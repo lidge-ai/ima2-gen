@@ -7,7 +7,7 @@
     <true/>
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
-    <!-- Native modules (better-sqlite3, sharp) loaded from asar.unpacked -->
+    <!-- Native modules (better-sqlite3, sharp) shipped unpacked in Resources/app -->
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
     <key>com.apple.security.network.client</key>

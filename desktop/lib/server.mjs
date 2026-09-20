@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
-import { createWriteStream, mkdirSync } from "node:fs";
+import { createWriteStream, mkdirSync, readFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 const RUNNING_RE = /Image Gen running at (https?:\/\/[^\s]+)/i;
@@ -21,6 +22,29 @@ export async function probeHealth(url, timeoutMs = HEALTH_TIMEOUT_MS) {
     return null;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Ask the server to shut itself down via POST /api/admin/stop using the nonce
+ * from its advertise file. Needed on Windows, where child.kill() is a hard
+ * TerminateProcess and would skip the server's own teardown.
+ */
+async function requestAdminStop(pid, configDir, timeoutMs = 2_500) {
+  try {
+    const entry = JSON.parse(readFileSync(join(configDir || join(homedir(), ".ima2"), "server.json"), "utf-8"));
+    if (entry.pid !== pid || !entry.adminNonce || !entry.url) return false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch(`${String(entry.url).replace(/\/$/, "")}/api/admin/stop`, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { "x-ima2-admin-nonce": entry.adminNonce, connection: "close" },
+    });
+    clearTimeout(timer);
+    return res.status === 202;
+  } catch {
+    return false;
   }
 }
 
@@ -60,6 +84,7 @@ export class ServerSupervisor extends EventEmitter {
     this.crashTimes = [];
     this.stopping = false;
     this.logStream = null;
+    this.configDir = "";
   }
 
   #setState(state, extra = {}) {
@@ -105,6 +130,7 @@ export class ServerSupervisor extends EventEmitter {
       env.IMA2_LOG_LEVEL = env.IMA2_LOG_LEVEL || "debug";
     }
     if (settings.configDir) env.IMA2_CONFIG_DIR = settings.configDir;
+    this.configDir = settings.configDir || "";
     return { bin, env };
   }
 
@@ -168,10 +194,12 @@ export class ServerSupervisor extends EventEmitter {
       this.#setState("stopped", { url: null, external: false });
       return;
     }
+    const graceful = await requestAdminStop(child.pid, this.configDir);
     await new Promise((resolve) => {
       const force = setTimeout(() => { try { child.kill("SIGKILL"); } catch {} }, STOP_GRACE_MS);
       child.once("exit", () => { clearTimeout(force); resolve(); });
-      try { child.kill("SIGTERM"); } catch { resolve(); }
+      if (child.exitCode !== null) return resolve();
+      if (!graceful) { try { child.kill("SIGTERM"); } catch { resolve(); } }
     });
     this.child = null;
     this.#setState("stopped", { url: null, external: false });
