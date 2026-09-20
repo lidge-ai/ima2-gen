@@ -30,10 +30,12 @@ export async function probeHealth(url, timeoutMs = HEALTH_TIMEOUT_MS) {
  * from its advertise file. Needed on Windows, where child.kill() is a hard
  * TerminateProcess and would skip the server's own teardown.
  */
-async function requestAdminStop(pid, configDir, timeoutMs = 2_500) {
+async function requestAdminStop(pid, configDir, log, timeoutMs = 2_500) {
+  const file = join(configDir || join(homedir(), ".ima2"), "server.json");
   try {
-    const entry = JSON.parse(readFileSync(join(configDir || join(homedir(), ".ima2"), "server.json"), "utf-8"));
-    if (entry.pid !== pid || !entry.adminNonce || !entry.url) return false;
+    const entry = JSON.parse(readFileSync(file, "utf-8"));
+    if (entry.pid !== pid) return fail(`advertise pid ${entry.pid} != child pid ${pid}`);
+    if (!entry.adminNonce || !entry.url) return fail("advertise file lacks adminNonce/url");
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     const res = await fetch(`${String(entry.url).replace(/\/$/, "")}/api/admin/stop`, {
@@ -42,8 +44,13 @@ async function requestAdminStop(pid, configDir, timeoutMs = 2_500) {
       headers: { "x-ima2-admin-nonce": entry.adminNonce, connection: "close" },
     });
     clearTimeout(timer);
-    return res.status === 202;
-  } catch {
+    return res.status === 202 || fail(`admin stop returned HTTP ${res.status}`);
+  } catch (err) {
+    return fail(`${file}: ${err.message}`);
+  }
+
+  function fail(reason) {
+    log(`[desktop] graceful stop unavailable (${reason}); falling back to signals`);
     return false;
   }
 }
@@ -194,7 +201,7 @@ export class ServerSupervisor extends EventEmitter {
       this.#setState("stopped", { url: null, external: false });
       return;
     }
-    const graceful = await requestAdminStop(child.pid, this.configDir);
+    const graceful = await requestAdminStop(child.pid, this.configDir, (line) => this.#log(line));
     await new Promise((resolve) => {
       const force = setTimeout(() => { try { child.kill("SIGKILL"); } catch {} }, STOP_GRACE_MS);
       child.once("exit", () => { clearTimeout(force); resolve(); });
