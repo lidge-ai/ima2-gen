@@ -34,13 +34,16 @@ jobs:
           - { os: macos-latest, label: macOS (arm64 + x64), target: mac }
           - { os: windows-latest, label: Windows (x64 + arm64), target: win }
           - { os: ubuntu-latest, label: Linux (x64 + arm64), target: linux }
-    # Cache must live outside the checkout: the root package.json is type=module,
-    # which breaks electron-builder's CommonJS helper scripts if extracted under it.
-    env:
-      ELECTRON_CACHE: ${{ runner.temp }}/eb-cache/electron
-      ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/eb-cache/electron-builder
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Cache must live outside the checkout: the root package.json is type=module,
+      # which breaks electron-builder's CommonJS helper scripts if extracted under it.
+      # (`runner` context is not available in job-level env, hence a step.)
+      - name: Point electron-builder cache outside the checkout
+        shell: bash
+        run: |
+          echo "ELECTRON_CACHE=${RUNNER_TEMP}/eb-cache/electron" >> "$GITHUB_ENV"
+          echo "ELECTRON_BUILDER_CACHE=${RUNNER_TEMP}/eb-cache/electron-builder" >> "$GITHUB_ENV"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24.17.0'
