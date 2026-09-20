@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file:">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #18191c; }
+  #bar {
+    height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 14px 0 78px; box-sizing: border-box;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: #e6e7ea; font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-app-region: drag; user-select: none;
+  }
+  body:not(.darwin) #bar { padding-left: 14px; }
+  img { width: 18px; height: 18px; border-radius: 4px; }
+  .sep { width: 1px; height: 14px; background: rgba(255,255,255,0.14); margin: 0 4px; }
+  .url { color: rgba(230,231,234,0.55); font-weight: 400; font-size: 12px; }
+  .spacer { flex: 1; }
+  button {
+    -webkit-app-region: no-drag; appearance: none; border: 0; background: transparent; color: rgba(230,231,234,0.7);
+    font: 500 12px/1 inherit; padding: 5px 8px; border-radius: 6px; cursor: default;
+  }
+  button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <img alt="" src="../build/icon.png">
+  <span class="title">ima2-gen</span>
+  <span class="sep"></span>
+  <span class="url" id="url"></span>
+  <span class="spacer"></span>
+  <button type="button" id="settings">Settings</button>
+</div>
+<script src="titlebar.js"></script>
+</body>
+</html>

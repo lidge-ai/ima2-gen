@@ -1,7 +1,7 @@
 import { BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { attachTitlebar } from "./titlebar.mjs";
+import { mountTitlebarLayout } from "./titlebar.mjs";
 
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const PRELOAD = join(desktopDir, "preload.cjs");
@@ -24,8 +24,14 @@ export class WindowManager {
     this.iconPath = iconPath;
     this.onVisibilityChange = onVisibilityChange ?? (() => {});
     this.main = null;
+    this.mainContent = null;
+    this.titlebar = null;
     this.settings = null;
     this.quitting = false;
+  }
+
+  #webPreferences() {
+    return { preload: PRELOAD, contextIsolation: true, nodeIntegration: false, sandbox: true };
   }
 
   #baseOptions(extra) {
@@ -33,7 +39,7 @@ export class WindowManager {
       show: false,
       backgroundColor: "#111214",
       icon: this.iconPath,
-      webPreferences: { preload: PRELOAD, contextIsolation: true, nodeIntegration: false, sandbox: true },
+      webPreferences: this.#webPreferences(),
       ...extra,
     };
   }
@@ -55,41 +61,56 @@ export class WindowManager {
       trafficLightPosition: { x: 14, y: 14 },
     }));
     this.main = win;
-    win.once("ready-to-show", () => win.show());
+    const { bar, content } = mountTitlebarLayout(win, this.#webPreferences());
+    this.titlebar = bar;
+    this.mainContent = content;
+    win.show();
     win.on("close", (e) => {
       if (this.quitting || !this.getSettings().keepRunningOnClose) return;
       e.preventDefault();
       win.hide();
     });
-    win.on("closed", () => { this.main = null; this.onVisibilityChange(); });
+    win.on("closed", () => {
+      this.main = null;
+      this.mainContent = null;
+      this.titlebar = null;
+      this.onVisibilityChange();
+    });
     win.on("hide", () => this.onVisibilityChange());
     win.on("show", () => this.onVisibilityChange());
-    win.webContents.setWindowOpenHandler(({ url }) => {
+    content.webContents.setWindowOpenHandler(({ url }) => {
       if (isLocalServerUrl(url, this.getServerUrl())) return { action: "allow" };
       void shell.openExternal(url);
       return { action: "deny" };
     });
-    win.webContents.on("will-navigate", (e, url) => {
+    content.webContents.on("will-navigate", (e, url) => {
       if (isLocalServerUrl(url, this.getServerUrl()) || url.startsWith("file:")) return;
       e.preventDefault();
       void shell.openExternal(url);
     });
-    attachTitlebar(win, { getServerUrl: this.getServerUrl });
     this.syncMainContent();
     return win;
   }
 
-  /** Point the main window at the live server once it is up, else the loading page. */
+  /** Point the main content view at the live server once it is up, else the loading page. */
   syncMainContent() {
-    const win = this.main;
-    if (!win || win.isDestroyed()) return;
+    const view = this.mainContent;
+    if (!view || !this.main || this.main.isDestroyed()) return;
     const url = this.getServerUrl();
-    const current = win.webContents.getURL();
+    const current = view.webContents.getURL();
     if (url) {
-      if (!current.startsWith(url)) void win.loadURL(url);
+      if (!current.startsWith(url)) void view.webContents.loadURL(url);
       return;
     }
-    if (!current.startsWith("file:")) void win.loadFile(LOADING_PAGE);
+    if (!current.startsWith("file:")) void view.webContents.loadFile(LOADING_PAGE);
+  }
+
+  #allContents() {
+    const list = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed()).map((w) => w.webContents);
+    for (const view of [this.titlebar, this.mainContent]) {
+      if (view && !view.webContents.isDestroyed()) list.push(view.webContents);
+    }
+    return list;
   }
 
   showSettings() {
@@ -117,9 +138,7 @@ export class WindowManager {
   }
 
   broadcast(channel, payload) {
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed()) win.webContents.send(channel, payload);
-    }
+    for (const contents of this.#allContents()) contents.send(channel, payload);
   }
 
   hideAll() {

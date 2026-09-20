@@ -9,7 +9,6 @@ import { WindowManager } from "./lib/windows.mjs";
 import { TrayController } from "./lib/tray.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
-import { registerTitlebarProtocol, registerTitlebarScheme } from "./lib/titlebar.mjs";
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(desktopDir, "..");
@@ -20,7 +19,6 @@ const trayIcon = join(buildDir, isMac ? "trayTemplate.png" : "tray.png");
 
 app.setName("ima2");
 if (process.platform === "win32") app.setAppUserModelId("com.lidge.ima2");
-registerTitlebarScheme();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -30,7 +28,6 @@ if (!app.requestSingleInstanceLock()) {
 
 async function boot() {
   await app.whenReady();
-  registerTitlebarProtocol(buildDir);
 
   const settingsStore = createSettingsStore(app.getPath("userData"));
   const supervisor = new ServerSupervisor({
