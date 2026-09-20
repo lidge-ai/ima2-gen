@@ -51,6 +51,13 @@ files:
   - "!node_modules/node-gyp/**"
   - "!node_modules/@types/**"
 
+# Runs before electron-builder signs the bundle. With asar:false the whole
+# production node_modules tree ships as loose files, and electron-builder does
+# not sign Mach-O binaries it did not place there. Seven of them have no file
+# extension (codex, rg, zsh, macos-trash, esbuild), so notarization rejects the
+# upload unless they are signed here first.
+afterPack: build/sign-extra-binaries.mjs
+
 publish: null
 
 mac:

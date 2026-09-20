@@ -14,7 +14,8 @@
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "verify:mac-signature": "node scripts/verify-mac-signature.mjs dist/mac-arm64/ima2.app"
   },
   "devDependencies": {
     "electron": "44.3.0",
