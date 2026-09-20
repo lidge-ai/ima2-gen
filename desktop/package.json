@@ -1,0 +1,23 @@
+{
+  "name": "ima2-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron desktop shell for ima2-gen (menubar/tray + local server supervisor).",
+  "type": "module",
+  "main": "main.mjs",
+  "scripts": {
+    "prestart": "node scripts/make-icons.mjs",
+    "start": "electron .",
+    "prepare:app": "cd .. && npm run build:server && npm run build:cli && npm run ui:build",
+    "icons": "node scripts/make-icons.mjs",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "44.3.0",
+    "electron-builder": "26.16.1"
+  }
+}

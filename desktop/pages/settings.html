@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>ima2 Settings</title>
+  <link rel="stylesheet" href="desktop.css" />
+</head>
+<body>
+  <div class="drag"></div>
+  <main>
+    <h1>ima2 Desktop</h1>
+    <p class="sub">Menubar shell for the local ima2 server</p>
+
+    <section>
+      <div class="row">
+        <label>Server<small id="status-detail">—</small></label>
+        <div class="status"><span id="dot" class="dot"></span><span id="status-label">…</span></div>
+      </div>
+      <div class="row">
+        <label>Port<small>Server restarts when changed. Falls back to the next free port if busy.</small></label>
+        <input id="port" type="number" min="1024" max="65535" step="1" />
+      </div>
+      <div class="row">
+        <label>Verbose server logging<small>IMA2_DEV=1 · debug log level</small></label>
+        <label class="switch"><input id="devLogging" type="checkbox" /><span></span></label>
+      </div>
+    </section>
+
+    <section>
+      <div class="row">
+        <label>Open at login<small>Start ima2 when you sign in</small></label>
+        <label class="switch"><input id="openAtLogin" type="checkbox" /><span></span></label>
+      </div>
+      <div class="row">
+        <label>Start hidden<small>Only the menubar / tray icon at launch</small></label>
+        <label class="switch"><input id="startHidden" type="checkbox" /><span></span></label>
+      </div>
+      <div class="row" data-mac-only>
+        <label>Menubar only<small>Hide the Dock icon while no window is open</small></label>
+        <label class="switch"><input id="menubarOnly" type="checkbox" /><span></span></label>
+      </div>
+      <div class="row">
+        <label>Keep server running when window closes<small>Off: closing the window quits ima2</small></label>
+        <label class="switch"><input id="keepRunningOnClose" type="checkbox" /><span></span></label>
+      </div>
+    </section>
+
+    <section>
+      <div class="row">
+        <label>Config directory<small>Default ~/.ima2 (IMA2_CONFIG_DIR)</small></label>
+        <input id="configDir" type="text" class="wide" placeholder="~/.ima2" />
+      </div>
+      <div class="row">
+        <label>Node binary override<small>Leave empty to use the bundled runtime</small></label>
+        <input id="nodeBinary" type="text" class="wide" placeholder="auto" />
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="restart">Restart Server</button>
+      <button id="logs">Open Server Log</button>
+      <button id="config">Open Config Folder</button>
+    </div>
+    <p class="hint mono" id="info"></p>
+  </main>
+  <script src="settings.js"></script>
+</body>
+</html>

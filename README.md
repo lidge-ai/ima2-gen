@@ -441,6 +441,22 @@ npm run build
 
 `npm run dev` builds the UI and starts the TypeScript server entry with `--watch` and verbose server diagnostics. `npm run typecheck`, `npm run build:server`, and `npm run build:cli` verify the TypeScript migration and package emit path. Node mode and Canvas Mode are part of the packaged UI by default.
 
+### Desktop app (Electron)
+
+`desktop/` wraps the same local server and UI in a menubar/tray app for macOS, Windows, and Linux. It supervises `server.js` as a child process (attaching to an already-running server on the configured port instead of starting a second one) and adds a native settings window: port, open at login, start hidden, menubar-only (macOS), keep-server-on-close, log level, config directory.
+
+```bash
+cd desktop
+npm install
+npm run prepare:app     # builds server + CLI + UI at the repo root
+npm start               # run unpackaged
+npm run dist:mac        # dmg + zip (arm64, x64)
+npm run dist:win        # nsis + zip
+npm run dist:linux      # AppImage + deb
+```
+
+Installers are produced by `.github/workflows/desktop.yml` on `desktop-v*` tags, desktop PRs, or manual dispatch. macOS signing/notarization and Windows Authenticode activate automatically when the repository secrets `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD` are configured; without them the builds are unsigned.
+
 ## Contributors
 
 - [@lidge-jun](https://github.com/lidge-jun) — maintainer

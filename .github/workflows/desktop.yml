@@ -1,0 +1,121 @@
+name: Desktop Build
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Attach installers to the GitHub release matching desktop/package.json version
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'desktop-v*'
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, label: macOS (arm64 + x64), target: mac }
+          - { os: windows-latest, label: Windows (x64 + arm64), target: win }
+          - { os: ubuntu-latest, label: Linux (x64 + arm64), target: linux }
+    env:
+      ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.17.0'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            ui/package-lock.json
+            desktop/package-lock.json
+      - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: .cache
+          key: electron-${{ runner.os }}-${{ hashFiles('desktop/package-lock.json') }}
+      - name: Pin npm
+        run: npm install -g npm@11.18.0
+      - name: Install root deps
+        run: npm ci --no-audit --no-fund
+      - name: Install ui deps
+        run: npm --prefix ui ci --no-audit --no-fund
+      - name: Install desktop deps
+        run: npm --prefix desktop ci --no-audit --no-fund
+      - name: Build server, CLI and UI
+        run: npm --prefix desktop run prepare:app
+      - name: Generate icons
+        run: npm --prefix desktop run icons
+
+      # macOS signing + notarization switch on only when the Developer ID
+      # secrets are present; otherwise the build stays unsigned (ad-hoc).
+      - name: Build (macOS)
+        if: matrix.target == 'mac'
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          NOTARIZE=false
+          if [ -n "$CSC_LINK" ] && [ -n "$APPLE_ID" ]; then NOTARIZE=true; fi
+          if [ -z "$CSC_LINK" ]; then export CSC_IDENTITY_AUTO_DISCOVERY=false; fi
+          npm --prefix desktop run dist:mac -- --config.mac.notarize=$NOTARIZE
+
+      - name: Build (Windows)
+        if: matrix.target == 'win'
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npm --prefix desktop run dist:win
+
+      - name: Build (Linux)
+        if: matrix.target == 'linux'
+        run: npm --prefix desktop run dist:linux
+
+      - name: Smoke-check artifacts
+        shell: bash
+        run: ls -la desktop/dist | grep -Ev '\.(yml|yaml|blockmap)$|^total|builder-'
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ima2-desktop-${{ matrix.target }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+            desktop/dist/*.blockmap
+            desktop/dist/latest*.yml
+
+      - name: Attach to GitHub release
+        if: startsWith(github.ref, 'refs/tags/desktop-v') || inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          TAG="desktop-v${VERSION}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "ima2 Desktop ${VERSION}" --notes "Electron desktop builds for ima2-gen." --draft
+          gh release upload "$TAG" desktop/dist/*.dmg desktop/dist/*.zip desktop/dist/*.exe desktop/dist/*.AppImage desktop/dist/*.deb desktop/dist/latest*.yml --clobber

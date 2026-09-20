@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' file:; script-src 'self'" />
+  <title>ima2</title>
+  <link rel="stylesheet" href="desktop.css" />
+</head>
+<body>
+  <div class="drag"></div>
+  <div class="center" style="height: calc(100% - 38px)">
+    <img class="logo" src="../build/icon.png" alt="ima2" />
+    <div class="status"><span id="dot" class="dot starting"></span><strong id="label">Starting ima2 server…</strong></div>
+    <div id="url" class="mono"></div>
+    <div id="error" class="error-box" hidden></div>
+    <div class="actions" id="actions" hidden>
+      <button id="restart" class="primary">Restart Server</button>
+      <button id="logs">Open Server Log</button>
+      <button id="settings">Settings…</button>
+    </div>
+  </div>
+  <script src="loading.js"></script>
+</body>
+</html>
