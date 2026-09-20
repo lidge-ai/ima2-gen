@@ -1,6 +1,7 @@
 import { BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { attachTitlebar } from "./titlebar.mjs";
 
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const PRELOAD = join(desktopDir, "preload.cjs");
@@ -17,10 +18,11 @@ function isLocalServerUrl(target, serverUrl) {
 }
 
 export class WindowManager {
-  constructor({ getServerUrl, getSettings, iconPath }) {
+  constructor({ getServerUrl, getSettings, iconPath, onVisibilityChange }) {
     this.getServerUrl = getServerUrl;
     this.getSettings = getSettings;
     this.iconPath = iconPath;
+    this.onVisibilityChange = onVisibilityChange ?? (() => {});
     this.main = null;
     this.settings = null;
     this.quitting = false;
@@ -59,7 +61,9 @@ export class WindowManager {
       e.preventDefault();
       win.hide();
     });
-    win.on("closed", () => { this.main = null; });
+    win.on("closed", () => { this.main = null; this.onVisibilityChange(); });
+    win.on("hide", () => this.onVisibilityChange());
+    win.on("show", () => this.onVisibilityChange());
     win.webContents.setWindowOpenHandler(({ url }) => {
       if (isLocalServerUrl(url, this.getServerUrl())) return { action: "allow" };
       void shell.openExternal(url);
@@ -70,6 +74,7 @@ export class WindowManager {
       e.preventDefault();
       void shell.openExternal(url);
     });
+    attachTitlebar(win, { getServerUrl: this.getServerUrl });
     this.syncMainContent();
     return win;
   }
@@ -106,7 +111,7 @@ export class WindowManager {
     this.settings = win;
     win.setMenuBarVisibility(false);
     win.once("ready-to-show", () => win.show());
-    win.on("closed", () => { this.settings = null; });
+    win.on("closed", () => { this.settings = null; this.onVisibilityChange(); });
     void win.loadFile(SETTINGS_PAGE);
     return win;
   }

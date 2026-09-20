@@ -9,6 +9,7 @@ import { WindowManager } from "./lib/windows.mjs";
 import { TrayController } from "./lib/tray.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
+import { registerTitlebarProtocol, registerTitlebarScheme } from "./lib/titlebar.mjs";
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(desktopDir, "..");
@@ -19,6 +20,7 @@ const trayIcon = join(buildDir, isMac ? "trayTemplate.png" : "tray.png");
 
 app.setName("ima2");
 if (process.platform === "win32") app.setAppUserModelId("com.lidge.ima2");
+registerTitlebarScheme();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -28,6 +30,7 @@ if (!app.requestSingleInstanceLock()) {
 
 async function boot() {
   await app.whenReady();
+  registerTitlebarProtocol(buildDir);
 
   const settingsStore = createSettingsStore(app.getPath("userData"));
   const supervisor = new ServerSupervisor({
@@ -39,11 +42,12 @@ async function boot() {
     iconPath: appIcon,
     getServerUrl: () => supervisor.url,
     getSettings: () => settingsStore.get(),
+    onVisibilityChange: () => applyDockVisibility(settingsStore.get(), windows),
   });
 
   const configDir = () => settingsStore.get().configDir || process.env.IMA2_CONFIG_DIR || join(homedir(), ".ima2");
   const actions = {
-    openApp: () => { windows.showMain(); if (isMac && !settingsStore.get().menubarOnly) app.dock?.show(); },
+    openApp: () => { if (isMac) app.dock?.show(); windows.showMain(); },
     openInBrowser: () => { if (supervisor.url) void shell.openExternal(supervisor.url); },
     openGenerated: () => shell.openPath(join(configDir(), "generated")),
     openLogs: () => shell.openPath(supervisor.logFile),
@@ -108,7 +112,7 @@ function wireAppLifecycle({ supervisor, windows, settingsStore }) {
   app.on("activate", () => windows.showMain());
   app.on("window-all-closed", () => {
     if (!settingsStore.get().keepRunningOnClose) app.quit();
-    else if (isMac && settingsStore.get().menubarOnly) app.dock?.hide();
+    else applyDockVisibility(settingsStore.get(), windows);
   });
   app.on("before-quit", (e) => {
     if (shuttingDown) return;
