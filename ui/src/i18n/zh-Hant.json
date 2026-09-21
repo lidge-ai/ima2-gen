@@ -705,7 +705,8 @@
     "retry": "重試",
     "retryTitle": "重試這個 node 的生成",
     "errorAuthCta": "檢查您的帳戶或 API 金鑰，然後重新產生。",
-    "errorFixCta": "調整提示或引用，然後再次產生。"
+    "errorFixCta": "調整提示或引用，然後再次產生。",
+    "zoomImage": "檢視大圖"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

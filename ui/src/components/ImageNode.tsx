@@ -5,6 +5,7 @@ import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
 import { formatReasoningLabel } from "../lib/reasoning";
 import { isVideoUrl } from "../lib/videoMedia";
+import { AssetMediaLightbox } from "./assetgen/AssetMediaLightbox";
 import { buildProvenanceView } from "../lib/provenance";
 import { SavePromptPopover } from "./SavePromptPopover";
 
@@ -52,6 +53,8 @@ function getPreviewWidth(size?: string | null): number {
 
 function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const { t } = useI18n();
+  // Anh trong node be, nen cho phong to xem trong lightbox dung chung cua du an.
+  const [xemTo, setXemTo] = useState(false);
   const d = data as ImageNodeData;
   const updateNodePrompt = useAppStore((s) => s.updateNodePrompt);
   const addNodeReferences = useAppStore((s) => s.addNodeReferences);
@@ -244,7 +247,21 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           isVideoUrl(d.imageUrl) ? (
             <video src={d.imageUrl} controls loop playsInline muted className="image-node__video nodrag" />
           ) : (
-            <img src={d.imageUrl} alt={t("node.nodeImageAlt")} />
+            <>
+              <img src={d.imageUrl} alt={t("node.nodeImageAlt")} />
+              <button
+                type="button"
+                className="image-node__zoom nodrag"
+                title={t("node.zoomImage")}
+                aria-label={t("node.zoomImage")}
+                onClick={(e) => { e.stopPropagation(); setXemTo(true); }}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                  <path d="M15.5 15.5 21 21M7.5 10.5h6M10.5 7.5v6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                </svg>
+              </button>
+            </>
           )
         ) : isBusy && d.partialImageUrl ? (
           <img
@@ -439,6 +456,18 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           className={`image-node__handle image-node__handle--source image-node__handle--${handleId}`}
         />
       ))}
+      {xemTo && d.imageUrl ? (
+        <AssetMediaLightbox
+          item={{
+            image: d.imageUrl,
+            url: d.imageUrl,
+            prompt: d.prompt || "",
+            filename: d.imageUrl.replace(/^\/generated\//, ""),
+            mediaType: isVideoUrl(d.imageUrl) ? "video" : "image",
+          }}
+          onClose={() => setXemTo(false)}
+        />
+      ) : null}
     </div>
   );
 }

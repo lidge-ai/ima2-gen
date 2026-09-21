@@ -193,6 +193,34 @@
   height: 100%;
   object-fit: contain;
 }
+.image-node__preview {
+  position: relative;
+}
+.image-node__zoom {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  /* Khong dat border-radius: manifest ban kinh bi dong bang o 482 dong, them
+     mot khai bao moi la vi pham rang buoc thiet ke. */
+  color: #fff;
+  background: rgba(24, 24, 28, 0.55);
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  cursor: zoom-in;
+}
+.image-node__preview:hover .image-node__zoom,
+.image-node__zoom:focus-visible {
+  opacity: 1;
+}
+.image-node__zoom:hover {
+  background: rgba(24, 24, 28, 0.78);
+}
 .image-node__partial {
   filter: saturate(1.04) contrast(1.03);
 }

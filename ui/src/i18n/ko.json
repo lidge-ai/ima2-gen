@@ -705,7 +705,8 @@
     "retry": "재시도",
     "retryTitle": "이 노드의 생성을 다시 시도합니다",
     "errorAuthCta": "계정 또는 API 키를 확인한 뒤 다시 생성해 주세요.",
-    "errorFixCta": "프롬프트나 참조 이미지를 고친 뒤 다시 생성해 주세요."
+    "errorFixCta": "프롬프트나 참조 이미지를 고친 뒤 다시 생성해 주세요.",
+    "zoomImage": "크게 보기"
   },
   "nodeBatch": {
     "selectionOn": "선택중",
