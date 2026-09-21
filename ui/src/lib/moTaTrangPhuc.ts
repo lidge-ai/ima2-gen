@@ -80,6 +80,7 @@ export async function dienMoTaTrangPhuc(
   nodes: readonly GraphNode[],
   edges: readonly GraphEdge[],
   datPrompt: (id: string, prompt: string) => void,
+  dinhAnh?: (id: string, url: string) => void | Promise<void>,
 ): Promise<KetQuaDienMoTa> {
   const node = nodes.find((n) => n.id === nodeId);
   const imageUrl = node?.data?.imageUrl;
@@ -92,6 +93,11 @@ export async function dienMoTaTrangPhuc(
     const n = nodes.find((x) => x.id === dich);
     const moi = n ? thayMoTaTrongPrompt(n.data.prompt || "", moTa) : null;
     if (moi) { datPrompt(dich, moi); daDien.push(dich); } else boQua.push(dich);
+    // Dinh THEM anh trang phuc vao chinh node do. Da do bang thuc nghiem: anh
+    // vao qua canh ref thi yeu (hoa tiet in ra sai so luong va cach sap), vao
+    // qua duong dinh kem thi bam sat ban goc - ma van giu duoc mat nguoi mau,
+    // khac voi cach lay flat lay lam anh nen.
+    if (moi && dinhAnh) await dinhAnh(dich, imageUrl);
   }
   return { moTa, daDien, boQua };
 }

@@ -125,14 +125,17 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const onDocBoDo = useCallback(async () => {
     setDangDocDo(true);
     try {
-      const kq = await dienMoTaTrangPhuc(id, graphNodes, graphEdges, updateNodePrompt);
+      const kq = await dienMoTaTrangPhuc(
+        id, graphNodes, graphEdges, updateNodePrompt,
+        (dichId, url) => addNodeReferenceFromUrl(dichId, url),
+      );
       showToast(t("node.outfitFilled", { n: String(kq.daDien.length), fallback: `Da dien mo ta vao ${kq.daDien.length} node` }), false);
     } catch (e) {
       showToast(String((e as Error).message || e), true);
     } finally {
       setDangDocDo(false);
     }
-  }, [id, graphNodes, graphEdges, updateNodePrompt, showToast, t]);
+  }, [id, graphNodes, graphEdges, updateNodePrompt, addNodeReferenceFromUrl, showToast, t]);
 
   const onBranch = useCallback(() => {
     if (d.status !== "ready") return;

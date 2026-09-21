@@ -26,9 +26,12 @@ không cần sửa chữ.
 
 ### Bước 2 — trên giao diện: bấm **Read outfit**
 
-Trên chính node trang phục vừa GEN xong, bấm nút **Read outfit**. Nó đọc ảnh,
-hỏi mô hình liệt kê từng món, rồi điền vào ô `{{TRANG_PHUC}}` ở **mọi node dùng
-node này làm ảnh tham chiếu** — tức node mặc đồ và tất cả node cảnh của nhánh.
+Trên chính node trang phục vừa GEN xong, bấm nút **Read outfit**. Nó làm hai việc
+cho **mọi node dùng node này làm ảnh tham chiếu** — node mặc đồ và tất cả node
+cảnh của nhánh:
+
+1. đọc ảnh, hỏi mô hình liệt kê từng món, điền vào ô `{{TRANG_PHUC}}`
+2. **đính chính ảnh flat lay** vào ô Attach của node đó
 
 Nút chỉ hiện trên node có ai đó dùng làm tham chiếu, nên không lẫn với node khác.
 
@@ -63,6 +66,20 @@ Bấm **GEN** theo thứ tự:
 2. Các node cảnh — ra ảnh trong quán cà phê
 
 ---
+
+## Vì sao vừa tả bằng chữ vừa đính ảnh
+
+Đã đo bốn cách trên cùng một bộ đồ, cùng một người mẫu:
+
+| Cách | Hoạ tiết in | Mặt mẫu |
+|---|---|---|
+| Ảnh nền = mẫu, bộ đồ chỉ vào qua cạnh `ref` | Sai (sáu con gấu thành sáu con giống hệt xếp hàng) | Đúng |
+| Ảnh nền = flat lay | Đúng | Trôi hẳn sang người khác |
+| Hai bước: bám đồ rồi trả mặt | Đúng | Vẫn trôi |
+| **Ảnh nền = mẫu + đính flat lay vào Attach** | **Đúng** | **Đúng** |
+
+Kết luận: ảnh vào qua **cạnh `ref` thì yếu**, vào qua **đường đính kèm thì mạnh**.
+Nên nút Read outfit làm cả hai — tả bằng chữ và đính ảnh.
 
 ## Vì sao phải có bước 2
 
