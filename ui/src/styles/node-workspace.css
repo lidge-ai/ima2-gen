@@ -197,6 +197,25 @@
   letter-spacing: .02em;
   cursor: copy;
 }
+.image-node__ref-chip--ke-thua {
+  position: relative;
+  opacity: .82;
+  outline: 1px dashed var(--border-strong, #8a8a92);
+  outline-offset: -1px;
+}
+.image-node__ref-vai {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 0 3px;
+  background: rgba(16, 16, 20, .72);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
 .image-node__busy {
   position: absolute;
   inset: 0;
@@ -212,15 +231,24 @@
 }
 .image-node__role {
   flex: 0 0 auto;
-  max-width: 130px;
+  max-width: 74px;
+  padding: 0 3px;
   border: 0;
   background: var(--control-bg);
-  cursor: pointer;
-  padding: 1px 5px;
   color: #fff;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .03em;
+  line-height: 1.5;
+  cursor: pointer;
+  /* Bo mui ten mac dinh cua trinh duyet: o nay nam chen trong hang tieu de,
+     mui ten lam no tho va chiem gan het be ngang node. */
+  appearance: none;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+.image-node__role:hover {
+  filter: brightness(1.12);
 }
 .image-node__id-label {
   flex: 1 1 auto;

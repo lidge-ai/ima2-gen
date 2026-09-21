@@ -34,7 +34,7 @@ export const PROMPT_BOC_TRANG_PHUC =
 
 export const VAI_TRO: Record<VaiTroNode, MoTaVaiTro> = {
   "mau": { nhan: "MẪU", mau: "#6b7cff" },
-  "trang-phuc": { nhan: "BÓC TRANG PHỤC", promptCoDinh: PROMPT_BOC_TRANG_PHUC, mau: "#0f9d58" },
+  "trang-phuc": { nhan: "BÓC ĐỒ", promptCoDinh: PROMPT_BOC_TRANG_PHUC, mau: "#0f9d58" },
   "mac-do": { nhan: "MẶC ĐỒ", mau: "#e2622f" },
   "canh": { nhan: "CẢNH", mau: "#8a5326" },
   "video": { nhan: "VIDEO", mau: "#9334e6" },

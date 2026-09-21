@@ -129,6 +129,22 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     return canhVao ? graphNodes.find((n) => n.id === canhVao.source) ?? null : null;
   }, [id, graphEdges, graphNodes]);
 
+  /**
+   * Anh KE THUA tu cac canh vao: canh dau la ANH NEN, cac canh sau la THAM CHIEU.
+   * Hien ra duoi node de nhin mot cai la biet node nay dang an theo anh nao -
+   * truoc day chi thay anh nguoi dung tu dinh, con phan ke thua thi vo hinh.
+   */
+  const anhKeThua = useMemo(() => {
+    const nguon = graphEdges.filter((e) => e.target === id).map((e) => e.source);
+    return nguon
+      .map((src, i) => {
+        const n = graphNodes.find((x) => x.id === src);
+        const url = n?.data?.imageUrl;
+        return url ? { id: src, url, vai: i === 0 ? "base" : "ref" } : null;
+      })
+      .filter((x): x is { id: string; url: string; vai: string } => !!x);
+  }, [id, graphEdges, graphNodes]);
+
   const dauVaoVideo = useMemo(() => {
     const laAnh = (u?: string | null) => !!u && !isVideoUrl(u);
     const anh =
@@ -430,8 +446,18 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         onDragLeave={onDragLeaveRefs}
         onPaste={onPasteRefs}
       >
-        {refs.length > 0 ? (
+        {refs.length > 0 || anhKeThua.length > 0 ? (
           <div className="image-node__refs">
+            {anhKeThua.map((k) => (
+              <div
+                key={`ke-thua-${k.id}`}
+                className="image-node__ref-chip image-node__ref-chip--ke-thua"
+                title={`${k.vai}: ${k.id}`}
+              >
+                <img src={k.url} alt={`${k.vai}: ${k.id}`} />
+                <span className="image-node__ref-vai">{k.vai}</span>
+              </div>
+            ))}
             {refs.map((src, i) => (
               <div
                 key={i}
@@ -563,8 +589,9 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                   {dangDocDo ? "..." : t("node.readOutfit", { fallback: "Doc bo do" })}
                 </button>
               )}
-              {/* Node CANH chi sinh anh - khong cho nut sinh video o day. */}
-              {anhNguonVideo && d.vaiTro !== "canh" && (
+              {/* Chi node VIDEO moi sinh video. Node boc do / mac do / canh
+                  deu la buoc lam ANH, bay nut video o do chi to gay bam nham. */}
+              {anhNguonVideo && (!d.vaiTro || d.vaiTro === "video") && (
                 <button type="button" onClick={onAnimate} disabled={isBusy} title={t(isVideoUrl(d.imageUrl) ? "result.animateAgainTitle" : "result.animateTitle", { fallback: "Animate" })} aria-label={t(isVideoUrl(d.imageUrl) ? "result.animateAgainTitle" : "result.animateTitle", { fallback: "Animate" })}>
                   {/* Cuon phim, KHONG phai tam giac phat: nut nay goi Grok sinh
                       video (ton thoi gian va tien), chu khong phat gi ca. Dung
