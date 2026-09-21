@@ -129,8 +129,15 @@ async function graphSave(argv: string[]) {
   const server = await getServer(args);
   // Step 1: fetch current version
   const current: any = await request(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
-  const version = current?.session?.graph?.version;
-  if (typeof version !== "number") die(1, "could not resolve current graph version");
+  const session = current?.session;
+  if (!session) die(1, "session not found");
+  // The server returns the version flat as `graphVersion`; a brand-new session
+  // has no graph yet, and its first save must go in with If-Match "0".
+  // Reading only `graph.version` made seeding a first graph impossible.
+  const version =
+    typeof session.graph?.version === "number" ? session.graph.version
+    : typeof session.graphVersion === "number" ? session.graphVersion
+    : 0;
   // Step 2: PUT with If-Match
   try {
     const result: any = await request(server.base, `/api/sessions/${encodeURIComponent(id)}/graph`, {
@@ -153,7 +160,16 @@ async function graphLoad(argv: string[]) {
   if (!id) die(2, "usage: session graph load <id>");
   const server = await getServer(args);
   const resp: any = await request(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
-  const graph = resp?.session?.graph;
+  const session = resp?.session;
+  if (!session) die(1, "session not found");
+  // Same shape mismatch as in graphSave: nodes/edges come back flat on the
+  // session, not nested under `graph`. Looking only at `graph` made every
+  // saved graph report "no graph for session".
+  const graph =
+    session.graph
+    ?? (Array.isArray(session.nodes)
+      ? { version: session.graphVersion ?? 0, nodes: session.nodes, edges: session.edges ?? [] }
+      : null);
   if (!graph) die(1, "no graph for session");
   const text = JSON.stringify(graph, null, 2);
   if (args.out) {
