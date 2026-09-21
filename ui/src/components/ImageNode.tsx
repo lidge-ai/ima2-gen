@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
@@ -6,6 +6,7 @@ import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/v
 import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
 import { dauVaoVideoCuaNode, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
 import { canhAnhVao } from "../lib/canhAnh";
+import { huyLuotChayApi, lichSuLuotChay, type WfLuotApi } from "../lib/wfApi";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
@@ -95,7 +96,23 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // sach viec dang chay - con job nao mang clientNodeId cua node thi node con ban.
   const inFlight = useAppStore((st) => st.inFlight);
   const coViecDangChay = inFlight.some((j) => j.clientNodeId === id);
-  const isBusy = d.status === "pending" || d.status === "reconciling" || coViecDangChay;
+  // Luot chay do MAY CHU dieu khien (co he thong khac goi API vao). Node phai
+  // bay ra dung nhu luc bam tay, khong thi nguoi dung ngoi nhin mot canvas tu
+  // nhien doi anh ma khong hieu vi sao.
+  const wfApiChay = useAppStore((st) => st.wfApiChay);
+  const luotApiCuaMoc = useMemo(
+    () => Object.values(wfApiChay).find((r) => r.startNodeId === id) ?? null,
+    [wfApiChay, id],
+  );
+  const nodeDangChayTuApi = useMemo(
+    () => Object.values(wfApiChay).some((r) => r.nodeHienTai === id),
+    [wfApiChay, id],
+  );
+  // Node dang duoc may chu sinh cung la node dang ban: khoa o nhap va bay lop
+  // phu nhu moi lan sinh khac, khong thi nguoi dung sua vao mot node ma ket qua
+  // sap bi ghi de.
+  const isBusy = d.status === "pending" || d.status === "reconciling"
+    || coViecDangChay || nodeDangChayTuApi;
   const canAttachRefs = !isBusy && refs.length < MAX_NODE_REFS;
   const nodeStyle = {
     "--node-preview-w": `${getPreviewWidth(d.size)}px`,
@@ -145,12 +162,30 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // dan phai nam ngay tren no - de trong tai lieu thi khong ai gap.
   const activeSessionId = useAppStore((st) => st.activeSessionId);
   const [hienApi, setHienApi] = useState(false);
+  const [lichSu, setLichSu] = useState<WfLuotApi[] | null>(null);
+  const [dangTaiLichSu, setDangTaiLichSu] = useState(false);
   const duongApi = activeSessionId && laMocDau
     ? `/api/wf/${activeSessionId}/${id}` : null;
   const oTrongKhuon = useMemo(
     () => (chuoi?.ok ? oTrongCuaKhuon(graphNodes, chuoi.thuTu) : []),
     [chuoi, graphNodes],
   );
+  // Tai lich su khi MO o API, va tai lai moi khi mot luot API vua ket thuc -
+  // dung luc do danh sach vua co them mot dong.
+  const taiLichSu = useCallback(async () => {
+    if (!activeSessionId || !laMocDau) return;
+    setDangTaiLichSu(true);
+    try { setLichSu(await lichSuLuotChay(activeSessionId, id, 8)); }
+    catch { setLichSu([]); }
+    finally { setDangTaiLichSu(false); }
+  }, [activeSessionId, laMocDau, id]);
+
+  const dangChayApi = !!luotApiCuaMoc;
+  useEffect(() => {
+    if (!hienApi) return;
+    void taiLichSu();
+  }, [hienApi, dangChayApi, taiLichSu]);
+
   const lenhCurl = useMemo(() => {
     if (!duongApi) return "";
     const than = oTrongKhuon.length
@@ -409,7 +444,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
       // Viec chay bat dong bo (video) khong doi status cua node, nen phai them
       // lop --pending theo danh sach viec dang chay, khong thi node dang chay
       // ma vien van bao "ready".
-      className={`image-node image-node--${coViecDangChay ? "pending" : d.status}${selected ? " image-node--selected" : ""}${laMoc ? " image-node--moc" : ""}${wfNodeHienTai === id ? " image-node--wf-hien-tai" : ""}`}
+      className={`image-node image-node--${coViecDangChay ? "pending" : d.status}${selected ? " image-node--selected" : ""}${laMoc ? " image-node--moc" : ""}${wfNodeHienTai === id || nodeDangChayTuApi ? " image-node--wf-hien-tai" : ""}`}
       style={nodeStyle}
     >
       {NODE_HANDLE_POSITIONS.map(({ id: handleId, position }) => (
@@ -459,13 +494,28 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           {laMocDau ? (
             <>
               <div className="image-node__moc-so">
-                {khuonNayDangChay
-                  ? t("node.wfRunning", { done: wfDaXong, total: wfTongViec })
-                  : chuoi?.ok
-                    ? t("node.wfSteps", { count: chuoi.soViec })
-                    : t(`node.wfErr.${chuoi?.loi ?? "thieu-ket-thuc"}`)}
+                {luotApiCuaMoc
+                  ? t("node.wfApiRunning", { done: luotApiCuaMoc.daXong, total: luotApiCuaMoc.tong })
+                  : khuonNayDangChay
+                    ? t("node.wfRunning", { done: wfDaXong, total: wfTongViec })
+                    : chuoi?.ok
+                      ? t("node.wfSteps", { count: chuoi.soViec })
+                      : t(`node.wfErr.${chuoi?.loi ?? "thieu-ket-thuc"}`)}
               </div>
-              {khuonNayDangChay ? (
+              {luotApiCuaMoc ? (
+                <button
+                  type="button"
+                  className="image-node__wf-nut image-node__wf-nut--dung"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void huyLuotChayApi(luotApiCuaMoc.runId).catch((err) =>
+                      showToast(String((err as Error).message || err), true));
+                  }}
+                  title={t("node.wfApiStopTitle")}
+                >
+                  {t("node.wfStop")}
+                </button>
+              ) : khuonNayDangChay ? (
                 <button
                   type="button"
                   className="image-node__wf-nut image-node__wf-nut--dung"
@@ -515,6 +565,33 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                   >
                     {t("node.wfApiCopy")}
                   </button>
+                  {/* Lich su: mot khuon goi qua API chay o may chu, co the luc
+                      nguoi dung khong mo trinh duyet. Khong ghi lai thi ho khong
+                      co cach nao biet dem qua no da chay nhung gi. */}
+                  <div className="image-node__api-ls">
+                    <div className="image-node__api-ls-tieu">
+                      {t("node.wfApiHistory")}
+                      {dangTaiLichSu ? " …" : ""}
+                    </div>
+                    {lichSu && lichSu.length === 0 ? (
+                      <div className="image-node__api-o">{t("node.wfApiHistoryEmpty")}</div>
+                    ) : null}
+                    {(lichSu ?? []).map((l) => (
+                      <div
+                        key={l.id}
+                        className={`image-node__api-ls-dong image-node__api-ls-dong--${l.trangThai}`}
+                        title={l.loi ? `${l.loi.code}: ${l.loi.message}` : l.id}
+                      >
+                        <span className="image-node__api-ls-luc">
+                          {new Date(l.taoLuc).toLocaleString()}
+                        </span>
+                        <span className="image-node__api-ls-tt">{l.trangThai}</span>
+                        <span className="image-node__api-ls-so">
+                          {l.buoc.filter((b) => b.trangThai === "xong").length}/{l.buoc.length}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </div>

@@ -1,7 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
@@ -14,6 +14,7 @@ process.env.IMA2_DB_PATH = join(TEST_DIR, "sessions.db");
 const { registerWorkflowRoutes } = await import("../routes/workflow.ts");
 const store = await import("../lib/sessionStore.ts");
 const bus = await import("../lib/eventBus.ts");
+const runStore = await import("../lib/wfRunStore.ts");
 const db = await import("../lib/db.ts");
 
 after(() => {
@@ -316,5 +317,132 @@ describe("workflow API contracts", () => {
       const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
       assert.deepEqual(canh.data.referenceImages, [anh]);
     });
+  });
+});
+
+describe("workflow run history contracts", () => {
+  it("WFLS-01 mot luot chay con lai trong lich su sau khi tien trinh mat ban nho", async () => {
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base }) => {
+      const chay = await goi(base, `/api/wf/${day}/start`, "POST", { inputs: { A: "x" } });
+      assert.equal(chay.status, 200);
+      const runId = chay.body.run.id as string;
+
+      // Bo nho bi don sach, dung nhu sau mot lan khoi dong lai.
+      runStore.moPhongKhoiDongLai();
+
+      const doc = await goi(base, `/api/wf/runs/${runId}`);
+      assert.equal(doc.status, 200);
+      assert.equal(doc.body.run.trangThai, "xong");
+      // Ca dau vao lan buoc deu con nguyen: do la thu tra loi duoc cau "lan goi
+      // do da chay voi gia tri gi va ra cai gi".
+      assert.deepEqual(doc.body.run.inputs, { A: "x" });
+      assert.equal(doc.body.run.buoc[0].url, "/generated/n_gia1.png");
+      assert.equal(doc.body.result.media[0].url, "/generated/n_gia1.png");
+    });
+  });
+
+  it("WFLS-02 luot con treo khi may chu tat duoc dong lai luc khoi dong, khong treo mai", () => {
+    runStore.luuLuotChay({
+      id: "wfr_treo", sessionId: "s_x", startNodeId: "start",
+      trangThai: "dang-chay", taoLuc: Date.now(), inputs: {},
+      buoc: [
+        { nodeId: "a", vaiTro: "canh", viec: "anh", trangThai: "dang-chay" },
+        { nodeId: "b", vaiTro: "canh", viec: "anh", trangThai: "cho" },
+      ],
+    });
+    // Tien trinh sinh anh chet theo may chu, nen mot luot "dang chay" con lai
+    // trong bang la mot luot khong bao gio ket thuc.
+    runStore.moPhongKhoiDongLai();
+    const luot = runStore.layLuotChay("wfr_treo")!;
+    assert.equal(luot.trangThai, "hong");
+    assert.equal(luot.loi?.code, "WF_SERVER_RESTARTED");
+    assert.deepEqual(luot.buoc.map((b) => b.trangThai), ["bo-qua", "bo-qua"]);
+    assert.ok(typeof luot.xongLuc === "number");
+  });
+
+  it("WFLS-03 khoi phuc khong dung toi luot dang that su chay trong tien trinh nay", () => {
+    runStore.moPhongKhoiDongLai();
+    runStore.taoLuotChay({
+      id: "wfr_that", sessionId: "s_y", startNodeId: "start",
+      trangThai: "dang-chay", taoLuc: Date.now(), inputs: {},
+      buoc: [{ nodeId: "a", vaiTro: null, viec: "anh", trangThai: "dang-chay" }],
+    });
+    // Lan doc dau tien sau khi dat lai co se chay buoc khoi phuc; no phai chua
+    // mot luot dang nam trong bo nho cua tien trinh nay.
+    assert.equal(runStore.layLuotChay("wfr_that")?.trangThai, "dang-chay");
+    runStore.ketThucLuotChay("wfr_that");
+  });
+
+  it("WFLS-04 loc va lat trang theo phien, node va trang thai", () => {
+    runStore.xoaHetLuotChay();
+    const goc = Date.now() - 10_000;
+    for (let i = 0; i < 5; i++) {
+      runStore.luuLuotChay({
+        id: `wfr_l${i}`, sessionId: i < 3 ? "s_a" : "s_b", startNodeId: i === 0 ? "start2" : "start",
+        trangThai: i === 4 ? "hong" : "xong", taoLuc: goc + i * 1000,
+        xongLuc: goc + i * 1000 + 5, inputs: {}, buoc: [],
+      });
+    }
+    // Moi nhat truoc.
+    assert.deepEqual(runStore.danhSachLuotChay({}).map((l) => l.id),
+      ["wfr_l4", "wfr_l3", "wfr_l2", "wfr_l1", "wfr_l0"]);
+    assert.deepEqual(runStore.danhSachLuotChay({ sessionId: "s_a" }).map((l) => l.id),
+      ["wfr_l2", "wfr_l1", "wfr_l0"]);
+    assert.deepEqual(runStore.danhSachLuotChay({ startNodeId: "start2" }).map((l) => l.id), ["wfr_l0"]);
+    assert.deepEqual(runStore.danhSachLuotChay({ trangThai: "hong" }).map((l) => l.id), ["wfr_l4"]);
+    // Lat trang: lay tiep nhung luot tao TRUOC moc cua trang dau.
+    const trang1 = runStore.danhSachLuotChay({ gioiHan: 2 });
+    const trang2 = runStore.danhSachLuotChay({ gioiHan: 2, truoc: trang1[1]!.taoLuc });
+    assert.deepEqual(trang1.map((l) => l.id), ["wfr_l4", "wfr_l3"]);
+    assert.deepEqual(trang2.map((l) => l.id), ["wfr_l2", "wfr_l1"]);
+    assert.equal(runStore.demLuotChay({ sessionId: "s_a" }), 3);
+  });
+
+  it("WFLS-05 tuyen liet ke tra ve bo loc, tong so va moc lat trang", async () => {
+    runStore.xoaHetLuotChay();
+    for (let i = 0; i < 3; i++) {
+      runStore.luuLuotChay({
+        id: `wfr_r${i}`, sessionId: "s_r", startNodeId: "start",
+        trangThai: "xong", taoLuc: Date.now() - (3 - i) * 1000, inputs: {}, buoc: [],
+      });
+    }
+    await voiApi(async ({ base }) => {
+      const { body } = await goi(base, "/api/wf/runs?sessionId=s_r&limit=2");
+      assert.equal(body.runs.length, 2);
+      assert.equal(body.total, 3);
+      assert.equal(body.nextBefore, body.runs[1].taoLuc);
+      const tiep = await goi(base, `/api/wf/runs?sessionId=s_r&limit=2&before=${body.nextBefore}`);
+      assert.deepEqual(tiep.body.runs.map((r: any) => r.id), ["wfr_r0"]);
+    });
+  });
+
+  it("WFLS-06 xoa duoc mot luot da xong, khong xoa duoc luot dang chay", async () => {
+    runStore.xoaHetLuotChay();
+    runStore.luuLuotChay({
+      id: "wfr_xoa", sessionId: "s_x", startNodeId: "start",
+      trangThai: "xong", taoLuc: Date.now(), inputs: {}, buoc: [],
+    });
+    runStore.taoLuotChay({
+      id: "wfr_song", sessionId: "s_x", startNodeId: "start",
+      trangThai: "dang-chay", taoLuc: Date.now(), inputs: {}, buoc: [],
+    });
+    await voiApi(async ({ base }) => {
+      assert.equal((await goi(base, "/api/wf/runs/wfr_xoa", "DELETE")).status, 200);
+      assert.equal(runStore.layLuotChay("wfr_xoa"), null);
+      // Xoa so mot luot van dang ton tien chay tiep se lam mat duong theo doi no.
+      const song = await goi(base, "/api/wf/runs/wfr_song", "DELETE");
+      assert.equal(song.status, 409);
+      assert.equal(runStore.layLuotChay("wfr_song")?.trangThai, "dang-chay");
+    });
+    runStore.ketThucLuotChay("wfr_song");
+  });
+
+  it("WFLS-07 ten su kien khuon deu duoc kenh su kien cua giao dien dang ky", () => {
+    // EventSource chi nhan nhung ten da dang ky truoc. Thieu mot ten la mat tin
+    // trong im lang - dung loi da xay ra mot lan, khong bao, khong dau vet.
+    const kenh = readFileSync("ui/src/lib/eventChannel.ts", "utf-8");
+    assert.match(kenh, /\.\.\.Object\.values\(WF_SU_KIEN\)/);
+    assert.match(kenh, /from "\.\.\/\.\.\/\.\.\/lib\/wfEvents\.js"/);
   });
 });

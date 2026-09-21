@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -24,6 +24,8 @@ import { NodeCanvasEmptyState } from "./node-canvas/NodeCanvasEmptyState";
 import { NodeStudioOverlays } from "./node-canvas/NodeStudioOverlays";
 import { useNodeStudioController } from "./node-canvas/useNodeStudioController";
 import { laCanhThuTu } from "../lib/canhAnh";
+import { subscribe } from "../lib/eventChannel";
+import { WF_KENH } from "../../../lib/wfEvents.js";
 
 function NodeCanvasInner() {
   const { t } = useI18n();
@@ -41,6 +43,15 @@ function NodeCanvasInner() {
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const studio = useNodeStudioController(wrapperRef);
+
+  // Mot he thong khac co the goi API kich hoat khuon bat cu luc nao. Nghe kenh
+  // su kien chung de thay no chay ngay tren canvas, thay vi hoi lien tuc hay de
+  // nguoi dung tu tai lai trang moi biet.
+  const nhanSuKienWf = useAppStore((s) => s.nhanSuKienWf);
+  useEffect(
+    () => subscribe(WF_KENH, null, (suKien, du) => nhanSuKienWf(suKien, du)),
+    [nhanSuKienWf],
+  );
 
   const nodeTypes = useMemo(() => ({
     imageNode: ImageNode,

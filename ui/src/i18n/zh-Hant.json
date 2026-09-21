@@ -744,7 +744,11 @@
     },
     "wfApiTitle": "從外部觸發這個工作流的位址",
     "wfApiInputs": "輸入：{names}",
-    "wfApiCopy": "複製 curl"
+    "wfApiCopy": "複製 curl",
+    "wfApiRunning": "API 執行 {done}/{total}",
+    "wfApiStopTitle": "停止由 API 觸發的執行",
+    "wfApiHistory": "最近的執行",
+    "wfApiHistoryEmpty": "尚未執行過"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

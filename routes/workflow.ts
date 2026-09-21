@@ -14,10 +14,12 @@ import { ulid } from "ulid";
 import { chayKhuon, kiemTruocKhiChay, LoiKhuon, maHttpCuaLoi, moTaKhuon } from "../lib/wfEngine.js";
 import {
   danhSachLuotChay,
+  demLuotChay,
   doiLuotChay,
   huyLuotChay,
   layLuotChay,
   taoLuotChay,
+  xoaLuotChay,
   type WfLuotChay,
 } from "../lib/wfRunStore.js";
 import { getSession, listSessions } from "../lib/sessionStore.js";
@@ -136,8 +138,43 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
   // Cac tuyen "runs" phai dang ky TRUOC /:sessionId/:startNodeId, khong thi
   // "runs" bi hieu thanh mot ma phien.
   app.get("/api/wf/runs", (req: Request, res: Response) => {
-    const gioiHan = Number(req.query.limit);
-    res.json({ runs: danhSachLuotChay(Number.isFinite(gioiHan) ? gioiHan : 20) });
+    const so = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : undefined;
+    };
+    const chuoi = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+    const loc = {
+      gioiHan: so(req.query.limit),
+      sessionId: chuoi(req.query.sessionId),
+      startNodeId: chuoi(req.query.startNodeId),
+      trangThai: chuoi(req.query.status),
+      truoc: so(req.query.before),
+    };
+    const runs = danhSachLuotChay(loc);
+    res.json({
+      runs,
+      total: demLuotChay({
+        ...(loc.sessionId ? { sessionId: loc.sessionId } : {}),
+        ...(loc.trangThai ? { trangThai: loc.trangThai } : {}),
+      }),
+      // Moc de lat sang trang cu hon: ?before=<nextBefore>.
+      nextBefore: runs.length ? runs[runs.length - 1]!.taoLuc : null,
+    });
+  });
+
+  app.delete("/api/wf/runs/:runId", (req: Request<{ runId: string }>, res: Response) => {
+    // Luot dang chay thi khong cho xoa: xoa so trong khi cong viec van dang chay
+    // tiep chi lam mat duong theo doi mot thu van dang ton tien.
+    const da = xoaLuotChay(req.params.runId);
+    if (!da) {
+      return res.status(409).json({
+        error: {
+          code: "WF_RUN_BUSY_OR_MISSING",
+          message: "luot chay dang chay hoac khong ton tai",
+        },
+      });
+    }
+    res.json({ ok: true });
   });
 
   app.get("/api/wf/runs/:runId", async (req: Request<{ runId: string }>, res: Response) => {
@@ -238,11 +275,11 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
         inputs,
         images,
       }, luot).catch((e) => {
+        // Bo chay da ghi loi vao chinh luot va dong so lai; o day chi ghi nhat ky
+        // va nuot loi, vi luot chay da la cau tra loi day du cho nguoi goi.
         const err = e instanceof LoiKhuon ? e : new LoiKhuon("WF_FAILED", errInfo(e).message);
-        luot.trangThai = "hong";
-        luot.loi = { code: err.code, message: err.message, ...(err.nodeId ? { nodeId: err.nodeId } : {}) };
         logError("wf", "run_failed", err, { runId: luot.id });
-        return luot;
+        return layLuotChay(luot.id) ?? luot;
       });
 
       if (traNgay) {

@@ -170,6 +170,17 @@ export type GraphEdge = FlowEdge;
 
 export type GraphHistoryEntry = import("../lib/nodeHistory").GraphSnapshotEntry;
 
+/** Mot luot chay khuon dang duoc may chu chay, theo doi qua kenh su kien. */
+export type WfApiLuotChay = {
+  runId: string;
+  sessionId: string;
+  startNodeId: string;
+  /** Node dang toi luot, hoac null giua hai buoc. */
+  nodeHienTai: string | null;
+  daXong: number;
+  tong: number;
+};
+
 export type ToastEntry = { message: string; error: boolean; id: number; createdAt: number };
 export type ToastState = ToastEntry | null;
 export type ErrorCardEntry = { code: ImaErrorCode; cardKey?: string; cta?: "reauth" | "reload" | "retry" | "dismiss"; fallbackMessage?: string; id: number; createdAt: number };
@@ -454,6 +465,12 @@ export type AppState = PresetState & ReferenceTraySlice & {
   wfDungLai: boolean;
   wfDaXong: number;
   wfTongViec: number;
+  /**
+   * Cac luot chay do MAY CHU dieu khien (goi vao qua API), tra cuu theo ma luot.
+   * Giao dien khong khoi dong chung, no chi nghe va bay ra - nen day la trang
+   * thai RIENG, khong tron voi wfDangChay cua luot bam tay.
+   */
+  wfApiChay: Record<string, WfApiLuotChay>;
   toggleNodeSelectionMode: () => void;
   selectAllGraphNodes: () => void;
   selectNodeGraph: (clientId: ClientNodeId, additive: boolean) => void;
@@ -462,6 +479,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   cancelNodeBatch: () => void;
   chayWorkflow: (startClientId: ClientNodeId) => Promise<void>;
   dungWorkflow: () => void;
+  nhanSuKienWf: (suKien: string, duLieu: Record<string, unknown>) => void;
   addRootNode: () => ClientNodeId;
   createRootNodeFromHistoryItem: (item: GenerateItem) => ClientNodeId;
   addChildNode: (parentClientId: ClientNodeId) => ClientNodeId;

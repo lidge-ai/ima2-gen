@@ -729,3 +729,43 @@
   font-size: 9px;
   cursor: copy;
 }
+
+/* Lich su cac luot chay goi qua API, nam trong o API cua node BAT DAU. */
+.image-node__api-ls {
+  display: grid;
+  gap: 2px;
+  margin-top: 2px;
+}
+.image-node__api-ls-tieu {
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.image-node__api-ls-dong {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.image-node__api-ls-luc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.image-node__api-ls-tt {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+.image-node__api-ls-dong--xong .image-node__api-ls-tt { color: var(--green, #0f9d58); }
+.image-node__api-ls-dong--hong .image-node__api-ls-tt { color: var(--red); }
+.image-node__api-ls-dong--da-huy .image-node__api-ls-tt,
+.image-node__api-ls-dong--dang-chay .image-node__api-ls-tt { color: var(--text-dim); }
+.image-node__api-ls-so {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+}

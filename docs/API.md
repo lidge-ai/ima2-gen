@@ -1329,17 +1329,50 @@ A failing node **stops the run**: every node behind it consumes that node's
 image, so continuing would only spend money producing wrong results. The
 response carries the failing step and `error.nodeId`.
 
-### Run status
+### Run status and history
 
-- `GET /api/wf/runs` — the most recent runs (`?limit=`).
+Runs are stored in the `wf_runs` table, so they survive a restart and answer
+"what did that API call produce yesterday". Each row keeps the inputs it ran
+with, every step with its media, and the final result.
+
+- `GET /api/wf/runs` — newest first. Filters: `?sessionId=`, `?startNodeId=`,
+  `?status=` (`dang-chay` / `xong` / `hong` / `da-huy`), `?limit=` (max 200) and
+  `?before=` for paging. The response carries `total` and a `nextBefore` cursor.
 - `GET /api/wf/runs/:runId` — one run. `202` while it is still going, `200` when
   finished. Add `?wait=1` to hold the connection until it ends.
 - `POST /api/wf/runs/:runId/cancel` — stop after the node that is currently
   running. A generation already in flight is not interrupted: aborting halfway
   still costs the same and yields nothing.
+- `DELETE /api/wf/runs/:runId` — drop one run from the history. A run that is
+  still going is refused with `409 WF_RUN_BUSY_OR_MISSING`: removing its record
+  while it keeps spending would lose the only way to follow it.
 
-Runs live in memory only and do not survive a server restart — the generation
-processes do not either, so a persisted run would just be permanently "running".
+The newest 500 runs are kept; older finished rows are pruned as new ones arrive.
+Rows are not tied to the session by a foreign key, so deleting a session leaves
+its run history intact — the files in `/generated` are still there.
+
+A run that was going when the server stopped is closed on the next start with
+`WF_SERVER_RESTARTED` and its unfinished steps marked `bo-qua`. The generation
+processes died with the server, so leaving the row as "running" would show a run
+that never ends. Recovery only touches runs that are not live in the current
+process, so it cannot disturb one that is genuinely running.
+
+### Watching a run from the UI
+
+Every run publishes to the shared `/api/events` stream under the fixed job id
+`wf`, with the run id inside the payload — the browser cannot know the id of a
+run some other system started, so a fixed channel is what makes it observable.
+
+| Event | Sent when |
+|---|---|
+| `wf_start` | the chain is resolved and the steps are known |
+| `wf_step` | a step starts, finishes (carrying its `url`) or fails |
+| `wf_end` | the run reaches `xong` / `hong` / `da-huy` |
+
+The Node Studio listens on that channel: the START marker shows `API run x/y`
+with a Stop button, the node being generated gets the running outline and
+overlay, and each finished image lands on its node as it is produced. The START
+marker's `API` panel also lists that workflow's recent runs.
 
 ### Status codes
 
@@ -1353,6 +1386,8 @@ processes do not either, so a persisted run would just be permanently "running".
 | `WF_INPUT_MISSING` / `WF_INPUT_INVALID` | 400 — inputs missing or malformed |
 | `WF_IMAGE_INVALID` / `WF_IMAGE_NODE_UNKNOWN` | 400 — attached images malformed or aimed at a node that does not exist |
 | `WF_CANCELED` | 409 — the run was canceled |
+| `WF_RUN_BUSY_OR_MISSING` | 409 — cannot delete a run that is still going |
+| `WF_SERVER_RESTARTED` | recorded on a run the server was killed in the middle of |
 | `WF_NODE_FAILED`, `WF_PROMPT_EMPTY`, `WF_PARENT_EMPTY`, `WF_MERGE_NEED_TWO`, `WF_NODE_TIMEOUT` | 500 — the run started but a node could not complete |
 
 ## Contract Discovery

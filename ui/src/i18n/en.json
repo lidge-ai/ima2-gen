@@ -744,7 +744,11 @@
     },
     "wfApiTitle": "Endpoint that triggers this workflow from outside",
     "wfApiInputs": "Inputs: {names}",
-    "wfApiCopy": "Copy curl"
+    "wfApiCopy": "Copy curl",
+    "wfApiRunning": "API run {done}/{total}",
+    "wfApiStopTitle": "Stop the run that was triggered through the API",
+    "wfApiHistory": "Recent runs",
+    "wfApiHistoryEmpty": "No run yet"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

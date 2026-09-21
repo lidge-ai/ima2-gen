@@ -207,6 +207,26 @@ function migrate(database: Database.Database) {
 	      ON agent_queue_items(session_id, status, created_at);
 	    CREATE INDEX IF NOT EXISTS idx_agent_queue_status
 	      ON agent_queue_items(status, created_at);
+
+    -- Lich su cac luot chay khuon (BAT DAU -> KET THUC) goi qua API.
+    -- KHONG khoa ngoai toi sessions: xoa mot phien khong nen xoa ca ghi chep ve
+    -- nhung gi da sinh ra, vi cac tep trong /generated van con do.
+    CREATE TABLE IF NOT EXISTS wf_runs (
+      id            TEXT PRIMARY KEY,
+      session_id    TEXT NOT NULL,
+      start_node_id TEXT NOT NULL,
+      status        TEXT NOT NULL,
+      created_at    INTEGER NOT NULL,
+      finished_at   INTEGER,
+      inputs        TEXT NOT NULL DEFAULT '{}',
+      steps         TEXT NOT NULL DEFAULT '[]',
+      result        TEXT,
+      error         TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wf_runs_created ON wf_runs(created_at);
+    CREATE INDEX IF NOT EXISTS idx_wf_runs_session ON wf_runs(session_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_wf_runs_status ON wf_runs(status, created_at);
 	  `);
 
   const sessionColumns = (database

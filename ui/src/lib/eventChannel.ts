@@ -1,5 +1,6 @@
 import { createLanAuthError, getLanAuthEpoch, getLanSessionState,
   isLanSessionLocked, LAN_AUTH_REQUIRED_EVENT, refreshLanSession } from "./lanSession";
+import { WF_SU_KIEN } from "../../../lib/wfEvents.js";
 
 type EventHandler = (event: string, data: Record<string, unknown>) => void;
 
@@ -37,7 +38,15 @@ export type ConnectionState = "connected" | "reconnecting" | "failed";
 const FAILED_THRESHOLD = 3;
 let connectionStateCallback: ((state: ConnectionState) => void) | null = null;
 
-const EVENT_TYPES = ["phase", "partial", "image", "done", "error", "submitted", "progress", "planning", "keying-start", "keying-progress", "keying-done", "keying-error"];
+// EventSource chi nhan nhung ten su kien duoc dang ky truoc, nen mot ten thieu
+// o day la mat tin trong im lang - khong loi, khong canh bao, chi la khong bao
+// gio toi noi. Ten su kien khuon lay thang tu module hop dong dung chung voi may
+// chu, de them mot su kien moi khong the quen cho nay.
+const EVENT_TYPES = [
+  "phase", "partial", "image", "done", "error", "submitted", "progress", "planning",
+  "keying-start", "keying-progress", "keying-done", "keying-error",
+  ...Object.values(WF_SU_KIEN),
+];
 
 function buildEventsUrl(): string {
   if (!lastEventId) return "/api/events";

@@ -14,7 +14,7 @@
  * rieng node vua chay - nho vay mot tab dang mo sua node khac khong bi xoa mat.
  */
 import { getSession, saveGraph } from "./sessionStore.js";
-import { subscribe } from "./eventBus.js";
+import { publish, subscribe } from "./eventBus.js";
 import { logError, logEvent } from "./logger.js";
 import { errInfo } from "./errInfo.js";
 import type { RuntimeContext } from "./runtimeContext.js";
@@ -33,11 +33,13 @@ import {
 } from "./wfChain.js";
 import {
   ketThucLuotChay,
+  luuLuotChay,
   tinHieuHuy,
   type WfBuoc,
   type WfKetQua,
   type WfLuotChay,
 } from "./wfRunStore.js";
+import { WF_KENH, WF_SU_KIEN } from "./wfEvents.js";
 
 /** Mot node video co the chay rat lau; qua nguong nay thi coi nhu hong. */
 const HAN_MOT_NODE_MS = 15 * 60 * 1000;
@@ -141,6 +143,31 @@ function doiViec(requestId: string, signal: AbortSignal): Promise<Record<string,
       }
     });
     signal.addEventListener("abort", khiHuy, { once: true });
+  });
+}
+
+/* ------------------------------------------------------------- bao tien do */
+
+function daXong(luot: WfLuotChay): number {
+  return luot.buoc.filter((b) => b.trangThai === "xong").length;
+}
+
+/**
+ * Ghi xuong bang VA bao len kenh su kien trong mot nhip.
+ *
+ * Hai viec nay luon di cung nhau: ghi ma khong bao thi giao dien dang mo khong
+ * thay gi cho toi luc tai lai; bao ma khong ghi thi tat may chu la mat.
+ */
+function capNhat(luot: WfLuotChay, suKien: string, them: Record<string, unknown> = {}): void {
+  luuLuotChay(luot);
+  publish(WF_KENH, suKien, {
+    jobId: WF_KENH,
+    runId: luot.id,
+    sessionId: luot.sessionId,
+    startNodeId: luot.startNodeId,
+    daXong: daXong(luot),
+    tong: luot.buoc.length,
+    ...them,
   });
 }
 
@@ -342,6 +369,10 @@ export async function chayKhuon(
         trangThai: "cho",
       }));
 
+    capNhat(luot, WF_SU_KIEN.batDau, {
+      buoc: luot.buoc.map((b) => ({ nodeId: b.nodeId, viec: b.viec })),
+    });
+
     // Anh dinh kem ghi vao graph truoc khi chay: cac buoc sau doc graph moi nhat
     // nen phai thay duoc chung, va nguoi dung mo giao dien cung thay dung thu da
     // dua vao.
@@ -357,6 +388,7 @@ export async function chayKhuon(
       }
       buoc.trangThai = "dang-chay";
       buoc.batDauLuc = Date.now();
+      capNhat(luot, WF_SU_KIEN.buoc, { nodeId: buoc.nodeId, trangThai: buoc.trangThai });
       try {
         const url = await chayMotNode(ctx, ts, buoc.nodeId, huy);
         buoc.url = url;
@@ -364,6 +396,9 @@ export async function chayKhuon(
         buoc.trangThai = "xong";
         buoc.xongLuc = Date.now();
         raNode[buoc.nodeId] = { url, loai: buoc.loai };
+        capNhat(luot, WF_SU_KIEN.buoc, {
+          nodeId: buoc.nodeId, trangThai: buoc.trangThai, url, loai: buoc.loai,
+        });
       } catch (e) {
         // Huy giua chung lam cai fetch noi bo nem AbortError. Bao nguyen van
         // "This operation was aborted" thi nguoi goi tuong node hong that, trong
@@ -379,6 +414,9 @@ export async function chayKhuon(
         if (!huy.aborted) {
           logError("wf", "node_failed", err, { runId: luot.id, nodeId: buoc.nodeId, code: err.code });
         }
+        capNhat(luot, WF_SU_KIEN.buoc, {
+          nodeId: buoc.nodeId, trangThai: buoc.trangThai, loi: err.message,
+        });
         return luot;
       }
     }
@@ -397,8 +435,26 @@ export async function chayKhuon(
       media: luot.ketQua.media.length,
     });
     return luot;
+  } catch (e) {
+    // Loi o phan chuan bi (graph doi giua luc kiem va luc chay) phai duoc ghi
+    // vao chinh luot chay truoc khi finally dong so lai - khong thi lich su luu
+    // mot luot "dang chay" vinh vien.
+    const err = e instanceof LoiKhuon ? e : new LoiKhuon("WF_FAILED", errInfo(e).message);
+    luot.trangThai = "hong";
+    luot.loi = { code: err.code, message: err.message, ...(err.nodeId ? { nodeId: err.nodeId } : {}) };
+    throw e;
   } finally {
     ketThucLuotChay(luot.id);
+    publish(WF_KENH, WF_SU_KIEN.ketThuc, {
+      jobId: WF_KENH,
+      runId: luot.id,
+      sessionId: luot.sessionId,
+      startNodeId: luot.startNodeId,
+      trangThai: luot.trangThai,
+      daXong: daXong(luot),
+      tong: luot.buoc.length,
+      ...(luot.loi ? { loi: luot.loi } : {}),
+    });
   }
 }
 

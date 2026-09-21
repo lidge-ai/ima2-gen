@@ -14,7 +14,8 @@ import { canhAnhVao, locCanhAnh } from "../lib/canhAnh";
 import { dauVaoVideoCuaNode, timChuoiChay, viecCuaNode } from "../lib/chayWorkflow";
 import { ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
 import { t } from "../i18n";
-import type { AppState } from "./storeTypes";
+import { WF_SU_KIEN } from "../../../lib/wfEvents.js";
+import type { AppState, WfApiLuotChay } from "./storeTypes";
 
 type StoreSet = (p: Partial<AppState>) => void;
 type StoreGet = () => AppState;
@@ -129,4 +130,62 @@ export async function chayWorkflowImpl(
 export function dungWorkflowImpl(set: StoreSet, get: StoreGet): void {
   if (!get().wfDangChay) return;
   set({ wfDungLai: true });
+}
+
+/**
+ * Nhan mot su kien cua luot chay do MAY CHU dieu khien.
+ *
+ * Khuon goi qua API chay o may chu, nen giao dien khong tu biet gi. Nghe kenh
+ * su kien co san thay vi hoi lien tuc: node dang toi luot sang len ngay, va anh
+ * hien ra tung cai mot dung luc may chu sinh xong - khong phai doi tai lai trang.
+ */
+export function nhanSuKienWfImpl(
+  suKien: string,
+  du: Record<string, unknown>,
+  set: StoreSet,
+  get: StoreGet,
+): void {
+  const runId = typeof du.runId === "string" ? du.runId : null;
+  const sessionId = typeof du.sessionId === "string" ? du.sessionId : null;
+  const startNodeId = typeof du.startNodeId === "string" ? du.startNodeId : null;
+  if (!runId || !sessionId || !startNodeId) return;
+  // Su kien cua mot phien khac khong lien quan gi toi graph dang mo.
+  if (sessionId !== get().activeSessionId) return;
+
+  const dang = { ...get().wfApiChay };
+  const truoc: WfApiLuotChay = dang[runId] ?? {
+    runId, sessionId, startNodeId, nodeHienTai: null, daXong: 0, tong: 0,
+  };
+  const daXong = typeof du.daXong === "number" ? du.daXong : truoc.daXong;
+  const tong = typeof du.tong === "number" ? du.tong : truoc.tong;
+
+  if (suKien === WF_SU_KIEN.ketThuc) {
+    delete dang[runId];
+    set({ wfApiChay: dang });
+    return;
+  }
+
+  const nodeId = typeof du.nodeId === "string" ? du.nodeId : null;
+  const trangThai = typeof du.trangThai === "string" ? du.trangThai : null;
+  dang[runId] = {
+    ...truoc,
+    daXong,
+    tong,
+    nodeHienTai: suKien === WF_SU_KIEN.buoc && trangThai === "dang-chay" ? nodeId : null,
+  };
+
+  // Buoc vua xong mang theo media cua no: dap thang vao node de anh hien ra
+  // ngay. May chu da ghi vao graph roi, nhung tab dang mo giu ban rieng cua no
+  // nen khong tu thay.
+  const url = typeof du.url === "string" ? du.url : null;
+  if (nodeId && url && trangThai === "xong") {
+    set({
+      wfApiChay: dang,
+      graphNodes: get().graphNodes.map((n) => (n.id === nodeId
+        ? { ...n, data: { ...n.data, imageUrl: url, status: "ready" as const, error: undefined, errorInfo: null } }
+        : n)),
+    });
+    return;
+  }
+  set({ wfApiChay: dang });
 }
