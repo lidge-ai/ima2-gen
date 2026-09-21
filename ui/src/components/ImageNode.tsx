@@ -1,5 +1,6 @@
 import { memo, useCallback, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { createPortal } from "react-dom";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
@@ -408,7 +409,13 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               </button>
               {!isVideoUrl(d.imageUrl) && (
                 <button type="button" onClick={onAnimate} disabled={isBusy} title={t("node.animateTitle", { fallback: "Animate" })} aria-label={t("node.animateTitle", { fallback: "Animate" })}>
-                  ▶
+                  {/* Cuon phim, KHONG phai tam giac phat: nut nay goi Grok sinh
+                      video (ton thoi gian va tien), chu khong phat gi ca. Dung
+                      hinh tam giac thi ai cung tuong la nut play. */}
+                  <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                    <rect x="3" y="5.5" width="18" height="13" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M7.5 5.5v13M16.5 5.5v13M3 12h18" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                  </svg>
                 </button>
               )}
             </>
@@ -456,7 +463,11 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           className={`image-node__handle image-node__handle--source image-node__handle--${handleId}`}
         />
       ))}
-      {xemTo && d.imageUrl ? (
+      {/* Phai dua ra ngoai document.body: node nam trong canvas React Flow co
+          transform: scale(), va panel cua lightbox rong "min(1100px, 100%)" -
+          100% se tinh theo be rong cua NODE (~300px) chu khong phai man hinh,
+          nen lightbox bi co thanh mot dai hep. */}
+      {xemTo && d.imageUrl ? createPortal(
         <AssetMediaLightbox
           item={{
             image: d.imageUrl,
@@ -466,7 +477,8 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
             mediaType: isVideoUrl(d.imageUrl) ? "video" : "image",
           }}
           onClose={() => setXemTo(false)}
-        />
+        />,
+        document.body,
       ) : null}
     </div>
   );
