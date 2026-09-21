@@ -92,6 +92,43 @@ function mergeRunReferences(nodeRefs: string[], elementRefs: string[], activeLim
   return merged;
 }
 
+/**
+ * Danh dau lo thoi cho moi node phia sau mot node vua doi anh.
+ *
+ * Di theo CA HAI loai canh: canh base (anh nen) lan canh ref (tham chieu). Node
+ * "mac do" lay anh trang phuc lam THAM CHIEU chu khong phai anh nen, nen neu chi
+ * di theo canh base thi doi trang phuc xong no van bao "Done" voi anh cu.
+ */
+function danhDauLoThoi(
+  goc: string,
+  set: StoreSet,
+  get: StoreGet,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): void {
+  const canh = get().graphEdges;
+  const phiaSau = new Set<string>();
+  let bien = [goc];
+  while (bien.length) {
+    const tiep: string[] = [];
+    for (const id of bien) {
+      for (const e of canh) {
+        if (e.source !== id || phiaSau.has(e.target) || e.target === goc) continue;
+        phiaSau.add(e.target);
+        tiep.push(e.target);
+      }
+    }
+    bien = tiep;
+  }
+  if (!phiaSau.size) return;
+  set({
+    graphNodes: get().graphNodes.map((n) =>
+      phiaSau.has(n.id) && n.data.status === "ready"
+        ? { ...n, data: { ...n.data, status: "stale" as const, error: t("nodeBatch.staleBecauseParentChanged") } }
+        : n,
+    ),
+  });
+}
+
 export async function runGenerateNodeInPlaceImpl(
   clientId: ClientNodeId,
   options: {
@@ -297,6 +334,11 @@ export async function runGenerateNodeInPlaceImpl(
           };
         }),
       });
+      // Anh cua node vua doi -> moi node phia sau (ke ca node chi dung no lam
+      // THAM CHIEU) van dang giu ket qua lam tu anh cu. Danh dau lo thoi thay vi
+      // de chung nam im nhu the van dung: truoc day chi danh dau khi sinh hang
+      // loat, sinh mot node thi con chau khong he duoc danh dau.
+      danhDauLoThoi(clientId, set, get, t);
       graphMutated = true;
       if (!options.suppressToast) {
         get().showToast(t("toast.nodeCreated", { id: res.nodeId.slice(0, 8), elapsed: res.elapsed }));

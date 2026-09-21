@@ -60,7 +60,7 @@ export async function docMoTaTuAnh(imageUrl: string): Promise<string> {
     body: JSON.stringify({
       messages: [{
         role: "user",
-        content: "This is a flat lay of ONE outfit. List every garment and accessory in ONE English sentence, separated by commas. For each item give its colour, material, pattern, cut and length, precise enough to dress a model in exactly these pieces. Output only the list, no preamble, no numbering.",
+        content: "This is a flat lay of ONE outfit. List every garment and accessory in ONE English sentence, separated by commas. For each item give its colour, material, cut and length. Be exact about anything a careless reader would get wrong: the NUMBER and ARRANGEMENT of printed motifs (say 'six small bears scattered in two rows', not 'a bear print'), the ORIENTATION of a pattern (diagonal/bias vs straight grid), whether a skirt is PLEATED or smooth, and any lettering exactly as written. If an item is normally worn on the face or head, say it is carried in the hand, not worn. Output only the list, no preamble, no numbering.",
         attachments: [{ kind: "image", name: "outfit.png", mimeType: blob.type || "image/png", dataUrl }],
       }],
     }),
