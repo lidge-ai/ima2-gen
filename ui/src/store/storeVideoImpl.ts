@@ -58,11 +58,14 @@ export async function runVideoGenerateImpl(
   nodeId: ClientNodeId | undefined,
   set: StoreSet,
   get: StoreGet,
+  /** Node VIDEO muon loi ta cua node CANH khi o prompt cua no de trong. */
+  taThayThe?: string,
 ): Promise<void> {
   const node = nodeId ? get().graphNodes.find((n) => n.id === nodeId) : null;
   const refs = node ? (node.data.referenceImages ?? []) : get().referenceImages;
   const singleRefAsSource = refs.length === 1 && get().videoSingleRefMode === "image-to-video";
-  const userPrompt = node ? node.data.prompt.trim() : composePrompt(get().prompt, get().insertedPrompts);
+  const userPrompt = (taThayThe ?? "").trim()
+    || (node ? node.data.prompt.trim() : composePrompt(get().prompt, get().insertedPrompts));
   if (!userPrompt.trim()) {
     get().showToast(ACTIVE_VIDEO_PROMPT_GUIDANCE, true);
     return;

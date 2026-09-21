@@ -558,7 +558,8 @@ export type AppState = PresetState & ReferenceTraySlice & {
   setVideoTopic: (topic: string) => void;
   setVideoContinuityLineage: (lineage: VideoContinuityLineage | null) => void;
   activeVideoRefCount: () => number;
-  runVideoGenerate: (nodeId?: string) => Promise<void>;
+  /** taThayThe: loi ta dung thay cho prompt cua node (node VIDEO muon loi ta cua node CANH). */
+  runVideoGenerate: (nodeId?: string, taThayThe?: string) => Promise<void>;
   animateImage: (filename: string, prompt?: string) => Promise<boolean>;
   setReasoningEffort: (e: ReasoningEffort) => void;
   setNaiOption: <K extends keyof NaiOptions>(key: K, value: NaiOptions[K]) => void;

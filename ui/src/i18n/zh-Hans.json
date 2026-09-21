@@ -715,7 +715,8 @@
     "promptLocked": "该节点角色的固定提示词，无需修改",
     "rolePick": "节点角色",
     "roleNone": "— 角色 —",
-    "needImageForVideo": "该节点没有可用于生成视频的图像"
+    "needImageForVideo": "该节点没有可用于生成视频的图像",
+    "working": "生成中…"
   },
   "nodeBatch": {
     "selectionOn": "选择",

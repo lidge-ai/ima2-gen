@@ -715,7 +715,8 @@
     "promptLocked": "Fixed prompt for this node role — no need to edit",
     "rolePick": "Node role",
     "roleNone": "— role —",
-    "needImageForVideo": "This node has no image to turn into a video"
+    "needImageForVideo": "This node has no image to turn into a video",
+    "working": "Working…"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

@@ -68,6 +68,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const showToast = useAppStore((st) => st.showToast);
   const graphEdges = useAppStore((st) => st.graphEdges);
   const datVaiTroNode = useAppStore((st) => st.datVaiTroNode);
+  const runVideoGenerate = useAppStore((st) => st.runVideoGenerate);
   const graphNodes = useAppStore((st) => st.graphNodes);
   const [dangDocDo, setDangDocDo] = useState(false);
   const vaiTro = layVaiTro(d.vaiTro);
@@ -83,7 +84,12 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const [isDraggingRef, setIsDraggingRef] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const refs = d.referenceImages ?? [];
-  const isBusy = d.status === "pending" || d.status === "reconciling";
+  // Viec sinh video chay bat dong bo: POST tra ve ngay nen trang thai node bi
+  // go rat som, trong khi may chu con chay tiep ca chuc giay. Bam them vao danh
+  // sach viec dang chay - con job nao mang clientNodeId cua node thi node con ban.
+  const inFlight = useAppStore((st) => st.inFlight);
+  const coViecDangChay = inFlight.some((j) => j.clientNodeId === id);
+  const isBusy = d.status === "pending" || d.status === "reconciling" || coViecDangChay;
   const canAttachRefs = !isBusy && refs.length < MAX_NODE_REFS;
   const nodeStyle = {
     "--node-preview-w": `${getPreviewWidth(d.size)}px`,
@@ -110,17 +116,47 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const laNodeVideo = d.vaiTro === "video";
   const onAnimateRef = useRef<(() => void) | null>(null);
 
+  /**
+   * Node VIDEO lay gi lam dau vao.
+   *
+   * Quy tac: node CANH chi sinh anh, node VIDEO chi sinh video. Node video noi
+   * vao mot node canh thi dung ANH va LOI TA cua canh do; prompt rieng cua node
+   * video la phan GHI THEM, khong thay the. Khong noi vao dau thi dung anh do
+   * nguoi dung tu dinh vao chinh node video.
+   */
+  const nodeCha = useMemo(() => {
+    const canhVao = graphEdges.find((e) => e.target === id);
+    return canhVao ? graphNodes.find((n) => n.id === canhVao.source) ?? null : null;
+  }, [id, graphEdges, graphNodes]);
+
+  const dauVaoVideo = useMemo(() => {
+    const laAnh = (u?: string | null) => !!u && !isVideoUrl(u);
+    const anh =
+      (laAnh(nodeCha?.data?.imageUrl) ? nodeCha!.data.imageUrl : null)
+      ?? (laAnh(d.imageUrl) ? d.imageUrl : null)
+      ?? d.videoSourceUrl
+      ?? null;
+    const taCha = (nodeCha?.data?.prompt || "").trim();
+    const taRieng = (d.prompt || "").trim();
+    const ta = taRieng ? (taCha ? `${taCha} ${taRieng}` : taRieng) : taCha;
+    return { anh, ta };
+  }, [nodeCha, d.imageUrl, d.videoSourceUrl, d.prompt]);
+
+
   const onGenerate = useCallback(() => {
     if (canhBaoOTrong()) return;
-    if (laNodeVideo) { onAnimateRef.current?.(); return; }
+    // Node VIDEO phai di duong runVideoGenerate (biet node) chu khong phai
+    // animateImage: duong kia chi nhan ten tep nen khong dat duoc trang thai
+    // cho, va ket qua khong gan vao node nao.
+    if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
     void generateNode(id);
-  }, [id, generateNode, canhBaoOTrong, laNodeVideo]);
+  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo]);
 
   const onRegenerateInPlace = useCallback(() => {
     if (canhBaoOTrong()) return;
-    if (laNodeVideo) { onAnimateRef.current?.(); return; }
+    if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
     void generateNodeInPlace(id);
-  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo]);
+  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo]);
 
   const onNewVariation = useCallback(() => {
     void generateNodeVariation(id);
@@ -152,32 +188,6 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // Anh dung lam dau vao cho video: neu node da bi video thay cho thi lay anh
   // nguon da giu lai, nho vay sinh lai video duoc thay vi cut duong.
   const anhNguonVideo = isVideoUrl(d.imageUrl) ? (d.videoSourceUrl ?? null) : d.imageUrl;
-
-  /**
-   * Node VIDEO lay gi lam dau vao.
-   *
-   * Quy tac: node CANH chi sinh anh, node VIDEO chi sinh video. Node video noi
-   * vao mot node canh thi dung ANH va LOI TA cua canh do; prompt rieng cua node
-   * video la phan GHI THEM, khong thay the. Khong noi vao dau thi dung anh do
-   * nguoi dung tu dinh vao chinh node video.
-   */
-  const nodeCha = useMemo(() => {
-    const canhVao = graphEdges.find((e) => e.target === id);
-    return canhVao ? graphNodes.find((n) => n.id === canhVao.source) ?? null : null;
-  }, [id, graphEdges, graphNodes]);
-
-  const dauVaoVideo = useMemo(() => {
-    const laAnh = (u?: string | null) => !!u && !isVideoUrl(u);
-    const anh =
-      (laAnh(nodeCha?.data?.imageUrl) ? nodeCha!.data.imageUrl : null)
-      ?? (laAnh(d.imageUrl) ? d.imageUrl : null)
-      ?? d.videoSourceUrl
-      ?? null;
-    const taCha = (nodeCha?.data?.prompt || "").trim();
-    const taRieng = (d.prompt || "").trim();
-    const ta = taRieng ? (taCha ? `${taCha} ${taRieng}` : taRieng) : taCha;
-    return { anh, ta };
-  }, [nodeCha, d.imageUrl, d.videoSourceUrl, d.prompt]);
 
   const onAnimate = useCallback(() => {
     // Nhan ca "stale": node lo thoi van co san mot ANH de lam video, chan lai
@@ -403,6 +413,15 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         ) : (
           <div className="image-node__placeholder">{t("node.noImage")}</div>
         )}
+        {/* Lop phu bao dang chay. Can thiet vi khung xuong chi hien khi node
+            CHUA co gi: sinh lai tren node da co anh/video thi truoc day khong
+            co phan hoi nao het. */}
+        {isBusy ? (
+          <div className="image-node__busy">
+            {t("node.working", { fallback: "Dang chay..." })}
+            {d.pendingPhase ? ` · ${d.pendingPhase}` : ""}
+          </div>
+        ) : null}
       </div>
       <div
         className={`image-node__composer nodrag${isDraggingRef ? " is-dragging" : ""}`}

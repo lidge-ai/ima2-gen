@@ -570,8 +570,8 @@ addChildNodeAt: (parentClientId, position, sourceHandle) => addChildNodeAtImpl(p
   setVideoTopic: (videoTopic) => set({ videoTopic }),
   setVideoContinuityLineage: (videoContinuityLineage) => set({ videoContinuityLineage }),
   activeVideoRefCount: () => activeVideoRefCountImpl(get),
-  runVideoGenerate: async (nodeId) => {
-    await runVideoGenerateImpl(nodeId, set, get);
+  runVideoGenerate: async (nodeId, taThayThe) => {
+    await runVideoGenerateImpl(nodeId, set, get, taThayThe);
   },
   animateImage: async (filename, prompt) => {
     return animateImageImpl(filename, prompt, set, get);

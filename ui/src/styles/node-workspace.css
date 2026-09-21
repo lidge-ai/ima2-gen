@@ -197,6 +197,19 @@
   letter-spacing: .02em;
   cursor: copy;
 }
+.image-node__busy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  background: rgba(16, 16, 20, 0.62);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  pointer-events: none;
+}
 .image-node__role {
   flex: 0 0 auto;
   max-width: 130px;
