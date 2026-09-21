@@ -151,6 +151,9 @@ export async function runGenerateNodeInPlaceImpl(
     options.parentServerNodeIdOverride !== undefined
       ? options.parentServerNodeIdOverride
       : parentServerNodeId;
+  // Cha phu: anh cua chung duoc gui kem lam tham chieu (xem extraParentNodeIds).
+  const extraParentServerNodeIds = (node.data.extraParentServerNodeIds ?? [])
+    .filter((id) => id && id !== effectiveParentServerNodeId);
   const incoming = get().graphEdges.find((edge) => edge.target === clientId);
   if (incoming && !effectiveParentServerNodeId) {
     get().showToast(t("node.parentImageRequired"), true);
@@ -206,6 +209,7 @@ export async function runGenerateNodeInPlaceImpl(
   try {
     const res = await postNodeGenerateStream({
       parentNodeId: effectiveParentServerNodeId,
+      ...(extraParentServerNodeIds.length ? { extraParentNodeIds: extraParentServerNodeIds } : {}),
       prompt,
       quality: normalizeImageQuality(nodeProvider, s.imageToolModel, s.quality),
       size,

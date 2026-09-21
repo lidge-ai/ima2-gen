@@ -30,6 +30,11 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
     const asyncMode = body.async === true;
     const streamResponse = !asyncMode && wantsSse(req);
     const parentNodeId = (typeof body.parentNodeId === "string" ? body.parentNodeId : null);
+    // Cac cha phu, chi lay anh lam tham chieu (xem cho ghep refsForRequest ben duoi).
+    const extraParentNodeIds: string[] = Array.isArray(body.extraParentNodeIds)
+      ? body.extraParentNodeIds.filter((id: unknown): id is string =>
+          typeof id === "string" && !!id && id !== parentNodeId)
+      : [];
     const requestId = normalizeBodyRequestId(body.requestId, req.id);
     const sessionId = typeof body.sessionId === "string" ? body.sessionId : null;
     const clientNodeId = typeof body.clientNodeId === "string" ? body.clientNodeId : null;
@@ -146,7 +151,23 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
       const referenceDiagnostics = refCheck.referenceDiagnostics || [];
       const generateReferenceDiagnostics = operation === "generate" ? referenceDiagnostics : [];
       const referenceMismatchCount = generateReferenceDiagnostics.filter((ref) => ref.warnings?.includes("mime_mismatch")).length;
-      const refsForRequest = contextMode === "parent-only" ? [] : (refCheck.refDetails || refCheck.refs);
+      // Cha phu: ke thua nhieu cha that ra chi la lay ANH cua tung cha lam tham
+      // chieu. Cha dau (parentNodeId) la anh goc dem di sua; cac cha con lai duoc
+      // nap len va noi vao dau danh sach tham chieu, truoc cac ref nguoi dung dinh kem.
+      const extraParentB64: string[] = [];
+      for (const extraId of extraParentNodeIds) {
+        try {
+          const b64 = await loadParentNodeB64(ctx, extraId);
+          if (b64) extraParentB64.push(b64);
+        } catch {
+          // Cha phu mat tep thi bo qua, khong lam hong ca lan sinh.
+          logEvent("node", "extra_parent_missing", { requestId, nodeId: extraId });
+        }
+      }
+      const baseRefs = contextMode === "parent-only" ? [] : (refCheck.refDetails || refCheck.refs);
+      const refsForRequest = contextMode === "parent-only"
+        ? []
+        : [...extraParentB64.map((b64) => ({ b64 })), ...(baseRefs as unknown[])] as typeof baseRefs;
       const parentImagePresent = !!parentB64;
       const inputImageCount = (parentImagePresent ? 1 : 0) + refsForRequest.length;
       const providerReferenceLimit = deriveReferenceLimit(activeProvider, "edit");

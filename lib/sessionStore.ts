@@ -127,16 +127,16 @@ function normalizeGraphPayload(nodes: NodeInput[], edges: EdgeInput[]) {
   const cleanEdges = edges.filter(
     (e) => e?.id && e?.source && e?.target && nodeIds.has(String(e.source)) && nodeIds.has(String(e.target)),
   );
-  const incomingByTarget = new Map<string, EdgeInput>();
+  // Nhieu cha: ke thua that ra chi la lay ANH cua cha lam tham chieu, nen mot
+  // node nhan duoc nhieu cha. Canh DAU TIEN la anh goc dem di sua; cac canh sau
+  // duoc noi them vao danh sach tham chieu (extraParentServerNodeIds).
+  // Thu tu lay theo thu tu canh do client gui len, nen keo canh truoc thi lam goc.
+  const incomingByTarget = new Map<string, EdgeInput[]>();
   for (const edge of cleanEdges) {
     const target = String(edge.target);
-    if (incomingByTarget.has(target)) {
-      const err = new Error(`Node ${target} has multiple parent edges`) as GraphErr;
-      err.code = "GRAPH_PARENT_CONFLICT";
-      err.status = 409;
-      throw err;
-    }
-    incomingByTarget.set(target, edge);
+    const list = incomingByTarget.get(target);
+    if (list) list.push(edge);
+    else incomingByTarget.set(target, [edge]);
   }
 
   const nodeDataById = new Map<string, Record<string, unknown>>();
@@ -153,13 +153,26 @@ function normalizeGraphPayload(nodes: NodeInput[], edges: EdgeInput[]) {
     const id = String(node.id);
     const data: Record<string, unknown> = { ...(nodeDataById.get(id) ?? {}) };
     const incoming = incomingByTarget.get(id);
-    if (!incoming) {
+    if (!incoming || incoming.length === 0) {
       data.parentServerNodeId = null;
+      data.extraParentServerNodeIds = [];
     } else {
-      const parentData = nodeDataById.get(String(incoming.source)) ?? {};
-      data.parentServerNodeId = typeof parentData.serverNodeId === "string"
-        ? parentData.serverNodeId
-        : null;
+      const serverIdOf = (edge: EdgeInput | undefined) => {
+        if (!edge) return null;
+        const parentData = nodeDataById.get(String(edge.source)) ?? {};
+        return typeof parentData.serverNodeId === "string" ? parentData.serverNodeId : null;
+      };
+      data.parentServerNodeId = serverIdOf(incoming[0]);
+      // Cha phu: bo qua cai chua sinh (serverNodeId rong) va cai trung voi cha chinh.
+      const seen = new Set<string>([String(data.parentServerNodeId ?? "")]);
+      const extras: string[] = [];
+      for (const edge of incoming.slice(1)) {
+        const sid = serverIdOf(edge);
+        if (!sid || seen.has(sid)) continue;
+        seen.add(sid);
+        extras.push(sid);
+      }
+      data.extraParentServerNodeIds = extras;
     }
     return { ...node, data };
   });
