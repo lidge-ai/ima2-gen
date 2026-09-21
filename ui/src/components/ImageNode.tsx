@@ -105,15 +105,22 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     return true;
   }, [oTrongChuaDien, showToast, t]);
 
+  // Node mang vai tro VIDEO thi GEN phai sinh VIDEO. Truoc day vai tro chi la
+  // cai nhan: bam GEN tren node video van sinh ra anh, ghi de mat clip.
+  const laNodeVideo = d.vaiTro === "video";
+  const onAnimateRef = useRef<(() => void) | null>(null);
+
   const onGenerate = useCallback(() => {
     if (canhBaoOTrong()) return;
+    if (laNodeVideo) { onAnimateRef.current?.(); return; }
     void generateNode(id);
-  }, [id, generateNode, canhBaoOTrong]);
+  }, [id, generateNode, canhBaoOTrong, laNodeVideo]);
 
   const onRegenerateInPlace = useCallback(() => {
     if (canhBaoOTrong()) return;
+    if (laNodeVideo) { onAnimateRef.current?.(); return; }
     void generateNodeInPlace(id);
-  }, [id, generateNodeInPlace, canhBaoOTrong]);
+  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo]);
 
   const onNewVariation = useCallback(() => {
     void generateNodeVariation(id);
@@ -147,10 +154,20 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const anhNguonVideo = isVideoUrl(d.imageUrl) ? (d.videoSourceUrl ?? null) : d.imageUrl;
 
   const onAnimate = useCallback(() => {
-    if (d.status !== "ready" || !anhNguonVideo) return;
+    // Nhan ca "stale": node lo thoi van co san mot ANH de lam video, chan lai
+    // chi khien bam GEN tren node video khong xay ra gi ma cung khong bao gi.
+    if (d.status !== "ready" && d.status !== "stale") return;
+    if (!anhNguonVideo) {
+      showToast(t("node.needImageForVideo", { fallback: "Node chua co anh de lam video" }), true);
+      return;
+    }
     const filename = anhNguonVideo.replace(/^\/generated\//, "");
     void animateImage(filename, d.prompt);
-  }, [d.status, anhNguonVideo, d.prompt, animateImage]);
+  }, [d.status, anhNguonVideo, d.prompt, animateImage, showToast, t]);
+
+  // Gan sau khi onAnimate da khai bao: onGenerate goi qua ref nen khong tao
+  // phu thuoc vong giua hai useCallback.
+  onAnimateRef.current = onAnimate;
 
   const onDuplicateBranch = useCallback(() => {
     duplicateBranchRoot(id);

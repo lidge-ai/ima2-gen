@@ -714,7 +714,8 @@
     "outfitFilled": "已將服裝描述填入 {n} 個節點",
     "promptLocked": "該節點角色的固定提示詞，無需修改",
     "rolePick": "節點角色",
-    "roleNone": "— 角色 —"
+    "roleNone": "— 角色 —",
+    "needImageForVideo": "該節點沒有可用於產生影片的影像"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

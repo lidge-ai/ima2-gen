@@ -714,7 +714,8 @@
     "outfitFilled": "Filled the outfit description into {n} node(s)",
     "promptLocked": "Fixed prompt for this node role — no need to edit",
     "rolePick": "Node role",
-    "roleNone": "— role —"
+    "roleNone": "— role —",
+    "needImageForVideo": "This node has no image to turn into a video"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

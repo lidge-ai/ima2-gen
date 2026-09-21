@@ -714,7 +714,8 @@
     "outfitFilled": "{n}개 노드에 의상 설명을 채웠습니다",
     "promptLocked": "이 노드 역할의 고정 프롬프트 — 수정할 필요 없음",
     "rolePick": "노드 역할",
-    "roleNone": "— 역할 —"
+    "roleNone": "— 역할 —",
+    "needImageForVideo": "이 노드에는 비디오로 만들 이미지가 없습니다"
   },
   "nodeBatch": {
     "selectionOn": "선택중",
