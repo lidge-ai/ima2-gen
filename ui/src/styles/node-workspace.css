@@ -262,22 +262,19 @@
   opacity: .35;
   cursor: default;
 }
-/* Nhan nho o goc, KHONG phu kin khung: luc sinh anh co anh nhap chay dan
-   (streaming) - phu kin len la che mat dung thu dang xem nhat. */
+/* Phu kin khung xem truoc. Can thiet vi khung xuong chi hien khi node CHUA co
+   gi: sinh lai tren node da co anh/video thi khong he co phan hoi nao. */
 .image-node__busy {
   position: absolute;
-  left: 6px;
-  bottom: 6px;
-  max-width: calc(100% - 12px);
-  padding: 2px 6px;
-  overflow: hidden;
-  background: rgba(16, 16, 20, 0.72);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  background: rgba(16, 16, 20, 0.62);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: .02em;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   pointer-events: none;
 }
 .image-node__role {
