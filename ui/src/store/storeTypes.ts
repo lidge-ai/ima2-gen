@@ -132,6 +132,8 @@ export type ImageNodeData = {
   clientId: ClientNodeId;
   serverNodeId: string | null;
   parentServerNodeId: string | null;
+  /** Cha phu: chi lay ANH cua tung node lam tham chieu, khong phai anh goc dem di sua. */
+  extraParentServerNodeIds?: string[];
   prompt: string;
   imageUrl: string | null;
   status: ImageNodeStatus;

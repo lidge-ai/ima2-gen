@@ -82,15 +82,29 @@ export function graphHasCycle(
 export function deriveParentServerNodeIds(nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   return nodes.map((node) => {
-    const incoming = getIncomingEdge(edges, node.id);
-    const parent = incoming ? byId.get(incoming.source) : null;
+    // Canh dau: anh goc dem di sua. Cac canh sau: chi lay anh lam tham chieu.
+    const incoming = edges.filter((edge) => edge.target === node.id);
+    const parent = incoming[0] ? byId.get(incoming[0].source) : null;
     const nextParentServerNodeId = parent?.data.serverNodeId ?? null;
-    if (node.data.parentServerNodeId === nextParentServerNodeId) return node;
+    const seen = new Set<string>(nextParentServerNodeId ? [nextParentServerNodeId] : []);
+    const nextExtras: string[] = [];
+    for (const edge of incoming.slice(1)) {
+      const sid = byId.get(edge.source)?.data.serverNodeId;
+      if (!sid || seen.has(sid)) continue;
+      seen.add(sid);
+      nextExtras.push(sid);
+    }
+    const prevExtras = node.data.extraParentServerNodeIds ?? [];
+    const same = node.data.parentServerNodeId === nextParentServerNodeId
+      && prevExtras.length === nextExtras.length
+      && prevExtras.every((id, i) => id === nextExtras[i]);
+    if (same) return node;
     return {
       ...node,
       data: {
         ...node.data,
         parentServerNodeId: nextParentServerNodeId,
+        extraParentServerNodeIds: nextExtras,
       },
     };
   });
