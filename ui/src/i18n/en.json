@@ -716,7 +716,13 @@
     "rolePick": "Node role",
     "roleNone": "— role —",
     "needImageForVideo": "This node has no image to turn into a video",
-    "working": "Working…"
+    "working": "Working…",
+    "merge": "Merge video",
+    "mergeTitle": "Merge the list into one video",
+    "mergeEmpty": "Connect scenes in, or attach files",
+    "mergeDone": "Merged",
+    "mergeUp": "Move up",
+    "mergeDown": "Move down"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

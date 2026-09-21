@@ -716,7 +716,13 @@
     "rolePick": "節點角色",
     "roleNone": "— 角色 —",
     "needImageForVideo": "該節點沒有可用於產生影片的影像",
-    "working": "產生中…"
+    "working": "產生中…",
+    "merge": "合併影片",
+    "mergeTitle": "將清單合併為一個影片",
+    "mergeEmpty": "連接場景或附加檔案",
+    "mergeDone": "合併完成",
+    "mergeUp": "上移",
+    "mergeDown": "下移"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

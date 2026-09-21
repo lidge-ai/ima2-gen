@@ -216,6 +216,69 @@
   text-transform: uppercase;
   pointer-events: none;
 }
+.image-node__gop {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 150px;
+  padding: 3px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.image-node__gop-trong {
+  padding: 8px 4px;
+  color: var(--text-dim);
+  font-size: 10px;
+  text-align: center;
+}
+.image-node__gop-muc {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface);
+}
+.image-node__gop-muc img,
+.image-node__gop-muc video {
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+.image-node__gop-so {
+  flex: 0 0 auto;
+  min-width: 12px;
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 700;
+  text-align: right;
+}
+.image-node__gop-loai {
+  flex: 1 1 auto;
+  color: var(--text-dim);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.image-node__gop-nut {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+.image-node__gop-nut button {
+  min-width: 16px;
+  padding: 0 2px;
+  border: 1px solid var(--border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 9px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.image-node__gop-nut button:disabled {
+  opacity: .35;
+  cursor: default;
+}
 .image-node__busy {
   position: absolute;
   inset: 0;

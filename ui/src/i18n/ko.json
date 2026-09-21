@@ -716,7 +716,13 @@
     "rolePick": "노드 역할",
     "roleNone": "— 역할 —",
     "needImageForVideo": "이 노드에는 비디오로 만들 이미지가 없습니다",
-    "working": "생성 중…"
+    "working": "생성 중…",
+    "merge": "비디오 병합",
+    "mergeTitle": "목록을 하나의 비디오로 병합",
+    "mergeEmpty": "장면을 연결하거나 파일을 첨부하세요",
+    "mergeDone": "병합 완료",
+    "mergeUp": "위로",
+    "mergeDown": "아래로"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

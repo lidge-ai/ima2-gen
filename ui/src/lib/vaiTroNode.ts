@@ -9,7 +9,7 @@
  * lai: prompt do da dung roi, sua vao chi lam hong.
  */
 
-export type VaiTroNode = "mau" | "trang-phuc" | "mac-do" | "canh" | "video";
+export type VaiTroNode = "mau" | "trang-phuc" | "mac-do" | "canh" | "video" | "gop-anh" | "gop-video";
 
 export type MoTaVaiTro = {
   nhan: string;
@@ -38,10 +38,19 @@ export const VAI_TRO: Record<VaiTroNode, MoTaVaiTro> = {
   "mac-do": { nhan: "MẶC ĐỒ", mau: "#e2622f" },
   "canh": { nhan: "CẢNH", mau: "#8a5326" },
   "video": { nhan: "VIDEO", mau: "#9334e6" },
+  // Hai vai tro GOP khong goi mo hinh nao: chung chi thu gom, nen khong co
+  // prompt va khong ton tien.
+  "gop-anh": { nhan: "GỘP ẢNH", mau: "#0b8a8f" },
+  "gop-video": { nhan: "GỘP VIDEO", mau: "#b3005e" },
 };
 
 export function layVaiTro(v: unknown): MoTaVaiTro | null {
   return typeof v === "string" && v in VAI_TRO ? VAI_TRO[v as VaiTroNode] : null;
+}
+
+/** Vai tro GOP: thu gom media tu cac canh vao, khong co prompt. */
+export function laVaiTroGop(v: unknown): boolean {
+  return v === "gop-anh" || v === "gop-video";
 }
 
 /** Vai tro co prompt co dinh thi khoa o nhap prompt. */

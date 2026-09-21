@@ -13,6 +13,7 @@ import { t } from "../i18n";
 import { compressReferenceSource } from "./storeHelpers";
 import type { GraphNode, GraphEdge, StoreSet, StoreGet } from "./storeTypes";
 import { VAI_TRO } from "../lib/vaiTroNode";
+import type { ImageNodeData } from "./storeTypes";
 
 const DEFAULT_CHILD_SOURCE_HANDLE = "source-right";
 const DEFAULT_CHILD_TARGET_HANDLE = "target-left";
@@ -343,6 +344,22 @@ export function updateNodePromptImpl(
  * Dat vai tro cho node. Vai tro co prompt CO DINH thi ghi luon prompt do vao,
  * de nguoi dung khong phai go lai va hai node cung vai tro khong the lech nhau.
  */
+/** Va mot mieng du lieu vao node. Dung cho cac truong phu nhu thu tu gop. */
+export function updateNodeDataImpl(
+  clientId: ClientNodeId,
+  patch: Partial<ImageNodeData>,
+  set: StoreSet,
+  get: StoreGet,
+): void {
+  set({
+    graphNodes: get().graphNodes.map((n) =>
+      n.id === clientId ? { ...n, data: { ...n.data, ...patch } } : n,
+    ),
+  });
+  get().scheduleGraphSave();
+}
+
+
 export function datVaiTroNodeImpl(
   clientId: ClientNodeId,
   vaiTro: string,

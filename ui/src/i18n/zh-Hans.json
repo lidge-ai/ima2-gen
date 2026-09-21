@@ -716,7 +716,13 @@
     "rolePick": "节点角色",
     "roleNone": "— 角色 —",
     "needImageForVideo": "该节点没有可用于生成视频的图像",
-    "working": "生成中…"
+    "working": "生成中…",
+    "merge": "合并视频",
+    "mergeTitle": "将列表合并为一个视频",
+    "mergeEmpty": "连接场景或附加文件",
+    "mergeDone": "合并完成",
+    "mergeUp": "上移",
+    "mergeDown": "下移"
   },
   "nodeBatch": {
     "selectionOn": "选择",

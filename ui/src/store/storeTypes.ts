@@ -139,8 +139,10 @@ export type ImageNodeData = {
   label?: string;
   /** Anh goc truoc khi node bi video thay cho - de sinh lai video duoc. */
   videoSourceUrl?: string | null;
-  /** Vai tro trong khuon: mau / trang-phuc / mac-do / canh / video. Xem lib/vaiTroNode.ts */
+  /** Vai tro trong khuon: mau / trang-phuc / mac-do / canh / video / gop-*. Xem lib/vaiTroNode.ts */
   vaiTro?: string;
+  /** Node GOP: thu tu media do nguoi dung sap xep, luu bang danh sach url. */
+  thuTuGop?: string[];
   imageUrl: string | null;
   status: ImageNodeStatus;
   pendingRequestId: string | null;
@@ -468,6 +470,8 @@ export type AppState = PresetState & ReferenceTraySlice & {
   updateNodePrompt: (clientId: ClientNodeId, prompt: string) => void;
   /** Dat vai tro node; vai tro co prompt co dinh thi ghi luon prompt do. */
   datVaiTroNode: (clientId: ClientNodeId, vaiTro: string) => void;
+  /** Va mot mieng du lieu vao node (thu tu gop, imageUrl sau khi ghep...). */
+  updateNodeData: (clientId: ClientNodeId, patch: Partial<ImageNodeData>) => void;
   addNodeReferences: (clientId: ClientNodeId, files: File[]) => Promise<void>;
   addNodeReferenceDataUrl: (clientId: ClientNodeId, dataUrl: string) => void;
   addNodeReferenceFromUrl: (clientId: ClientNodeId, src: string, filename?: string) => Promise<void>;

@@ -1217,6 +1217,41 @@ normal generation. Async: `202 { requestId, taskId }`; `done` carries
 Catalog-only providers (e.g. Higgsfield on a free plan) return
 `409 MCP_EXECUTION_LOCKED`, same as `/api/mcp/generate`.
 
+## Media Merge
+
+`POST /api/media/merge` joins several already-generated files into a single MP4.
+No model is called: the route only runs ffmpeg, so it is fast and costs nothing.
+
+```json
+{
+  "items": [{ "filename": "1790001755820_8a5e47d5.mp4" }, { "filename": "n_5a3efe98d3.png" }],
+  "imageSec": 2,
+  "fps": 24
+}
+```
+
+- `items` — two or more entries, in the exact order they should appear. Each
+  `filename` must resolve inside the generated directory; paths are rejected.
+  Videos keep their own length, images are held for `imageSec` seconds
+  (default 2, max 30).
+- `fps` — optional output frame rate (default 24, max 60).
+
+Every input is scaled and padded to one frame size before concatenation, taken
+from the first video in the list (falling back to 720×1280 when the list holds
+only images). Mixed resolutions and aspect ratios are therefore safe.
+
+The output carries **no audio track**: mixing clips that have sound with images
+that do not needs a silent source and drift correction, which this route does
+not attempt.
+
+```json
+{ "ok": true, "filename": "1790002811990_ghep.mp4", "url": "/generated/1790002811990_ghep.mp4", "items": 3 }
+```
+
+Errors: `MERGE_NEED_TWO` (fewer than two items), `MERGE_ITEM_INVALID` (an entry
+without a filename), `MERGE_ITEM_KIND` (unsupported extension), `MERGE_FAILED`
+(ffmpeg failed or is not installed).
+
 ## Contract Discovery
 
 Machine-readable tool contracts for AI agents (`ima2 tools` CLI backs onto these).

@@ -13,6 +13,7 @@ import { registerAssetDerivedRoutes } from "./assetDerived.js";
 import { registerVideoKeyingRoutes } from "./videoKeying.js";
 import { registerSessionRoutes } from "./sessions.js";
 import { registerEditRoutes } from "./edit.js";
+import { registerMediaMergeRoutes } from "./mediaMerge.js";
 import { registerNodeRoutes } from "./nodes.js";
 import { registerNodeTemplateRoutes } from "./nodeTemplates.js";
 import { registerGenerateRoutes } from "./generate.js";
@@ -66,6 +67,7 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   registerSessionRoutes(app, ctx);
   registerEditRoutes(app, ctx);
   registerNodeRoutes(app, ctx);
+  registerMediaMergeRoutes(app, ctx);
   registerNodeTemplateRoutes(app);
   if (ctx.config.features.cardNews) registerCardNewsRoutes(app, ctx);
   registerMultimodeRoutes(app, ctx);

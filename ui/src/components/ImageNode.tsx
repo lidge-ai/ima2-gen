@@ -2,7 +2,8 @@ import { memo, useCallback, useMemo, useRef, useState, type ClipboardEvent, type
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
-import { khoaPrompt, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
+import { khoaPrompt, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
+import { doiCho, ghepThanhVideo, gomTuCanhVao, xepTheoThuTu } from "../lib/gopMedia";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
@@ -68,10 +69,13 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const showToast = useAppStore((st) => st.showToast);
   const graphEdges = useAppStore((st) => st.graphEdges);
   const datVaiTroNode = useAppStore((st) => st.datVaiTroNode);
+  const updateNodeData = useAppStore((st) => st.updateNodeData);
   const runVideoGenerate = useAppStore((st) => st.runVideoGenerate);
   const graphNodes = useAppStore((st) => st.graphNodes);
   const [dangDocDo, setDangDocDo] = useState(false);
   const vaiTro = layVaiTro(d.vaiTro);
+  const laNodeGop = laVaiTroGop(d.vaiTro);
+  const [dangGhep, setDangGhep] = useState(false);
   // Vai tro co prompt co dinh thi khoa o nhap: prompt do da dung, sua chi lam hong.
   const promptBiKhoa = khoaPrompt(d.vaiTro);
   const generateNodeInPlace = useAppStore((s) => s.generateNodeInPlace);
@@ -144,6 +148,36 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
       })
       .filter((x): x is { id: string; url: string; vai: string } => !!x);
   }, [id, graphEdges, graphNodes]);
+
+  /** Media cua node GOP: canh vao + anh nguoi dung tu dinh, theo thu tu da luu. */
+  const mucGop = useMemo(() => {
+    if (!laNodeGop) return [];
+    const tuCanh = gomTuCanhVao(id, graphNodes, graphEdges);
+    const tuTay = (d.referenceImages ?? []).map((url) => ({
+      url, loai: isVideoUrl(url) ? ("video" as const) : ("anh" as const), tuNode: null,
+    }));
+    return xepTheoThuTu([...tuCanh, ...tuTay], d.thuTuGop);
+  }, [laNodeGop, id, graphNodes, graphEdges, d.referenceImages, d.thuTuGop]);
+
+  const dayLen = useCallback((i: number) => {
+    updateNodeData(id, { thuTuGop: doiCho(mucGop, i, i - 1) });
+  }, [id, mucGop, updateNodeData]);
+  const dayXuong = useCallback((i: number) => {
+    updateNodeData(id, { thuTuGop: doiCho(mucGop, i, i + 1) });
+  }, [id, mucGop, updateNodeData]);
+
+  const onGhepVideo = useCallback(async () => {
+    setDangGhep(true);
+    try {
+      const url = await ghepThanhVideo(mucGop);
+      updateNodeData(id, { imageUrl: url, status: "ready" });
+      showToast(t("node.mergeDone", { fallback: "Da ghep xong" }), false);
+    } catch (e) {
+      showToast(String((e as Error).message || e), true);
+    } finally {
+      setDangGhep(false);
+    }
+  }, [id, mucGop, updateNodeData, showToast, t]);
 
   const dauVaoVideo = useMemo(() => {
     const laAnh = (u?: string | null) => !!u && !isVideoUrl(u);
@@ -478,6 +512,27 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
             ))}
           </div>
         ) : null}
+        {laNodeGop ? (
+          <div className="image-node__gop nodrag">
+            {mucGop.length === 0 ? (
+              <div className="image-node__gop-trong">{t("node.mergeEmpty", { fallback: "Noi canh vao hoac dinh tep" })}</div>
+            ) : (
+              mucGop.map((m, i) => (
+                <div key={m.url} className="image-node__gop-muc" title={m.url}>
+                  <span className="image-node__gop-so">{i + 1}</span>
+                  {m.loai === "video"
+                    ? <video src={m.url} muted playsInline preload="metadata" />
+                    : <img src={m.url} alt="" />}
+                  <span className="image-node__gop-loai">{m.loai === "video" ? "MP4" : "IMG"}</span>
+                  <span className="image-node__gop-nut">
+                    <button type="button" onClick={() => dayLen(i)} disabled={i === 0} aria-label={t("node.mergeUp", { fallback: "Len" })}>↑</button>
+                    <button type="button" onClick={() => dayXuong(i)} disabled={i === mucGop.length - 1} aria-label={t("node.mergeDown", { fallback: "Xuong" })}>↓</button>
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
         <textarea
           className="image-node__prompt"
           value={d.prompt}
@@ -489,6 +544,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           readOnly={promptBiKhoa}
           title={promptBiKhoa ? t("node.promptLocked", { fallback: "Prompt co dinh cho vai tro nay" }) : undefined}
         />
+        )}
         <div className="image-node__composer-bar">
           <button
             type="button"
@@ -570,6 +626,16 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               />
             )}
           </div>
+          {d.vaiTro === "gop-video" ? (
+            <button
+              type="button"
+              onClick={() => void onGhepVideo()}
+              disabled={dangGhep || mucGop.length < 2}
+              title={t("node.mergeTitle", { fallback: "Ghep thanh mot video" })}
+            >
+              {dangGhep ? "..." : t("node.merge", { fallback: "Ghep video" })}
+            </button>
+          ) : null}
           {d.status === "ready" ? (
             <>
               <button type="button" onClick={onRegenerateInPlace} disabled={isBusy} title={t("node.regenerateTitle")} aria-label={t("node.regenerateTitle")}>
