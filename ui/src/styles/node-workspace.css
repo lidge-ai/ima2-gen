@@ -177,6 +177,34 @@
 }
 .image-node--ready { border-color: var(--blue); }
 .image-node--error { border-color: var(--red); }
+.image-node__id {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 2px 4px;
+  font-size: 10px;
+  line-height: 1.3;
+}
+.image-node__id-copy {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: copy;
+}
+.image-node__id-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim, #8b8b93);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .image-node__preview {
   width: 100%;
   height: var(--node-preview-h, 240px);
@@ -199,7 +227,8 @@
 .image-node__zoom {
   position: absolute;
   right: 6px;
-  bottom: 6px;
+  /* Tren, khong duoi: node video co thanh dieu khien nam o day khung. */
+  top: 6px;
   display: grid;
   place-items: center;
   width: 26px;

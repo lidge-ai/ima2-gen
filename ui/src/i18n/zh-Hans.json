@@ -706,7 +706,9 @@
     "retryTitle": "重试这个 node 的生成",
     "errorAuthCta": "检查您的帐户或 API 密钥，然后重新生成。",
     "errorFixCta": "调整提示或引用，然后再次生成。",
-    "zoomImage": "查看大图"
+    "zoomImage": "查看大图",
+    "placeholderLeft": "提示词中还有未填写的占位符 {slot}，请先填写再生成",
+    "copyId": "复制节点 ID"
   },
   "nodeBatch": {
     "selectionOn": "选择",

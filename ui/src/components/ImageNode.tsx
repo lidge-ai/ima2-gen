@@ -63,6 +63,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const readDroppedImageMetadata = useAppStore((s) => s.readDroppedImageMetadata);
   const removeNodeReference = useAppStore((s) => s.removeNodeReference);
   const generateNode = useAppStore((s) => s.generateNode);
+  const showToast = useAppStore((st) => st.showToast);
   const generateNodeInPlace = useAppStore((s) => s.generateNodeInPlace);
   const generateNodeVariation = useAppStore((s) => s.generateNodeVariation);
   const animateImage = useAppStore((s) => s.animateImage);
@@ -85,13 +86,25 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     [id, updateNodePrompt],
   );
 
+  // Prompt khuon co the con o trong dang {{...}} chua dien. Sinh luc do thi
+  // chuoi {{...}} di thang vao prompt va ra ket qua vo nghia - chan tu dau
+  // thay vi de nguoi dung dot mot luot sinh moi biet.
+  const oTrongChuaDien = /\{\{[A-Z_]+\}\}/.exec(d.prompt || "")?.[0] ?? null;
+  const canhBaoOTrong = useCallback(() => {
+    if (!oTrongChuaDien) return false;
+    showToast(t("node.placeholderLeft", { slot: oTrongChuaDien, fallback: `Prompt con o trong ${oTrongChuaDien} chua dien` }), true);
+    return true;
+  }, [oTrongChuaDien, showToast, t]);
+
   const onGenerate = useCallback(() => {
+    if (canhBaoOTrong()) return;
     void generateNode(id);
-  }, [id, generateNode]);
+  }, [id, generateNode, canhBaoOTrong]);
 
   const onRegenerateInPlace = useCallback(() => {
+    if (canhBaoOTrong()) return;
     void generateNodeInPlace(id);
-  }, [id, generateNodeInPlace]);
+  }, [id, generateNodeInPlace, canhBaoOTrong]);
 
   const onNewVariation = useCallback(() => {
     void generateNodeVariation(id);
@@ -243,13 +256,30 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           className={`image-node__handle image-node__handle--target image-node__handle--${handleId}`}
         />
       ))}
+      {/* Ma node + nhan: khong co ma thi nguoi dung khong co cach nao chi ra
+          node nao dang sai. Bam vao la chep ma vao bo nho tam. */}
+      <div className="image-node__id nodrag" title={d.label ? `${id} - ${d.label}` : id}>
+        <button
+          type="button"
+          className="image-node__id-copy"
+          onClick={(e) => { e.stopPropagation(); void navigator.clipboard?.writeText(id); }}
+          title={t("node.copyId", { fallback: "Copy node id" })}
+          aria-label={t("node.copyId", { fallback: "Copy node id" })}
+        >
+          {id}
+        </button>
+        {d.label ? <span className="image-node__id-label">{d.label}</span> : null}
+      </div>
       <div className="image-node__preview">
         {d.imageUrl && d.status !== "asset-missing" ? (
-          isVideoUrl(d.imageUrl) ? (
-            <video src={d.imageUrl} controls loop playsInline muted className="image-node__video nodrag" />
-          ) : (
-            <>
+          <>
+            {isVideoUrl(d.imageUrl) ? (
+              <video src={d.imageUrl} controls loop playsInline muted className="image-node__video nodrag" />
+            ) : (
               <img src={d.imageUrl} alt={t("node.nodeImageAlt")} />
+            )}
+            {/* Nut nay dung cho CA anh lan video: lightbox tu phat video khi
+                media la video, nen xem to clip ngay trong do duoc. */}
               <button
                 type="button"
                 className="image-node__zoom nodrag"
@@ -262,8 +292,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                   <path d="M15.5 15.5 21 21M7.5 10.5h6M10.5 7.5v6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
                 </svg>
               </button>
-            </>
-          )
+          </>
         ) : isBusy && d.partialImageUrl ? (
           <img
             className="image-node__partial"

@@ -135,6 +135,8 @@ export type ImageNodeData = {
   /** Cha phu: chi lay ANH cua tung node lam tham chieu, khong phai anh goc dem di sua. */
   extraParentServerNodeIds?: string[];
   prompt: string;
+  /** Nhan do nguoi dung dat cho node, hien canh ma node tren canvas. */
+  label?: string;
   imageUrl: string | null;
   status: ImageNodeStatus;
   pendingRequestId: string | null;

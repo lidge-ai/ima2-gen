@@ -1,6 +1,7 @@
 // Doi bo trang phuc cho ca mot workflow chi bang mot lenh.
 //
 //   node scripts/wf-doi-do.mjs <sessionId> <nhanh> "<mo ta bo do>"
+//   node scripts/wf-doi-do.mjs <sessionId> <nhanh>           <- tu doc anh ra mo ta
 //   node scripts/wf-doi-do.mjs s_01M30... hong "the oversized dusty-pink button-up shirt worn open over a BLACK AND WHITE checked plaid tube top, and a brown utility mini skirt with cargo pockets, plain white sneakers"
 //
 // VI SAO CAN MO TA BANG CHU, KHONG CHI DUA ANH THAM CHIEU:
@@ -35,8 +36,38 @@ export const DONG_TAC = {
   9: 'Sitting sideways on a high stool at the counter, one foot on the footrest, turning to look back at the camera. Full body visible.',
 };
 
+/** O trong cua khuon. Chay wf-doi-do de thay bang mo ta bo do that. */
+export const O_TRONG = '{{TRANG_PHUC}}';
+
 export const promptMacDo = (moTa) => `${GIU} She wears: ${moTa}. ${LUAT} ${STUDIO}`;
 export const promptCanh = (moTa, dongTac) => `${GIU} She wears: ${moTa}. ${LUAT} ${dongTac} ${DIADIEM} ${DUOI}`;
+
+/**
+ * Doc anh trang phuc ra mot cau liet ke mon do.
+ *
+ * Buoc nay ton tai vi anh tham chieu MOT MINH khong quyet dinh duoc mac cai gi
+ * (xem ghi chu dau file). Truoc day nguoi dung phai tu go mo ta; gio hoi thang
+ * mo hinh, nen khuon chay duoc hoan toan tu dau vao.
+ */
+async function taBoDo(imageUrl) {
+  const res = await fetch(SERVER + imageUrl);
+  if (!res.ok) throw new Error(`khong tai duoc anh trang phuc: HTTP ${res.status}`);
+  const b64 = Buffer.from(await res.arrayBuffer()).toString('base64');
+  const kq = await api('/api/prompt-builder/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{
+        role: 'user',
+        content: 'This is a flat lay of ONE outfit. List every garment and accessory in ONE English sentence, separated by commas. For each item give its colour, material, pattern, cut and length, precise enough to dress a model in exactly these pieces. Output only the list, no preamble, no numbering.',
+        attachments: [{ kind: 'image', name: 'outfit.png', mimeType: 'image/png', dataUrl: 'data:image/png;base64,' + b64 }],
+      }],
+    }),
+  });
+  const chu = String(kq?.message?.content || '').trim();
+  if (!chu) throw new Error('mo hinh khong tra ve mo ta nao');
+  return chu;
+}
 
 async function api(duongDan, tuyChon = {}) {
   const res = await fetch(SERVER + duongDan, tuyChon);
@@ -45,10 +76,11 @@ async function api(duongDan, tuyChon = {}) {
 }
 
 async function main() {
-  const [sessionId, nhanh, moTa] = process.argv.slice(2);
-  if (!sessionId || !nhanh || !moTa) {
-    console.error('Dung: node scripts/wf-doi-do.mjs <sessionId> <nhanh> "<mo ta bo do>"');
+  const [sessionId, nhanh, moTaTay] = process.argv.slice(2);
+  if (!sessionId || !nhanh) {
+    console.error('Dung: node scripts/wf-doi-do.mjs <sessionId> <nhanh> ["<mo ta bo do>"]');
     console.error('  <nhanh>  hau to cua node, vi du "thu" hoac "hong"');
+    console.error('  bo trong phan mo ta thi tu doc anh o node trang phuc');
     process.exit(2);
   }
 
@@ -72,6 +104,19 @@ async function main() {
   for (const e of session.edges) if (!chaCua.has(e.target)) chaCua.set(e.target, e.source);
   const cha = [...new Set(canh.map((n) => chaCua.get(n.id)).filter(Boolean))];
   const macDo = cha.length === 1 ? nodes.find((n) => n.id === cha[0]) : null;
+
+  // Khong dua mo ta thi doc tu chinh anh o node trang phuc (canh ref cua node
+  // mac do), tuc la khuon tu bat lay dau vao ma nguoi dung da dinh vao.
+  let moTa = moTaTay;
+  if (!moTa) {
+    if (!macDo) throw new Error('khong do duoc node mac do de tim anh trang phuc');
+    const refs = session.edges.filter((e) => e.target === macDo.id).slice(1).map((e) => e.source);
+    const anh = refs.map((idNguon) => nodes.find((n) => n.id === idNguon)?.data?.imageUrl).find(Boolean);
+    if (!anh) throw new Error('node mac do chua co canh ref toi node trang phuc co anh');
+    console.log('dang doc anh trang phuc:', anh);
+    moTa = await taBoDo(anh);
+    console.log('mo ta doc duoc:', moTa);
+  }
 
   let doi = 0;
   if (macDo) { macDo.data.prompt = promptMacDo(moTa); doi++; }

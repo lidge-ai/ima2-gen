@@ -1,0 +1,102 @@
+# Khuôn chụp thời trang — cách dùng
+
+Workflow trong Node Studio: **Idol Kpop - mau + trang phuc → cac canh quan ca phe**
+Mã phiên: `s_01M30YY0XJEEVYEPGKD0GCN34E`
+
+Khuôn có hai nhánh trang phục chạy song song, dùng chung một người mẫu:
+
+| Nhánh | Hậu tố lệnh | Gồm |
+|---|---|---|
+| A | `thu` | 1 node trang phục + 1 node mặc đồ + 9 cảnh |
+| B | `hong` | 1 node trang phục + 1 node mặc đồ + 3 cảnh |
+
+---
+
+## Làm một bộ đồ mới
+
+### Bước 1 — trên giao diện: đưa ảnh chụp thật vào
+
+Mở node **TRANG PHUC A** (hoặc **B**) → bấm **Attach** → chọn 1–3 ảnh chụp thật
+của bộ đồ (ảnh người mẫu shop chụp cũng được) → bấm **GEN**.
+
+Node sẽ trả về ảnh *flat lay* nền trắng, từng món tách riêng.
+
+Prompt ở node này **không gọi tên món đồ nào**, nên đính ảnh nào thì ra bộ đó —
+không cần sửa chữ.
+
+### Bước 2 — chạy một lệnh: đọc ảnh ra mô tả rồi điền cả nhánh
+
+```bash
+node scripts/wf-doi-do.mjs s_01M30YY0XJEEVYEPGKD0GCN34E hong
+```
+
+Đổi `hong` thành `thu` nếu làm nhánh A.
+
+Lệnh tự đọc ảnh ở node trang phục, hỏi mô hình liệt kê từng món, rồi điền vào
+ô `{{TRANG_PHUC}}` ở **tất cả** node mặc đồ và node cảnh của nhánh đó.
+
+Muốn tự viết mô tả thay vì để máy đọc thì thêm chuỗi vào cuối:
+
+```bash
+node scripts/wf-doi-do.mjs s_01M30YY0XJEEVYEPGKD0GCN34E hong "<liệt kê món đồ bằng tiếng Anh>"
+```
+
+### Bước 3 — trên giao diện: tải lại trang rồi sinh ảnh
+
+**Phải tải lại trang** (Ctrl+Shift+R), vì bản graph trong trình duyệt là bản đọc
+lúc mở, không tự biết lệnh vừa sửa gì.
+
+Rồi bấm **GEN** theo thứ tự:
+
+1. Node **MAC BO ... LEN MAU** — ra ảnh mẫu mặc bộ đó, nền studio
+2. Các node cảnh — ra ảnh trong quán cà phê
+
+---
+
+## Vì sao phải có bước 2
+
+Ảnh tham chiếu **giữ chi tiết** (hoa văn, túi, nếp vải, sắc độ) nhưng **không
+quyết định mặc cái gì**. Đã thử hai kiểu prompt chỉ trỏ vào ảnh mà không gọi tên
+món đồ — cả hai đều hỏng: một lần mô hình nhuộm màu bộ đồ cũ trên ảnh nền, một
+lần giữ nguyên đồ cũ. Cái quyết định là chữ.
+
+Ngược lại, **bước trích ở node trang phục thì prompt chung chạy tốt**, vì ở đó
+ảnh là nguồn duy nhất nên mô hình buộc phải nhìn.
+
+## Những chỗ dễ vấp
+
+**Bấm GEN khi ô `{{TRANG_PHUC}}` chưa điền** → giao diện chặn lại và báo. Trước
+khi có chốt chặn này, chuỗi `{{TRANG_PHUC}}` đi thẳng vào prompt và sinh ra bộ đồ
+bịa hoàn toàn.
+
+**Thứ tự cạnh quyết định vai trò.** Cạnh vào đầu tiên là **ảnh nền** đem đi sửa,
+các cạnh sau là **ảnh tham chiếu** — canvas dán nhãn `base` / `ref` và vẽ cạnh ref
+nét đứt. Nếu xoá rồi nối lại, phải nối **base trước, ref sau**; đảo ngược thì bộ
+đồ thành ảnh nền và người mẫu thành tham chiếu, ra kết quả khác hẳn.
+
+**Mã node hiện ở góc trên mỗi node**, bấm vào là chép. Dùng nó để chỉ đúng node
+khi cần sửa.
+
+**Kính lúp ở góc ảnh** mở ảnh (hoặc video) cỡ lớn trong lightbox.
+
+**Nút hình cuộn phim** gọi Grok sinh video từ ảnh của node — tốn thời gian và
+tiền, không phải nút phát. Node nào đã giữ video thì tự có trình phát riêng.
+
+## Đổi thứ khác trong khuôn
+
+| Muốn đổi | Sửa ở đâu |
+|---|---|
+| Người mẫu | Prompt node **MAU**, rồi GEN lại cả nhánh |
+| Địa điểm | Hằng `DIADIEM` trong `scripts/wf-doi-do.mjs`, chạy lại lệnh bước 2 |
+| Góc máy / động tác từng cảnh | Bảng `DONG_TAC` trong `scripts/wf-doi-do.mjs` |
+
+## Làm ngoài giao diện
+
+Nhanh hơn khi cần nhiều ảnh, và ghép được hai ảnh tham chiếu trong một lệnh:
+
+```bash
+node bin/ima2.js gen "<lời tả cảnh>" --ref <anh-mau>.png --ref <anh-flat-lay>.png --size 1024x1792 -o canh/x.png
+```
+
+Ảnh sinh ra nằm ở `C:\Users\s2pha\.ima2\generated\`, xem lại bằng
+`node bin/ima2.js ls`.
