@@ -92,3 +92,15 @@ cache/
 !devlog/_plan/260908_xai_imagine_spec_resync/**
 !devlog/_plan/260909_grok_native_oauth/
 !devlog/_plan/260909_grok_native_oauth/**
+
+# Ho so trinh duyet dung de dang video - CHUA COOKIE DANG NHAP GOOGLE.
+# Tuyet doi khong duoc dua len remote.
+**/.ho-so-chrome/
+studio/tools/upload/anh-chup/
+studio/tools/upload/log.txt
+
+# Anh sinh ra trong luc thu nghiem workflow thoi trang (nang, khong phai ma nguon)
+/canh/
+/mau-nu/
+/do-goc/
+/trang-phuc/
