@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
+import { memo, useCallback, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
@@ -153,17 +153,48 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // nguon da giu lai, nho vay sinh lai video duoc thay vi cut duong.
   const anhNguonVideo = isVideoUrl(d.imageUrl) ? (d.videoSourceUrl ?? null) : d.imageUrl;
 
+  /**
+   * Node VIDEO lay gi lam dau vao.
+   *
+   * Quy tac: node CANH chi sinh anh, node VIDEO chi sinh video. Node video noi
+   * vao mot node canh thi dung ANH va LOI TA cua canh do; prompt rieng cua node
+   * video la phan GHI THEM, khong thay the. Khong noi vao dau thi dung anh do
+   * nguoi dung tu dinh vao chinh node video.
+   */
+  const nodeCha = useMemo(() => {
+    const canhVao = graphEdges.find((e) => e.target === id);
+    return canhVao ? graphNodes.find((n) => n.id === canhVao.source) ?? null : null;
+  }, [id, graphEdges, graphNodes]);
+
+  const dauVaoVideo = useMemo(() => {
+    const laAnh = (u?: string | null) => !!u && !isVideoUrl(u);
+    const anh =
+      (laAnh(nodeCha?.data?.imageUrl) ? nodeCha!.data.imageUrl : null)
+      ?? (laAnh(d.imageUrl) ? d.imageUrl : null)
+      ?? d.videoSourceUrl
+      ?? null;
+    const taCha = (nodeCha?.data?.prompt || "").trim();
+    const taRieng = (d.prompt || "").trim();
+    const ta = taRieng ? (taCha ? `${taCha} ${taRieng}` : taRieng) : taCha;
+    return { anh, ta };
+  }, [nodeCha, d.imageUrl, d.videoSourceUrl, d.prompt]);
+
   const onAnimate = useCallback(() => {
     // Nhan ca "stale": node lo thoi van co san mot ANH de lam video, chan lai
     // chi khien bam GEN tren node video khong xay ra gi ma cung khong bao gi.
-    if (d.status !== "ready" && d.status !== "stale") return;
-    if (!anhNguonVideo) {
+    // Node VIDEO lay anh tu node CANH, nen trang thai cua CHINH no khong noi len
+    // dieu gi: node video moi tao luon la "idle" va van phai sinh duoc. Chi chan
+    // theo trang thai voi node thuong, la node tu dung anh cua minh.
+    if (!laNodeVideo && d.status !== "ready" && d.status !== "stale") return;
+    const nguon = laNodeVideo ? dauVaoVideo.anh : anhNguonVideo;
+    const ta = laNodeVideo ? dauVaoVideo.ta : d.prompt;
+    if (!nguon) {
       showToast(t("node.needImageForVideo", { fallback: "Node chua co anh de lam video" }), true);
       return;
     }
-    const filename = anhNguonVideo.replace(/^\/generated\//, "");
-    void animateImage(filename, d.prompt);
-  }, [d.status, anhNguonVideo, d.prompt, animateImage, showToast, t]);
+    const filename = nguon.replace(/^\/generated\//, "");
+    void animateImage(filename, ta);
+  }, [d.status, d.prompt, anhNguonVideo, laNodeVideo, dauVaoVideo, animateImage, showToast, t]);
 
   // Gan sau khi onAnimate da khai bao: onGenerate goi qua ref nen khong tao
   // phu thuoc vong giua hai useCallback.
@@ -513,7 +544,8 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                   {dangDocDo ? "..." : t("node.readOutfit", { fallback: "Doc bo do" })}
                 </button>
               )}
-              {anhNguonVideo && (
+              {/* Node CANH chi sinh anh - khong cho nut sinh video o day. */}
+              {anhNguonVideo && d.vaiTro !== "canh" && (
                 <button type="button" onClick={onAnimate} disabled={isBusy} title={t(isVideoUrl(d.imageUrl) ? "result.animateAgainTitle" : "result.animateTitle", { fallback: "Animate" })} aria-label={t(isVideoUrl(d.imageUrl) ? "result.animateAgainTitle" : "result.animateTitle", { fallback: "Animate" })}>
                   {/* Cuon phim, KHONG phai tam giac phat: nut nay goi Grok sinh
                       video (ton thoi gian va tien), chu khong phat gi ca. Dung
