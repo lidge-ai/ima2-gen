@@ -1252,6 +1252,109 @@ Errors: `MERGE_NEED_TWO` (fewer than two items), `MERGE_ITEM_INVALID` (an entry
 without a filename), `MERGE_ITEM_KIND` (unsupported extension), `MERGE_FAILED`
 (ffmpeg failed or is not installed).
 
+## Workflows (START → END)
+
+A graph that carries a **START** marker node (`vaiTro: "bat-dau"`) reaching an
+**END** marker (`vaiTro: "ket-thuc"`) is a runnable workflow. The START node is
+the entry point: its address is `/api/wf/:sessionId/:startNodeId`. The server
+runs every node between the two markers itself — no browser tab has to be open —
+and the END node decides what comes back: the media of the nodes wired into it.
+
+These routes sit under `/api`, so they inherit the same access rules as every
+other route: open on a local bind, `x-ima2-token` required in LAN mode (see
+[Local and LAN access](#local-and-lan-access)).
+
+### Listing and describing
+
+`GET /api/wf` lists every START node found in the most recent sessions.
+
+```json
+{ "workflows": [
+  { "sessionId": "s_01M…", "title": "Idol Kpop", "startNodeId": "nc_a1b2",
+    "path": "/api/wf/s_01M…/nc_a1b2", "ready": true, "steps": 6 },
+  { "sessionId": "s_01N…", "startNodeId": "nc_c3d4", "ready": false,
+    "reason": "thieu-ket-thuc" }
+] }
+```
+
+`GET /api/wf/:sessionId/:startNodeId` describes one workflow without running it —
+the ordered steps and the input slots it needs.
+
+```json
+{ "sessionId": "s_01M…", "startNodeId": "nc_a1b2", "ketThuc": "nc_z9",
+  "soViec": 2, "inputs": ["MAU_SAC"],
+  "buoc": [{ "nodeId": "nc_ve", "vaiTro": "canh", "viec": "anh" }] }
+```
+
+### Running
+
+`POST /api/wf/:sessionId/:startNodeId`
+
+```json
+{
+  "inputs": { "TRANG_PHUC": "a pleated navy skirt and a white knit top" },
+  "images": { "nc_bocdo": ["data:image/png;base64,iVBORw0KGgo…"] }
+}
+```
+
+- `inputs` — fills `{{NAME}}` slots in the prompts. Names are `A-Z`, `0-9` and
+  `_` only. A slot left unfilled is **refused with 400 `WF_INPUT_MISSING`**
+  rather than sent to the model: `{{…}}` reaching a prompt generates nonsense
+  and still costs money. At most 64 inputs, 4000 characters each.
+- `images` — attaches reference images to specific nodes before the run, keyed by
+  node id. Each entry must be a **data URL**; file paths and remote URLs are
+  rejected, since accepting them would let a caller read arbitrary files or turn
+  the server into a downloader. At most 8 images per node.
+
+By default the request **waits** and returns the finished run. Add `?async=1`
+(or `"async": true`) to get a run id immediately instead.
+
+```json
+{ "ok": true,
+  "run": { "id": "wfr_01M…", "trangThai": "xong", "buoc": [ … ] },
+  "result": {
+    "media": [{ "nodeId": "nc_canh", "url": "/generated/n_6c34eeab.png", "loai": "anh" }],
+    "nodes": { "nc_canh": { "url": "/generated/n_6c34eeab.png", "loai": "anh" } }
+  } }
+```
+
+`result.media` is what the END node collects; `result.nodes` carries every node
+that ran, for workflows where intermediate output matters too.
+
+Results are also written back into the session graph, so opening the Node Studio
+shows them on the nodes. Each write re-reads the newest graph and touches only
+the node that just ran, so a browser tab editing another node is not clobbered.
+
+A failing node **stops the run**: every node behind it consumes that node's
+image, so continuing would only spend money producing wrong results. The
+response carries the failing step and `error.nodeId`.
+
+### Run status
+
+- `GET /api/wf/runs` — the most recent runs (`?limit=`).
+- `GET /api/wf/runs/:runId` — one run. `202` while it is still going, `200` when
+  finished. Add `?wait=1` to hold the connection until it ends.
+- `POST /api/wf/runs/:runId/cancel` — stop after the node that is currently
+  running. A generation already in flight is not interrupted: aborting halfway
+  still costs the same and yields nothing.
+
+Runs live in memory only and do not survive a server restart — the generation
+processes do not either, so a persisted run would just be permanently "running".
+
+### Status codes
+
+| Code | Meaning |
+|---|---|
+| `WF_SESSION_NOT_FOUND` | 404 — no such session |
+| `WF_RUN_NOT_FOUND` | 404 — no such run |
+| `WF_CHAIN_KHONG_PHAI_MOC_DAU` | 400 — that node is not a START marker |
+| `WF_CHAIN_THIEU_KET_THUC` | 400 — no END marker downstream |
+| `WF_CHAIN_VONG_LAP` | 400 — the graph loops back on itself |
+| `WF_INPUT_MISSING` / `WF_INPUT_INVALID` | 400 — inputs missing or malformed |
+| `WF_IMAGE_INVALID` / `WF_IMAGE_NODE_UNKNOWN` | 400 — attached images malformed or aimed at a node that does not exist |
+| `WF_CANCELED` | 409 — the run was canceled |
+| `WF_NODE_FAILED`, `WF_PROMPT_EMPTY`, `WF_PARENT_EMPTY`, `WF_MERGE_NEED_TWO`, `WF_NODE_TIMEOUT` | 500 — the run started but a node could not complete |
+
 ## Contract Discovery
 
 Machine-readable tool contracts for AI agents (`ima2 tools` CLI backs onto these).

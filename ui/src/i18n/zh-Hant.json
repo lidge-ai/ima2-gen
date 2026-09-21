@@ -741,7 +741,10 @@
       "khong-phai-moc-dau": "此節點不是 START 標記",
       "thieu-ket-thuc": "下游沒有 END 標記 — 連上才算完整的工作流",
       "vong-lap": "工作流形成了迴圈"
-    }
+    },
+    "wfApiTitle": "從外部觸發這個工作流的位址",
+    "wfApiInputs": "輸入：{names}",
+    "wfApiCopy": "複製 curl"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

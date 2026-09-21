@@ -741,7 +741,10 @@
       "khong-phai-moc-dau": "This node is not a START marker",
       "thieu-ket-thuc": "No END marker downstream — connect one to complete the workflow",
       "vong-lap": "The workflow loops back on itself"
-    }
+    },
+    "wfApiTitle": "Endpoint that triggers this workflow from outside",
+    "wfApiInputs": "Inputs: {names}",
+    "wfApiCopy": "Copy curl"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

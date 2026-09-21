@@ -685,3 +685,47 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Chi dan API tren node BAT DAU. Gap lai mac dinh: phan lon thoi gian nguoi
+   dung chi bam chay tay, dia chi API chi can khi di noi voi he thong khac. */
+.image-node__api {
+  width: 100%;
+  text-align: left;
+}
+.image-node__api-mo {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.image-node__api-than {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+}
+.image-node__api-duong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 9px;
+  line-height: 1.35;
+}
+.image-node__api-o {
+  color: var(--text-dim);
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+.image-node__api-chep {
+  justify-self: start;
+  padding: 2px 6px;
+  border: 1px solid var(--border-strong, #8a8a92);
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--text-dim);
+  font-size: 9px;
+  cursor: copy;
+}

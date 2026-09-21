@@ -741,7 +741,10 @@
       "khong-phai-moc-dau": "此节点不是 START 标记",
       "thieu-ket-thuc": "下游没有 END 标记 — 连上才算完整的工作流",
       "vong-lap": "工作流形成了回路"
-    }
+    },
+    "wfApiTitle": "从外部触发这个工作流的地址",
+    "wfApiInputs": "输入：{names}",
+    "wfApiCopy": "复制 curl"
   },
   "nodeBatch": {
     "selectionOn": "选择",

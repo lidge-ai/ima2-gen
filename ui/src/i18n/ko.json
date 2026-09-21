@@ -741,7 +741,10 @@
       "khong-phai-moc-dau": "이 노드는 START 표식이 아닙니다",
       "thieu-ket-thuc": "아래쪽에 END 표식이 없습니다 — 연결해야 워크플로가 완성됩니다",
       "vong-lap": "워크플로가 자기 자신으로 되돌아옵니다"
-    }
+    },
+    "wfApiTitle": "외부에서 이 워크플로를 실행하는 엔드포인트",
+    "wfApiInputs": "입력: {names}",
+    "wfApiCopy": "curl 복사"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
 import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
 import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
-import { dauVaoVideoCuaNode, timChuoiChay } from "../lib/chayWorkflow";
+import { dauVaoVideoCuaNode, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
 import { canhAnhVao } from "../lib/canhAnh";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
@@ -140,6 +140,26 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     [laMocDau, id, graphNodes, graphEdges],
   );
   const khuonNayDangChay = wfDangChay === id;
+
+  // Diem vao API cua khuon. Node BAT DAU la dia chi goi tu ben ngoai, nen chi
+  // dan phai nam ngay tren no - de trong tai lieu thi khong ai gap.
+  const activeSessionId = useAppStore((st) => st.activeSessionId);
+  const [hienApi, setHienApi] = useState(false);
+  const duongApi = activeSessionId && laMocDau
+    ? `/api/wf/${activeSessionId}/${id}` : null;
+  const oTrongKhuon = useMemo(
+    () => (chuoi?.ok ? oTrongCuaKhuon(graphNodes, chuoi.thuTu) : []),
+    [chuoi, graphNodes],
+  );
+  const lenhCurl = useMemo(() => {
+    if (!duongApi) return "";
+    const than = oTrongKhuon.length
+      ? `{"inputs":{${oTrongKhuon.map((o) => `"${o}":""`).join(",")}}}`
+      : "{}";
+    return `curl -X POST ${window.location.origin}${duongApi} \
+  -H 'Content-Type: application/json' \
+  -d '${than}'`;
+  }, [duongApi, oTrongKhuon]);
 
   /**
    * Anh KE THUA tu cac canh vao: canh dau la ANH NEN, cac canh sau la THAM CHIEU.
@@ -469,6 +489,36 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           ) : (
             <div className="image-node__moc-so">{t("node.wfEndHint")}</div>
           )}
+          {duongApi ? (
+            <div className="image-node__api nodrag">
+              <button
+                type="button"
+                className="image-node__api-mo"
+                onClick={(e) => { e.stopPropagation(); setHienApi((v) => !v); }}
+                aria-expanded={hienApi}
+                title={t("node.wfApiTitle")}
+              >
+                {hienApi ? "▾ API" : "▸ API"}
+              </button>
+              {hienApi ? (
+                <div className="image-node__api-than">
+                  <code className="image-node__api-duong">POST {duongApi}</code>
+                  {oTrongKhuon.length ? (
+                    <div className="image-node__api-o">
+                      {t("node.wfApiInputs", { names: oTrongKhuon.join(", ") })}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="image-node__api-chep"
+                    onClick={(e) => { e.stopPropagation(); void navigator.clipboard?.writeText(lenhCurl); }}
+                  >
+                    {t("node.wfApiCopy")}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : (
       <div className="image-node__preview">

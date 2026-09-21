@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import {
   dauVaoVideoCuaNode,
+  dienOTrong,
+  oTrongCuaKhuon,
+  oTrongTrongVanBan,
   timChuoiChay,
   viecCuaNode,
 } from "../ui/src/lib/chayWorkflow.ts";
@@ -164,6 +167,34 @@ describe("workflow START/END run contracts", () => {
     assert.match(nodeSrc, /mucGopCuaNode\(id, graphNodes, graphEdges, d\)/);
     assert.match(runSrc, /mucGopCuaNode\(nodeId, get\(\)\.graphNodes, get\(\)\.graphEdges, node\.data\)/);
     assert.match(nodeSrc, /dauVaoVideoCuaNode\(id, graphNodes, graphEdges\)/);
+  });
+
+  it("WF-13 a template slot is filled per call and an unfilled one stays visible", () => {
+    assert.equal(
+      dienOTrong("a {{MAU_SAC}} circle in {{NOI_CHON}}", { MAU_SAC: "green" }),
+      "a green circle in {{NOI_CHON}}",
+    );
+    // Leaving the unknown slot as-is is what lets the caller be told which input
+    // is missing; substituting an empty string would silently generate nonsense.
+    assert.deepEqual(oTrongTrongVanBan("a green circle in {{NOI_CHON}}"), ["NOI_CHON"]);
+    assert.deepEqual(oTrongTrongVanBan("no slots here"), []);
+    // Lowercase and mixed names are not slots, so ordinary braces in a prompt
+    // are left alone.
+    assert.deepEqual(oTrongTrongVanBan("{{mau_sac}} and {{Mixed}}"), []);
+  });
+
+  it("WF-14 the workflow reports every slot its steps need, once each", () => {
+    const nodes = [
+      node("start", { vaiTro: "bat-dau", prompt: "{{BO_QUA}}" }),
+      node("a", { vaiTro: "canh", prompt: "a {{MAU_SAC}} circle" }),
+      node("b", { vaiTro: "canh", prompt: "{{NOI_CHON}} and {{MAU_SAC}} again" }),
+      node("end", { vaiTro: "ket-thuc" }),
+    ];
+    const edges = [edge("start", "a"), edge("a", "b"), edge("b", "end")];
+    const kq = timChuoiChay("start", nodes, edges);
+    assert.ok(kq.ok);
+    // Markers do no work, so a slot written on one is not an input of the run.
+    assert.deepEqual(oTrongCuaKhuon(nodes, kq.thuTu), ["MAU_SAC", "NOI_CHON"]);
   });
 
   it("WF-12 the run awaits each node and stops on the first failure", () => {

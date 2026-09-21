@@ -32,6 +32,7 @@ import { registerAgentRoutes } from "./agent.js";
 import { registerGrokRoutes } from "./grok.js";
 import { registerAgyRoutes } from "./agy.js";
 import { registerVideoRoutes } from "./video.js";
+import { registerWorkflowRoutes } from "./workflow.js";
 import { registerVideoExtendedRoutes } from "./videoExtended.js";
 import { registerQuotaRoutes } from "./quota.js";
 import { registerAuthRoutes } from "./auth.js";
@@ -68,6 +69,7 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   registerEditRoutes(app, ctx);
   registerNodeRoutes(app, ctx);
   registerMediaMergeRoutes(app, ctx);
+  registerWorkflowRoutes(app, ctx);
   registerNodeTemplateRoutes(app);
   if (ctx.config.features.cardNews) registerCardNewsRoutes(app, ctx);
   registerMultimodeRoutes(app, ctx);
