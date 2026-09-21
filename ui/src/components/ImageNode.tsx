@@ -383,7 +383,10 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
 
   return (
     <div
-      className={`image-node image-node--${d.status}${selected ? " image-node--selected" : ""}`}
+      // Viec chay bat dong bo (video) khong doi status cua node, nen phai them
+      // lop --pending theo danh sach viec dang chay, khong thi node dang chay
+      // ma vien van bao "ready".
+      className={`image-node image-node--${coViecDangChay ? "pending" : d.status}${selected ? " image-node--selected" : ""}`}
       style={nodeStyle}
     >
       {NODE_HANDLE_POSITIONS.map(({ id: handleId, position }) => (

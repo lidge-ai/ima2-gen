@@ -151,29 +151,12 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--amber) 16%, transparent),
     0 0 26px color-mix(in srgb, var(--amber) 20%, transparent);
 }
-.image-node--pending::before,
-.image-node--reconciling::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  z-index: 0;
-  border-radius: var(--r-xl);
-  padding: 2px;
-  background:
-    conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      color-mix(in srgb, var(--amber) 92%, white) 70deg,
-      color-mix(in srgb, var(--accent) 88%, white) 145deg,
-      transparent 220deg,
-      transparent 360deg
-    );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: image-node-border-spin 1.45s linear infinite;
-  pointer-events: none;
+/* Vien tinh khi node dang chay. Truoc day o day la mot vien gradient hinh non
+   XOAY VONG 1.45s/vong - qua on, va gio da co nhan "Working..." o goc anh bao
+   ro hon nhieu. Giu mau am de van nhan ra ngay node nao dang chay. */
+.image-node--pending,
+.image-node--reconciling {
+  border-color: color-mix(in srgb, var(--amber) 82%, var(--accent));
 }
 .image-node--ready { border-color: var(--blue); }
 .image-node--error { border-color: var(--red); }
@@ -402,16 +385,6 @@
   resize: vertical;
 }
 
-@keyframes image-node-border-spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .image-node--pending::before,
-  .image-node--reconciling::before {
-    animation: none;
-  }
-}
 .image-node__prompt:focus,
 .image-node__prompt:focus-visible {
   outline: none;

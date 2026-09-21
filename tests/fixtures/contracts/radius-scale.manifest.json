@@ -2088,13 +2088,6 @@
   {
     "file": "ui/src/styles/node-workspace.css",
     "atRule": null,
-    "selector": ".image-node--pending::before,\n.image-node--reconciling::before",
-    "expected": "var(--r-xl)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/node-workspace.css",
-    "atRule": null,
     "selector": ".in-flight-cancel",
     "expected": "50%",
     "important": false

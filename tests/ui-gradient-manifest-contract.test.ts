@@ -32,12 +32,11 @@ const MANIFEST: ManifestEntry[] = [
   { file: "styles/assetgen-workspace.css", count: 6, category: "functional", note: "checkerboard + alpha grids" },
   { file: "styles/canvas-annotations.css", count: 4, category: "functional", note: "alpha frame 4-layer" },
   { file: "styles/canvas-mode.css", count: 1, category: "functional", note: "canvas dot grid" },
-  { file: "styles/node-workspace.css", count: 5, category: "functional", note: "node dot grid + mask 4" },
+  { file: "styles/node-workspace.css", count: 1, category: "functional", note: "node dot grid" },
   { file: "styles/node-canvas-extras.css", count: 1, category: "functional", note: "template preview grid" },
   { file: "styles/sprite-curator.css", count: 1, category: "functional", note: "alpha grid" },
   { file: "index.css", count: 1, category: "state", note: "--skeleton-shimmer definition" },
   { file: "styles/progress-composer.css", count: 4, category: "state", note: "progress layers + success" },
-  { file: "styles/node-workspace.css", count: 1, category: "state", note: "reconciling spinner ring" },
   { file: "styles/gallery-modal.css", count: 1, category: "scrim", note: "caption scrim" },
   { file: "styles/canvas-mode.css", count: 1, category: "scrim", note: "top scrim" },
   { file: "index.css", count: 3, category: "decorative", note: "body::before tint + prism + chrome defs" },
@@ -80,17 +79,17 @@ describe("ui-gradient-manifest-contract", () => {
     assert.deepStrictEqual(mismatches, [], "Manifest mismatches");
   });
 
-  it("total is exactly 40 (functional 18 + state 6 + scrim 2 + decorative 14)", () => {
+  it("total is exactly 35 (functional 14 + state 5 + scrim 2 + decorative 14)", () => {
     const byCategory: Record<Category, number> = { functional: 0, state: 0, scrim: 0, decorative: 0 };
     for (const entry of MANIFEST) {
       byCategory[entry.category] += entry.count;
     }
-    assert.equal(byCategory.functional, 18, "functional");
-    assert.equal(byCategory.state, 6, "state");
+    assert.equal(byCategory.functional, 14, "functional");
+    assert.equal(byCategory.state, 5, "state");
     assert.equal(byCategory.scrim, 2, "scrim");
     assert.equal(byCategory.decorative, 14, "decorative");
     const total = Object.values(byCategory).reduce((a, b) => a + b, 0);
-    assert.equal(total, 40, "total");
+    assert.equal(total, 35, "total");
   });
 
   it("--skeleton-shimmer is defined once and referenced by 6 consumers", () => {
