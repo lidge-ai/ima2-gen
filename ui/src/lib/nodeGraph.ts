@@ -1,4 +1,5 @@
 import type { GraphEdge, GraphNode } from "../store/useAppStore";
+import { canhAnhVao } from "./canhAnh";
 
 export function getIncomingEdge(edges: GraphEdge[], targetId: string): GraphEdge | null {
   return edges.find((edge) => edge.target === targetId) ?? null;
@@ -83,7 +84,8 @@ export function deriveParentServerNodeIds(nodes: GraphNode[], edges: GraphEdge[]
   const byId = new Map(nodes.map((node) => [node.id, node]));
   return nodes.map((node) => {
     // Canh dau: anh goc dem di sua. Cac canh sau: chi lay anh lam tham chieu.
-    const incoming = edges.filter((edge) => edge.target === node.id);
+    // Canh tu node MOC bi loai: no chi dinh thu tu chay, khong mang anh nao.
+    const incoming = canhAnhVao(edges, nodes, node.id);
     const parent = incoming[0] ? byId.get(incoming[0].source) : null;
     const nextParentServerNodeId = parent?.data.serverNodeId ?? null;
     const seen = new Set<string>(nextParentServerNodeId ? [nextParentServerNodeId] : []);

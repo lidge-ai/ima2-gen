@@ -722,7 +722,26 @@
     "mergeEmpty": "连接场景或附加文件",
     "mergeDone": "合并完成",
     "mergeUp": "上移",
-    "mergeDown": "下移"
+    "mergeDown": "下移",
+    "wfRun": "▶ 运行工作流",
+    "wfRunTitle": "从这里开始，依次运行到 END 标记的每个节点",
+    "wfStop": "停止",
+    "wfStopping": "停止中…",
+    "wfRunning": "运行中 {done}/{total}",
+    "wfSteps": "{count} 个步骤",
+    "wfStartHint": "工作流起点",
+    "wfEndHint": "工作流终点",
+    "wfEmpty": "两个标记之间没有可运行的节点",
+    "wfParentRequired": "有 {count} 个节点依赖工作流外尚未产生结果的节点",
+    "wfMergeNeedTwo": "合并节点至少需要两段素材",
+    "wfDone": "工作流完成 — {done}/{total}",
+    "wfStopped": "在 {node} 中断 — 已完成 {done}/{total}",
+    "wfCanceled": "已取消 — 已完成 {done}/{total}",
+    "wfErr": {
+      "khong-phai-moc-dau": "此节点不是 START 标记",
+      "thieu-ket-thuc": "下游没有 END 标记 — 连上才算完整的工作流",
+      "vong-lap": "工作流形成了回路"
+    }
   },
   "nodeBatch": {
     "selectionOn": "选择",

@@ -445,12 +445,23 @@ export type AppState = PresetState & ReferenceTraySlice & {
   nodeSelectionMode: boolean;
   nodeBatchRunning: boolean;
   nodeBatchStopping: boolean;
+  /**
+   * Luot chay ca mot khuon (BAT DAU -> KET THUC). Rieng voi luot chay theo o
+   * danh dau: khuon tu biet duong di nen khong dung chung co nodeBatch*.
+   */
+  wfDangChay: string | null;
+  wfNodeHienTai: string | null;
+  wfDungLai: boolean;
+  wfDaXong: number;
+  wfTongViec: number;
   toggleNodeSelectionMode: () => void;
   selectAllGraphNodes: () => void;
   selectNodeGraph: (clientId: ClientNodeId, additive: boolean) => void;
   clearNodeSelection: () => void;
   runNodeBatch: (mode: NodeBatchMode) => Promise<void>;
   cancelNodeBatch: () => void;
+  chayWorkflow: (startClientId: ClientNodeId) => Promise<void>;
+  dungWorkflow: () => void;
   addRootNode: () => ClientNodeId;
   createRootNodeFromHistoryItem: (item: GenerateItem) => ClientNodeId;
   addChildNode: (parentClientId: ClientNodeId) => ClientNodeId;

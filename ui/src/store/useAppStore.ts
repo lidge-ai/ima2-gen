@@ -42,6 +42,7 @@ import {
   runGenerateNodeInPlaceImpl,
   runNodeBatchImpl,
 } from "./storeNodeGenImpl";
+import { chayWorkflowImpl, dungWorkflowImpl } from "./storeWorkflowImpl";
 import {
   generateMultimodeImpl,
   runGenerateImpl,
@@ -467,6 +468,11 @@ trashPending: null,
   nodeSelectionMode: false,
   nodeBatchRunning: false,
   nodeBatchStopping: false,
+  wfDangChay: null,
+  wfNodeHienTai: null,
+  wfDungLai: false,
+  wfDaXong: 0,
+  wfTongViec: 0,
   toggleNodeSelectionMode: () => toggleNodeSelectionModeImpl(set, get),
   selectAllGraphNodes: () => {
     set({ graphNodes: applySelectedNodeIds(get().graphNodes, get().graphNodes.map((n) => n.id)) });
@@ -527,6 +533,12 @@ duplicateBranchRoot: (sourceClientId) => duplicateBranchRootImpl(sourceClientId,
   async runNodeBatch(mode) {
     await runNodeBatchImpl(mode, set, get);
   },
+
+  async chayWorkflow(startClientId) {
+    await chayWorkflowImpl(startClientId, set, get);
+  },
+
+  dungWorkflow: () => dungWorkflowImpl(set, get),
 
   deleteNode: (clientId) => deleteNodeImpl(clientId, set, get),
 deleteNodes: (clientIds) => deleteNodesImpl(clientIds, set, get),

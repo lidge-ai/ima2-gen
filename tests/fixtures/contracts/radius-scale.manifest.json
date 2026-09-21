@@ -3365,5 +3365,12 @@
     "selector": ".lan-sign-in__panel button",
     "expected": "var(--r-md)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/node-workspace.css",
+    "atRule": null,
+    "selector": ".image-node__wf-nut",
+    "expected": "var(--r-sm)",
+    "important": false
   }
 ]

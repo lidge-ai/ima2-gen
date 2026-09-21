@@ -722,7 +722,26 @@
     "mergeEmpty": "장면을 연결하거나 파일을 첨부하세요",
     "mergeDone": "병합 완료",
     "mergeUp": "위로",
-    "mergeDown": "아래로"
+    "mergeDown": "아래로",
+    "wfRun": "▶ 워크플로 실행",
+    "wfRunTitle": "여기서 END 표식까지 모든 노드를 차례로 실행합니다",
+    "wfStop": "중지",
+    "wfStopping": "중지하는 중…",
+    "wfRunning": "실행 중 {done}/{total}",
+    "wfSteps": "{count}단계",
+    "wfStartHint": "워크플로 시작점",
+    "wfEndHint": "워크플로 종료점",
+    "wfEmpty": "두 표식 사이에 실행할 것이 없습니다",
+    "wfParentRequired": "{count}개 노드가 아직 아무것도 만들지 않은 외부 노드에 의존합니다",
+    "wfMergeNeedTwo": "병합 노드에는 클립이 최소 두 개 필요합니다",
+    "wfDone": "워크플로 완료 — {done}/{total}",
+    "wfStopped": "{node}에서 중단 — {done}/{total} 완료",
+    "wfCanceled": "취소됨 — {done}/{total} 완료",
+    "wfErr": {
+      "khong-phai-moc-dau": "이 노드는 START 표식이 아닙니다",
+      "thieu-ket-thuc": "아래쪽에 END 표식이 없습니다 — 연결해야 워크플로가 완성됩니다",
+      "vong-lap": "워크플로가 자기 자신으로 되돌아옵니다"
+    }
   },
   "nodeBatch": {
     "selectionOn": "선택중",

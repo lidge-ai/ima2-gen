@@ -1,6 +1,7 @@
 import type { ClientNodeId } from "../lib/graph";
 import { postNodeGenerateStream } from "../lib/api";
 import { deriveParentServerNodeIds } from "../lib/nodeGraph";
+import { canhAnhVao, locCanhAnh } from "../lib/canhAnh";
 import { getSelectedNodeIds } from "../lib/nodeSelection";
 import {
   getDirectUnselectedChildren,
@@ -190,7 +191,9 @@ export async function runGenerateNodeInPlaceImpl(
   // Cha phu: anh cua chung duoc gui kem lam tham chieu (xem extraParentNodeIds).
   const extraParentServerNodeIds = (node.data.extraParentServerNodeIds ?? [])
     .filter((id) => id && id !== effectiveParentServerNodeId);
-  const incoming = get().graphEdges.find((edge) => edge.target === clientId);
+  // Chi canh ANH moi bat buoc phai co anh cha. Canh tu node MOC chi la thu tu
+  // chay, doi no sinh anh thi node dau khuon khong bao gio chay duoc.
+  const incoming = canhAnhVao(get().graphEdges, get().graphNodes, clientId)[0];
   if (incoming && !effectiveParentServerNodeId) {
     get().showToast(t("node.parentImageRequired"), true);
     nodeGenerationLocks.delete(clientId);
@@ -429,7 +432,11 @@ export async function runNodeBatchImpl(
     get().showToast(t("nodeBatch.noneSelected"), true);
     return;
   }
-  const blocked = validateBatchDependencies(get().graphNodes, get().graphEdges, selectedIds);
+  const blocked = validateBatchDependencies(
+    get().graphNodes,
+    locCanhAnh(get().graphEdges, get().graphNodes),
+    selectedIds,
+  );
   if (blocked.length > 0) {
     get().showToast(t("nodeBatch.parentRequired", { count: blocked.length }), true);
     return;
@@ -472,7 +479,7 @@ export async function runNodeBatchImpl(
         skippedCount += 1;
         continue;
       }
-      const incoming = get().graphEdges.find((e) => e.target === candidateId);
+      const incoming = canhAnhVao(get().graphEdges, get().graphNodes, candidateId)[0];
       const parentOverride = incoming
         ? latestServerNodeIdByClientId.get(incoming.source)
           ?? get().graphNodes.find((n) => n.id === candidateId)?.data.parentServerNodeId

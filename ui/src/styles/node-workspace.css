@@ -633,3 +633,55 @@
 /* wp6: 44px hit area */
 .image-node__del { position: relative; }
 .image-node__del::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+
+/* Node MOC (BAT DAU / KET THUC).
+
+   Moc khong sinh gi nen no khong can khung xem truoc 240px, o nhap prompt hay
+   hang nut sinh. De nguyen bo khung cua node thuong thi hai cai moc to bang ca
+   mot canh that, nhin vao tuong la chung cung cho ra anh. */
+.image-node--moc {
+  min-width: 0;
+}
+.image-node__moc-than {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 10px 8px;
+  text-align: center;
+}
+.image-node__moc-nhan {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.image-node__moc-so {
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.image-node__wf-nut {
+  padding: 5px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer;
+}
+.image-node__wf-nut:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.image-node__wf-nut--dung {
+  border-color: var(--red);
+  background: var(--red);
+}
+/* Node dang toi luot trong mot khuon dang chay. Lop phu "dang chay" chi hien
+   tren node co trang thai pending; buoc GOP VIDEO thi ffmpeg chay o may chu ma
+   node khong doi trang thai, nen van can mot dau hieu rieng cho "dang toi no". */
+.image-node--wf-hien-tai {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

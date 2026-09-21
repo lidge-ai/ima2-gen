@@ -23,6 +23,7 @@ import { ElementReferenceNode } from "./node-canvas/ElementReferenceNode";
 import { NodeCanvasEmptyState } from "./node-canvas/NodeCanvasEmptyState";
 import { NodeStudioOverlays } from "./node-canvas/NodeStudioOverlays";
 import { useNodeStudioController } from "./node-canvas/useNodeStudioController";
+import { laCanhThuTu } from "../lib/canhAnh";
 
 function NodeCanvasInner() {
   const { t } = useI18n();
@@ -52,10 +53,14 @@ function NodeCanvasInner() {
   const labelledEdges = useMemo(() => {
     const incomingCount = new Map<string, number>();
     for (const edge of edges) {
+      // Canh tu node MOC chi dinh thu tu chay - dem no vao day thi mot node
+      // co dung mot anh cha van bi gan nhan "base/ref" nhu the co hai.
+      if (laCanhThuTu(edge, nodes)) continue;
       incomingCount.set(edge.target, (incomingCount.get(edge.target) ?? 0) + 1);
     }
     const seenTarget = new Set<string>();
     return edges.map((edge) => {
+      if (laCanhThuTu(edge, nodes)) return edge;
       const isBase = !seenTarget.has(edge.target);
       seenTarget.add(edge.target);
       // Mot cha thi khong can nhan - khong co gi de nham lan.
@@ -69,7 +74,7 @@ function NodeCanvasInner() {
         style: isBase ? undefined : { strokeDasharray: "6 4" },
       };
     });
-  }, [edges, t]);
+  }, [edges, nodes, t]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) =>

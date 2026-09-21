@@ -362,7 +362,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Entry | `ui/src/main.tsx` | 89 | React mount |
 | Types | `ui/src/types.ts` | 299 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
-| Store | `ui/src/store/useAppStore.ts` | 684 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
+| Store | `ui/src/store/useAppStore.ts` | 696 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
 | Persistence registry | `ui/src/store/persistenceRegistry.ts` | 94 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, and settings keys (theme keys removed in Phase 010); prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 417 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 16 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
@@ -370,7 +370,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Card-news API client | `ui/src/lib/cardNewsApi.ts` | 277 | Card-news templates, draft, jobs, regenerate, set/manifest helpers |
 | Node API client | `ui/src/lib/nodeApi.ts` | 173 | Node generation JSON/SSE client and node error status propagation |
 | NovelAI options | `ui/src/lib/naiOptions.ts` | 137 | NovelAI option alphabets, compiled fallback, sparse-override coercion, and the fallback→server→override resolver |
-| Node graph helpers | `ui/src/lib/nodeGraph.ts` | 112 | Visual-edge parent derivation, incoming-edge conflict, and cycle-detection helpers (`wouldCreateCycle`, `graphHasCycle`) |
+| Node graph helpers | `ui/src/lib/nodeGraph.ts` | 114 | Visual-edge parent derivation, incoming-edge conflict, and cycle-detection helpers (`wouldCreateCycle`, `graphHasCycle`) |
 | Node selection | `ui/src/lib/nodeSelection.ts` | 65 | Component-based selection toggling utilities |
 | Node batch | `ui/src/lib/nodeBatch.ts` | 159 | Sequential batch generation queue, cycle-selection guard (`findCycleNodeIds`), and stale-downstream rewiring |
 | Node connection validation | `ui/src/lib/nodeConnectionValidation.ts` | 32 | Pure drag-time `isValidConnection` validator for React Flow (port resolution + compatibility incl. cycle guard) |

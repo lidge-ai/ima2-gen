@@ -722,7 +722,26 @@
     "mergeEmpty": "連接場景或附加檔案",
     "mergeDone": "合併完成",
     "mergeUp": "上移",
-    "mergeDown": "下移"
+    "mergeDown": "下移",
+    "wfRun": "▶ 執行工作流",
+    "wfRunTitle": "從這裡開始，依序執行到 END 標記的每個節點",
+    "wfStop": "停止",
+    "wfStopping": "停止中…",
+    "wfRunning": "執行中 {done}/{total}",
+    "wfSteps": "{count} 個步驟",
+    "wfStartHint": "工作流起點",
+    "wfEndHint": "工作流終點",
+    "wfEmpty": "兩個標記之間沒有可執行的節點",
+    "wfParentRequired": "有 {count} 個節點依賴工作流外尚未產生結果的節點",
+    "wfMergeNeedTwo": "合併節點至少需要兩段素材",
+    "wfDone": "工作流完成 — {done}/{total}",
+    "wfStopped": "在 {node} 中斷 — 已完成 {done}/{total}",
+    "wfCanceled": "已取消 — 已完成 {done}/{total}",
+    "wfErr": {
+      "khong-phai-moc-dau": "此節點不是 START 標記",
+      "thieu-ket-thuc": "下游沒有 END 標記 — 連上才算完整的工作流",
+      "vong-lap": "工作流形成了迴圈"
+    }
   },
   "nodeBatch": {
     "selectionOn": "選擇",

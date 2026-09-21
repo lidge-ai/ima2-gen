@@ -722,7 +722,26 @@
     "mergeEmpty": "Connect scenes in, or attach files",
     "mergeDone": "Merged",
     "mergeUp": "Move up",
-    "mergeDown": "Move down"
+    "mergeDown": "Move down",
+    "wfRun": "▶ Run workflow",
+    "wfRunTitle": "Run every node from here down to the END marker, one after another",
+    "wfStop": "Stop",
+    "wfStopping": "Stopping…",
+    "wfRunning": "Running {done}/{total}",
+    "wfSteps": "{count} step(s)",
+    "wfStartHint": "Start of the workflow",
+    "wfEndHint": "End of the workflow",
+    "wfEmpty": "Nothing to run between the two markers",
+    "wfParentRequired": "{count} node(s) depend on a node outside the workflow that has not produced anything yet",
+    "wfMergeNeedTwo": "The merge node needs at least two clips",
+    "wfDone": "Workflow finished — {done}/{total}",
+    "wfStopped": "Stopped at {node} — {done}/{total} done",
+    "wfCanceled": "Canceled — {done}/{total} done",
+    "wfErr": {
+      "khong-phai-moc-dau": "This node is not a START marker",
+      "thieu-ket-thuc": "No END marker downstream — connect one to complete the workflow",
+      "vong-lap": "The workflow loops back on itself"
+    }
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

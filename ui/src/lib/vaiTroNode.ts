@@ -9,13 +9,27 @@
  * lai: prompt do da dung roi, sua vao chi lam hong.
  */
 
-export type VaiTroNode = "mau" | "trang-phuc" | "mac-do" | "canh" | "video" | "gop-anh" | "gop-video";
+export type VaiTroNode =
+  | "bat-dau"
+  | "mau"
+  | "trang-phuc"
+  | "mac-do"
+  | "canh"
+  | "video"
+  | "gop-anh"
+  | "gop-video"
+  | "ket-thuc";
 
 export type MoTaVaiTro = {
   nhan: string;
   /** Prompt co dinh - nguoi dung khong can va khong nen sua. */
   promptCoDinh?: string;
   mau: string;
+  /**
+   * Node MOC chi danh dau dau/cuoi cua mot khuon: khong prompt, khong anh,
+   * khong goi mo hinh. Bam chay tren MOC DAU thi ca khuon chay mot luot.
+   */
+  moc?: boolean;
 };
 
 /**
@@ -33,6 +47,8 @@ export const PROMPT_BOC_TRANG_PHUC =
   + "no hangers, no text, no watermark.";
 
 export const VAI_TRO: Record<VaiTroNode, MoTaVaiTro> = {
+  // Hai moc nam o hai dau danh sach vi trong khuon chung cung nam o hai dau.
+  "bat-dau": { nhan: "BẮT ĐẦU", mau: "#1f7a3a", moc: true },
   "mau": { nhan: "MẪU", mau: "#6b7cff" },
   "trang-phuc": { nhan: "BÓC ĐỒ", promptCoDinh: PROMPT_BOC_TRANG_PHUC, mau: "#0f9d58" },
   "mac-do": { nhan: "MẶC ĐỒ", mau: "#e2622f" },
@@ -42,6 +58,7 @@ export const VAI_TRO: Record<VaiTroNode, MoTaVaiTro> = {
   // prompt va khong ton tien.
   "gop-anh": { nhan: "GỘP ẢNH", mau: "#0b8a8f" },
   "gop-video": { nhan: "GỘP VIDEO", mau: "#b3005e" },
+  "ket-thuc": { nhan: "KẾT THÚC", mau: "#8a1f1f", moc: true },
 };
 
 export function layVaiTro(v: unknown): MoTaVaiTro | null {
@@ -51,6 +68,11 @@ export function layVaiTro(v: unknown): MoTaVaiTro | null {
 /** Vai tro GOP: thu gom media tu cac canh vao, khong co prompt. */
 export function laVaiTroGop(v: unknown): boolean {
   return v === "gop-anh" || v === "gop-video";
+}
+
+/** Moc dau / moc cuoi: khong sinh gi, chi dinh hinh mot khuon hoan chinh. */
+export function laNodeMoc(v: unknown): boolean {
+  return !!layVaiTro(v)?.moc;
 }
 
 /** Vai tro co prompt co dinh thi khoa o nhap prompt. */

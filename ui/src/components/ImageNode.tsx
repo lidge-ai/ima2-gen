@@ -2,8 +2,10 @@ import { memo, useCallback, useMemo, useRef, useState, type ClipboardEvent, type
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
-import { khoaPrompt, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
-import { doiCho, ghepThanhVideo, gomTuCanhVao, xepTheoThuTu } from "../lib/gopMedia";
+import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
+import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
+import { dauVaoVideoCuaNode, timChuoiChay } from "../lib/chayWorkflow";
+import { canhAnhVao } from "../lib/canhAnh";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
@@ -120,18 +122,24 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const laNodeVideo = d.vaiTro === "video";
   const onAnimateRef = useRef<(() => void) | null>(null);
 
-  /**
-   * Node VIDEO lay gi lam dau vao.
-   *
-   * Quy tac: node CANH chi sinh anh, node VIDEO chi sinh video. Node video noi
-   * vao mot node canh thi dung ANH va LOI TA cua canh do; prompt rieng cua node
-   * video la phan GHI THEM, khong thay the. Khong noi vao dau thi dung anh do
-   * nguoi dung tu dinh vao chinh node video.
-   */
-  const nodeCha = useMemo(() => {
-    const canhVao = graphEdges.find((e) => e.target === id);
-    return canhVao ? graphNodes.find((n) => n.id === canhVao.source) ?? null : null;
-  }, [id, graphEdges, graphNodes]);
+  // Node MOC (BAT DAU / KET THUC) khong sinh gi ca: no chi danh dau hai dau cua
+  // mot khuon. Noi du hai moc thi bam CHAY tren moc dau se chay het khuon.
+  const laMoc = laNodeMoc(d.vaiTro);
+  const laMocDau = d.vaiTro === "bat-dau";
+  const wfDangChay = useAppStore((st) => st.wfDangChay);
+  const wfNodeHienTai = useAppStore((st) => st.wfNodeHienTai);
+  const wfDungLai = useAppStore((st) => st.wfDungLai);
+  const wfDaXong = useAppStore((st) => st.wfDaXong);
+  const wfTongViec = useAppStore((st) => st.wfTongViec);
+  const chayWorkflow = useAppStore((st) => st.chayWorkflow);
+  const dungWorkflow = useAppStore((st) => st.dungWorkflow);
+  // Tinh ngay tren node de nguoi dung thay truoc so buoc se chay - va thay ngay
+  // loi "chua noi toi KET THUC" thay vi bam chay roi moi biet.
+  const chuoi = useMemo(
+    () => (laMocDau ? timChuoiChay(id, graphNodes, graphEdges) : null),
+    [laMocDau, id, graphNodes, graphEdges],
+  );
+  const khuonNayDangChay = wfDangChay === id;
 
   /**
    * Anh KE THUA tu cac canh vao: canh dau la ANH NEN, cac canh sau la THAM CHIEU.
@@ -139,7 +147,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
    * truoc day chi thay anh nguoi dung tu dinh, con phan ke thua thi vo hinh.
    */
   const anhKeThua = useMemo(() => {
-    const nguon = graphEdges.filter((e) => e.target === id).map((e) => e.source);
+    const nguon = canhAnhVao(graphEdges, graphNodes, id).map((e) => e.source);
     return nguon
       .map((src, i) => {
         const n = graphNodes.find((x) => x.id === src);
@@ -149,15 +157,12 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
       .filter((x): x is { id: string; url: string; vai: string } => !!x);
   }, [id, graphEdges, graphNodes]);
 
-  /** Media cua node GOP: canh vao + anh nguoi dung tu dinh, theo thu tu da luu. */
-  const mucGop = useMemo(() => {
-    if (!laNodeGop) return [];
-    const tuCanh = gomTuCanhVao(id, graphNodes, graphEdges);
-    const tuTay = (d.referenceImages ?? []).map((url) => ({
-      url, loai: isVideoUrl(url) ? ("video" as const) : ("anh" as const), tuNode: null,
-    }));
-    return xepTheoThuTu([...tuCanh, ...tuTay], d.thuTuGop);
-  }, [laNodeGop, id, graphNodes, graphEdges, d.referenceImages, d.thuTuGop]);
+  /** Media cua node GOP: canh vao + anh nguoi dung tu dinh, theo thu tu da luu.
+      Dung chung ham voi luot chay khuon, khong thi hai ben lech nhau. */
+  const mucGop = useMemo(
+    () => (laNodeGop ? mucGopCuaNode(id, graphNodes, graphEdges, d) : []),
+    [laNodeGop, id, graphNodes, graphEdges, d],
+  );
 
   const dayLen = useCallback((i: number) => {
     updateNodeData(id, { thuTuGop: doiCho(mucGop, i, i - 1) });
@@ -179,18 +184,12 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     }
   }, [id, mucGop, updateNodeData, showToast, t]);
 
-  const dauVaoVideo = useMemo(() => {
-    const laAnh = (u?: string | null) => !!u && !isVideoUrl(u);
-    const anh =
-      (laAnh(nodeCha?.data?.imageUrl) ? nodeCha!.data.imageUrl : null)
-      ?? (laAnh(d.imageUrl) ? d.imageUrl : null)
-      ?? d.videoSourceUrl
-      ?? null;
-    const taCha = (nodeCha?.data?.prompt || "").trim();
-    const taRieng = (d.prompt || "").trim();
-    const ta = taRieng ? (taCha ? `${taCha} ${taRieng}` : taRieng) : taCha;
-    return { anh, ta };
-  }, [nodeCha, d.imageUrl, d.videoSourceUrl, d.prompt]);
+  // Dung chung ham voi luot chay khuon: bam GEN tay va chay ca khuon phai cho ra
+  // dung mot dau vao, khong thi ket qua hai duong khac nhau ma khong ro vi sao.
+  const dauVaoVideo = useMemo(
+    () => dauVaoVideoCuaNode(id, graphNodes, graphEdges),
+    [id, graphNodes, graphEdges],
+  );
 
 
   const onGenerate = useCallback(() => {
@@ -377,7 +376,11 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         return "";
     }
   };
-  const statusLabel = computeStatusLabel();
+  // Moc khong co anh nen dong trang thai thuong se bao "chua co anh" - dung
+  // nghia den ma vo nghia voi nguoi doc. Noi thang no la moc gi.
+  const statusLabel = laMoc
+    ? (laMocDau ? t("node.wfStartHint") : t("node.wfEndHint"))
+    : computeStatusLabel();
   const errorAction = d.status === "error" && d.errorInfo?.code !== "JOB_TRACKING_TIMEOUT"
     ? d.errorInfo?.action ?? "retry" : null;
 
@@ -386,7 +389,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
       // Viec chay bat dong bo (video) khong doi status cua node, nen phai them
       // lop --pending theo danh sach viec dang chay, khong thi node dang chay
       // ma vien van bao "ready".
-      className={`image-node image-node--${coViecDangChay ? "pending" : d.status}${selected ? " image-node--selected" : ""}`}
+      className={`image-node image-node--${coViecDangChay ? "pending" : d.status}${selected ? " image-node--selected" : ""}${laMoc ? " image-node--moc" : ""}${wfNodeHienTai === id ? " image-node--wf-hien-tai" : ""}`}
       style={nodeStyle}
     >
       {NODE_HANDLE_POSITIONS.map(({ id: handleId, position }) => (
@@ -428,6 +431,46 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         </select>
         {d.label ? <span className="image-node__id-label">{d.label}</span> : null}
       </div>
+      {laMoc ? (
+        <div className="image-node__moc-than">
+          <div className="image-node__moc-nhan" style={vaiTro ? { color: vaiTro.mau } : undefined}>
+            {vaiTro?.nhan}
+          </div>
+          {laMocDau ? (
+            <>
+              <div className="image-node__moc-so">
+                {khuonNayDangChay
+                  ? t("node.wfRunning", { done: wfDaXong, total: wfTongViec })
+                  : chuoi?.ok
+                    ? t("node.wfSteps", { count: chuoi.soViec })
+                    : t(`node.wfErr.${chuoi?.loi ?? "thieu-ket-thuc"}`)}
+              </div>
+              {khuonNayDangChay ? (
+                <button
+                  type="button"
+                  className="image-node__wf-nut image-node__wf-nut--dung"
+                  onClick={dungWorkflow}
+                  disabled={wfDungLai}
+                >
+                  {wfDungLai ? t("node.wfStopping") : t("node.wfStop")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="image-node__wf-nut"
+                  onClick={() => void chayWorkflow(id)}
+                  disabled={!chuoi?.ok || !!wfDangChay}
+                  title={t("node.wfRunTitle")}
+                >
+                  {t("node.wfRun")}
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="image-node__moc-so">{t("node.wfEndHint")}</div>
+          )}
+        </div>
+      ) : (
       <div className="image-node__preview">
         {d.imageUrl && d.status !== "asset-missing" ? (
           <>
@@ -476,6 +519,8 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           </div>
         ) : null}
       </div>
+      )}
+      {laMoc ? null : (
       <div
         className={`image-node__composer nodrag${isDraggingRef ? " is-dragging" : ""}`}
         onDrop={onDropRefs}
@@ -577,6 +622,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           }}
         />
       </div>
+      )}
       <div className="image-node__footer nodrag">
         <span
           className="image-node__status"
@@ -600,6 +646,8 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           <span className="image-node__error-cta">{t("node.errorFixCta")}</span>
         ) : null}
         <div className="image-node__actions">
+          {laMoc ? null : (
+            <>
           <div style={{ position: "relative" }}>
             <button
               type="button"
@@ -704,6 +752,8 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               </button>
             </>
           ) : null}
+            </>
+          )}
           <button type="button" onClick={onDelete} className="image-node__del" title={t("node.deleteTitle")} aria-label={t("node.deleteTitle")}>×</button>
         </div>
       </div>

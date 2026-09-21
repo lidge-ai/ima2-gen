@@ -35,6 +35,26 @@ export function gomTuCanhVao(
 }
 
 /**
+ * Toan bo media cua MOT node GOP, da xep dung thu tu.
+ *
+ * Gom hai nguon: cac canh noi vao va nhung tep nguoi dung tu dinh len chinh
+ * node. Node ve ra danh sach nay, va luot chay khuon ghep cung danh sach nay -
+ * de moi ben tu tinh lai thi hai ben se lech nhau luc them bot canh.
+ */
+export function mucGopCuaNode(
+  nodeId: string,
+  nodes: readonly GraphNode[],
+  edges: readonly GraphEdge[],
+  data: { referenceImages?: readonly string[]; thuTuGop?: readonly string[] },
+): MucGop[] {
+  const tuCanh = gomTuCanhVao(nodeId, nodes, edges);
+  const tuTay = (data.referenceImages ?? []).map((url) => ({
+    url, loai: isVideoUrl(url) ? ("video" as const) : ("anh" as const), tuNode: null,
+  }));
+  return xepTheoThuTu([...tuCanh, ...tuTay], data.thuTuGop);
+}
+
+/**
  * Thu tu cuoi cung cua node GOP.
  *
  * `thuTu` la danh sach url nguoi dung da sap xep, luu trong data cua node. Cai

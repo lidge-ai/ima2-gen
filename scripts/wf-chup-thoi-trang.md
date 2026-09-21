@@ -102,6 +102,10 @@ Mỗi node mang một **huy hiệu vai trò** ở góc trên, cạnh mã node:
 | **MẶC ĐỒ** | Cho mẫu mặc bộ đồ, nền studio | Điền bằng nút **Read outfit** |
 | **CẢNH** | Mẫu trong quán cà phê, mỗi node một góc máy | Điền bằng nút **Read outfit**; sửa động tác thì sửa `DONG_TAC` |
 | **VIDEO** | Node đã sinh video từ ảnh của nó | Giữ ảnh nguồn nên sinh lại video được |
+| **GỘP ẢNH** | Gom ảnh của các cạnh vào thành một danh sách | Không có — chỉ thu gom |
+| **GỘP VIDEO** | Nối danh sách thành **một** video bằng ffmpeg | Không có — thứ tự xếp ngay trên node |
+| **BẮT ĐẦU** | Mốc đầu khuôn. Bấm **▶ Run workflow** là chạy cả khuôn | Không có |
+| **KẾT THÚC** | Mốc cuối khuôn | Không có |
 
 Node mới thêm chưa có vai trò. Chọn ở **ô thả xuống ngay trên node**, cạnh mã
 node. Chọn vai trò có prompt cố định (BÓC TRANG PHỤC) thì prompt **tự điền vào
@@ -110,6 +114,24 @@ và ô nhập bị khoá** — không phải gõ gì.
 Node **BÓC TRANG PHỤC** có prompt khoá cứng: nó đã đúng và không phụ thuộc bộ đồ
 nào, nên không có gì để chỉnh. Cả hai node A và B dùng chung một chuỗi, lấy từ
 `ui/src/lib/vaiTroNode.ts` — không thể lệch nhau.
+
+## Chạy cả khuôn một lượt
+
+Thêm một node **BẮT ĐẦU** và một node **KẾT THÚC**, nối chúng vào hai đầu chuỗi.
+Node BẮT ĐẦU khi đó hiện số bước và nút **▶ Run workflow**; bấm vào là nó chạy
+**lần lượt** từng node theo đúng thứ tự phụ thuộc, chờ xong node trước mới sang
+node sau — phải chờ thật, vì node sau ăn ảnh của node trước.
+
+Trong lúc chạy, node đang tới lượt có **viền sáng** và lớp phủ *Working…*, còn
+node BẮT ĐẦU đổi thành nút **Stop** kèm số đã xong. Gặp lỗi thì luợt chạy **dừng
+hẳn** chứ không chạy tiếp: mọi node phía sau đều ăn theo node vừa hỏng, chạy tiếp
+chỉ tốn tiền để ra một loạt kết quả sai.
+
+**Cạnh đi ra từ mốc là cạnh thứ tự, không phải cạnh ảnh.** Mốc không sinh ảnh nào
+nên nối BẮT ĐẦU vào một node không biến node đó thành "con" của mốc — nhãn
+`base`/`ref` cũng không đếm cạnh này.
+
+Chưa nối tới KẾT THÚC thì nút chạy bị tắt và node BẮT ĐẦU nói thẳng lý do.
 
 ## Những chỗ dễ vấp
 
