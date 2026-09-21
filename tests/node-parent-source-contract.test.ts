@@ -48,22 +48,28 @@ test("saveGraph derives parentServerNodeId from the incoming visual edge", () =>
   assert.equal(b.data.parentServerNodeId, "n_a");
 });
 
-test("saveGraph rejects multiple incoming parent edges for one node", () => {
+test("saveGraph keeps every incoming edge: first is the base image, the rest are references", () => {
   const session = sessionStore.createSession({ title: "multi parent" });
-  assert.throws(
-    () => sessionStore.saveGraph(session.id, {
-      expectedVersion: 0,
-      nodes: [
-        { id: "a", x: 0, y: 0, data: { serverNodeId: "n_a" } },
-        { id: "b", x: 1, y: 1, data: { serverNodeId: "n_b" } },
-        { id: "c", x: 2, y: 2, data: { serverNodeId: "n_c" } },
-      ],
-      edges: [
-        { id: "a->c", source: "a", target: "c", data: {} },
-        { id: "b->c", source: "b", target: "c", data: {} },
-      ],
-    }),
-    (err) => (err as { code?: string })?.code === "GRAPH_PARENT_CONFLICT",
-  );
+  sessionStore.saveGraph(session.id, {
+    expectedVersion: 0,
+    nodes: [
+      { id: "a", x: 0, y: 0, data: { serverNodeId: "n_a" } },
+      { id: "b", x: 1, y: 1, data: { serverNodeId: "n_b" } },
+      { id: "c", x: 2, y: 2, data: { serverNodeId: "n_c" } },
+      { id: "d", x: 3, y: 3, data: {} },
+    ],
+    edges: [
+      { id: "a->c", source: "a", target: "c", data: {} },
+      { id: "b->c", source: "b", target: "c", data: {} },
+      { id: "d->c", source: "d", target: "c", data: {} },
+      { id: "a->c2", source: "a", target: "c", data: {} },
+    ],
+  });
+  const saved = sessionStore.getSession(session.id);
+  const c = saved!.nodes.find((n: { id: string }) => n.id === "c")!;
+  // Canh dau: anh goc dem di sua.
+  assert.equal((c.data as { parentServerNodeId?: string }).parentServerNodeId, "n_a");
+  // Canh sau: chi gop ANH lam tham chieu. Cha chua sinh (d, khong co serverNodeId)
+  // va cha trung voi cha chinh (a lan hai) deu bi bo qua.
+  assert.deepEqual((c.data as { extraParentServerNodeIds?: string[] }).extraParentServerNodeIds, ["n_b"]);
 });
-

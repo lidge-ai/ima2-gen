@@ -23,11 +23,17 @@ describe("node compact footer contract", () => {
     assert.doesNotMatch(css, /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 0\.9fr\)/);
   });
 
-  it("has localized action titles and parent conflict copy", () => {
+  it("has localized action titles and edge role copy", () => {
     assert.match(ko, /regenerateTitle/);
-    assert.match(ko, /parentConflict/);
     assert.match(en, /regenerateTitle/);
-    assert.match(en, /parentConflict/);
+    // Mot node nhan duoc nhieu cha, nen khong con chuoi "parentConflict"; thay
+    // vao do canh mang nhan vai tro: anh goc hay tham chieu.
+    assert.doesNotMatch(ko, /parentConflict/);
+    assert.doesNotMatch(en, /parentConflict/);
+    for (const locale of [ko, en]) {
+      assert.match(locale, /roleBase/);
+      assert.match(locale, /roleRef/);
+    }
   });
 });
 

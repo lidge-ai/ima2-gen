@@ -123,7 +123,8 @@ describe("NC — palette and compatibility boundary", () => {
   it("publishes the exact ten React Flow port bindings", () => {
     const imageInputs = ["top", "right", "bottom", "left"].map((side) => ({
       nodeType: "imageNode", flowHandleId: `target-${side}`, logicalPortId: "image-input",
-      direction: "input", type: "image", acceptsMany: false,
+      // Nhieu cha: canh dau la anh goc, cac canh sau gop anh lam tham chieu.
+      direction: "input", type: "image", acceptsMany: true,
       equivalentHandleIds: ["target-top", "target-right", "target-bottom", "target-left"],
     }));
     const imageOutputs = ["top", "right", "bottom", "left"].map((side) => ({
@@ -154,7 +155,10 @@ describe("NC — palette and compatibility boundary", () => {
     assert.equal(canConnectPortTypes("element-notes", "image"), false);
     assert.deepEqual(canConnectPorts(refsOut, imageIn, { nodes: [], edges: [] }), { allowed: true });
     assert.equal(canConnectPorts(notesOut, imageIn, { nodes: [], edges: [] }).reason, "TYPE_MISMATCH");
-    assert.equal(canConnectPorts(imageOut, imageIn, { nodes: [], edges: [{ id: "occupied", source: "other", target: "target", sourceHandle: "source-left", targetHandle: "target-left" }] }).reason, "CARDINALITY");
+    // Cong vao anh nhan duoc nhieu nguon, nen canh thu hai KHONG con bi chan.
+    assert.deepEqual(canConnectPorts(imageOut, imageIn, { nodes: [], edges: [{ id: "occupied", source: "other", target: "target", sourceHandle: "source-left", targetHandle: "target-left" }] }), { allowed: true });
+    // Nhung cong chi nhan mot thi luat CARDINALITY van con hieu luc.
+    assert.equal(canConnectPorts(imageOut, { ...imageIn, acceptsMany: false }, { nodes: [], edges: [{ id: "occupied", source: "other", target: "target", sourceHandle: "source-left", targetHandle: "target-left" }] }).reason, "CARDINALITY");
   });
 
   it("resolves catalog ports before connecting and surfaces typed failures", () => {

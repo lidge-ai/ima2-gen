@@ -359,7 +359,20 @@
     "grokApi": "Grok API",
     "grokApiBody": "xAI OAuth 세션으로 api.x.ai를 직접 호출해 필수 검색 → Grok 4.5 이미지·텍스트 도구 기획(영어 프롬프트) → xAI Images API 순서로 실행합니다. 첨부 레퍼런스는 xAI 이미지 편집으로 보내 i2i 맥락을 유지합니다.",
     "openAccount": "계정 설정 열기",
-    "mcp": {"loading":"MCP 준비 상태 확인 중…","error":"MCP 준비 상태를 읽지 못했습니다","missing":"공급자를 사용할 수 없습니다","disabled":"공급자가 비활성화되었습니다","disconnected":"공급자가 연결되지 않았습니다","locked":"공급자 실행이 잠겨 있습니다","default":"공급자 기본 모델","model-missing":"선택한 모델을 사용할 수 없습니다","model-locked":"선택한 모델 실행이 잠겨 있습니다","ready":"최근 연결 확인 때 사용 가능했습니다.","refresh":"새로고침","observed":"확인 시각 {time}"}
+    "mcp": {
+      "loading": "MCP 준비 상태 확인 중…",
+      "error": "MCP 준비 상태를 읽지 못했습니다",
+      "missing": "공급자를 사용할 수 없습니다",
+      "disabled": "공급자가 비활성화되었습니다",
+      "disconnected": "공급자가 연결되지 않았습니다",
+      "locked": "공급자 실행이 잠겨 있습니다",
+      "default": "공급자 기본 모델",
+      "model-missing": "선택한 모델을 사용할 수 없습니다",
+      "model-locked": "선택한 모델 실행이 잠겨 있습니다",
+      "ready": "최근 연결 확인 때 사용 가능했습니다.",
+      "refresh": "새로고침",
+      "observed": "확인 시각 {time}"
+    }
   },
   "generate": {
     "button": "생성",
@@ -718,8 +731,9 @@
     "disconnect": "끊기",
     "disconnectTitle": "선택한 연결선 끊기",
     "disconnected": "연결선을 끊었습니다.",
-    "parentConflict": "한 노드에는 부모 연결을 하나만 둘 수 있습니다.",
-    "cycleBlocked": "이 연결은 순환 고리를 만들기 때문에 연결할 수 없습니다."
+    "cycleBlocked": "이 연결은 순환 고리를 만들기 때문에 연결할 수 없습니다.",
+    "roleBase": "원본",
+    "roleRef": "참조"
   },
   "provider": {
     "authTitle": "공급자",
@@ -2400,7 +2414,25 @@
     "refUndo": "되돌리기"
   },
   "comfy": {
-    "display": {"localMethod":"로컬 HTTP","loading":"워크플로 확인 중…","refreshing":"최근 상태를 다시 확인하는 중…","loadFailed":"워크플로 목록을 읽지 못했습니다.","appAccessRequired":"목록을 읽으려면 앱 접근 권한이 필요합니다.","unavailable":"워크플로 사용 가능 여부를 확인할 수 없습니다.","available":"최근 목록 확인 때 사용 가능했습니다.","chooseWorkflow":"워크플로 선택","empty":"등록된 워크플로가 없습니다.","selectedMissing":"선택한 워크플로가 목록에 없습니다.","selectedOffline":"최근 확인 때 선택한 워크플로가 오프라인이었습니다.","selectedLocked":"선택한 워크플로가 잠겨 있습니다.","observedConnected":"최근 확인 때 인스턴스가 응답했습니다.","lastChecked":"최근 확인: {time}","refresh":"다시 확인","manage":"워크플로 관리","controlsHelp":"이미지 또는 비디오 워크플로를 선택합니다. 저장된 요청 설정 중 적용되는 항목은 바인딩이 결정합니다. 선택만으로 실행 성공을 확인한 것은 아닙니다."},
+    "display": {
+      "localMethod": "로컬 HTTP",
+      "loading": "워크플로 확인 중…",
+      "refreshing": "최근 상태를 다시 확인하는 중…",
+      "loadFailed": "워크플로 목록을 읽지 못했습니다.",
+      "appAccessRequired": "목록을 읽으려면 앱 접근 권한이 필요합니다.",
+      "unavailable": "워크플로 사용 가능 여부를 확인할 수 없습니다.",
+      "available": "최근 목록 확인 때 사용 가능했습니다.",
+      "chooseWorkflow": "워크플로 선택",
+      "empty": "등록된 워크플로가 없습니다.",
+      "selectedMissing": "선택한 워크플로가 목록에 없습니다.",
+      "selectedOffline": "최근 확인 때 선택한 워크플로가 오프라인이었습니다.",
+      "selectedLocked": "선택한 워크플로가 잠겨 있습니다.",
+      "observedConnected": "최근 확인 때 인스턴스가 응답했습니다.",
+      "lastChecked": "최근 확인: {time}",
+      "refresh": "다시 확인",
+      "manage": "워크플로 관리",
+      "controlsHelp": "이미지 또는 비디오 워크플로를 선택합니다. 저장된 요청 설정 중 적용되는 항목은 바인딩이 결정합니다. 선택만으로 실행 성공을 확인한 것은 아닙니다."
+    },
     "workflowsTitle": "ComfyUI 워크플로",
     "addTitle": "워크플로 등록",
     "loading": "워크플로를 불러오는 중…",

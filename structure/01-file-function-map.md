@@ -121,7 +121,7 @@ routes/
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
 | `bin/commands/multimode.ts` | 220 | CLI multimode SSE client with provider override, references, prompt mode, incremental image save, timeout recovery, web-search, reasoning-effort, and session options |
 | `bin/commands/node.ts` | 179 | CLI node-mode generate/show client with references, provider override, parent node, web-search, reasoning-effort, and SSE support |
-| `bin/commands/session.ts` | 267 | CLI session list/load/save/rename/delete client |
+| `bin/commands/session.ts` | 283 | CLI session list/load/save/rename/delete client |
 | `bin/commands/history.ts` | 147 | CLI history mutation client for favorite/import/restore/delete/permanent actions |
 | `bin/commands/prompt.ts` | 493 | CLI prompt library list/show/save/delete/import/export client |
 | `bin/commands/annotate.ts` | 120 | CLI annotation read/write/delete client |
@@ -157,7 +157,7 @@ routes/
 | `bin/lib/storage-doctor.ts` | 40 | CLI storage doctor formatting |
 | `bin/lib/sse.ts` | 186 | CLI SSE response stream helper |
 | `bin/lib/browser-id.ts` | 17 | CLI browser-id header helper |
-| `lib/sessionStore.ts` | 309 | SQLite session and graph persistence, graph parent normalization, style-sheet helpers, session-title lookup |
+| `lib/sessionStore.ts` | 322 | SQLite session and graph persistence, graph parent normalization, style-sheet helpers, session-title lookup |
 | `lib/styleSheet.ts` | 140 | Session style-sheet extraction and prefix composition |
 | `lib/assetLifecycle.ts` | 198 | Soft delete (OS trash via `trash` dep), restore, node asset-missing marking |
 | `lib/systemTrash.ts` | 21 | Cross-platform OS-trash helper wrapping the `trash` dependency |
@@ -202,7 +202,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/multimodePipeline.ts` | 522 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
 | `lib/comparisonMatrix.ts` | 77 | Prompt-locked comparison axes: deterministic cartesian expansion, 9-cell cost cap, varying-axis labels |
 | `lib/comparisonRunner.ts` | 111 | Per-cell generation orchestrator with bounded concurrency, isolated failures, single-cell retry, and two-level cancel |
-| `lib/nodeGeneration.ts` | 513 | Node admission and execution facade, caller-owned retry, persistence, and SSE publication |
+| `lib/nodeGeneration.ts` | 534 | Node admission and execution facade, caller-owned retry, persistence, and SSE publication |
 | `lib/nodeValidation.ts` | 49 | Node prompt, references, and moderation validation |
 | `lib/oauthProxy/streams.ts` | 233 | SSE/event-stream helpers and safe stream diagnostics |
 | `lib/oauthProxy/prompts.ts` | 158 | Prompt assembly with injected `SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts` |
@@ -301,7 +301,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/historyIndex.ts` | 57 | Generated-history index construction and lookup |
 | `lib/imageThumb.ts` | 50 | Image thumbnail generation helpers |
 | `lib/multimodeHelpers.ts` | 48 | Shared multimode generation helpers |
-| `lib/nodeHelpers.ts` | 119 | Node workflow graph and payload helpers |
+| `lib/nodeHelpers.ts` | 121 | Node workflow graph and payload helpers |
 | `lib/vectorizeImage.ts` | 179 | Raster-to-SVG tracing (VTracer) with named presets, size/dimension guards, and SVG optimization |
 | `lib/nodeTemplateSeeds.ts` | 84 | Built-in node workflow template seed definitions |
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
@@ -370,7 +370,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Card-news API client | `ui/src/lib/cardNewsApi.ts` | 277 | Card-news templates, draft, jobs, regenerate, set/manifest helpers |
 | Node API client | `ui/src/lib/nodeApi.ts` | 173 | Node generation JSON/SSE client and node error status propagation |
 | NovelAI options | `ui/src/lib/naiOptions.ts` | 137 | NovelAI option alphabets, compiled fallback, sparse-override coercion, and the fallback→server→override resolver |
-| Node graph helpers | `ui/src/lib/nodeGraph.ts` | 98 | Visual-edge parent derivation, incoming-edge conflict, and cycle-detection helpers (`wouldCreateCycle`, `graphHasCycle`) |
+| Node graph helpers | `ui/src/lib/nodeGraph.ts` | 112 | Visual-edge parent derivation, incoming-edge conflict, and cycle-detection helpers (`wouldCreateCycle`, `graphHasCycle`) |
 | Node selection | `ui/src/lib/nodeSelection.ts` | 65 | Component-based selection toggling utilities |
 | Node batch | `ui/src/lib/nodeBatch.ts` | 159 | Sequential batch generation queue, cycle-selection guard (`findCycleNodeIds`), and stale-downstream rewiring |
 | Node connection validation | `ui/src/lib/nodeConnectionValidation.ts` | 32 | Pure drag-time `isValidConnection` validator for React Flow (port resolution + compatibility incl. cycle guard) |

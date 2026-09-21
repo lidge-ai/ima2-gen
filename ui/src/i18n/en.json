@@ -359,7 +359,20 @@
     "grokApi": "Grok API",
     "grokApiBody": "Calls api.x.ai with your xAI OAuth session: mandatory search, Grok 4.5 image-and-text tool planning in English, then xAI Images API. Attached references use xAI image editing so i2i context is preserved.",
     "openAccount": "Open account settings",
-    "mcp": {"loading":"Checking MCP readiness…","error":"MCP readiness could not be read","missing":"Provider is unavailable","disabled":"Provider is disabled","disconnected":"Provider is not connected","locked":"Provider execution is locked","default":"Provider default model","model-missing":"Selected model is unavailable","model-locked":"Selected model execution is locked","ready":"Available at the last connection check.","refresh":"Refresh","observed":"Observed {time}"}
+    "mcp": {
+      "loading": "Checking MCP readiness…",
+      "error": "MCP readiness could not be read",
+      "missing": "Provider is unavailable",
+      "disabled": "Provider is disabled",
+      "disconnected": "Provider is not connected",
+      "locked": "Provider execution is locked",
+      "default": "Provider default model",
+      "model-missing": "Selected model is unavailable",
+      "model-locked": "Selected model execution is locked",
+      "ready": "Available at the last connection check.",
+      "refresh": "Refresh",
+      "observed": "Observed {time}"
+    }
   },
   "generate": {
     "button": "Generate",
@@ -718,8 +731,9 @@
     "disconnect": "Disconnect",
     "disconnectTitle": "Disconnect selected edge",
     "disconnected": "Connection removed.",
-    "parentConflict": "A node can only have one parent connection.",
-    "cycleBlocked": "That connection would create a loop."
+    "cycleBlocked": "That connection would create a loop.",
+    "roleBase": "base",
+    "roleRef": "ref"
   },
   "provider": {
     "authTitle": "Provider",
@@ -2400,7 +2414,25 @@
     "refUndo": "Undo"
   },
   "comfy": {
-    "display": {"localMethod":"Local HTTP","loading":"Checking workflows…","refreshing":"Refreshing the last observation…","loadFailed":"Could not read the workflow catalog.","appAccessRequired":"App access is required to read the catalog.","unavailable":"Workflow availability is unknown.","available":"Available at the last catalog check.","chooseWorkflow":"Choose a workflow","empty":"No workflows registered.","selectedMissing":"The selected workflow is no longer listed.","selectedOffline":"The selected workflow was offline at the last check.","selectedLocked":"The selected workflow is locked.","observedConnected":"An instance responded at the last check.","lastChecked":"Last checked {time}","refresh":"Refresh","manage":"Manage workflows","controlsHelp":"This panel selects an image or video workflow. Its bindings determine which saved request settings apply; selecting a workflow does not verify execution."},
+    "display": {
+      "localMethod": "Local HTTP",
+      "loading": "Checking workflows…",
+      "refreshing": "Refreshing the last observation…",
+      "loadFailed": "Could not read the workflow catalog.",
+      "appAccessRequired": "App access is required to read the catalog.",
+      "unavailable": "Workflow availability is unknown.",
+      "available": "Available at the last catalog check.",
+      "chooseWorkflow": "Choose a workflow",
+      "empty": "No workflows registered.",
+      "selectedMissing": "The selected workflow is no longer listed.",
+      "selectedOffline": "The selected workflow was offline at the last check.",
+      "selectedLocked": "The selected workflow is locked.",
+      "observedConnected": "An instance responded at the last check.",
+      "lastChecked": "Last checked {time}",
+      "refresh": "Refresh",
+      "manage": "Manage workflows",
+      "controlsHelp": "This panel selects an image or video workflow. Its bindings determine which saved request settings apply; selecting a workflow does not verify execution."
+    },
     "workflowsTitle": "ComfyUI workflows",
     "addTitle": "Register a workflow",
     "loading": "Loading workflows…",

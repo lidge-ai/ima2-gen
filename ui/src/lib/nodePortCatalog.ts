@@ -31,7 +31,10 @@ export const NODE_PORT_BINDINGS: readonly PortBinding[] = [
     logicalPortId: "image-input",
     direction: "input" as const,
     type: "image" as const,
-    acceptsMany: false,
+    // Nhan nhieu nguon: canh dau la ANH GOC dem di sua, cac canh sau gop ANH
+    // lam tham chieu. Truoc day khoa o mot canh nen keo cha -> con bi tu choi
+    // ngay luc keo (CARDINALITY) khi con da co cha.
+    acceptsMany: true,
     equivalentHandleIds: IMAGE_TARGET_HANDLES,
   })),
   ...IMAGE_SOURCE_HANDLES.map((flowHandleId) => ({

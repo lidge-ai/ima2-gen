@@ -359,7 +359,20 @@
     "grokApi": "Grok API",
     "grokApiBody": "使用 xAI OAuth 工作階段直接呼叫 api.x.ai：強制搜尋、Grok 4.5 英語圖像和文字工具規劃，然後是 xAI Images API。附加參考使用 xAI 影像編輯，因此保留了 i2i 上下文。",
     "openAccount": "開設帳戶設置",
-    "mcp": {"loading":"正在檢查 MCP 就緒狀態…","error":"無法讀取 MCP 就緒狀態","missing":"提供者不可用","disabled":"提供者已停用","disconnected":"提供者未連線","locked":"提供者執行已鎖定","default":"提供者預設模型","model-missing":"所選模型不可用","model-locked":"所選模型執行已鎖定","ready":"上次連線檢查時可用。","refresh":"重新整理","observed":"檢查於 {time}"}
+    "mcp": {
+      "loading": "正在檢查 MCP 就緒狀態…",
+      "error": "無法讀取 MCP 就緒狀態",
+      "missing": "提供者不可用",
+      "disabled": "提供者已停用",
+      "disconnected": "提供者未連線",
+      "locked": "提供者執行已鎖定",
+      "default": "提供者預設模型",
+      "model-missing": "所選模型不可用",
+      "model-locked": "所選模型執行已鎖定",
+      "ready": "上次連線檢查時可用。",
+      "refresh": "重新整理",
+      "observed": "檢查於 {time}"
+    }
   },
   "generate": {
     "button": "產生",
@@ -718,8 +731,9 @@
     "disconnect": "斷開",
     "disconnectTitle": "斷開選定的邊",
     "disconnected": "連線已移除。",
-    "parentConflict": "node 只能有一個父連結。",
-    "cycleBlocked": "該連接會形成一個循環。"
+    "cycleBlocked": "該連接會形成一個循環。",
+    "roleBase": "原圖",
+    "roleRef": "參考"
   },
   "provider": {
     "authTitle": "提供者",
@@ -2400,7 +2414,25 @@
     "refUndo": "撤銷"
   },
   "comfy": {
-    "display": {"localMethod":"本機 HTTP","loading":"正在檢查工作流…","refreshing":"正在更新上次觀測狀態…","loadFailed":"無法讀取工作流目錄。","appAccessRequired":"讀取目錄需要應用程式存取權限。","unavailable":"尚未確認工作流是否可用。","available":"上次檢查目錄時可用。","chooseWorkflow":"選擇工作流","empty":"尚未註冊工作流。","selectedMissing":"所選工作流已不在目錄中。","selectedOffline":"上次檢查時所選工作流離線。","selectedLocked":"所選工作流已鎖定。","observedConnected":"上次檢查時有執行個體回應。","lastChecked":"上次檢查：{time}","refresh":"重新整理","manage":"管理工作流","controlsHelp":"此面板選擇影像或影片工作流。繫結決定哪些已儲存的請求設定生效；選擇工作流並不證明執行成功。"},
+    "display": {
+      "localMethod": "本機 HTTP",
+      "loading": "正在檢查工作流…",
+      "refreshing": "正在更新上次觀測狀態…",
+      "loadFailed": "無法讀取工作流目錄。",
+      "appAccessRequired": "讀取目錄需要應用程式存取權限。",
+      "unavailable": "尚未確認工作流是否可用。",
+      "available": "上次檢查目錄時可用。",
+      "chooseWorkflow": "選擇工作流",
+      "empty": "尚未註冊工作流。",
+      "selectedMissing": "所選工作流已不在目錄中。",
+      "selectedOffline": "上次檢查時所選工作流離線。",
+      "selectedLocked": "所選工作流已鎖定。",
+      "observedConnected": "上次檢查時有執行個體回應。",
+      "lastChecked": "上次檢查：{time}",
+      "refresh": "重新整理",
+      "manage": "管理工作流",
+      "controlsHelp": "此面板選擇影像或影片工作流。繫結決定哪些已儲存的請求設定生效；選擇工作流並不證明執行成功。"
+    },
     "workflowsTitle": "ComfyUI 工作流",
     "addTitle": "註冊工作流",
     "loading": "正在載入工作流…",
