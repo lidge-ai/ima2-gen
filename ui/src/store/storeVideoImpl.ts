@@ -190,6 +190,10 @@ export async function runVideoGenerateImpl(
                 data: {
                   ...n.data,
                   serverNodeId: result.filename.replace(/\.[^.]+$/, ""),
+                  // Video thay mat anh o imageUrl. Giu lai anh nguon de con
+                  // sinh lai video duoc - khong giu thi node thanh video la
+                  // cut duong, vi animate can mot ANH lam dau vao.
+                  videoSourceUrl: n.data.videoSourceUrl ?? n.data.imageUrl,
                   imageUrl: result.url,
                   status: "ready" as const,
                   error: undefined,

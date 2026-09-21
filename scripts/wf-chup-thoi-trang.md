@@ -24,7 +24,17 @@ Node sẽ trả về ảnh *flat lay* nền trắng, từng món tách riêng.
 Prompt ở node này **không gọi tên món đồ nào**, nên đính ảnh nào thì ra bộ đó —
 không cần sửa chữ.
 
-### Bước 2 — chạy một lệnh: đọc ảnh ra mô tả rồi điền cả nhánh
+### Bước 2 — trên giao diện: bấm **Read outfit**
+
+Trên chính node trang phục vừa GEN xong, bấm nút **Read outfit**. Nó đọc ảnh,
+hỏi mô hình liệt kê từng món, rồi điền vào ô `{{TRANG_PHUC}}` ở **mọi node dùng
+node này làm ảnh tham chiếu** — tức node mặc đồ và tất cả node cảnh của nhánh.
+
+Nút chỉ hiện trên node có ai đó dùng làm tham chiếu, nên không lẫn với node khác.
+
+Không cần tải lại trang sau bước này.
+
+#### Cách cũ: chạy lệnh (vẫn dùng được)
 
 ```bash
 node scripts/wf-doi-do.mjs s_01M30YY0XJEEVYEPGKD0GCN34E hong
@@ -41,12 +51,13 @@ Muốn tự viết mô tả thay vì để máy đọc thì thêm chuỗi vào c
 node scripts/wf-doi-do.mjs s_01M30YY0XJEEVYEPGKD0GCN34E hong "<liệt kê món đồ bằng tiếng Anh>"
 ```
 
-### Bước 3 — trên giao diện: tải lại trang rồi sinh ảnh
+### Bước 3 — trên giao diện: sinh ảnh
 
-**Phải tải lại trang** (Ctrl+Shift+R), vì bản graph trong trình duyệt là bản đọc
-lúc mở, không tự biết lệnh vừa sửa gì.
+Nếu bước 2 làm bằng **lệnh** thì phải tải lại trang (Ctrl+Shift+R) trước, vì bản
+graph trong trình duyệt không tự biết lệnh vừa sửa gì. Bấm nút **Read outfit**
+thì không cần.
 
-Rồi bấm **GEN** theo thứ tự:
+Bấm **GEN** theo thứ tự:
 
 1. Node **MAC BO ... LEN MAU** — ra ảnh mẫu mặc bộ đó, nền studio
 2. Các node cảnh — ra ảnh trong quán cà phê
@@ -62,6 +73,22 @@ lần giữ nguyên đồ cũ. Cái quyết định là chữ.
 
 Ngược lại, **bước trích ở node trang phục thì prompt chung chạy tốt**, vì ở đó
 ảnh là nguồn duy nhất nên mô hình buộc phải nhìn.
+
+## Các loại node
+
+Mỗi node mang một **huy hiệu vai trò** ở góc trên, cạnh mã node:
+
+| Huy hiệu | Việc | Prompt |
+|---|---|---|
+| **MẪU** | Sinh người mẫu gốc | Sửa được — đổi người mẫu ở đây |
+| **BÓC TRANG PHỤC** | Tách đồ từ ảnh chụp thật ra flat lay nền trắng | **Cố định, khoá** — không gọi tên món nào nên đính ảnh nào ăn ảnh đó |
+| **MẶC ĐỒ** | Cho mẫu mặc bộ đồ, nền studio | Điền bằng nút **Read outfit** |
+| **CẢNH** | Mẫu trong quán cà phê, mỗi node một góc máy | Điền bằng nút **Read outfit**; sửa động tác thì sửa `DONG_TAC` |
+| **VIDEO** | Node đã sinh video từ ảnh của nó | Giữ ảnh nguồn nên sinh lại video được |
+
+Node **BÓC TRANG PHỤC** có prompt khoá cứng: nó đã đúng và không phụ thuộc bộ đồ
+nào, nên không có gì để chỉnh. Cả hai node A và B dùng chung một chuỗi, lấy từ
+`ui/src/lib/vaiTroNode.ts` — không thể lệch nhau.
 
 ## Những chỗ dễ vấp
 

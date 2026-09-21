@@ -708,7 +708,11 @@
     "errorFixCta": "調整提示或引用，然後再次產生。",
     "zoomImage": "檢視大圖",
     "placeholderLeft": "提示詞中還有未填寫的佔位符 {slot}，請先填寫再生成",
-    "copyId": "複製節點 ID"
+    "copyId": "複製節點 ID",
+    "readOutfit": "讀取服裝",
+    "readOutfitTitle": "讀取此服裝並填入所有引用該節點的提示詞",
+    "outfitFilled": "已將服裝描述填入 {n} 個節點",
+    "promptLocked": "該節點角色的固定提示詞，無需修改"
   },
   "nodeBatch": {
     "selectionOn": "選擇",
@@ -933,7 +937,8 @@
     "upscaleInvalid": "無效的高檔參數",
     "editVideo": "編輯影片",
     "editVideoTitle": "用提示詞修改此影片（grok-imagine-video）",
-    "editVideoPrompt": "想如何修改這段影片？例如：把衣服改成紅色"
+    "editVideoPrompt": "想如何修改這段影片？例如：把衣服改成紅色",
+    "animateAgainTitle": "用原圖重新產生 Grok 影片"
   },
   "session": {
     "switchTitle": "切換會話",

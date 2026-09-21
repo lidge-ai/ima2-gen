@@ -197,6 +197,14 @@
   letter-spacing: .02em;
   cursor: copy;
 }
+.image-node__role {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
 .image-node__id-label {
   flex: 1 1 auto;
   min-width: 0;

@@ -708,7 +708,11 @@
     "errorFixCta": "Adjust the prompt or references, then generate again.",
     "zoomImage": "View larger",
     "placeholderLeft": "The prompt still has the empty slot {slot} — fill it before generating",
-    "copyId": "Copy node id"
+    "copyId": "Copy node id",
+    "readOutfit": "Read outfit",
+    "readOutfitTitle": "Read this outfit and fill it into every prompt that references this node",
+    "outfitFilled": "Filled the outfit description into {n} node(s)",
+    "promptLocked": "Fixed prompt for this node role — no need to edit"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",
@@ -933,7 +937,8 @@
     "upscaleInvalid": "Invalid upscale parameters",
     "editVideo": "Edit video",
     "editVideoTitle": "Change this video with a prompt (grok-imagine-video)",
-    "editVideoPrompt": "What should change in this video? e.g. make the outfit red"
+    "editVideoPrompt": "What should change in this video? e.g. make the outfit red",
+    "animateAgainTitle": "Generate the Grok video again from the source image"
   },
   "session": {
     "switchTitle": "Switch session",

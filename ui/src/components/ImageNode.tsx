@@ -1,6 +1,8 @@
 import { memo, useCallback, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
+import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
+import { khoaPrompt, layVaiTro } from "../lib/vaiTroNode";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
@@ -64,6 +66,12 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const removeNodeReference = useAppStore((s) => s.removeNodeReference);
   const generateNode = useAppStore((s) => s.generateNode);
   const showToast = useAppStore((st) => st.showToast);
+  const graphEdges = useAppStore((st) => st.graphEdges);
+  const graphNodes = useAppStore((st) => st.graphNodes);
+  const [dangDocDo, setDangDocDo] = useState(false);
+  const vaiTro = layVaiTro(d.vaiTro);
+  // Vai tro co prompt co dinh thi khoa o nhap: prompt do da dung, sua chi lam hong.
+  const promptBiKhoa = khoaPrompt(d.vaiTro);
   const generateNodeInPlace = useAppStore((s) => s.generateNodeInPlace);
   const generateNodeVariation = useAppStore((s) => s.generateNodeVariation);
   const animateImage = useAppStore((s) => s.animateImage);
@@ -110,16 +118,35 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     void generateNodeVariation(id);
   }, [id, generateNodeVariation]);
 
+  // Node nay co ai dung lam ANH THAM CHIEU khong - chi node trang phuc moi co.
+  const coNodeDungThamChieu = timNodeDungThamChieu(id, graphEdges).length > 0;
+
+  const onDocBoDo = useCallback(async () => {
+    setDangDocDo(true);
+    try {
+      const kq = await dienMoTaTrangPhuc(id, graphNodes, graphEdges, updateNodePrompt);
+      showToast(t("node.outfitFilled", { n: String(kq.daDien.length), fallback: `Da dien mo ta vao ${kq.daDien.length} node` }), false);
+    } catch (e) {
+      showToast(String((e as Error).message || e), true);
+    } finally {
+      setDangDocDo(false);
+    }
+  }, [id, graphNodes, graphEdges, updateNodePrompt, showToast, t]);
+
   const onBranch = useCallback(() => {
     if (d.status !== "ready") return;
     addChildNode(id);
   }, [id, d.status, addChildNode]);
 
+  // Anh dung lam dau vao cho video: neu node da bi video thay cho thi lay anh
+  // nguon da giu lai, nho vay sinh lai video duoc thay vi cut duong.
+  const anhNguonVideo = isVideoUrl(d.imageUrl) ? (d.videoSourceUrl ?? null) : d.imageUrl;
+
   const onAnimate = useCallback(() => {
-    if (d.status !== "ready" || !d.imageUrl || isVideoUrl(d.imageUrl)) return;
-    const filename = d.imageUrl.replace(/^\/generated\//, "");
+    if (d.status !== "ready" || !anhNguonVideo) return;
+    const filename = anhNguonVideo.replace(/^\/generated\//, "");
     void animateImage(filename, d.prompt);
-  }, [d.status, d.imageUrl, d.prompt, animateImage]);
+  }, [d.status, anhNguonVideo, d.prompt, animateImage]);
 
   const onDuplicateBranch = useCallback(() => {
     duplicateBranchRoot(id);
@@ -268,6 +295,9 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         >
           {id}
         </button>
+        {vaiTro ? (
+          <span className="image-node__role" style={{ background: vaiTro.mau }}>{vaiTro.nhan}</span>
+        ) : null}
         {d.label ? <span className="image-node__id-label">{d.label}</span> : null}
       </div>
       <div className="image-node__preview">
@@ -346,6 +376,8 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           placeholder={d.parentServerNodeId ? t("node.editPromptPlaceholder") : t("node.promptPlaceholder")}
           rows={2}
           disabled={isBusy}
+          readOnly={promptBiKhoa}
+          title={promptBiKhoa ? t("node.promptLocked", { fallback: "Prompt co dinh cho vai tro nay" }) : undefined}
         />
         <div className="image-node__composer-bar">
           <button
@@ -436,8 +468,19 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               <button type="button" onClick={onNewVariation} disabled={isBusy} title={t("node.newVariationTitle")} aria-label={t("node.newVariationTitle")}>
                 {t("node.newVariation")}
               </button>
-              {!isVideoUrl(d.imageUrl) && (
-                <button type="button" onClick={onAnimate} disabled={isBusy} title={t("node.animateTitle", { fallback: "Animate" })} aria-label={t("node.animateTitle", { fallback: "Animate" })}>
+              {coNodeDungThamChieu && !isVideoUrl(d.imageUrl) && (
+                <button
+                  type="button"
+                  onClick={() => void onDocBoDo()}
+                  disabled={isBusy || dangDocDo}
+                  title={t("node.readOutfitTitle", { fallback: "Read this outfit into the prompts that reference it" })}
+                  aria-label={t("node.readOutfitTitle", { fallback: "Read this outfit into the prompts that reference it" })}
+                >
+                  {dangDocDo ? "..." : t("node.readOutfit", { fallback: "Doc bo do" })}
+                </button>
+              )}
+              {anhNguonVideo && (
+                <button type="button" onClick={onAnimate} disabled={isBusy} title={t(isVideoUrl(d.imageUrl) ? "result.animateAgainTitle" : "result.animateTitle", { fallback: "Animate" })} aria-label={t(isVideoUrl(d.imageUrl) ? "result.animateAgainTitle" : "result.animateTitle", { fallback: "Animate" })}>
                   {/* Cuon phim, KHONG phai tam giac phat: nut nay goi Grok sinh
                       video (ton thoi gian va tien), chu khong phat gi ca. Dung
                       hinh tam giac thi ai cung tuong la nut play. */}

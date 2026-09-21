@@ -137,6 +137,10 @@ export type ImageNodeData = {
   prompt: string;
   /** Nhan do nguoi dung dat cho node, hien canh ma node tren canvas. */
   label?: string;
+  /** Anh goc truoc khi node bi video thay cho - de sinh lai video duoc. */
+  videoSourceUrl?: string | null;
+  /** Vai tro trong khuon: mau / trang-phuc / mac-do / canh / video. Xem lib/vaiTroNode.ts */
+  vaiTro?: string;
   imageUrl: string | null;
   status: ImageNodeStatus;
   pendingRequestId: string | null;
