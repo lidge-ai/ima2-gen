@@ -2,7 +2,7 @@ import { memo, useCallback, useRef, useState, type ClipboardEvent, type CSSPrope
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
-import { khoaPrompt, layVaiTro } from "../lib/vaiTroNode";
+import { khoaPrompt, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { getImageModelShortLabel } from "../lib/imageModels";
@@ -67,6 +67,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const generateNode = useAppStore((s) => s.generateNode);
   const showToast = useAppStore((st) => st.showToast);
   const graphEdges = useAppStore((st) => st.graphEdges);
+  const datVaiTroNode = useAppStore((st) => st.datVaiTroNode);
   const graphNodes = useAppStore((st) => st.graphNodes);
   const [dangDocDo, setDangDocDo] = useState(false);
   const vaiTro = layVaiTro(d.vaiTro);
@@ -295,9 +296,22 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         >
           {id}
         </button>
-        {vaiTro ? (
-          <span className="image-node__role" style={{ background: vaiTro.mau }}>{vaiTro.nhan}</span>
-        ) : null}
+        {/* Chon vai tro ngay tren node: node moi them chua co vai tro, chon o
+            day la xong - vai tro co prompt co dinh se tu dien prompt vao. */}
+        <select
+          className="image-node__role nodrag"
+          style={vaiTro ? { background: vaiTro.mau } : undefined}
+          value={typeof d.vaiTro === "string" ? d.vaiTro : ""}
+          onChange={(e) => datVaiTroNode(id, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          title={t("node.rolePick", { fallback: "Vai tro node" })}
+          aria-label={t("node.rolePick", { fallback: "Vai tro node" })}
+        >
+          <option value="">{t("node.roleNone", { fallback: "— vai tro —" })}</option>
+          {Object.entries(VAI_TRO).map(([ma, v]) => (
+            <option key={ma} value={ma}>{v.nhan}</option>
+          ))}
+        </select>
         {d.label ? <span className="image-node__id-label">{d.label}</span> : null}
       </div>
       <div className="image-node__preview">

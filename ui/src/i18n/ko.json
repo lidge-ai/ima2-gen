@@ -712,7 +712,9 @@
     "readOutfit": "의상 읽기",
     "readOutfitTitle": "이 의상을 읽어 이 노드를 참조하는 모든 프롬프트에 채웁니다",
     "outfitFilled": "{n}개 노드에 의상 설명을 채웠습니다",
-    "promptLocked": "이 노드 역할의 고정 프롬프트 — 수정할 필요 없음"
+    "promptLocked": "이 노드 역할의 고정 프롬프트 — 수정할 필요 없음",
+    "rolePick": "노드 역할",
+    "roleNone": "— 역할 —"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

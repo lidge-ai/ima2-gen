@@ -86,6 +86,10 @@ Mỗi node mang một **huy hiệu vai trò** ở góc trên, cạnh mã node:
 | **CẢNH** | Mẫu trong quán cà phê, mỗi node một góc máy | Điền bằng nút **Read outfit**; sửa động tác thì sửa `DONG_TAC` |
 | **VIDEO** | Node đã sinh video từ ảnh của nó | Giữ ảnh nguồn nên sinh lại video được |
 
+Node mới thêm chưa có vai trò. Chọn ở **ô thả xuống ngay trên node**, cạnh mã
+node. Chọn vai trò có prompt cố định (BÓC TRANG PHỤC) thì prompt **tự điền vào
+và ô nhập bị khoá** — không phải gõ gì.
+
 Node **BÓC TRANG PHỤC** có prompt khoá cứng: nó đã đúng và không phụ thuộc bộ đồ
 nào, nên không có gì để chỉnh. Cả hai node A và B dùng chung một chuỗi, lấy từ
 `ui/src/lib/vaiTroNode.ts` — không thể lệch nhau.

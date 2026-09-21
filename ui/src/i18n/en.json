@@ -712,7 +712,9 @@
     "readOutfit": "Read outfit",
     "readOutfitTitle": "Read this outfit and fill it into every prompt that references this node",
     "outfitFilled": "Filled the outfit description into {n} node(s)",
-    "promptLocked": "Fixed prompt for this node role — no need to edit"
+    "promptLocked": "Fixed prompt for this node role — no need to edit",
+    "rolePick": "Node role",
+    "roleNone": "— role —"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

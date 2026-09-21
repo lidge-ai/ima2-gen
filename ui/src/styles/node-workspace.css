@@ -199,6 +199,10 @@
 }
 .image-node__role {
   flex: 0 0 auto;
+  max-width: 130px;
+  border: 0;
+  background: var(--control-bg);
+  cursor: pointer;
   padding: 1px 5px;
   color: #fff;
   font-size: 9px;

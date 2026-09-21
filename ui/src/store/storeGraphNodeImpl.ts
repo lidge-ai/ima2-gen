@@ -12,6 +12,7 @@ import { isVideoUrl, extractLastFrame } from "../lib/videoMedia";
 import { t } from "../i18n";
 import { compressReferenceSource } from "./storeHelpers";
 import type { GraphNode, GraphEdge, StoreSet, StoreGet } from "./storeTypes";
+import { VAI_TRO } from "../lib/vaiTroNode";
 
 const DEFAULT_CHILD_SOURCE_HANDLE = "source-right";
 const DEFAULT_CHILD_TARGET_HANDLE = "target-left";
@@ -332,6 +333,28 @@ export function updateNodePromptImpl(
   set({
     graphNodes: get().graphNodes.map((n) =>
       n.id === clientId ? { ...n, data: { ...n.data, prompt } } : n,
+    ),
+  });
+  get().scheduleGraphSave();
+}
+
+
+/**
+ * Dat vai tro cho node. Vai tro co prompt CO DINH thi ghi luon prompt do vao,
+ * de nguoi dung khong phai go lai va hai node cung vai tro khong the lech nhau.
+ */
+export function datVaiTroNodeImpl(
+  clientId: ClientNodeId,
+  vaiTro: string,
+  set: StoreSet,
+  get: StoreGet,
+): void {
+  const coDinh = VAI_TRO[vaiTro as keyof typeof VAI_TRO]?.promptCoDinh;
+  set({
+    graphNodes: get().graphNodes.map((n) =>
+      n.id === clientId
+        ? { ...n, data: { ...n.data, vaiTro: vaiTro || undefined, ...(coDinh ? { prompt: coDinh } : {}) } }
+        : n,
     ),
   });
   get().scheduleGraphSave();
