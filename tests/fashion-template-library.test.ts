@@ -77,6 +77,26 @@ describe("kho khuon thoi trang", () => {
     }
   });
 
+  it("TP-13 thu lam nen concept nam ngay dau khoi boi canh", () => {
+    // Da mat mot lan that: "hang cot trang" chi duoc 10 chu trong khi ban tiec
+    // duoc hon 30, va anh ra mot cai ban tren bai co, khong co cai cot nao.
+    // Mo hinh danh cho theo so chu, nen thu lam nen concept phai dung dau va
+    // duoc ta ky nhat.
+    for (const c of conceptThoiTrang) {
+      assert.ok(
+        c.boiCanh.toLowerCase().startsWith(c.dacTrung.toLowerCase()),
+        `${c.ten}: boi canh khong mo dau bang "${c.dacTrung}"`,
+      );
+      // Va no phai duoc ta ky, khong chi goi ten roi bo do.
+      const sauDacTrung = c.boiCanh.slice(c.dacTrung.length);
+      const truocDauCham = sauDacTrung.split(";")[0] ?? "";
+      assert.ok(
+        truocDauCham.split(/\s+/).length >= 8,
+        `${c.ten}: "${c.dacTrung}" duoc goi ten nhung khong duoc ta`,
+      );
+    }
+  });
+
   it("TP-10 khong cau nao vua quay lung vua nhin vao ong kinh", () => {
     // Co che bu tru hinh anh: mo hinh dich "quay lung" thanh lung/ba lo/mu, va
     // "nhin" thanh mat/kinh/mat chinh dien. Hai nhom dung canh nhau la xung

@@ -87,7 +87,15 @@ export type Concept = {
   size: string;
   /** Prompt node MAU. Sua cau nay la doi nguoi mau. */
   mau: string;
-  /** Khoi BOI CANH, giong nhau tung chu o moi canh. */
+  /**
+   * Thu BAT BUOC phai thay trong moi tam cua khuon nay - cai lam nen concept.
+   *
+   * Phai nam ngay DAU khoi boi canh va duoc ta nhieu chu nhat: da mat mot lan
+   * that - "hang cot trang" chi duoc 10 chu trong khi ban tiec duoc 30, va anh
+   * ra mot cai ban tren bai co khong co cai cot nao.
+   */
+  dacTrung: string;
+  /** Khoi BOI CANH, giong nhau tung chu o moi canh. Mo dau bang `dacTrung`. */
   boiCanh: string;
   /** Duoi prompt: chat anh, ong kinh, hau ky. */
   duoi: string;
@@ -192,10 +200,12 @@ const CONCEPTS: Concept[] = [
       + " camera, arms slightly away from the body. Plain cream fitted top, plain beige shorts, nude heels,"
       + " no accessories. Soft even studio lighting, plain light grey seamless background, photorealistic,"
       + " head to shoes, no text.",
-    boiCanh: "a formal garden terrace with a white classical colonnade behind, clipped hedges and tall"
-      + " cypress beyond it, a round table under a white linen cloth laid with cream roses and hydrangeas in"
-      + " a low bowl, gold-rimmed plates, crystal glasses and a structured handbag resting on the cloth,"
-      + " white French bistro chairs standing on close-cut lawn, bright midday sun throwing crisp shadows.",
+    dacTrung: "a row of tall white stone columns",
+    boiCanh: "a row of tall white stone columns standing close behind her, each column fluted from base to"
+      + " capital under a plain square block, the gaps between them open to the daylight sky, a low white"
+      + " stone balustrade running along their feet; in front of the columns a round table under a white"
+      + " linen cloth with cream roses in a low bowl and two white French bistro chairs on close-cut lawn,"
+      + " clipped hedges and tall cypress far behind, bright midday sun throwing crisp shadows.",
     duoi: "Luxury lifestyle fashion photography, warm bright daylight, creamy highlights, 85mm lens,"
       + " shallow depth of field, photorealistic.",
     canh: [
@@ -246,6 +256,7 @@ const CONCEPTS: Concept[] = [
       + " facing camera, arms slightly away from the body. Plain cream fitted top, plain cream shorts, bare"
       + " feet, small white flowers pinned in the hair. Soft even studio lighting, plain light grey seamless"
       + " background, photorealistic, head to feet, no text.",
+    dacTrung: "a studio lotus set",
     boiCanh: "a studio lotus set: a hand-painted misty lotus backdrop in pale green and grey, real white and"
       + " cream lotus blooms with round green pads standing in a shallow black water tray that mirrors"
       + " everything above it, a low dark wooden platform and a small clay teapot at the edge of the water,"
@@ -299,6 +310,7 @@ const CONCEPTS: Concept[] = [
       + " sheen, athletic slim build. Relaxed neutral stance facing camera, arms slightly away from the"
       + " body. Plain white fitted top, plain black shorts, white court shoes, no accessories. Soft even"
       + " studio lighting, plain light grey seamless background, photorealistic, head to shoes, no text.",
+    dacTrung: "an outdoor clay tennis court",
     boiCanh: "an outdoor clay tennis court late in the afternoon, rows of blue stadium seats rising out of"
       + " focus behind, crisp white court lines on red-orange clay, a net at the far edge, floodlight masts"
       + " against a pale sky, the low sun raking straight across the court.",
@@ -351,6 +363,7 @@ const CONCEPTS: Concept[] = [
       + " cheekbones. Relaxed neutral stance facing camera, arms slightly away from the body. Plain white"
       + " fitted top, plain white trousers, bare feet, no accessories. Soft even studio lighting, plain"
       + " light grey seamless background, photorealistic, head to feet, no text.",
+    dacTrung: "a pure white studio cyclorama",
     boiCanh: "a pure white studio cyclorama with a seamless white floor, one fresh white magnolia bloom and"
       + " a small framed antique painted portrait propped on the floor as the only props, nothing else in"
       + " the frame.",
@@ -402,6 +415,7 @@ const CONCEPTS: Concept[] = [
       + " camera, arms slightly away from the body. Plain white fitted top, plain light grey shorts, bare"
       + " feet, no accessories. Soft even studio lighting, plain light grey seamless background,"
       + " photorealistic, head to feet, no text.",
+    dacTrung: "a professional photo studio",
     boiCanh: "a professional photo studio with a plain warm-grey seamless paper backdrop, the floor the same"
       + " tone as the wall with no visible seam, one large softbox at 45 degrees and a white bounce card"
       + " filling the shadow side, no props, no furniture.",
@@ -453,6 +467,7 @@ const CONCEPTS: Concept[] = [
       + " stance facing camera, arms slightly away from the body. Plain grey fitted top, plain black shorts,"
       + " white sneakers, no accessories. Soft even studio lighting, plain light grey seamless background,"
       + " photorealistic, head to shoes, no text.",
+    dacTrung: "a wide city sidewalk",
     boiCanh: "a wide city sidewalk between tall buildings, pale stone paving with painted crossing lines, a"
       + " row of parked cars along the kerb, glass shopfronts reflecting the street, a few blurred passers-by"
       + " in the distance, mid-morning sun coming down the street from behind the camera's left.",
@@ -505,6 +520,7 @@ const CONCEPTS: Concept[] = [
       + " neutral pose facing camera, arms slightly away from the body. Plain white crop top, light grey"
       + " shorts, white sneakers, no accessories. Soft even studio lighting, plain light grey seamless"
       + " background, photorealistic, head to shoes, no text.",
+    dacTrung: "a warm cosy coffee shop",
     boiCanh: "a warm cosy coffee shop with pale oak furniture, white brick walls, tall arched windows with"
       + " sheer linen curtains, brass pendant lights, a long marble counter with a chrome espresso machine,"
       + " potted olive trees in the corners, soft morning sunlight lying across the floor.",
@@ -557,6 +573,7 @@ const CONCEPTS: Concept[] = [
       + " camera, arms slightly away from the body. Plain cream fitted top, plain sand-coloured shorts, bare"
       + " feet, no accessories. Soft even studio lighting, plain light grey seamless background,"
       + " photorealistic, head to feet, no text.",
+    dacTrung: "an open concrete rooftop terrace",
     boiCanh: "an open concrete rooftop terrace above a city at sunset, a low parapet wall along the edge, the"
       + " skyline hazy and far behind, the sun sitting just above the horizon directly behind the model, the"
       + " concrete still warm and pale orange.",
@@ -609,6 +626,7 @@ const CONCEPTS: Concept[] = [
       + " stance facing camera, arms slightly away from the body. Plain black fitted top, plain black shorts,"
       + " bare feet, no accessories. Soft even studio lighting, plain light grey seamless background,"
       + " photorealistic, head to feet, no text.",
+    dacTrung: "an empty room with smooth pale concrete walls",
     boiCanh: "an empty room with smooth pale concrete walls and floor of the same tone, one tall narrow"
       + " window out of frame to the right throwing a single hard shaft of daylight across the wall, nothing"
       + " else in the room.",
@@ -660,6 +678,7 @@ const CONCEPTS: Concept[] = [
       + " camera, arms slightly away from the body. Plain white fitted top, plain grey shorts, white"
       + " sneakers, no accessories. Soft even studio lighting, plain light grey seamless background,"
       + " photorealistic, head to shoes, no text.",
+    dacTrung: "a bright modern airport terminal",
     boiCanh: "a bright modern airport terminal, polished pale stone floor reflecting the ceiling lights, a"
       + " long glass curtain wall on the left showing aircraft tails on the apron, rows of empty seats and a"
       + " check-in island far behind, even daylight mixed with cool ceiling light.",
