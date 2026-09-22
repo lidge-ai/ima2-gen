@@ -97,13 +97,15 @@ test("missing session fails without a save or output file", async (t) => {
   const f = await fixture(() => ({ body: { session: null } }));
   t.after(() => f.close());
   const input = join(f.root, "input.json");
+  const output = join(f.root, "absent-output.json");
   await writeFile(input, JSON.stringify({ nodes: [], edges: [] }));
-  for (const args of [["load", "absent"], ["save", "absent", input]]) {
+  for (const args of [["load", "absent", "--out", output], ["save", "absent", input]]) {
     const result = await f.cli(...args);
     assert.equal(result.code, 1);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, /session not found/);
   }
+  await assert.rejects(readFile(output), { code: "ENOENT" });
   assert.equal(f.requests.some((req) => req.method === "PUT"), false);
 });
 

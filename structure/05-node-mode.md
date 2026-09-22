@@ -85,7 +85,15 @@ sequenceDiagram
 
 `PUT /api/sessions/:id/graph` uses version-based saving. The client sends the current `graphVersion` in the `If-Match` header. The server returns the new `graphVersion` on success.
 
-Visual edges are the canonical parent graph. `parentServerNodeId` is a derived generation cache, not a separate source of truth. On load, edge changes, node changes, connect, disconnect, and save, the UI derives a node's parent server id from its single incoming edge. `ImageNode` renders top/right/bottom/left source and target handles with unique React Flow handle ids. `NodeCanvas` forwards `sourceHandle` and `targetHandle` into `connectNodes()`, and session graph saves preserve those ids in edge `data` so reloads keep the same visual anchors. The server repeats parent normalization in `saveGraph()` and rejects multiple incoming parent edges with `GRAPH_PARENT_CONFLICT`.
+Visual edges are the canonical parent graph. The first incoming image edge derives
+`parentServerNodeId`; later image edges derive ordered, deduplicated
+`extraParentServerNodeIds`. These fields are caches, not separate graph sources.
+Load, connect, disconnect, parent regeneration and save recalculate them. Element
+references retain their separate input resolution and do not replace the image base.
+`ImageNode` keeps its four-direction handles, and graph saves preserve handle IDs
+in edge data. `saveGraph()` repeats parent normalization; `getSession()` explicitly
+orders edges by insertion rowid, preserving base/ref roles after reload. Multiple
+image parents are accepted while cycle and duplicate-connection guards remain.
 
 ## Streaming And Recovery
 
@@ -142,7 +150,11 @@ Cmd/Ctrl + selected node -> toggle that one node as an exception
 
 Batch actions run sequentially. `Generate missing` skips selected nodes that already have a ready image. `Regenerate selected` replaces the image on the same client node and deliberately avoids the single-node sibling-regeneration path.
 
-During a batch, the client keeps a `latestServerNodeIdByClientId` map. If node `1` is regenerated before selected child `2`, node `2` uses the fresh server node id as its `parentNodeId`. If an unselected direct child depends on a regenerated parent, it is marked `stale` and its `parentServerNodeId` is rewired to the new parent. Deeper unselected descendants are also marked `stale`, but only direct changed-parent children are rewired immediately.
+During a batch, the client keeps a `latestServerNodeIdByClientId` map and
+re-derives ordered parent IDs from current graph nodes. Regenerating a base parent
+refreshes `parentServerNodeId`; regenerating an additional parent refreshes its
+reference ID without making it the base. Unselected dependent nodes become
+`stale`, and unrelated graph nodes retain their state.
 
 `stale` therefore has two meanings in node mode: recovered graph/assets may differ, or an upstream node was regenerated while this node was intentionally left out of the batch. In both cases the preview may remain visible, but the node should be regenerated when the user wants it to match the latest upstream image.
 
@@ -166,7 +178,11 @@ A       B
 B.parentServerNodeId = null
 ```
 
-New connections are blocked if the target already has a different incoming parent edge. If a target somehow still has another incoming edge, the target's `parentServerNodeId` is recomputed from the remaining source node's current `serverNodeId`. All nodes keep target handles available after disconnect, so a disconnected or independent node can be connected again without creating a new child node by mistake. Selection mode disables Delete/Backspace removal so graph selection and edge deletion do not collide.
+New image connections become references after the first base connection. Removing
+the base promotes the next remaining image edge; removing a reference leaves the
+base unchanged. Removing all incoming image edges clears both derived fields.
+Targets keep handles available after disconnect. Selection mode disables
+Delete/Backspace removal so selection and edge deletion do not collide.
 
 ## Conflict Reload Recovery
 

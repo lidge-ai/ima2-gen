@@ -66,6 +66,12 @@ sequenceDiagram
 
 ## Client Commands
 
+`ima2 session graph load` reads the server's flat `graphVersion`, `nodes` and
+`edges` and exports `{ version, nodes, edges }`; legacy nested graph responses
+remain accepted. `graph save` reads that current version and sends `If-Match`.
+A new session starts at version 0. Missing sessions and version conflicts remain
+errors; malformed graph files fail before contacting the server.
+
 The CLI surface was expanded to near-feature-parity with the server API in #45 (`feat(cli): full feature parity with server API`, commit 9698fc1). The table below groups commands by the API surface they wrap. Run `ima2 <command> --help` for full per-command flags.
 
 | Command | Server API | Role |

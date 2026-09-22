@@ -512,6 +512,14 @@ or upstream completion guarantee is introduced.
 
 ## Node Mode API
 
+`extraParentNodeIds?: string[]` supplies additional saved node images. The primary
+`parentNodeId` remains the editable base; deduplicated extra parents precede user
+references in the provider request. Explicit missing/invalid extras fail, and
+combined configured reference limits apply before provider admission. Parent-only
+skips loading extra parents; existing adapter-specific user-reference behavior
+is preserved. Graph session edge ordering is explicit so reloading cannot swap
+base and reference roles.
+
 | Method | Path | Body or query | Response |
 |---|---|---|---|
 | `POST` | `/api/node/generate` | `{ parentNodeId?, prompt, quality?, size?, format?, moderation?, model?, references?, externalSrc?, contextMode?, searchMode?, sessionId?, clientNodeId?, requestId?, provider? }` | `{ nodeId, parentNodeId, requestId, image, filename, url, elapsed, usage, webSearchCalls, provider, moderation, model, refsCount, contextMode, searchMode }` |

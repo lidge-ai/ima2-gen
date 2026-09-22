@@ -425,6 +425,7 @@ Body fields:
 ```json
 {
   "parentNodeId": "optional-server-node-id",
+  "extraParentNodeIds": ["optional-reference-node-id"],
   "prompt": "continue this image",
   "quality": "medium",
   "size": "1024x1024",
@@ -441,6 +442,16 @@ Body fields:
 ```
 
 When `parentNodeId` is present, the server loads the stored parent node image and uses the edit path. Node-local references are allowed on both root and child/edit nodes; for child/edit nodes the parent image is sent first, then references, then the text prompt.
+
+`extraParentNodeIds` adds stored node images as ordered references before explicit
+`references`. Duplicate IDs and the base parent ID are removed; a missing requested
+extra image fails the request. Malformed IDs, per-reference size overflow, and the
+combined extra-plus-explicit reference cap are rejected before provider work.
+The existing configured reference limits apply, followed by provider-specific
+admission counting the base image too. `parent-only` does not load extra parents;
+existing provider-specific handling of explicit user references is unchanged.
+Graph connections preserve their saved order: the first image connection supplies
+the base and the remaining image connections supply references.
 
 Grok Node Mode uses the configured planner and Images API, with search suppressed by `searchMode: "off"` or `webSearchEnabled: false`. A parent node image, `externalSrc`, or extra references are passed to the planner and then to `/v1/images/edits`; otherwise the final call uses `/v1/images/generations`. The server caps total input images at three, counting parent/current image plus references, and returns `GROK_REF_TOO_MANY` before upstream when exceeded. Existing quality-model resolution is unchanged.
 
@@ -1038,6 +1049,8 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 Notes:
 - `ima2 history favorite` and `ima2 annotate …` send `X-Ima2-Browser-Id: cli-<sha1prefix>` derived from the config dir, so CLI activity does not collide with browser sessions.
 - `ima2 session graph save` performs a GET-then-PUT with `If-Match: "<version>"` to guard against `GRAPH_VERSION_CONFLICT`.
+- Graph CLI commands accept current flat session fields and legacy nested graph
+  responses. First save uses version 0; load exports `{ version, nodes, edges }`.
 - `ima2 history import` and `ima2 canvas-versions save/update` send raw bytes with `Content-Type: image/<png|jpeg|webp>`; the SSE endpoints (`multimode`, `node generate`, `video`) use `Accept: text/event-stream`. The web UI instead uses `GET /api/events` plus `async: true` on POST routes.
 - `ima2 cardnews …` checks `runtimeConfig.features.cardNews` before calling the gated endpoints; when disabled the CLI exits 2 with a clear message instead of producing a 404.
 
