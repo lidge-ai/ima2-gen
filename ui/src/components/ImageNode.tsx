@@ -15,6 +15,7 @@ import { isVideoUrl } from "../lib/videoMedia";
 import { AssetMediaLightbox } from "./assetgen/AssetMediaLightbox";
 import { buildProvenanceView } from "../lib/provenance";
 import { SavePromptPopover } from "./SavePromptPopover";
+import { NodeVideoSettings } from "./node-canvas/NodeVideoSettings";
 import { NodeApiPanel } from "./node-canvas/NodeApiPanel";
 
 const MAX_NODE_REFS = 5;
@@ -149,6 +150,14 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // Node mang vai tro VIDEO thi GEN phai sinh VIDEO. Truoc day vai tro chi la
   // cai nhan: bam GEN tren node video van sinh ra anh, ghi de mat clip.
   const laNodeVideo = d.vaiTro === "video";
+  const doiCaiDatVideo = useCallback((patch: Partial<NonNullable<typeof d.caiDatVideo>>) => {
+    // Bo mot lua chon = xoa han khoi node, khong luu `undefined`: o trong phai
+    // co nghia "theo cai dat chung", va mot truong undefined con lai trong graph
+    // se khien lan doc sau khong phan biet duoc hai truong hop.
+    const goc = { ...(d.caiDatVideo ?? {}), ...patch };
+    const con = Object.fromEntries(Object.entries(goc).filter(([, v]) => v !== undefined && v !== ""));
+    updateNodeData(id, { caiDatVideo: Object.keys(con).length ? con : null });
+  }, [d.caiDatVideo, id, updateNodeData]);
   const onAnimateRef = useRef<(() => void) | null>(null);
 
   // Node MOC (BAT DAU / KET THUC) khong sinh gi ca: no chi danh dau hai dau cua
@@ -825,6 +834,16 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
             <span className="image-node__ref-count">{refs.length}/{MAX_NODE_REFS}</span>
           ) : null}
         </div>
+        {/* Cai dat rieng cua node video: bang ben phai la cai dat chung ca
+            phien, con mot khuon co the co hai node video khac ti le nhau - va
+            khi chay qua API thi khong ai ngoi chon o bang do ca. */}
+        {laNodeVideo ? (
+          <NodeVideoSettings
+            caiDat={d.caiDatVideo}
+            coAnhNen={Boolean(dauVaoVideo.anh)}
+            doi={doiCaiDatVideo}
+          />
+        ) : null}
         <input
           ref={fileInput}
           type="file"

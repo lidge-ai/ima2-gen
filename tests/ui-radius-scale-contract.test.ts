@@ -139,8 +139,9 @@ test("the frozen manifest covers every border-radius declaration exactly once", 
   const decls = radiusDecls().filter((d) => d.prop === "border-radius");
   // WP12s adds exactly three inspected sign-in panel/input/button declarations;
   // The workflow START marker adds two (its run button and the copy-curl
-  // button); the Runner panel adds seven; the template import button adds one.
-  assert.equal(MANIFEST.length, 491, "the manifest is frozen at 491 rows");
+  // button); the Runner panel adds seven; the template import button adds one;
+  // the per-node video settings add two.
+  assert.equal(MANIFEST.length, 493, "the manifest is frozen at 493 rows");
   assert.equal(decls.length, MANIFEST.length, "declaration count drifted from the manifest");
 
   const manifestKeys = new Set(MANIFEST.map(keyOf));

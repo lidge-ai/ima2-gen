@@ -3388,6 +3388,20 @@
     "important": false
   },
   {
+    "file": "ui/src/styles/node-workspace.css",
+    "atRule": null,
+    "selector": ".image-node__vid-cd-so",
+    "expected": "var(--r-pill)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/node-workspace.css",
+    "atRule": null,
+    "selector": ".image-node__vid-cd-than select",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
     "file": "ui/src/styles/wf-runner.css",
     "atRule": null,
     "selector": ".wf-runner",

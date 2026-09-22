@@ -70,7 +70,7 @@ test("both surfaces let a lone attachment be a first frame or a reference", () =
   // video node is not thrown away by an attachment" - nen khop giua dong.
   assert.match(
     store,
-    /sourceImage:.*singleRefAsSource \? refs\[0\]/,
+    /sourceImage:[\s\S]{0,240}singleRefAsSource \? refs\[0\]/,
     "choosing the first frame must actually send the image in the source slot",
   );
   const cli = readFileSync(new URL("../bin/lib/videoMcp.ts", import.meta.url), "utf8");
@@ -138,4 +138,24 @@ test("the workflow engine sends the base frame by filename, not parentNodeId", (
   assert.match(videoCall.slice(0, 400), /\.\.\.anhVao/);
   assert.match(engine, /sourceFilename: tenNen/);
   assert.doesNotMatch(videoCall.slice(0, 400), /parentNodeId/);
+});
+
+test("a video node carries its own aspect ratio, resolution and length", () => {
+  // Bang dieu khien ben phai la cai dat chung ca phien. Mot khuon co the co hai
+  // node video khac ti le nhau, va khi chay qua API thi khong ai ngoi chon o
+  // bang do - mac dinh cua may chu la thu duy nhat den.
+  const impl = readFileSync(new URL("../ui/src/store/storeVideoImpl.ts", import.meta.url), "utf8");
+  assert.match(impl, /const cdNode = node\?\.data\.caiDatVideo \?\? null/);
+  assert.match(impl, /duration: cdNode\?\.duration \?\? get\(\)\.videoDuration/);
+  assert.match(impl, /resolution: cdNode\?\.resolution \?\? get\(\)\.videoResolution/);
+  assert.match(impl, /aspectRatio: cdNode\?\.aspectRatio \?\? get\(\)\.videoAspectRatio/);
+  // "tham-chieu" chi ap cho anh nen la ANH: cha la clip thi duong duy nhat la
+  // noi tiep, khong co o tham chieu nao nhet mot doan phim vao duoc.
+  assert.match(impl, /const nenLamThamChieu = Boolean\(parentSourceFilename\) && cdNode\?\.anhNen === "tham-chieu"/);
+
+  const panel = readFileSync(new URL("../ui/src/components/node-canvas/NodeVideoSettings.tsx", import.meta.url), "utf8");
+  // O trong phai co nghia "theo cai dat chung", khong phai mot gia tri an.
+  assert.match(panel, /node\.videoInherit/);
+  assert.match(panel, /khung-dau/);
+  assert.match(panel, /tham-chieu/);
 });

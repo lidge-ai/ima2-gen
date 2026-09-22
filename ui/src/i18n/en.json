@@ -757,7 +757,16 @@
     "wfApiSecCalls": "API · {count} calls",
     "wfApiSecInputs": "Inputs · {count}",
     "wfApiSecNodes": "Nodes · {count}",
-    "wfApiSecRuns": "Recent runs"
+    "wfApiSecRuns": "Recent runs",
+    "videoSettings": "Video settings",
+    "videoSettingsTitle": "Settings for this video node only",
+    "videoInherit": "Panel default",
+    "videoAspect": "Aspect",
+    "videoResolution": "Resolution",
+    "videoDuration": "Length",
+    "videoBase": "Base image",
+    "videoBaseFirstFrame": "First frame",
+    "videoBaseReference": "Reference only"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

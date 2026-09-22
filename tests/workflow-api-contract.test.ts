@@ -698,6 +698,51 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-14 node VIDEO mang cai dat rieng: ti le, phan giai, thoi luong", async () => {
+    // Chay qua API thi khong co ai ngoi chon o bang dieu khien, nen mac dinh
+    // cua may chu (auto / 480p / 5s) la thu duy nhat den - va no khong phai ti
+    // le nguoi dung muon. Cai dat phai song trong chinh node.
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "mot quan ca phe" },
+      { id: "vid", vaiTro: "video", prompt: "may quay xoay cham" },
+    ]);
+    const phien = store.getSession(day)!;
+    const nodes = (phien.nodes as any[]).map((n) => (n.id === "vid"
+      ? { ...n, data: { ...n.data, caiDatVideo: { aspectRatio: "9:16", resolution: "720p", duration: 8 } } }
+      : n));
+    store.saveGraph(day, { nodes, edges: phien.edges as [], expectedVersion: phien.version });
+
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      assert.equal(video.than.aspectRatio, "9:16");
+      assert.equal(video.than.resolution, "720p");
+      assert.equal(video.than.duration, 8);
+    });
+  });
+
+  it("WFTP-15 node VIDEO chon anh nen lam THAM CHIEU thi khong khoa khung dau", async () => {
+    // Mac dinh anh nen la khung dau, nhung co canh nguoi dung muon no chi la
+    // goi y (vi du can mot goc may khac han). Luc do no phai di o o tham chieu.
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "mot quan ca phe" },
+      { id: "vid", vaiTro: "video", prompt: "may quay xoay cham" },
+    ]);
+    const phien = store.getSession(day)!;
+    const nodes = (phien.nodes as any[]).map((n) => (n.id === "vid"
+      ? { ...n, data: { ...n.data, caiDatVideo: { anhNen: "tham-chieu" } } }
+      : n));
+    store.saveGraph(day, { nodes, edges: phien.edges as [], expectedVersion: phien.version });
+
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
+      assert.deepEqual(video.than.referenceFilenames, [String(canh.data.imageUrl).replace("/generated/", "")]);
+      assert.equal(video.than.sourceFilename, undefined);
+    });
+  });
+
   it("WFTP-11 anh dinh o node VIDEO khong dap duoc anh nen", async () => {
     // May chu chi lam MOT trong hai: khung dau hoac danh sach tham chieu. De ca
     // hai vao thi khung dau bi bo - dung cai da lam doi nguoi mau.

@@ -23,6 +23,16 @@ export type WfNodeData = {
   /** Kich thuoc va mo hinh rieng cua node, neu nguoi dung da chon. */
   size?: string | null | undefined;
   model?: string | null | undefined;
+  /**
+   * Cai dat rieng cua node VIDEO: ti le, do phan giai, thoi luong, va anh nen
+   * dung lam khung dau hay chi lam tham chieu. Bo trong thi theo mac dinh.
+   */
+  caiDatVideo?: {
+    aspectRatio?: string | undefined;
+    resolution?: string | undefined;
+    duration?: number | undefined;
+    anhNen?: "khung-dau" | "tham-chieu" | undefined;
+  } | null | undefined;
 };
 
 export type WfNode = {

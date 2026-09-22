@@ -757,7 +757,16 @@
     "wfApiSecCalls": "API · 호출 {count}개",
     "wfApiSecInputs": "입력 · {count}",
     "wfApiSecNodes": "노드 · {count}",
-    "wfApiSecRuns": "최근 실행"
+    "wfApiSecRuns": "최근 실행",
+    "videoSettings": "영상 설정",
+    "videoSettingsTitle": "이 영상 노드에만 적용되는 설정",
+    "videoInherit": "패널 기본값",
+    "videoAspect": "비율",
+    "videoResolution": "해상도",
+    "videoDuration": "길이",
+    "videoBase": "베이스 이미지",
+    "videoBaseFirstFrame": "첫 프레임",
+    "videoBaseReference": "참조로만"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

@@ -162,6 +162,21 @@ export type ImageNodeData = {
   provider?: string | null;
   referenceImages?: string[];
   video?: { duration?: number; resolution?: string; aspectRatio?: string; topic?: string } | null;
+  /**
+   * Cai dat RIENG cua mot node VIDEO.
+   *
+   * Bang dieu khien ben phai la cai dat chung cho ca phien, nhung mot khuon co
+   * the co hai node video khac ti le nhau (mot doc cho reel, mot ngang), va khi
+   * chay qua API thi khong co ai ngoi chon o bang do ca - mac dinh cua may chu
+   * (auto / 480p / 5s) khong phai cai nguoi dung muon.
+   */
+  caiDatVideo?: {
+    aspectRatio?: string;
+    resolution?: string;
+    duration?: number;
+    /** Anh nen lam KHUNG DAU (mac dinh) hay chi lam THAM CHIEU. */
+    anhNen?: "khung-dau" | "tham-chieu";
+  } | null;
   videoContinuity?: VideoContinuityLineage | null;
 };
 

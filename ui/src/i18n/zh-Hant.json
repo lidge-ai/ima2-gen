@@ -757,7 +757,16 @@
     "wfApiSecCalls": "API · {count} 種呼叫",
     "wfApiSecInputs": "輸入 · {count}",
     "wfApiSecNodes": "節點 · {count}",
-    "wfApiSecRuns": "最近的執行"
+    "wfApiSecRuns": "最近的執行",
+    "videoSettings": "影片設定",
+    "videoSettingsTitle": "僅套用於此影片節點",
+    "videoInherit": "面板預設",
+    "videoAspect": "比例",
+    "videoResolution": "解析度",
+    "videoDuration": "長度",
+    "videoBase": "基底圖像",
+    "videoBaseFirstFrame": "首格",
+    "videoBaseReference": "僅作參考"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

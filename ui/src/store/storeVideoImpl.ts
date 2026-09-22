@@ -124,7 +124,16 @@ export async function runVideoGenerateImpl(
       }
     }
   }
+  // Cai dat rieng cua node thang cai dat chung o bang ben phai: mot khuon co
+  // the co hai node video khac ti le nhau, va nguoi dung da noi ro o node nao.
+  const cdNode = node?.data.caiDatVideo ?? null;
   const coAnhNen = Boolean(parentSourceFilename || parentVideoFrameRef);
+  // "tham-chieu": anh nen chi la goi y, khong khoa khung dau. Gui no o o tham
+  // chieu (kem anh dinh, neu co) chu khong phai o anh nguon.
+  //
+  // Chi ap cho anh nen la ANH. Cha la mot clip thi duong duy nhat la noi tiep
+  // (`continueFromVideo`), khong co o tham chieu nao de nhet mot doan phim vao.
+  const nenLamThamChieu = Boolean(parentSourceFilename) && cdNode?.anhNen === "tham-chieu";
   // Noi ra chu khong bo im: nguoi dung vua dinh mot anh vao node video va no
   // khong duoc dung cho lan nay.
   if (coAnhNen && refs.length > 0) get().showToast(t("video.baseWinsOverRefs"));
@@ -167,14 +176,19 @@ export async function runVideoGenerateImpl(
       // May chu chi lam MOT trong hai: mot khung dau (image-to-video) hoac mot
       // danh sach tham chieu (reference-to-video). Co anh nen thi anh nen
       // thang, anh dinh o node video de lai cho lan sau.
-      referenceImages: refs.length > 0 && !singleRefAsSource && !coAnhNen ? refs : undefined,
-      sourceImage: coAnhNen ? parentVideoFrameRef : (singleRefAsSource ? refs[0] : (refs.length > 0 ? undefined : parentVideoFrameRef)),
-      sourceFilename: !parentVideoFrameRef ? parentSourceFilename : undefined,
+      referenceImages: (refs.length > 0 && !singleRefAsSource && !coAnhNen) || (nenLamThamChieu && refs.length > 0)
+        ? refs
+        : undefined,
+      ...(nenLamThamChieu && parentSourceFilename ? { referenceFilenames: [parentSourceFilename] } : {}),
+      sourceImage: nenLamThamChieu
+        ? undefined
+        : coAnhNen ? parentVideoFrameRef : (singleRefAsSource ? refs[0] : (refs.length > 0 ? undefined : parentVideoFrameRef)),
+      sourceFilename: !parentVideoFrameRef && !nenLamThamChieu ? parentSourceFilename : undefined,
       continueFromVideo,
       continuityLineage: parentVideoContinuity,
-      duration: get().videoDuration,
-      resolution: get().videoResolution,
-      aspectRatio: get().videoAspectRatio,
+      duration: cdNode?.duration ?? get().videoDuration,
+      resolution: cdNode?.resolution ?? get().videoResolution,
+      aspectRatio: cdNode?.aspectRatio ?? get().videoAspectRatio,
       // Sent only when a voice is selected: the route treats an absent field and an
       // empty array differently, and an empty array would advertise reference-to-video
       // for a request that has nothing to reference.

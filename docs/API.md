@@ -1422,6 +1422,20 @@ The server does **one of the two**, never both: a first frame or a reference
 list. So when a base exists it wins, and an attachment on the video node is left
 for a run that has no base — sending both would drop the first frame, and the
 video would come back with a different person in different light.
+
+A video node carries its own settings in `data.caiDatVideo`, which the run uses
+in place of the defaults:
+
+```json
+{ "aspectRatio": "9:16", "resolution": "720p", "duration": 8, "anhNen": "khung-dau" }
+```
+
+Every field is optional; an absent one keeps the server default (`auto`, `480p`,
+`5s`). `anhNen` chooses what the base image is for — `khung-dau` (the default)
+locks it as the first frame, `tham-chieu` sends it as a reference instead, for a
+shot that should not start on that exact frame. An API run reads these from the
+graph: nobody is sitting at the panel to pick them, and the defaults are almost
+never the aspect ratio the workflow wants.
 - `nodes` — replaces a node's content for **this call only**, keyed by node id.
   Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
   let one API call redraw a workflow the user shaped by hand on the canvas. The

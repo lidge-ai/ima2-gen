@@ -725,11 +725,29 @@ async function chayMotNode(
     // danh sach tham chieu (reference-to-video). Co anh nen thi anh nen thang:
     // no la dung canh nguoi dung muon lam dong, con anh dinh o node video chi
     // la goi y - de ca hai vao thi khung dau bi bo va nguoi mau doi.
+    // Cai dat rieng cua node: khi khuon chay qua API thi khong co ai ngoi chon
+    // o bang dieu khien ca, va mac dinh cua may chu (auto / 480p / 5s) gan nhu
+    // khong bao gio la ti le nguoi dung muon. Chi gui truong nguoi dung da dat;
+    // bo trong thi may chu giu mac dinh cua no nhu truoc.
+    const cd = node.data?.caiDatVideo ?? null;
+    const caiDat: Record<string, unknown> = {};
+    if (cd?.aspectRatio) caiDat.aspectRatio = cd.aspectRatio;
+    if (cd?.resolution) caiDat.resolution = cd.resolution;
+    if (typeof cd?.duration === "number") caiDat.duration = cd.duration;
+    // "tham-chieu": nguoi dung muon anh nen chi la goi y chu khong khoa khung
+    // dau - vi du canh dung yen ma clip can mot goc may khac. Luc do anh nen di
+    // o o tham chieu, va anh dinh o node duoc di kem.
+    const nenThamChieu = !clipCha && !!tenNen && cd?.anhNen === "tham-chieu";
     const anhVao = clipCha
       ? { continueFromVideo: clipCha }
-      : tenNen
-        ? { sourceFilename: tenNen }
-        : refs2.length ? { referenceImages: refs2 } : {};
+      : nenThamChieu
+        ? {
+            referenceFilenames: [tenNen],
+            ...(refs2.length ? { referenceImages: refs2 } : {}),
+          }
+        : tenNen
+          ? { sourceFilename: tenNen }
+          : refs2.length ? { referenceImages: refs2 } : {};
     const cho = doiViec(requestId, huy);
     await goiNoiBo(ctx, "/api/video/generate", {
       async: true,
@@ -738,6 +756,7 @@ async function chayMotNode(
       prompt: loiTa,
       sessionId: ts.sessionId,
       clientNodeId: nodeId,
+      ...caiDat,
       ...anhVao,
     }, huy);
     const kq = await cho;

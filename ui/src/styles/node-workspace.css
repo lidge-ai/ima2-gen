@@ -854,3 +854,51 @@
 .image-node__api-muc:first-child {
   border-top: 0;
 }
+
+/* Cai dat rieng cua node VIDEO. Dong san va nam duoi thanh dinh anh: no chi
+   duoc mo ra khi nguoi dung thuc su muon doi, con lai thi node phai gon. */
+.image-node__vid-cd {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+.image-node__vid-cd-mo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.image-node__vid-cd-so {
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 10px;
+}
+.image-node__vid-cd-than {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+.image-node__vid-cd-than label {
+  display: grid;
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.image-node__vid-cd-than select {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 4px;
+}
