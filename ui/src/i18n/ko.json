@@ -725,8 +725,9 @@
     "disconnect": "끊기",
     "disconnectTitle": "선택한 연결선 끊기",
     "disconnected": "연결선을 끊었습니다.",
-    "parentConflict": "한 노드에는 부모 연결을 하나만 둘 수 있습니다.",
-    "cycleBlocked": "이 연결은 순환 고리를 만들기 때문에 연결할 수 없습니다."
+    "cycleBlocked": "이 연결은 순환 고리를 만들기 때문에 연결할 수 없습니다.",
+    "roleBase": "원본",
+    "roleRef": "참조"
   },
   "provider": {
     "authTitle": "공급자",

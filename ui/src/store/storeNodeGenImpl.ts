@@ -1,10 +1,13 @@
 import { normalizeImageQuality } from "../lib/imageModels";
 import type { ClientNodeId } from "../lib/graph";
 import { postNodeGenerateStream } from "../lib/api";
-import { deriveParentServerNodeIds } from "../lib/nodeGraph";
+import {
+  deriveParentServerNodeIds,
+  getImageParentEdges,
+  getIncomingImageEdges,
+} from "../lib/nodeGraph";
 import { getSelectedNodeIds } from "../lib/nodeSelection";
 import {
-  getDirectUnselectedChildren,
   getUnselectedDownstreamIds,
   collectDownstream,
   findCycleNodeIds,
@@ -108,7 +111,7 @@ export async function runGenerateNodeInPlaceImpl(
   nodeGenerationLocks.add(clientId);
   const beforeRepair = get().graphNodes;
   const repairedNodes = deriveParentServerNodeIds(beforeRepair, get().graphEdges);
-  if (repairedNodes.some((n, i) => n.data.parentServerNodeId !== beforeRepair[i]?.data.parentServerNodeId)) {
+  if (repairedNodes.some((node, index) => node !== beforeRepair[index])) {
     set({ graphNodes: repairedNodes });
   }
   const node = repairedNodes.find((n) => n.id === clientId);
@@ -151,11 +154,10 @@ export async function runGenerateNodeInPlaceImpl(
     options.parentServerNodeIdOverride !== undefined
       ? options.parentServerNodeIdOverride
       : parentServerNodeId;
-  // Cha phu: anh cua chung duoc gui kem lam tham chieu (xem extraParentNodeIds).
   const extraParentServerNodeIds = (node.data.extraParentServerNodeIds ?? [])
     .filter((id) => id && id !== effectiveParentServerNodeId);
-  const incoming = get().graphEdges.find((edge) => edge.target === clientId);
-  if (incoming && !effectiveParentServerNodeId) {
+  const incoming = getIncomingImageEdges(repairedNodes, get().graphEdges, clientId);
+  if (incoming.length > 0 && !effectiveParentServerNodeId) {
     get().showToast(t("node.parentImageRequired"), true);
     nodeGenerationLocks.delete(clientId);
     return null;
@@ -390,7 +392,8 @@ export async function runNodeBatchImpl(
     get().showToast(t("nodeBatch.noneSelected"), true);
     return;
   }
-  const blocked = validateBatchDependencies(get().graphNodes, get().graphEdges, selectedIds);
+  const imageEdges = getImageParentEdges(get().graphNodes, get().graphEdges);
+  const blocked = validateBatchDependencies(get().graphNodes, imageEdges, selectedIds);
   if (blocked.length > 0) {
     get().showToast(t("nodeBatch.parentRequired", { count: blocked.length }), true);
     return;
@@ -400,7 +403,7 @@ export async function runNodeBatchImpl(
     get().showToast(t("nodeBatch.cycleBlocked", { count: cycleIds.length }), true);
     return;
   }
-  const orderedIds = topologicalSortSelected(get().graphNodes, get().graphEdges, selectedIds);
+  const orderedIds = topologicalSortSelected(get().graphNodes, imageEdges, selectedIds);
   const selectedSet = new Set(selectedIds);
   const candidates = orderedIds.filter((id) => {
     if (mode === "regenerate-all") return true;
@@ -421,7 +424,6 @@ export async function runNodeBatchImpl(
   }
 
   set({ nodeBatchRunning: true, nodeBatchStopping: false });
-  const latestServerNodeIdByClientId = new Map<string, string>();
   let completed = 0;
   let failedCount = 0;
   let skippedCount = 0;
@@ -433,12 +435,12 @@ export async function runNodeBatchImpl(
         skippedCount += 1;
         continue;
       }
-      const incoming = get().graphEdges.find((e) => e.target === candidateId);
-      const parentOverride = incoming
-        ? latestServerNodeIdByClientId.get(incoming.source)
-          ?? get().graphNodes.find((n) => n.id === candidateId)?.data.parentServerNodeId
-          ?? null
-        : null;
+      const repairedNodes = deriveParentServerNodeIds(get().graphNodes, get().graphEdges);
+      if (repairedNodes.some((node, index) => node !== get().graphNodes[index])) {
+        set({ graphNodes: repairedNodes });
+      }
+      const parentOverride = repairedNodes.find((node) => node.id === candidateId)
+        ?.data.parentServerNodeId ?? null;
       const nodeId = get().videoModelSelected
         ? await get().runVideoGenerate(candidateId as ClientNodeId).then(() => {
             const n = get().graphNodes.find((nd) => nd.id === candidateId);
@@ -452,37 +454,24 @@ export async function runNodeBatchImpl(
         // Partial failure (020, wp2): skip everything downstream of the
         // failed node but keep independent candidates running.
         failedCount += 1;
-        for (const id of collectDownstream(get().graphEdges, candidateId)) skipIds.add(id);
+        for (const id of collectDownstream(imageEdges, candidateId)) skipIds.add(id);
         continue;
       }
       completed += 1;
-      latestServerNodeIdByClientId.set(candidateId, nodeId);
-      const directChildren = getDirectUnselectedChildren(get().graphEdges, candidateId, selectedSet);
-      // Selected direct children too (020, wp2 audit blocker #2): the video
-      // batch path resolves lineage from the stored parentServerNodeId, so
-      // propagate the fresh server id to every direct child.
-      const selectedDirectChildren = get().graphEdges
-        .filter((e) => e.source === candidateId && selectedSet.has(e.target))
-        .map((e) => e.target);
-      const downstream = new Set(getUnselectedDownstreamIds(get().graphEdges, selectedSet));
+      const downstream = new Set(getUnselectedDownstreamIds(imageEdges, selectedSet));
+      const nextNodes = get().graphNodes.map((n) => {
+        if (!downstream.has(n.id)) return n;
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            status: "stale" as const,
+            error: t("nodeBatch.staleBecauseParentChanged"),
+          },
+        };
+      });
       set({
-        graphNodes: get().graphNodes.map((n) => {
-          if (selectedDirectChildren.includes(n.id)) {
-            return { ...n, data: { ...n.data, parentServerNodeId: nodeId } };
-          }
-          if (!downstream.has(n.id)) return n;
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              status: "stale",
-              parentServerNodeId: directChildren.includes(n.id)
-                ? nodeId
-                : n.data.parentServerNodeId,
-              error: t("nodeBatch.staleBecauseParentChanged"),
-            },
-          };
-        }),
+        graphNodes: deriveParentServerNodeIds(nextNodes, get().graphEdges),
       });
     }
     if (failedCount > 0) {

@@ -8,6 +8,7 @@ import { mergeAbortSignals, submitAsyncJobWithCapacityRetry } from "./asyncJobSu
 
 export type NodeGenerateRequest = {
   parentNodeId: string | null;
+  extraParentNodeIds?: string[];
   prompt: string;
   quality: string;
   size: string;

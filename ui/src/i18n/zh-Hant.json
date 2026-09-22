@@ -725,8 +725,9 @@
     "disconnect": "斷開",
     "disconnectTitle": "斷開選定的邊",
     "disconnected": "連線已移除。",
-    "parentConflict": "node 只能有一個父連結。",
-    "cycleBlocked": "該連接會形成一個循環。"
+    "cycleBlocked": "該連接會形成一個循環。",
+    "roleBase": "原圖",
+    "roleRef": "參考"
   },
   "provider": {
     "authTitle": "提供者",

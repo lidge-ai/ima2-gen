@@ -23,11 +23,12 @@ describe("node compact footer contract", () => {
     assert.doesNotMatch(css, /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 0\.9fr\)/);
   });
 
-  it("has localized action titles and parent conflict copy", () => {
+  it("has localized action titles and multiple-parent edge roles", () => {
     assert.match(ko, /regenerateTitle/);
-    assert.match(ko, /parentConflict/);
+    assert.match(ko, /"roleBase":\s*"원본"/);
+    assert.match(ko, /"roleRef":\s*"참조"/);
     assert.match(en, /regenerateTitle/);
-    assert.match(en, /parentConflict/);
+    assert.match(en, /"roleBase":\s*"base"/);
+    assert.match(en, /"roleRef":\s*"ref"/);
   });
 });
-

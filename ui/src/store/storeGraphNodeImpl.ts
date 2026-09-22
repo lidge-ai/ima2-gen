@@ -426,9 +426,6 @@ export function connectNodesImpl(
     (e) => e.source === sourceClientId && e.target === targetClientId,
   );
   if (existing) return;
-  // Nhieu cha duoc phep: ke thua chi la lay ANH cua cha lam tham chieu, nen mot
-  // node nhan nhieu nguon. Canh noi TRUOC la anh goc dem di sua, cac canh sau
-  // thanh tham chieu kem theo.
   if (wouldCreateCycle(get().graphEdges, sourceClientId, targetClientId)) {
     get().showToast(t("edge.cycleBlocked"), true);
     return;

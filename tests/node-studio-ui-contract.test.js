@@ -123,7 +123,7 @@ describe("NC — palette and compatibility boundary", () => {
   it("publishes the exact ten React Flow port bindings", () => {
     const imageInputs = ["top", "right", "bottom", "left"].map((side) => ({
       nodeType: "imageNode", flowHandleId: `target-${side}`, logicalPortId: "image-input",
-      direction: "input", type: "image", acceptsMany: false,
+      direction: "input", type: "image", acceptsMany: true,
       equivalentHandleIds: ["target-top", "target-right", "target-bottom", "target-left"],
     }));
     const imageOutputs = ["top", "right", "bottom", "left"].map((side) => ({
@@ -154,7 +154,7 @@ describe("NC — palette and compatibility boundary", () => {
     assert.equal(canConnectPortTypes("element-notes", "image"), false);
     assert.deepEqual(canConnectPorts(refsOut, imageIn, { nodes: [], edges: [] }), { allowed: true });
     assert.equal(canConnectPorts(notesOut, imageIn, { nodes: [], edges: [] }).reason, "TYPE_MISMATCH");
-    assert.equal(canConnectPorts(imageOut, imageIn, { nodes: [], edges: [{ id: "occupied", source: "other", target: "target", sourceHandle: "source-left", targetHandle: "target-left" }] }).reason, "CARDINALITY");
+    assert.deepEqual(canConnectPorts(imageOut, imageIn, { nodes: [], edges: [{ id: "occupied", source: "other", target: "target", sourceHandle: "source-left", targetHandle: "target-left" }] }), { allowed: true });
   });
 
   it("resolves catalog ports before connecting and surfaces typed failures", () => {

@@ -1,5 +1,23 @@
 import type { GraphEdge, GraphNode } from "../store/useAppStore";
 
+function isElementReferenceNode(node: GraphNode | undefined): boolean {
+  return node?.type === "elementReferenceNode"
+    || (node?.data as Record<string, unknown> | undefined)?.nodeType === "element-reference";
+}
+
+export function getImageParentEdges(nodes: GraphNode[], edges: GraphEdge[]): GraphEdge[] {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  return edges.filter((edge) => !isElementReferenceNode(byId.get(edge.source)));
+}
+
+export function getIncomingImageEdges(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  targetId: string,
+): GraphEdge[] {
+  return getImageParentEdges(nodes, edges).filter((edge) => edge.target === targetId);
+}
+
 export function getIncomingEdge(edges: GraphEdge[], targetId: string): GraphEdge | null {
   return edges.find((edge) => edge.target === targetId) ?? null;
 }
@@ -82,8 +100,7 @@ export function graphHasCycle(
 export function deriveParentServerNodeIds(nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   return nodes.map((node) => {
-    // Canh dau: anh goc dem di sua. Cac canh sau: chi lay anh lam tham chieu.
-    const incoming = edges.filter((edge) => edge.target === node.id);
+    const incoming = getIncomingImageEdges(nodes, edges, node.id);
     const parent = incoming[0] ? byId.get(incoming[0].source) : null;
     const nextParentServerNodeId = parent?.data.serverNodeId ?? null;
     const seen = new Set<string>(nextParentServerNodeId ? [nextParentServerNodeId] : []);

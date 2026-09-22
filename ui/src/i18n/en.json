@@ -725,8 +725,9 @@
     "disconnect": "Disconnect",
     "disconnectTitle": "Disconnect selected edge",
     "disconnected": "Connection removed.",
-    "parentConflict": "A node can only have one parent connection.",
-    "cycleBlocked": "That connection would create a loop."
+    "cycleBlocked": "That connection would create a loop.",
+    "roleBase": "base",
+    "roleRef": "ref"
   },
   "provider": {
     "authTitle": "Provider",

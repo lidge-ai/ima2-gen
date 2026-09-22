@@ -31,7 +31,7 @@ export const NODE_PORT_BINDINGS: readonly PortBinding[] = [
     logicalPortId: "image-input",
     direction: "input" as const,
     type: "image" as const,
-    acceptsMany: false,
+    acceptsMany: true,
     equivalentHandleIds: IMAGE_TARGET_HANDLES,
   })),
   ...IMAGE_SOURCE_HANDLES.map((flowHandleId) => ({

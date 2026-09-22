@@ -23,6 +23,7 @@ import { ElementReferenceNode } from "./node-canvas/ElementReferenceNode";
 import { NodeCanvasEmptyState } from "./node-canvas/NodeCanvasEmptyState";
 import { NodeStudioOverlays } from "./node-canvas/NodeStudioOverlays";
 import { useNodeStudioController } from "./node-canvas/useNodeStudioController";
+import { getImageParentEdges } from "../lib/nodeGraph";
 
 function NodeCanvasInner() {
   const { t } = useI18n();
@@ -45,6 +46,33 @@ function NodeCanvasInner() {
     imageNode: ImageNode,
     elementReferenceNode: ElementReferenceNode,
   }), []);
+
+  const labelledEdges = useMemo(() => {
+    const imageEdges = getImageParentEdges(nodes, edges);
+    const incomingCount = new Map<string, number>();
+    const imageEdgeIds = new Set(imageEdges.map((edge) => edge.id));
+    for (const edge of imageEdges) {
+      incomingCount.set(edge.target, (incomingCount.get(edge.target) ?? 0) + 1);
+    }
+    const seenTargets = new Set<string>();
+    return edges.map((edge) => {
+      if (!imageEdgeIds.has(edge.id)) return edge;
+      const isBase = !seenTargets.has(edge.target);
+      seenTargets.add(edge.target);
+      if ((incomingCount.get(edge.target) ?? 0) < 2) return edge;
+      return {
+        ...edge,
+        label: t(isBase ? "edge.roleBase" : "edge.roleRef"),
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgStyle: {
+          fill: isBase ? "var(--accent, #6b7cff)" : "var(--node-canvas-grid, #9aa0aa)",
+          opacity: 0.92,
+        },
+        labelStyle: { fill: "#fff", fontSize: 11, fontWeight: 600 },
+        style: isBase ? edge.style : { ...edge.style, strokeDasharray: "6 4" },
+      };
+    });
+  }, [edges, nodes, t]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) =>
@@ -89,7 +117,7 @@ function NodeCanvasInner() {
       {sessionLoading && <div className="node-canvas__loading">{t("nodeCanvas.loading")}</div>}
       <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={labelledEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={studio.onConnect}
