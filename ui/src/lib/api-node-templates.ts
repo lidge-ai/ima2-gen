@@ -72,3 +72,40 @@ export async function deleteNodeTemplate(id: string): Promise<void> {
     throw error instanceof Error ? error : new Error(String(error));
   }
 }
+
+/**
+ * Tep template de mang sang may khac. Chi chua phan hinh khuon - khong phien,
+ * khong anh da sinh.
+ */
+export type TepTemplateDto = {
+  kind: string;
+  version: number;
+  exportedAt: number;
+  sourceId?: string;
+  name: string;
+  description: string;
+  tags: string[];
+  graph: NodeTemplateGraphDto;
+};
+
+export async function xuatTemplate(id: string): Promise<TepTemplateDto> {
+  try {
+    return await jsonFetch<TepTemplateDto>(
+      `/api/node-templates/${encodeURIComponent(id)}/export`,
+    );
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}
+
+export async function nhapTemplate(tep: unknown): Promise<NodeTemplateSummary> {
+  try {
+    const response = await jsonFetch<{ template: NodeTemplateSummary }>(
+      "/api/node-templates/import",
+      { method: "POST", headers: jsonHeaders, body: JSON.stringify(tep) },
+    );
+    return response.template;
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}

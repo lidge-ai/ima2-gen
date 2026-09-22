@@ -1953,6 +1953,13 @@
     "important": false
   },
   {
+    "file": "ui/src/styles/node-canvas-extras.css",
+    "atRule": null,
+    "selector": ".node-template-picker__nhap button",
+    "expected": "var(--r-md)",
+    "important": false
+  },
+  {
     "file": "ui/src/styles/node-polish.css",
     "atRule": null,
     "selector": ".error-card",

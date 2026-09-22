@@ -158,8 +158,14 @@ export function xepTopo(
 
 export type LoiChuoi = "khong-phai-moc-dau" | "thieu-ket-thuc" | "vong-lap";
 
+/**
+ * `loi?: undefined` o nhanh THANH CONG khong phai cho dep: bo kiem cua tests
+ * chay voi `strictNullChecks: false`, va o che do do TypeScript khong thu hep
+ * duoc union theo `!ket.ok`, nen moi cho doc `.loi` deu bao khong co truong do.
+ * Khai bao san thi ca hai che do doc duoc.
+ */
 export type KetQuaChuoi =
-  | { ok: true; thuTu: string[]; ketThuc: string; soViec: number }
+  | { ok: true; thuTu: string[]; ketThuc: string; soViec: number; loi?: undefined }
   | { ok: false; loi: LoiChuoi };
 
 /**

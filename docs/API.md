@@ -781,6 +781,41 @@ Node graph templates (higgsfield 120). Seed templates ship with the app and are 
 | `POST` | `/api/node-templates/:id/instantiate` | Return a graph copy with fresh node IDs (never auto-runs) |
 | `PATCH` | `/api/node-templates/:id` | Rename a user template (seed → `403`) |
 | `DELETE` | `/api/node-templates/:id` | Delete a user template (seed → `403`) |
+| `GET` | `/api/node-templates/:id/export` | Download one template as a portable JSON file (seed templates included) |
+| `POST` | `/api/node-templates/import` | Create a user template from such a file (`201 { template }`) |
+
+### Portable template files
+
+A template lives in the SQLite database of the machine that made it, so moving a
+hand-built graph to a second machine means carrying the file:
+
+```bash
+curl -sO -J http://127.0.0.1:3000/api/node-templates/<id>/export
+curl -sX POST http://127.0.0.1:3000/api/node-templates/import   -H 'content-type: application/json' --data-binary @my-flow.ima2-template.json
+```
+
+The document holds only the shape of the workflow — no sessions, no generated
+images:
+
+```json
+{
+  "kind": "ima2.node-template",
+  "version": 1,
+  "exportedAt": 1758499200000,
+  "sourceId": "template_01J…",
+  "name": "Idol Kpop",
+  "description": "",
+  "tags": [],
+  "graph": { "nodes": [], "edges": [] }
+}
+```
+
+Import is a normal create: the graph goes through the same strip step, so
+secret-looking keys and run outputs in a file from elsewhere never reach the
+database. A file whose `kind` is wrong (`TEMPLATE_FILE_KIND`), whose `version`
+is newer than this app understands (`TEMPLATE_FILE_VERSION`) or which is over
+2 MB / 300 nodes / 1200 edges (`TEMPLATE_FILE_TOO_LARGE`) is refused. A name
+already in use is imported as `Name (2)` instead of overwriting.
 
 Graph save requests may include observability headers:
 

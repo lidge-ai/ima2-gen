@@ -5,6 +5,13 @@ import {
   type NodeTemplateGraph,
   type NodeTemplateRecord,
 } from "../lib/nodeTemplateStore.js";
+import {
+  docTepNhap,
+  taoTepXuat,
+  tenTepXuat,
+  tenKhongTrung,
+  TOI_DA_BYTE,
+} from "../lib/nodeTemplateFile.js";
 
 type IdParams = { id: string };
 
@@ -66,6 +73,47 @@ export function registerNodeTemplateRoutes(app: Express): void {
     try {
       const template = await nodeTemplateStore.create(req.body ?? {});
       res.status(201).json({ template: toSummary(template) });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  // Dang ky TRUOC cac route co ":id": Express khop theo thu tu, nen neu de
+  // sau thi "/import" bi doc thanh mot ma template ten la "import".
+  app.post("/api/node-templates/import", async (req: Request, res: Response) => {
+    try {
+      const body = req.body ?? {};
+      // Tep tu ngoai vao: chan theo kich thuoc THAT cua noi dung, vi mot graph
+      // it node van co the om data URL nang hang chuc MB.
+      if (JSON.stringify(body).length > TOI_DA_BYTE) {
+        res.status(413).json({ error: { code: "TEMPLATE_FILE_TOO_LARGE", message: `template file exceeds ${TOI_DA_BYTE} bytes` } });
+        return;
+      }
+      const doc = docTepNhap(body);
+      const dangCo = (await nodeTemplateStore.list()).map((item) => item.name);
+      const template = await nodeTemplateStore.create({
+        name: tenKhongTrung(doc.name, dangCo),
+        description: doc.description,
+        tags: doc.tags,
+        graph: doc.graph,
+      });
+      res.status(201).json({ template: toSummary(template) });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  app.get("/api/node-templates/:id/export", async (req: Request<IdParams>, res: Response) => {
+    try {
+      const template = await nodeTemplateStore.get(req.params.id);
+      if (!template) {
+        res.status(404).json({ error: { code: "TEMPLATE_NOT_FOUND", message: "template not found" } });
+        return;
+      }
+      // Trinh duyet tai ve dung ten template thay vi "export.json": mot nguoi
+      // xuat nhieu khuon thi khong phan biet duoc tep nao la tep nao.
+      res.setHeader("Content-Disposition", `attachment; filename="${tenTepXuat(template.name)}"`);
+      res.json(taoTepXuat(template));
     } catch (error) {
       sendError(res, error);
     }

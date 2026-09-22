@@ -2272,7 +2272,18 @@
       "saveError": "無法儲存模板。",
       "renamePrompt": "重新命名模板",
       "renameError": "無法重命名模板。",
-      "deleteError": "無法刪除模板。"
+      "deleteError": "無法刪除模板。",
+      "export": "匯出",
+      "import": "匯入檔案",
+      "importHint": "從其他電腦匯出的 .ima2-template.json 檔案。",
+      "exported": "已匯出「{name}」。",
+      "exportError": "無法匯出範本。",
+      "imported": "已匯入「{name}」。",
+      "importError": "無法匯入檔案。",
+      "importNotTemplate": "這不是 ima2 範本檔案。",
+      "importNewerVersion": "這個檔案由較新版本產生，請先更新應用程式。",
+      "importTooLarge": "範本檔案太大。",
+      "importBadName": "檔案中的範本沒有可用名稱。"
     },
     "palette": {
       "ariaLabel": "插入 node 指令",
