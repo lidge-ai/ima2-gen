@@ -767,7 +767,10 @@
     "videoBase": "Base image",
     "videoBaseFirstFrame": "First frame",
     "videoBaseReference": "Reference only",
-    "bocDoNeedRef": "Attach the real photo of the outfit — with no image this node invents one."
+    "bocDoNeedRef": "Attach the real photo of the outfit — with no image this node invents one.",
+    "wfSize": "Whole-workflow ratio",
+    "wfSizeNone": "Per-node / panel",
+    "outfitNotReadYet": "Run the extraction node first — the outfit description is not read yet."
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

@@ -948,3 +948,24 @@
   font-size: 10px;
   line-height: 1.35;
 }
+
+/* Ti le chung cua ca khuon, dat tren node BAT DAU. */
+.image-node__khuon-size {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.image-node__khuon-size select {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 11px;
+  padding: 3px 4px;
+}
+.image-node__khuon-size option {
+  background: var(--surface);
+  color: var(--text);
+}

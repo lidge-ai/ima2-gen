@@ -13,6 +13,8 @@
 export {
   dauVaoVideoCuaNode,
   dienOTrong,
+  kichThuocCuaKhuon,
+  kichThuocKeThua,
   laViecThat,
   nodeChaDau,
   oTrongCuaKhuon,

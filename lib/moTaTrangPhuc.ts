@@ -61,6 +61,53 @@ export const CAU_HOI_MO_TA =
 
 type CanhCoNguon = { source: string; target: string };
 type NodeCoPrompt = { id: string; data?: { prompt?: string | undefined } | undefined };
+type NodeCoMoTa = {
+  id: string;
+  data?: {
+    vaiTro?: string | undefined;
+    /** Cau ta bo do doc duoc tu flat lay cua CHINH node BOC DO nay. */
+    moTaTrangPhuc?: string | null | undefined;
+  } | undefined;
+};
+
+/**
+ * Cau ta bo do dung cho mot node: cua node BOC DO gan nhat PHIA TRUOC no.
+ *
+ * Luot chay o may chu doc lai flat lay moi lan, nhung giao dien thi khong: bam
+ * GEN mot node le thi khong co buoc nao doc anh ca. Nen node BOC DO luu lai cau
+ * ta da doc, va node phia sau dien o trong `{{TRANG_PHUC}}` tu day.
+ *
+ * Luu NGOAI prompt chu khong viet thang vao prompt: viet vao la prompt trong
+ * graph mang mot bo do cu thi, doi anh trang phuc xong van ra do cu - dung cai
+ * bay da phai sua mot lan.
+ */
+export function moTaTrangPhucGanNhat(
+  nodeId: string,
+  nodes: readonly NodeCoMoTa[],
+  edges: readonly CanhCoNguon[],
+): string | null {
+  const cha = new Map<string, string[]>();
+  for (const e of edges) {
+    const ds = cha.get(e.target) ?? [];
+    ds.push(e.source);
+    cha.set(e.target, ds);
+  }
+  const daQua = new Set<string>([nodeId]);
+  const hang = [nodeId];
+  for (let i = 0; i < hang.length; i++) {
+    for (const c of cha.get(hang[i]!) ?? []) {
+      if (daQua.has(c)) continue;
+      daQua.add(c);
+      const n = nodes.find((x) => x.id === c);
+      const moTa = n?.data?.moTaTrangPhuc;
+      if (n?.data?.vaiTro === "trang-phuc" && typeof moTa === "string" && moTa.trim()) {
+        return moTa.trim();
+      }
+      hang.push(c);
+    }
+  }
+  return null;
+}
 
 /**
  * Moi node PHIA SAU `nodeId` con mang khoi "She wears: ...".

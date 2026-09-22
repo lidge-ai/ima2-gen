@@ -260,6 +260,29 @@ export function kichThuocKeThua(
 }
 
 /**
+ * Ti le chung cua ca khuon: kich thuoc dat tren node BAT DAU.
+ *
+ * Mot khuon nen ra mot ti le duy nhat. Dat o tung node thi them mot node moi la
+ * quen, va node quen do roi ve mac dinh cua may chu - cung mot luot chay ra may
+ * tam doc may tam vuong.
+ *
+ * Dung `phiaSauCua` chu khong dung `timChuoiChay`: graph dang dung do con thieu
+ * moc KET THUC van phai tra loi duoc, con khong thi bam GEN giua luc dang ve la
+ * mat ti le.
+ */
+export function kichThuocCuaKhuon(
+  nodeId: string,
+  nodes: readonly WfNode[],
+  edges: readonly WfEdge[],
+): string | null {
+  for (const n of nodes) {
+    if (n.data?.vaiTro !== VAI_TRO_MOC_DAU || !n.data?.size) continue;
+    if (n.id === nodeId || phiaSauCua(edges, n.id).includes(nodeId)) return n.data.size;
+  }
+  return null;
+}
+
+/**
  * Anh va loi ta mot node VIDEO dung lam dau vao.
  *
  * Node CANH chi sinh anh, node VIDEO chi sinh video. Node video noi vao mot node

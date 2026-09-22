@@ -25,6 +25,7 @@ import {
   dauVaoVideoCuaNode,
   dienOTrong,
   laUrlVideo,
+  kichThuocCuaKhuon,
   kichThuocKeThua,
   laViecThat,
   nodeSauBocDo,
@@ -851,7 +852,10 @@ async function chayMotNode(
   // Node khong tu dat kich thuoc thi lay kich thuoc cua ANH NEN. Khong ke thua
   // thi no roi ve mac dinh cua may chu (1024x1024 - vuong), va cung mot luot
   // chay ra may tam doc may tam vuong du tat ca sua tu cung mot anh nen doc.
-  const kichThuoc = noiDung.size ?? kichThuocKeThua(nodeId, nodesHieuLuc(nodes, ts), edges);
+  const nodesHl = nodesHieuLuc(nodes, ts);
+  const kichThuoc = noiDung.size
+    ?? kichThuocKeThua(nodeId, nodesHl, edges)
+    ?? kichThuocCuaKhuon(nodeId, nodesHl, edges);
   const kq = await goiNoiBo(ctx, "/api/node/generate", {
     requestId,
     prompt,

@@ -202,7 +202,12 @@ describe("NB — atomic branch consumer", () => {
     assert.match(branching, /if \(applyVariant && variant\.provider\) data\.provider = variant\.provider/);
     assert.match(nodeRun, /const nodeProvider = \(typeof node\.data\.provider === "string"[\s\S]*: s\.provider\)/);
     assert.match(nodeRun, /const nodeModel = \(typeof node\.data\.model === "string"[\s\S]*: s\.imageModel\)/);
-    assert.match(nodeRun, /const size = options\.sizeOverride \?\? \(typeof node\.data\.size === "string"[\s\S]*: s\.getResolvedSize\(\)\)/);
+    // Kich thuoc rieng cua bien the (settingsPatch) van thang, va bang dieu
+    // khien van la bac cuoi. Giua hai bac do co them ke thua tu ANH NEN roi ti
+    // le cua ca khuon - xem WFSZ-01/04.
+    assert.match(nodeRun, /const size = options\.sizeOverride/);
+    assert.match(nodeRun, /\?\? \(typeof node\.data\.size === "string" && node\.data\.size \? node\.data\.size : null\)/);
+    assert.match(nodeRun, /\?\? s\.getResolvedSize\(\)/);
     assert.match(nodeRun, /postNodeGenerateStream\(\{[\s\S]*provider: nodeProvider,[\s\S]*model: nodeModel/);
   });
 });

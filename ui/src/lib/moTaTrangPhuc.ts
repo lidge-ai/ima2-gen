@@ -17,6 +17,8 @@ import {
  */
 export {
   KHUON_MO_TA,
+  O_TRANG_PHUC,
+  moTaTrangPhucGanNhat,
   thayMoTaTrongPrompt,
   timNodeCanDoiMoTa,
   timNodeDungThamChieu,

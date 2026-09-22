@@ -1414,6 +1414,12 @@ added later carry none — and a workflow running on the server has no panel to
 read, so those fell back to the square default even though every one of them was
 editing the same portrait base.
 
+The full precedence is: the node's own `size`, then the base it is editing, then
+a `size` set on the **START marker** — the ratio for the whole workflow — and
+only then the server default. The canvas offers that picker on the START node
+and resolves a single node's GEN the same way, so pressing GEN on one node and
+running the whole workflow land on the same ratio.
+
 A `nodes` override may set `size` too, and an override on a parent carries down
 the chain for that call, same as its prompt.
 
@@ -1453,6 +1459,14 @@ refused with `WF_INPUT_MISSING` — nothing would fill it.
 
 Passing `inputs.TRANG_PHUC` **overrides** the reading, on both paths: the caller
 said what to wear, and overwriting that would ignore their instruction silently.
+
+In the canvas there is no extraction step behind a single GEN, so the extraction
+node stores the sentence it read on itself (`data.moTaTrangPhuc`) and any node
+behind it fills `{{TRANG_PHUC}}` from there at generate time. It is kept *beside*
+the prompt rather than written into it: a prompt carrying a literal outfit is how
+a stale outfit came back after the garment had already been changed. A node whose
+only unfilled slot is `TRANG_PHUC` and which has no extraction node behind it
+says so instead of refusing with a generic "slot not filled".
 
 The older shape — rewriting the block between `She wears: ` and `. Use the
 reference image` — still works for prompts written before the slot existed, and

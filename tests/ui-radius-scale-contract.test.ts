@@ -143,8 +143,8 @@ test("the frozen manifest covers every border-radius declaration exactly once", 
   // the per-node video settings add two; the selection bar moved into the
   // toolbar row and lost its own panel chrome, removing one; the collapsed
   // element tray adds its count chip; the missing-photo notice on an
-  // extraction node adds one.
-  assert.equal(MANIFEST.length, 493, "the manifest is frozen at 493 rows");
+  // extraction node adds one; the whole-workflow ratio picker adds one.
+  assert.equal(MANIFEST.length, 494, "the manifest is frozen at 494 rows");
   assert.equal(decls.length, MANIFEST.length, "declaration count drifted from the manifest");
 
   const manifestKeys = new Set(MANIFEST.map(keyOf));

@@ -4,7 +4,14 @@ import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc } from "../lib/moTaTrangPhuc";
 import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
 import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
-import { dauVaoVideoCuaNode, laViecThat, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
+import { dauVaoVideoCuaNode, dienOTrong, laViecThat, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
+import { moTaTrangPhucGanNhat, O_TRANG_PHUC } from "../lib/moTaTrangPhuc";
+import {
+  SIZE_PRESETS_ROW1,
+  SIZE_PRESETS_ROW2,
+  SIZE_PRESETS_ROW3,
+  SIZE_PRESETS_ROW4,
+} from "../lib/size";
 import { canhAnhVao } from "../lib/canhAnh";
 import { huyLuotChayApi, lichSuLuotChay, type WfLuotApi } from "../lib/wfApi";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
@@ -67,6 +74,14 @@ function getPreviewWidth(size?: string | null): number {
     Math.min(NODE_PREVIEW_MAX_WIDTH, Math.max(NODE_PREVIEW_MIN_WIDTH, scaledWidth)),
   );
 }
+
+/** Dung dung bang ti le cua bang dieu khien, khong bay ra mot bang rieng. */
+const TI_LE_KHUON = [
+  ...SIZE_PRESETS_ROW1,
+  ...SIZE_PRESETS_ROW2,
+  ...SIZE_PRESETS_ROW3,
+  ...SIZE_PRESETS_ROW4,
+];
 
 function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const { t } = useI18n();
@@ -140,12 +155,29 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // Prompt khuon co the con o trong dang {{...}} chua dien. Sinh luc do thi
   // chuoi {{...}} di thang vao prompt va ra ket qua vo nghia - chan tu dau
   // thay vi de nguoi dung dot mot luot sinh moi biet.
-  const oTrongChuaDien = /\{\{[A-Z_]+\}\}/.exec(d.prompt || "")?.[0] ?? null;
+  /**
+   * Cau ta bo do dung cho node nay: cua node BOC DO gan nhat phia truoc.
+   *
+   * Co no thi `{{TRANG_PHUC}}` khong con la o trong chua dien - bam GEN duoc
+   * ngay. Truoc day them mot node moi mang o trong nay la khong bam GEN duoc,
+   * du ca khuon da co san cau ta.
+   */
+  const moTaBoDo = useMemo(
+    () => moTaTrangPhucGanNhat(id, graphNodes, graphEdges),
+    [id, graphNodes, graphEdges],
+  );
+  const oTrongChuaDien = useMemo(() => {
+    const dayDu = dienOTrong(d.prompt || "", moTaBoDo ? { [O_TRANG_PHUC]: moTaBoDo } : {});
+    return /\{\{[A-Z_]+\}\}/.exec(dayDu)?.[0] ?? null;
+  }, [d.prompt, moTaBoDo]);
+  /** O trong duy nhat con lai la TRANG_PHUC, va chua ai chay BOC DO. */
+  const thieuMoTaBoDo = !moTaBoDo && (d.prompt || "").includes(`{{${O_TRANG_PHUC}}}`);
   const canhBaoOTrong = useCallback(() => {
+    if (thieuMoTaBoDo) { showToast(t("node.outfitNotReadYet"), true); return true; }
     if (!oTrongChuaDien) return false;
     showToast(t("node.placeholderLeft", { slot: oTrongChuaDien, fallback: `Prompt con o trong ${oTrongChuaDien} chua dien` }), true);
     return true;
-  }, [oTrongChuaDien, showToast, t]);
+  }, [oTrongChuaDien, thieuMoTaBoDo, showToast, t]);
 
   // Node mang vai tro VIDEO thi GEN phai sinh VIDEO. Truoc day vai tro chi la
   // cai nhan: bam GEN tren node video van sinh ra anh, ghi de mat clip.
@@ -396,13 +428,16 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         id, st.graphNodes, st.graphEdges, st.updateNodePrompt,
         (dichId, url) => st.addNodeReferenceFromUrl(dichId, url),
       );
+      // Luu cau ta LEN NODE: bam GEN mot node le o giao dien thi khong co buoc
+      // nao doc anh ca, no dien o trong `{{TRANG_PHUC}}` tu day.
+      updateNodeData(id, { moTaTrangPhuc: kq.moTa });
       showToast(t("node.outfitFilled", { n: String(kq.daDien.length), fallback: `Da dien mo ta vao ${kq.daDien.length} node` }), false);
     } catch (e) {
       showToast(String((e as Error).message || e), true);
     } finally {
       setDangDocDo(false);
     }
-  }, [id, showToast, t]);
+  }, [id, showToast, t, updateNodeData]);
 
   /** Node BOC DO thi sinh xong la doc mo ta luon. */
   const laNodeBocDo = d.vaiTro === "trang-phuc";
@@ -702,6 +737,22 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                   {t("node.wfRun")}
                 </button>
               )}
+              {/* Ti le chung cua ca khuon. Dat o tung node thi them mot node
+                  moi la quen, va node quen do roi ve mac dinh cua may chu -
+                  cung mot luot chay ra may tam doc may tam vuong. */}
+              <label className="image-node__khuon-size nodrag">
+                <span>{t("node.wfSize")}</span>
+                <select
+                  value={typeof d.size === "string" ? d.size : ""}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => updateNodeData(id, { size: e.target.value || null })}
+                >
+                  <option value="">{t("node.wfSizeNone")}</option>
+                  {TI_LE_KHUON.map((v) => (
+                    <option key={v.value} value={v.value}>{v.label} · {v.sub}</option>
+                  ))}
+                </select>
+              </label>
             </>
           ) : (
             <div className="image-node__moc-so">{t("node.wfEndHint")}</div>

@@ -141,6 +141,13 @@ export type ImageNodeData = {
   videoSourceUrl?: string | null;
   /** Vai tro trong khuon: mau / trang-phuc / mac-do / canh / video / gop-*. Xem lib/vaiTroNode.ts */
   vaiTro?: string;
+  /**
+   * Node BOC DO: cau ta bo do doc duoc tu flat lay cua no.
+   *
+   * Nam NGOAI prompt: node phia sau dien o trong `{{TRANG_PHUC}}` tu day luc
+   * sinh, nen prompt trong graph khong bao gio mang mot bo do cu.
+   */
+  moTaTrangPhuc?: string | null;
   /** Node GOP: thu tu media do nguoi dung sap xep, luu bang danh sach url. */
   thuTuGop?: string[];
   imageUrl: string | null;

@@ -2,6 +2,8 @@ import type { ClientNodeId } from "../lib/graph";
 import { postNodeGenerateStream } from "../lib/api";
 import { deriveParentServerNodeIds } from "../lib/nodeGraph";
 import { canhAnhVao, locCanhAnh } from "../lib/canhAnh";
+import { dienOTrong, kichThuocCuaKhuon, kichThuocKeThua } from "../lib/chayWorkflow";
+import { moTaTrangPhucGanNhat, O_TRANG_PHUC } from "../lib/moTaTrangPhuc";
 import { getSelectedNodeIds } from "../lib/nodeSelection";
 import {
   getDirectUnselectedChildren,
@@ -162,7 +164,16 @@ export async function runGenerateNodeInPlaceImpl(
     nodeGenerationLocks.delete(clientId);
     return null;
   }
-  const { prompt, parentServerNodeId } = node.data;
+  const { parentServerNodeId } = node.data;
+  // Dien `{{TRANG_PHUC}}` tu cau ta cua node BOC DO gan nhat phia truoc. Bam
+  // GEN mot node le thi khong co buoc nao doc anh ca, va prompt trong graph co
+  // y giu nguyen o trong - khong dien thi chuoi "{{TRANG_PHUC}}" di thang len
+  // may sinh anh.
+  const moTaBoDo = moTaTrangPhucGanNhat(clientId, get().graphNodes, get().graphEdges);
+  const prompt = dienOTrong(
+    node.data.prompt,
+    moTaBoDo ? { [O_TRANG_PHUC]: moTaBoDo } : {},
+  );
   if (!prompt.trim()) {
     get().showToast(t("toast.promptRequired"), true);
     nodeGenerationLocks.delete(clientId);
@@ -183,7 +194,14 @@ export async function runGenerateNodeInPlaceImpl(
   });
   const nodeRefs = mergeRunReferences(node.data.referenceImages ?? [], elementResolution.referenceDataUrls, variantRefLimit);
   const nodeModel = (typeof node.data.model === "string" && node.data.model ? node.data.model : s.imageModel) as AppState["imageModel"];
-  const size = options.sizeOverride ?? (typeof node.data.size === "string" && node.data.size ? node.data.size : s.getResolvedSize());
+  // Kich thuoc: cua rieng node -> ke thua tu ANH NEN -> ti le cua ca khuon
+  // (node BAT DAU) -> bang dieu khien. Cung thu tu voi luot chay o may chu, de
+  // bam GEN mot node va chay ca khuon ra cung mot ti le.
+  const size = options.sizeOverride
+    ?? (typeof node.data.size === "string" && node.data.size ? node.data.size : null)
+    ?? kichThuocKeThua(clientId, get().graphNodes, get().graphEdges)
+    ?? kichThuocCuaKhuon(clientId, get().graphNodes, get().graphEdges)
+    ?? s.getResolvedSize();
   const effectiveParentServerNodeId =
     options.parentServerNodeIdOverride !== undefined
       ? options.parentServerNodeIdOverride

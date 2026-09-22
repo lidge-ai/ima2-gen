@@ -866,6 +866,68 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFSZ-05 giao dien theo dung thu tu kich thuoc nhu may chu", () => {
+    // Bam GEN mot node va chay ca khuon phai ra cung mot ti le, khong thi nguoi
+    // dung sua mot node roi thay no lech han so voi chin node con lai.
+    const gen = readFileSync("ui/src/store/storeNodeGenImpl.ts", "utf-8");
+    assert.match(gen, /kichThuocKeThua\(clientId, get\(\)\.graphNodes, get\(\)\.graphEdges\)/);
+    assert.match(gen, /kichThuocCuaKhuon\(clientId, get\(\)\.graphNodes, get\(\)\.graphEdges\)/);
+    assert.match(gen, /\?\? s\.getResolvedSize\(\)/);
+    // Va node BAT DAU co cho chon ti le do.
+    const nodeSrc = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    assert.match(nodeSrc, /image-node__khuon-size/);
+    assert.match(nodeSrc, /updateNodeData\(id, \{ size: e\.target\.value \|\| null \}\)/);
+  });
+
+  it("WFTP-21 giao dien dien {{TRANG_PHUC}} tu cau ta cua node BOC DO", () => {
+    // Bam GEN mot node le thi khong co buoc nao doc anh ca. Truoc day them mot
+    // node mang o trong nay la khong bam GEN duoc, du khuon da co san cau ta.
+    const gen = readFileSync("ui/src/store/storeNodeGenImpl.ts", "utf-8");
+    assert.match(gen, /moTaTrangPhucGanNhat\(clientId, get\(\)\.graphNodes, get\(\)\.graphEdges\)/);
+    assert.match(gen, /dienOTrong\(\s*node\.data\.prompt/);
+
+    const nodeSrc = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    // Cau ta duoc luu LEN NODE, khong viet thang vao prompt: viet vao la prompt
+    // trong graph mang mot bo do cu.
+    assert.match(nodeSrc, /updateNodeData\(id, \{ moTaTrangPhuc: kq\.moTa \}\)/);
+    // Va o trong do khong con tinh la "chua dien" khi da co cau ta.
+    assert.match(nodeSrc, /const thieuMoTaBoDo = !moTaBoDo/);
+    assert.match(nodeSrc, /node\.outfitNotReadYet/);
+  });
+
+  it("WFSZ-04 ti le dat tren node BAT DAU ap cho ca khuon", async () => {
+    // Mot khuon nen ra mot ti le duy nhat. Dat o tung node thi them mot node
+    // moi la quen, va node quen do roi ve mac dinh cua may chu.
+    const phien = store.createSession({ title: "ti le ca khuon" }) as { id: string };
+    const nodes = [
+      node("start", "bat-dau"),
+      node("canh1", "canh", "canh mot"),
+      node("canh2", "canh", "canh hai"),
+      node("end", "ket-thuc"),
+    ];
+    (nodes[0]!.data as Record<string, unknown>).size = "1152x2048";
+    // Node giua chuoi dat rieng: kich thuoc rieng van thang ti le cua khuon.
+    (nodes[2]!.data as Record<string, unknown>).size = "1024x1024";
+    store.saveGraph(phien.id, {
+      nodes,
+      edges: [
+        { id: "e0", source: "start", target: "canh1" },
+        { id: "e1", source: "canh1", target: "canh2" },
+        { id: "e2", source: "canh2", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      const theoNode = new Map(ghiNhan
+        .filter((g) => g.duong === "/api/node/generate")
+        .map((g) => [String(g.than.clientNodeId), g.than.size]));
+      assert.equal(theoNode.get("canh1"), "1152x2048");
+      assert.equal(theoNode.get("canh2"), "1024x1024");
+    });
+  });
+
   it("WFSZ-03 khong co kich thuoc nao trong chuoi thi khong gui truong size", async () => {
     // Khong tu bay ra mot kich thuoc: khong ai dat thi de may chu dung mac dinh
     // cua no, day la hanh vi cu va khong co ly do gi de doi.
