@@ -645,6 +645,31 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-12 anh nen la anh node cha SINH RA TRONG LUOT NAY, khong phai ban trong graph", async () => {
+    // Cau hoi that: base la anh, ma anh thi sinh ra luc chay - node video co
+    // chac lay ban vua sinh khong? Dat san mot anh CU vao node canh roi chay:
+    // neu doc ban chup luc bat dau thi ten tep gui len se la ban cu.
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "mot quan ca phe" },
+      { id: "vid", vaiTro: "video", prompt: "may quay xoay cham" },
+    ]);
+    const phien = store.getSession(day)!;
+    const nodes = (phien.nodes as any[]).map((n) => (n.id === "canh"
+      ? { ...n, data: { ...n.data, serverNodeId: "n_cu", imageUrl: "/generated/anh_cu.png" } }
+      : n));
+    store.saveGraph(day, { nodes, edges: phien.edges as [], expectedVersion: phien.version });
+
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
+      const moi = String(canh.data.imageUrl).replace("/generated/", "");
+      assert.notEqual(moi, "anh_cu.png", "node canh phai da sinh anh moi trong luot nay");
+      assert.equal(video.than.sourceFilename, moi);
+      assert.notEqual(video.than.sourceFilename, "anh_cu.png");
+    });
+  });
+
   it("WFTP-11 anh dinh o node VIDEO khong dap duoc anh nen", async () => {
     // May chu chi lam MOT trong hai: khung dau hoac danh sach tham chieu. De ca
     // hai vao thi khung dau bi bo - dung cai da lam doi nguoi mau.
