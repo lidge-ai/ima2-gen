@@ -79,6 +79,28 @@ graph TD
 
 README may still mention a different Node baseline. The operational baseline is the current `engines.node` field in `package.json`.
 
+## Desktop macOS signing
+
+`desktop.yml` separates unsigned PR previews from trusted dispatch/tag builds.
+`desktop/scripts/desktop-build-policy.mjs` validates platform selection before
+scheduling and checks required signing input presence. Secret-bearing steps and
+publication conditions use GitHub event/ref/input context directly, not outputs
+computed by PR code. A tag selected for manual `publish=false` cannot publish.
+
+The existing `desktop/build/sign-extra-binaries.mjs` hook awaits the builder's
+lazy keychain import, then signs loose Mach-O sidecars with the same scoped
+Developer ID identity. Forced signing fails on incomplete discovery or scanning.
+`verify-mac-signature.mjs` supplies native bundle checks;
+`verify-mac-artifacts.mjs` verifies both architectures, extracts ZIPs and mounts
+DMGs read-only, compares each app's signed-content fingerprint to its original,
+and emits source-bound reports and hashes under `desktop/dist/signature-proof`.
+Verification failure blocks installer export. Uncertain mounts are preserved
+for diagnostics instead of recursively cleaned. Builder import failure before
+disposer registration relies on disposable hosted-runner destruction.
+
+Use `gh workflow run desktop.yml --ref <reviewed-branch> -f platform=mac -f publish=false`
+for recovery verification. This is distinct from public release publication.
+
 ## Script Surface
 
 | Script | Runs | Purpose |

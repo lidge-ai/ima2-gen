@@ -51,7 +51,8 @@ files:
   - "!node_modules/node-gyp/**"
   - "!node_modules/@types/**"
 
-# Runs before electron-builder signs the bundle. With asar:false the whole
+# Runs before electron-builder signs the bundle, awaiting its imported keychain
+# before resolving the sidecar identity. With asar:false the whole
 # production node_modules tree ships as loose files, and electron-builder does
 # not sign Mach-O binaries it did not place there. Seven of them have no file
 # extension (codex, rg, zsh, macos-trash, esbuild), so notarization rejects the
@@ -72,7 +73,10 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  # Signing/notarization activate automatically when the CI secrets exist:
+  # PR previews explicitly disable signing/notarization. Trusted CI requires
+  # forceCodeSigning, distribution signing and notarization, then verifies both
+  # architecture installers. Local builds retain the explicit notarize opt-in.
+  # Required CI signing inputs:
   #   CSC_LINK, CSC_KEY_PASSWORD (Developer ID Application .p12)
   #   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID  (notarytool)
   notarize: false

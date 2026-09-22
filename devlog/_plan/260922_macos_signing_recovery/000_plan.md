@@ -96,3 +96,21 @@ release job; `continue-on-error` and unsigned fallback are prohibited there.
 - New policy/hook/verifier tests are planned, not yet executed. Existing root
   runner `scripts/run-tests.mjs` discovers `tests/*.test.{js,ts,mjs,...}`; new
   TypeScript tests join its inventory and typecheck configuration.
+
+## Implementation and portable checks
+
+- Implemented D1, D2a and D3 in the existing owners and the two scoped scripts.
+- Independent C reviewer `01a0c89f-46ee-7810-b086-f74f01ade011` reviewed all 15
+  changed files and returned PASS. The later cleanup precision delta also passed
+  its independent re-review with two focused checks.
+- Main verified 79 focused tests, source/test typechecks, server/CLI/UI builds,
+  inventory, structure checks and whitespace. Full root suite: 3,621 passed,
+  zero failed, seven existing skips (3,628 total).
+- Cleanup identity checks use bigint stats. A real Windows inode exceeded the
+  safe integer range; incrementing its Number representation was invisible.
+  The injected inode-change regression failed before the bigint correction and
+  passed afterward, preserving the directory and withholding successful hashes.
+- macbookpro2's real read-only DMG attach/detach probe passed. The explicitly
+  created mountpoint remained after detach, matching collector cleanup behavior.
+- Actual ima2 Developer ID signing, notarization, exported-app checks and PR CI
+  remain pending. Unit doubles and the tiny key probe are not app-release proof.

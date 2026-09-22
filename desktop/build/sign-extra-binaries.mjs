@@ -1,150 +1,104 @@
-#!/usr/bin/env node
-/**
- * Sign the Mach-O binaries electron-builder does not sign.
- *
- * This app runs with `asar: false`, because the server is spawned as a real
- * Node child process that needs on-disk ESM files. That puts the entire
- * production `node_modules` tree inside the bundle as loose files, and
- * electron-builder does not sign what it did not place there itself.
- *
- * The tree carries real executables: the vendored `codex` binary and its
- * bundled `rg` and `zsh`, `esbuild`, `macos-trash`, plus sharp's libvips
- * dylib and the better-sqlite3 prebuilds. Each one is a separate signing
- * subject to Apple.
- *
- * Apple only tells you about it after the upload. A 278MB submission came back
- * `Invalid` with 21 issues that were all the same four binaries repeated:
- *
- *   The binary is not signed with a valid Developer ID certificate.
- *     .../Resources/server/node_modules/trash/lib/macos-trash
- *     .../Resources/app.asar.unpacked/node_modules/node-pty/.../spawn-helper
- *
- * Crucially, selecting binaries by extension does not work. Seven Mach-O
- * files in this tree have no extension at all -- `codex`, `rg`, `zsh`,
- * `macos-trash`, `esbuild` -- so the obvious `*.node`/`*.dylib` filter skips
- * every one of them and the rejection only arrives after the upload. This
- * script classifies by Mach-O magic bytes and ignores filenames entirely.
- *
- * Runs before electron-builder's own signing pass so the outer bundle seals a
- * tree whose contents are already signed.
- */
-import { execFileSync } from 'node:child_process';
+/** Sign loose Mach-O sidecars before electron-builder seals the outer bundle. */
+import { spawnSync } from 'node:child_process';
 import { openSync, readSync, closeSync, statSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-
-/** Mach-O and universal-binary magic numbers, both endiannesses. */
+/** @typedef {(command: string, args: string[], options: import('node:child_process').SpawnSyncOptionsWithStringEncoding) => {status: number | null, stdout?: string | Buffer, stderr?: string | Buffer, error?: Error}} NativeRunner */
 const MACHO_MAGIC = new Set([
-  0xfeedface, 0xfeedfacf, // 32/64-bit, host order
-  0xcefaedfe, 0xcffaedfe, // 32/64-bit, byte-swapped
-  0xcafebabe, 0xbebafeca, // universal ("fat") binary
+  0xfeedface, 0xfeedfacf, 0xcefaedfe, 0xcffaedfe,
+  0xcafebabe, 0xbebafeca, 0xcafebabf, 0xbfbafeca,
 ]);
 
-/** True when the first four bytes identify a Mach-O image. */
 function isMachO(path) {
-  let fd;
+  if (statSync(path).size < 4) return false;
+  const fd = openSync(path, 'r');
   try {
-    if (statSync(path).size < 4) return false;
-    fd = openSync(path, 'r');
-    const buf = Buffer.alloc(4);
-    if (readSync(fd, buf, 0, 4, 0) < 4) return false;
-    return MACHO_MAGIC.has(buf.readUInt32BE(0)) || MACHO_MAGIC.has(buf.readUInt32LE(0));
-  } catch {
-    return false;
+    const bytes = Buffer.alloc(4);
+    if (readSync(fd, bytes, 0, 4, 0) !== 4) throw new Error('Short read scanning Mach-O file');
+    return MACHO_MAGIC.has(bytes.readUInt32BE(0));
   } finally {
-    if (fd !== undefined) {
-      try { closeSync(fd); } catch { /* already gone */ }
-    }
+    closeSync(fd);
   }
 }
 
-/** Every regular file under `dir`, symlinks not followed. */
+/** Symlinks are not separate signing subjects; never follow them while scanning. */
 async function collectFiles(dir, out = []) {
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
-  for (const entry of entries) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
-    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) await collectFiles(full, out);
     else if (entry.isFile()) out.push(full);
   }
   return out;
 }
 
-export default async function signExtraBinaries(context) {
-  if (context.electronPlatformName !== 'darwin') return;
-
-  const identity = resolveIdentity();
-  if (!identity) {
-    console.log('[sign-extra] no Developer ID identity available; leaving sidecar binaries to the ad-hoc fallback.');
-    return;
+function command(run, executable, args) {
+  const result = run(executable, args, { encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    // Do not echo diagnostics that may include credential-import details.
+    throw new Error('[sign-extra] ' + executable + ' failed (status ' + (result.status ?? 'unavailable') + ')');
   }
+  return String(result.stdout ?? '') + '\n' + String(result.stderr ?? '');
+}
 
-  const appName = `${context.packager.appInfo.productFilename}.app`;
-  const resources = join(context.appOutDir, appName, 'Contents', 'Resources');
-  const entitlements = join(here, 'entitlements.mac.plist');
-
-  const files = await collectFiles(resources);
-  const binaries = files.filter(isMachO);
-
-  if (binaries.length === 0) {
-    console.log('[sign-extra] no Mach-O binaries found under Resources.');
-    return;
+async function resolveIdentity(context, env, run) {
+  const signingInfo = context.packager?.codeSigningInfo;
+  if (!signingInfo || !('value' in signingInfo)) throw new Error('[sign-extra] missing builder signing API');
+  // This lazy promise performs CSC_LINK import and registers builder-owned cleanup.
+  const info = await signingInfo.value;
+  const keychain = info?.keychainFile;
+  if (env.CSC_LINK && (typeof keychain !== 'string' || !keychain.trim())) {
+    throw new Error('[sign-extra] CSC_LINK import returned no keychain');
   }
-
-  // Deepest first: a container must be signed after everything inside it, or
-  // the outer seal is invalidated by the inner signature that lands later.
-  binaries.sort((a, b) => b.split('/').length - a.split('/').length);
-
-  console.log(`[sign-extra] signing ${binaries.length} Mach-O binaries under Resources`);
-  const failures = [];
-  for (const binary of binaries) {
-    try {
-      execFileSync('/usr/bin/codesign', [
-        '--force',
-        '--timestamp',
-        '--options', 'runtime',
-        '--entitlements', entitlements,
-        '--sign', identity,
-        binary,
-      ], { stdio: ['ignore', 'ignore', 'pipe'] });
-    } catch (error) {
-      failures.push(`${binary.replace(resources, 'Resources')}: ${(error.stderr ?? '').toString().trim()}`);
-    }
+  const qualifier = (context.packager.config?.mac?.identity ?? env.CSC_NAME ?? '').trim();
+  if (/^(?:Developer ID (?:Application|Installer)|3rd Party Mac Developer (?:Application|Installer)|Apple Development|Apple Distribution|Mac Developer):/.test(qualifier)) {
+    throw new Error('[sign-extra] remove the certificate-type prefix from CSC_NAME/identity; use a qualifier or hash');
   }
-
-  if (failures.length > 0) {
-    // Failing loudly here costs seconds. Failing silently costs an upload, a
-    // notarization round trip and a rejection log.
-    throw new Error(`[sign-extra] could not sign ${failures.length} binaries:\n  ${failures.join('\n  ')}`);
+  const args = ['find-identity', '-v', '-p', 'codesigning'];
+  if (keychain) args.push(keychain);
+  const listing = command(run, '/usr/bin/security', args);
+  const identities = new Map();
+  for (const match of listing.matchAll(/^\s*\d+\)\s+([A-Fa-f0-9]{40})\s+"(Developer ID Application: [^"]+)"\s*$/gm)) {
+    const [, hash, name] = match;
+    const matches = /^[A-Fa-f0-9]{40}$/.test(qualifier)
+      ? hash === qualifier : name.includes(qualifier);
+    if (matches) identities.set(hash.toUpperCase(), name);
   }
-  console.log('[sign-extra] done');
+  if (identities.size > 1) throw new Error('[sign-extra] ambiguous Developer ID identities; select a unique hash or qualifier');
+  return { hash: identities.keys().next().value, keychain };
 }
 
 /**
- * The identity electron-builder is about to use, if there is one.
- *
- * CSC_IDENTITY_AUTO_DISCOVERY=false is how the unsigned local build opts out,
- * so honour it rather than signing behind its back.
+ * Native command/env ports are injectable by callers; electron-builder uses defaults.
+ * @param {object} context
+ * @param {{env?: NodeJS.ProcessEnv, run?: NativeRunner}} ports
  */
-function resolveIdentity() {
-  if (process.env['CSC_IDENTITY_AUTO_DISCOVERY'] === 'false') return null;
-  if (process.env['CSC_NAME']) return process.env['CSC_NAME'];
-
-  try {
-    const out = execFileSync('/usr/bin/security', ['find-identity', '-v', '-p', 'codesigning'], {
-      encoding: 'utf8',
-    });
-    const match = out.match(/"(Developer ID Application: [^"]+)"/);
-    return match ? match[1] : null;
-  } catch {
-    return null;
+export default async function signExtraBinaries(context, { env = process.env, run = spawnSync } = {}) {
+  if (context.electronPlatformName !== 'darwin') return;
+  const force = context.packager?.forceCodeSigning === true;
+  if (env.CSC_IDENTITY_AUTO_DISCOVERY === 'false' || context.packager?.config?.mac?.identity === null) {
+    if (force) throw new Error('[sign-extra] forced signing conflicts with unsigned override');
+    console.log('[sign-extra] explicit unsigned preview');
+    return;
   }
+  const identity = await resolveIdentity(context, env, run);
+  if (!identity.hash) {
+    if (force || env.CSC_LINK || env.CSC_NAME) throw new Error('[sign-extra] no matching Developer ID identity');
+    console.log('[sign-extra] no Developer ID identity available for local build');
+    return;
+  }
+  const appName = context.packager.appInfo.productFilename + '.app';
+  const resources = join(context.appOutDir, appName, 'Contents', 'Resources');
+  const binaries = (await collectFiles(resources)).filter(isMachO);
+  binaries.sort((a, b) => b.split(sep).length - a.split(sep).length);
+  for (const binary of binaries) {
+    const args = ['--force', '--timestamp', '--options', 'runtime',
+      '--entitlements', join(here, 'entitlements.mac.plist'), '--sign', identity.hash];
+    if (identity.keychain) args.push('--keychain', identity.keychain);
+    command(run, '/usr/bin/codesign', [...args, binary]);
+    command(run, '/usr/bin/codesign', ['--verify', '--strict', '--verbose=2', binary]);
+  }
+  console.log('[sign-extra] signed and verified ' + binaries.length + ' Mach-O binaries');
 }

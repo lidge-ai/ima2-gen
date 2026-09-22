@@ -6,6 +6,11 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
+      platform:
+        description: Desktop platforms to build (publishing requires all)
+        type: choice
+        options: [all, mac, win, linux]
+        default: all
       publish:
         description: Attach installers to the GitHub release matching desktop/package.json version
         type: boolean
@@ -23,17 +28,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    name: Validate desktop build request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.policy.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.17.0'
+      - id: policy
+        env:
+          DESKTOP_EVENT: ${{ github.event_name }}
+          DESKTOP_PLATFORM: ${{ inputs.platform || 'all' }}
+          DESKTOP_PUBLISH: ${{ inputs.publish || false }}
+        run: node desktop/scripts/desktop-build-policy.mjs --matrix
+
   build:
+    needs: prepare
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { os: macos-latest, label: macOS (arm64 + x64), target: mac }
-          - { os: windows-latest, label: Windows (x64 + arm64), target: win }
-          - { os: ubuntu-latest, label: Linux (x64 + arm64), target: linux }
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Cache must live outside the checkout: the root package.json is type=module,
@@ -69,21 +89,42 @@ jobs:
       - name: Generate icons
         run: npm --prefix desktop run icons
 
-      # macOS signing + notarization switch on only when the Developer ID
-      # secrets are present; otherwise the build stays unsigned (ad-hoc).
-      - name: Build (macOS)
-        if: matrix.target == 'mac'
+      - name: Build unsigned macOS PR preview
+        if: matrix.target == 'mac' && github.event_name == 'pull_request'
         env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm --prefix desktop run dist:mac -- --config.forceCodeSigning=false --config.mac.notarize=false --publish never
+
+      - name: Build signed and notarized macOS installers
+        id: mac_build
+        if: matrix.target == 'mac' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')))
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'true'
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          NOTARIZE=false
-          if [ -n "$CSC_LINK" ] && [ -n "$APPLE_ID" ]; then NOTARIZE=true; fi
-          if [ -z "$CSC_LINK" ]; then export CSC_IDENTITY_AUTO_DISCOVERY=false; fi
-          npm --prefix desktop run dist:mac -- --config.mac.notarize=$NOTARIZE
+          node desktop/scripts/desktop-build-policy.mjs --credentials
+          npm --prefix desktop run dist:mac -- --config.forceCodeSigning=true --config.mac.type=distribution --config.mac.notarize=true --publish never
+
+      - name: Verify both macOS architectures and exported installers
+        id: mac_verify
+        if: always() && matrix.target == 'mac' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v'))) && steps.mac_build.outcome != 'skipped'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          VERIFY_REQUIRE_STAPLED: '1'
+        run: node desktop/scripts/verify-mac-artifacts.mjs --dist desktop/dist
+
+      - name: Preserve macOS signing verification reports
+        if: always() && matrix.target == 'mac' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v'))) && steps.mac_verify.outcome != 'skipped'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ima2-macos-signature-proof
+          if-no-files-found: error
+          retention-days: 14
+          path: desktop/dist/signature-proof/
 
       - name: Build (Windows)
         if: matrix.target == 'win'
@@ -116,8 +157,8 @@ jobs:
 
   release:
     name: Attach to GitHub release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/desktop-v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
+    needs: [prepare, build]
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && (github.event.inputs.platform || 'all') == 'all')
     runs-on: ubuntu-latest
     permissions:
       contents: write
