@@ -386,6 +386,9 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
           operation,
           finalCode: finishErrorCode,
           upstreamCode: lastErr?.upstreamCode || lastErr?.code,
+          // Cau upstream noi. Khong co no thi log chi con nhan cua chinh minh,
+          // va mot nhan thi khong sua duoc gi.
+          upstreamMessage: lastErr?.upstreamMessage ?? null,
           errorEventType: lastErr?.eventType,
           errorEventCount: lastErr?.eventCount,
           diagnosticReason: lastErr?.diagnosticReason,

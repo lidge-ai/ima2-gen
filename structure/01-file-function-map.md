@@ -174,7 +174,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/codexDetect.ts` | 154 | Codex OAuth session detection helper |
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
-| `lib/generationErrors.ts` | 245 | Generation error normalization, retry classification, status mapping |
+| `lib/generationErrors.ts` | 247 | Generation error normalization, retry classification, status mapping |
 | `lib/historyList.ts` | 200 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
 | `lib/videoContinuity.ts` | 193 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 100 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
@@ -202,7 +202,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/multimodePipeline.ts` | 522 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
 | `lib/comparisonMatrix.ts` | 77 | Prompt-locked comparison axes: deterministic cartesian expansion, 9-cell cost cap, varying-axis labels |
 | `lib/comparisonRunner.ts` | 111 | Per-cell generation orchestrator with bounded concurrency, isolated failures, single-cell retry, and two-level cancel |
-| `lib/nodeGeneration.ts` | 534 | Node admission and execution facade, caller-owned retry, persistence, and SSE publication |
+| `lib/nodeGeneration.ts` | 537 | Node admission and execution facade, caller-owned retry, persistence, and SSE publication |
 | `lib/nodeValidation.ts` | 49 | Node prompt, references, and moderation validation |
 | `lib/oauthProxy/streams.ts` | 233 | SSE/event-stream helpers and safe stream diagnostics |
 | `lib/oauthProxy/prompts.ts` | 158 | Prompt assembly with injected `SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts` |
@@ -308,9 +308,9 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/presetCompiler.ts` | 67 | Named preset prompt compilation helpers |
 | `lib/responsesDoctor.ts` | 457 | Responses API diagnostics and provider health checks |
-| `lib/responsesErrors.ts` | 85 | Responses API error normalization helpers |
+| `lib/responsesErrors.ts` | 93 | Responses API error normalization helpers |
 | `lib/responsesFallback.ts` | 173 | Responses API fallback routing helpers |
-| `lib/responsesParse.ts` | 453 | Responses API output parsing and normalization |
+| `lib/responsesParse.ts` | 488 | Responses API output parsing and normalization |
 | `lib/responsesTools.ts` | 39 | Responses API tool-call definitions and helpers |
 | `lib/routeHelpers.ts` | 58 | Shared Express route request/response helpers |
 | `lib/storyboardPrefix.ts` | 29 | Storyboard prompt-prefix construction |

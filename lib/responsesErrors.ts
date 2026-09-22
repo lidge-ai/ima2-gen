@@ -69,7 +69,15 @@ export function classifyNoImageResponse(result: ParsedResponsesResult): string {
 
 export function emptyResponseError(message: string, result: ParsedResponsesResult, meta: EmptyResponseMeta): ResponsesError {
   const code = classifyNoImageResponse(result);
-  const err = new Error(messageForCode(code, message)) as ResponsesError;
+  // Ghep CAU UPSTREAM NOI vao sau nhan cua minh.
+  //
+  // "Responses image tool call failed." la ten minh dat cho tinh huong, khong
+  // phai thu upstream noi - doc mot minh no thi khong sua duoc gi. Cau that
+  // nam trong `error.message` cua muc ve anh, da duoc lam sach.
+  const tuUpstream = result.diagnostics.upstreamErrorMessage;
+  const nhan = messageForCode(code, message);
+  const err = new Error(tuUpstream ? `${nhan} ${tuUpstream}` : nhan) as ResponsesError;
+  if (tuUpstream) err.upstreamMessage = tuUpstream;
   err.status = 422;
   err.code = code;
   err.eventCount = result.eventCount;
