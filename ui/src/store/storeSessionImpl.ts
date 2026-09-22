@@ -16,6 +16,7 @@ import {
   mapSessionToGraph,
   recoverGraphNodesFromHistory,
 } from "./storeGraphSave";
+import { napRefCuaPhien } from "../lib/nodeRefStorage";
 import type { StoreSet, StoreGet } from "./storeTypes";
 
 export async function loadSessionsImpl(set: StoreSet, get: StoreGet): Promise<void> {
@@ -58,6 +59,9 @@ export async function switchSessionImpl(
   set({ sessionLoading: true });
   try {
     const { session } = await apiGetSession(id);
+    // Anh dinh tren node nam o bang rieng tren may chu, khong nam trong graph.
+    // Phai nap TRUOC khi dung graph, khong thi node hien ra khong co anh nao.
+    await napRefCuaPhien(id);
     const { graphNodes, graphEdges, graphVersion } = mapSessionToGraph(session);
     set({
       activeSessionId: id,

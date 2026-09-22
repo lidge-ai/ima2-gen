@@ -9,7 +9,7 @@ import {
 import { compressImage } from "../lib/image";
 import { type ClientNodeId } from "../lib/graph";
 import { deriveParentServerNodeIds } from "../lib/nodeGraph";
-import { loadNodeRefs, pruneNodeRefs } from "../lib/nodeRefStorage";
+import { loadNodeRefs, napRefCuaPhien, pruneNodeRefs } from "../lib/nodeRefStorage";
 import { isVideoItem } from "../lib/videoMedia";
 import { t } from "../i18n";
 import { GRAPH_TAB_ID_KEY } from "./persistenceRegistry";
@@ -227,6 +227,7 @@ async function reloadSessionAfterConflict(
   const id = get().activeSessionId;
   if (!id) return;
   const { session } = await apiGetSession(id);
+  await napRefCuaPhien(id);
   const { graphNodes, graphEdges, graphVersion } = mapSessionToGraph(session);
   set({
     graphNodes,

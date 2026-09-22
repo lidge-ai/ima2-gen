@@ -14,6 +14,8 @@
  * rieng node vua chay - nho vay mot tab dang mo sua node khac khong bi xoa mat.
  */
 import { getSession, saveGraph } from "./sessionStore.js";
+import { refCuaNode } from "./nodeRefStore.js";
+import { loadAssetB64 } from "./nodeStore.js";
 import { publish, subscribe } from "./eventBus.js";
 import { logError, logEvent } from "./logger.js";
 import { errInfo } from "./errInfo.js";
@@ -40,6 +42,7 @@ import {
   type WfLuotChay,
 } from "./wfRunStore.js";
 import { WF_KENH, WF_SU_KIEN } from "./wfEvents.js";
+import { CAU_HOI_MO_TA, thayMoTaTrongPrompt, timNodeDungThamChieu } from "./moTaTrangPhuc.js";
 
 /** Mot node video co the chay rat lau; qua nguong nay thi coi nhu hong. */
 const HAN_MOT_NODE_MS = 15 * 60 * 1000;
@@ -423,6 +426,11 @@ export async function chayKhuon(
     });
 
     const raNode: Record<string, { url: string; loai: "anh" | "video" }> = {};
+    // Ghi de va anh dinh THEM cua rieng luot chay nay. Buoc BOC DO se viet vao
+    // day sau khi no sinh ra flat lay moi, nen cac buoc sau doc duoc - va graph
+    // van khong he bi sua.
+    const tsChay: ThamSoChay = { ...ts, nodes: { ...ts.nodes } };
+    const anhThem: Record<string, string[]> = {};
     for (const buoc of luot.buoc) {
       if (huy.aborted) {
         luot.trangThai = "da-huy";
@@ -432,12 +440,18 @@ export async function chayKhuon(
       buoc.batDauLuc = Date.now();
       capNhat(luot, WF_SU_KIEN.buoc, { nodeId: buoc.nodeId, trangThai: buoc.trangThai });
       try {
-        const url = await chayMotNode(ctx, ts, buoc.nodeId, huy);
+        const url = await chayMotNode(ctx, tsChay, buoc.nodeId, anhThem, huy);
         buoc.url = url;
         buoc.loai = laUrlVideo(url) ? "video" : "anh";
         buoc.trangThai = "xong";
         buoc.xongLuc = Date.now();
         raNode[buoc.nodeId] = { url, loai: buoc.loai };
+        // Node BOC DO vua cho ra mot flat lay MOI. Loi ta o cac node sau van la
+        // loi ta cua bo do cu, va chinh chu moi quyet dinh mac gi - nen phai doc
+        // lai ngay bay gio, khong thi anh ta mot dang chu ta mot neo.
+        if (buoc.vaiTro === "trang-phuc") {
+          await doiLoiTaTrangPhuc(ctx, tsChay, anhThem, buoc.nodeId, url, huy);
+        }
         capNhat(luot, WF_SU_KIEN.buoc, {
           nodeId: buoc.nodeId, trangThai: buoc.trangThai, url, loai: buoc.loai,
         });
@@ -500,6 +514,89 @@ export async function chayKhuon(
   }
 }
 
+/**
+ * Doc flat lay vua sinh ra roi doi loi ta o cac node dung no lam THAM CHIEU.
+ *
+ * Day la buoc nguoi dung van bam tay bang nut "Doc bo do" tren giao dien. Khuon
+ * chay qua API khong co ai bam, nen no phai tu lam - khong thi doi anh trang
+ * phuc xong goi API se ra dung bo do cu, vi hai node sau con mang nguyen cau
+ * "She wears: ..." cua bo do truoc.
+ *
+ * Chi ghi vao ban ghi de cua luot chay, KHONG sua graph: khuon mau phai giu
+ * nguyen de lan goi sau lai doc lai tu dau.
+ */
+async function doiLoiTaTrangPhuc(
+  ctx: RuntimeContext,
+  ts: ThamSoChay,
+  anhThem: Record<string, string[]>,
+  nodeId: string,
+  flatLayUrl: string,
+  huy: AbortSignal,
+): Promise<void> {
+  const { nodes, edges } = docGraph(ts.sessionId);
+  const dich = timNodeDungThamChieu(nodeId, edges)
+    .filter((id) => {
+      const n = nodes.find((x) => x.id === id);
+      return !!n && laViecThat(n);
+    });
+  if (dich.length === 0) return;
+
+  // Dinh THEM flat lay vao tung node truoc da. Viec nay khong can goi mo hinh
+  // nao, va no la thu giu duoc chi tiet bo do: da do bang thuc nghiem, anh vao
+  // qua canh ref thi yeu (hoa tiet in ra sai so luong va cach sap), vao qua
+  // duong dinh kem thi bam sat ban goc. Nen no khong duoc phu thuoc vao viec
+  // doc mo ta co thanh cong hay khong.
+  for (const id of dich) (anhThem[id] ??= []).push(flatLayUrl);
+
+  let moTa: string;
+  try {
+    moTa = await docMoTaAnh(ctx, flatLayUrl, huy);
+  } catch (e) {
+    // Doc mo ta that bai thi van chay tiep voi loi ta cu: thieu mot cau ta con
+    // hon dung ca luot chay da ton tien o nhung buoc truoc.
+    logError("wf", "outfit_describe_failed", e, { nodeId });
+    return;
+  }
+
+  const daDoi: string[] = [];
+  for (const id of dich) {
+    const n = nodes.find((x) => x.id === id)!;
+    const cu = noiDungNode(n, ts).prompt ?? "";
+    const moi = thayMoTaTrongPrompt(cu, moTa);
+    if (!moi) continue;
+    ts.nodes[id] = { ...(ts.nodes[id] ?? {}), prompt: moi };
+    daDoi.push(id);
+  }
+  logEvent("wf", "outfit_described", { nodeId, nodes: daDoi, chars: moTa.length });
+}
+
+/** Hoi mo hinh liet ke tung mon do trong anh. */
+async function docMoTaAnh(
+  ctx: RuntimeContext,
+  url: string,
+  huy: AbortSignal,
+): Promise<string> {
+  const b64 = await docB64(ctx, url);
+  const duoi = url.split(".").pop()?.toLowerCase();
+  const mime = duoi === "jpg" || duoi === "jpeg" ? "image/jpeg"
+    : duoi === "webp" ? "image/webp" : "image/png";
+  const kq = await goiNoiBo(ctx, "/api/prompt-builder/chat", {
+    messages: [{
+      role: "user",
+      content: CAU_HOI_MO_TA,
+      attachments: [{
+        kind: "image",
+        name: "outfit.png",
+        mimeType: mime,
+        dataUrl: `data:${mime};base64,${b64}`,
+      }],
+    }],
+  }, huy);
+  const chu = String((kq.message as { content?: unknown } | undefined)?.content ?? "").trim();
+  if (!chu) throw new Error("mo hinh khong tra ve mo ta nao");
+  return chu;
+}
+
 /** Ket qua tra ve cho nguoi goi: media cua nhung node noi thang vao KET THUC. */
 function thuKetQua(
   sessionId: string,
@@ -528,6 +625,7 @@ async function chayMotNode(
   ctx: RuntimeContext,
   ts: ThamSoChay,
   nodeId: string,
+  anhThem: Record<string, string[]>,
   huy: AbortSignal,
 ): Promise<string> {
   // Doc lai graph o moi buoc: node truoc vua ghi ket qua vao, node nay phai
@@ -562,6 +660,7 @@ async function chayMotNode(
     );
     const loiTa = dienOTrong(ta, ts.inputs).trim();
     if (!loiTa) throw new LoiKhuon("WF_PROMPT_EMPTY", "node video khong co loi ta nao", nodeId);
+    const refs2 = await thamChieuHieuLuc(ctx, node, ts, anhThem[nodeId] ?? []);
     const cho = doiViec(requestId, huy);
     await goiNoiBo(ctx, "/api/video/generate", {
       async: true,
@@ -571,7 +670,7 @@ async function chayMotNode(
       sessionId: ts.sessionId,
       clientNodeId: nodeId,
       ...(chaServerId ? { parentNodeId: chaServerId } : {}),
-      ...(thamChieuHieuLuc(node, ts).length ? { referenceImages: thamChieuHieuLuc(node, ts) } : {}),
+      ...(refs2.length ? { referenceImages: refs2 } : {}),
     }, huy);
     const kq = await cho;
     const url = typeof kq.url === "string" ? kq.url : "";
@@ -596,6 +695,7 @@ async function chayMotNode(
     .slice(1)
     .map((e) => nodes.find((n) => n.id === e.source)?.data?.serverNodeId)
     .filter((id): id is string => !!id && id !== chaServerId);
+  const refsAnh = await thamChieuHieuLuc(ctx, node, ts, anhThem[nodeId] ?? []);
   const kq = await goiNoiBo(ctx, "/api/node/generate", {
     requestId,
     prompt,
@@ -606,7 +706,7 @@ async function chayMotNode(
     sessionId: ts.sessionId,
     clientNodeId: nodeId,
     contextMode: "parent-plus-refs",
-    ...(thamChieuHieuLuc(node, ts).length ? { references: thamChieuHieuLuc(node, ts) } : {}),
+    ...(refsAnh.length ? { references: refsAnh } : {}),
   }, huy);
   const url = typeof kq.url === "string" ? kq.url : "";
   const serverNodeId = typeof kq.nodeId === "string" ? kq.nodeId : null;
@@ -626,15 +726,41 @@ async function chayMotNode(
 /**
  * Anh tham chieu HIEU LUC cua mot node, dua ve base64 tran nhu giao dien gui.
  *
- * Anh gui kem trong luot chay THAY THE anh dinh san tren node, va chi cho luot
- * do - giong het inputs va nodes. Khong ghi vao graph: goi mot tram lan voi mot
- * tram bo anh khac nhau van phai de lai dung mot khuon mau.
+ * Hai nguon, theo dung thu tu nay:
+ *  1. Anh gui kem trong luot chay - THAY THE anh dinh san, va chi cho luot do.
+ *  2. Khong gui gi thi lay anh nguoi dung da dinh o giao dien, doc tu bang
+ *     node_refs. Chinh cho nay truoc day bi hong: anh dinh nam o localStorage
+ *     nen may chu khong he thay, doi anh tren giao dien xong goi API van ra do cu.
  */
-function thamChieuHieuLuc(node: WfNode, ts: Pick<ThamSoChay, "images">): string[] {
-  const nguon = ts.images[node.id] ?? node.data?.referenceImages ?? [];
-  return nguon
-    .filter((s) => typeof s === "string" && s.startsWith("data:"))
-    .map(boTienToDataUrl);
+async function thamChieuHieuLuc(
+  ctx: RuntimeContext,
+  node: WfNode,
+  ts: Pick<ThamSoChay, "images" | "sessionId">,
+  themVao: readonly string[] = [],
+): Promise<string[]> {
+  const tuApi = ts.images[node.id];
+  const ra: string[] = tuApi?.length
+    ? tuApi.filter((s) => typeof s === "string" && s.startsWith("data:")).map(boTienToDataUrl)
+    : [];
+  if (!tuApi?.length) {
+    for (const url of refCuaNode(ts.sessionId, node.id)) {
+      try { ra.push(await docB64(ctx, url)); }
+      catch { logEvent("wf", "ref_missing", { nodeId: node.id, url }); }
+    }
+  }
+  for (const url of themVao) {
+    try { ra.push(await docB64(ctx, url)); }
+    catch { logEvent("wf", "ref_missing", { nodeId: node.id, url }); }
+  }
+  return ra;
+}
+
+function docB64(ctx: RuntimeContext, url: string): Promise<string> {
+  return loadAssetB64(
+    ctx.rootDir,
+    url.replace(/^\/generated\//, ""),
+    ctx.config.storage.generatedDir,
+  );
 }
 
 async function ghepVideo(

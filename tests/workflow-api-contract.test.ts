@@ -1,7 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
@@ -15,6 +15,8 @@ const { registerWorkflowRoutes } = await import("../routes/workflow.ts");
 const store = await import("../lib/sessionStore.ts");
 const bus = await import("../lib/eventBus.ts");
 const runStore = await import("../lib/wfRunStore.ts");
+const refStore = await import("../lib/nodeRefStore.ts");
+const cfg = (await import("../config.ts")).config;
 const db = await import("../lib/db.ts");
 
 after(() => {
@@ -42,6 +44,13 @@ async function moCongGia(ghiNhan: Goi[], hong: Set<string> = new Set()) {
     }
     dem += 1;
     const nodeId = `n_gia${dem}`;
+    // Ghi mot tep THAT: buoc doc flat lay ra mo ta se doc tep nay len, khong co
+    // tep thi no bo qua trong im lang va bai kiem khong con kiem gi.
+    mkdirSync(cfg.storage.generatedDir, { recursive: true });
+    writeFileSync(
+      join(cfg.storage.generatedDir, `${nodeId}.png`),
+      Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==", "base64"),
+    );
     res.json({ nodeId, url: `/generated/${nodeId}.png`, filename: `${nodeId}.png` });
   });
   app.post("/api/video/generate", (req, res) => {
@@ -57,6 +66,12 @@ async function moCongGia(ghiNhan: Goi[], hong: Set<string> = new Set()) {
   app.post("/api/media/merge", (req, res) => {
     ghiNhan.push({ duong: "/api/media/merge", than: req.body });
     res.json({ ok: true, url: "/generated/ghep.mp4", filename: "ghep.mp4" });
+  });
+  // Buoc doc flat lay ra mo ta di qua day. Cong gia tra ve mot cau co dinh, nen
+  // kiem duoc ca duong di ma khong goi mot mo hinh nao.
+  app.post("/api/prompt-builder/chat", (req, res) => {
+    ghiNhan.push({ duong: "/api/prompt-builder/chat", than: req.body });
+    res.json({ message: { content: "a cream cardigan, blue jeans, white sneakers" } });
   });
   const server = await new Promise<Server>((ok) => {
     const s = app.listen(0, "127.0.0.1", () => ok(s));
@@ -457,6 +472,146 @@ describe("workflow node override contracts", () => {
     // o ca chuoi, chi hien node dau tien thi van phai di tim id cua nhung node kia.
     assert.match(src, /chuoi\.thuTu[\s\S]{0,200}laViecThat/);
     assert.match(src, /than\.nodes = Object\.fromEntries/);
+  });
+});
+
+describe("workflow outfit + attachment contracts", () => {
+  /** Mot tep anh that trong thu muc generated, de bo chay doc len duoc. */
+  function tepAnh(ten: string): string {
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    mkdirSync(cfg.storage.generatedDir, { recursive: true });
+    writeFileSync(join(cfg.storage.generatedDir, ten), png);
+    return `/generated/${ten}`;
+  }
+
+  /** Khuon that: BOC DO -> MAC DO, node MAC DO dung BOC DO lam THAM CHIEU. */
+  function taoKhuonThoiTrang(promptMacDo: string) {
+    const phien = store.createSession({ title: "khuon thoi trang" }) as { id: string };
+    const nodes = [
+      node("start", "bat-dau"),
+      node("mau", null, "mot nguoi mau"),
+      node("bocdo", "trang-phuc", "boc trang phuc ra flat lay"),
+      node("macdo", "mac-do", promptMacDo),
+      node("end", "ket-thuc"),
+    ];
+    // Canh vao DAU TIEN cua macdo la anh nen (mau), canh sau la tham chieu (bocdo).
+    const edges = [
+      { id: "e0", source: "start", target: "bocdo" },
+      { id: "e1", source: "mau", target: "macdo" },
+      { id: "e2", source: "bocdo", target: "macdo" },
+      { id: "e3", source: "macdo", target: "end" },
+    ];
+    // Node "mau" phai co san anh: no khong nam trong khuon nen khong duoc chay.
+    nodes[1]!.data.serverNodeId = "n_mau";
+    (nodes[1]!.data as Record<string, unknown>).imageUrl = "/generated/n_mau.png";
+    store.saveGraph(phien.id, { nodes, edges, expectedVersion: null });
+    return phien.id;
+  }
+
+  const PROMPT_MAC_DO =
+    "Keep the exact same face. She wears: an off-white shirt printed with mountain landscapes. "
+    + "Use the reference image for the garments.";
+
+  it("WFTP-01 BOC DO tu doc lai mo ta, node sau nhan do MOI chu khong phai do cu", async () => {
+    const day = taoKhuonThoiTrang(PROMPT_MAC_DO);
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+
+      // Flat lay vua sinh xong thi phai duoc doc ra mo ta ngay.
+      const doc = ghiNhan.find((g) => g.duong === "/api/prompt-builder/chat");
+      assert.ok(doc, "phai co buoc doc flat lay ra mo ta");
+
+      const macDo = ghiNhan.filter((g) => g.duong === "/api/node/generate")
+        .find((g) => g.than.clientNodeId === "macdo")!;
+      // Day la loi hong that da xay ra: doi anh trang phuc roi ma node MAC DO
+      // van mang nguyen cau ta bo do cu, nen ket qua ra dung bo do cu.
+      assert.match(String(macDo.than.prompt), /She wears: a cream cardigan, blue jeans, white sneakers\./);
+      assert.doesNotMatch(String(macDo.than.prompt), /mountain landscapes/);
+      // Va flat lay duoc dinh vao duong THAM CHIEU manh, khong chi qua canh ref.
+      assert.equal((macDo.than.references as string[] | undefined)?.length, 1);
+
+      // Graph giu nguyen: khuon mau phai doc lai tu dau o lan goi sau.
+      const nodes = store.getSession(day)!.nodes as any[];
+      assert.equal(nodes.find((n) => n.id === "macdo").data.prompt, PROMPT_MAC_DO);
+    });
+  });
+
+  it("WFTP-02 prompt khong co khuon 'She wears' thi khong bi sua gi", async () => {
+    const day = taoKhuonThoiTrang("Keep the exact same face. Put her in a coffee shop.");
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      const macDo = ghiNhan.filter((g) => g.duong === "/api/node/generate")
+        .find((g) => g.than.clientNodeId === "macdo")!;
+      assert.equal(macDo.than.prompt, "Keep the exact same face. Put her in a coffee shop.");
+      // Van dinh flat lay vao: chinh no la thu giu duoc chi tiet bo do.
+      assert.equal((macDo.than.references as string[] | undefined)?.length, 1);
+    });
+  });
+
+  it("WFTP-03 khong truyen images thi lay anh nguoi dung da dinh o giao dien", async () => {
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);
+    const url = tepAnh(`ref_${Date.now()}.png`);
+    refStore.datRefCuaNode(day, "canh", [url]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      // Truoc day anh dinh nam o localStorage nen may chu khong he thay: doi anh
+      // tren giao dien xong goi API van ra ket qua cu.
+      assert.equal((ghiNhan[0]!.than.references as string[]).length, 1);
+
+      // API truyen anh thi anh do THAY THE anh da dinh, khong cong them.
+      ghiNhan.length = 0;
+      await goi(base, `/api/wf/${day}/start`, "POST",
+        { images: { canh: ["data:image/png;base64,iVBORw0KGgo="] } });
+      assert.deepEqual(ghiNhan[0]!.than.references, ["iVBORw0KGgo="]);
+    });
+  });
+
+  it("WFTP-04 anh dinh luu duoc, doc lai duoc, va don theo node da xoa", () => {
+    const phien = store.createSession({ title: "kho anh dinh" }) as { id: string };
+    refStore.datRefCuaNode(phien.id, "a", ["/generated/x.png", "/generated/y.png"]);
+    refStore.datRefCuaNode(phien.id, "b", ["/generated/z.png"]);
+    assert.deepEqual(refStore.refCuaNode(phien.id, "a"), ["/generated/x.png", "/generated/y.png"]);
+    assert.deepEqual(Object.keys(refStore.refCuaPhien(phien.id)).sort(), ["a", "b"]);
+    // Dat lai la THAY toan bo, khong cong don.
+    refStore.datRefCuaNode(phien.id, "a", ["/generated/x.png"]);
+    assert.deepEqual(refStore.refCuaNode(phien.id, "a"), ["/generated/x.png"]);
+    // Node bi xoa khoi graph thi anh cua no thanh rac khong ai doc nua.
+    assert.equal(refStore.donRefMoCoi(phien.id, ["a"]), 1);
+    assert.deepEqual(Object.keys(refStore.refCuaPhien(phien.id)), ["a"]);
+  });
+
+  it("WFTP-05 chi nhan data URL anh that hoac duong trong generated", async () => {
+    const dir = cfg.storage.generatedDir;
+    // Duong dan tuy y thi doc duoc tep bat ky tren may; dia chi ngoai thi bien
+    // may chu thanh cong cu tai ho noi dung la.
+    await assert.rejects(() => refStore.chuanHoaRef(dir, ["/etc/passwd"]), /khong nhan duong dan/);
+    await assert.rejects(() => refStore.chuanHoaRef(dir, ["https://x.test/a.png"]), /khong nhan duong dan/);
+    await assert.rejects(() => refStore.chuanHoaRef(dir, ["/generated/../../secret"]), /khong nhan duong dan/);
+    // MIME khai bao khong khop byte thi hong o tan ben sinh anh, chan tu day.
+    await assert.rejects(
+      () => refStore.chuanHoaRef(dir, ["data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQ=="]),
+      /khong khop/,
+    );
+    await assert.rejects(
+      () => refStore.chuanHoaRef(dir, Array(9).fill("/generated/a.png")),
+      /toi da/,
+    );
+    assert.deepEqual(await refStore.chuanHoaRef(dir, ["/generated/a.png"]), ["/generated/a.png"]);
+  });
+
+  it("WFTP-06 giao dien va may chu dung chung mot khuon 'She wears'", () => {
+    // Hai ban rieng thi nut "Doc bo do" tren giao dien va luot chay qua API se
+    // thay hai doan khac nhau trong cung mot prompt.
+    const uiSrc = readFileSync("ui/src/lib/moTaTrangPhuc.ts", "utf-8");
+    assert.match(uiSrc, /from "\.\.\/\.\.\/\.\.\/lib\/moTaTrangPhuc\.js"/);
+    assert.match(uiSrc, /content: CAU_HOI_MO_TA/);
+    const engine = readFileSync("lib/wfEngine.ts", "utf-8");
+    assert.match(engine, /thayMoTaTrongPrompt/);
+    assert.match(engine, /CAU_HOI_MO_TA/);
   });
 });
 

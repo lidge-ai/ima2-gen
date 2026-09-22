@@ -1,0 +1,66 @@
+/**
+ * Doc mot anh flat lay trang phuc ra mot cau liet ke tung mon do, roi thay vao
+ * prompt cua cac node dung anh do lam THAM CHIEU.
+ *
+ * Vi sao can buoc nay: anh tham chieu giu duoc chi tiet (hoa tiet, tui, nep vai)
+ * nhung KHONG quyet dinh duoc mac cai gi. Da thu hai kieu prompt chi tro vao anh
+ * ma khong goi ten mon do - ca hai deu hong: mot lan mo hinh nhuom mau bo do cu
+ * tren anh nen, mot lan giu nguyen do cu. Cai quyet dinh la chu.
+ *
+ * Nen khi doi anh trang phuc, phai doi ca loi ta o cac node phia sau; neu khong
+ * thi anh ta mot dang, chu ta mot neo - dung cai bay da xay ra that: flat lay la
+ * bo cardigan moi, con hai node sau van mang chu ta bo ao in nui cu.
+ *
+ * Module nay THUAN TUY va dung chung: giao dien goi khi nguoi dung bam "Doc bo
+ * do", may chu goi trong luot chay khuon. Hai ban rieng se lech nhau.
+ */
+
+/** Doan prompt bi thay: giua "She wears: " va cau luat bat dau bang "Use the reference image". */
+export const KHUON_MO_TA = /She wears: [\s\S]*?\. Use the reference image/;
+
+export function thayMoTaTrongPrompt(prompt: string, moTa: string): string | null {
+  if (!KHUON_MO_TA.test(prompt)) return null;
+  return prompt.replace(KHUON_MO_TA, `She wears: ${moTa}. Use the reference image`);
+}
+
+/**
+ * Cau hoi doc anh ra mo ta.
+ *
+ * Siet vao dung nhung cho mot nguoi doc vo tam se bo qua - so luong va cach sap
+ * hoa tiet, huong ke, xep ly hay tron - vi mo ta vo thuong lam mo hinh sinh ra
+ * mot bo do "na na" thay vi dung bo do do.
+ */
+export const CAU_HOI_MO_TA =
+  "This is a flat lay of ONE outfit. List every garment and accessory in ONE English sentence, "
+  + "separated by commas. For each item give its colour, material, cut and length. Be exact about "
+  + "anything a careless reader would get wrong: the NUMBER and ARRANGEMENT of printed motifs "
+  + "(say 'six small bears scattered in two rows', not 'a bear print'), the ORIENTATION of a pattern "
+  + "(diagonal/bias vs straight grid), whether a skirt is PLEATED or smooth, and any lettering exactly "
+  + "as written. If an item is normally worn on the face or head, say it is carried in the hand, not "
+  + "worn. Output only the list, no preamble, no numbering.";
+
+type CanhCoNguon = { source: string; target: string };
+
+/**
+ * Cac node dung `nodeId` lam anh THAM CHIEU.
+ *
+ * Canh vao DAU TIEN cua mot node la anh nen dem di sua, cac canh sau moi la
+ * tham chieu. Node trang phuc luon o vai tro tham chieu, nen bo qua canh dau -
+ * lay ca canh dau thi se dien nham vao node nhan no lam anh nen.
+ */
+export function timNodeDungThamChieu(
+  nodeId: string,
+  edges: readonly CanhCoNguon[],
+): string[] {
+  const theoDich = new Map<string, string[]>();
+  for (const e of edges) {
+    const list = theoDich.get(e.target) ?? [];
+    list.push(e.source);
+    theoDich.set(e.target, list);
+  }
+  const ra: string[] = [];
+  for (const [dich, nguon] of theoDich) {
+    if (nguon.slice(1).includes(nodeId)) ra.push(dich);
+  }
+  return ra;
+}

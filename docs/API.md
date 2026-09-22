@@ -1315,12 +1315,35 @@ graph.
   merge node takes media from its incoming edges, not attachments, and is
   refused.
 
-  **Attachments added in the Node Studio do not reach the server.** They live in
-  that browser's local storage and are stripped from the saved graph, which is
-  what keeps data URLs out of the database. So a node that shows attachments on
-  the canvas has none as far as an API run is concerned: pass them in `images`.
-  The START marker's panel marks every node that currently has attachments and
-  pre-fills an `images` entry for it in the copied body.
+  Leaving `images` out does **not** mean no attachments: the run then uses the
+  ones the user attached in the Node Studio, which are stored server-side in the
+  `node_refs` table. They used to live only in that browser's local storage, so
+  changing an attachment on the canvas had no effect on an API run at all —
+  fixed. Attachments are managed through
+  `GET|PUT|DELETE /api/sessions/:id/node-refs[/:nodeId]`, which writes each image
+  as a file and keeps only its `/generated/...` URL in the table, so neither the
+  table nor the graph carries base64.
+
+### Outfit descriptions follow the flat lay
+
+An extraction node (`vaiTro: "trang-phuc"`) produces a flat lay, and the nodes
+that use it as a **reference** carry a `She wears: … . Use the reference image`
+block naming the garments. The text is what decides what gets worn — a reference
+image alone keeps detail but does not dictate the outfit — so a stale block is
+enough to dress the model in the previous outfit no matter which flat lay is
+attached. That is exactly what happened: the flat lay was a new cardigan set
+while two downstream nodes still described a mountain-print shirt, and the run
+produced the shirt.
+
+So after an extraction node finishes, the run re-reads its fresh flat lay
+(through `/api/prompt-builder/chat`) and rewrites that block in every node
+referencing it, **for that run only** — the template keeps its own text and is
+re-read from scratch next time. The flat lay is also attached to those nodes'
+reference channel, which happens whether or not the description succeeds: the
+attachment costs no model call and is what holds motif counts and pattern
+direction. A failed description logs `wf.outfit_describe_failed` and the run
+continues with the existing text rather than discarding the steps already paid
+for.
 - `nodes` — replaces a node's content for **this call only**, keyed by node id.
   Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
   let one API call redraw a workflow the user shaped by hand on the canvas. The

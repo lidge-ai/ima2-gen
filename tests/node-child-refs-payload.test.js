@@ -24,9 +24,20 @@ describe("node child reference payload contract", () => {
   });
 
   it("persists node-local refs outside sanitized graph payload", () => {
-    assert.match(refs, /STORAGE_KEY = "ima2\.nodeRefs\.v1"/);
+    // Anh dinh van nam NGOAI payload graph - do la diem giu data URL ra khoi
+    // co so du lieu. Cai doi la NOI luu: truoc o localStorage, gio o may chu,
+    // vi mot khuon chay o may chu khong he thay localStorage cua trinh duyet.
+    assert.match(refs, /\/node-refs/);
     assert.match(store, /loadNodeRefs\(session\.id, n\.id\)/);
     assert.match(store, /saveNodeRefs\(sessionId, clientId, refs\)/);
+    assert.match(store, /delete safe\.referenceImages/);
+  });
+
+  it("keeps the legacy local key so attachments made before the move are not lost", () => {
+    // Nguoi dung da dinh anh truoc khi co bang nay. Bo khoa cu di la mat cong
+    // ho da bo ra, ma khong co gi bao.
+    assert.match(refs, /KHOA_CU = "ima2\.nodeRefs\.v1"/);
+    assert.match(refs, /napRefCuaPhien/);
   });
 
   it("compresses generated-image references before reusing them for i2i", () => {

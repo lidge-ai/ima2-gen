@@ -1,46 +1,24 @@
 import type { GraphEdge, GraphNode } from "../store/storeTypes";
+import {
+  CAU_HOI_MO_TA,
+  thayMoTaTrongPrompt,
+  timNodeDungThamChieu,
+} from "../../../lib/moTaTrangPhuc.js";
 
 /**
  * Doc mot anh flat lay trang phuc ra mot cau liet ke tung mon do, roi dien vao
  * prompt cua cac node dung anh do lam THAM CHIEU.
  *
- * Vi sao can buoc nay: anh tham chieu giu duoc chi tiet (hoa tiet, tui, nep vai)
- * nhung KHONG quyet dinh duoc mac cai gi. Da thu hai kieu prompt chi tro vao anh
- * ma khong goi ten mon do - ca hai deu hong: mot lan mo hinh nhuom mau bo do cu
- * tren anh nen, mot lan giu nguyen do cu. Cai quyet dinh la chu.
- *
- * Nen khi doi anh trang phuc, phai doi ca loi ta o cac node phia sau; neu khong
- * thi anh ta mot dang, chu ta mot neo.
+ * Phan thuan tuy (khuon prompt bi thay, cau hoi doc anh, cach tim node tham
+ * chieu) nam o lib/moTaTrangPhuc.ts, dung chung voi may chu: luot chay khuon goi
+ * qua API cung phai doi loi ta y nhu khi nguoi dung bam "Doc bo do" tren giao
+ * dien. Hai ban rieng se lech nhau.
  */
-
-/** Doan prompt bi thay: giua "She wears: " va cau luat bat dau bang "Use the reference image". */
-const KHUON_MO_TA = /She wears: [\s\S]*?\. Use the reference image/;
-
-export function thayMoTaTrongPrompt(prompt: string, moTa: string): string | null {
-  if (!KHUON_MO_TA.test(prompt)) return null;
-  return prompt.replace(KHUON_MO_TA, `She wears: ${moTa}. Use the reference image`);
-}
-
-/**
- * Cac node dung `nodeId` lam anh THAM CHIEU.
- *
- * Canh vao DAU TIEN cua mot node la anh nen dem di sua, cac canh sau moi la
- * tham chieu. Node trang phuc luon o vai tro tham chieu, nen bo qua canh dau -
- * lay ca canh dau thi se dien nham vao node nhan no lam anh nen.
- */
-export function timNodeDungThamChieu(nodeId: string, edges: readonly GraphEdge[]): string[] {
-  const theoDich = new Map<string, string[]>();
-  for (const e of edges) {
-    const list = theoDich.get(e.target) ?? [];
-    list.push(e.source);
-    theoDich.set(e.target, list);
-  }
-  const ra: string[] = [];
-  for (const [dich, nguon] of theoDich) {
-    if (nguon.slice(1).includes(nodeId)) ra.push(dich);
-  }
-  return ra;
-}
+export {
+  KHUON_MO_TA,
+  thayMoTaTrongPrompt,
+  timNodeDungThamChieu,
+} from "../../../lib/moTaTrangPhuc.js";
 
 /** Hoi mo hinh liet ke tung mon do trong anh. */
 export async function docMoTaTuAnh(imageUrl: string): Promise<string> {
@@ -60,7 +38,7 @@ export async function docMoTaTuAnh(imageUrl: string): Promise<string> {
     body: JSON.stringify({
       messages: [{
         role: "user",
-        content: "This is a flat lay of ONE outfit. List every garment and accessory in ONE English sentence, separated by commas. For each item give its colour, material, cut and length. Be exact about anything a careless reader would get wrong: the NUMBER and ARRANGEMENT of printed motifs (say 'six small bears scattered in two rows', not 'a bear print'), the ORIENTATION of a pattern (diagonal/bias vs straight grid), whether a skirt is PLEATED or smooth, and any lettering exactly as written. If an item is normally worn on the face or head, say it is carried in the hand, not worn. Output only the list, no preamble, no numbering.",
+        content: CAU_HOI_MO_TA,
         attachments: [{ kind: "image", name: "outfit.png", mimeType: blob.type || "image/png", dataUrl }],
       }],
     }),
