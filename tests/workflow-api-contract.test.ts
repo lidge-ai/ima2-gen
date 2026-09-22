@@ -128,6 +128,11 @@ function taoPhien(buoc: { id: string; vaiTro: string | null; prompt?: string }[]
   return phien.id;
 }
 
+/** Dia chi day du may chu se tra ve khi duoc goi qua `base`. */
+function diaChi(base: string, duong: string): string {
+  return `http://${new URL(base).host}${duong}`;
+}
+
 async function voiApi(fn: (t: { base: string; ghiNhan: Goi[] }) => Promise<void>, hong?: Set<string>) {
   const ghiNhan: Goi[] = [];
   const cong = await moCongGia(ghiNhan, hong);
@@ -237,7 +242,7 @@ describe("workflow API contracts", () => {
       // Node KET THUC quyet dinh cai gi duoc tra ve: media cua nhung node noi
       // thang vao no, o day la node cuoi chuoi.
       assert.deepEqual(body.result.media, [
-        { nodeId: "sau", url: "/generated/n_gia2.png", loai: "anh" },
+        { nodeId: "sau", url: diaChi(base, "/generated/n_gia2.png"), loai: "anh" },
       ]);
       assert.deepEqual(Object.keys(body.result.nodes).sort(), ["canh", "sau"]);
 
@@ -299,7 +304,7 @@ describe("workflow API contracts", () => {
       assert.deepEqual(ghiNhan[3]!.than.items, [
         { filename: "v_gia.mp4" }, { filename: "v_gia.mp4" },
       ]);
-      assert.equal(body.result.media[0].url, "/generated/ghep.mp4");
+      assert.equal(body.result.media[0].url, diaChi(base, "/generated/ghep.mp4"));
     });
   });
 
@@ -309,9 +314,10 @@ describe("workflow API contracts", () => {
       const mo = await goi(base, `/api/wf/${day}/start?async=1`, "POST", {});
       assert.equal(mo.status, 202);
       assert.match(mo.body.runId, /^wfr_/);
-      assert.equal(mo.body.statusUrl, `/api/wf/runs/${mo.body.runId}`);
+      assert.equal(mo.body.statusUrl, diaChi(base, `/api/wf/runs/${mo.body.runId}`));
 
-      const cho = await goi(base, `${mo.body.statusUrl}?wait=1`);
+      // statusUrl la dia chi DAY DU: ghep them base nua se ra mot dia chi vo nghia.
+      const cho = await goi("", `${mo.body.statusUrl}?wait=1`);
       assert.equal(cho.status, 200);
       assert.equal(cho.body.run.trangThai, "xong");
 
@@ -709,6 +715,57 @@ describe("workflow outfit + attachment contracts", () => {
   });
 });
 
+describe("workflow absolute url contracts", () => {
+  it("WFURL-01 moi dia chi tra ve la day du, va doi theo nguon goi", async () => {
+    const day = taoPhien([{ id: "a", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base }) => {
+      const chay = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      // Goi tu dau thi nhan dia chi cua chinh cho do: mot goc co dinh se tra ve
+      // dia chi ma nguoi goi khong voi toi duoc.
+      assert.equal(chay.body.run.buoc[0].url, diaChi(base, "/generated/n_gia1.png"));
+      assert.equal(chay.body.result.media[0].url, diaChi(base, "/generated/n_gia1.png"));
+      assert.equal(chay.body.result.nodes.a.url, diaChi(base, "/generated/n_gia1.png"));
+
+      const runId = chay.body.run.id as string;
+      // fetch khong cho dat tieu de Host (ten bi cam), nen goi qua mot TEN KHAC
+      // cung tro ve 127.0.0.1 - dung co che that chu khong gia lap.
+      const cong2 = new URL(base).port;
+      const khac = await goi(`http://localhost:${cong2}`, `/api/wf/runs/${runId}`);
+      assert.equal(khac.body.run.buoc[0].url, `http://localhost:${cong2}/generated/n_gia1.png`);
+
+      // Nhung KHONG luu dia chi day du xuong co so du lieu: host la thuoc tinh
+      // cua lan goi, khong phai cua tep. Luu vao thi doi cong la lich su tro sai.
+      assert.equal(runStore.layLuotChay(runId)?.buoc[0]?.url, "/generated/n_gia1.png");
+    });
+  });
+
+  it("WFURL-02 duong hoi, duong nghe va dia chi khuon cung la day du", async () => {
+    const day = taoPhien([{ id: "a", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base }) => {
+      const mo = await goi(base, `/api/wf/${day}/start?async=1`, "POST", {});
+      assert.equal(mo.body.statusUrl, diaChi(base, `/api/wf/runs/${mo.body.runId}`));
+      assert.equal(mo.body.streamUrl, diaChi(base, `/api/wf/runs/${mo.body.runId}/stream`));
+
+      const ds = await goi(base, "/api/wf");
+      const w = ds.body.workflows.find((x: any) => x.sessionId === day);
+      // `path` cu van con cho ai da dung no; `url` la ban day du.
+      assert.equal(w.path, `/api/wf/${day}/start`);
+      assert.equal(w.url, diaChi(base, `/api/wf/${day}/start`));
+
+      const mota = await goi(base, `/api/wf/${day}/start`);
+      assert.equal(mota.body.url, diaChi(base, `/api/wf/${day}/start`));
+    });
+  });
+
+  it("WFURL-03 giao dien chep dia chi may chu ghep, khong tu ghep lai", () => {
+    const panel = readFileSync("ui/src/components/node-canvas/WfRunnerPanel.tsx", "utf-8");
+    // Tu ghep o trinh duyet se ra dia chi cua trinh duyet, khong phai cua nguoi
+    // se goi API - hai cai khac nhau ngay khi mo giao dien qua LAN.
+    assert.match(panel, /writeText\(k\.url\)/);
+    assert.doesNotMatch(panel, /window\.location\.origin\}\$\{k\.path\}/);
+  });
+});
+
 describe("workflow streaming contracts", () => {
   /** Doc mot duong SSE cho toi khi gap `wf_end`, tra ve tung khung mot. */
   async function docSse(res: Response, hanMs = 20_000): Promise<{ suKien: string; du: any }[]> {
@@ -760,7 +817,7 @@ describe("workflow streaming contracts", () => {
       // Moi buoc bay ra hai lan: luc bat dau va luc xong.
       const xong = khung.filter((k) => k.suKien === "wf_step" && k.du.trangThai === "xong");
       assert.deepEqual(xong.map((k) => k.du.nodeId), ["a", "b"]);
-      assert.equal(xong[0]!.du.url, "/generated/n_gia1.png");
+      assert.equal(xong[0]!.du.url, diaChi(base, "/generated/n_gia1.png"));
       assert.equal(xong[0]!.du.daXong, 1);
 
       // Khung cuoi kem ca luot va ket qua: nguoi goi khong phai goi them mot
@@ -803,8 +860,8 @@ describe("workflow streaming contracts", () => {
     const day = taoPhien([{ id: "a", vaiTro: "canh", prompt: "mot canh" }]);
     await voiApi(async ({ base }) => {
       const { body } = await goi(base, `/api/wf/${day}/start?async=1`, "POST", {});
-      assert.equal(body.statusUrl, `/api/wf/runs/${body.runId}`);
-      assert.equal(body.streamUrl, `/api/wf/runs/${body.runId}/stream`);
+      assert.equal(body.statusUrl, diaChi(base, `/api/wf/runs/${body.runId}`));
+      assert.equal(body.streamUrl, diaChi(base, `/api/wf/runs/${body.runId}/stream`));
     });
   });
 
@@ -838,8 +895,8 @@ describe("workflow run history contracts", () => {
       // Ca dau vao lan buoc deu con nguyen: do la thu tra loi duoc cau "lan goi
       // do da chay voi gia tri gi va ra cai gi".
       assert.deepEqual(doc.body.run.inputs, { A: "x" });
-      assert.equal(doc.body.run.buoc[0].url, "/generated/n_gia1.png");
-      assert.equal(doc.body.result.media[0].url, "/generated/n_gia1.png");
+      assert.equal(doc.body.run.buoc[0].url, diaChi(base, "/generated/n_gia1.png"));
+      assert.equal(doc.body.result.media[0].url, diaChi(base, "/generated/n_gia1.png"));
     });
   });
 

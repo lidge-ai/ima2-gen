@@ -31,7 +31,11 @@ import { subscribe } from "../lib/eventBus.js";
 import { WF_KENH, WF_SU_KIEN } from "../lib/wfEvents.js";
 import { errInfo } from "../lib/errInfo.js";
 import { logError, logEvent } from "../lib/logger.js";
-import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
+import {
+  requireRuntimeContext,
+  type RouteRuntimeContext,
+  type RuntimeContext,
+} from "../lib/runtimeContext.js";
 
 /** Cho lau nhat trong mot request giu ket noi; qua han thi chuyen sang hoi sau. */
 const HAN_CHO_MS = 10 * 60 * 1000;
@@ -172,12 +176,54 @@ function docNodes(tho: unknown): Record<string, GhiDeNode> {
   return ra;
 }
 
+/**
+ * Goc dia chi dung cho lan tra loi NAY, lay tu chinh yeu cau.
+ *
+ * Goi tu LAN thi phai nhan link LAN, goi tu may minh thi nhan link localhost -
+ * mot goc co dinh se tra ve dia chi ma nguoi goi khong voi tới duoc.
+ *
+ * Tieu de Host da duoc lop bao ve kiem TRUOC khi vao day (policy.resolveOrigin
+ * tu choi moi Host khong nam trong danh sach dia chi phuc vu), nen dung lai no
+ * o day la an toan; khong co Host thi lui ve dia chi may chu tu biet.
+ */
+function gocTuYeuCau(req: Request, ctx: RuntimeContext): string {
+  const host = req.get("host");
+  return host ? `${req.protocol}://${host}` : ctx.serverUrl;
+}
+
+/**
+ * Ghep duong media thanh dia chi day du NGAY LUC TRA LOI.
+ *
+ * Khong luu dia chi day du xuong co so du lieu: host la thuoc tinh cua lan goi,
+ * khong phai cua tep. Luu vao thi doi cong hay doi may la ca lich su tro sai.
+ */
+function tuyetDoi(goc: string, u: string): string {
+  return u.startsWith("/") ? `${goc}${u}` : u;
+}
+
+function luotTuyetDoi(luot: WfLuotChay, goc: string): WfLuotChay {
+  const kq = luot.ketQua;
+  return {
+    ...luot,
+    buoc: luot.buoc.map((b) => (b.url ? { ...b, url: tuyetDoi(goc, b.url) } : b)),
+    ...(kq ? {
+      ketQua: {
+        media: kq.media.map((m) => ({ ...m, url: tuyetDoi(goc, m.url) })),
+        nodes: Object.fromEntries(
+          Object.entries(kq.nodes).map(([id, v]) => [id, { ...v, url: tuyetDoi(goc, v.url) }]),
+        ),
+      },
+    } : {}),
+  };
+}
+
 /** Dia chi dan len node BAT DAU, de o chi dan API tren giao dien chi mot cho. */
 export function duongDanKhuon(sessionId: string, startNodeId: string): string {
   return `/api/wf/${encodeURIComponent(sessionId)}/${encodeURIComponent(startNodeId)}`;
 }
 
-function traLuot(res: Response, luot: WfLuotChay): void {
+function traLuot(res: Response, luotTho: WfLuotChay, goc: string): void {
+  const luot = luotTuyetDoi(luotTho, goc);
   if (luot.trangThai === "xong") {
     res.json({ ok: true, run: luot, result: luot.ketQua });
     return;
@@ -196,7 +242,8 @@ function traLuot(res: Response, luot: WfLuotChay): void {
   res.status(202).json({
     ok: true,
     run: luot,
-    statusUrl: `/api/wf/runs/${luot.id}`,
+    statusUrl: `${goc}/api/wf/runs/${luot.id}`,
+    streamUrl: `${goc}/api/wf/runs/${luot.id}/stream`,
   });
 }
 
@@ -214,7 +261,7 @@ const NHIP_THO_MS = 15_000;
  * Tra ve ham thoi nghe: nguoi goi PHAI dang ky truoc khi khoi dong luot chay,
  * khong thi su kien dau tien da bay qua truoc luc nghe.
  */
-function phatTienDo(res: Response, runId: string): () => void {
+function phatTienDo(res: Response, runId: string, goc: string): () => void {
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -242,11 +289,14 @@ function phatTienDo(res: Response, runId: string): () => void {
   const thoi = subscribe((ev) => {
     if (ev.jobId !== WF_KENH || ev.data.runId !== runId) return;
     if (ev.event !== WF_SU_KIEN.ketThuc) {
-      gui(ev.event, ev.data);
+      // Khung buoc mang url media: ghep thanh dia chi day du theo nguon goi.
+      const u = ev.data.url;
+      gui(ev.event, typeof u === "string" ? { ...ev.data, url: tuyetDoi(goc, u) } : ev.data);
       return;
     }
     // Ket thuc: kem ca luot va ket qua roi dong duong lai.
-    const luot = layLuotChay(runId);
+    const luotTho = layLuotChay(runId);
+    const luot = luotTho ? luotTuyetDoi(luotTho, goc) : null;
     gui(WF_SU_KIEN.ketThuc, {
       ...ev.data,
       ok: luot?.trangThai === "xong",
@@ -298,7 +348,8 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
       trangThai: chuoi(req.query.status),
       truoc: so(req.query.before),
     };
-    const runs = danhSachLuotChay(loc);
+    const goc = gocTuYeuCau(req, ctx);
+    const runs = danhSachLuotChay(loc).map((l) => luotTuyetDoi(l, goc));
     res.json({
       runs,
       total: demLuotChay({
@@ -334,7 +385,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
       const cho = doiLuotChay(req.params.runId);
       if (cho) await Promise.race([cho, khoangCho(HAN_CHO_MS)]);
     }
-    traLuot(res, layLuotChay(req.params.runId) ?? luot);
+    traLuot(res, layLuotChay(req.params.runId) ?? luot, gocTuYeuCau(req, ctx));
   });
 
   /** Bam vao mot luot dang chay de nhan tiep cac buoc con lai. */
@@ -343,18 +394,20 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
     if (!luot) {
       return res.status(404).json({ error: { code: "WF_RUN_NOT_FOUND", message: "khong co luot chay nay" } });
     }
-    const ngung = phatTienDo(res, req.params.runId);
+    const goc = gocTuYeuCau(req, ctx);
+    const ngung = phatTienDo(res, req.params.runId, goc);
     // Luot da xong roi thi khong con su kien nao toi nua: tra ket qua ngay va
     // dong, thay vi de nguoi goi treo cho mot thu da ket thuc.
     if (luot.trangThai !== "dang-chay") {
+      const day = luotTuyetDoi(luot, goc);
       res.write(`event: ${WF_SU_KIEN.ketThuc}\ndata: ${JSON.stringify({
-        runId: luot.id,
-        sessionId: luot.sessionId,
-        startNodeId: luot.startNodeId,
-        trangThai: luot.trangThai,
-        ok: luot.trangThai === "xong",
-        run: luot,
-        ...(luot.ketQua ? { result: luot.ketQua } : {}),
+        runId: day.id,
+        sessionId: day.sessionId,
+        startNodeId: day.startNodeId,
+        trangThai: day.trangThai,
+        ok: day.trangThai === "xong",
+        run: day,
+        ...(day.ketQua ? { result: day.ketQua } : {}),
       })}\n\n`);
       ngung();
     }
@@ -368,11 +421,13 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
     // Node dang chay van chay het roi moi dung: huy giua chung mot lan sinh anh
     // van mat tien ma khong co ket qua nao.
     const da = huyLuotChay(req.params.runId);
-    res.json({ ok: da, run: layLuotChay(req.params.runId) });
+    const sau = layLuotChay(req.params.runId);
+    res.json({ ok: da, run: sau ? luotTuyetDoi(sau, gocTuYeuCau(req, ctx)) : null });
   });
 
   /** Moi khuon dang co: phien nao co node BAT DAU noi duoc toi KET THUC. */
-  app.get("/api/wf", (_req: Request, res: Response) => {
+  app.get("/api/wf", (req: Request, res: Response) => {
+    const goc = gocTuYeuCau(req, ctx);
     const ra: unknown[] = [];
     for (const phien of listSessions().slice(0, SO_PHIEN_QUET)) {
       const day = getSession((phien as { id: string }).id);
@@ -388,6 +443,9 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
           startNodeId: n.id,
           label: n.data?.label ?? null,
           path: duongDanKhuon(day.id, n.id),
+          // Them `url` ben canh `path`: nguoi goi co ngay dia chi day du theo
+          // dung nguon minh goi, ma `path` cu van con cho ai da dung no.
+          url: `${goc}${duongDanKhuon(day.id, n.id)}`,
           ready: chuoi.ok,
           ...(chuoi.ok ? { steps: chuoi.soViec } : { reason: chuoi.loi }),
         });
@@ -399,7 +457,8 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
   app.get("/api/wf/:sessionId/:startNodeId", (req: Request<Params>, res: Response) => {
     try {
       const mo = moTaKhuon(req.params.sessionId, req.params.startNodeId);
-      res.json({ ...mo, path: duongDanKhuon(req.params.sessionId, req.params.startNodeId) });
+      const duong = duongDanKhuon(req.params.sessionId, req.params.startNodeId);
+      res.json({ ...mo, path: duong, url: `${gocTuYeuCau(req, ctx)}${duong}` });
     } catch (e) { batLoi(res, e); }
   });
 
@@ -450,7 +509,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
 
       // Dang ky nghe TRUOC khi khoi dong: su kien dau tien bay ra ngay khi bo
       // chay giai xong chuoi, dang ky sau la mat no.
-      const ngung = phat ? phatTienDo(res, luot.id) : null;
+      const ngung = phat ? phatTienDo(res, luot.id, gocTuYeuCau(req, ctx)) : null;
 
       const dangChay = chayKhuon(ctx, {
         sessionId: req.params.sessionId,
@@ -474,16 +533,17 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
         return;
       }
       if (traNgay) {
+        const goc = gocTuYeuCau(req, ctx);
         return res.status(202).json({
           ok: true,
           runId: luot.id,
-          statusUrl: `/api/wf/runs/${luot.id}`,
-          streamUrl: `/api/wf/runs/${luot.id}/stream`,
-          run: luot,
+          statusUrl: `${goc}/api/wf/runs/${luot.id}`,
+          streamUrl: `${goc}/api/wf/runs/${luot.id}/stream`,
+          run: luotTuyetDoi(luot, goc),
         });
       }
       await Promise.race([dangChay, khoangCho(HAN_CHO_MS)]);
-      traLuot(res, layLuotChay(luot.id) ?? luot);
+      traLuot(res, layLuotChay(luot.id) ?? luot, gocTuYeuCau(req, ctx));
     } catch (e) { batLoi(res, e); }
   });
 }

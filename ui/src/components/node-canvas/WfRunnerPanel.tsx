@@ -117,7 +117,10 @@ export function WfRunnerPanel({ onClose }: { onClose(): void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void navigator.clipboard?.writeText(`${window.location.origin}${k.path}`)}
+                    // May chu da ghep dia chi day du theo dung nguon goi: goi
+                    // tu LAN thi day la link LAN. Tu ghep lai o day se ra dia
+                    // chi cua trinh duyet, khong phai cua nguoi se goi API.
+                    onClick={() => void navigator.clipboard?.writeText(k.url)}
                   >
                     {t("runner.copyUrl")}
                   </button>

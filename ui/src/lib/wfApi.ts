@@ -61,6 +61,8 @@ export type WfKhuonApi = {
   startNodeId: string;
   label: string | null;
   path: string;
+  /** Dia chi day du theo dung nguon goi - may chu ghep san. */
+  url: string;
   ready: boolean;
   steps?: number;
   reason?: string;

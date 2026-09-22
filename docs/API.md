@@ -1430,6 +1430,25 @@ generation halfway costs the same and yields nothing. Use
 `result.media` is what the END node collects; `result.nodes` carries every node
 that ran, for workflows where intermediate output matters too.
 
+### URLs follow the caller
+
+Every URL a workflow route returns — `buoc[].url`, `result.media[].url`,
+`result.nodes[*].url`, `statusUrl`, `streamUrl`, and the `url` beside a
+workflow's `path` — is **absolute, built from the origin of the request being
+answered**. Call from the LAN and the links point at the LAN address; call from
+the machine itself and they point at localhost. A fixed origin would hand a
+caller addresses it cannot reach.
+
+The `Host` header is safe to echo because the access layer has already rejected
+any host outside the serving origins (`LOCAL_HOST_REJECTED`) before a route runs.
+
+Absolute URLs exist **only in responses**. What is stored keeps the
+`/generated/...` path: a host belongs to a call, not to a file, and baking one in
+would make the whole history point at the wrong place the day the port or address
+changes. `statusUrl` and `streamUrl` are already complete — prefixing them with a
+base again yields nonsense. `path` is kept alongside `url` for callers that
+already build their own.
+
 Results are also written back into the session graph, so opening the Node Studio
 shows them on the nodes. Each write re-reads the newest graph and touches only
 the node that just ran, so a browser tab editing another node is not clobbered.
