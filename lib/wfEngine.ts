@@ -26,6 +26,7 @@ import {
   dienOTrong,
   laUrlVideo,
   laViecThat,
+  nodeSauBocDo,
   mucGopCuaNode,
   oTrongTrongVanBan,
   timChuoiChay,
@@ -45,6 +46,7 @@ import { WF_KENH, WF_SU_KIEN } from "./wfEvents.js";
 import {
   CAU_HOI_MO_TA,
   thayMoTaTrongPrompt,
+  O_TRANG_PHUC,
   timNodeCanDoiMoTa,
   timNodeDungThamChieu,
 } from "./moTaTrangPhuc.js";
@@ -312,12 +314,18 @@ export function moTaKhuon(sessionId: string, startNodeId: string) {
   const { nodes, edges } = docGraph(sessionId);
   const chuoi = timChuoiChay(startNodeId, nodes, edges);
   if (!chuoi.ok) throw new LoiKhuon(`WF_CHAIN_${chuoi.loi.toUpperCase().replace(/-/g, "_")}`, chuoi.loi);
+  // `{{TRANG_PHUC}}` sau BOC DO khong ke vao `inputs`: bao la bat buoc thi
+  // nguoi goi phai truyen mot gia tri ma chinh luot chay ghi de ngay sau do.
+  const tuDien = nodeSauBocDo(nodes, edges);
   const oTrong = new Set<string>();
   const buoc = chuoi.thuTu
     .map((id) => nodes.find((n) => n.id === id))
     .filter((n): n is WfNode => !!n && laViecThat(n))
     .map((n) => {
-      for (const ten of oTrongTrongVanBan(n.data?.prompt)) oTrong.add(ten);
+      for (const ten of oTrongTrongVanBan(n.data?.prompt)) {
+        if (ten === O_TRANG_PHUC && tuDien.has(n.id)) continue;
+        oTrong.add(ten);
+      }
       // Kem ca prompt: nguoi goi phai doc duoc noi dung hien tai cua tung node
       // thi moi dung duoc than request de ghi de no.
       return {
@@ -351,7 +359,12 @@ export function kiemDauVao(
   thuTu: readonly string[],
   inputs: Record<string, string>,
   ghiDe: Record<string, GhiDeNode> = {},
+  edges: readonly WfEdge[] = [],
 ): void {
+  // `{{TRANG_PHUC}}` o node nam sau BOC DO khong phai dau vao cua nguoi goi:
+  // buoc BOC DO doc flat lay ra mot cau roi dien ho ngay trong luot chay. Doi
+  // bat buoc mot gia tri se bi ghi de ngay sau do la bat truyen cho co.
+  const tuDien = nodeSauBocDo(nodes, edges);
   const thieu = new Set<string>();
   for (const id of thuTu) {
     const n = nodes.find((x) => x.id === id);
@@ -359,7 +372,10 @@ export function kiemDauVao(
     // Phai doc prompt HIEU LUC chu khong phai prompt trong graph: ghi de co the
     // vua bo mot o trong di, hoac vua them mot o trong moi vao.
     const prompt = noiDungNode(n, { nodes: ghiDe }).prompt;
-    for (const ten of oTrongTrongVanBan(dienOTrong(prompt, inputs))) thieu.add(ten);
+    for (const ten of oTrongTrongVanBan(dienOTrong(prompt, inputs))) {
+      if (ten === O_TRANG_PHUC && tuDien.has(id)) continue;
+      thieu.add(ten);
+    }
   }
   if (thieu.size > 0) {
     throw new LoiKhuon(
@@ -417,7 +433,7 @@ export function kiemTruocKhiChay(ts: ThamSoChay): void {
       );
     }
   }
-  kiemDauVao(nodes, chuoi.thuTu, ts.inputs, ts.nodes);
+  kiemDauVao(nodes, chuoi.thuTu, ts.inputs, ts.nodes, edges);
 }
 
 /**
@@ -476,7 +492,7 @@ export async function chayKhuon(
     // Ghi de va anh dinh THEM cua rieng luot chay nay. Buoc BOC DO se viet vao
     // day sau khi no sinh ra flat lay moi, nen cac buoc sau doc duoc - va graph
     // van khong he bi sua.
-    const tsChay: ThamSoChay = { ...ts, nodes: { ...ts.nodes } };
+    const tsChay: ThamSoChay = { ...ts, nodes: { ...ts.nodes }, inputs: { ...ts.inputs } };
     const anhThem: Record<string, string[]> = {};
     for (const buoc of luot.buoc) {
       if (huy.aborted) {
@@ -611,16 +627,27 @@ async function doiLoiTaTrangPhuc(
     return;
   }
 
+  // Ben goi API co truyen TRANG_PHUC thi gia tri cua HO thang, o ca hai duong:
+  // ho noi ro muon mac gi, ghi de len la bo qua lenh cua ho trong im lang.
+  const tuApi = Object.prototype.hasOwnProperty.call(ts.inputs, O_TRANG_PHUC)
+    ? String(ts.inputs[O_TRANG_PHUC])
+    : null;
+  const moTaDung = tuApi ?? moTa;
+  // Duong CHINH: dien vao o trong `{{TRANG_PHUC}}`. Prompt viet the nao cung
+  // an - "He wears: {{TRANG_PHUC}}", "Outfit: {{TRANG_PHUC}}", hay mot cau
+  // tieng Viet.
+  if (tuApi === null) (ts.inputs as Record<string, string>)[O_TRANG_PHUC] = moTa;
+
   const daDoi: string[] = [];
   for (const id of doiTa) {
     const n = nodes.find((x) => x.id === id)!;
     const cu = noiDungNode(n, ts).prompt ?? "";
-    const moi = thayMoTaTrongPrompt(cu, moTa);
+    const moi = thayMoTaTrongPrompt(cu, moTaDung);
     if (!moi) continue;
     ts.nodes[id] = { ...(ts.nodes[id] ?? {}), prompt: moi };
     daDoi.push(id);
   }
-  logEvent("wf", "outfit_described", { nodeId, nodes: daDoi, chars: moTa.length });
+  logEvent("wf", "outfit_described", { nodeId, nodes: daDoi, chars: moTaDung.length, tuApi: tuApi !== null });
 }
 
 /** Hoi mo hinh liet ke tung mon do trong anh. */

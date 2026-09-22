@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
+import { KHUON_MO_TA, O_TRANG_PHUC, thayMoTaTrongPrompt } from "../lib/moTaTrangPhuc.ts";
 import {
   dauVaoVideoCuaNode,
   dienOTrong,
@@ -195,6 +196,23 @@ describe("workflow START/END run contracts", () => {
     assert.ok(kq.ok);
     // Markers do no work, so a slot written on one is not an input of the run.
     assert.deepEqual(oTrongCuaKhuon(nodes, kq.thuTu), ["MAU_SAC", "NOI_CHON"]);
+  });
+
+  it("WF-14 the outfit description is poured into {{TRANG_PHUC}}, and the fallback keeps the subject", () => {
+    // O trong la duong CHINH: prompt viet the nao cung an, ke ca mot cau tieng
+    // Viet hay mot nhan vat nam. Bat theo khoi chu "She wears: ..." dong cung
+    // tieng Anh va gioi tinh, va khong khop thi IM LANG - ra dung bo do cu.
+    assert.equal(O_TRANG_PHUC, "TRANG_PHUC");
+
+    // Duong du phong: giu nguyen chu dan dau da viet trong prompt. Doi
+    // "He wears" thanh "She wears" la tu tay doi gioi tinh cua nhan vat.
+    const nam = "He wears: an old grey coat. Use the reference image for the garments.";
+    assert.ok(KHUON_MO_TA.test(nam));
+    assert.match(thayMoTaTrongPrompt(nam, "a red hoodie")!, /^He wears: a red hoodie\./);
+    const nu = "She wears: an old dress. Use the reference image for the garments.";
+    assert.match(thayMoTaTrongPrompt(nu, "a red hoodie")!, /^She wears: a red hoodie\./);
+    // Khong co khoi nao de thay thi tra null chu khong doan bua.
+    assert.equal(thayMoTaTrongPrompt("co ay mac mot cai gi do", "a red hoodie"), null);
   });
 
   it("WF-13 a node's id is draggable text, with copying on its own icon", () => {

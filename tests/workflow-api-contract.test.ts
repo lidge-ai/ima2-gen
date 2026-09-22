@@ -771,6 +771,60 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-16 BOC DO dien vao o trong {{TRANG_PHUC}}, khong doi ai truyen", async () => {
+    // Duong chinh. Bat theo khoi chu "She wears: ..." dong cung tieng Anh va
+    // gioi tinh - gap model nam la khong khop, ma khong khop thi im lang. O
+    // trong thi prompt viet the nao cung an.
+    const day = taoKhuonThoiTrang("He wears: {{TRANG_PHUC}}. Use the reference image for the garments.");
+    await voiApi(async ({ base, ghiNhan }) => {
+      // Khong truyen inputs nao ca.
+      const { status, body } = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      const macDo = ghiNhan.filter((g) => g.duong === "/api/node/generate")
+        .find((g) => g.than.clientNodeId === "macdo")!;
+      assert.match(String(macDo.than.prompt), /a cream cardigan, blue jeans, white sneakers/);
+      assert.doesNotMatch(String(macDo.than.prompt), /\{\{TRANG_PHUC\}\}/);
+      // Chu dan dau cua nguoi viet prompt duoc giu: doi "He wears" thanh "She
+      // wears" la tu tay doi gioi tinh cua nhan vat.
+      assert.match(String(macDo.than.prompt), /He wears: a cream cardigan/);
+    });
+
+    // Va tuyen mo ta khong con khai bao TRANG_PHUC la dau vao bat buoc nua:
+    // bao bat buoc thi nguoi goi phai truyen mot gia tri ma luot chay ghi de
+    // ngay sau do.
+    await voiApi(async ({ base }) => {
+      const { status, body } = await goi(base, `/api/wf/${day}/start`, "GET");
+      assert.equal(status, 200, JSON.stringify(body));
+      assert.deepEqual(body.inputs, []);
+    });
+  });
+
+  it("WFTP-17 API truyen TRANG_PHUC thi gia tri cua ben goi THANG", async () => {
+    // Ho noi ro muon mac gi; ghi de len la bo qua lenh cua ho trong im lang.
+    const day = taoKhuonThoiTrang("She wears: {{TRANG_PHUC}}. Use the reference image for the garments.");
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status } = await goi(base, `/api/wf/${day}/start`, "POST",
+        { inputs: { TRANG_PHUC: "mot bo ao dai lua do" } });
+      assert.equal(status, 200);
+      const macDo = ghiNhan.filter((g) => g.duong === "/api/node/generate")
+        .find((g) => g.than.clientNodeId === "macdo")!;
+      assert.match(String(macDo.than.prompt), /mot bo ao dai lua do/);
+      assert.doesNotMatch(String(macDo.than.prompt), /cream cardigan/);
+    });
+  });
+
+  it("WFTP-18 o trong TRANG_PHUC ngoai tam BOC DO thi van phai truyen", async () => {
+    // Chi node nam SAU boc do moi duoc dien ho. Bo qua het thi mot khuon khong
+    // he co buoc boc do van im lang gui chuoi "{{TRANG_PHUC}}" len may sinh anh.
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "co ay mac {{TRANG_PHUC}}" }]);
+    await voiApi(async ({ base }) => {
+      const { status, body } = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      assert.equal(status, 400);
+      assert.equal(body.error.code, "WF_INPUT_MISSING");
+      assert.deepEqual(body.error.missing, ["TRANG_PHUC"]);
+    });
+  });
+
   it("WFTP-02 prompt khong co khuon 'She wears' thi khong bi sua gi", async () => {
     const day = taoKhuonThoiTrang("Keep the exact same face. Put her in a coffee shop.");
     await voiApi(async ({ base, ghiNhan }) => {

@@ -10,6 +10,8 @@
  */
 
 /** Hinh dang toi thieu cua mot node do ca hai ben deu co. */
+import { O_TRANG_PHUC } from "./moTaTrangPhuc.js";
+
 export type WfNodeData = {
   vaiTro?: string | undefined;
   prompt?: string | undefined;
@@ -355,15 +357,45 @@ export function dienOTrong(
 }
 
 /** Moi o trong ca khuon can, sap xep va khong trung - dung cho tuyen mo ta. */
+/**
+ * Moi node nam SAU mot node BOC DO trong khuon.
+ *
+ * Nhung node nay khong phai doi bang goi API dien `{{TRANG_PHUC}}`: buoc BOC DO
+ * doc flat lay ra mot cau roi dien ho ngay trong luot chay.
+ */
+export function nodeSauBocDo(
+  nodes: readonly WfNode[],
+  edges: readonly WfEdge[],
+): Set<string> {
+  const ra = new Set<string>();
+  for (const n of nodes) {
+    if (n.data?.vaiTro !== "trang-phuc") continue;
+    for (const id of phiaSauCua(edges, n.id)) ra.add(id);
+  }
+  return ra;
+}
+
+/**
+ * O trong nguoi goi phai dien.
+ *
+ * Co `edges` thi bo qua `{{TRANG_PHUC}}` o nhung node nam sau BOC DO - doi bat
+ * buoc mot gia tri ma chinh luot chay se ghi de ngay sau do la bat nguoi dung
+ * truyen cho co.
+ */
 export function oTrongCuaKhuon(
   nodes: readonly WfNode[],
   thuTu: readonly string[],
+  edges?: readonly WfEdge[],
 ): string[] {
+  const tuDien = edges ? nodeSauBocDo(nodes, edges) : new Set<string>();
   const ra = new Set<string>();
   for (const id of thuTu) {
     const n = nodes.find((x) => x.id === id);
     if (!n || !laViecThat(n)) continue;
-    for (const ten of oTrongTrongVanBan(n.data?.prompt)) ra.add(ten);
+    for (const ten of oTrongTrongVanBan(n.data?.prompt)) {
+      if (ten === O_TRANG_PHUC && tuDien.has(id)) continue;
+      ra.add(ten);
+    }
   }
   return [...ra].sort();
 }

@@ -1401,6 +1401,32 @@ animating. A video node with nothing of its own sends the parent's text alone,
 and one wired to nothing sends only its own. `inputs` are substituted after the
 two halves are joined, so a `{{SLOT}}` works in either.
 
+### The outfit slot
+
+The description goes into a `{{TRANG_PHUC}}` slot, and that is the path to write
+prompts against:
+
+```text
+He wears: {{TRANG_PHUC}}. Use the reference image for the garments.
+```
+
+A slot is plain text substitution, so the prompt can say anything around it —
+`She wears:`, `He wears:`, `Outfit:`, or a sentence in Vietnamese. A run fills
+it for every node downstream of the extraction node, so those nodes do **not**
+ask the caller for `TRANG_PHUC`: it is left out of the `inputs` list a describe
+call returns, and a run without it is accepted. A `{{TRANG_PHUC}}` on a node
+that is *not* downstream of an extraction node is still a caller input and still
+refused with `WF_INPUT_MISSING` — nothing would fill it.
+
+Passing `inputs.TRANG_PHUC` **overrides** the reading, on both paths: the caller
+said what to wear, and overwriting that would ignore their instruction silently.
+
+The older shape — rewriting the block between `She wears: ` and `. Use the
+reference image` — still works for prompts written before the slot existed, and
+now keeps whichever subject the prompt used instead of forcing `She`. Prefer the
+slot: a pattern that hardcodes English and one gender misses a male subject, and
+a miss here is silent — the model simply wears the old outfit.
+
 None of this asks the user to wire every node to the extraction node. A scene or
 video node takes the dressed model as its base and has no business holding the
 flat lay as an image; forcing an edge there would only dilute its input, and it

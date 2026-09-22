@@ -15,12 +15,32 @@
  * do", may chu goi trong luot chay khuon. Hai ban rieng se lech nhau.
  */
 
-/** Doan prompt bi thay: giua "She wears: " va cau luat bat dau bang "Use the reference image". */
-export const KHUON_MO_TA = /She wears: [\s\S]*?\. Use the reference image/;
+/**
+ * O TRONG de bo do moi do vao: `{{TRANG_PHUC}}`.
+ *
+ * Day la duong CHINH. Buoc BOC DO doc flat lay ra mot cau roi dien vao o nay,
+ * nen prompt viet the nao cung duoc - "He wears: {{TRANG_PHUC}}", "Outfit:
+ * {{TRANG_PHUC}}", hay mot cau tieng Viet - deu an. Bat theo khoi chu
+ * "She wears: ..." (xem KHUON_MO_TA duoi) chi con la duong DU PHONG cho prompt
+ * viet truoc khi co o trong: no dong cung tieng Anh va gioi tinh, gap model nam
+ * la khong khop, va khong khop thi IM LANG - ra dung bo do cu.
+ */
+export const O_TRANG_PHUC = "TRANG_PHUC";
+
+/**
+ * Duong du phong: doan prompt giua "She wears: " (hoac cach noi tuong duong) va
+ * cau luat bat dau bang "Use the reference image".
+ *
+ * Giu lai nguyen chu dan dau da viet trong prompt - doi "He wears" thanh
+ * "She wears" la tu tay doi gioi tinh cua nhan vat.
+ */
+export const KHUON_MO_TA =
+  /(She wears|He wears|They wear|Wearing|Outfit): [\s\S]*?\. Use the reference image/;
 
 export function thayMoTaTrongPrompt(prompt: string, moTa: string): string | null {
-  if (!KHUON_MO_TA.test(prompt)) return null;
-  return prompt.replace(KHUON_MO_TA, `She wears: ${moTa}. Use the reference image`);
+  const khop = KHUON_MO_TA.exec(prompt);
+  if (!khop) return null;
+  return prompt.replace(KHUON_MO_TA, `${khop[1]}: ${moTa}. Use the reference image`);
 }
 
 /**

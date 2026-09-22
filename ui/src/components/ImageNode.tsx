@@ -187,8 +187,10 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const duongApi = activeSessionId && laMocDau
     ? `/api/wf/${activeSessionId}/${id}` : null;
   const oTrongKhuon = useMemo(
-    () => (chuoi?.ok ? oTrongCuaKhuon(graphNodes, chuoi.thuTu) : []),
-    [chuoi, graphNodes],
+    // Truyen ca `graphEdges`: o trong `{{TRANG_PHUC}}` o node sau BOC DO duoc
+    // chinh luot chay dien, khong phai thu doi nguoi goi API truyen.
+    () => (chuoi?.ok ? oTrongCuaKhuon(graphNodes, chuoi.thuTu, graphEdges) : []),
+    [chuoi, graphNodes, graphEdges],
   );
   // Tai lich su khi MO o API, va tai lai moi khi mot luot API vua ket thuc -
   // dung luc do danh sach vua co them mot dong.
