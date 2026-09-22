@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { buildIma2Xmp, buildIma2MetadataPayload, parseIma2Xmp } from "../lib/imageMetadata.ts";
+import { isImageToolModel, normalizeImageQuality } from "../ui/src/lib/imageModels.ts";
 
 /**
  * The Home preset grid was removed in 3.3.0. That leaves a trap: a presetIds
@@ -62,6 +63,8 @@ function restoreDefaults(payload: unknown): Record<string, unknown> {
     "normalizeInsertedPromptArray",
     "parseRequestedCustomSide",
     "getPresetById",
+    "isImageToolModel",
+    "normalizeImageQuality",
     `return (function ()${body})();`,
   );
 
@@ -75,6 +78,8 @@ function restoreDefaults(payload: unknown): Record<string, unknown> {
     (v: unknown) => (Array.isArray(v) ? v : undefined),
     (v: unknown) => v,
     () => true,
+    isImageToolModel,
+    normalizeImageQuality,
   ) as Record<string, unknown>;
 }
 

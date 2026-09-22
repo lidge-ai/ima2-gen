@@ -8,6 +8,7 @@ export interface GenerateOptions {
   onPartialImage?: ((partial: { b64: string | undefined; index: number | null | undefined }) => void) | null;
   onFinalImage?: FinalImageHandler | null | undefined;
   model?: string | undefined;
+  imageToolModel?: string | undefined;
   partialImages?: number | undefined;
   reasoningEffort?: string | undefined;
   maxImages?: number | undefined;

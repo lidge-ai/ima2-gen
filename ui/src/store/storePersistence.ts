@@ -1,3 +1,4 @@
+import { isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import { isCoreProviderId } from "../generated/providers";
 import type {
@@ -333,7 +334,7 @@ export function parseMetadataSize(size?: string | null): { preset?: SizePreset; 
 }
 
 export function isQuality(value: unknown): value is Quality {
-  return value === "low" || value === "medium" || value === "high";
+  return value === "low" || value === "medium" || value === "high" || value === "xhigh" || value === "max";
 }
 
 export function isFormat(value: unknown): value is Format {
@@ -393,7 +394,10 @@ export function loadGenerationDefaults(): GenerationDefaults {
     if ("mcpParameters" in parsed) {
       out.mcpParameters = normalizeMcpParameters(parsed.mcpParameters);
     }
-    if (isQuality(parsed.quality)) out.quality = parsed.quality;
+    if ("imageToolModel" in parsed) {
+      out.imageToolModel = parsed.provider === "api" && isImageToolModel(parsed.imageToolModel) ? parsed.imageToolModel : null;
+    }
+    if (isQuality(parsed.quality)) out.quality = normalizeImageQuality(parsed.provider, out.imageToolModel, parsed.quality);
     if (isSizePreset(parsed.sizePreset)) out.sizePreset = parsed.sizePreset;
     if (typeof parsed.customW === "number" && Number.isFinite(parsed.customW)) {
       out.customW = parseRequestedCustomSide(parsed.customW, 1920);

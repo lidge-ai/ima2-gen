@@ -21,6 +21,7 @@ export type HistoryItem = {
   size: string | null;
   moderation?: string | null;
   model?: string | null;
+  imageToolModel?: import("../types").ImageToolModel | null;
   reasoningEffort?: string | null;
   elapsed?: number | null;
   format: string;

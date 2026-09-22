@@ -2,7 +2,7 @@ import type { Quality } from "../types";
 
 // Rough cost-per-image for gpt-image-2 sizes (preset-based estimate).
 // Size auto/custom fall back to the nearest keyed size or 1024².
-export const COST_MAP: Record<Quality, Record<string, number>> = {
+export const COST_MAP: Partial<Record<Quality, Record<string, number>>> = {
   low: {
     "1024x1024": 0.006,
     "1024x1536": 0.005,

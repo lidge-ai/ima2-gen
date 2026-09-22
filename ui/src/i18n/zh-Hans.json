@@ -1,4 +1,9 @@
 {
+  "imageToolModel": {
+    "title": "API 图像模型",
+    "default": "默认（上游选择）",
+    "costUnavailable": "暂无费用估算"
+  },
   "lan": {
     "title": "连接到工作室",
     "body": "请输入工作室设置的 LAN 令牌。令牌不会保存在浏览器存储中。",
@@ -193,6 +198,8 @@
     "reasonSnap": "尺寸必须以 16 像素为增量对齐。"
   },
   "quality": {
+    "xhighLabel": "超高",
+    "maxLabel": "最高",
     "title": "质量",
     "grokTitle": "Grok 质量",
     "grokModelTitle": "模型",

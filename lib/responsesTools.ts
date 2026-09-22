@@ -1,4 +1,5 @@
 export interface ImageGenOptions {
+  model?: string | undefined;
   quality?: string | undefined;
   size?: string | undefined;
   moderation?: string | undefined;
@@ -9,6 +10,7 @@ export interface ImageGenOptions {
 
 export type ResponseTool = {
   type: string;
+  model?: string | undefined;
   quality?: string | undefined;
   size?: string | undefined;
   moderation?: string | undefined;

@@ -6,6 +6,13 @@ aliases: [ima2 API, image_gen server API, ima2 endpoints]
 
 # Server API
 
+API image tool selection: classic/edit/multimode/node accept optional `imageToolModel`
+only for provider `api` (Sunburst/Flare 2.5 IDs). `model` keeps its outer GPT meaning.
+Only selected 2.5 tools accept image quality `xhigh`/`max`; other scopes normalize to
+medium. `oauthNormalize.ts` owns this allowlist and `providerOptions.ts` validates
+API values. `openaiOperations.ts` emits the tool model, and sidecar/history metadata
+preserves it. See `docs/API.md` for exact values.
+
 `server.ts` is the runtime bootstrap for `ima2-gen`. The browser UI and CLI both call `/api/*` endpoints registered from `routes/*.ts`. TypeScript is the source of truth; `server.js`/`routes/*.js`/`lib/*.js` are generated runtime outputs, ignored in the current checkout, and must be built before package/runtime verification rather than hand-edited. The server starts the OAuth proxy, serves the built UI, wires route modules, stores generated image files under the configured generated directory, reconstructs history, and exposes graph sessions.
 
 This document matters because the UI and CLI share the same server contract. For example, `/api/generate` returns a different shape for single-image and multi-image responses. `/api/history` supports both a flat list and session grouping. Node mode uses separate `/api/node/generate` and `/api/sessions/*` contracts. If those differences are not documented, clients can break quietly.

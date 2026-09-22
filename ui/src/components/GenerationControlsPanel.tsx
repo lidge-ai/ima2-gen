@@ -1,3 +1,6 @@
+import { Select } from "./controls/Select";
+import { API_IMAGE_TOOL_MODEL_OPTIONS } from "../lib/imageModels";
+import type { ImageToolModel } from "../types";
 import { useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
@@ -85,6 +88,8 @@ function nearestGeminiParams(w: number, h: number): { ratio: string; res: string
 export function GenerationControlsPanel() {
   const { t } = useI18n();
   const provider = useAppStore((s) => s.provider);
+  const imageToolModel = useAppStore((s) => s.imageToolModel);
+  const setImageToolModel = useAppStore((s) => s.setImageToolModel);
   const quality = useAppStore((s) => s.quality);
   const setQuality = useAppStore((s) => s.setQuality);
   const format = useAppStore((s) => s.format);
@@ -148,6 +153,10 @@ export function GenerationControlsPanel() {
     { value: "low" as const, label: t("quality.lowLabel"), sub: t("quality.lowSub") },
     { value: "medium" as const, label: t("quality.mediumLabel"), sub: t("quality.mediumSub") },
     { value: "high" as const, label: t("quality.highLabel"), sub: t("quality.highSub") },
+    ...(provider === "api" && imageToolModel ? [
+      { value: "xhigh" as const, label: t("quality.xhighLabel") },
+      { value: "max" as const, label: t("quality.maxLabel") },
+    ] : []),
   ];
   const moderationItems = [
     { value: "auto" as const, label: t("moderation.autoLabel"), sub: t("moderation.autoSub") },
@@ -347,6 +356,18 @@ export function GenerationControlsPanel() {
         </>
       ) : (
         <>
+        {provider === "api" && (
+          <div className="option-group">
+            <div className="section-title">{t("imageToolModel.title")}</div>
+            <Select<ImageToolModel | "">
+              ariaLabel={t("imageToolModel.title")}
+              items={[{ value: "", label: t("imageToolModel.default") }, ...API_IMAGE_TOOL_MODEL_OPTIONS]}
+              value={imageToolModel ?? ""}
+              onChange={(value) => setImageToolModel(value || null)}
+              portal
+            />
+          </div>
+        )}
         <OptionGroup<Quality>
           title={t("quality.title")}
           items={qualityItems}

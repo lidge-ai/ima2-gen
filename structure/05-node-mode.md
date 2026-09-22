@@ -6,6 +6,11 @@ aliases: [ima2 Node Mode, image graph mode, node canvas]
 
 # Node Mode
 
+Node generation accepts the API-only `imageToolModel` independently of outer `model`.
+The shared generation controls forward it to root generation and parent-image edits.
+Node sidecars and result metadata preserve the tool selection; API 2.5 enables
+xhigh/max quality, while non-API node variants normalize those qualities to medium.
+
 Node mode extends `ima2-gen` from a single-image generator into a graph-based image workspace. Users can create a root image, branch from it, and generate or edit child images. The UI is based on `@xyflow/react`, while the server provides node-level generation and session graph persistence.
 
 This mode matters because it is the likely center of future workflows. Classic UI revolves around one prompt and a list of image results. Node mode can represent lineage, retries, comparisons, and research-style branching as a graph. That connects API contracts, store state, session DB, and asset lifecycle.

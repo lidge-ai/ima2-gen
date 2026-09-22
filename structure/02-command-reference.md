@@ -6,6 +6,10 @@ aliases: [ima2 CLI, ima2 commands, image generation CLI]
 
 # Command Reference
 
+`gen`, `edit`, `multimode`, and `node generate` accept `--image-tool-model` for API
+Sunburst/Flare 2.5 tools. `--model` remains the outer GPT choice; omission keeps
+upstream selection. See `docs/CLI.md` for exact IDs and xhigh/max quality scope.
+
 The `ima2` CLI lets users configure the server, generate images, edit images, inspect history, and list active jobs without opening the browser UI. Server commands and server-client commands share the same entrypoint.
 
 This matters because `ima2-gen` is both a browser app and an automation tool. Users can run `npx ima2-gen serve` for an instant local app, while scripts can call `ima2 gen` or `ima2 edit` against the same server. If the CLI contract drifts, README examples, tests, server discovery, and API response handling drift with it.

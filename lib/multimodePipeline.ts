@@ -116,7 +116,8 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
     let routeQuality = "medium";
     let routeEffectiveSize = "1024x1024";
     let routeModeration = "low";
-    let routeImageModel: string | null = null;
+    let routeImageToolModel: string | undefined;
+  let routeImageModel: string | null = null;
     let routeWebSearchEnabled = true;
     let routePromptMode: "auto" | "direct" = "auto";
     let routeQualityWarnings: unknown[] = [];
@@ -142,6 +143,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         references = [],
         mode: promptMode = "auto",
         model: rawModel,
+        imageToolModel: rawImageToolModel,
         reasoningEffort: rawReasoningEffort,
         webSearchEnabled: rawWebSearchEnabled = true,
       } = req.body;
@@ -151,7 +153,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       );
       const maxImages = normalizeMaxImages(maxImagesResult.value, maxAllowedImages);
       const normalizedPromptMode = promptMode === "direct" ? "direct" : "auto";
-      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality });
+      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
       // Multimode has no comfy dispatch in this unit. Without this guard the
       // request would reach generateViaResponses and bill OAuth for an image
       // the user asked ComfyUI to make — silently, with no error to trace.
@@ -170,6 +172,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       const providerOptions = resolveProviderOptions(ctx, {
         provider,
         rawModel,
+        rawImageToolModel,
         rawReasoningEffort,
         rawSize: size,
         rawWebSearchEnabled,
@@ -186,6 +189,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         });
       }
       const imageModel = providerOptions.model;
+      const imageToolModel = providerOptions.imageToolModel;
       const reasoningEffort = providerOptions.reasoningEffort;
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
@@ -246,6 +250,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           kind: "multimode",
           quality,
           model: imageModel,
+          ...(imageToolModel ? { imageToolModel } : {}),
           size: effectiveSize,
           maxImages,
           refsCount: referencePayload.refsCount,
@@ -288,6 +293,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       routeEffectiveSize = effectiveSize;
       routeModeration = moderation;
       routeImageModel = imageModel ?? null;
+      routeImageToolModel = imageToolModel;
       routeWebSearchEnabled = webSearchEnabled ?? false;
       routePromptMode = normalizedPromptMode;
       routeQualityWarnings = qualityWarnings;
@@ -334,6 +340,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           format: resultFormat,
           moderation,
           model: activeProvider === "grok" ? resolveGrokQualityModel(imageModel, quality) : imageModel,
+          ...(imageToolModel ? { imageToolModel } : {}),
           provider: activeProvider,
           createdAt,
           usage: latestUsage,
@@ -374,7 +381,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         surface: "multimode", provider: activeProvider, requestId,
         signal: cancelController.signal, prompt: generationPrompt, rawPrompt: prompt,
         references: refCheck.refDetails, providerUrl: incomingProviderUrl, maxImages,
-        options: { model: imageModel, quality, size: effectiveSize, moderation,
+        options: { model: imageModel, imageToolModel, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
         nai: activeProvider === "nai" ? readNaiOptions(req.body) : {},
       }, {
@@ -439,6 +446,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         size: effectiveSize,
         moderation,
         model: imageModel,
+        ...(imageToolModel ? { imageToolModel } : {}),
         usage: latestUsage,
         webSearchCalls: latestWebSearchCalls,
         webSearchEnabled,
@@ -489,6 +497,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           size: routeEffectiveSize,
           moderation: routeModeration,
           model: routeImageModel,
+          ...(routeImageToolModel ? { imageToolModel: routeImageToolModel } : {}),
           usage: latestUsage,
           webSearchCalls: latestWebSearchCalls,
           webSearchEnabled: routeWebSearchEnabled,

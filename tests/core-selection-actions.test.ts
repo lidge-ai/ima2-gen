@@ -284,6 +284,36 @@ test("explicit image null deletes only remembered image and retains inactive vid
   });
 });
 
+test("API tool choice and quality survive reload and reset with default/provider/storage changes", async () => {
+  await isolated(async (storage) => {
+    storage.seed(GENERATION, { provider: "api", quality: "high" });
+    const runtime = await loadRuntime();
+    const f = fixture(runtime);
+    runtime.setImageToolModelImpl("gpt-image-2.5-flare", f.set, f.get);
+    runtime.setQualityImpl("max", f.set, f.get);
+    const reloaded = (await loadRuntime()).useAppStore.getState();
+    assert.equal(reloaded.provider, "api");
+    assert.equal(reloaded.imageToolModel, "gpt-image-2.5-flare");
+    assert.equal(reloaded.quality, "max");
+    runtime.setImageToolModelImpl(null, f.set, f.get);
+    assert.equal(f.get().quality, "medium");
+    runtime.setImageToolModelImpl("gpt-image-2.5-sunburst", f.set, f.get);
+    runtime.setQualityImpl("xhigh", f.set, f.get);
+    runtime.setCoreProviderSelection("oauth", f.set, f.get);
+    assert.equal(f.get().imageToolModel, null);
+    assert.equal(f.get().quality, "medium");
+    assert.equal(storage.json(GENERATION).imageToolModel, null);
+    runtime.setCoreProviderSelection("api", f.set, f.get);
+    runtime.setImageToolModelImpl("gpt-image-2.5-flare", f.set, f.get);
+    runtime.setQualityImpl("max", f.set, f.get);
+    storage.seed(GENERATION, { provider: "oauth", imageToolModel: "gpt-image-2.5-flare", quality: "max" });
+    runtime.syncFromStorageImpl(f.set, f.get);
+    assert.equal(f.get().provider, "oauth");
+    assert.equal(f.get().imageToolModel, null);
+    assert.equal(f.get().quality, "medium");
+  });
+});
+
 test("all interactive wrappers clear MCP while making exactly one complete core selection patch", async () => {
   await isolated(async (storage) => {
     const runtime = await loadRuntime();
@@ -304,7 +334,9 @@ test("all interactive wrappers clear MCP while making exactly one complete core 
       assert.equal(storage.json(GENERATION).mcpProvider, null);
       const corePatches = f.patches.filter((patch) => "provider" in patch || "imageModel" in patch || "videoModelSelected" in patch);
       assert.equal(corePatches.length, 1);
-      assert.deepEqual(Object.keys(corePatches[0]).sort(), ["comfyVideoWorkflow", "comfyWorkflow", "imageModel", "provider", "videoModelSelected"]);
+      assert.deepEqual(Object.keys(corePatches[0]).sort(), ["comfyVideoWorkflow", "comfyWorkflow", "imageModel", "imageToolModel", "provider", "quality", "videoModelSelected"]);
+      assert.equal(corePatches[0].imageToolModel, null);
+      assert.equal(corePatches[0].quality, "medium");
     }
   });
 });

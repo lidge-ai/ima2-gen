@@ -1,4 +1,9 @@
 {
+  "imageToolModel": {
+    "title": "API 이미지 모델",
+    "default": "기본값 (서버 선택)",
+    "costUnavailable": "예상 비용 미제공"
+  },
   "lan": {
     "title": "스튜디오에 연결",
     "body": "스튜디오에 설정된 LAN 토큰을 입력하세요. 토큰은 브라우저 저장소에 저장하지 않습니다.",
@@ -193,6 +198,8 @@
     "reasonSnap": "16px 단위에 맞춰야 합니다."
   },
   "quality": {
+    "xhighLabel": "매우 높음",
+    "maxLabel": "최대",
     "title": "품질",
     "grokTitle": "Grok 품질",
     "grokModelTitle": "모델",

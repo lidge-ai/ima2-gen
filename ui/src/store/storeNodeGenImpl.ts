@@ -1,3 +1,4 @@
+import { normalizeImageQuality } from "../lib/imageModels";
 import type { ClientNodeId } from "../lib/graph";
 import { postNodeGenerateStream } from "../lib/api";
 import { deriveParentServerNodeIds } from "../lib/nodeGraph";
@@ -206,12 +207,13 @@ export async function runGenerateNodeInPlaceImpl(
     const res = await postNodeGenerateStream({
       parentNodeId: effectiveParentServerNodeId,
       prompt,
-      quality: s.quality,
+      quality: normalizeImageQuality(nodeProvider, s.imageToolModel, s.quality),
       size,
       format: s.format,
       moderation: s.moderation,
       provider: nodeProvider,
       model: nodeModel,
+      ...(nodeProvider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
       reasoningEffort: s.reasoningEffort,
       storyboard: s.storyboardActive || undefined,
       requestId: flightId,
@@ -287,6 +289,7 @@ export async function runGenerateNodeInPlaceImpl(
               reasoningEffort: res.reasoningEffort,
               webSearchCalls: res.webSearchCalls,
               model: res.model ?? null,
+              imageToolModel: res.imageToolModel ?? null,
               size: res.size ?? null,
               errorInfo: null,
             },

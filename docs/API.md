@@ -327,6 +327,19 @@ Text-to-image and reference-guided root generation.
 
 Supported quality values: `low`, `medium`, `high`.
 
+For `provider: "api"`, generation, edit, multimode, and node generation also accept
+optional `imageToolModel`: `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`. It selects
+`tools[].model` for the Responses image-generation tool; `model` still selects the
+outer GPT reasoning model. Omit the field (or send null/empty) for upstream selection
+and the existing defaults. Other providers ignore it. Unknown API values return
+`INVALID_IMAGE_TOOL_MODEL` (400, or the existing synchronous multimode SSE error).
+Only an explicit API 2.5 selection enables quality `xhigh` and `max`; elsewhere those
+values normalize to `medium` with `QUALITY_DEFAULTED`. Sidecars, history, generation
+results and existing XMP embedding paths retain the selected `imageToolModel`.
+Edit continues to preserve upstream bytes and uses sidecar metadata.
+`GET /api/capabilities` advertises the API-only tool model/quality allowlist separately
+from the outer models in `/api/models`.
+
 Supported moderation values: `auto`, `low`.
 
 When `storyboard` is `true`, the server prepends storyboard keyframe instructions so image

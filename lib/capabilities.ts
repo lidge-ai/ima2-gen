@@ -4,7 +4,7 @@ import { AGENT_TOOL_MANIFEST } from "./agentToolManifest.js";
 import { buildCatalog, catalogSummary } from "./contracts/catalog.js";
 import { loadAllBundledSnapshots } from "./mcp/snapshotStore.js";
 import { KEY_TO_ENV, WRITABLE_CONFIG_KEYS } from "./configKeys.js";
-import { DEFAULT_IMAGE_QUALITY, VALID_IMAGE_QUALITIES } from "./oauthNormalize.js";
+import { DEFAULT_IMAGE_QUALITY, VALID_IMAGE_QUALITIES, API_IMAGE_TOOL_MODELS, API_IMAGE_25_QUALITIES } from "./oauthNormalize.js";
 import {
   MAX_REF2V_DURATION_15,
   MAX_REF2V_DURATION_BASE,
@@ -115,6 +115,7 @@ export function buildIma2Capabilities({
       },
     },
     valid: {
+      imageToolModels: { api: [...API_IMAGE_TOOL_MODELS], qualities: [...API_IMAGE_25_QUALITIES] },
       imageModels: {
         supported: toArray(appConfig.imageModels.valid),
         unsupported: toArray(appConfig.imageModels.unsupported),

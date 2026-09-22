@@ -60,6 +60,7 @@ export function buildIma2MetadataPayload(meta: any = {}, context: any = {}) {
     format: stringOrNull(meta.format, 20),
     moderation: stringOrNull(meta.moderation, 40),
     model: stringOrNull(meta.model, 80),
+    ...(meta.provider === "api" && meta.imageToolModel ? { imageToolModel: stringOrNull(meta.imageToolModel, 80) } : {}),
     reasoningEffort: stringOrNull(meta.reasoningEffort, 40),
     elapsed: numberOrNull(meta.elapsed),
     provider: stringOrNull(meta.provider, 40),

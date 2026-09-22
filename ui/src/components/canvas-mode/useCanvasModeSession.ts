@@ -100,6 +100,7 @@ export function useCanvasModeSession({
   showToast,
   t,
 }: UseCanvasModeSessionArgs) {
+  const imageToolModel = useAppStore((s) => s.imageToolModel);
   const saveCanvasVersionAndUseReference = useCallback(async (): Promise<GenerateItem | null> => {
     if (!imageElementRef.current || !currentImage) return null;
     const source = canvasSourceImageRef.current ?? currentImage;
@@ -333,6 +334,7 @@ export function useCanvasModeSession({
         provider,
         n: 1,
         model: imageModel,
+        ...(provider === "api" && imageToolModel ? { imageToolModel } : {}),
         reasoningEffort,
         mode: promptMode,
         webSearchEnabled,

@@ -6,6 +6,12 @@ aliases: [ima2 frontend, ima2 React UI, image_gen frontend]
 
 # Frontend Architecture
 
+API image model is a distinct optional `imageToolModel` in generation defaults.
+`GenerationControlsPanel` uses the shared Select; default/upstream stays unselected.
+Classic, edit, multimode and node requests forward it only for the API lane. Provider
+switches clear it; leaving 2.5 selection resets xhigh/max quality to medium. Four
+locales share the labels, and 2.5 pricing shows estimate unavailable until measured.
+
 LAN startup is owned by `ui/src/lib/lanSession.ts` and `main.tsx`: remove URL tokens
 before async work, confirm a session cookie, then import App. `LanSignIn.tsx` uses
 pure locale helpers and dictionaries, not the store-dependent i18n barrel. Expiry

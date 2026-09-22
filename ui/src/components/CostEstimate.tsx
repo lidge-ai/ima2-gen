@@ -12,9 +12,12 @@ export function CostEstimate() {
   const size = getResolvedSize();
 
   const imageModel = useAppStore((s) => s.imageModel);
+  const imageToolModel = useAppStore((s) => s.imageToolModel);
   const free = provider === "oauth" || provider === "grok" || provider === "agy";
   const cost = estimateCost(quality, size, provider, imageModel);
-  const label = free
+  const label = provider === "api" && imageToolModel
+    ? t("imageToolModel.costUnavailable")
+    : free
     ? t("cost.free")
     : multimode
       ? t("cost.multimodeApprox", { amount: (cost * multimodeMaxImages).toFixed(3), count: multimodeMaxImages })

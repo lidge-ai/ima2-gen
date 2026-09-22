@@ -18,6 +18,7 @@ const KNOWN_IMAGE_MODELS = deriveCliImageModelSet();
 
 const SPEC = {
   flags: {
+    "image-tool-model": { type: "string" },
     quality: { short: "q", type: "string", default: "low" },
     size:    { short: "s", type: "string", default: "1024x1024" },
     "max-images": { type: "string" },
@@ -48,7 +49,7 @@ const HELP = `
   Stream multi-image generation via SSE (phase / partial / image / done / error).
 
   Options:
-    -q, --quality <low|medium|high>     Default: low
+    -q, --quality <low|medium|high|xhigh|max>     Default: low
     -s, --size <WxH>                    Default: 1024x1024
     -n, --count <1..${MAX_GENERATION_COUNT}>                 Default: 4
         --max-images <1..${MAX_GENERATION_COUNT}>            Alias for --count
@@ -56,6 +57,7 @@ const HELP = `
     -d, --out-dir <dir>                 Output dir for multiple images
         --json
         --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-5.6-luna
+        --image-tool-model <id>       API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
                                       Aliases: luna, astra, sol, terra, spark
         --provider <${PROVIDER_VALUES.join("|")}>
                                       Provider (oauth = GPT OAuth; grok = xAI Grok; agy/gemini-api = Gemini)
@@ -123,6 +125,7 @@ export default async function multimodeCmd(argv: string[]) {
   const model = canonicalizeImageModel(args.model);
   if (model) body.model = model;
   if (args.provider) body.provider = args.provider;
+  if (args["image-tool-model"]) body.imageToolModel = args["image-tool-model"];
   if (args["reasoning-effort"]) body.reasoningEffort = args["reasoning-effort"];
   if (args["no-web-search"]) body.webSearchEnabled = false;
   else if (args["web-search"]) body.webSearchEnabled = true;

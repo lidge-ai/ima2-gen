@@ -112,6 +112,7 @@ export async function generateMultimodeImpl(
       provider: s.provider,
       maxImages: requested,
       model: coreImageRequestModel(s),
+      ...(s.provider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
       reasoningEffort: s.reasoningEffort,
       webSearchEnabled: s.webSearchEnabled,
       requestId: flightId,
@@ -184,6 +185,7 @@ export async function generateMultimodeImpl(
       quality: res.quality,
       size: res.size,
       model: res.model ?? null,
+      imageToolModel: res.imageToolModel ?? null,
     }));
     for (const item of items) {
       await addHistory(item, set, get, { autoSelectStartedAt });
@@ -319,6 +321,7 @@ export async function runGenerateImpl(
       // that makes hiding CountPicker honest instead of cosmetic.
       n: s.provider === "nai" ? 1 : s.count,
       model: coreImageRequestModel(s),
+      ...(s.provider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
       reasoningEffort: s.reasoningEffort,
       storyboard: s.storyboardActive || undefined,
       webSearchEnabled: s.webSearchEnabled,
@@ -355,6 +358,7 @@ export async function runGenerateImpl(
           quality: res.quality,
           size: res.size,
           model: res.model ?? null,
+          imageToolModel: res.imageToolModel ?? null,
           createdAt: img.createdAt ?? Date.now(),
         };
         await addHistory(item, set, get, { autoSelectStartedAt });
@@ -379,6 +383,7 @@ export async function runGenerateImpl(
           quality: res.quality,
           size: res.size,
           model: res.model ?? null,
+          imageToolModel: res.imageToolModel ?? null,
           createdAt: first.createdAt ?? Date.now(),
         };
       } else {
@@ -397,6 +402,7 @@ export async function runGenerateImpl(
           quality: res.quality,
           size: res.size,
           model: res.model ?? null,
+          imageToolModel: res.imageToolModel ?? null,
           createdAt: res.createdAt ?? Date.now(),
         };
       }

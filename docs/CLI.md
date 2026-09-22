@@ -19,6 +19,20 @@ For a quick start, see the [main README](../README.md). For endpoint mapping, se
 | `ima2 reset` | Remove saved config |
 | `ima2 backfill-thumbs` | Generate missing gallery thumbnails for images and videos (offline, no running server needed) |
 
+## API image tool selection
+
+`gen`, `edit`, `multimode`, and `node generate` accept
+`--image-tool-model gpt-image-2.5-sunburst|gpt-image-2.5-flare` with `--provider api`.
+This is separate from `--model`, which continues to choose the outer GPT reasoning
+model. Omission preserves upstream selection and existing defaults. Only an explicit
+API 2.5 selection enables `--quality xhigh|max`; other scopes normalize these values
+to medium. Non-API core providers ignore the tool model; MCP generation rejects the
+core-only flag.
+
+```bash
+ima2 gen "botanical illustration" --provider api --model gpt-5.4 --image-tool-model gpt-image-2.5-sunburst --quality xhigh
+```
+
 ## Common flags
 
 These work on most client commands:

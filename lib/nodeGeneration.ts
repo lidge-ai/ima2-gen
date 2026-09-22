@@ -54,10 +54,11 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         contextMode: rawContextMode = "parent-plus-refs",
         searchMode: rawSearchMode = "on",
         model: rawModel,
+        imageToolModel: rawImageToolModel,
         reasoningEffort: rawReasoningEffort,
       } = body;
       const { provider = "oauth" } = body;
-      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality });
+      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
       const normalizedPromptMode = promptMode === "direct" ? "direct" : "auto";
       const contextMode = rawContextMode === "parent-only" ? "parent-only"
         : rawContextMode === "ancestry" ? "ancestry" : "parent-plus-refs";
@@ -79,6 +80,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
       const providerOptions = resolveProviderOptions(ctx, {
         provider,
         rawModel,
+        rawImageToolModel,
         rawReasoningEffort,
         rawSize: size,
         rawWebSearchEnabled: body.webSearchEnabled,
@@ -94,6 +96,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         });
       }
       const imageModel = providerOptions.model;
+      const imageToolModel = providerOptions.imageToolModel;
       const reasoningEffort = providerOptions.reasoningEffort;
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
@@ -254,6 +257,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         clientNodeId,
         quality,
         model: effectiveImageModel,
+        ...(imageToolModel ? { imageToolModel } : {}),
         size: effectiveSize,
         moderation,
         refs: refsForRequest.length,
@@ -287,7 +291,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         signal: cancelController.signal, prompt: generationPrompt, rawPrompt: prompt,
         references: refCheck.refDetails, sourceImage: parentB64, contextMode, searchMode,
         partialImages: emitProgress ? 2 : 0,
-        options: { model: effectiveImageModel, quality, size: effectiveSize, moderation,
+        options: { model: effectiveImageModel, imageToolModel, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
         nai: activeProvider === "nai" ? readNaiOptions(req.body) : {},
       }, emitProgress ? {
@@ -311,6 +315,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
             parentNodeId,
             clientNodeId,
             model: effectiveImageModel,
+            ...(imageToolModel ? { imageToolModel } : {}),
             moderation,
             quality,
             size: effectiveSize,
@@ -398,6 +403,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         promptMode: normalizedPromptMode,
         options: { quality, size: effectiveSize, format: resultFormat, moderation },
         model: effectiveImageModel,
+        ...(imageToolModel ? { imageToolModel } : {}),
         reasoningEffort,
         createdAt: Date.now(),
         createdAtIso: new Date().toISOString(),
@@ -448,6 +454,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         webSearchEnabled,
         provider: activeProvider,
         model: effectiveImageModel,
+        ...(imageToolModel ? { imageToolModel } : {}),
         reasoningEffort,
         size: effectiveSize,
         format: resultFormat,

@@ -20,11 +20,14 @@ const HELP = `
     show <nodeId> [--json]
 
   Generate options:
+    --image-tool-model <id> API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
+    --quality <low|medium|high|xhigh|max> Extended quality requires an API 2.5 model
     --provider <${PROVIDER_VALUES.join("|")}>  Provider for this request
 ${NAI_CLI_HELP}
 `;
 
 const GEN_FLAGS = {
+  "image-tool-model": { type: "string" },
   quality: { short: "q", type: "string", default: "low" },
   size:    { short: "s", type: "string", default: "1024x1024" },
   count:   { short: "n", type: "string", default: "1" },
@@ -91,6 +94,7 @@ async function generateSub(argv: string[]) {
   if (model) body.model = model;
   if (args.provider) body.provider = args.provider;
   if (args.parent) body.parentNodeId = args.parent;
+  if (args["image-tool-model"]) body.imageToolModel = args["image-tool-model"];
   if (args["reasoning-effort"]) body.reasoningEffort = args["reasoning-effort"];
   if (args["no-web-search"]) body.webSearchEnabled = false;
   else if (args["web-search"]) body.webSearchEnabled = true;

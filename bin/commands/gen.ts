@@ -32,6 +32,7 @@ const PROVIDER_VALUES = [
 
 const SPEC = {
   flags: {
+    "image-tool-model": { type: "string" },
     quality: { short: "q", type: "string", default: "low" },
     size: { short: "s", type: "string", default: "1024x1024" },
     "no-size-nudge": { type: "boolean" },
@@ -62,7 +63,7 @@ const HELP = `
     'ima2 cancel <requestId>'. MCP lanes support -n 1 only.
 
   Options:
-    -q, --quality <low|medium|high>         Core lanes only. Default: low
+    -q, --quality <low|medium|high|xhigh|max>         Core lanes only. Default: low
     -s, --size <WxH | auto>                 Core lanes only. Default: 1024x1024
         --no-size-nudge                     Do not restate --size in the prompt
     -n, --count <1..${MAX_GENERATION_COUNT}>                     MCP lanes: 1 only
@@ -77,6 +78,7 @@ const HELP = `
         --server <url>                      Override server URL
         --model <model|lane/model>          Bare IDs must be unique across lanes
                                             Core aliases: luna, astra, sol, terra, spark
+        --image-tool-model <id>             API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --provider <${PROVIDER_VALUES.join("|")}>
                                             'auto' was removed; choose a lane explicitly
         --mode <auto|direct>                Core lanes only. Default: auto
@@ -197,6 +199,7 @@ function generatedFilename(value: string): boolean {
 
 function rejectUnsupportedMcpFlags(argv: string[], args: ParsedArgs): void {
   const forbidden: Array<[string, string[]]> = [
+    ["--image-tool-model", ["--image-tool-model"]],
     ["--quality", ["--quality", "-q"]], ["--size", ["--size", "-s"]],
     ["--no-save", ["--no-save"]], ["--force", ["--force"]], ["--stdin", ["--stdin"]],
     ["--mode", ["--mode"]], ["--moderation", ["--moderation"]], ["--bg", ["--bg"]],
@@ -311,6 +314,7 @@ async function requestCoreImage(args: ParsedArgs, context: ImageContext, n: numb
     provider: context.target.lane, ...context.naiOptions };
   body.requestId = requestId;
   if (args.bg) body.backgroundPreset = String(args.bg);
+  if (args["image-tool-model"]) body.imageToolModel = args["image-tool-model"];
   if (args["reasoning-effort"]) body.reasoningEffort = args["reasoning-effort"];
   if (args["no-web-search"]) body.webSearchEnabled = false;
   else if (args["web-search"]) body.webSearchEnabled = true;

@@ -1,4 +1,9 @@
 {
+  "imageToolModel": {
+    "title": "API image model",
+    "default": "Default (upstream)",
+    "costUnavailable": "Estimate unavailable"
+  },
   "lan": {
     "title": "Connect to your studio",
     "body": "Enter the LAN token configured on this studio. It is not saved in browser storage.",
@@ -193,6 +198,8 @@
     "reasonSnap": "The size must align to 16px increments."
   },
   "quality": {
+    "xhighLabel": "Extra high",
+    "maxLabel": "Maximum",
     "title": "Quality",
     "grokTitle": "Grok quality",
     "grokModelTitle": "Model",

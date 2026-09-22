@@ -208,6 +208,7 @@ export function mapHistoryItem(it: Awaited<ReturnType<typeof getHistory>>["items
     quality: it.quality ?? undefined,
     format: it.format as Format | undefined,
     model: it.model ?? undefined,
+    imageToolModel: it.imageToolModel ?? null,
     reasoningEffort: (it.reasoningEffort as GenerateItem["reasoningEffort"]) ?? undefined,
     elapsed: it.elapsed ?? undefined,
     provider: it.provider,

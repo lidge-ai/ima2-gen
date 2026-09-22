@@ -22,6 +22,7 @@ import {
   buildMultimodeSequencePrompt,
   buildUserTextPrompt,
 } from "../../oauthProxy.js";
+import { normalizeOAuthParams, normalizeImageToolModel } from "../../oauthNormalize.js";
 import { postResponses } from "../../responsesTransport.js";
 import type { ReferenceRef, GenerateOptions } from "./openaiTypes.js";
 
@@ -43,7 +44,12 @@ export async function generateViaResponses(provider: string | undefined, prompt:
   const ctx = requireRuntimeContext(ctxRaw);
   const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
-  const requestTools = tools(webSearchEnabled, {
+  const toolModel = normalizeImageToolModel(provider ?? "oauth", options.imageToolModel);
+  if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
+  if (quality === "xhigh" || quality === "max") {
+    quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
+  }
+  const requestTools = tools(webSearchEnabled, { ...(toolModel.imageToolModel ? { model: toolModel.imageToolModel } : {}),
     quality,
     size,
     moderation,
@@ -131,7 +137,12 @@ export async function generateMultimodeViaResponses(provider: string | undefined
   );
   const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
-  const requestTools = tools(webSearchEnabled, { quality, size, moderation, ...(options.partialImages ? { partial_images: options.partialImages } : {}) });
+  const toolModel = normalizeImageToolModel(provider ?? "oauth", options.imageToolModel);
+  if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
+  if (quality === "xhigh" || quality === "max") {
+    quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
+  }
+  const requestTools = tools(webSearchEnabled, { ...(toolModel.imageToolModel ? { model: toolModel.imageToolModel } : {}), quality, size, moderation, ...(options.partialImages ? { partial_images: options.partialImages } : {}) });
   const userText = buildMultimodeSequencePrompt(
     mode === "direct"
       ? `${prompt}${DIRECT_PROMPT_FIDELITY_SUFFIX}`
@@ -170,7 +181,12 @@ export async function editViaResponses(provider: string | undefined, prompt: str
   const ctx = requireRuntimeContext(ctxRaw);
   const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
-  const requestTools = tools(webSearchEnabled, { quality, size, moderation });
+  const toolModel = normalizeImageToolModel(provider ?? "oauth", options.imageToolModel);
+  if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
+  if (quality === "xhigh" || quality === "max") {
+    quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
+  }
+  const requestTools = tools(webSearchEnabled, { ...(toolModel.imageToolModel ? { model: toolModel.imageToolModel } : {}), quality, size, moderation });
   const toolChoice = imageToolChoice(options.forceImageToolChoice ?? ctx.config?.oauth?.forceImageToolChoice !== false);
   const toolChoiceKind = imageToolChoiceKind(toolChoice);
   const imageForRequest = await compressReferenceB64ForOAuth(imageB64, {

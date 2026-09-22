@@ -1,5 +1,22 @@
 import type { ImageModel, OpenAIImageModel, GeminiImageModel, AtlasCloudImageModel, MinimaxImageModel, NaiImageModel, Provider, UnsupportedImageModel, VideoModel } from "../types";
 import { PROVIDER_MODELS } from "../generated/providers";
+import type { ImageToolModel, Quality } from "../types";
+
+export const API_IMAGE_TOOL_MODEL_OPTIONS = [
+  { value: "gpt-image-2.5-sunburst", label: "GPT Image2.5 Sunburst" },
+  { value: "gpt-image-2.5-flare", label: "GPT Image2.5 Flare" },
+] as const;
+
+export function isImageToolModel(value: unknown): value is ImageToolModel {
+  return API_IMAGE_TOOL_MODEL_OPTIONS.some((option) => option.value === value);
+}
+
+export function normalizeImageQuality(provider: unknown, imageToolModel: unknown, quality: Quality): Quality {
+  if ((quality === "xhigh" || quality === "max") && (provider !== "api" || !isImageToolModel(imageToolModel))) {
+    return "medium";
+  }
+  return quality;
+}
 
 export const DEFAULT_IMAGE_MODEL: ImageModel = "gpt-5.6-luna";
 export const IMAGE_MODEL_STORAGE_KEY = "ima2.imageModel";

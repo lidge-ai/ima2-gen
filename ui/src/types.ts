@@ -10,7 +10,8 @@ export type AssetGenBackgroundPreset = "chroma-green" | "white" | "black" | "tra
 export type SettingsSection = "providers" | "workspace" | "general";
 export type HistoryStripLayout = "rail" | "horizontal" | "sidebar";
 export type Provider = CoreProviderId;
-export type Quality = "low" | "medium" | "high";
+export type Quality = "low" | "medium" | "high" | "xhigh" | "max";
+export type ImageToolModel = "gpt-image-2.5-sunburst" | "gpt-image-2.5-flare";
 export type Format = "png" | "jpeg" | "webp";
 export type Moderation = "low" | "auto";
 export type OpenAIImageModel = Extract<ImageModelId, `gpt-${string}`>;
@@ -106,6 +107,7 @@ export type GenerateItem = {
   format?: string;
   moderation?: string;
   model?: string | null;
+  imageToolModel?: ImageToolModel | null;
   /**
    * Background preset the image was generated with. "transparent" means the
    * file carries a real alpha channel, so it needs a checkerboard preview and
@@ -171,6 +173,7 @@ export type EmbeddedGenerationMetadata = {
   format?: string | null;
   moderation?: string | null;
   model?: string | null;
+  imageToolModel?: ImageToolModel | null;
   provider?: string | null;
   providerUrl?: string | null;
   sessionId?: string | null;
@@ -198,6 +201,7 @@ export type GenerateSingleResponse = {
   size?: string;
   moderation?: string;
   model?: string | null;
+  imageToolModel?: ImageToolModel | null;
   revisedPrompt?: string | null;
   promptMode?: "auto" | "direct";
   providerUrl?: string | null;
@@ -216,6 +220,7 @@ export type GenerateMultiResponse = {
   size?: string;
   moderation?: string;
   model?: string | null;
+  imageToolModel?: ImageToolModel | null;
   revisedPrompt?: string | null;
   promptMode?: "auto" | "direct";
 };
@@ -234,6 +239,7 @@ export type GenerateRequest = {
   moderation: Moderation;
   provider: Provider;
   n: number;
+  imageToolModel?: ImageToolModel;
   model?: string; // wire model id, including runtime Comfy workflow ids
   reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   image?: string;
@@ -279,6 +285,7 @@ export type MultimodeGenerateResponse = {
   size?: string;
   moderation?: string;
   model?: string | null;
+  imageToolModel?: ImageToolModel | null;
   webSearchCalls?: number;
   promptMode?: "auto" | "direct";
   extraIgnored?: number;

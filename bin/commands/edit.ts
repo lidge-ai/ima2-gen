@@ -18,6 +18,7 @@ const KNOWN_IMAGE_MODELS = deriveCliImageModelSet();
 const SPEC = {
   flags: {
     prompt:  { short: "p", type: "string" },
+    "image-tool-model": { type: "string" },
     quality: { short: "q", type: "string", default: "low" },
     size:    { short: "s", type: "string", default: "1024x1024" },
     out:     { short: "o", type: "string" },
@@ -43,11 +44,12 @@ const HELP = `
 
   Options:
     -p, --prompt <text>        Edit instruction (required)
-    -q, --quality <low|medium|high>
+    -q, --quality <low|medium|high|xhigh|max>
     -s, --size <WxH>
     -o, --out <file>
         --json
         --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-5.6-luna
+        --image-tool-model <id>       API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
                                       Aliases: luna, astra, sol, terra, spark
         --provider <${PROVIDER_VALUES.join("|")}>
                                       Provider (oauth = GPT OAuth; grok = xAI Grok; agy/gemini-api = Gemini)
@@ -119,6 +121,7 @@ export default async function editCmd(argv: string[]) {
       sessionId: args.session,
       requestId,
     };
+    if (args["image-tool-model"]) editBody.imageToolModel = args["image-tool-model"];
     if (args["reasoning-effort"]) editBody.reasoningEffort = args["reasoning-effort"];
     if (args.provider) editBody.provider = args.provider;
     if (args["no-web-search"]) editBody.webSearchEnabled = false;

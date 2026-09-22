@@ -1,3 +1,5 @@
+import { normalizeImageQuality } from "../lib/imageModels";
+import { saveGenerationDefaultsPatch } from "./storePersistence";
 import type { ImageModel, Provider } from "../types";
 import { isCoreProviderId } from "../generated/providers";
 import {
@@ -29,7 +31,12 @@ function commitSelection(
   memory[next.provider] = nextLane;
   saveCoreSelectionMemory(memory);
   persistCoreSelection(next);
-  set(next);
+  set((state) => {
+    const imageToolModel = next.provider === "api" ? state.imageToolModel : null;
+    const quality = normalizeImageQuality(next.provider, imageToolModel, state.quality);
+    saveGenerationDefaultsPatch({ imageToolModel, quality });
+    return { ...next, imageToolModel, quality };
+  });
 }
 
 export function setCoreProviderSelection(provider: Provider, set: StoreSet, get: StoreGet): void {

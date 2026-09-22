@@ -23,6 +23,7 @@ import {
 import {
   loadSelectedFilename,
   loadVideoDefaults,
+  loadGenerationDefaults,
   persistCanvasExportBackground,
 } from "./storePersistence";
 import {
@@ -37,6 +38,7 @@ import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import type { HistoryStripLayout, UIMode } from "../types";
 import { abortFlight } from "./flightAbortRegistry";
 import { loadCoreSelectionSnapshot } from "./coreSelectionPersistence";
+import { normalizeImageQuality } from "../lib/imageModels";
 
 export async function cancelInFlightJobImpl(
   requestId: string,
@@ -65,6 +67,7 @@ export function syncFromStorageImpl(set: StoreSet, get: StoreGet): void {
   const nextSelected = loadSelectedFilename();
   const nextSelection = loadCoreSelectionSnapshot();
   const nextVideo = loadVideoDefaults();
+  const nextGeneration = loadGenerationDefaults();
   set((s) => {
     const matched = nextSelected
       ? s.history.find((h) => h.filename === nextSelected) ?? null
@@ -80,6 +83,8 @@ export function syncFromStorageImpl(set: StoreSet, get: StoreGet): void {
       inFlight: nextInflight,
       activeGenerations: nextInflight.length,
       ...nextSelection,
+      imageToolModel: nextSelection.provider === "api" ? nextGeneration.imageToolModel ?? null : null,
+      quality: normalizeImageQuality(nextSelection.provider, nextGeneration.imageToolModel, nextGeneration.quality ?? s.quality),
       videoDuration: nextVideo.duration,
       videoResolution: nextVideo.resolution as VideoResolutionUI,
       videoAspectRatio: nextVideo.aspectRatio,

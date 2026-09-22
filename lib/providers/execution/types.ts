@@ -13,6 +13,7 @@ export type ExecutionReference = Pick<
 >;
 export interface ExecutionOptions {
   model: string;
+  imageToolModel?: string | undefined;
   quality: string;
   size: string;
   moderation: string;

@@ -1,3 +1,5 @@
+import type { ImageToolModel } from "../types";
+import { normalizeImageQuality } from "../lib/imageModels";
 import type { Provider, Quality, SizePreset, Format, Moderation, ImageModel, Count } from "../types";
 import type { ReasoningEffort } from "../lib/reasoning";
 import {
@@ -352,7 +354,15 @@ export function setProviderImpl(provider: Provider, set: StoreSet, get: StoreGet
   setCoreProviderSelection(provider, set, get);
 }
 
-export function setQualityImpl(quality: Quality, set: StoreSet): void {
+export function setImageToolModelImpl(imageToolModel: ImageToolModel | null, set: StoreSet, get: StoreGet): void {
+  if (get().provider !== "api") imageToolModel = null;
+  const quality = normalizeImageQuality(get().provider, imageToolModel, get().quality);
+  saveGenerationDefaultsPatch({ imageToolModel, quality });
+  set({ imageToolModel, quality });
+}
+
+export function setQualityImpl(quality: Quality, set: StoreSet, get: StoreGet): void {
+  quality = normalizeImageQuality(get().provider, get().imageToolModel, quality);
   saveGenerationDefaultsPatch({ quality });
   set({ quality });
 }
