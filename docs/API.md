@@ -1353,9 +1353,18 @@ for.
 
 A video node inherits the **scene node's** prompt as its own description, so the
 rewrite has to be visible through that inheritance too: the run reads every
-node's effective prompt, not the one stored in the graph. Reading the parent
-straight from the graph is what made a run produce three correct images followed
-by a video in the previous outfit.
+node's effective prompt — the stored one with this run's overrides applied on
+top — not the one stored in the graph. Reading the parent straight from the graph
+is what made a run produce three correct images followed by a video in the
+previous outfit.
+
+That makes a `nodes` override on a video node **additive, not replacing**: the
+prompt sent is the parent's effective text, a space, then the override. The
+override stands in for the node's own line, which is the part a video node holds
+anyway — replacing the whole thing would silently throw away the scene it is
+animating. A video node with nothing of its own sends the parent's text alone,
+and one wired to nothing sends only its own. `inputs` are substituted after the
+two halves are joined, so a `{{SLOT}}` works in either.
 
 None of this asks the user to wire every node to the extraction node. A scene or
 video node takes the dressed model as its base and has no business holding the
