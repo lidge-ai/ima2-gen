@@ -18,10 +18,25 @@ function onDragStart(event: DragEvent<HTMLElement>, element: AssetItem): void {
   event.dataTransfer.setData(NODE_ELEMENT_MIME, JSON.stringify(payloadFor(element.id)));
 }
 
+/**
+ * Khay Element dong san.
+ *
+ * Mo san thi no chiem mot goc canvas o moi phien lam viec, ke ca voi nguoi chua
+ * luu element nao - luc do no chi hien mot dong "chua co element". Nho lua chon
+ * trong localStorage: day la tien nghi cua tung nguoi tren tung may, khong phai
+ * du lieu cua khuon.
+ */
+const KHOA_MO = "ima2.nodeElements.mo";
+
+function docDaMo(): boolean {
+  try { return localStorage.getItem(KHOA_MO) === "1"; } catch { return false; }
+}
+
 export function NodeElementTray({ disabled = false, onAdd }: NodeElementTrayProps) {
   const { t } = useI18n();
   const [elements, setElements] = useState<AssetItem[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [mo, setMo] = useState(docDaMo);
 
   useEffect(() => {
     let active = true;
@@ -36,8 +51,20 @@ export function NodeElementTray({ disabled = false, onAdd }: NodeElementTrayProp
     return () => { active = false; };
   }, []);
 
-  return <aside className="node-element-tray" aria-label={t("nodeStudio.elements.ariaLabel")}>
-    <header><strong>{t("nodeStudio.elements.title")}</strong><span>{t("nodeStudio.elements.hint")}</span></header>
+  const bat = () => setMo((v) => {
+    try { localStorage.setItem(KHOA_MO, v ? "0" : "1"); } catch { /* rieng tu / chan luu: van dong mo duoc, chi khong nho. */ }
+    return !v;
+  });
+
+  return <aside className={`node-element-tray${mo ? "" : " is-dong"}`} aria-label={t("nodeStudio.elements.ariaLabel")}>
+    <header>
+      <button type="button" className="node-element-tray__mo" onClick={bat} aria-expanded={mo}>
+        {mo ? "▾" : "▸"} <strong>{t("nodeStudio.elements.title")}</strong>
+        {state === "ready" && elements.length > 0 ? <span className="node-element-tray__so">{elements.length}</span> : null}
+      </button>
+      {mo ? <span>{t("nodeStudio.elements.hint")}</span> : null}
+    </header>
+    {!mo ? null : <>
     {state === "loading" ? <p role="status">{t("nodeStudio.elements.loading")}</p> : null}
     {state === "error" ? <p role="alert">{t("nodeStudio.elements.loadError")}</p> : null}
     {state === "ready" && elements.length === 0 ? <p>{t("nodeStudio.elements.empty")}</p> : null}
@@ -51,5 +78,6 @@ export function NodeElementTray({ disabled = false, onAdd }: NodeElementTrayProp
         </article>;
       })}
     </div>
+    </>}
   </aside>;
 }

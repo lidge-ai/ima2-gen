@@ -7,6 +7,7 @@ import { NodeBranchDialog } from "./NodeBranchDialog";
 import { NodeCommandPalette } from "./NodeCommandPalette";
 import { NodeElementTray } from "./NodeElementTray";
 import { NodeTemplatePicker } from "./NodeTemplatePicker";
+import { NodeBatchBar } from "../NodeBatchBar";
 import { WfRunnerPanel } from "./WfRunnerPanel";
 
 type StudioController = ReturnType<typeof useNodeStudioController>;
@@ -30,6 +31,9 @@ export function NodeStudioOverlays({ studio, graphEmpty, disabled, onAddRoot }: 
   const [runnerOpen, setRunnerOpen] = useState(false);
   return <>
     <Panel position="top-right" className="node-studio-toolbar">
+      {/* Chon / Chon het nam chung mot hang voi cac nut kia. Truoc day no la
+          mot thanh noi rieng ngay duoi, an mat them mot dong canvas. */}
+      {graphEmpty ? null : <NodeBatchBar />}
       <button type="button" disabled={disabled} onClick={onAddRoot}>{t("nodeStudio.toolbar.addImage")}</button>
       <button type="button" onClick={() => setRunnerOpen(true)}>{t("nodeStudio.toolbar.runner")}</button>
       <button type="button" disabled={disabled} onClick={studio.openTemplates}>{t("nodeStudio.toolbar.templates")}</button>

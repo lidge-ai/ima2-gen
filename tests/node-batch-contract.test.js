@@ -56,8 +56,13 @@ describe("node selection batch contract", () => {
     assert.doesNotMatch(store, /cancelInflight\(flightId\)/);
   });
 
-  it("renders a canvas-level batch action bar", () => {
-    assert.match(canvas, /<NodeBatchBar \/>/);
+  it("renders the batch actions inside the canvas toolbar row", () => {
+    // Thanh chon nam TRONG hang cong cu, khong phai mot thanh noi rieng ngay
+    // duoi no: hai thanh chong nhau an mat hai dong tren cung cua canvas.
+    const overlays = readFileSync("ui/src/components/node-canvas/NodeStudioOverlays.tsx", "utf-8");
+    assert.match(overlays, /<NodeBatchBar \/>/);
+    assert.doesNotMatch(canvas, /<NodeBatchBar \/>/);
+    assert.doesNotMatch(batchBar, /<Panel/);
     assert.match(batchBar, /nodeBatch\.generateMissing/);
     assert.match(batchBar, /nodeBatch\.regenerateSelected/);
     assert.match(batchBar, /nodeBatch\.stopRemaining/);

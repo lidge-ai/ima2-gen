@@ -295,10 +295,17 @@ body::after {
 
 .node-studio-empty-overlay { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; padding: 72px 16px 24px; pointer-events: none; }
 .node-studio-empty-overlay > * { pointer-events: auto; }
-.node-studio-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: min(520px, calc(100vw - 280px)); margin-right: 52px; position: relative; z-index: 11; }
+.node-studio-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; max-width: min(900px, calc(100vw - 280px)); margin-right: 52px; position: relative; z-index: 11; }
 .node-studio-toolbar button, .node-element-tray button { min-height: 32px; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); color: var(--text); cursor: pointer; }
 .node-studio-toolbar button:disabled, .node-element-tray button:disabled { cursor: not-allowed; opacity: .5; }
 .node-studio-element-panel { width: 230px; margin-top: 56px !important; }
+/* Khay dong lai chi con mot cai chip: no dang nam de len canvas, va nguoi chua
+   luu element nao thi mo san cung khong co gi de xem. */
+.node-studio-element-panel:has(.node-element-tray.is-dong) { width: auto; }
+.node-element-tray.is-dong { padding: 4px 8px; }
+.node-element-tray.is-dong header { margin-bottom: 0; }
+.node-element-tray__mo { display: flex; align-items: center; gap: 5px; padding: 2px 0 !important; border: 0 !important; background: none !important; color: var(--text) !important; font: inherit; cursor: pointer; }
+.node-element-tray__so { padding: 0 5px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--text-muted); font-size: 10px; }
 .node-element-tray { max-height: min(380px, calc(100vh - 200px)); overflow: auto; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-xl); background: var(--surface); backdrop-filter: blur(10px); color: var(--text); box-shadow: 0 10px 30px var(--shadow-soft); }
 .node-element-tray header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }.node-element-tray header span, .node-element-tray p { color: var(--text-muted); font-size: 11px; }
 .node-element-tray__list { display: grid; gap: 7px; }.node-element-tray__item { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 7px; align-items: center; padding: 6px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); font-size: 11px; }.node-element-tray__item img, .node-element-tray__placeholder { width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--surface-3); object-fit: cover; }.node-element-tray__item > span:not(.node-element-tray__placeholder) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.node-element-tray__item button { grid-column: 1 / -1; width: 100%; }

@@ -16,7 +16,6 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useAppStore, type GraphNode, type GraphEdge } from "../store/useAppStore";
 import { ImageNode } from "./ImageNode";
-import { NodeBatchBar } from "./NodeBatchBar";
 import { useI18n } from "../i18n";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { ElementReferenceNode } from "./node-canvas/ElementReferenceNode";
@@ -151,7 +150,6 @@ function NodeCanvasInner() {
             proOptions={{ hideAttribution: true }}
           >
             {nodes.length === 0 ? <div className="node-studio-empty-overlay"><NodeCanvasEmptyState hasRecentGraph={studio.hasRecentGraph} onStartBlank={() => { if (!sessionLoading) addRootNode(); }} onOpenTemplates={studio.openTemplates} onResumeRecent={studio.resumeRecent} /></div> : null}
-            {nodes.length > 0 ? <NodeBatchBar /> : null}
             <NodeStudioOverlays studio={studio} graphEmpty={nodes.length === 0} disabled={sessionLoading} onAddRoot={() => addRootNode()} />
             <Background
               gap={24}

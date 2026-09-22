@@ -223,6 +223,16 @@ describe("EN — element node lifecycle", () => {
     assert.match(elementNode, /<Handle type="source" id="notes"/);
   });
 
+  it("keeps the element tray collapsed until the user opens it", () => {
+    // Mo san thi khay de len mot goc canvas o moi phien, ke ca voi nguoi chua
+    // luu element nao - luc do no chi hien mot dong "chua co element".
+    assert.match(elementTray, /const \[mo, setMo\] = useState\(docDaMo\)/);
+    assert.match(elementTray, /return localStorage\.getItem\(KHOA_MO\) === "1"/);
+    // Khong nho duoc (cua so rieng tu, chan luu) van phai dong mo duoc.
+    assert.match(elementTray, /catch \{ return false; \}/);
+    assert.match(elementTray, /aria-expanded=\{mo\}/);
+  });
+
   it("restores the renderer and blocks single and batch runs for missing inputs", () => {
     assert.match(graphSave, /nodeType === "element-reference" \? "elementReferenceNode" : "imageNode"/);
     // Reload preserves unmanaged element/branch fields (spread-first mapper).

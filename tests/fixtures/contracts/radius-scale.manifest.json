@@ -56,6 +56,13 @@
     "important": false
   },
   {
+    "file": "ui/src/index.css",
+    "atRule": null,
+    "selector": ".node-element-tray__so",
+    "expected": "var(--r-pill)",
+    "important": false
+  },
+  {
     "file": "ui/src/styles/agent-panels-composer.css",
     "atRule": null,
     "selector": ".agent-composer textarea",
@@ -2111,20 +2118,6 @@
     "atRule": null,
     "selector": ".in-flight-spinner",
     "expected": "50%",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/node-workspace.css",
-    "atRule": null,
-    "selector": ".node-batch-bar",
-    "expected": "var(--r-xl)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/node-workspace.css",
-    "atRule": null,
-    "selector": ".node-batch-bar button",
-    "expected": "var(--r-lg)",
     "important": false
   },
   {

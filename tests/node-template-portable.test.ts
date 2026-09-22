@@ -16,7 +16,14 @@ async function listen(): Promise<{ base: string; close: () => Promise<void> }> {
   const port = typeof address === "object" && address ? address.port : 0;
   return {
     base: `http://127.0.0.1:${port}`,
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+    close: () => new Promise<void>((resolve) => {
+      // Dong ca socket dang giu truoc: fetch cua Node giu ket noi lai theo
+      // origin, ma origin o day la "127.0.0.1:<cong ngau nhien>" - he dieu hanh
+      // cap lai dung cong do cho may chu cua bai ke tiep thi lan fetch sau boc
+      // phai socket da chet va bao "fetch failed".
+      server.closeAllConnections?.();
+      server.close(() => resolve());
+    }),
   };
 }
 

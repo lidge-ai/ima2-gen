@@ -1,4 +1,3 @@
-import { Panel } from "@xyflow/react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import {
@@ -34,7 +33,9 @@ export function NodeBatchBar() {
   };
 
   return (
-    <Panel position="top-center" className="node-batch-bar nodrag">
+    // Nam TRONG hang cong cu, khong phai mot thanh noi rieng: hai thanh chong
+    // nhau an mat hai dong tren cung cua canvas, ma cai nao cung it nut.
+    <div className="node-batch-bar nodrag">
       <button type="button" onClick={toggleNodeSelectionMode} aria-pressed={nodeSelectionMode}>
         {nodeSelectionMode ? t("nodeBatch.selectionOn") : t("nodeBatch.selectionOff")}
       </button>
@@ -77,6 +78,6 @@ export function NodeBatchBar() {
           </button>
         </>
       ) : null}
-    </Panel>
+    </div>
   );
 }

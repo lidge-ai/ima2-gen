@@ -85,28 +85,20 @@
   cursor: pointer;
   box-shadow: 0 4px 12px var(--shadow-soft);
 }
+/* Nam trong hang cong cu: khong co khung/nen rieng nua, neu khong thi trong
+   nhu mot thanh long trong mot thanh. */
 .node-batch-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: min(920px, calc(100vw - 320px));
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
-  box-shadow: 0 14px 36px var(--shadow-soft);
-  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
+/* Vien, nen va bo goc lay theo hang cong cu (.node-studio-toolbar button) -
+   dat rieng o day thi hai nhom nut canh nhau trong cung mot hang lai khac mau. */
 .node-batch-bar button {
-  min-height: 30px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  color: var(--text);
-  padding: 0 10px;
   font-size: 12px;
   white-space: nowrap;
-  cursor: pointer;
 }
 .node-batch-bar__danger {
   border-color: color-mix(in srgb, var(--red) 62%, var(--border)) !important;
