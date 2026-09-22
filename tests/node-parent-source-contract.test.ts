@@ -16,54 +16,88 @@ after(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
-test("saveGraph clears stale parentServerNodeId when the visual edge is missing", () => {
+function node(id: string, serverNodeId?: string, nodeType?: string) {
+  return {
+    id,
+    x: 0,
+    y: 0,
+    data: { ...(serverNodeId ? { serverNodeId } : {}), ...(nodeType ? { nodeType } : {}) },
+  };
+}
+
+test("saveGraph clears stale parent ids when visual image edges are missing", () => {
   const session = sessionStore.createSession({ title: "parent contract" });
   sessionStore.saveGraph(session.id, {
     expectedVersion: 0,
     nodes: [
-      { id: "a", x: 0, y: 0, data: { serverNodeId: "n_a", parentServerNodeId: null } },
-      { id: "b", x: 1, y: 1, data: { serverNodeId: "n_b", parentServerNodeId: "n_a" } },
+      node("a", "n_a"),
+      { ...node("b", "n_b"), data: { serverNodeId: "n_b", parentServerNodeId: "stale", extraParentServerNodeIds: ["also-stale"] } },
     ],
     edges: [],
   });
 
-  const graph = sessionStore.getSession(session.id);
-  const b = graph.nodes.find((node) => node.id === "b");
-  assert.equal(b.data.parentServerNodeId, null);
+  const graph = sessionStore.getSession(session.id)!;
+  const child = graph.nodes.find((entry) => entry.id === "b")!;
+  assert.equal(child.data.parentServerNodeId, null);
+  assert.deepEqual(child.data.extraParentServerNodeIds, []);
 });
 
-test("saveGraph derives parentServerNodeId from the incoming visual edge", () => {
-  const session = sessionStore.createSession({ title: "derive parent" });
+test("saveGraph keeps ordered image parents, ignores element inputs, and retains a missing primary", () => {
+  const session = sessionStore.createSession({ title: "multi parent" });
   sessionStore.saveGraph(session.id, {
     expectedVersion: 0,
     nodes: [
-      { id: "a", x: 0, y: 0, data: { serverNodeId: "n_a", parentServerNodeId: null } },
-      { id: "b", x: 1, y: 1, data: { serverNodeId: "n_b", parentServerNodeId: "wrong" } },
+      node("element", "n_element", "element-reference"),
+      node("missing-primary"),
+      node("z-base", "n_base"),
+      node("a-extra", "n_extra"),
+      node("duplicate-extra", "n_extra"),
+      node("child", "n_child"),
     ],
-    edges: [{ id: "a->b", source: "a", target: "b", data: {} }],
+    edges: [
+      { id: "z-element", source: "element", target: "child", data: {} },
+      { id: "y-missing", source: "missing-primary", target: "child", data: {} },
+      { id: "x-base", source: "z-base", target: "child", data: {} },
+      { id: "b-extra", source: "a-extra", target: "child", data: {} },
+      { id: "a-duplicate", source: "duplicate-extra", target: "child", data: {} },
+    ],
   });
 
-  const graph = sessionStore.getSession(session.id);
-  const b = graph.nodes.find((node) => node.id === "b");
-  assert.equal(b.data.parentServerNodeId, "n_a");
+  const graph = sessionStore.getSession(session.id)!;
+  const child = graph.nodes.find((entry) => entry.id === "child")!;
+  assert.equal(child.data.parentServerNodeId, null, "a missing first image parent is not replaced");
+  assert.deepEqual(child.data.extraParentServerNodeIds, ["n_base", "n_extra"]);
 });
 
-test("saveGraph rejects multiple incoming parent edges for one node", () => {
-  const session = sessionStore.createSession({ title: "multi parent" });
-  assert.throws(
-    () => sessionStore.saveGraph(session.id, {
-      expectedVersion: 0,
-      nodes: [
-        { id: "a", x: 0, y: 0, data: { serverNodeId: "n_a" } },
-        { id: "b", x: 1, y: 1, data: { serverNodeId: "n_b" } },
-        { id: "c", x: 2, y: 2, data: { serverNodeId: "n_c" } },
-      ],
-      edges: [
-        { id: "a->c", source: "a", target: "c", data: {} },
-        { id: "b->c", source: "b", target: "c", data: {} },
-      ],
-    }),
-    (err) => (err as { code?: string })?.code === "GRAPH_PARENT_CONFLICT",
-  );
-});
+test("edge insertion order survives reverse scan, reopen, and removal", () => {
+  const session = sessionStore.createSession({ title: "edge order" });
+  const nodes = [node("z-source", "n_z"), node("a-source", "n_a"), node("m-source", "n_m"), node("child", "n_child")];
+  const edges = [
+    { id: "z-edge", source: "z-source", target: "child", data: {} },
+    { id: "a-edge", source: "a-source", target: "child", data: {} },
+    { id: "m-edge", source: "m-source", target: "child", data: {} },
+  ];
+  sessionStore.saveGraph(session.id, { expectedVersion: 0, nodes, edges });
 
+  db.getDb().pragma("reverse_unordered_selects = ON");
+  let graph = sessionStore.getSession(session.id)!;
+  assert.deepEqual(graph.edges.map((edge) => edge.id), ["z-edge", "a-edge", "m-edge"]);
+  let child = graph.nodes.find((entry) => entry.id === "child")!;
+  assert.equal(child.data.parentServerNodeId, "n_z");
+  assert.deepEqual(child.data.extraParentServerNodeIds, ["n_a", "n_m"]);
+
+  db.closeDb();
+  db.getDb().pragma("reverse_unordered_selects = ON");
+  graph = sessionStore.getSession(session.id)!;
+  assert.deepEqual(graph.edges.map((edge) => edge.id), ["z-edge", "a-edge", "m-edge"]);
+  child = graph.nodes.find((entry) => entry.id === "child")!;
+  assert.equal(child.data.parentServerNodeId, "n_z");
+  assert.deepEqual(child.data.extraParentServerNodeIds, ["n_a", "n_m"]);
+
+  sessionStore.saveGraph(session.id, { expectedVersion: graph.graphVersion, nodes, edges: [edges[0]] });
+  db.closeDb();
+  graph = sessionStore.getSession(session.id)!;
+  child = graph.nodes.find((entry) => entry.id === "child")!;
+  assert.equal(child.data.parentServerNodeId, "n_z");
+  assert.deepEqual(child.data.extraParentServerNodeIds, []);
+});

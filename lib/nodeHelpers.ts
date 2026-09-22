@@ -18,7 +18,7 @@ export interface NodeGenerateBody extends Partial<NaiRequestOptions> {
   prompt?: string;
   parentNodeId?: string;
   /** Cha phu: chi lay ANH cua tung node lam tham chieu, khong phai anh goc dem di sua. */
-  extraParentNodeIds?: string[];
+  extraParentNodeIds?: unknown;
   requestId?: string;
   sessionId?: string;
   clientNodeId?: string;
