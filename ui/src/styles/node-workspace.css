@@ -319,6 +319,16 @@
 .image-node__role:hover {
   filter: brightness(1.12);
 }
+/* Danh sach vai tro khi bung ra.
+   O `select` co chu trang de doc tren nen mau cua vai tro, nhung danh sach bung
+   ra LAI THUA cai mau chu do trong khi nen cua no la nen he thong - chu trang
+   tren nen trang, khong doc duoc mot dong nao ngoai dong dang tro toi. Nen phai
+   dat lai mau cho tung dong. */
+.image-node__role option {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
 .image-node__id-label {
   flex: 1 1 auto;
   min-width: 0;
