@@ -78,6 +78,8 @@ export function emptyResponseError(message: string, result: ParsedResponsesResul
   const nhan = messageForCode(code, message);
   const err = new Error(tuUpstream ? `${nhan} ${tuUpstream}` : nhan) as ResponsesError;
   if (tuUpstream) err.upstreamMessage = tuUpstream;
+  if (result.diagnostics.upstreamErrorCode) err.upstreamItemCode = result.diagnostics.upstreamErrorCode;
+  if (result.diagnostics.upstreamErrorType) err.upstreamItemType = result.diagnostics.upstreamErrorType;
   err.status = 422;
   err.code = code;
   err.eventCount = result.eventCount;

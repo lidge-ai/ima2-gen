@@ -34,6 +34,9 @@ export interface UpstreamErr {
   upstreamParam?: string;
   /** Cau upstream noi (da lam sach) khi luot sinh khong ra duoc anh nao. */
   upstreamMessage?: string;
+  /** Ma/kieu loi cua chinh muc ve anh, khi upstream bao `failed` ma khong kem cau nao. */
+  upstreamItemCode?: string;
+  upstreamItemType?: string;
   code?: string;
   message?: string;
   status?: number;

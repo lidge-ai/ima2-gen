@@ -133,6 +133,35 @@ function danhDauLoThoi(
 }
 
 /**
+ * Node BOC DO gan nhat PHIA TRUOC `clientId` ma da co anh flat lay.
+ *
+ * Dung khi node phia sau can cau ta nhung chua ai doc: co anh roi thi doc duoc
+ * ngay, khong phai sinh lai anh.
+ */
+function timNodeBocDoCoAnh(clientId: ClientNodeId, get: StoreGet): ClientNodeId | null {
+  const nodes = get().graphNodes;
+  const edges = get().graphEdges;
+  const cha = new Map<string, string[]>();
+  for (const e of edges) {
+    const ds = cha.get(e.target) ?? [];
+    ds.push(e.source);
+    cha.set(e.target, ds);
+  }
+  const daQua = new Set<string>([clientId]);
+  const hang: string[] = [clientId];
+  for (let i = 0; i < hang.length; i++) {
+    for (const c of cha.get(hang[i]!) ?? []) {
+      if (daQua.has(c)) continue;
+      daQua.add(c);
+      const n = nodes.find((x) => x.id === c);
+      if (n?.data.vaiTro === "trang-phuc" && n.data.imageUrl) return c as ClientNodeId;
+      hang.push(c);
+    }
+  }
+  return null;
+}
+
+/**
  * Node BOC DO vua sinh xong flat lay: doc ngay ra cau ta va luu LEN NODE.
  *
  * Cau ta nam ngoai prompt, node phia sau dien o trong `{{TRANG_PHUC}}` tu day
@@ -197,7 +226,19 @@ export async function runGenerateNodeInPlaceImpl(
   // GEN mot node le thi khong co buoc nao doc anh ca, va prompt trong graph co
   // y giu nguyen o trong - khong dien thi chuoi "{{TRANG_PHUC}}" di thang len
   // may sinh anh.
-  const moTaBoDo = moTaTrangPhucGanNhat(clientId, get().graphNodes, get().graphEdges);
+  let moTaBoDo = moTaTrangPhucGanNhat(clientId, get().graphNodes, get().graphEdges);
+  // Chua co cau ta ma node BOC DO thi da co anh: doc ngay tai day.
+  //
+  // Truoc day chi doc sau khi SINH, nen mot khuon copy ve, boc do xong tu lan
+  // truoc (hoac tu ban cu) la ket cung: node sau doi cau ta, ma cach duy nhat
+  // de co cau ta la sinh lai chinh node boc do - ton tien ma khong them gi.
+  if (!moTaBoDo && node.data.prompt.includes(`{{${O_TRANG_PHUC}}}`)) {
+    const nguon = timNodeBocDoCoAnh(clientId, get);
+    if (nguon) {
+      await docBoDoSauKhiSinh(nguon, get);
+      moTaBoDo = moTaTrangPhucGanNhat(clientId, get().graphNodes, get().graphEdges);
+    }
+  }
   const prompt = dienOTrong(
     node.data.prompt,
     moTaBoDo ? { [O_TRANG_PHUC]: moTaBoDo } : {},
@@ -413,7 +454,10 @@ export async function runGenerateNodeInPlaceImpl(
       // Dat o day chu khong o nut GEN: truoc day viec doc treo vao mot nut, nen
       // sinh lai bang "Retry" hay sinh hang loat la khong doc, va node phia sau
       // giu nguyen o trong `{{TRANG_PHUC}}` chua ai dien.
-      if (node.data.vaiTro === "trang-phuc") void docBoDoSauKhiSinh(clientId, get);
+      // CHO doc xong, khong tha troi. Luot chay khuon lam tuan tu va doi dung
+      // cai promise nay: tha troi thi node MAC DO chay ngay trong luc dang doc,
+      // thay `moTaTrangPhuc` con trong va dung lai - dung canh da xay ra.
+      if (node.data.vaiTro === "trang-phuc") await docBoDoSauKhiSinh(clientId, get);
       if (!options.suppressToast) {
         get().showToast(t("toast.nodeCreated", { id: res.nodeId.slice(0, 8), elapsed: res.elapsed }));
       }

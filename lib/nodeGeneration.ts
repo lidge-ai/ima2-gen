@@ -389,6 +389,8 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
           // Cau upstream noi. Khong co no thi log chi con nhan cua chinh minh,
           // va mot nhan thi khong sua duoc gi.
           upstreamMessage: lastErr?.upstreamMessage ?? null,
+          upstreamItemCode: lastErr?.upstreamItemCode ?? null,
+          upstreamItemType: lastErr?.upstreamItemType ?? null,
           errorEventType: lastErr?.eventType,
           errorEventCount: lastErr?.eventCount,
           diagnosticReason: lastErr?.diagnosticReason,
