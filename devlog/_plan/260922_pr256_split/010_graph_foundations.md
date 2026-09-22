@@ -71,3 +71,36 @@ Input enforcement: server boundary (E7 implementation review plus executed tests
 UI is bypassable by direct HTTP, so server validates independently. No claim of
 unbypassable controls. Rollback: revert this PR, preserving existing graph data;
 multi-parent sessions need exported backup before runtime downgrade.
+
+## WP1 P revalidation
+
+Previous D locked the 83-path roadmap and directed this graph/CLI slice next.
+Current HEAD 4e7dbc7a differs from starting dev only in the roadmap docs; the
+source anchors remain valid. Baseline CLI and SQLite order failures were actually
+reproduced (001). Bound new extra-parent inputs with existing
+config.limits.maxRefCount/maxRefB64Bytes and provider admission; no new constants
+or config surface. Preserve original user-ref details for legacy adapters.
+No-code/config-only alternatives cannot repair the missing CLI shape handling,
+graph cardinality or missing execution-input propagation, so scoped source changes
+are required. Reuse sessionStore, nodeValidation/nodeHelpers and nodeGraph owners.
+Main exclusively owns bin/commands/session.ts, tests/cli-session-graph.test.ts,
+docs/inventory and integration. Backend Sol exclusively owns lib/nodeGeneration.ts,
+lib/nodeHelpers.ts, lib/nodeValidation.ts, lib/sessionStore.ts, a narrowly named
+node-reference helper if needed, tests/node-parent-source-contract.test.ts and
+tests/node-extra-parents.test.ts. UI Sol exclusively owns ui graph/types/labels,
+tests/node-footer-compact-contract.test.js, tests/node-studio-ui-contract.test.js,
+tests/node-multi-parent-ui.test.ts and ui/e2e/node-multi-parent.spec.ts.
+No child changes branches, commits or another owner's test files.
+Architect Designer re-reflected the final WP1 packet as ALIGNED: actual reference
+wire propagation, legacy parent-only semantics, configured limits, rowid ordering
+and disjoint ownership covered with no material gaps.
+
+Independent A review (Halley) required two clarifications, both accepted: exact
+combined configured cap and explicit test ownership above. Enforce deduplicated
+extra IDs <= config.limits.maxRefCount, each loaded extra base64 length <=
+config.limits.maxRefB64Bytes, and extraParentDetails.length +
+refCheck.refDetails.length <= config.limits.maxRefCount before upstream admission.
+Provider cap includes the base parent and all references actually sent by that
+adapter. Parent-only loads no extra details; legacy user-ref semantics remain.
+Activate separate-list-pass/combined-list-overflow with API/OAuth fixtures to
+prove provider-independent limits, and verify zero upstream calls on refusal.
