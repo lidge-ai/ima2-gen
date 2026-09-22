@@ -740,14 +740,11 @@
       "thieu-ket-thuc": "No END marker downstream — connect one to complete the workflow",
       "vong-lap": "The workflow loops back on itself"
     },
-    "wfApiTitle": "Endpoint that triggers this workflow from outside",
     "wfApiInputs": "Inputs: {names}",
     "wfApiCopy": "Copy curl",
     "wfApiRunning": "API run {done}/{total}",
     "wfApiStopTitle": "Stop the run that was triggered through the API",
-    "wfApiHistory": "Recent runs",
     "wfApiHistoryEmpty": "No run yet",
-    "wfApiNodes": "Nodes in this workflow ({count})",
     "wfApiCopyNode": "copy",
     "wfApiCopyNodeTitle": "Copy a body that overrides this node for one call",
     "wfApiNoPrompt": "(no prompt)",
@@ -756,7 +753,11 @@
     "wfApiStream": "one frame per finished step",
     "wfApiAsync": "returns a runId at once",
     "wfApiStatus": "check a run",
-    "wfApiStreamRun": "attach to a run in progress"
+    "wfApiStreamRun": "attach to a run in progress",
+    "wfApiSecCalls": "API · {count} calls",
+    "wfApiSecInputs": "Inputs · {count}",
+    "wfApiSecNodes": "Nodes · {count}",
+    "wfApiSecRuns": "Recent runs"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

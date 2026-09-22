@@ -871,10 +871,25 @@ describe("workflow streaming contracts", () => {
     for (const m of [/\?stream=1/, /\?async=1/, /GET \/api\/wf\/runs\/:runId/, /:runId\/stream/]) {
       assert.match(src, m);
     }
-    assert.match(src, /cacTuyen\.map\(\(tuyen\)/);
     // Lenh chep ra phai xuong dong duoc: mot dau gach truoc newline trong
     // template literal bi hieu la noi dong va bay mat.
     assert.match(src, /\\\\\r?\n/);
+    // Phan bay ra nam o bang rieng.
+    const panel = readFileSync("ui/src/components/node-canvas/NodeApiPanel.tsx", "utf-8");
+    assert.match(panel, /cacTuyen\.map\(\(tuyen\)/);
+  });
+
+  it("WFST-06 o API chia thanh tung muc gap rieng, dong san", () => {
+    // Gop het vao mot khoi thi mo ra la mot cot dai hon ca canvas, va phan
+    // nguoi dung dang can bi day xuong duoi tam nhin.
+    const panel = readFileSync("ui/src/components/node-canvas/NodeApiPanel.tsx", "utf-8");
+    for (const nhan of ["wfApiSecCalls", "wfApiSecInputs", "wfApiSecNodes", "wfApiSecRuns"]) {
+      assert.ok(panel.includes(nhan), `thieu muc ${nhan}`);
+    }
+    assert.match(panel, /const \[mo, setMo\] = useState\(!!moSan\);/);
+    // Lich su chi hoi may chu luc nguoi dung thuc su mo muc do.
+    assert.match(panel, /if \(!v\) khiMo\?\.\(\);/);
+    assert.match(panel, /khiMo=\{taiLichSu\}/);
   });
 });
 

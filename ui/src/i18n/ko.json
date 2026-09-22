@@ -740,14 +740,11 @@
       "thieu-ket-thuc": "아래쪽에 END 표식이 없습니다 — 연결해야 워크플로가 완성됩니다",
       "vong-lap": "워크플로가 자기 자신으로 되돌아옵니다"
     },
-    "wfApiTitle": "외부에서 이 워크플로를 실행하는 엔드포인트",
     "wfApiInputs": "입력: {names}",
     "wfApiCopy": "curl 복사",
     "wfApiRunning": "API 실행 {done}/{total}",
     "wfApiStopTitle": "API로 시작된 실행을 중지",
-    "wfApiHistory": "최근 실행",
     "wfApiHistoryEmpty": "아직 실행 없음",
-    "wfApiNodes": "이 워크플로의 노드 ({count})",
     "wfApiCopyNode": "복사",
     "wfApiCopyNodeTitle": "이 노드를 한 번만 덮어쓰는 본문 복사",
     "wfApiNoPrompt": "(프롬프트 없음)",
@@ -756,7 +753,11 @@
     "wfApiStream": "단계가 끝날 때마다 한 프레임",
     "wfApiAsync": "runId를 즉시 반환",
     "wfApiStatus": "실행 상태 확인",
-    "wfApiStreamRun": "진행 중인 실행에 붙기"
+    "wfApiStreamRun": "진행 중인 실행에 붙기",
+    "wfApiSecCalls": "API · 호출 {count}개",
+    "wfApiSecInputs": "입력 · {count}",
+    "wfApiSecNodes": "노드 · {count}",
+    "wfApiSecRuns": "최근 실행"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

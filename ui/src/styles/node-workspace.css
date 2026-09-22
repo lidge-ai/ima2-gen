@@ -845,3 +845,12 @@
   grid-row: 1 / span 2;
   align-self: center;
 }
+
+/* Tung muc trong o API, gap rieng. Gop het vao mot khoi thi mo ra la mot cot
+   dai hon ca canvas va phan dang can bi day khoi tam nhin. */
+.image-node__api-muc {
+  border-top: 1px solid var(--border);
+}
+.image-node__api-muc:first-child {
+  border-top: 0;
+}

@@ -740,14 +740,11 @@
       "thieu-ket-thuc": "下游沒有 END 標記 — 連上才算完整的工作流",
       "vong-lap": "工作流形成了迴圈"
     },
-    "wfApiTitle": "從外部觸發這個工作流的位址",
     "wfApiInputs": "輸入：{names}",
     "wfApiCopy": "複製 curl",
     "wfApiRunning": "API 執行 {done}/{total}",
     "wfApiStopTitle": "停止由 API 觸發的執行",
-    "wfApiHistory": "最近的執行",
     "wfApiHistoryEmpty": "尚未執行過",
-    "wfApiNodes": "這個工作流的節點（{count}）",
     "wfApiCopyNode": "複製",
     "wfApiCopyNodeTitle": "複製只覆寫這個節點一次的請求內容",
     "wfApiNoPrompt": "（沒有提示詞）",
@@ -756,7 +753,11 @@
     "wfApiStream": "每完成一步傳回一筆",
     "wfApiAsync": "立即回傳 runId",
     "wfApiStatus": "查詢一次執行",
-    "wfApiStreamRun": "接上進行中的執行"
+    "wfApiStreamRun": "接上進行中的執行",
+    "wfApiSecCalls": "API · {count} 種呼叫",
+    "wfApiSecInputs": "輸入 · {count}",
+    "wfApiSecNodes": "節點 · {count}",
+    "wfApiSecRuns": "最近的執行"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

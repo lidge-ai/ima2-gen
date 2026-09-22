@@ -740,14 +740,11 @@
       "thieu-ket-thuc": "下游没有 END 标记 — 连上才算完整的工作流",
       "vong-lap": "工作流形成了回路"
     },
-    "wfApiTitle": "从外部触发这个工作流的地址",
     "wfApiInputs": "输入：{names}",
     "wfApiCopy": "复制 curl",
     "wfApiRunning": "API 运行 {done}/{total}",
     "wfApiStopTitle": "停止由 API 触发的运行",
-    "wfApiHistory": "最近的运行",
     "wfApiHistoryEmpty": "尚未运行过",
-    "wfApiNodes": "这个工作流的节点（{count}）",
     "wfApiCopyNode": "复制",
     "wfApiCopyNodeTitle": "复制只覆盖这个节点一次的请求内容",
     "wfApiNoPrompt": "（没有提示词）",
@@ -756,7 +753,11 @@
     "wfApiStream": "每完成一步返回一条",
     "wfApiAsync": "立即返回 runId",
     "wfApiStatus": "查询一次运行",
-    "wfApiStreamRun": "接上进行中的运行"
+    "wfApiStreamRun": "接上进行中的运行",
+    "wfApiSecCalls": "API · {count} 种调用",
+    "wfApiSecInputs": "输入 · {count}",
+    "wfApiSecNodes": "节点 · {count}",
+    "wfApiSecRuns": "最近的运行"
   },
   "nodeBatch": {
     "selectionOn": "选择",

@@ -15,6 +15,7 @@ import { isVideoUrl } from "../lib/videoMedia";
 import { AssetMediaLightbox } from "./assetgen/AssetMediaLightbox";
 import { buildProvenanceView } from "../lib/provenance";
 import { SavePromptPopover } from "./SavePromptPopover";
+import { NodeApiPanel } from "./node-canvas/NodeApiPanel";
 
 const MAX_NODE_REFS = 5;
 /**
@@ -172,7 +173,6 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // Diem vao API cua khuon. Node BAT DAU la dia chi goi tu ben ngoai, nen chi
   // dan phai nam ngay tren no - de trong tai lieu thi khong ai gap.
   const activeSessionId = useAppStore((st) => st.activeSessionId);
-  const [hienApi, setHienApi] = useState(false);
   const [lichSu, setLichSu] = useState<WfLuotApi[] | null>(null);
   const [dangTaiLichSu, setDangTaiLichSu] = useState(false);
   const duongApi = activeSessionId && laMocDau
@@ -183,8 +183,17 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   );
   // Tai lich su khi MO o API, va tai lai moi khi mot luot API vua ket thuc -
   // dung luc do danh sach vua co them mot dong.
+  /**
+   * Tai lai khi mot luot API vua ket thuc - dung luc danh sach co them mot dong.
+   *
+   * Dung ref chu khong dung `lichSu !== null`: lan tai dau tien lam gia tri do
+   * doi tu false sang true, va effect chay lai ngay -> hoi may chu hai lan lien
+   * cho cung mot viec.
+   */
+  const daMoLichSu = useRef(false);
   const taiLichSu = useCallback(async () => {
     if (!activeSessionId || !laMocDau) return;
+    daMoLichSu.current = true;
     setDangTaiLichSu(true);
     try { setLichSu(await lichSuLuotChay(activeSessionId, id, 8)); }
     catch { setLichSu([]); }
@@ -193,9 +202,9 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
 
   const dangChayApi = !!luotApiCuaMoc;
   useEffect(() => {
-    if (!hienApi) return;
+    if (!daMoLichSu.current) return;
     void taiLichSu();
-  }, [hienApi, dangChayApi, taiLichSu]);
+  }, [dangChayApi, taiLichSu]);
 
   /**
    * Cac node se chay trong khuon, kem noi dung hien tai cua tung cai.
@@ -666,109 +675,15 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
             <div className="image-node__moc-so">{t("node.wfEndHint")}</div>
           )}
           {duongApi ? (
-            <div className="image-node__api nodrag">
-              <button
-                type="button"
-                className="image-node__api-mo"
-                onClick={(e) => { e.stopPropagation(); setHienApi((v) => !v); }}
-                aria-expanded={hienApi}
-                title={t("node.wfApiTitle")}
-              >
-                {hienApi ? "▾ API" : "▸ API"}
-              </button>
-              {hienApi ? (
-                <div className="image-node__api-than">
-                  {/* Nam cach goi, moi dong mot nut chep lenh cua chinh no. */}
-                  {cacTuyen.map((tuyen) => (
-                    <div key={tuyen.duong} className="image-node__api-tuyen">
-                      <code className="image-node__api-duong">{tuyen.duong}</code>
-                      <span className="image-node__api-ghi">{tuyen.ghiChu}</span>
-                      <button
-                        type="button"
-                        className="image-node__api-chep"
-                        title={t("node.wfApiCopy")}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void navigator.clipboard?.writeText(tuyen.lenh);
-                        }}
-                      >
-                        {t("node.wfApiCopyNode")}
-                      </button>
-                    </div>
-                  ))}
-                  {oTrongKhuon.length ? (
-                    <div className="image-node__api-o">
-                      {t("node.wfApiInputs", { names: oTrongKhuon.join(", ") })}
-                    </div>
-                  ) : null}
-                  {/* Than day du cua tung node phia sau. Noi dung that nam o
-                      day chu khong o moc BAT DAU, nen phai doc duoc tai cho. */}
-                  {nodeTrongKhuon.length ? (
-                    <div className="image-node__api-node">
-                      <div className="image-node__api-ls-tieu">
-                        {t("node.wfApiNodes", { count: nodeTrongKhuon.length })}
-                      </div>
-                      {nodeTrongKhuon.map((n) => (
-                        <div key={n.id} className="image-node__api-node-muc">
-                          <div className="image-node__api-node-dau">
-                            <code className="image-node__api-node-ma">{n.id}</code>
-                            {n.vaiTro ? (
-                              <span className="image-node__api-node-vai">{n.vaiTro}</span>
-                            ) : null}
-                            {/* Node nao dang co anh dinh san thi gan nhu chac
-                                chan la cho nguoi goi se truyen anh vao. */}
-                            {n.soAnh > 0 ? (
-                              <span className="image-node__api-node-anh">
-                                {t("node.wfApiNodeImages", { count: n.soAnh })}
-                              </span>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="image-node__api-chep"
-                              title={t("node.wfApiCopyNodeTitle")}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void navigator.clipboard?.writeText(thanMotNode(n));
-                              }}
-                            >
-                              {t("node.wfApiCopyNode")}
-                            </button>
-                          </div>
-                          <pre className="image-node__api-than-node">{n.prompt || t("node.wfApiNoPrompt")}</pre>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                  {/* Lich su: mot khuon goi qua API chay o may chu, co the luc
-                      nguoi dung khong mo trinh duyet. Khong ghi lai thi ho khong
-                      co cach nao biet dem qua no da chay nhung gi. */}
-                  <div className="image-node__api-ls">
-                    <div className="image-node__api-ls-tieu">
-                      {t("node.wfApiHistory")}
-                      {dangTaiLichSu ? " …" : ""}
-                    </div>
-                    {lichSu && lichSu.length === 0 ? (
-                      <div className="image-node__api-o">{t("node.wfApiHistoryEmpty")}</div>
-                    ) : null}
-                    {(lichSu ?? []).map((l) => (
-                      <div
-                        key={l.id}
-                        className={`image-node__api-ls-dong image-node__api-ls-dong--${l.trangThai}`}
-                        title={l.loi ? `${l.loi.code}: ${l.loi.message}` : l.id}
-                      >
-                        <span className="image-node__api-ls-luc">
-                          {new Date(l.taoLuc).toLocaleString()}
-                        </span>
-                        <span className="image-node__api-ls-tt">{l.trangThai}</span>
-                        <span className="image-node__api-ls-so">
-                          {l.buoc.filter((b) => b.trangThai === "xong").length}/{l.buoc.length}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            <NodeApiPanel
+              cacTuyen={cacTuyen}
+              oTrongKhuon={oTrongKhuon}
+              nodeTrongKhuon={nodeTrongKhuon}
+              thanMotNode={thanMotNode}
+              lichSu={lichSu}
+              dangTaiLichSu={dangTaiLichSu}
+              taiLichSu={() => void taiLichSu()}
+            />
           ) : null}
         </div>
       ) : (
