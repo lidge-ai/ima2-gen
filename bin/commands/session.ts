@@ -123,6 +123,8 @@ async function graphSave(argv: string[]) {
   const buf = await readFile(file, "utf-8");
   let parsed;
   try { parsed = JSON.parse(buf); } catch { die(2, "graph file is not valid JSON"); }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    die(2, "graph file must contain { nodes: [], edges: [] }");
   const { nodes, edges } = parsed;
   if (!Array.isArray(nodes) || !Array.isArray(edges))
     die(2, "graph file must contain { nodes: [], edges: [] }");
