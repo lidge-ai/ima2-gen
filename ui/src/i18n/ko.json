@@ -1326,7 +1326,8 @@
     "voiceSection": "보이스",
     "voiceLimit": "최대 {max}개. 프롬프트에서 <AUDIO_0>처럼 지칭하세요",
     "voiceNeeds15": "보이스는 grok-imagine-video-1.5에서만 지원합니다",
-    "voiceCustomPlaceholder": "커스텀 보이스 ID (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "커스텀 보이스 ID (/v1/custom-voices)",
+    "baseWinsOverRefs": "이 영상은 베이스 이미지에서 시작하므로 노드에 첨부한 이미지는 사용되지 않았습니다."
   },
   "sidebar": {
     "appName": "이미지 생성기",

@@ -65,10 +65,11 @@ function tenTep(name: string): string {
 
 function luuTep(ten: string, noiDung: string): void {
   const url = URL.createObjectURL(new Blob([noiDung], { type: "application/json" }));
-  try {
-    const the = document.createElement("a");
-    the.href = url; the.download = ten; the.click();
-  } finally { URL.revokeObjectURL(url); }
+  const the = document.createElement("a");
+  the.href = url; the.download = ten; the.click();
+  // Thu url o luot sau chu khong ngay trong cung mot tac vu: thu ngay thi co
+  // trinh duyet huy ban tai ve vua bat dau.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 /**
@@ -124,7 +125,12 @@ export function useNodeTemplateMutations(options: TemplateOptions, setters: Temp
       const tep = await xuatTemplate(template.id);
       luuTep(tenTep(template.name), JSON.stringify(tep, null, 2));
       options.showToast(t("nodeStudio.templates.exported", { name: template.name }));
-    } catch { options.showToast(t("nodeStudio.templates.exportError"), true); }
+    } catch (error) {
+      // Keo ca ly do vao cau bao: mot cau "khong xuat duoc" tran khong phan
+      // biet duoc may chu tat, phien dang khoa, hay khuon khong con.
+      const vi = (error as Error | null)?.message?.trim();
+      options.showToast(vi ? `${t("nodeStudio.templates.exportError")} ${vi}` : t("nodeStudio.templates.exportError"), true);
+    }
   }, [options, t]);
 
   const importTemplate = useCallback(async (file: File) => {

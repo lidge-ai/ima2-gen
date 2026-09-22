@@ -625,6 +625,54 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-10 node VIDEO gui ANH NEN theo ten tep, khong phai parentNodeId", async () => {
+    // Loi da xay ra that: cho nay gui `parentNodeId`, ma /api/video/generate
+    // khong doc truong do - anh nen mat trong im lang. Sidecar cua clip ghi
+    // mode="reference-to-video", sourceImageFilename=null, con prompt van doi
+    // "keep the exact same face as the base image": ra mot nguoi mau khac.
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "mot quan ca phe" },
+      { id: "vid", vaiTro: "video", prompt: "may quay xoay cham" },
+    ]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status } = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      assert.equal(status, 200);
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
+      assert.equal(video.than.sourceFilename, String(canh.data.imageUrl).replace("/generated/", ""));
+      assert.equal(video.than.parentNodeId, undefined);
+      assert.equal(video.than.referenceImages, undefined);
+    });
+  });
+
+  it("WFTP-11 anh dinh o node VIDEO khong dap duoc anh nen", async () => {
+    // May chu chi lam MOT trong hai: khung dau hoac danh sach tham chieu. De ca
+    // hai vao thi khung dau bi bo - dung cai da lam doi nguoi mau.
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "mot quan ca phe" },
+      { id: "vid", vaiTro: "video", prompt: "may quay xoay cham" },
+    ]);
+    refStore.datRefCuaNode(day, "vid", [tepAnh(`ref_${Date.now()}_vid.png`)]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
+      assert.equal(video.than.sourceFilename, String(canh.data.imageUrl).replace("/generated/", ""));
+      assert.equal(video.than.referenceImages, undefined);
+    });
+
+    // Khong co anh nen thi anh dinh van duoc dung: khong thi node video dung mot
+    // minh mat han duong truyen anh.
+    const leLoi = taoPhien([{ id: "vid", vaiTro: "video", prompt: "may quay xoay cham" }]);
+    refStore.datRefCuaNode(leLoi, "vid", [tepAnh(`ref_${Date.now()}_le.png`)]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${leLoi}/start`, "POST", {});
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      assert.equal(video.than.sourceFilename, undefined);
+      assert.equal((video.than.referenceImages as string[]).length, 1);
+    });
+  });
+
   it("WFTP-02 prompt khong co khuon 'She wears' thi khong bi sua gi", async () => {
     const day = taoKhuonThoiTrang("Keep the exact same face. Put her in a coffee shop.");
     await voiApi(async ({ base, ghiNhan }) => {

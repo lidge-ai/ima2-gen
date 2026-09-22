@@ -1326,7 +1326,8 @@
     "voiceSection": "語音",
     "voiceLimit": "最多 {max} 個。在提示詞中以 <AUDIO_0> 指稱",
     "voiceNeeds15": "僅 grok-imagine-video-1.5 支援語音",
-    "voiceCustomPlaceholder": "自訂語音 ID (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "自訂語音 ID (/v1/custom-voices)",
+    "baseWinsOverRefs": "這段影片以基底圖像為起點，因此節點上附加的圖片未被使用。"
   },
   "sidebar": {
     "appName": "影像生成器",

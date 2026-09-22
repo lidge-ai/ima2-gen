@@ -66,9 +66,11 @@ test("both surfaces let a lone attachment be a first frame or a reference", () =
     /videoSingleRefMode/,
     "the UI store must consult the user's choice for a single attachment",
   );
+  // Anh nen (neu co) duoc xet TRUOC lua chon nay - xem test "a base image on a
+  // video node is not thrown away by an attachment" - nen khop giua dong.
   assert.match(
     store,
-    /sourceImage:\s*singleRefAsSource \? refs\[0\]/,
+    /sourceImage:.*singleRefAsSource \? refs\[0\]/,
     "choosing the first frame must actually send the image in the source slot",
   );
   const cli = readFileSync(new URL("../bin/lib/videoMcp.ts", import.meta.url), "utf8");
@@ -109,4 +111,31 @@ test("two or more attachments stay references no matter what the user picked", (
     /if \(refCount === 1\) return singleRefMode;/,
     "exactly one attachment must defer to the user's choice",
   );
+});
+
+test("a base image on a video node is not thrown away by an attachment", () => {
+  // Loi da xay ra that: dieu kien giai anh nen la `refs.length === 0`, nen chi
+  // can dinh mot anh vao node video la anh nen bi bo han. May chu nhan duoc mot
+  // tham chieu, sinh ra mot nguoi mau khac, du prompt van doi "keep the exact
+  // same face as the base image".
+  const impl = readFileSync(new URL("../ui/src/store/storeVideoImpl.ts", import.meta.url), "utf8");
+  assert.match(
+    impl,
+    /if \(node && node\.data\.parentServerNodeId\) \{/,
+    "the parent base image must be resolved even when the node carries attachments",
+  );
+  assert.doesNotMatch(impl, /refs\.length === 0 && node\.data\.parentServerNodeId/);
+  // Mot trong hai, khong phai ca hai: co anh nen thi khong gui kem tham chieu.
+  assert.match(impl, /referenceImages:[^\n]*!coAnhNen/);
+  assert.match(impl, /const coAnhNen = Boolean\(parentSourceFilename \|\| parentVideoFrameRef\)/);
+});
+
+test("the workflow engine sends the base frame by filename, not parentNodeId", () => {
+  // /api/video/generate khong doc `parentNodeId` (chi /api/node/generate doc),
+  // nen gui truong do la mat anh nen trong im lang.
+  const engine = readFileSync(new URL("../lib/wfEngine.ts", import.meta.url), "utf8");
+  const videoCall = engine.slice(engine.indexOf('"/api/video/generate"'));
+  assert.match(videoCall.slice(0, 400), /\.\.\.anhVao/);
+  assert.match(engine, /sourceFilename: tenNen/);
+  assert.doesNotMatch(videoCall.slice(0, 400), /parentNodeId/);
 });

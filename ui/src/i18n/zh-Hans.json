@@ -1326,7 +1326,8 @@
     "voiceSection": "语音",
     "voiceLimit": "最多 {max} 个。在提示词中以 <AUDIO_0> 指代",
     "voiceNeeds15": "仅 grok-imagine-video-1.5 支持语音",
-    "voiceCustomPlaceholder": "自定义语音 ID (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "自定义语音 ID (/v1/custom-voices)",
+    "baseWinsOverRefs": "这段视频以基底图像为起点，因此节点上附加的图片未被使用。"
   },
   "sidebar": {
     "appName": "图像生成器",

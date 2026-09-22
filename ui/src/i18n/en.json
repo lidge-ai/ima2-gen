@@ -1326,7 +1326,8 @@
     "voiceSection": "Voice",
     "voiceLimit": "Up to {max}. Refer to them as <AUDIO_0> in the prompt",
     "voiceNeeds15": "Voices are supported only on grok-imagine-video-1.5",
-    "voiceCustomPlaceholder": "Custom voice id (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "Custom voice id (/v1/custom-voices)",
+    "baseWinsOverRefs": "This video starts from the base image, so the attachment on the node was not used."
   },
   "sidebar": {
     "appName": "Image Generator",
