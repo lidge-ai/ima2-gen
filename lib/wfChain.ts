@@ -233,6 +233,33 @@ export function nodeChaDau(
 }
 
 /**
+ * Kich thuoc anh cua mot node, KE THUA theo chuoi.
+ *
+ * Node khong tu dat kich thuoc thi lay kich thuoc cua ANH NEN no dang sua. Mot
+ * khuon chay o may chu khong co bang dieu khien nao de doc, nen truoc day node
+ * nao khong co kich thuoc rieng la roi ve mac dinh cua may chu (1024x1024 -
+ * vuong): cung mot luot chay ra may tam doc, may tam vuong, du tat ca deu sua
+ * tu cung mot anh nen doc.
+ *
+ * Di nguoc len tung nut mot thay vi lay cua node ngay truoc: node giua chuoi
+ * cung co the khong dat kich thuoc.
+ */
+export function kichThuocKeThua(
+  nodeId: string,
+  nodes: readonly WfNode[],
+  edges: readonly WfEdge[],
+): string | null {
+  const daQua = new Set<string>([nodeId]);
+  let cha = nodeChaDau(nodeId, nodes, edges);
+  while (cha && !daQua.has(cha.id)) {
+    if (cha.data?.size) return cha.data.size;
+    daQua.add(cha.id);
+    cha = nodeChaDau(cha.id, nodes, edges);
+  }
+  return null;
+}
+
+/**
  * Anh va loi ta mot node VIDEO dung lam dau vao.
  *
  * Node CANH chi sinh anh, node VIDEO chi sinh video. Node video noi vao mot node

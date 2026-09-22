@@ -25,6 +25,7 @@ import {
   dauVaoVideoCuaNode,
   dienOTrong,
   laUrlVideo,
+  kichThuocKeThua,
   laViecThat,
   nodeSauBocDo,
   mucGopCuaNode,
@@ -294,8 +295,18 @@ export function nodesHieuLuc(
   ts: Pick<ThamSoChay, "nodes">,
 ): WfNode[] {
   return nodes.map((n) => {
-    const de = ts.nodes[n.id]?.prompt;
-    return de === undefined ? n : { ...n, data: { ...(n.data ?? {}), prompt: de } };
+    const de = ts.nodes[n.id];
+    if (!de || (de.prompt === undefined && de.size === undefined)) return n;
+    return {
+      ...n,
+      data: {
+        ...(n.data ?? {}),
+        ...(de.prompt === undefined ? {} : { prompt: de.prompt }),
+        // Ke ca `size`: node phia sau ke thua kich thuoc cua anh nen, nen mot
+        // ghi de kich thuoc o node cha phai keo theo ca chuoi.
+        ...(de.size === undefined ? {} : { size: de.size }),
+      },
+    };
   });
 }
 
@@ -837,12 +848,16 @@ async function chayMotNode(
     .map((e) => nodes.find((n) => n.id === e.source)?.data?.serverNodeId)
     .filter((id): id is string => !!id && id !== chaServerId);
   const refsAnh = await thamChieuHieuLuc(ctx, node, ts, anhThem[nodeId] ?? []);
+  // Node khong tu dat kich thuoc thi lay kich thuoc cua ANH NEN. Khong ke thua
+  // thi no roi ve mac dinh cua may chu (1024x1024 - vuong), va cung mot luot
+  // chay ra may tam doc may tam vuong du tat ca sua tu cung mot anh nen doc.
+  const kichThuoc = noiDung.size ?? kichThuocKeThua(nodeId, nodesHieuLuc(nodes, ts), edges);
   const kq = await goiNoiBo(ctx, "/api/node/generate", {
     requestId,
     prompt,
     ...(chaServerId ? { parentNodeId: chaServerId } : {}),
     ...(refs.length ? { extraParentNodeIds: refs } : {}),
-    ...(noiDung.size ? { size: noiDung.size } : {}),
+    ...(kichThuoc ? { size: kichThuoc } : {}),
     ...(noiDung.model ? { model: noiDung.model } : {}),
     sessionId: ts.sessionId,
     clientNodeId: nodeId,

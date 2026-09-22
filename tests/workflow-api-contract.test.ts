@@ -790,6 +790,92 @@ describe("workflow outfit + attachment contracts", () => {
     assert.match(src, /if \(bocDoThieuAnh\) \{ showToast\(t\("node\.bocDoNeedRef"\), true\); return; \}/);
   });
 
+  it("WFSZ-01 node khong dat kich thuoc thi ke thua kich thuoc cua anh nen", async () => {
+    // Loi da thay tren canvas: BOC DO va MAC DO duoc sinh bang tay o giao dien
+    // nen mang size 1152x2048, con cac node CANH them sau khong co size -> luot
+    // chay roi ve mac dinh may chu (1024x1024, vuong). Cung mot lan chay ra may
+    // tam doc may tam vuong.
+    const phien = store.createSession({ title: "khuon lech kich thuoc" }) as { id: string };
+    const nodes = [
+      node("start", "bat-dau"),
+      node("bocdo", "trang-phuc", "boc trang phuc"),
+      node("macdo", "mac-do", "mac len nguoi"),
+      node("canh", "canh", "mot quan ca phe"),
+      node("end", "ket-thuc"),
+    ];
+    (nodes[1]!.data as Record<string, unknown>).size = "1152x2048";
+    store.saveGraph(phien.id, {
+      nodes,
+      edges: [
+        { id: "e0", source: "start", target: "bocdo" },
+        { id: "e1", source: "bocdo", target: "macdo" },
+        { id: "e2", source: "macdo", target: "canh" },
+        { id: "e3", source: "canh", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+    refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_sz_${Date.now()}.png`)]);
+
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      const theoNode = new Map(ghiNhan
+        .filter((g) => g.duong === "/api/node/generate")
+        .map((g) => [String(g.than.clientNodeId), g.than.size]));
+      assert.equal(theoNode.get("bocdo"), "1152x2048");
+      assert.equal(theoNode.get("macdo"), "1152x2048");
+      // Node CANH cach BOC DO hai nut: phai di nguoc het chuoi, khong chi mot buoc.
+      assert.equal(theoNode.get("canh"), "1152x2048");
+    });
+  });
+
+  it("WFSZ-02 kich thuoc rieng cua node thang kich thuoc ke thua", async () => {
+    const phien = store.createSession({ title: "kich thuoc rieng" }) as { id: string };
+    const nodes = [
+      node("start", "bat-dau"),
+      node("bocdo", "trang-phuc", "boc trang phuc"),
+      node("canh", "canh", "mot quan ca phe"),
+      node("end", "ket-thuc"),
+    ];
+    (nodes[1]!.data as Record<string, unknown>).size = "1152x2048";
+    (nodes[2]!.data as Record<string, unknown>).size = "1024x1024";
+    store.saveGraph(phien.id, {
+      nodes,
+      edges: [
+        { id: "e0", source: "start", target: "bocdo" },
+        { id: "e1", source: "bocdo", target: "canh" },
+        { id: "e2", source: "canh", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+    refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_sz2_${Date.now()}.png`)]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      const canh = ghiNhan.filter((g) => g.duong === "/api/node/generate")
+        .find((g) => g.than.clientNodeId === "canh")!;
+      assert.equal(canh.than.size, "1024x1024");
+    });
+
+    // Va ghi de kich thuoc o node CHA keo theo ca chuoi trong lan goi do.
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${phien.id}/start`, "POST",
+        { nodes: { bocdo: { size: "864x1536" }, canh: {} } });
+      const bocdo = ghiNhan.filter((g) => g.duong === "/api/node/generate")
+        .find((g) => g.than.clientNodeId === "bocdo")!;
+      assert.equal(bocdo.than.size, "864x1536");
+    });
+  });
+
+  it("WFSZ-03 khong co kich thuoc nao trong chuoi thi khong gui truong size", async () => {
+    // Khong tu bay ra mot kich thuoc: khong ai dat thi de may chu dung mac dinh
+    // cua no, day la hanh vi cu va khong co ly do gi de doi.
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      await goi(base, `/api/wf/${day}/start`, "POST", {});
+      assert.equal(ghiNhan[0]!.than.size, undefined);
+    });
+  });
+
   it("WFTP-19 node BOC DO khong co anh nao thi tu choi truoc khi ton mot dong", async () => {
     // Prompt cua vai tro nay la "doc anh tham chieu roi boc tung mon do ra".
     // Khong anh thi mo hinh BIA ra mot bo, va ca khuon phia sau mac bo do tuong
