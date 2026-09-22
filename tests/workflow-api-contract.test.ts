@@ -670,6 +670,34 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-13 chuoi VIDEO -> VIDEO noi tiep tu clip cha, khong roi ve anh tinh", async () => {
+    // Node video thu hai khong co anh nao lam dau vao: cha cua no la mot clip.
+    // Truoc day cho nay khong gui gi ca nen no roi ve anh tinh cu con luu trong
+    // graph, va doan hai bi dut khoi doan mot.
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "mot quan ca phe" },
+      { id: "vid1", vaiTro: "video", prompt: "may quay xoay cham" },
+      { id: "vid2", vaiTro: "video", prompt: "co ay buoc tiep" },
+    ]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      const video = ghiNhan.filter((g) => g.duong === "/api/video/generate");
+      assert.equal(video.length, 2);
+
+      // Clip dau: anh nen la anh node canh vua sinh.
+      const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
+      assert.equal(video[0]!.than.sourceFilename, String(canh.data.imageUrl).replace("/generated/", ""));
+      assert.equal(video[0]!.than.continueFromVideo, undefined);
+
+      // Clip hai: noi tiep clip mot, va KHONG gui kem o anh nen - may chu chi
+      // trich khung cuoi khi khong co sourceImage/sourceFilename nao.
+      assert.equal(video[1]!.than.continueFromVideo, "v_gia.mp4");
+      assert.equal(video[1]!.than.sourceFilename, undefined);
+      assert.equal(video[1]!.than.referenceImages, undefined);
+    });
+  });
+
   it("WFTP-11 anh dinh o node VIDEO khong dap duoc anh nen", async () => {
     // May chu chi lam MOT trong hai: khung dau hoac danh sach tham chieu. De ca
     // hai vao thi khung dau bi bo - dung cai da lam doi nguoi mau.

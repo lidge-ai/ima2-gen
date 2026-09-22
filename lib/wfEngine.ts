@@ -237,13 +237,21 @@ function boTienToDataUrl(s: string): string {
  * cat bua: mot url ngoai (hoac mot url video) di vao duong nay se thanh mot ten
  * tep khong co that, va loi do chi hien ra o clip da tra tien.
  */
-function laTenGenerated(url: string | null): string | null {
+/**
+ * Ten clip trong thu muc generated. Chi `.mp4` - do la dung dinh dang may chu
+ * nhan cho duong noi tiep (`safeGeneratedVideoFilename`).
+ */
+function laTenClipGenerated(url: string | null | undefined): string | null {
+  return laTenGenerated(url ?? null, /\.mp4$/i);
+}
+
+function laTenGenerated(url: string | null, duoi = /\.(png|jpe?g|webp)$/i): string | null {
   if (!url || !url.startsWith("/generated/")) return null;
   const ten = url.slice("/generated/".length).split(/[?#]/)[0] ?? "";
   if (ten.includes("..") || !/^[A-Za-z0-9._-]+$/.test(ten)) return null;
-  // Chi ANH. Mot clip lam khung dau la duong khac (`continueFromVideo`, co buoc
-  // trich khung); gui ten .mp4 vao o anh nen thi may chu doc no nhu mot anh.
-  return /\.(png|jpe?g|webp)$/i.test(ten) ? ten : null;
+  // Loc theo duoi tep: gui ten .mp4 vao o anh nen thi may chu doc no nhu mot
+  // anh, con nguoc lai thi buoc trich khung khong co gi de trich.
+  return duoi.test(ten) ? ten : null;
 }
 
 /* ----------------------------------------------------------------- chay */
@@ -706,14 +714,22 @@ async function chayMotNode(
     // im lang: sidecar cua mot clip that ghi mode="reference-to-video",
     // sourceImageFilename=null, trong khi prompt van noi "keep the exact same
     // face as the base image". Ket qua la mot nguoi mau khac va anh sang khac.
-    const tenNen = laTenGenerated(anh);
+    // Chuoi VIDEO -> VIDEO: dau vao khong phai mot anh ma la khung CUOI cua
+    // clip cha. Gui `continueFromVideo` de may chu tu trich khung do (ffmpeg
+    // chon duoc mot khung that; khong co no thi node nay roi ve cai anh tinh cu
+    // trong graph va doan hai bi dut). Sidecar cua clip cha cung la noi may chu
+    // doc ra lineage, nen khong phai tu dung o day.
+    const clipCha = laTenClipGenerated(cha?.data?.imageUrl);
+    const tenNen = clipCha ? null : laTenGenerated(anh);
     // May chu chi lam MOT trong hai: mot khung dau (image-to-video) hoac mot
     // danh sach tham chieu (reference-to-video). Co anh nen thi anh nen thang:
     // no la dung canh nguoi dung muon lam dong, con anh dinh o node video chi
     // la goi y - de ca hai vao thi khung dau bi bo va nguoi mau doi.
-    const anhVao = tenNen
-      ? { sourceFilename: tenNen }
-      : refs2.length ? { referenceImages: refs2 } : {};
+    const anhVao = clipCha
+      ? { continueFromVideo: clipCha }
+      : tenNen
+        ? { sourceFilename: tenNen }
+        : refs2.length ? { referenceImages: refs2 } : {};
     const cho = doiViec(requestId, huy);
     await goiNoiBo(ctx, "/api/video/generate", {
       async: true,

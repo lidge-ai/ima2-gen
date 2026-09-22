@@ -1405,6 +1405,23 @@ None of this asks the user to wire every node to the extraction node. A scene or
 video node takes the dressed model as its base and has no business holding the
 flat lay as an image; forcing an edge there would only dilute its input, and it
 would not fix the video at all, since a video takes its parent's *text*.
+
+### What a video node animates
+
+A video node's *image* input is whatever its parent produced **in this run**, not
+the copy sitting in the graph or the template — every step re-reads the graph, so
+the step that just finished is what the next one sees.
+
+| Parent | Sent as | Provider mode |
+|---|---|---|
+| an image node | `sourceFilename` — the parent's generated file | `image-to-video` (first frame) |
+| a video node | `continueFromVideo` — the parent clip; the server extracts its last frame | `image-to-video`, continuing the lineage |
+| nothing | the node's own attachments, if any | `reference-to-video`, else `text-to-video` |
+
+The server does **one of the two**, never both: a first frame or a reference
+list. So when a base exists it wins, and an attachment on the video node is left
+for a run that has no base — sending both would drop the first frame, and the
+video would come back with a different person in different light.
 - `nodes` — replaces a node's content for **this call only**, keyed by node id.
   Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
   let one API call redraw a workflow the user shaped by hand on the canvas. The
