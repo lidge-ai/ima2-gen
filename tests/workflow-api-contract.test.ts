@@ -1154,17 +1154,18 @@ describe("workflow outfit + attachment contracts", () => {
     assert.match(gen, /n\?\.data\.vaiTro === "trang-phuc" && n\.data\.imageUrl/);
   });
 
-  it("WFTP-24 flat lay dinh vao node sau THAY anh cu, va anh dinh gui di la base64", () => {
+  it("WFTP-24 flat lay di theo LUOT CHAY, va anh dinh gui di la base64", () => {
     const refs = readFileSync("ui/src/store/storeNodeRefImpl.ts", "utf-8");
     const gen = readFileSync("ui/src/store/storeNodeGenImpl.ts", "utf-8");
 
-    // 1. Dinh bang chinh duong dan, khong chep ra `ref_*.png` moi: chep thi lan
-    //    dinh thu hai ra mot ten khac va khong loc trung duoc.
-    assert.match(gen, /st\.addNodeReferenceUrl\(dichId, url\)/);
-    // 2. THAY anh cu chu khong chat them. Boc do lan hai ra flat lay khac, ma
-    //    node phia sau van giu ca hai - tuc la mang theo ca bo do CU.
-    assert.match(refs, /const ANH_CUA_NODE = /);
-    assert.match(refs, /\.filter\(\(r\) => r === url \|\| !ANH_CUA_NODE\.test\(r\)\)/);
+    // 1. KHONG dinh vao graph. May chu dua flat lay theo tung luot chay va
+    //    khong dung vao graph; giao dien dinh that vao node nen moi lan boc do
+    //    lai la node phia sau co them mot anh - va giu ca anh cua bo do CU.
+    assert.match(gen, /function anhFlatLayCuaNode\(/);
+    assert.match(gen, /n\?\.data\.vaiTro === "trang-phuc" && n\.data\.imageUrl/);
+    assert.match(gen, /\.\.\.anhFlatLayCuaNode\(clientId, get\)/);
+    assert.doesNotMatch(gen, /addNodeReferenceUrl\(/);
+    assert.doesNotMatch(refs, /addNodeReferenceUrlImpl/);
     // 3. Anh dinh doc lai tu may chu la duong dan tep, ma may sinh anh chi nhan
     //    base64 - da tra ve "references[0] is not valid base64".
     assert.match(gen, /if \(ref\.startsWith\("data:"\)\)/);

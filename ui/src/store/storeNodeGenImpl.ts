@@ -134,6 +134,25 @@ function danhDauLoThoi(
 }
 
 /**
+ * Anh flat lay cua cac node BOC DO noi vao `clientId` bang canh THAM CHIEU.
+ *
+ * Dua theo tung luot sinh, khong dinh vao graph - giong het cach may chu lam
+ * (`anhThem` trong lib/wfEngine.ts). Dinh that vao node thi moi lan boc do lai
+ * la mot anh nua nam do, va node phia sau mang theo ca bo do cu.
+ *
+ * Canh vao DAU TIEN la anh nen dem di sua nen bo qua; tu canh thu hai tro di
+ * moi la tham chieu.
+ */
+function anhFlatLayCuaNode(clientId: ClientNodeId, get: StoreGet): string[] {
+  const nodes = get().graphNodes;
+  return canhAnhVao(get().graphEdges, nodes, clientId)
+    .slice(1)
+    .map((e) => nodes.find((n) => n.id === e.source))
+    .filter((n) => n?.data.vaiTro === "trang-phuc" && n.data.imageUrl)
+    .map((n) => n!.data.imageUrl!);
+}
+
+/**
  * Node BOC DO gan nhat PHIA TRUOC `clientId` ma da co anh flat lay.
  *
  * Dung khi node phia sau can cau ta nhung chua ai doc: co anh roi thi doc duoc
@@ -172,21 +191,21 @@ function timNodeBocDoCoAnh(clientId: ClientNodeId, get: StoreGet): ClientNodeId 
  * Hong thi chi bao, khong lam hong ket qua vua sinh duoc: anh flat lay van con
  * do, nguoi dung bam "Doc bo do" lai duoc.
  */
-async function docBoDoSauKhiSinh(
-  clientId: ClientNodeId,
-  get: StoreGet,
-  tuyChon: { dinhAnh?: boolean } = {},
-): Promise<void> {
+async function docBoDoSauKhiSinh(clientId: ClientNodeId, get: StoreGet): Promise<void> {
   // Node van phai trong nhu dang BAN trong luc doc: anh da co roi nhung cau ta
   // thi chua, ma node phia sau can chinh cau ta do.
   get().updateNodeData(clientId, { pendingPhase: "doc-bo-do" });
   try {
     const st = get();
+    // KHONG dinh anh vao graph.
+    //
+    // May chu khong lam the: no dua flat lay theo tung luot chay (`anhThem`) va
+    // khong dung vao graph. Ban giao dien truoc day dinh that vao node, nen moi
+    // lan boc do lai la node phia sau co them mot anh - va giu ca anh cua bo do
+    // CU. Gio giao dien cung lay flat lay tu canh ref ngay luc sinh, xem
+    // `anhFlatLayCuaNode`.
     const kq = await dienMoTaTrangPhuc(
       clientId, st.graphNodes, st.graphEdges, st.updateNodePrompt,
-      // Dinh bang chinh duong dan cua flat lay: chep ra tep moi thi lan doc thu
-      // hai ra mot ten khac va node phia sau chat hai anh giong het nhau.
-      tuyChon.dinhAnh === false ? undefined : (dichId, url) => st.addNodeReferenceUrl(dichId, url),
     );
     get().updateNodeData(clientId, { moTaTrangPhuc: kq.moTa });
   } catch (e) {
@@ -244,7 +263,7 @@ export async function runGenerateNodeInPlaceImpl(
     if (nguon) {
       // Chi doc CHU, khong dinh lai anh: anh flat lay da duoc dinh tu lan sinh
       // node BOC DO, dinh nua la hai anh giong het trong cung mot node.
-      await docBoDoSauKhiSinh(nguon, get, { dinhAnh: false });
+      await docBoDoSauKhiSinh(nguon, get);
       moTaBoDo = moTaTrangPhucGanNhat(clientId, get().graphNodes, get().graphEdges);
     }
   }
@@ -289,7 +308,11 @@ export async function runGenerateNodeInPlaceImpl(
     videoModelSelected: Boolean(s.videoModelSelected),
     mcpProvider: s.mcpProvider ?? null,
   });
-  const nodeRefsTho = mergeRunReferences(node.data.referenceImages ?? [], elementResolution.referenceDataUrls, variantRefLimit);
+  const nodeRefsTho = mergeRunReferences(
+    [...(node.data.referenceImages ?? []), ...anhFlatLayCuaNode(clientId, get)],
+    elementResolution.referenceDataUrls,
+    variantRefLimit,
+  );
   // Anh dinh doc lai tu may chu la DUONG DAN TEP (/generated/...), khong phai
   // data URL - tu khi anh dinh chuyen ve may chu thi lan nao tai lai trang cung
   // ra duong dan. May sinh anh chi nhan base64, nen phai doi o day; khong thi

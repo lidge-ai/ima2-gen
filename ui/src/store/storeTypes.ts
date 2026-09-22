@@ -527,8 +527,6 @@ export type AppState = PresetState & ReferenceTraySlice & {
   addNodeReferences: (clientId: ClientNodeId, files: File[]) => Promise<void>;
   addNodeReferenceDataUrl: (clientId: ClientNodeId, dataUrl: string) => void;
   addNodeReferenceFromUrl: (clientId: ClientNodeId, src: string, filename?: string) => Promise<void>;
-  /** Dinh anh DA nam trong /generated bang chinh duong dan cua no, khong chep ra tep moi. */
-  addNodeReferenceUrl: (clientId: ClientNodeId, url: string) => void;
   removeNodeReference: (clientId: ClientNodeId, index: number) => void;
   clearNodeReferences: (clientId: ClientNodeId) => void;
   generateNode: (clientId: ClientNodeId) => Promise<void>;

@@ -250,7 +250,7 @@ describe("EN — element node lifecycle", () => {
     assert.ok(single.indexOf("collectElementInputs(get().graphNodes, get().graphEdges, [clientId])") < single.indexOf("postNodeGenerateStream({"));
     assert.match(single, /resolveElementInputsForRun\(elementInputs, set, get\)/);
     assert.match(single, /if \(elementResolution\.ok === false\)[\s\S]*showToast[\s\S]*return null/);
-    assert.match(single, /mergeRunReferences\(node\.data\.referenceImages \?\? \[\], elementResolution\.referenceDataUrls/);
+    assert.match(single, /mergeRunReferences\(\s*\[\.\.\.\(node\.data\.referenceImages \?\? \[\]\), \.\.\.anhFlatLayCuaNode\(clientId, get\)\],/);
     const batch = section(nodeRun, "export async function runNodeBatchImpl", "\n}");
     assert.ok(batch.indexOf("collectElementInputs(get().graphNodes, get().graphEdges, candidates)") < batch.indexOf("set({ nodeBatchRunning: true"));
     assert.match(batch, /batchElementInputs\.find\(\(input\) => input\.missing\)/);
@@ -338,7 +338,7 @@ describe("EN — element node lifecycle", () => {
       "request.prompt",
     ]);
     // Merge dedupes across classic+element refs and caps at the active limit.
-    assert.match(nodeRun, /mergeRunReferences\(node\.data\.referenceImages \?\? \[\], elementResolution\.referenceDataUrls, variantRefLimit\)/);
+    assert.match(nodeRun, /mergeRunReferences\(\s*\[\.\.\.\(node\.data\.referenceImages \?\? \[\]\), \.\.\.anhFlatLayCuaNode\(clientId, get\)\],\s*elementResolution\.referenceDataUrls,/);
     assert.match(nodeRun, /effectiveReferenceLimit\(\{\s*provider: nodeProvider/);
     assert.match(nodeRun, /if \(!merged\.includes\(ref\)\) merged\.push\(ref\)/);
     assert.match(nodeRun, /if \(merged\.length >= activeLimit\) break/);
