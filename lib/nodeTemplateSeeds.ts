@@ -1,4 +1,5 @@
 import type { NodeTemplateRecord } from "./nodeTemplateStore.js";
+import { khuonThoiTrang } from "./nodeTemplateThoiTrang.js";
 
 type Node = NodeTemplateRecord["graph"]["nodes"][number];
 type Edge = NodeTemplateRecord["graph"]["edges"][number];
@@ -35,6 +36,9 @@ function seed(
 }
 
 export const nodeTemplateSeeds: readonly NodeTemplateRecord[] = [
+  // Kho khuon THOI TRANG dung truoc: dau vao mot bo do, dau ra nguoi mau mac bo
+  // do do theo tung concept chup. Day la viec nguoi dung lam nhieu nhat.
+  ...khuonThoiTrang,
   seed("seed-four-variations", "이미지 4변형 비교", "하나의 프롬프트를 네 가지 변형으로 비교합니다.", [
     node("prompt", "prompt", 0, 180, { prompt: "" }),
     ...[0, 1, 2, 3].flatMap((index) => [

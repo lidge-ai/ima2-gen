@@ -303,7 +303,8 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/multimodeHelpers.ts` | 48 | Shared multimode generation helpers |
 | `lib/nodeHelpers.ts` | 121 | Node workflow graph and payload helpers |
 | `lib/vectorizeImage.ts` | 179 | Raster-to-SVG tracing (VTracer) with named presets, size/dimension guards, and SVG optimization |
-| `lib/nodeTemplateSeeds.ts` | 84 | Built-in node workflow template seed definitions |
+| `lib/nodeTemplateSeeds.ts` | 88 | Built-in node workflow template seed definitions |
+| `lib/nodeTemplateThoiTrang.ts` | 459 | Fashion concept template library: one outfit in, models wearing it per concept |
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/presetCompiler.ts` | 67 | Named preset prompt compilation helpers |
 | `lib/responsesDoctor.ts` | 457 | Responses API diagnostics and provider health checks |

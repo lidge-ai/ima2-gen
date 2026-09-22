@@ -784,6 +784,37 @@ Node graph templates (higgsfield 120). Seed templates ship with the app and are 
 | `GET` | `/api/node-templates/:id/export` | Download one template as a portable JSON file (seed templates included) |
 | `POST` | `/api/node-templates/import` | Create a user template from such a file (`201 { template }`) |
 
+### The fashion template library
+
+Six seed templates ship for the one job people do most: **one outfit in, a model
+wearing it in a named shooting concept out**. Each is the same chain — MODEL +
+EXTRACT (a real photo of the garment) → DRESS → four scenes → END — and differs
+in the concept: `Lookbook studio`, `Street style`, `Quan ca phe`,
+`San thuong hoang hon` (golden hour rooftop), `Editorial toi gian`,
+`Thoi trang san bay` (airport).
+
+The user does exactly one thing: attach the real photo of the outfit to the
+extraction node. Everything else is already wired — the chain declares **no
+required inputs**, the extraction step fills `{{TRANG_PHUC}}` for every node
+behind it, and each START marker carries the ratio for its concept
+(`1024x1536` for lookbook and editorial, `1152x2048` for the rest).
+
+Three rules the library follows, each one the residue of a real failure:
+
+- Prompts say `Wearing: {{TRANG_PHUC}}`, never `She wears:` — the outfit arrives
+  through the slot, so the prompt must not hardcode a gender the MODEL node is
+  what actually decides.
+- Every scene names **body mechanics and camera**: which foot is forward, where
+  the hands are, where the eyes go, camera height and focal length. A generic
+  line like "walking toward the camera, mid-stride" makes every frame in the set
+  come back looking like the same frame.
+- The LOCATION block is identical character for character across the scenes of
+  one template. It may be the only thing that makes the set read as one shoot.
+
+`lib/nodeTemplateThoiTrang.ts` builds them from a `Concept` list, so adding a
+concept is one entry: location, lighting tail, model description, ratio, and the
+pose line per scene.
+
 ### Portable template files
 
 A template lives in the SQLite database of the machine that made it, so moving a
