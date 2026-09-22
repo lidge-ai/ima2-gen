@@ -709,6 +709,118 @@ describe("workflow outfit + attachment contracts", () => {
   });
 });
 
+describe("workflow streaming contracts", () => {
+  /** Doc mot duong SSE cho toi khi gap `wf_end`, tra ve tung khung mot. */
+  async function docSse(res: Response, hanMs = 20_000): Promise<{ suKien: string; du: any }[]> {
+    const khung: { suKien: string; du: any }[] = [];
+    const doc = res.body!.getReader();
+    const giaiMa = new TextDecoder();
+    let dem = "";
+    const han = setTimeout(() => void doc.cancel(), hanMs);
+    try {
+      for (;;) {
+        const { done, value } = await doc.read();
+        if (done) break;
+        dem += giaiMa.decode(value, { stream: true });
+        let i: number;
+        while ((i = dem.indexOf("\n\n")) >= 0) {
+          const kh = dem.slice(0, i);
+          dem = dem.slice(i + 2);
+          const suKien = /^event: (.+)$/m.exec(kh)?.[1];
+          const du = /^data: (.+)$/m.exec(kh)?.[1];
+          if (!suKien || !du) continue;
+          khung.push({ suKien, du: JSON.parse(du) });
+        }
+        if (khung.some((k) => k.suKien === "wf_end")) break;
+      }
+    } finally {
+      clearTimeout(han);
+      await doc.cancel().catch(() => {});
+    }
+    return khung;
+  }
+
+  it("WFST-01 xong buoc nao tra buoc do, va ket thuc kem ca ket qua", async () => {
+    const day = taoPhien([
+      { id: "a", vaiTro: "canh", prompt: "canh mot" },
+      { id: "b", vaiTro: "canh", prompt: "canh hai" },
+    ]);
+    await voiApi(async ({ base }) => {
+      const res = await fetch(`${base}/api/wf/${day}/start?stream=1`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get("content-type") ?? "", /text\/event-stream/);
+      const khung = await docSse(res);
+
+      assert.equal(khung[0]!.suKien, "wf_start");
+      assert.equal(khung[0]!.du.tong, 2);
+      // Moi buoc bay ra hai lan: luc bat dau va luc xong.
+      const xong = khung.filter((k) => k.suKien === "wf_step" && k.du.trangThai === "xong");
+      assert.deepEqual(xong.map((k) => k.du.nodeId), ["a", "b"]);
+      assert.equal(xong[0]!.du.url, "/generated/n_gia1.png");
+      assert.equal(xong[0]!.du.daXong, 1);
+
+      // Khung cuoi kem ca luot va ket qua: nguoi goi khong phai goi them mot
+      // lan nua chi de lay media.
+      const cuoi = khung.at(-1)!;
+      assert.equal(cuoi.suKien, "wf_end");
+      assert.equal(cuoi.du.ok, true);
+      assert.equal(cuoi.du.run.trangThai, "xong");
+      assert.equal(cuoi.du.result.media.length, 1);
+    });
+  });
+
+  it("WFST-02 bam vao mot luot da xong thi tra ket qua ngay roi dong", async () => {
+    const day = taoPhien([{ id: "a", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base }) => {
+      const chay = await goi(base, `/api/wf/${day}/start`, "POST", {});
+      const runId = chay.body.run.id as string;
+      const res = await fetch(`${base}/api/wf/runs/${runId}/stream`);
+      const khung = await docSse(res);
+      // De nguoi goi treo cho mot thu da ket thuc la mot duong khong bao gio dong.
+      assert.equal(khung.length, 1);
+      assert.equal(khung[0]!.suKien, "wf_end");
+      assert.equal(khung[0]!.du.run.id, runId);
+
+      const khong = await fetch(`${base}/api/wf/runs/wfr_khong_co/stream`);
+      assert.equal(khong.status, 404);
+    });
+  });
+
+  it("WFST-03 duong SSE nghe tren res, khong phai tren req", () => {
+    // Voi mot POST, req phat "close" ngay khi than yeu cau doc xong - nen nghe
+    // tren req la tu ngat chinh minh sau khung dau tien, va duong treo mai. Dung
+    // loi da xay ra: luot chay xong binh thuong ma khach hang chi nhan 2 khung.
+    const src = readFileSync("routes/workflow.ts", "utf-8");
+    assert.match(src, /res\.on\("close"/);
+    assert.doesNotMatch(src, /req\.on\("close"/);
+  });
+
+  it("WFST-04 che do tra ngay chi ra ca duong hoi va duong nghe", async () => {
+    const day = taoPhien([{ id: "a", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base }) => {
+      const { body } = await goi(base, `/api/wf/${day}/start?async=1`, "POST", {});
+      assert.equal(body.statusUrl, `/api/wf/runs/${body.runId}`);
+      assert.equal(body.streamUrl, `/api/wf/runs/${body.runId}/stream`);
+    });
+  });
+
+  it("WFST-05 node BAT DAU bay ra ca nam cach goi, moi cach mot lenh chep san", () => {
+    const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    // De nguoi dung tu doan hay di doc tai lieu thi ho chi biet duong mac dinh.
+    for (const m of [/\?stream=1/, /\?async=1/, /GET \/api\/wf\/runs\/:runId/, /:runId\/stream/]) {
+      assert.match(src, m);
+    }
+    assert.match(src, /cacTuyen\.map\(\(tuyen\)/);
+    // Lenh chep ra phai xuong dong duoc: mot dau gach truoc newline trong
+    // template literal bi hieu la noi dong va bay mat.
+    assert.match(src, /\\\\\r?\n/);
+  });
+});
+
 describe("workflow run history contracts", () => {
   it("WFLS-01 mot luot chay con lai trong lich su sau khi tien trinh mat ban nho", async () => {
     const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);

@@ -1379,8 +1379,44 @@ would not fix the video at all, since a video takes its parent's *text*.
   effective prompt, so one that removes a `{{SLOT}}` needs no input for it, and
   one that introduces a new slot is refused like any other missing input.
 
-By default the request **waits** and returns the finished run. Add `?async=1`
-(or `"async": true`) to get a run id immediately instead.
+Three ways to call it:
+
+| Call | What comes back |
+|---|---|
+| `POST <path>` | waits, then the finished run (the default) |
+| `POST <path>?stream=1` | an SSE stream, one frame per step as it finishes |
+| `POST <path>?async=1` | `202` with `runId`, `statusUrl` and `streamUrl` |
+
+### Streaming
+
+`?stream=1` answers with `text/event-stream` and the same event names the UI
+listens to, so there is one vocabulary for both:
+
+```
+event: wf_start
+data: {"runId":"wfr_01M…","tong":2,"buoc":[{"nodeId":"nc_ve","viec":"anh"}]}
+
+event: wf_step
+data: {"runId":"wfr_01M…","nodeId":"nc_ve","trangThai":"xong","url":"/generated/n_6c34eeab.png","daXong":1,"tong":2}
+
+event: wf_end
+data: {"runId":"wfr_01M…","ok":true,"run":{…},"result":{…}}
+```
+
+Each step reports twice — once on `dang-chay`, once on `xong` with its media.
+`wf_end` carries the whole run and its result, so a streaming caller never needs
+a second request. The connection closes on `wf_end`; a `: ping` comment every
+15 s keeps proxies from cutting a long gap between steps, and a run that outlives
+the 10-minute ceiling gets a `wf_timeout` frame naming the `statusUrl` to poll
+instead of hanging forever.
+
+`GET /api/wf/runs/:runId/stream` attaches to a run already in progress — pair it
+with `?async=1`. A run that has already finished gets its `wf_end` immediately
+and the connection closes, rather than waiting for events that will never come.
+
+Disconnecting does **not** cancel the run, exactly as with `?async=1`: aborting a
+generation halfway costs the same and yields nothing. Use
+`POST /api/wf/runs/:runId/cancel` to actually stop it.
 
 ```json
 { "ok": true,

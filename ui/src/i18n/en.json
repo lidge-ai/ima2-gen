@@ -751,7 +751,12 @@
     "wfApiCopyNode": "copy",
     "wfApiCopyNodeTitle": "Copy a body that overrides this node for one call",
     "wfApiNoPrompt": "(no prompt)",
-    "wfApiNodeImages": "{count} img"
+    "wfApiNodeImages": "{count} img",
+    "wfApiWait": "wait for the result",
+    "wfApiStream": "one frame per finished step",
+    "wfApiAsync": "returns a runId at once",
+    "wfApiStatus": "check a run",
+    "wfApiStreamRun": "attach to a run in progress"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

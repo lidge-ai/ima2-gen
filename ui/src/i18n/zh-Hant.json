@@ -751,7 +751,12 @@
     "wfApiCopyNode": "複製",
     "wfApiCopyNodeTitle": "複製只覆寫這個節點一次的請求內容",
     "wfApiNoPrompt": "（沒有提示詞）",
-    "wfApiNodeImages": "{count} 張圖"
+    "wfApiNodeImages": "{count} 張圖",
+    "wfApiWait": "等待結果",
+    "wfApiStream": "每完成一步傳回一筆",
+    "wfApiAsync": "立即回傳 runId",
+    "wfApiStatus": "查詢一次執行",
+    "wfApiStreamRun": "接上進行中的執行"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

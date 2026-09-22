@@ -249,14 +249,53 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     return JSON.stringify(than, null, 2);
   }, [oTrongKhuon, nodeCoViDuAnh, nodeTrongKhuon]);
 
-  const lenhCurl = useMemo(() => {
-    if (!duongApi) return "";
+  /**
+   * Cac cach goi khuon nay.
+   *
+   * Mot khuon co ba kieu goi va hai tuyen theo doi; de nguoi dung tu doan hay
+   * di doc tai lieu thi ho chi biet duong mac dinh. Bay het ra day, moi dong mot
+   * nut chep san lenh cua chinh dong do.
+   */
+  const cacTuyen = useMemo(() => {
+    if (!duongApi) return [];
+    const goc = window.location.origin;
+    const dauJson = `-H 'Content-Type: application/json'`;
+    const than = `-d '${thanDayDu}'`;
     return [
-      `curl -X POST ${window.location.origin}${duongApi} \\`,
-      `  -H 'Content-Type: application/json' \\`,
-      `  -d '${thanDayDu}'`,
-    ].join("\n");
-  }, [duongApi, thanDayDu]);
+      {
+        duong: `POST ${duongApi}`,
+        ghiChu: t("node.wfApiWait"),
+        lenh: `curl -X POST ${goc}${duongApi} \\
+  ${dauJson} \\
+  ${than}`,
+      },
+      {
+        duong: `POST ${duongApi}?stream=1`,
+        ghiChu: t("node.wfApiStream"),
+        lenh: `curl -N -X POST '${goc}${duongApi}?stream=1' \\
+  ${dauJson} \\
+  ${than}`,
+      },
+      {
+        duong: `POST ${duongApi}?async=1`,
+        ghiChu: t("node.wfApiAsync"),
+        lenh: `curl -X POST '${goc}${duongApi}?async=1' \\
+  ${dauJson} \\
+  ${than}`,
+      },
+      {
+        duong: "GET /api/wf/runs/:runId",
+        ghiChu: t("node.wfApiStatus"),
+        lenh: `curl ${goc}/api/wf/runs/RUN_ID`,
+      },
+      {
+        duong: "GET /api/wf/runs/:runId/stream",
+        ghiChu: t("node.wfApiStreamRun"),
+        lenh: `curl -N ${goc}/api/wf/runs/RUN_ID/stream`,
+      },
+    ];
+  }, [duongApi, thanDayDu, t]);
+
 
   /** Than chi de ghi de MOT node - bam mot cai la co ngay lenh sua node do. */
   const thanMotNode = useCallback(
@@ -639,7 +678,24 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               </button>
               {hienApi ? (
                 <div className="image-node__api-than">
-                  <code className="image-node__api-duong">POST {duongApi}</code>
+                  {/* Nam cach goi, moi dong mot nut chep lenh cua chinh no. */}
+                  {cacTuyen.map((tuyen) => (
+                    <div key={tuyen.duong} className="image-node__api-tuyen">
+                      <code className="image-node__api-duong">{tuyen.duong}</code>
+                      <span className="image-node__api-ghi">{tuyen.ghiChu}</span>
+                      <button
+                        type="button"
+                        className="image-node__api-chep"
+                        title={t("node.wfApiCopy")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void navigator.clipboard?.writeText(tuyen.lenh);
+                        }}
+                      >
+                        {t("node.wfApiCopyNode")}
+                      </button>
+                    </div>
+                  ))}
                   {oTrongKhuon.length ? (
                     <div className="image-node__api-o">
                       {t("node.wfApiInputs", { names: oTrongKhuon.join(", ") })}
@@ -683,13 +739,6 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                       ))}
                     </div>
                   ) : null}
-                  <button
-                    type="button"
-                    className="image-node__api-chep"
-                    onClick={(e) => { e.stopPropagation(); void navigator.clipboard?.writeText(lenhCurl); }}
-                  >
-                    {t("node.wfApiCopy")}
-                  </button>
                   {/* Lich su: mot khuon goi qua API chay o may chu, co the luc
                       nguoi dung khong mo trinh duyet. Khong ghi lai thi ho khong
                       co cach nao biet dem qua no da chay nhung gi. */}

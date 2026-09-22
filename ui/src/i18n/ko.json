@@ -751,7 +751,12 @@
     "wfApiCopyNode": "복사",
     "wfApiCopyNodeTitle": "이 노드를 한 번만 덮어쓰는 본문 복사",
     "wfApiNoPrompt": "(프롬프트 없음)",
-    "wfApiNodeImages": "이미지 {count}"
+    "wfApiNodeImages": "이미지 {count}",
+    "wfApiWait": "결과를 기다림",
+    "wfApiStream": "단계가 끝날 때마다 한 프레임",
+    "wfApiAsync": "runId를 즉시 반환",
+    "wfApiStatus": "실행 상태 확인",
+    "wfApiStreamRun": "진행 중인 실행에 붙기"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

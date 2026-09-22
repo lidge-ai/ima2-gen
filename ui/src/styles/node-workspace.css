@@ -822,3 +822,26 @@
   font-size: 8px;
   font-weight: 700;
 }
+
+/* Mot cach goi khuon: dia chi, ghi chu ngan, va nut chep lenh cua chinh no. */
+.image-node__api-tuyen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 4px;
+  align-items: start;
+  padding: 2px 0;
+}
+.image-node__api-tuyen .image-node__api-duong {
+  grid-column: 1;
+}
+.image-node__api-ghi {
+  grid-column: 1;
+  color: var(--text-dim);
+  font-size: 8px;
+  line-height: 1.3;
+}
+.image-node__api-tuyen .image-node__api-chep {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}

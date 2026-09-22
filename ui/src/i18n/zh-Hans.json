@@ -751,7 +751,12 @@
     "wfApiCopyNode": "复制",
     "wfApiCopyNodeTitle": "复制只覆盖这个节点一次的请求内容",
     "wfApiNoPrompt": "（没有提示词）",
-    "wfApiNodeImages": "{count} 张图"
+    "wfApiNodeImages": "{count} 张图",
+    "wfApiWait": "等待结果",
+    "wfApiStream": "每完成一步返回一条",
+    "wfApiAsync": "立即返回 runId",
+    "wfApiStatus": "查询一次运行",
+    "wfApiStreamRun": "接上进行中的运行"
   },
   "nodeBatch": {
     "selectionOn": "选择",
