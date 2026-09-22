@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node bin/ima2.js serve",
+    "serve:tailscale": "node scripts/serve-tailscale.mjs",
     "dev": "node scripts/dev.mjs",
     "predev": "npm run build:server",
     "prestart": "npm run build:server && npm run build:cli",

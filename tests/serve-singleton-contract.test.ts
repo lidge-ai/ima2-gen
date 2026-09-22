@@ -59,7 +59,21 @@ test("findRunningServer skips a dead advertised candidate", async () => {
   try {
     // Default-port probe may still hit a developer's live server, so only
     // assert the dead advertised candidate is never returned.
-    const found = await findRunningServer({ includeEnv: false });
+    //
+    // That live server may also be bound past loopback and asking for a token
+    // (npm run serve:tailscale). Discovery deliberately carries no token - the
+    // CLI binds one only to a server named explicitly - so the probe comes back
+    // 401. That is the environment answering, not the thing under test.
+    let found: Awaited<ReturnType<typeof findRunningServer>> = null;
+    try {
+      found = await findRunningServer({ includeEnv: false });
+    } catch (e) {
+      const ma = (e as { code?: string }).code;
+      assert.ok(
+        ma === "LAN_TOKEN_REQUIRED" || ma === "SERVER_ACCESS_DENIED",
+        `probe hong vi ly do khac: ${String(ma)}`,
+      );
+    }
     if (found) assert.notEqual(found.base, "http://127.0.0.1:1");
   } finally {
     if (prev === undefined) delete process.env.IMA2_ADVERTISE_FILE;

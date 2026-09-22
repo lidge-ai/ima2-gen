@@ -1325,6 +1325,44 @@ Errors: `MERGE_NEED_TWO` (fewer than two items), `MERGE_ITEM_INVALID` (an entry
 without a filename), `MERGE_ITEM_KIND` (unsupported extension), `MERGE_FAILED`
 (ffmpeg failed or is not installed).
 
+## Reaching the server from another machine (Tailscale)
+
+```bash
+npm run serve:tailscale
+```
+
+It prints the URL and the token. The same address serves both the UI and the
+API, so a phone or laptop in the tailnet opens `http://<machine>:3333` and gets
+the studio, and a script hits `http://<machine>:3333/api/...`.
+
+Three things have to hold at once, and the script sets all three:
+
+| | Why |
+|---|---|
+| `IMA2_HOST=0.0.0.0` | the default `127.0.0.1` answers only that one machine |
+| `IMA2_LAN_TOKEN` | the server **refuses to start** when bound past loopback without one — opening a port with no lock is a silent mistake |
+| `IMA2_PUBLIC_ORIGINS` | an IP the server infers by itself, a MagicDNS *name* it does not: a request whose `Host` is that name gets `403 LOCAL_HOST_REJECTED` |
+
+The token lives at `~/.ima2/lan-token.txt`, never in the repo. Send it as
+`x-ima2-token` on API calls; a browser is asked for it once and keeps a session.
+Note that with the server bound past loopback, **every** caller needs the token,
+including one on the machine itself.
+
+The CLI does **not** attach the token to a server it discovered by probing — a
+token only ever binds to a server named on purpose. So in this mode point it at
+the server explicitly:
+
+```bash
+IMA2_SERVER=http://100.x.y.z:3333 IMA2_LAN_TOKEN=$(cat ~/.ima2/lan-token.txt) ima2 ping
+```
+
+On Windows the port also has to be allowed through the firewall, scoped to the
+Tailscale interface so no other network can reach it (run as administrator):
+
+```powershell
+New-NetFirewallRule -DisplayName "ima2 studio (Tailscale only) TCP 3333" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 3333 -InterfaceAlias "Tailscale"
+```
+
 ## Workflows (START → END)
 
 A graph that carries a **START** marker node (`vaiTro: "bat-dau"`) reaching an
