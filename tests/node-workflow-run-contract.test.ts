@@ -197,6 +197,17 @@ describe("workflow START/END run contracts", () => {
     assert.deepEqual(oTrongCuaKhuon(nodes, kq.thuTu), ["MAU_SAC", "NOI_CHON"]);
   });
 
+  it("WF-13 a node's id is draggable text, with copying on its own icon", () => {
+    // Dai tren dinh node la cho de keo node di. Truoc day ca ma node la mot nut
+    // chep va ca dai mang `nodrag`, nen bam vao ten chi chep chu khong keo duoc.
+    const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    assert.match(src, /<div className="image-node__id"/);
+    assert.doesNotMatch(src, /className="image-node__id nodrag"/);
+    assert.match(src, /<span className="image-node__id-ma">\{id\}<\/span>/);
+    // Nut chep van phai la `nodrag`: keo tu dung cai icon do thi khong keo node.
+    assert.match(src, /className="image-node__id-copy nodrag"/);
+  });
+
   it("WF-12 the run awaits each node and stops on the first failure", () => {
     const src = readFileSync("ui/src/store/storeWorkflowImpl.ts", "utf-8");
     // Sequential await inside the loop: a Promise.all here would feed a later

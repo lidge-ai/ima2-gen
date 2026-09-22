@@ -601,16 +601,23 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         />
       ))}
       {/* Ma node + nhan: khong co ma thi nguoi dung khong co cach nao chi ra
-          node nao dang sai. Bam vao la chep ma vao bo nho tam. */}
-      <div className="image-node__id nodrag" title={d.label ? `${id} - ${d.label}` : id}>
+          node nao dang sai.
+          Ma la CHU THUONG, khong phai nut: ca dai nay la cho de keo node di, va
+          truoc day no la nut chep nen bam vao chi chep chu khong keo duoc. Viec
+          chep chuyen sang mot icon rieng ben canh. */}
+      <div className="image-node__id" title={d.label ? `${id} - ${d.label}` : id}>
+        <span className="image-node__id-ma">{id}</span>
         <button
           type="button"
-          className="image-node__id-copy"
+          className="image-node__id-copy nodrag"
           onClick={(e) => { e.stopPropagation(); void navigator.clipboard?.writeText(id); }}
           title={t("node.copyId", { fallback: "Copy node id" })}
           aria-label={t("node.copyId", { fallback: "Copy node id" })}
         >
-          {id}
+          <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true">
+            <rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
         </button>
         {/* Chon vai tro ngay tren node: node moi them chua co vai tro, chon o
             day la xong - vai tro co prompt co dinh se tu dien prompt vao. */}

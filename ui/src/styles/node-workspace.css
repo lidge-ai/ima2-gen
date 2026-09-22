@@ -169,16 +169,37 @@
   font-size: 10px;
   line-height: 1.3;
 }
-.image-node__id-copy {
+/* Ma node: chu thuong, keo duoc. Ca dai tren dinh node la cho de keo node di,
+   nen khong duoc bat cai gi o day bat con tro thanh "bam". */
+.image-node__id-ma {
   flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: none;
   color: var(--accent);
-  font: inherit;
   font-weight: 700;
   letter-spacing: .02em;
+  /* Khong boi den chu khi keo: keo mot doan la ca dong ma bi boi xanh, trong
+     nhu dang chon chu chu khong phai dang di chuyen node. */
+  user-select: none;
+}
+.image-node__id {
+  cursor: grab;
+}
+.image-node__id:active {
+  cursor: grabbing;
+}
+.image-node__id-copy {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 1px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
   cursor: copy;
+  opacity: .6;
+}
+.image-node__id-copy:hover {
+  color: var(--accent);
+  opacity: 1;
 }
 .image-node__ref-chip--ke-thua {
   position: relative;
