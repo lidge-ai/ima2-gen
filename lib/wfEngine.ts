@@ -255,6 +255,24 @@ export type ThamSoChay = {
   nodes: Record<string, GhiDeNode>;
 };
 
+/**
+ * Ca danh sach node sau khi da ap ghi de cua luot chay.
+ *
+ * Node VIDEO ke thua LOI TA cua node canh, nen tinh dau vao cho no phai doc
+ * prompt hieu luc cua CHA nua, khong chi cua chinh no. Chi ap cho rieng no thi
+ * video lay prompt cha thang tu graph - tuc cau ta bo do CU - va ra dung bo do
+ * cu du ba buoc truoc da dung. Dung loi da xay ra.
+ */
+export function nodesHieuLuc(
+  nodes: readonly WfNode[],
+  ts: Pick<ThamSoChay, "nodes">,
+): WfNode[] {
+  return nodes.map((n) => {
+    const de = ts.nodes[n.id]?.prompt;
+    return de === undefined ? n : { ...n, data: { ...(n.data ?? {}), prompt: de } };
+  });
+}
+
 /** Noi dung node sau khi da ap ghi de cua luot chay. */
 export function noiDungNode(node: WfNode, ts: Pick<ThamSoChay, "nodes">): GhiDeNode {
   const de = ts.nodes[node.id] ?? {};
@@ -657,18 +675,11 @@ async function chayMotNode(
   }
 
   if (viec === "video") {
-    // Ghi de prompt cua node video phai an vao dung phan RIENG cua no, chu
-    // khong de len loi ta ke thua tu node canh - neu khong, ghi de mot node
-    // video se am tham vut mat canh no dang dung.
-    const daGhiDe = ts.nodes[nodeId]?.prompt;
-    const nodeTam: WfNode = daGhiDe === undefined
-      ? node
-      : { ...node, data: { ...(node.data ?? {}), prompt: daGhiDe } };
-    const { ta } = dauVaoVideoCuaNode(
-      nodeId,
-      nodes.map((n) => (n.id === nodeId ? nodeTam : n)),
-      edges,
-    );
+    // Ap ghi de cho CA danh sach, khong chi cho node video. Node video ke thua
+    // loi ta cua node canh, nen prompt cua CHA cung phai la ban da ghi de -
+    // lay thang tu graph thi no mang cau ta bo do cu. Ghi de rieng cua node
+    // video van chi la phan GHI THEM, dauVaoVideoCuaNode noi hai phan lai.
+    const { ta } = dauVaoVideoCuaNode(nodeId, nodesHieuLuc(nodes, ts), edges);
     const loiTa = dienOTrong(ta, ts.inputs).trim();
     if (!loiTa) throw new LoiKhuon("WF_PROMPT_EMPTY", "node video khong co loi ta nao", nodeId);
     const refs2 = await thamChieuHieuLuc(ctx, node, ts, anhThem[nodeId] ?? []);

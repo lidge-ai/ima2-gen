@@ -1350,6 +1350,17 @@ attachment costs no model call and is what holds motif counts and pattern
 direction. A failed description logs `wf.outfit_describe_failed` and the run
 continues with the existing text rather than discarding the steps already paid
 for.
+
+A video node inherits the **scene node's** prompt as its own description, so the
+rewrite has to be visible through that inheritance too: the run reads every
+node's effective prompt, not the one stored in the graph. Reading the parent
+straight from the graph is what made a run produce three correct images followed
+by a video in the previous outfit.
+
+None of this asks the user to wire every node to the extraction node. A scene or
+video node takes the dressed model as its base and has no business holding the
+flat lay as an image; forcing an edge there would only dilute its input, and it
+would not fix the video at all, since a video takes its parent's *text*.
 - `nodes` — replaces a node's content for **this call only**, keyed by node id.
   Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
   let one API call redraw a workflow the user shaped by hand on the canvas. The

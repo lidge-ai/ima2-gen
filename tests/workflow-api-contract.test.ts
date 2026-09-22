@@ -582,6 +582,43 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-09 node VIDEO ke thua loi ta DA DOI cua node canh, khong phai ban trong graph", async () => {
+    // Node VIDEO lay loi ta cua node canh lam dau vao. Neu doc prompt cha thang
+    // tu graph thi no mang cau ta bo do CU va video ra bo do cu, du ba buoc anh
+    // truoc da dung. Dung loi da xay ra.
+    const phien = store.createSession({ title: "chuoi co video" }) as { id: string };
+    const nodes = [
+      node("start", "bat-dau"),
+      node("mau", null, "mot nguoi mau"),
+      node("bocdo", "trang-phuc", "boc trang phuc"),
+      node("macdo", "mac-do", PROMPT_MAC_DO),
+      node("canh", "canh", PROMPT_MAC_DO + " In a coffee shop."),
+      node("vid", "video", ""),
+      node("end", "ket-thuc"),
+    ];
+    nodes[1]!.data.serverNodeId = "n_mau";
+    (nodes[1]!.data as Record<string, unknown>).imageUrl = "/generated/n_mau.png";
+    store.saveGraph(phien.id, {
+      nodes,
+      edges: [
+        { id: "e0", source: "start", target: "bocdo" },
+        { id: "e1", source: "mau", target: "macdo" },
+        { id: "e2", source: "bocdo", target: "macdo" },
+        { id: "e3", source: "macdo", target: "canh" },
+        { id: "e4", source: "canh", target: "vid" },
+        { id: "e5", source: "vid", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
+      assert.match(String(video.than.prompt), /She wears: a cream cardigan/);
+      assert.doesNotMatch(String(video.than.prompt), /mountain landscapes/);
+    });
+  });
+
   it("WFTP-02 prompt khong co khuon 'She wears' thi khong bi sua gi", async () => {
     const day = taoKhuonThoiTrang("Keep the exact same face. Put her in a coffee shop.");
     await voiApi(async ({ base, ghiNhan }) => {
