@@ -70,10 +70,15 @@ test("WP12 ordered image parents show localized roles and survive graph edits", 
   try {
     await seedBrowser(page, { dismissOnboarding: true, locale: "ko" });
     await page.goto(app.baseUrl);
+    await page.waitForFunction(() => Boolean(localStorage.getItem("ima2.activeSessionId")));
     const sessionId = await seedGraph(page);
+    await page.reload();
     await page.goto(`${app.baseUrl}/#node`);
     await expect(page.locator(".app")).toHaveAttribute("data-ui-mode", "node");
     await expect(page.locator(".react-flow__node")).toHaveCount(3);
+    for (const id of ["base", "reference", "target"]) {
+      await expect(page.locator(`.react-flow__node[data-id="${id}"]`)).toBeVisible();
+    }
 
     await connect(page, "base", "target");
     const saved = page.waitForResponse((response) => response.request().method() === "PUT"
