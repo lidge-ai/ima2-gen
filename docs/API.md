@@ -786,12 +786,19 @@ Node graph templates (higgsfield 120). Seed templates ship with the app and are 
 
 ### The fashion template library
 
-Six seed templates ship for the one job people do most: **one outfit in, a model
+Ten seed templates ship for the one job people do most: **one outfit in, a model
 wearing it in a named shooting concept out**. Each is the same chain — MODEL +
 EXTRACT (a real photo of the garment) → DRESS → four scenes → END — and differs
-in the concept: `Lookbook studio`, `Street style`, `Quan ca phe`,
-`San thuong hoang hon` (golden hour rooftop), `Editorial toi gian`,
-`Thoi trang san bay` (airport).
+in the concept.
+
+Four are art-directed sets, each with its own props, styling and light:
+`Tiec vuon cot trang` (garden party under a white colonnade), `Dam sen studio`
+(a lotus pond built in the studio, reflected in a shallow water tray),
+`San tennis chieu muon` (clay court raked by a low sun) and `Co phuc studio`
+(Vietnamese heritage costume on a bare white cyclorama). Six are plainer
+backdrops for everyday catalogue work: `Lookbook studio`, `Street style`,
+`Quan ca phe`, `San thuong hoang hon`, `Editorial toi gian`,
+`Thoi trang san bay`.
 
 The user does exactly one thing: attach the real photo of the outfit to the
 extraction node. Everything else is already wired — the chain declares **no

@@ -165,6 +165,203 @@ export function khuonTuConcept(c: Concept): NodeTemplateRecord {
  */
 const CONCEPTS: Concept[] = [
   {
+    id: "seed-tp-tiec-vuon",
+    ten: "Tiec vuon cot trang",
+    moTa: "Tiec tra ngoai vuon: hang cot trang, ban linen, hoa hong kem, nang trua gat va bong sac net.",
+    tags: ["thoi-trang", "tiec-vuon", "sang-trong"],
+    size: "1024x1536",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, long"
+      + " loose wavy hair, warm dewy skin, soft red lip, elegant posture. Relaxed neutral stance facing"
+      + " camera, arms slightly away from the body. Plain cream fitted top, plain beige shorts, nude heels,"
+      + " no accessories. Soft even studio lighting, plain light grey seamless background, photorealistic,"
+      + " head to shoes, no text.",
+    boiCanh: "a formal garden terrace with a white classical colonnade behind, clipped hedges and tall"
+      + " cypress beyond it, a round table under a white linen cloth laid with cream roses and hydrangeas in"
+      + " a low bowl, gold-rimmed plates, crystal glasses and a structured handbag resting on the cloth,"
+      + " white French bistro chairs standing on close-cut lawn, bright midday sun throwing crisp shadows.",
+    duoi: "Luxury lifestyle fashion photography, warm bright daylight, creamy highlights, 85mm lens,"
+      + " shallow depth of field, photorealistic, no text, no watermark.",
+    canh: [
+      {
+        ma: "ngoi-ban",
+        nhan: "Ngoi ben ban tiec",
+        dang: "The model sits sideways on a bistro chair turned away from the table, spine long, knees"
+          + " together and angled off camera, one hand resting on the chair back and the other in the lap,"
+          + " head turned to the lens with a small smile. Camera at seated eye level, 85mm, full body with"
+          + " the laid table in the near foreground out of focus.",
+      },
+      {
+        ma: "rot-tra",
+        nhan: "Rot tra",
+        dang: "The model stands at the table pouring from a porcelain pot into a cup, weight on the front"
+          + " foot, the free hand steadying the cloth, eyes down on the pour, shoulders relaxed forward."
+          + " Camera at chest height, 85mm, three-quarter length with the colonnade soft behind.",
+      },
+      {
+        ma: "di-hang-cot",
+        nhan: "Di doc hang cot",
+        dang: "The model walks along the colonnade away from the table, mid-stride with the far leg"
+          + " extended, one hand lifting the hem clear of the grass, chin up and eyes ahead, the white"
+          + " columns marching past behind. Camera at chest height, 85mm, full body, sunlight striping the"
+          + " lawn.",
+      },
+      {
+        ma: "ngoanh-lai",
+        nhan: "Tua ban ngoanh lai",
+        dang: "The model leans back against the edge of the table with both palms on the cloth behind, one"
+          + " ankle crossed in front of the other, head turned back over the shoulder toward the lens, hair"
+          + " lifted by the breeze. Camera at chest height, 85mm, three-quarter length.",
+      },
+    ],
+  },
+  {
+    id: "seed-tp-dam-sen",
+    ten: "Dam sen studio",
+    moTa: "Set sen dung trong studio: phong nen ve, sen that, khay nuoc nong phan chieu, khoi mo va anh sang toa.",
+    tags: ["thoi-trang", "sen", "co-dien"],
+    size: "1024x1536",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, very"
+      + " long dark wavy hair, porcelain dewy skin, soft pink lip, delicate build. Relaxed neutral stance"
+      + " facing camera, arms slightly away from the body. Plain cream fitted top, plain cream shorts, bare"
+      + " feet, small white flowers pinned in the hair. Soft even studio lighting, plain light grey seamless"
+      + " background, photorealistic, head to feet, no text.",
+    boiCanh: "a studio lotus set: a hand-painted misty lotus backdrop in pale green and grey, real white and"
+      + " cream lotus blooms with round green pads standing in a shallow black water tray that mirrors"
+      + " everything above it, a low dark wooden platform and a small clay teapot at the edge of the water,"
+      + " thin haze hanging in the air.",
+    duoi: "Soft dreamy oriental portrait photography, diffused frontal light with a pale glow, pastel green"
+      + " and cream palette, 85mm lens, shallow depth of field, photorealistic, no text, no watermark.",
+    canh: [
+      {
+        ma: "ngoi-be",
+        nhan: "Ngoi ben be sen",
+        dang: "The model sits on the low wooden platform at the edge of the water with both legs folded to"
+          + " one side, one hand resting behind for support and the other trailing just above the surface,"
+          + " head tilted down toward a bloom. Camera at water level, 85mm, full body with lotus pads in the"
+          + " foreground.",
+      },
+      {
+        ma: "nga-lung",
+        nhan: "Nga lung tren be",
+        dang: "The model lies back along the wooden platform just above the water, one knee raised, one arm"
+          + " stretched above the head and the other across the waist, hair spilling over the edge toward"
+          + " the reflection, eyes closed. Camera high looking straight down, 50mm, whole figure with blooms"
+          + " framing two corners.",
+      },
+      {
+        ma: "quay-lung",
+        nhan: "Quay lung ben hoa",
+        dang: "The model kneels facing away from the camera among the tall stems, back straight, both hands"
+          + " lifting the hair off the nape, head turned just enough to show the profile. Camera at chest"
+          + " height, 85mm, three-quarter length with haze separating her from the backdrop.",
+      },
+      {
+        ma: "can-mat",
+        nhan: "Can mat nghieng",
+        dang: "Close portrait from the shoulders up, the model in profile with eyes closed and chin lifted,"
+          + " one lotus held just below the jaw, the flowers in the hair catching the light. Camera at eye"
+          + " level, 135mm, very shallow depth of field with the pond melting behind.",
+      },
+    ],
+  },
+  {
+    id: "seed-tp-tennis",
+    ten: "San tennis chieu muon",
+    moTa: "Nang xien cuoi chieu tren san dat nen, ghe khan dai xanh nhoe phia sau, da bong mo hoi.",
+    tags: ["thoi-trang", "the-thao", "golden-hour"],
+    size: "1024x1536",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, hair"
+      + " pulled into a high ponytail with loose strands, clear-framed glasses, bare skin with a light"
+      + " sheen, athletic slim build. Relaxed neutral stance facing camera, arms slightly away from the"
+      + " body. Plain white fitted top, plain black shorts, white court shoes, no accessories. Soft even"
+      + " studio lighting, plain light grey seamless background, photorealistic, head to shoes, no text.",
+    boiCanh: "an outdoor clay tennis court late in the afternoon, rows of blue stadium seats rising out of"
+      + " focus behind, crisp white court lines on red-orange clay, a net at the far edge, floodlight masts"
+      + " against a pale sky, the low sun raking straight across the court.",
+    duoi: "Sporty editorial photography, strong warm backlight and a flare at the frame edge, visible skin"
+      + " sheen, 135mm lens compressing the seats into soft bokeh, photorealistic, no text, no watermark.",
+    canh: [
+      {
+        ma: "vac-vot",
+        nhan: "Vac vot nhin may",
+        dang: "The model stands half-turned with a racket resting across one shoulder, that elbow high and"
+          + " the other hand on the hip, chin level, looking straight into the lens without smiling, stray"
+          + " hairs lit by the sun behind. Camera at chest height, 135mm, waist-up with the blue seats"
+          + " dissolved behind.",
+      },
+      {
+        ma: "giao-bong",
+        nhan: "Vuon nguoi giao bong",
+        dang: "The model reaches full stretch at the top of a serve, the racket arm extended overhead and"
+          + " the other arm pointing up after the toss, back arched and the front heel lifted, eyes on the"
+          + " ball out of frame. Camera at hip height, 85mm, full body against the sky.",
+      },
+      {
+        ma: "thu-the",
+        nhan: "Khom nguoi thu the",
+        dang: "The model crouches low in the ready position behind the baseline, knees bent wide, racket"
+          + " held in both hands in front, weight on the balls of the feet, eyes fixed down the court."
+          + " Camera at knee height, 85mm, full body with the white line running under her.",
+      },
+      {
+        ma: "roi-san",
+        nhan: "Roi san lau mo hoi",
+        dang: "The model walks off court toward the camera, the racket hanging from one hand and the other"
+          + " wiping the brow with the back of the wrist, head down and shoulders loose, backlight rimming"
+          + " the ponytail. Camera at chest height, 135mm, three-quarter length.",
+      },
+    ],
+  },
+  {
+    id: "seed-tp-co-phuc",
+    ten: "Co phuc studio",
+    moTa: "Nen trang tron, do cu toi thieu: mot doa moc lan va mot buc chan dung co. Mau vai la thu duy nhat co mau.",
+    tags: ["thoi-trang", "co-phuc", "editorial"],
+    size: "1024x1536",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, very"
+      + " long straight black hair parted in the middle, matte porcelain skin, deep red lip, sharp"
+      + " cheekbones. Relaxed neutral stance facing camera, arms slightly away from the body. Plain white"
+      + " fitted top, plain white trousers, bare feet, no accessories. Soft even studio lighting, plain"
+      + " light grey seamless background, photorealistic, head to feet, no text.",
+    boiCanh: "a pure white studio cyclorama with a seamless white floor, one fresh white magnolia bloom and"
+      + " a small framed antique painted portrait propped on the floor as the only props, nothing else in"
+      + " the frame.",
+    duoi: "Vietnamese heritage concept photography, clean even light with a soft falloff into the white,"
+      + " deeply saturated garment colour against the bare set, 85mm lens, photorealistic, no text,"
+      + " no watermark.",
+    canh: [
+      {
+        ma: "ngoi-san",
+        nhan: "Ngoi xep chan tren san",
+        dang: "The model sits on the white floor with both legs folded to one side, one palm flat on the"
+          + " floor taking the weight, the far sleeve spread wide across the ground, spine tall and chin"
+          + " level to the lens. Camera at floor level, 50mm, whole figure with a large empty white field"
+          + " above.",
+      },
+      {
+        ma: "xoe-tay-ao",
+        nhan: "Dang tay cho tay ao xoe",
+        dang: "The model stands and lifts both arms to shoulder height so the wide sleeves fall open into"
+          + " two long curtains, feet together, head turned in profile with the eyes closed. Camera at"
+          + " chest height, 85mm, full body centred with symmetrical space on both sides.",
+      },
+      {
+        ma: "chong-khuyu",
+        nhan: "Chong khuyu cam hoa",
+        dang: "The model reclines on the floor propped on one elbow, the lower hand holding the magnolia"
+          + " just below the chin, legs folded away behind, looking straight down the lens. Camera at floor"
+          + " level, 85mm, three-quarter length with the folded fabric filling the lower frame.",
+      },
+      {
+        ma: "lung-ao",
+        nhan: "Quay lung khoe than ao",
+        dang: "The model stands with the back three-quarters to the camera, weight on one hip, one hand"
+          + " gathering the hair over the shoulder so the back panel and its pattern are fully visible,"
+          + " head turned just past the shoulder. Camera at chest height, 85mm, full body.",
+      },
+    ],
+  },
+  {
     id: "seed-tp-lookbook",
     ten: "Lookbook studio",
     moTa: "Bon goc chuan cua mot trang lookbook: chinh dien, ba phan tu, sau lung, va mot tam can canh chat lieu.",
