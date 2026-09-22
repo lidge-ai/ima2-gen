@@ -168,23 +168,33 @@
   padding: 0 2px 4px;
   font-size: 10px;
   line-height: 1.3;
+  /* Ca hang nay la cho de keo node di. */
+  cursor: grab;
+}
+.image-node__id:active {
+  cursor: grabbing;
 }
 /* Ma node: chu thuong, keo duoc. Ca dai tren dinh node la cho de keo node di,
    nen khong duoc bat cai gi o day bat con tro thanh "bam". */
 .image-node__id-ma {
+  /* Cat bang dau ba cham khi qua dai: ma cua node tu tao la mot uuid dai hon
+     ca be ngang node, de nguyen thi no day o vai tro ra ngoai va ca hang tieu
+     de vo ra. Ma day du van con o tooltip va o nut chep.
+     Chan bang max-width chu khong cho co lai theo flex: cho co lai thi ma NGAN
+     cung bi cat theo do dai cua cai nhan ben canh, va "canh-hong-1" hien ra
+     thanh "ca..." - mat luon cong dung cua ma. */
   flex: 0 0 auto;
+  max-width: 58%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--accent);
   font-weight: 700;
   letter-spacing: .02em;
   /* Khong boi den chu khi keo: keo mot doan la ca dong ma bi boi xanh, trong
      nhu dang chon chu chu khong phai dang di chuyen node. */
   user-select: none;
-}
-.image-node__id {
-  cursor: grab;
-}
-.image-node__id:active {
-  cursor: grabbing;
 }
 .image-node__id-copy {
   display: inline-flex;

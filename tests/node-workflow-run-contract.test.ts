@@ -206,6 +206,15 @@ describe("workflow START/END run contracts", () => {
     assert.match(src, /<span className="image-node__id-ma">\{id\}<\/span>/);
     // Nut chep van phai la `nodrag`: keo tu dung cai icon do thi khong keo node.
     assert.match(src, /className="image-node__id-copy nodrag"/);
+
+    // Ma cua node tu tao la mot uuid dai hon ca be ngang node: khong chan lai
+    // thi no day o vai tro ra ngoai va ca hang tieu de vo ra.
+    const css = readFileSync("ui/src/styles/node-workspace.css", "utf-8");
+    const khoi = css.slice(css.indexOf(".image-node__id-ma {"));
+    assert.match(khoi.slice(0, 700), /text-overflow: ellipsis/);
+    assert.match(khoi.slice(0, 700), /max-width: 58%/);
+    // Cho co lai theo flex thi ma NGAN cung bi cat theo cai nhan ben canh.
+    assert.match(khoi.slice(0, 700), /flex: 0 0 auto/);
   });
 
   it("WF-12 the run awaits each node and stops on the first failure", () => {
