@@ -77,6 +77,46 @@ describe("kho khuon thoi trang", () => {
     }
   });
 
+  it("TP-10 khong cau nao vua quay lung vua nhin vao ong kinh", () => {
+    // Co che bu tru hinh anh: mo hinh dich "quay lung" thanh lung/ba lo/mu, va
+    // "nhin" thanh mat/kinh/mat chinh dien. Hai nhom dung canh nhau la xung
+    // dot, va anh ra MAT CHINH DIEN - tra ve dung cai canh khong muon.
+    const QUAY_LUNG = /back (three-quarters |fully )?to the camera|walks away|facing away|rear angle|back of the (garment|head)/i;
+    const NHIN_MAY = /look(s|ing)? (in)?to the lens|look(s|ing)? at the (lens|camera)|eyes on the lens|looks? back over/i;
+    for (const k of khuonThoiTrang) {
+      for (const n of nodesCua(k).filter((x) => x.data?.vaiTro === "canh")) {
+        const dang = String(n.data.prompt).split("LOCATION (keep identical in every shot):")[0];
+        assert.ok(
+          !(QUAY_LUNG.test(dang) && NHIN_MAY.test(dang)),
+          `${k.name}/${n.data.label}: vua quay lung vua nhin vao ong kinh`,
+        );
+      }
+    }
+  });
+
+  it("TP-11 khung hinh goi ten thu NAM TRONG KHUNG, khong dung tu chi co canh", () => {
+    // "full body / waist-up / close portrait" chay rat khong on dinh. Goi ten
+    // thu phai nam trong khung thi mo hinh buoc phai danh cho cho chung.
+    const CO_CANH = /(full body|waist-up|close portrait|three-quarter length|whole figure)/i;
+    for (const k of khuonThoiTrang) {
+      for (const n of nodesCua(k).filter((x) => x.data?.vaiTro === "canh")) {
+        const dang = String(n.data.prompt).split("LOCATION (keep identical in every shot):")[0];
+        const khop = CO_CANH.exec(dang);
+        assert.equal(khop, null, `${k.name}/${n.data.label}: con dung "${khop?.[0]}"`);
+        assert.match(dang, /inside the frame|filling most of the frame|framed from the crown/i, `${k.name}/${n.data.label}`);
+      }
+    }
+  });
+
+  it("TP-12 khong cau phu dinh nao trong prompt cac khuon", () => {
+    // Nhac mot tu la keo theo no, KE CA khi da phu dinh: "no text" keo chu vao.
+    for (const k of khuonThoiTrang) {
+      for (const n of nodesCua(k).filter((x) => ["canh", "mac-do", "mau"].includes(x.data?.vaiTro))) {
+        assert.doesNotMatch(String(n.data.prompt), /no text|no watermark/i, `${k.name}/${n.id}`);
+      }
+    }
+  });
+
   it("TP-05 boi canh giong nhau tung chu trong cung mot khuon", () => {
     // Co the la thu duy nhat giu cho tam nao cung nhin ra la cung mot buoi chup.
     for (const k of khuonThoiTrang) {
