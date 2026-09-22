@@ -6,6 +6,12 @@ aliases: [ima2 frontend, ima2 React UI, image_gen frontend]
 
 # Frontend Architecture
 
+Node graph image inputs accept multiple connections. `nodeGraph` derives the
+first image parent's server ID and ordered additional reference IDs; element
+references retain their separate resolution. `NodeCanvas` displays localized
+base/ref edge roles when multiple image parents exist. Generation and batch
+updates recalculate derived IDs so replacing a reference never makes it the base.
+
 API image model is a distinct optional `imageToolModel` in generation defaults.
 `GenerationControlsPanel` uses the shared Select; default/upstream stays unselected.
 Classic, edit, multimode and node requests forward it only for the API lane. Provider

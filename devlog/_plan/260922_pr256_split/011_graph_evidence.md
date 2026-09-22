@@ -19,6 +19,12 @@ version 7 and the synthetic node JSON on stdout, empty stderr. Only owned health
 and session GETs occurred; child exited and fixture server closed. No provider
 request or credential access was needed.
 
+Independent CLI Sol review found that the legacy 200/null-session fixture did
+not exercise the real HTTP 404 path. Added actual `SESSION_NOT_FOUND` response
+coverage for load/save, preserving established exit code 5, exact stderr, empty
+stdout, no PUT and no output file. Now seven CLI tests pass. Inventory was
+regenerated with the existing script; final regeneration follows worker edits.
+
 ## Concurrent implementation ownership
 
 Sol Hand: backend reference boundary, graph store and two named backend tests.

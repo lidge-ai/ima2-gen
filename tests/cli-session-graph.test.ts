@@ -93,7 +93,7 @@ test("new session first save uses version zero and empty graph loads to stdout",
   assert.deepEqual(JSON.parse(result.stdout), { version: 0, nodes: [], edges: [] });
 });
 
-test("missing session fails without a save or output file", async (t) => {
+test("legacy null-session envelope fails without a save or output file", async (t) => {
   const f = await fixture(() => ({ body: { session: null } }));
   t.after(() => f.close());
   const input = join(f.root, "input.json");
@@ -104,6 +104,22 @@ test("missing session fails without a save or output file", async (t) => {
     assert.equal(result.code, 1);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, /session not found/);
+  }
+  await assert.rejects(readFile(output), { code: "ENOENT" });
+  assert.equal(f.requests.some((req) => req.method === "PUT"), false);
+});
+
+test("HTTP 404 session envelope preserves CLI exit mapping and writes nothing", async (t) => {
+  const f = await fixture(() => ({ status: 404,
+    body: { error: { code: "SESSION_NOT_FOUND", message: "Session not found" } } }));
+  t.after(() => f.close());
+  const input = join(f.root, "input.json"), output = join(f.root, "absent.json");
+  await writeFile(input, JSON.stringify({ nodes: [], edges: [] }));
+  for (const args of [["load", "absent", "--out", output], ["save", "absent", input]]) {
+    const result = await f.cli(...args);
+    assert.equal(result.code, 5);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "✗ Session not found (SESSION_NOT_FOUND)\n");
   }
   await assert.rejects(readFile(output), { code: "ENOENT" });
   assert.equal(f.requests.some((req) => req.method === "PUT"), false);

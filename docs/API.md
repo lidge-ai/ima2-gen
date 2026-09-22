@@ -1015,7 +1015,7 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `POST /api/history/import-local` | `ima2 history import` |
 | `POST /api/metadata/read` | `ima2 metadata` / `ima2 show --metadata` |
 | `GET/POST/PUT/DELETE /api/sessions[/…]` | `ima2 session ls/show/create/rm/rename` |
-| `GET/PUT /api/sessions/:id/graph` | `ima2 session graph load/save` |
+| `GET /api/sessions/:id`, `PUT /api/sessions/:id/graph` | `ima2 session graph load/save` |
 | `GET/PUT /api/sessions/:id/style-sheet[/…]` | `ima2 session style-sheet …` |
 | `GET/PUT/DELETE /api/annotations/:name` | `ima2 annotate get/set/rm` |
 | `POST /api/canvas-versions` / `PUT /api/canvas-versions/:name` | `ima2 canvas-versions save/update` |
