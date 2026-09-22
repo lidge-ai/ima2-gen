@@ -1,11 +1,40 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { readFileSync } from "node:fs";
 import { collectDownstream } from "../ui/src/lib/nodeBatch.ts";
-
-const store = readFileSync("ui/src/store/storeNodeGenImpl.ts", "utf-8");
+import { batchEdge, batchNode, withNodeBatch } from "./_nodeBatchFixture.ts";
 
 describe("node batch partial-failure contracts", () => {
+  it("executes an independent branch after failure and reports skipped transitive descendants", () => withNodeBatch({
+    nodes: [batchNode("failed"), batchNode("child"), batchNode("grandchild"),
+      batchNode("independent"), batchNode("independent-child")],
+    edges: [batchEdge("failed", "child"), batchEdge("child", "grandchild"),
+      batchEdge("independent", "independent-child")], fail: ["failed"],
+  }, async ({ store, calls, node, notices, saved }) => {
+    await store.getState().runNodeBatch("regenerate-all");
+    assert.deepEqual(calls.map(({ id }) => id), ["failed", "independent", "independent-child"]);
+    assert.equal(node("child").data.serverNodeId, "child-old");
+    assert.equal(node("grandchild").data.serverNodeId, "grandchild-old");
+    assert.equal(node("independent-child").data.serverNodeId, "independent-child-new");
+    assert.equal(calls[2].options?.parentServerNodeIdOverride, "independent-new");
+    assert.deepEqual(notices, [{ message: "Finished 2/5 — 1 failed, 2 skipped.", error: true }]);
+    assert.equal(saved.length, 1);
+  }));
+
+  it("executes video children with the newly generated base already stored", () => withNodeBatch({
+    nodes: [batchNode("child", true, { parentServerNodeId: "parent-old" }), batchNode("parent"),
+      batchNode("unselected", false, { parentServerNodeId: "parent-old" })],
+    edges: [batchEdge("parent", "child"), batchEdge("parent", "unselected")], video: true,
+  }, async ({ store, calls, node, saved }) => {
+    await store.getState().runNodeBatch("regenerate-all");
+    assert.deepEqual(calls.map(({ id, lane }) => [id, lane]), [["parent", "video"], ["child", "video"]]);
+    assert.equal(calls[1].storedBase, "parent-new");
+    assert.equal(calls[1].options, undefined, "video resolves stored lineage, without an image override");
+    assert.equal(node("child").data.parentServerNodeId, "parent-new");
+    assert.equal(node("unselected").data.parentServerNodeId, "parent-new");
+    assert.equal(node("unselected").data.status, "stale");
+    assert.equal(saved.length, 1);
+  }));
+
   it("BP-01a collectDownstream covers chains", () => {
     const edges = [
       { source: "a", target: "b" },
@@ -24,23 +53,4 @@ describe("node batch partial-failure contracts", () => {
     assert.deepEqual(collectDownstream(edges, "d"), []);
   });
 
-  it("BP-02 batch continues past failures and skips only failed downstream", () => {
-    assert.match(store, /failedCount \+= 1;/);
-    assert.match(store, /for \(const id of collectDownstream\(get\(\)\.graphEdges, candidateId\)\) skipIds\.add\(id\);/);
-    assert.match(store, /continue;\s*\/\/ 독립 후보는 계속|continue;\s*\n/);
-    assert.doesNotMatch(store, /nodeBatch\.failed.*\n.*break/);
-    assert.match(store, /if \(skipIds\.has\(candidateId\)\) \{\s*skippedCount \+= 1;\s*continue;/);
-    assert.match(store, /if \(get\(\)\.nodeBatchStopping\) break;/);
-  });
-
-  it("BP-03 terminal toast separates done, failed, and skipped counts", () => {
-    assert.match(store, /t\("nodeBatch\.partialFinished", \{\s*done: completed,\s*failed: failedCount,\s*skipped: skippedCount,\s*total: candidates\.length,?\s*\}\)/);
-    assert.match(store, /failedCount > 0/);
-  });
-
-  it("BP-04 fresh parent ids propagate to selected direct children for the video path", () => {
-    assert.match(store, /selectedDirectChildren/);
-    assert.match(store, /selectedSet\.has\(e\.target\)/);
-    assert.match(store, /selectedDirectChildren\.includes\(n\.id\)/);
-  });
 });

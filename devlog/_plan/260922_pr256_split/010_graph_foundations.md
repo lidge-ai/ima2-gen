@@ -104,3 +104,11 @@ Provider cap includes the base parent and all references actually sent by that
 adapter. Parent-only loads no extra details; legacy user-ref semantics remain.
 Activate separate-list-pass/combined-list-overflow with API/OAuth fixtures to
 prove provider-independent limits, and verify zero upstream calls on refusal.
+
+WP1 implementation finding: three existing batch tests assert removed internal
+variable names, not results. Amend UI test ownership to include
+tests/node-batch-contract.test.js, tests/node-batch-partial-contract.test.ts and
+a focused batch fixture if required. Replace only obsolete source-token checks
+with real batch invocation proof: fresh base/video propagation, secondary ref
+identity, partial failure skips descendants while independent work continues.
+No reduction of behavioral acceptance or test skips is authorized.

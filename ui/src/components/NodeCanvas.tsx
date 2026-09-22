@@ -65,10 +65,9 @@ function NodeCanvasInner() {
         label: t(isBase ? "edge.roleBase" : "edge.roleRef"),
         labelBgPadding: [6, 3] as [number, number],
         labelBgStyle: {
-          fill: isBase ? "var(--accent, #6b7cff)" : "var(--node-canvas-grid, #9aa0aa)",
-          opacity: 0.92,
+          fill: isBase ? "var(--accent)" : "var(--surface-2)",
         },
-        labelStyle: { fill: "#fff", fontSize: 11, fontWeight: 600 },
+        labelStyle: { fill: isBase ? "var(--accent-ink)" : "var(--text)", fontSize: 11, fontWeight: 600 },
         style: isBase ? edge.style : { ...edge.style, strokeDasharray: "6 4" },
       };
     });

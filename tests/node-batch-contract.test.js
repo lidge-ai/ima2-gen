@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { readSourceTree } from "./_readTree.mjs";
+import { batchEdge, batchNode, withNodeBatch } from "./_nodeBatchFixture.ts";
 
 const store = readSourceTree("ui/src/store/useAppStore.ts");
 const canvas = readFileSync("ui/src/components/NodeCanvas.tsx", "utf-8");
@@ -9,9 +10,51 @@ const batchBar = readFileSync("ui/src/components/NodeBatchBar.tsx", "utf-8");
 const css = readSourceTree("ui/src/index.css");
 const ko = readFileSync("ui/src/i18n/ko.json", "utf-8");
 const selectionLib = readFileSync("ui/src/lib/nodeSelection.ts", "utf-8");
-const batchLib = readFileSync("ui/src/lib/nodeBatch.ts", "utf-8");
 
 describe("node selection batch contract", () => {
+  it("executes parent before selected child and saves fresh lineage for unselected descendants", () => withNodeBatch({
+    nodes: [batchNode("selected-child", true, { parentServerNodeId: "parent-old" }),
+      batchNode("unselected-child", false, { parentServerNodeId: "parent-old" }),
+      batchNode("grandchild", false, { parentServerNodeId: "unselected-child-old" }), batchNode("parent")],
+    edges: [batchEdge("parent", "selected-child"), batchEdge("parent", "unselected-child"),
+      batchEdge("unselected-child", "grandchild")],
+  }, async ({ store, calls, saved, node }) => {
+    await store.getState().runNodeBatch("regenerate-all");
+    assert.deepEqual(calls.map(({ id }) => id), ["parent", "selected-child"]);
+    assert.equal(calls[1].options.parentServerNodeIdOverride, "parent-new");
+    assert.equal(calls[1].storedBase, "parent-new");
+    assert.equal(node("selected-child").data.serverNodeId, "selected-child-new");
+    assert.equal(node("selected-child").data.status, "ready");
+    assert.equal(node("unselected-child").data.serverNodeId, "unselected-child-old");
+    assert.equal(node("unselected-child").data.parentServerNodeId, "parent-new");
+    assert.equal(node("unselected-child").data.status, "stale");
+    assert.equal(node("grandchild").data.parentServerNodeId, "unselected-child-old");
+    assert.equal(node("grandchild").data.status, "stale");
+    assert.equal(saved.length, 1);
+    assert.equal(saved[0].find(({ id }) => id === "unselected-child").data.parentServerNodeId, "parent-new");
+    assert.equal(store.getState().graphNodes.length, 4, "regeneration must stay in place");
+  }));
+
+  it("executes no child generation when its unselected image parent is ungenerated", () => withNodeBatch({
+    nodes: [batchNode("parent", false, { serverNodeId: null, imageUrl: null, status: "empty" }), batchNode("child")],
+    edges: [batchEdge("parent", "child")],
+  }, async ({ store, calls, notices, saved }) => {
+    await store.getState().runNodeBatch("regenerate-all");
+    assert.deepEqual(calls, []);
+    assert.deepEqual(saved, []);
+    assert.equal(notices.length, 1);
+    assert.equal(notices[0].error, true);
+  }));
+
+  it("executes the active result then stops remaining queued candidates", () => withNodeBatch({
+    nodes: [batchNode("first"), batchNode("second")], edges: [], stopAfter: "first",
+  }, async ({ store, calls, node }) => {
+    await store.getState().runNodeBatch("regenerate-all");
+    assert.deepEqual(calls.map(({ id }) => id), ["first"]);
+    assert.equal(node("first").data.serverNodeId, "first-new");
+    assert.equal(node("second").data.serverNodeId, "second-old");
+  }));
+
   it("uses React Flow selected nodes as the visual source of truth", () => {
     assert.match(selectionLib, /applySelectedNodeIds/);
     assert.match(selectionLib, /selected:\s*selected\.has\(n\.id\)/);
@@ -25,35 +68,6 @@ describe("node selection batch contract", () => {
     assert.match(selectionLib, /neighbors\.get\(edge\.target\)\?\.add\(edge\.source\)/);
     assert.match(selectionLib, /componentHasSelection/);
     assert.match(selectionLib, /nextSelected\.delete\(nodeId\)/);
-  });
-
-  it("keeps batch regenerate in-place instead of using the sibling path", () => {
-    assert.match(store, /runGenerateNodeInPlace/);
-    assert.match(store, /generateNodeVariation/);
-    assert.match(store, /const targetClientId = get\(\)\.addSiblingNode\(clientId\)/);
-    assert.match(store, /runGenerateNodeInPlace\(\w+ as ClientNodeId/);
-    assert.match(store, /n\.id !== clientId/);
-  });
-
-  it("tracks latest parent ids and marks unselected downstream stale", () => {
-    assert.match(store, /latestServerNodeIdByClientId/);
-    assert.match(store, /getDirectUnselectedChildren/);
-    assert.match(store, /getUnselectedDownstreamIds/);
-    assert.match(store, /status:\s*"stale"/);
-    assert.match(store, /parentServerNodeId:\s*directChildren\.includes\(n\.id\)/);
-  });
-
-  it("blocks children whose unselected parent has no serverNodeId", () => {
-    assert.match(batchLib, /validateBatchDependencies/);
-    assert.match(batchLib, /!parent\?\.data\.serverNodeId/);
-    assert.match(store, /nodeBatch\.parentRequired/);
-  });
-
-  it("treats stop as stopping the remaining queue only", () => {
-    assert.match(store, /nodeBatchStopping/);
-    assert.match(store, /nodeBatch\.stopQueued/);
-    assert.match(store, /if \(get\(\)\.nodeBatchStopping\) break/);
-    assert.doesNotMatch(store, /cancelInflight\(flightId\)/);
   });
 
   it("renders a canvas-level batch action bar", () => {
