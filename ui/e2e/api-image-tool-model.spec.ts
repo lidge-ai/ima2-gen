@@ -40,6 +40,12 @@ test("API image tool selection persists, submits separately and resets on defaul
       await settings(page);
       await expect(tool).toContainText("GPT Image2.5 Flare");
       await expect(page.getByRole("button", { name: "Maximum", exact: true })).toHaveClass(/active/);
+      const qualityWidths = await page.locator(".quality-options-expanded .option-btn")
+        .evaluateAll((buttons) => buttons.map((button) => ({
+          content: button.scrollWidth, visible: button.clientWidth,
+        })));
+      expect(qualityWidths).toHaveLength(5);
+      for (const width of qualityWidths) expect(width.content).toBeLessThanOrEqual(width.visible);
       await expect(page.locator(MODEL_TRIGGER)).toContainText("5.6l");
       await page.screenshot({ path: info.outputPath("wp02-image25-selected.png") });
       const api = await submit(page, capture, origin);

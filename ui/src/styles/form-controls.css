@@ -43,6 +43,11 @@
   gap: 4px;
 }
 
+.quality-options-expanded > .option-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .option-btn {
   flex: 1;
   min-width: 0;

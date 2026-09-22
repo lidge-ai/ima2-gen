@@ -74,3 +74,10 @@ The new route fixture passes 25 inner cases. Local Playwright execution was
 refused by the existing GitHub-hosted-Linux isolation guard; PR frontend CI is
 the required execution environment. Its selection artifact includes
 `wp02-image25-selected.png`. No isolation guard was changed.
+
+Hosted E2E passed 267 cases. Its screenshot exposed clipped labels in the
+five-choice quality row. Only the expanded row now uses three columns, keeping
+the existing three-choice layout unchanged. The actual Segmented component and
+built CSS reproduced overflow at 240px (52px/50px content in 43px buttons) and
+verified the fix (all five labels fit 75px buttons). Hosted E2E also checks that
+the five buttons' content widths fit before capturing the screenshot.

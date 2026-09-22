@@ -369,6 +369,7 @@ export function GenerationControlsPanel() {
           </div>
         )}
         <OptionGroup<Quality>
+          className={qualityItems.length > 3 ? "quality-options-expanded" : ""}
           title={t("quality.title")}
           items={qualityItems}
           value={quality}
