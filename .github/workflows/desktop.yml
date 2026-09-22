@@ -96,7 +96,10 @@ jobs:
         if: matrix.target == 'mac' && github.event_name == 'pull_request'
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm --prefix desktop run dist:mac -- --config.forceCodeSigning=false --config.mac.notarize=false --publish never
+        # desktop/package.json dist:* scripts already pass --publish never. Repeating the flag
+        # makes electron-builder's CLI receive ["never", "never"], which is not "never", so a
+        # non-PR build then tries to upload to GitHub and fails without GH_TOKEN.
+        run: npm --prefix desktop run dist:mac -- --config.forceCodeSigning=false --config.mac.notarize=false
 
       - name: Build signed and notarized macOS installers
         id: mac_build
@@ -110,7 +113,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           node desktop/scripts/desktop-build-policy.mjs --credentials
-          npm --prefix desktop run dist:mac -- --config.forceCodeSigning=true --config.mac.type=distribution --config.mac.notarize=true --publish never
+          npm --prefix desktop run dist:mac -- --config.forceCodeSigning=true --config.mac.type=distribution --config.mac.notarize=true
 
       - name: Verify every declared macOS architecture and exported installer
         id: mac_verify
