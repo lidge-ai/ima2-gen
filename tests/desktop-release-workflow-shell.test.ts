@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -114,6 +114,13 @@ const PUBLISH_SCRIPT = stepScript("publish_release", "Publish approved desktop r
 
 const hasSha256sum = spawnSync("sha256sum", ["--version"], { encoding: "utf8" }).status === 0;
 
+// Both release jobs declare runs-on: ubuntu-latest, so a POSIX shell is the only
+// environment this simulation describes. Windows runners have no /bin/bash, and
+// re-running these scripts under a different shell would assert nothing about the
+// job that actually ships the release.
+const POSIX_SHELL = "/bin/bash";
+const posixShell = process.platform !== "win32" && existsSync(POSIX_SHELL);
+
 class Harness {
   readonly dir = mkdtempSync(join(tmpdir(), "ima2-release-shell-"));
   readonly bin = join(this.dir, "bin");
@@ -225,7 +232,9 @@ function withHarness(body: (harness: Harness) => void): void {
   }
 }
 
-describe("desktop release workflow shell", () => {
+describe("desktop release workflow shell", {
+  skip: posixShell ? false : "the release jobs run on ubuntu-latest; no POSIX shell here",
+}, () => {
   it("drafts a tag-bound release carrying exactly the six public assets", () => {
     withHarness((harness) => {
       harness.seedBuildOutput();
