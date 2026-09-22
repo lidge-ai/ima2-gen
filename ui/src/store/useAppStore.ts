@@ -42,7 +42,12 @@ import {
   runGenerateNodeInPlaceImpl,
   runNodeBatchImpl,
 } from "./storeNodeGenImpl";
-import { chayWorkflowImpl, dungWorkflowImpl, nhanSuKienWfImpl } from "./storeWorkflowImpl";
+import {
+  chayWorkflowImpl,
+  dungWorkflowImpl,
+  napWfApiDangChayImpl,
+  nhanSuKienWfImpl,
+} from "./storeWorkflowImpl";
 import {
   generateMultimodeImpl,
   runGenerateImpl,
@@ -542,6 +547,8 @@ duplicateBranchRoot: (sourceClientId) => duplicateBranchRootImpl(sourceClientId,
   dungWorkflow: () => dungWorkflowImpl(set, get),
 
   nhanSuKienWf: (suKien, duLieu) => nhanSuKienWfImpl(suKien, duLieu, set, get),
+
+  napWfApiDangChay: (sessionId) => napWfApiDangChayImpl(sessionId, set, get),
 
   deleteNode: (clientId) => deleteNodeImpl(clientId, set, get),
 deleteNodes: (clientIds) => deleteNodesImpl(clientIds, set, get),

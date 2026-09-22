@@ -733,6 +733,32 @@ describe("workflow run history contracts", () => {
     runStore.ketThucLuotChay("wfr_song");
   });
 
+  it("WFLS-08 mo mot phien thi hoi may chu trang thai luot dang chay, khong doi su kien", () => {
+    // Kenh su kien chi noi nhung gi xay ra TU LUC NAY, va giao dien bo qua su
+    // kien cua phien khong mo. Nen vao Runner chon dung phien ma chi doi su kien
+    // thi node dang sinh khong sang len - da xay ra that.
+    const wf = readFileSync("ui/src/store/storeWorkflowImpl.ts", "utf-8");
+    assert.match(wf, /export async function napWfApiDangChayImpl/);
+    assert.match(wf, /if \(l\.trangThai !== "dang-chay"\) continue;/);
+    // Doi phien nhanh tay thi ket qua hoi cu khong duoc de len phien moi.
+    assert.match(wf, /if \(get\(\)\.activeSessionId === sessionId\) set\(\{ wfApiChay: dang \}\);/);
+    // Va cho goi phai la luc phien duoc mo.
+    const phien = readFileSync("ui/src/store/storeSessionImpl.ts", "utf-8");
+    assert.match(phien, /napWfApiDangChay\(id\)/);
+    // Bo loc theo phien dang mo van phai con: no la ly do phai hoi mot lan.
+    assert.match(wf, /if \(sessionId !== get\(\)\.activeSessionId\) return;/);
+  });
+
+  it("WFLS-09 dong luot chay trong Runner mo duoc dung phien cua no", () => {
+    const panel = readFileSync("ui/src/components/node-canvas/WfRunnerPanel.tsx", "utf-8");
+    // Ket qua cua luot chay ghi vao graph cua phien, nen xem no chay den dau la
+    // mo dung phien do ra canvas.
+    assert.match(panel, /onClick=\{\(\) => void moPhien\(l\.sessionId\)\}/);
+    assert.match(panel, /runner\.watch/);
+    // Va dong luot phai noi ro no thuoc khuon nao, khong thi khong biet mo cai gi.
+    assert.match(panel, /tenPhien\.get\(l\.sessionId\)/);
+  });
+
   it("WFLS-07 ten su kien khuon deu duoc kenh su kien cua giao dien dang ky", () => {
     // EventSource chi nhan nhung ten da dang ky truoc. Thieu mot ten la mat tin
     // trong im lang - dung loi da xay ra mot lan, khong bao, khong dau vet.

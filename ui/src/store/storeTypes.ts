@@ -480,6 +480,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   chayWorkflow: (startClientId: ClientNodeId) => Promise<void>;
   dungWorkflow: () => void;
   nhanSuKienWf: (suKien: string, duLieu: Record<string, unknown>) => void;
+  napWfApiDangChay: (sessionId: string | null) => Promise<void>;
   addRootNode: () => ClientNodeId;
   createRootNodeFromHistoryItem: (item: GenerateItem) => ClientNodeId;
   addChildNode: (parentClientId: ClientNodeId) => ClientNodeId;

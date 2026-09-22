@@ -2601,6 +2601,8 @@
     "open": "開啟",
     "filterOn": "只看這個",
     "filterOff": "全部",
-    "copyUrl": "複製網址"
+    "copyUrl": "複製網址",
+    "watch": "在畫布上觀看",
+    "openRun": "開啟這個工作階段"
   }
 }

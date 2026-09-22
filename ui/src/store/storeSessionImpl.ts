@@ -73,6 +73,9 @@ export async function switchSessionImpl(
       sessionLoading: false,
     });
     saveActiveSessionId(id);
+    // Luot chay do may chu dieu khien co the dang giua chung: hoi mot lan de node
+    // dang sinh sang len ngay, thay vi doi su kien tiep theo.
+    void get().napWfApiDangChay(id);
     await get().reconcileGraphPending().catch(() => {});
   } catch (err) {
     console.warn("[sessions] switch failed:", err);

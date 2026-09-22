@@ -1429,10 +1429,17 @@ its own copy button for a body that overrides just that one.
 
 The **Runner** button in the Node Studio toolbar opens a wider view: every
 workflow on the server (with its endpoint, step count, or the reason it is not
-runnable) beside the recent runs. Expanding a run shows the inputs it was called
-with, each step with its media, and any error. A workflow's runs can be isolated
-with `Only this`, its session opened with `Open`, and a run still going stopped
-from there. The START marker's own panel only knows its own history, and only
+runnable) beside the recent runs. Each run row names the session it belongs to;
+expanding one shows the inputs it was called with, each step with its media, and
+any error. A workflow's runs can be isolated with `Only this`, and a run still
+going can be stopped from there.
+
+A run's results are written into its session's graph, so `Watch on canvas` on a
+run opens that session and the workflow is visible running on the nodes. Opening
+a session also asks the server which runs are still going in it, because the
+event stream only reports what happens from that moment on and events for a
+session that is not open are dropped — waiting for the next event would leave the
+node being generated unmarked. The START marker's own panel only knows its own history, and only
 while that session is open — the Runner is where a workflow triggered by another
 system while nobody was looking becomes visible.
 

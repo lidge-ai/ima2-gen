@@ -2601,6 +2601,8 @@
     "open": "열기",
     "filterOn": "이것만",
     "filterOff": "전체",
-    "copyUrl": "URL 복사"
+    "copyUrl": "URL 복사",
+    "watch": "캔버스에서 보기",
+    "openRun": "이 세션 열기"
   }
 }

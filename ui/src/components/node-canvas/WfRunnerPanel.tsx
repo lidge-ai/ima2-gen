@@ -51,6 +51,13 @@ export function WfRunnerPanel({ onClose }: { onClose(): void }) {
 
   useEffect(() => { void tai(); }, [tai, soDangChay]);
 
+  /** Ten phien theo id - de dong luot chay noi ro no thuoc khuon nao. */
+  const tenPhien = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const k of khuon) if (k.title) m.set(k.sessionId, k.title);
+    return m;
+  }, [khuon]);
+
   const dangChayTheoKhuon = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of Object.values(wfApiChay)) {
@@ -140,7 +147,10 @@ export function WfRunnerPanel({ onClose }: { onClose(): void }) {
                   aria-expanded={mo}
                 >
                   <span className="wf-runner__tt">{l.trangThai}</span>
-                  <span className="wf-runner__luc">{new Date(l.taoLuc).toLocaleString()}</span>
+                  <span className="wf-runner__luc">
+                    {new Date(l.taoLuc).toLocaleString()}
+                    {tenPhien.get(l.sessionId) ? ` · ${tenPhien.get(l.sessionId)}` : ""}
+                  </span>
                   <span className="wf-runner__so">{xong}/{l.buoc.length}</span>
                 </button>
                 {mo ? (
@@ -165,17 +175,25 @@ export function WfRunnerPanel({ onClose }: { onClose(): void }) {
                         </div>
                       ))}
                     </div>
-                    {l.trangThai === "dang-chay" ? (
-                      <button
-                        type="button"
-                        className="wf-runner__dung"
-                        onClick={() => void huyLuotChayApi(l.id)
-                          .then(() => tai())
-                          .catch((e) => showToast(String((e as Error).message || e), true))}
-                      >
-                        {t("node.wfStop")}
+                    <div className="wf-runner__nut">
+                      {/* Ket qua cua luot chay duoc ghi vao graph cua phien, nen
+                          xem no chay den dau thi mo dung phien do ra canvas -
+                          node dang sinh sang vien va anh hien ra tung cai mot. */}
+                      <button type="button" onClick={() => void moPhien(l.sessionId)}>
+                        {l.trangThai === "dang-chay" ? t("runner.watch") : t("runner.openRun")}
                       </button>
-                    ) : null}
+                      {l.trangThai === "dang-chay" ? (
+                        <button
+                          type="button"
+                          className="wf-runner__dung"
+                          onClick={() => void huyLuotChayApi(l.id)
+                            .then(() => tai())
+                            .catch((e) => showToast(String((e as Error).message || e), true))}
+                        >
+                          {t("node.wfStop")}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
               </div>

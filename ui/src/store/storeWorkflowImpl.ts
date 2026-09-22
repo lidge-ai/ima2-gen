@@ -15,6 +15,7 @@ import { dauVaoVideoCuaNode, timChuoiChay, viecCuaNode } from "../lib/chayWorkfl
 import { ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
 import { t } from "../i18n";
 import { WF_SU_KIEN } from "../../../lib/wfEvents.js";
+import { lichSuChung } from "../lib/wfApi";
 import type { AppState, WfApiLuotChay } from "./storeTypes";
 
 type StoreSet = (p: Partial<AppState>) => void;
@@ -188,4 +189,40 @@ export function nhanSuKienWfImpl(
     return;
   }
   set({ wfApiChay: dang });
+}
+
+/**
+ * Nap cac luot chay DANG CHAY cua mot phien tu may chu.
+ *
+ * Kenh su kien chi noi cho ta nhung gi xay ra TU LUC NAY: sang phien khac roi mo
+ * lai thi moi su kien cua luot dang chay da troi qua het, va node dang sinh
+ * khong sang len. Nguoi dung vao Runner chon dung phien la de xem no chay den
+ * dau, nen phai hoi may chu mot lan ngay luc mo phien.
+ */
+export async function napWfApiDangChayImpl(
+  sessionId: string | null,
+  set: StoreSet,
+  get: StoreGet,
+): Promise<void> {
+  if (!sessionId) { set({ wfApiChay: {} }); return; }
+  let dang: Record<string, WfApiLuotChay> = {};
+  try {
+    for (const l of await lichSuChung({ sessionId, gioiHan: 20 })) {
+      if (l.trangThai !== "dang-chay") continue;
+      dang[l.id] = {
+        runId: l.id,
+        sessionId: l.sessionId,
+        startNodeId: l.startNodeId,
+        nodeHienTai: l.buoc.find((b) => b.trangThai === "dang-chay")?.nodeId ?? null,
+        daXong: l.buoc.filter((b) => b.trangThai === "xong").length,
+        tong: l.buoc.length,
+      };
+    }
+  } catch {
+    // Mat mang thi cu de rong: su kien den sau se dung lai trang thai.
+    dang = {};
+  }
+  // Chi ap khi nguoi dung con o dung phien do: doi phien nhanh tay thi ket qua
+  // hoi cu khong duoc de len phien moi.
+  if (get().activeSessionId === sessionId) set({ wfApiChay: dang });
 }

@@ -2601,6 +2601,8 @@
     "open": "Open",
     "filterOn": "Only this",
     "filterOff": "All",
-    "copyUrl": "Copy URL"
+    "copyUrl": "Copy URL",
+    "watch": "Watch on canvas",
+    "openRun": "Open this session"
   }
 }

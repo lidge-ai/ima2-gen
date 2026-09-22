@@ -2601,6 +2601,8 @@
     "open": "打开",
     "filterOn": "只看这个",
     "filterOff": "全部",
-    "copyUrl": "复制网址"
+    "copyUrl": "复制网址",
+    "watch": "在画布上观看",
+    "openRun": "打开这个会话"
   }
 }
