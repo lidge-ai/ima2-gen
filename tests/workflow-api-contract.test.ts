@@ -888,8 +888,9 @@ describe("workflow outfit + attachment contracts", () => {
 
     const nodeSrc = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
     // Cau ta duoc luu LEN NODE, khong viet thang vao prompt: viet vao la prompt
-    // trong graph mang mot bo do cu.
-    assert.match(nodeSrc, /updateNodeData\(id, \{ moTaTrangPhuc: kq\.moTa \}\)/);
+    // trong graph mang mot bo do cu. Viec luu nam o duong sinh, nen moi duong
+    // (GEN, Retry, New variant, sinh hang loat) deu luu.
+    assert.match(gen, /updateNodeData\(clientId, \{ moTaTrangPhuc: kq\.moTa \}\)/);
     // Va o trong do khong con tinh la "chua dien" khi da co cau ta.
     assert.match(nodeSrc, /const thieuMoTaBoDo = !moTaBoDo/);
     assert.match(nodeSrc, /node\.outfitNotReadYet/);
@@ -1120,19 +1121,37 @@ describe("workflow outfit + attachment contracts", () => {
     assert.deepEqual(await refStore.chuanHoaRef(dir, ["/generated/a.png"]), ["/generated/a.png"]);
   });
 
-  it("WFTP-08 boc do la doc mo ta luon, khong con nut rieng de nho bam", () => {
+  it("WFTP-08 boc do la doc mo ta luon, tren MOI duong sinh", () => {
     const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    const gen = readFileSync("ui/src/store/storeNodeGenImpl.ts", "utf-8");
     // Boc do ma khong doc lai mo ta thi cac node sau van mang cau ta bo do
-    // truoc, va chu moi la thu quyet dinh mac gi - bo do cu se quay lai. De
-    // nguoi dung phai nho bam them mot nut la de san mot cai bay.
-    assert.match(src, /const laNodeBocDo = d\.vaiTro === "trang-phuc";/);
-    assert.match(src, /generateNode\(id\)\.then\(sauKhiSinh\)/);
-    assert.match(src, /generateNodeInPlace\(id\)\.then\(sauKhiSinh\)/);
+    // truoc, va chu moi la thu quyet dinh mac gi - bo do cu se quay lai.
+    //
+    // Viec doc nam o DUONG SINH chu khong treo vao nut GEN: treo vao nut thi
+    // "Retry", "New variant" va sinh hang loat deu khong doc, va node phia sau
+    // giu nguyen o trong chua ai dien. Da xay ra that.
+    assert.match(gen, /if \(node\.data\.vaiTro === "trang-phuc"\) void docBoDoSauKhiSinh\(/);
+    assert.doesNotMatch(src, /\.then\(sauKhiSinh\)/);
     assert.doesNotMatch(src, /node\.readOutfit/);
     // Doc graph tu store, khong tu closure: anh moi chi co trong store.
-    assert.match(src, /const st = useAppStore\.getState\(\);/);
+    assert.match(gen, /const st = get\(\);/);
     // Va node con ban trong luc doc, khong bao "xong" som.
-    assert.match(src, /\|\| nodeDangChayTuApi \|\| dangDocDo;/);
+    assert.match(gen, /pendingPhase: "doc-bo-do"/);
+    assert.match(src, /d\.pendingPhase === "doc-bo-do"/);
+  });
+
+  it("WFTP-22 o trong chua dien thi KHONG goi may sinh anh, tren moi duong", () => {
+    // Loi da xay ra that: mot node MAC DO chay voi chuoi "{{TRANG_PHUC}}"
+    // nguyen xi trong prompt. Anh nen va anh tham chieu deu vao du (log ghi
+    // parentImagePresent=true, refs=1) nhung LOI TA khong noi mac gi, ma chu
+    // moi la thu quyet dinh bo do - nen no bia ra mot bo khac han flat lay.
+    //
+    // Cua phai dat o duong sinh: nut GEN co cua chan, con Retry / New variant /
+    // sinh hang loat thi khong.
+    const gen = readFileSync("ui/src/store/storeNodeGenImpl.ts", "utf-8");
+    assert.match(gen, /const conOTrong = /);
+    assert.match(gen, /if \(conOTrong\) \{/);
+    assert.match(gen, /node\.outfitNotReadYet/);
   });
 
   it("WFTP-06 giao dien va may chu dung chung mot khuon 'She wears'", () => {

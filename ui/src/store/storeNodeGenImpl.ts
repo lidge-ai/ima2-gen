@@ -3,7 +3,7 @@ import { postNodeGenerateStream } from "../lib/api";
 import { deriveParentServerNodeIds } from "../lib/nodeGraph";
 import { canhAnhVao, locCanhAnh } from "../lib/canhAnh";
 import { dienOTrong, kichThuocCuaKhuon, kichThuocKeThua } from "../lib/chayWorkflow";
-import { moTaTrangPhucGanNhat, O_TRANG_PHUC } from "../lib/moTaTrangPhuc";
+import { dienMoTaTrangPhuc, moTaTrangPhucGanNhat, O_TRANG_PHUC } from "../lib/moTaTrangPhuc";
 import { getSelectedNodeIds } from "../lib/nodeSelection";
 import {
   getDirectUnselectedChildren,
@@ -132,6 +132,34 @@ function danhDauLoThoi(
   });
 }
 
+/**
+ * Node BOC DO vua sinh xong flat lay: doc ngay ra cau ta va luu LEN NODE.
+ *
+ * Cau ta nam ngoai prompt, node phia sau dien o trong `{{TRANG_PHUC}}` tu day
+ * luc sinh. Viet thang vao prompt la prompt trong graph mang mot bo do cu, doi
+ * anh trang phuc xong van ra do cu - dung cai bay da phai sua mot lan.
+ *
+ * Hong thi chi bao, khong lam hong ket qua vua sinh duoc: anh flat lay van con
+ * do, nguoi dung bam "Doc bo do" lai duoc.
+ */
+async function docBoDoSauKhiSinh(clientId: ClientNodeId, get: StoreGet): Promise<void> {
+  // Node van phai trong nhu dang BAN trong luc doc: anh da co roi nhung cau ta
+  // thi chua, ma node phia sau can chinh cau ta do.
+  get().updateNodeData(clientId, { pendingPhase: "doc-bo-do" });
+  try {
+    const st = get();
+    const kq = await dienMoTaTrangPhuc(
+      clientId, st.graphNodes, st.graphEdges, st.updateNodePrompt,
+      (dichId, url) => st.addNodeReferenceFromUrl(dichId, url),
+    );
+    get().updateNodeData(clientId, { moTaTrangPhuc: kq.moTa });
+  } catch (e) {
+    get().showToast(String((e as Error).message || e), true);
+  } finally {
+    get().updateNodeData(clientId, { pendingPhase: null });
+  }
+}
+
 export async function runGenerateNodeInPlaceImpl(
   clientId: ClientNodeId,
   options: {
@@ -176,6 +204,25 @@ export async function runGenerateNodeInPlaceImpl(
   );
   if (!prompt.trim()) {
     get().showToast(t("toast.promptRequired"), true);
+    nodeGenerationLocks.delete(clientId);
+    return null;
+  }
+  // Chan o DAY chu khong o nut GEN.
+  //
+  // Da xay ra that: mot node MAC DO chay voi chuoi "{{TRANG_PHUC}}" nguyen xi
+  // trong prompt. Anh nen va anh tham chieu deu vao du, nhung LOI TA khong noi
+  // mac gi, ma chu moi la thu quyet dinh bo do - nen mo hinh tu bia ra mot bo
+  // khac han cai trong flat lay. Nut GEN co cua chan, con "Retry", "New
+  // variant" va sinh hang loat thi khong: cua phai dat o cho MOI duong deu di
+  // qua.
+  const conOTrong = /\{\{[A-Z_]+\}\}/.exec(prompt)?.[0];
+  if (conOTrong) {
+    get().showToast(
+      conOTrong === `{{${O_TRANG_PHUC}}}`
+        ? t("node.outfitNotReadYet")
+        : t("node.placeholderLeft", { slot: conOTrong }),
+      true,
+    );
     nodeGenerationLocks.delete(clientId);
     return null;
   }
@@ -361,6 +408,12 @@ export async function runGenerateNodeInPlaceImpl(
       // loat, sinh mot node thi con chau khong he duoc danh dau.
       danhDauLoThoi(clientId, set, get, t);
       graphMutated = true;
+      // Node BOC DO vua co flat lay moi -> doc ngay ra cau ta.
+      //
+      // Dat o day chu khong o nut GEN: truoc day viec doc treo vao mot nut, nen
+      // sinh lai bang "Retry" hay sinh hang loat la khong doc, va node phia sau
+      // giu nguyen o trong `{{TRANG_PHUC}}` chua ai dien.
+      if (node.data.vaiTro === "trang-phuc") void docBoDoSauKhiSinh(clientId, get);
       if (!options.suppressToast) {
         get().showToast(t("toast.nodeCreated", { id: res.nodeId.slice(0, 8), elapsed: res.elapsed }));
       }

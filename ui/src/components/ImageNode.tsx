@@ -1,7 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
-import { dienMoTaTrangPhuc } from "../lib/moTaTrangPhuc";
 import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
 import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
 import { dauVaoVideoCuaNode, dienOTrong, laViecThat, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
@@ -100,7 +99,6 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const updateNodeData = useAppStore((st) => st.updateNodeData);
   const runVideoGenerate = useAppStore((st) => st.runVideoGenerate);
   const graphNodes = useAppStore((st) => st.graphNodes);
-  const [dangDocDo, setDangDocDo] = useState(false);
   const vaiTro = layVaiTro(d.vaiTro);
   const laNodeGop = laVaiTroGop(d.vaiTro);
   const [dangGhep, setDangGhep] = useState(false);
@@ -140,7 +138,9 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // sua prompt cua cac node khac, nen bo lop phu ra qua som la bao "xong" trong
   // khi viec chua xong.
   const isBusy = d.status === "pending" || d.status === "reconciling"
-    || coViecDangChay || nodeDangChayTuApi || dangDocDo;
+    // `doc-bo-do`: anh da co nhung cau ta bo do thi chua doc xong. Node phia
+    // sau can chinh cau ta do, nen o day van phai la dang ban.
+    || coViecDangChay || nodeDangChayTuApi || d.pendingPhase === "doc-bo-do";
   const canAttachRefs = !isBusy && refs.length < MAX_NODE_REFS;
   const nodeStyle = {
     "--node-preview-w": `${getPreviewWidth(d.size)}px`,
@@ -420,26 +420,12 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
    * Doc graph tu store thay vi tu closure: ham nay chay sau khi sinh xong, luc
    * do anh moi da vao store con ban trong closure thi con la anh cu.
    */
-  const docBoDo = useCallback(async () => {
-    const st = useAppStore.getState();
-    setDangDocDo(true);
-    try {
-      const kq = await dienMoTaTrangPhuc(
-        id, st.graphNodes, st.graphEdges, st.updateNodePrompt,
-        (dichId, url) => st.addNodeReferenceFromUrl(dichId, url),
-      );
-      // Luu cau ta LEN NODE: bam GEN mot node le o giao dien thi khong co buoc
-      // nao doc anh ca, no dien o trong `{{TRANG_PHUC}}` tu day.
-      updateNodeData(id, { moTaTrangPhuc: kq.moTa });
-      showToast(t("node.outfitFilled", { n: String(kq.daDien.length), fallback: `Da dien mo ta vao ${kq.daDien.length} node` }), false);
-    } catch (e) {
-      showToast(String((e as Error).message || e), true);
-    } finally {
-      setDangDocDo(false);
-    }
-  }, [id, showToast, t, updateNodeData]);
 
-  /** Node BOC DO thi sinh xong la doc mo ta luon. */
+  /**
+   * Viec doc bo do sau khi sinh da chuyen vao duong sinh (storeNodeGenImpl), nen
+   * moi duong - GEN, Retry, New variant, sinh hang loat - deu doc. Giu lai o day
+   * chi de bam tay khi can doc lai ma khong sinh lai.
+   */
   const laNodeBocDo = d.vaiTro === "trang-phuc";
   /**
    * Node BOC DO khong co anh nao vao thi no tu nghi ra mot bo do.
@@ -454,24 +440,20 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   const bocDoThieuAnh = laNodeBocDo
     && refs.length === 0
     && canhAnhVao(graphEdges, graphNodes, id).length === 0;
-  const sauKhiSinh = useCallback(async () => {
-    if (laNodeBocDo) await docBoDo();
-  }, [laNodeBocDo, docBoDo]);
-
   const onGenerate = useCallback(() => {
     if (canhBaoOTrong()) return;
     // Node VIDEO phai di duong runVideoGenerate (biet node) chu khong phai
     // animateImage: duong kia chi nhan ten tep nen khong dat duoc trang thai
     // cho, va ket qua khong gan vao node nao.
     if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
-    void generateNode(id).then(sauKhiSinh);
-  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh]);
+    void generateNode(id);
+  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo]);
 
   const onRegenerateInPlace = useCallback(() => {
     if (canhBaoOTrong()) return;
     if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
-    void generateNodeInPlace(id).then(sauKhiSinh);
-  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh]);
+    void generateNodeInPlace(id);
+  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo]);
 
   const onNewVariation = useCallback(() => {
     void generateNodeVariation(id);
