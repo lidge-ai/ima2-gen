@@ -748,7 +748,11 @@
     "wfApiRunning": "API run {done}/{total}",
     "wfApiStopTitle": "Stop the run that was triggered through the API",
     "wfApiHistory": "Recent runs",
-    "wfApiHistoryEmpty": "No run yet"
+    "wfApiHistoryEmpty": "No run yet",
+    "wfApiNodes": "Nodes in this workflow ({count})",
+    "wfApiCopyNode": "copy",
+    "wfApiCopyNodeTitle": "Copy a body that overrides this node for one call",
+    "wfApiNoPrompt": "(no prompt)"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

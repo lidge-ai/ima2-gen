@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
 import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
 import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
-import { dauVaoVideoCuaNode, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
+import { dauVaoVideoCuaNode, laViecThat, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
 import { canhAnhVao } from "../lib/canhAnh";
 import { huyLuotChayApi, lichSuLuotChay, type WfLuotApi } from "../lib/wfApi";
 import { useAppStore, type ImageNodeData, type GraphNode } from "../store/useAppStore";
@@ -186,15 +186,49 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     void taiLichSu();
   }, [hienApi, dangChayApi, taiLichSu]);
 
+  /**
+   * Cac node se chay trong khuon, kem noi dung hien tai cua tung cai.
+   *
+   * Node BAT DAU la diem vao cua API, nhung noi dung thuc su nam o cac node
+   * phia sau. Bay chung ra ngay day de khong phai bam tung node moi biet co gi
+   * de truyen - va de chep mot than request da dien san.
+   */
+  const nodeTrongKhuon = useMemo(() => {
+    if (!chuoi?.ok) return [];
+    return chuoi.thuTu
+      .map((nid) => graphNodes.find((n) => n.id === nid))
+      .filter((n): n is GraphNode => !!n && laViecThat(n))
+      .map((n) => ({
+        id: n.id,
+        vaiTro: layVaiTro(n.data.vaiTro)?.nhan ?? null,
+        prompt: n.data.prompt ?? "",
+      }));
+  }, [chuoi, graphNodes]);
+
+  /** Than request day du: o trong de dien, va noi dung tung node de ghi de. */
+  const thanDayDu = useMemo(() => {
+    const than: Record<string, unknown> = {};
+    if (oTrongKhuon.length) {
+      than.inputs = Object.fromEntries(oTrongKhuon.map((o) => [o, ""]));
+    }
+    if (nodeTrongKhuon.length) {
+      than.nodes = Object.fromEntries(nodeTrongKhuon.map((n) => [n.id, { prompt: n.prompt }]));
+    }
+    return JSON.stringify(than, null, 2);
+  }, [oTrongKhuon, nodeTrongKhuon]);
+
   const lenhCurl = useMemo(() => {
     if (!duongApi) return "";
-    const than = oTrongKhuon.length
-      ? `{"inputs":{${oTrongKhuon.map((o) => `"${o}":""`).join(",")}}}`
-      : "{}";
-    return `curl -X POST ${window.location.origin}${duongApi} \
-  -H 'Content-Type: application/json' \
-  -d '${than}'`;
-  }, [duongApi, oTrongKhuon]);
+    return [
+      `curl -X POST ${window.location.origin}${duongApi} \\`,
+      `  -H 'Content-Type: application/json' \\`,
+      `  -d '${thanDayDu}'`,
+    ].join("\n");
+  }, [duongApi, thanDayDu]);
+
+  /** Than chi de ghi de MOT node - bam mot cai la co ngay lenh sua node do. */
+  const thanMotNode = useCallback((nodeId: string, prompt: string) =>
+    JSON.stringify({ nodes: { [nodeId]: { prompt } } }, null, 2), []);
 
   /**
    * Anh KE THUA tu cac canh vao: canh dau la ANH NEN, cac canh sau la THAM CHIEU.
@@ -556,6 +590,37 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                   {oTrongKhuon.length ? (
                     <div className="image-node__api-o">
                       {t("node.wfApiInputs", { names: oTrongKhuon.join(", ") })}
+                    </div>
+                  ) : null}
+                  {/* Than day du cua tung node phia sau. Noi dung that nam o
+                      day chu khong o moc BAT DAU, nen phai doc duoc tai cho. */}
+                  {nodeTrongKhuon.length ? (
+                    <div className="image-node__api-node">
+                      <div className="image-node__api-ls-tieu">
+                        {t("node.wfApiNodes", { count: nodeTrongKhuon.length })}
+                      </div>
+                      {nodeTrongKhuon.map((n) => (
+                        <div key={n.id} className="image-node__api-node-muc">
+                          <div className="image-node__api-node-dau">
+                            <code className="image-node__api-node-ma">{n.id}</code>
+                            {n.vaiTro ? (
+                              <span className="image-node__api-node-vai">{n.vaiTro}</span>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="image-node__api-chep"
+                              title={t("node.wfApiCopyNodeTitle")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void navigator.clipboard?.writeText(thanMotNode(n.id, n.prompt));
+                              }}
+                            >
+                              {t("node.wfApiCopyNode")}
+                            </button>
+                          </div>
+                          <pre className="image-node__api-than-node">{n.prompt || t("node.wfApiNoPrompt")}</pre>
+                        </div>
+                      ))}
                     </div>
                   ) : null}
                   <button

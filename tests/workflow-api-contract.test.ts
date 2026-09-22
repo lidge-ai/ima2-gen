@@ -320,6 +320,105 @@ describe("workflow API contracts", () => {
   });
 });
 
+describe("workflow node override contracts", () => {
+  it("WFGD-01 ghi de noi dung node chi ap cho luot chay do, graph giu nguyen", async () => {
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "a {{MAU_SAC}} circle" },
+      { id: "sau", vaiTro: "canh", prompt: "same circle, larger" },
+    ]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status } = await goi(base, `/api/wf/${day}/start`, "POST", {
+        nodes: {
+          canh: { prompt: "a teal square", size: "512x512" },
+          sau: { prompt: "same square, red outline" },
+        },
+      });
+      assert.equal(status, 200);
+      assert.deepEqual(ghiNhan.map((g) => g.than.prompt), ["a teal square", "same square, red outline"]);
+      assert.equal(ghiNhan[0]!.than.size, "512x512");
+      // Khuon mau phai con nguyen: goi mot tram lan voi mot tram noi dung khac
+      // nhau van la cung mot khuon.
+      const nodes = store.getSession(day)!.nodes as any[];
+      assert.equal(nodes.find((n) => n.id === "canh").data.prompt, "a {{MAU_SAC}} circle");
+      assert.equal(nodes.find((n) => n.id === "canh").data.size, undefined);
+      assert.equal(nodes.find((n) => n.id === "sau").data.prompt, "same circle, larger");
+    });
+  });
+
+  it("WFGD-02 o trong duoc tinh tren prompt HIEU LUC, khong phai prompt trong graph", async () => {
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "a {{MAU_SAC}} circle" }]);
+    await voiApi(async ({ base }) => {
+      // Ghi de bo o trong di thi khong con gi de dien nua.
+      const bo = await goi(base, `/api/wf/${day}/start`, "POST",
+        { nodes: { canh: { prompt: "a teal square" } } });
+      assert.equal(bo.status, 200);
+
+      // Va nguoc lai: ghi de dua VAO mot o trong moi thi phai bao thieu.
+      const them = await goi(base, `/api/wf/${day}/start`, "POST",
+        { inputs: { MAU_SAC: "teal" }, nodes: { canh: { prompt: "a {{HINH_DANG}} thing" } } });
+      assert.equal(them.status, 400);
+      assert.deepEqual(them.body.error.missing, ["HINH_DANG"]);
+    });
+  });
+
+  it("WFGD-03 tu choi ghi de nham cho hoac ghi de thu khong duoc phep", async () => {
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      const laNode = await goi(base, `/api/wf/${day}/start`, "POST", { nodes: { khong_co: { prompt: "x" } } });
+      assert.equal(laNode.status, 400);
+      assert.equal(laNode.body.error.code, "WF_NODE_OVERRIDE_UNKNOWN");
+
+      // Moc khong sinh gi nen khong co gi de ghi de.
+      const moc = await goi(base, `/api/wf/${day}/start`, "POST", { nodes: { end: { prompt: "x" } } });
+      assert.equal(moc.status, 400);
+      assert.equal(moc.body.error.code, "WF_NODE_OVERRIDE_UNKNOWN");
+
+      // Hinh dang khuon la thu nguoi dung ve ra tren canvas: mot lan goi API
+      // khong duoc phep ve lai no.
+      const vaiTro = await goi(base, `/api/wf/${day}/start`, "POST", { nodes: { canh: { vaiTro: "video" } } });
+      assert.equal(vaiTro.status, 400);
+      assert.equal(vaiTro.body.error.code, "WF_NODE_OVERRIDE_INVALID");
+
+      const size = await goi(base, `/api/wf/${day}/start`, "POST", { nodes: { canh: { size: "to bang nha" } } });
+      assert.equal(size.status, 400);
+      assert.equal(size.body.error.code, "WF_NODE_OVERRIDE_INVALID");
+
+      assert.deepEqual(ghiNhan, []);
+    });
+  });
+
+  it("WFGD-04 ghi de node VIDEO chi thay phan rieng, van ke thua loi ta cua canh", async () => {
+    const day = taoPhien([
+      { id: "canh", vaiTro: "canh", prompt: "a coffee shop" },
+      { id: "vid", vaiTro: "video", prompt: "she turns around" },
+    ]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status } = await goi(base, `/api/wf/${day}/start`, "POST",
+        { nodes: { vid: { prompt: "she waves at the camera" } } });
+      assert.equal(status, 200);
+      // Loi ta cua canh van dung dau; ghi de chi thay phan ghi them cua node video.
+      assert.equal(ghiNhan[1]!.than.prompt, "a coffee shop she waves at the camera");
+    });
+  });
+
+  it("WFGD-05 mo ta khuon kem noi dung hien tai de nguoi goi dung duoc than request", async () => {
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "a {{MAU_SAC}} circle" }]);
+    await voiApi(async ({ base }) => {
+      const { body } = await goi(base, `/api/wf/${day}/start`);
+      assert.equal(body.buoc[0].prompt, "a {{MAU_SAC}} circle");
+      assert.equal(body.buoc[0].nodeId, "canh");
+    });
+  });
+
+  it("WFGD-06 node BAT DAU bay than cua MOI node trong khuon, khong chi node noi thang", () => {
+    const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    // Dung chuoi chay, khong dung canh noi truc tiep: noi dung that nam rai rac
+    // o ca chuoi, chi hien node dau tien thi van phai di tim id cua nhung node kia.
+    assert.match(src, /chuoi\.thuTu[\s\S]{0,200}laViecThat/);
+    assert.match(src, /than\.nodes = Object\.fromEntries/);
+  });
+});
+
 describe("workflow run history contracts", () => {
   it("WFLS-01 mot luot chay con lai trong lich su sau khi tien trinh mat ban nho", async () => {
     const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);

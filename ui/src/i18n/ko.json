@@ -748,7 +748,11 @@
     "wfApiRunning": "API 실행 {done}/{total}",
     "wfApiStopTitle": "API로 시작된 실행을 중지",
     "wfApiHistory": "최근 실행",
-    "wfApiHistoryEmpty": "아직 실행 없음"
+    "wfApiHistoryEmpty": "아직 실행 없음",
+    "wfApiNodes": "이 워크플로의 노드 ({count})",
+    "wfApiCopyNode": "복사",
+    "wfApiCopyNodeTitle": "이 노드를 한 번만 덮어쓰는 본문 복사",
+    "wfApiNoPrompt": "(프롬프트 없음)"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

@@ -11,7 +11,10 @@
  */
 import type { Express, Request, Response } from "express";
 import { ulid } from "ulid";
-import { chayKhuon, kiemTruocKhiChay, LoiKhuon, maHttpCuaLoi, moTaKhuon } from "../lib/wfEngine.js";
+import {
+  chayKhuon, kiemTruocKhiChay, LoiKhuon, maHttpCuaLoi, moTaKhuon,
+  type GhiDeNode,
+} from "../lib/wfEngine.js";
 import {
   danhSachLuotChay,
   demLuotChay,
@@ -34,6 +37,8 @@ const SO_PHIEN_QUET = 60;
 const INPUT_TOI_DA = 64;
 const INPUT_DAI_TOI_DA = 4000;
 const ANH_MOI_NODE_TOI_DA = 8;
+const PROMPT_DAI_TOI_DA = 20000;
+const NODE_GHI_DE_TOI_DA = 64;
 
 type Params = { sessionId: string; startNodeId: string };
 
@@ -100,6 +105,60 @@ function docImages(tho: unknown): Record<string, string[]> {
       sach.push(item);
     }
     ra[nodeId] = sach;
+  }
+  return ra;
+}
+
+/**
+ * Noi dung thay the theo node, chi cho luot chay nay.
+ *
+ * Danh sach truong la DONG: prompt / size / model. Cho phep doi vaiTro hay canh
+ * noi thi mot lan goi API se ve lai ca khuon, trong khi hinh dang khuon la thu
+ * nguoi dung dung tay ve ra tren canvas.
+ */
+function docNodes(tho: unknown): Record<string, GhiDeNode> {
+  if (tho == null) return {};
+  if (typeof tho !== "object" || Array.isArray(tho)) {
+    throw new LoiKhuon("WF_NODE_OVERRIDE_INVALID", "nodes phai la mot doi tuong nodeId -> noi dung");
+  }
+  const vao = Object.entries(tho as Record<string, unknown>);
+  if (vao.length > NODE_GHI_DE_TOI_DA) {
+    throw new LoiKhuon("WF_NODE_OVERRIDE_INVALID", `toi da ${NODE_GHI_DE_TOI_DA} node`);
+  }
+  const ra: Record<string, GhiDeNode> = {};
+  for (const [nodeId, gt] of vao) {
+    if (gt == null || typeof gt !== "object" || Array.isArray(gt)) {
+      throw new LoiKhuon("WF_NODE_OVERRIDE_INVALID", `noi dung cua ${nodeId} phai la mot doi tuong`, nodeId);
+    }
+    const than = gt as Record<string, unknown>;
+    const la = Object.keys(than).filter((k) => !["prompt", "size", "model"].includes(k));
+    if (la.length) {
+      throw new LoiKhuon(
+        "WF_NODE_OVERRIDE_INVALID",
+        `${nodeId}: chi ghi de duoc prompt, size, model - khong nhan ${la.join(", ")}`,
+        nodeId,
+      );
+    }
+    const mot: GhiDeNode = {};
+    if (than.prompt !== undefined) {
+      if (typeof than.prompt !== "string" || than.prompt.length > PROMPT_DAI_TOI_DA) {
+        throw new LoiKhuon("WF_NODE_OVERRIDE_INVALID", `${nodeId}: prompt phai la chuoi ngan hon ${PROMPT_DAI_TOI_DA} ky tu`, nodeId);
+      }
+      mot.prompt = than.prompt;
+    }
+    if (than.size !== undefined) {
+      if (typeof than.size !== "string" || !/^\d{2,5}x\d{2,5}$/.test(than.size)) {
+        throw new LoiKhuon("WF_NODE_OVERRIDE_INVALID", `${nodeId}: size phai co dang 1024x1024`, nodeId);
+      }
+      mot.size = than.size;
+    }
+    if (than.model !== undefined) {
+      if (typeof than.model !== "string" || !than.model || than.model.length > 100) {
+        throw new LoiKhuon("WF_NODE_OVERRIDE_INVALID", `${nodeId}: model phai la chuoi ngan`, nodeId);
+      }
+      mot.model = than.model;
+    }
+    ra[nodeId] = mot;
   }
   return ra;
 }
@@ -234,9 +293,12 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
 
   app.post("/api/wf/:sessionId/:startNodeId", async (req: Request<Params>, res: Response) => {
     try {
-      const body = (req.body ?? {}) as { inputs?: unknown; images?: unknown; async?: unknown };
+      const body = (req.body ?? {}) as {
+        inputs?: unknown; images?: unknown; nodes?: unknown; async?: unknown;
+      };
       const inputs = docInputs(body.inputs);
       const images = docImages(body.images);
+      const nodes = docNodes(body.nodes);
       // Mac dinh la CHO: goi mot lan roi nhan ket qua la cach dung thang nhat.
       // ?async=1 (hoac async: true) cho ai khong muon giu ket noi vai phut.
       const traNgay = req.query.async === "1" || body.async === true;
@@ -248,6 +310,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
         startNodeId: req.params.startNodeId,
         inputs,
         images,
+        nodes,
       });
 
       const luot: WfLuotChay = {
@@ -266,6 +329,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
         startNodeId: luot.startNodeId,
         inputs: Object.keys(inputs),
         images: Object.keys(images),
+        nodes: Object.keys(nodes),
         wait: !traNgay,
       });
 
@@ -274,6 +338,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
         startNodeId: req.params.startNodeId,
         inputs,
         images,
+        nodes,
       }, luot).catch((e) => {
         // Bo chay da ghi loi vao chinh luot va dong so lai; o day chi ghi nhat ky
         // va nuot loi, vi luot chay da la cau tra loi day du cho nguoi goi.

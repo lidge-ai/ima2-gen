@@ -224,13 +224,38 @@ function boTienToDataUrl(s: string): string {
 
 /* ----------------------------------------------------------------- chay */
 
+/**
+ * Ghi de noi dung mot node cho DUNG mot luot chay.
+ *
+ * Khong ghi vao graph: khuon mau phai giu nguyen de goi mot tram lan voi mot
+ * tram noi dung khac nhau ma van la cung mot khuon. Ghi vao graph thi lan goi
+ * truoc lang le doi khuon cho lan goi sau.
+ */
+export type GhiDeNode = {
+  prompt?: string | undefined;
+  size?: string | undefined;
+  model?: string | undefined;
+};
+
 export type ThamSoChay = {
   sessionId: string;
   startNodeId: string;
   inputs: Record<string, string>;
   /** Anh dinh them theo node: { "<nodeId>": ["data:image/png;base64,..."] } */
   images: Record<string, string[]>;
+  /** Noi dung thay the theo node, chi cho luot chay nay. */
+  nodes: Record<string, GhiDeNode>;
 };
+
+/** Noi dung node sau khi da ap ghi de cua luot chay. */
+export function noiDungNode(node: WfNode, ts: Pick<ThamSoChay, "nodes">): GhiDeNode {
+  const de = ts.nodes[node.id] ?? {};
+  return {
+    prompt: de.prompt ?? node.data?.prompt ?? "",
+    size: de.size ?? node.data?.size ?? undefined,
+    model: de.model ?? node.data?.model ?? undefined,
+  };
+}
 
 /** Mo ta mot khuon ma khong chay: dung cho tuyen GET va cho o API tren node. */
 export function moTaKhuon(sessionId: string, startNodeId: string) {
@@ -243,11 +268,16 @@ export function moTaKhuon(sessionId: string, startNodeId: string) {
     .filter((n): n is WfNode => !!n && laViecThat(n))
     .map((n) => {
       for (const ten of oTrongTrongVanBan(n.data?.prompt)) oTrong.add(ten);
+      // Kem ca prompt: nguoi goi phai doc duoc noi dung hien tai cua tung node
+      // thi moi dung duoc than request de ghi de no.
       return {
         nodeId: n.id,
         vaiTro: n.data?.vaiTro ?? null,
         nhan: n.data?.label,
         viec: viecCuaNode(n),
+        prompt: n.data?.prompt ?? "",
+        ...(n.data?.size ? { size: n.data.size } : {}),
+        ...(n.data?.model ? { model: n.data.model } : {}),
       };
     });
   return {
@@ -270,12 +300,16 @@ export function kiemDauVao(
   nodes: readonly WfNode[],
   thuTu: readonly string[],
   inputs: Record<string, string>,
+  ghiDe: Record<string, GhiDeNode> = {},
 ): void {
   const thieu = new Set<string>();
   for (const id of thuTu) {
     const n = nodes.find((x) => x.id === id);
     if (!n || !laViecThat(n)) continue;
-    for (const ten of oTrongTrongVanBan(dienOTrong(n.data?.prompt, inputs))) thieu.add(ten);
+    // Phai doc prompt HIEU LUC chu khong phai prompt trong graph: ghi de co the
+    // vua bo mot o trong di, hoac vua them mot o trong moi vao.
+    const prompt = noiDungNode(n, { nodes: ghiDe }).prompt;
+    for (const ten of oTrongTrongVanBan(dienOTrong(prompt, inputs))) thieu.add(ten);
   }
   if (thieu.size > 0) {
     throw new LoiKhuon(
@@ -306,7 +340,23 @@ export function kiemTruocKhiChay(ts: ThamSoChay): void {
       throw new LoiKhuon("WF_IMAGE_NODE_UNKNOWN", `khong co node ${id} de dinh anh`, id);
     }
   }
-  kiemDauVao(nodes, chuoi.thuTu, ts.inputs);
+  // Ghi de phai nham vao mot node NAM TRONG khuon nay. Nham node khac thi no
+  // khong co tac dung gi ca, ma nguoi goi lai tuong da sua duoc.
+  const trongKhuon = new Set(chuoi.thuTu);
+  for (const id of Object.keys(ts.nodes)) {
+    if (!trongKhuon.has(id)) {
+      throw new LoiKhuon("WF_NODE_OVERRIDE_UNKNOWN", `node ${id} khong nam trong khuon nay`, id);
+    }
+    const n = nodes.find((x) => x.id === id);
+    if (n && !laViecThat(n)) {
+      throw new LoiKhuon(
+        "WF_NODE_OVERRIDE_UNKNOWN",
+        `node ${id} khong sinh gi nen khong co gi de ghi de`,
+        id,
+      );
+    }
+  }
+  kiemDauVao(nodes, chuoi.thuTu, ts.inputs, ts.nodes);
 }
 
 /**
@@ -319,7 +369,8 @@ export function maHttpCuaLoi(code: string | undefined): number {
   if (!code) return 500;
   if (code === "WF_SESSION_NOT_FOUND" || code === "WF_RUN_NOT_FOUND") return 404;
   if (code === "WF_CANCELED") return 409;
-  if (code.startsWith("WF_CHAIN_") || code.startsWith("WF_INPUT") || code.startsWith("WF_IMAGE")) return 400;
+  if (code.startsWith("WF_CHAIN_") || code.startsWith("WF_INPUT")
+    || code.startsWith("WF_IMAGE") || code.startsWith("WF_NODE_OVERRIDE")) return 400;
   return 500;
 }
 
@@ -335,28 +386,15 @@ export async function chayKhuon(
 ): Promise<WfLuotChay> {
   const huy = tinHieuHuy(luot.id) ?? new AbortController().signal;
   try {
+    // Kiem LAI bang dung mot ham ma tuyen da goi truoc do: graph co the vua doi
+    // giua luc nhan yeu cau va luc chay. Hai ban kiem rieng se lech nhau - da
+    // lech mot lan, ban trong luot chay khong nhan `nodes` nen mot ghi de hop le
+    // van bi bao thieu dau vao.
+    kiemTruocKhiChay(ts);
     const { nodes, edges } = docGraph(ts.sessionId);
-    const chuoi = timChuoiChay(ts.startNodeId, nodes, edges);
-    if (!chuoi.ok) {
-      throw new LoiKhuon(
-        `WF_CHAIN_${chuoi.loi.toUpperCase().replace(/-/g, "_")}`,
-        chuoi.loi === "thieu-ket-thuc"
-          ? "khuon chua noi toi node KET THUC"
-          : chuoi.loi === "vong-lap"
-            ? "khuon co vong lap"
-            : "node nay khong phai moc BAT DAU",
-      );
-    }
-
-    // Anh dinh kem phai ve dung node CO THAT, khong thi nguoi goi tuong da dinh
-    // duoc ma thuc te no roi vao hu khong.
-    for (const id of Object.keys(ts.images)) {
-      if (!nodes.some((n) => n.id === id)) {
-        throw new LoiKhuon("WF_IMAGE_NODE_UNKNOWN", `khong co node ${id} de dinh anh`, id);
-      }
-    }
-
-    kiemDauVao(nodes, chuoi.thuTu, ts.inputs);
+    const chuoi = timChuoiChay(ts.startNodeId, nodes, edges) as Extract<
+      ReturnType<typeof timChuoiChay>, { ok: true }
+    >;
 
     luot.buoc = chuoi.thuTu
       .map((id) => nodes.find((n) => n.id === id))
@@ -506,7 +544,18 @@ async function chayMotNode(
   }
 
   if (viec === "video") {
-    const { ta } = dauVaoVideoCuaNode(nodeId, nodes, edges);
+    // Ghi de prompt cua node video phai an vao dung phan RIENG cua no, chu
+    // khong de len loi ta ke thua tu node canh - neu khong, ghi de mot node
+    // video se am tham vut mat canh no dang dung.
+    const daGhiDe = ts.nodes[nodeId]?.prompt;
+    const nodeTam: WfNode = daGhiDe === undefined
+      ? node
+      : { ...node, data: { ...(node.data ?? {}), prompt: daGhiDe } };
+    const { ta } = dauVaoVideoCuaNode(
+      nodeId,
+      nodes.map((n) => (n.id === nodeId ? nodeTam : n)),
+      edges,
+    );
     const loiTa = dienOTrong(ta, ts.inputs).trim();
     if (!loiTa) throw new LoiKhuon("WF_PROMPT_EMPTY", "node video khong co loi ta nao", nodeId);
     const cho = doiViec(requestId, huy);
@@ -536,7 +585,8 @@ async function chayMotNode(
   }
 
   // Sinh ANH.
-  const prompt = dienOTrong(node.data?.prompt, ts.inputs).trim();
+  const noiDung = noiDungNode(node, ts);
+  const prompt = dienOTrong(noiDung.prompt, ts.inputs).trim();
   if (!prompt) throw new LoiKhuon("WF_PROMPT_EMPTY", "node khong co prompt", nodeId);
   const refs = canhAnhVao(edges, nodes, nodeId)
     .slice(1)
@@ -547,8 +597,8 @@ async function chayMotNode(
     prompt,
     ...(chaServerId ? { parentNodeId: chaServerId } : {}),
     ...(refs.length ? { extraParentNodeIds: refs } : {}),
-    ...(node.data?.size ? { size: node.data.size } : {}),
-    ...(node.data?.model ? { model: node.data.model } : {}),
+    ...(noiDung.size ? { size: noiDung.size } : {}),
+    ...(noiDung.model ? { model: noiDung.model } : {}),
     sessionId: ts.sessionId,
     clientNodeId: nodeId,
     contextMode: "parent-plus-refs",

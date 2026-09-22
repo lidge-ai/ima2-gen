@@ -748,7 +748,11 @@
     "wfApiRunning": "API 執行 {done}/{total}",
     "wfApiStopTitle": "停止由 API 觸發的執行",
     "wfApiHistory": "最近的執行",
-    "wfApiHistoryEmpty": "尚未執行過"
+    "wfApiHistoryEmpty": "尚未執行過",
+    "wfApiNodes": "這個工作流的節點（{count}）",
+    "wfApiCopyNode": "複製",
+    "wfApiCopyNodeTitle": "複製只覆寫這個節點一次的請求內容",
+    "wfApiNoPrompt": "（沒有提示詞）"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

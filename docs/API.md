@@ -1278,12 +1278,15 @@ other route: open on a local bind, `x-ima2-token` required in LAN mode (see
 ```
 
 `GET /api/wf/:sessionId/:startNodeId` describes one workflow without running it —
-the ordered steps and the input slots it needs.
+the ordered steps with their current content, and the input slots it needs. The
+prompts are here so a caller can build the override body without reading the
+graph.
 
 ```json
 { "sessionId": "s_01M…", "startNodeId": "nc_a1b2", "ketThuc": "nc_z9",
   "soViec": 2, "inputs": ["MAU_SAC"],
-  "buoc": [{ "nodeId": "nc_ve", "vaiTro": "canh", "viec": "anh" }] }
+  "buoc": [{ "nodeId": "nc_ve", "vaiTro": "canh", "viec": "anh",
+             "prompt": "a {{MAU_SAC}} circle", "size": "1024x1024" }] }
 ```
 
 ### Running
@@ -1293,7 +1296,8 @@ the ordered steps and the input slots it needs.
 ```json
 {
   "inputs": { "TRANG_PHUC": "a pleated navy skirt and a white knit top" },
-  "images": { "nc_bocdo": ["data:image/png;base64,iVBORw0KGgo…"] }
+  "images": { "nc_bocdo": ["data:image/png;base64,iVBORw0KGgo…"] },
+  "nodes": { "nc_canh": { "prompt": "she sits by the window", "size": "1024x1536" } }
 }
 ```
 
@@ -1304,7 +1308,16 @@ the ordered steps and the input slots it needs.
 - `images` — attaches reference images to specific nodes before the run, keyed by
   node id. Each entry must be a **data URL**; file paths and remote URLs are
   rejected, since accepting them would let a caller read arbitrary files or turn
-  the server into a downloader. At most 8 images per node.
+  the server into a downloader. At most 8 images per node. Unlike the two fields
+  around it, this one **is written onto the node**, so the picture the run used
+  is visible in the Node Studio afterwards.
+- `nodes` — replaces a node's content for **this call only**, keyed by node id.
+  Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
+  let one API call redraw a workflow the user shaped by hand on the canvas. The
+  graph is never modified, so calling a hundred times with a hundred different
+  prompts still leaves one template behind. An override is checked against the
+  effective prompt, so one that removes a `{{SLOT}}` needs no input for it, and
+  one that introduces a new slot is refused like any other missing input.
 
 By default the request **waits** and returns the finished run. Add `?async=1`
 (or `"async": true`) to get a run id immediately instead.
@@ -1371,8 +1384,14 @@ run some other system started, so a fixed channel is what makes it observable.
 
 The Node Studio listens on that channel: the START marker shows `API run x/y`
 with a Stop button, the node being generated gets the running outline and
-overlay, and each finished image lands on its node as it is produced. The START
-marker's `API` panel also lists that workflow's recent runs.
+overlay, and each finished image lands on its node as it is produced.
+
+The START marker's `API` panel also carries everything needed to call it: the
+endpoint, the input slots, that workflow's recent runs, and **every node in the
+chain with its current prompt** — the content lives on those nodes, not on the
+marker, so the panel prints them there rather than making the reader hunt for
+ids. `Copy curl` yields a body pre-filled with all of them; each node also has
+its own copy button for a body that overrides just that one.
 
 ### Status codes
 
@@ -1385,6 +1404,7 @@ marker's `API` panel also lists that workflow's recent runs.
 | `WF_CHAIN_VONG_LAP` | 400 — the graph loops back on itself |
 | `WF_INPUT_MISSING` / `WF_INPUT_INVALID` | 400 — inputs missing or malformed |
 | `WF_IMAGE_INVALID` / `WF_IMAGE_NODE_UNKNOWN` | 400 — attached images malformed or aimed at a node that does not exist |
+| `WF_NODE_OVERRIDE_INVALID` / `WF_NODE_OVERRIDE_UNKNOWN` | 400 — override malformed, or aimed at a node outside this workflow / one that generates nothing |
 | `WF_CANCELED` | 409 — the run was canceled |
 | `WF_RUN_BUSY_OR_MISSING` | 409 — cannot delete a run that is still going |
 | `WF_SERVER_RESTARTED` | recorded on a run the server was killed in the middle of |
