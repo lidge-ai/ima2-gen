@@ -401,6 +401,30 @@ export function kiemTruocKhiChay(ts: ThamSoChay): void {
           : "node nay khong phai moc BAT DAU",
     );
   }
+  // Node BOC DO khong co anh nao vao thi no BIA ra mot bo do.
+  //
+  // Prompt cua vai tro nay la "doc anh tham chieu roi boc tung mon do ra" -
+  // khong anh thi mo hinh tu nghi ra mot bo, va ca khuon phia sau mac bo do
+  // tuong tuong day. Chan tu dau: loi nay hien ra o buoc dau, con de chay thi
+  // no hien ra o tam anh cuoi cung, sau khi da tra tien cho tat ca.
+  //
+  // Hay xay ra khi copy tu template: template khong mang anh dinh theo (co y -
+  // de data URL khong vao co so du lieu), nen ban moi copy ra la node trong.
+  for (const id of chuoi.thuTu) {
+    const n = nodes.find((x) => x.id === id);
+    if (!n || n.data?.vaiTro !== "trang-phuc") continue;
+    const coAnhVao = canhAnhVao(edges, nodes, id).length > 0
+      || (ts.images[id]?.length ?? 0) > 0
+      || refCuaNode(ts.sessionId, id).length > 0;
+    if (!coAnhVao) {
+      throw new LoiKhuon(
+        "WF_REF_MISSING",
+        `node BOC DO ${id} chua co anh nao: dinh anh that cua bo do vao node nay`,
+        id,
+      );
+    }
+  }
+
   const trongKhuon = new Set(chuoi.thuTu);
   for (const id of Object.keys(ts.images)) {
     const n = nodes.find((x) => x.id === id);
@@ -446,8 +470,11 @@ export function maHttpCuaLoi(code: string | undefined): number {
   if (!code) return 500;
   if (code === "WF_SESSION_NOT_FOUND" || code === "WF_RUN_NOT_FOUND") return 404;
   if (code === "WF_CANCELED") return 409;
+  // WF_REF_MISSING: khuon con thieu anh dinh, nguoi goi sua duoc - loi cua ben
+  // goi chu khong phai may chu hong.
   if (code.startsWith("WF_CHAIN_") || code.startsWith("WF_INPUT")
-    || code.startsWith("WF_IMAGE") || code.startsWith("WF_NODE_OVERRIDE")) return 400;
+    || code.startsWith("WF_IMAGE") || code === "WF_REF_MISSING"
+    || code.startsWith("WF_NODE_OVERRIDE")) return 400;
   return 500;
 }
 

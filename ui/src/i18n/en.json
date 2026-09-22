@@ -766,7 +766,8 @@
     "videoDuration": "Length",
     "videoBase": "Base image",
     "videoBaseFirstFrame": "First frame",
-    "videoBaseReference": "Reference only"
+    "videoBaseReference": "Reference only",
+    "bocDoNeedRef": "Attach the real photo of the outfit — with no image this node invents one."
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

@@ -766,7 +766,8 @@
     "videoDuration": "时长",
     "videoBase": "基底图像",
     "videoBaseFirstFrame": "首帧",
-    "videoBaseReference": "仅作参考"
+    "videoBaseReference": "仅作参考",
+    "bocDoNeedRef": "请附上实际服装照片 — 没有图片这个节点会自己编一套。"
   },
   "nodeBatch": {
     "selectionOn": "选择",

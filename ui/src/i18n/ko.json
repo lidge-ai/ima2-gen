@@ -766,7 +766,8 @@
     "videoDuration": "길이",
     "videoBase": "베이스 이미지",
     "videoBaseFirstFrame": "첫 프레임",
-    "videoBaseReference": "참조로만"
+    "videoBaseReference": "참조로만",
+    "bocDoNeedRef": "실제 의상 사진을 첨부하세요 — 이미지가 없으면 이 노드가 옷을 지어냅니다."
   },
   "nodeBatch": {
     "selectionOn": "선택중",

@@ -935,3 +935,16 @@
   font-size: 11px;
   padding: 3px 4px;
 }
+
+/* Node BOC DO chua co anh nao: khong anh thi no bia ra mot bo do, va ca khuon
+   phia sau mac bo do tuong tuong day. Phai thay ngay tren node. */
+.image-node__thieu-anh {
+  margin-top: 6px;
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--red) 55%, var(--border));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--red) 12%, var(--surface));
+  color: var(--red);
+  font-size: 10px;
+  line-height: 1.35;
+}

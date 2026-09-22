@@ -1401,6 +1401,23 @@ animating. A video node with nothing of its own sends the parent's text alone,
 and one wired to nothing sends only its own. `inputs` are substituted after the
 two halves are joined, so a `{{SLOT}}` works in either.
 
+### An extraction node needs a photo
+
+A `trang-phuc` (extraction) node in the chain must have at least one image going
+in — an attachment on the node, an `images` entry in the request, or an incoming
+image edge. Without one the run is refused up front with `WF_REF_MISSING` and
+the offending `nodeId`, before a single node is generated.
+
+The node's prompt is *"read the reference photograph and lay every garment
+out"*, so with no photo the model invents an outfit and every node behind it
+dresses the model in that invention — a failure that only becomes visible in the
+last image, after all of them have been paid for.
+
+This is easiest to hit right after copying a template: a template deliberately
+carries no attachments (that is what keeps data URLs out of the database), so a
+fresh copy has an empty extraction node. The canvas now says so on the node
+itself, and pressing GEN there does nothing but repeat the message.
+
 ### The outfit slot
 
 The description goes into a `{{TRANG_PHUC}}` slot, and that is the path to write
@@ -1631,6 +1648,7 @@ system while nobody was looking becomes visible.
 | `WF_CANCELED` | 409 — the run was canceled |
 | `WF_RUN_BUSY_OR_MISSING` | 409 — cannot delete a run that is still going |
 | `WF_SERVER_RESTARTED` | recorded on a run the server was killed in the middle of |
+| `WF_REF_MISSING` | 400 — an extraction node in the chain has no image going in (carries `nodeId`) |
 | `WF_NODE_FAILED`, `WF_PROMPT_EMPTY`, `WF_PARENT_EMPTY`, `WF_MERGE_NEED_TWO`, `WF_NODE_TIMEOUT` | 500 — the run started but a node could not complete |
 
 ## Contract Discovery

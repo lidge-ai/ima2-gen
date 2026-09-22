@@ -50,7 +50,16 @@ type Params = { sessionId: string; startNodeId: string };
 
 function batLoi(res: Response, e: unknown): void {
   if (e instanceof LoiKhuon) {
-    res.status(maHttpCuaLoi(e.code)).json({ error: { code: e.code, message: e.message, ...e.chiTiet } });
+    // Kem `nodeId`: mot loi nhu "chua co anh" thi cau tra loi phai chi duoc
+    // node nao, khong thi nguoi goi phai tu do tim trong ca khuon.
+    res.status(maHttpCuaLoi(e.code)).json({
+      error: {
+        code: e.code,
+        message: e.message,
+        ...(e.nodeId ? { nodeId: e.nodeId } : {}),
+        ...e.chiTiet,
+      },
+    });
     return;
   }
   const err = errInfo(e);

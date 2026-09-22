@@ -406,18 +406,32 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
 
   /** Node BOC DO thi sinh xong la doc mo ta luon. */
   const laNodeBocDo = d.vaiTro === "trang-phuc";
+  /**
+   * Node BOC DO khong co anh nao vao thi no BIA ra mot bo do.
+   *
+   * Prompt cua vai tro nay la "doc anh tham chieu roi boc tung mon do ra" -
+   * khong anh thi mo hinh tu nghi ra mot bo, va ca khuon phia sau mac bo do
+   * tuong tuong day. Hay xay ra nhat la khi vua copy tu template: template
+   * KHONG mang anh dinh theo (co y - de data URL khong vao co so du lieu), nen
+   * ban moi copy ra la node trong tron.
+   */
+  const bocDoThieuAnh = laNodeBocDo
+    && refs.length === 0
+    && canhAnhVao(graphEdges, graphNodes, id).length === 0;
   const sauKhiSinh = useCallback(async () => {
     if (laNodeBocDo) await docBoDo();
   }, [laNodeBocDo, docBoDo]);
 
   const onGenerate = useCallback(() => {
+    if (bocDoThieuAnh) { showToast(t("node.bocDoNeedRef"), true); return; }
     if (canhBaoOTrong()) return;
     // Node VIDEO phai di duong runVideoGenerate (biet node) chu khong phai
     // animateImage: duong kia chi nhan ten tep nen khong dat duoc trang thai
     // cho, va ket qua khong gan vao node nao.
     if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
     void generateNode(id).then(sauKhiSinh);
-  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh]);
+  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh,
+      bocDoThieuAnh, showToast, t]);
 
   const onRegenerateInPlace = useCallback(() => {
     if (canhBaoOTrong()) return;
@@ -843,6 +857,11 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
             <span className="image-node__ref-count">{refs.length}/{MAX_NODE_REFS}</span>
           ) : null}
         </div>
+        {bocDoThieuAnh ? (
+          <div className="image-node__thieu-anh" role="alert">
+            {t("node.bocDoNeedRef")}
+          </div>
+        ) : null}
         {/* Cai dat rieng cua node video: bang ben phai la cai dat chung ca
             phien, con mot khuon co the co hai node video khac ti le nhau - va
             khi chay qua API thi khong ai ngoi chon o bang do ca. */}

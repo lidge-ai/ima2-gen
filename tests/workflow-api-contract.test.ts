@@ -514,6 +514,9 @@ describe("workflow outfit + attachment contracts", () => {
     nodes[1]!.data.serverNodeId = "n_mau";
     (nodes[1]!.data as Record<string, unknown>).imageUrl = "/generated/n_mau.png";
     store.saveGraph(phien.id, { nodes, edges, expectedVersion: null });
+    // Nhu ngoai doi: BOC DO co anh that cua bo do dinh vao. Khong anh thi luot
+    // chay bi tu choi ngay - xem WFTP-19.
+    refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_bocdo_${Date.now()}.png`)]);
     return phien.id;
   }
 
@@ -572,6 +575,8 @@ describe("workflow outfit + attachment contracts", () => {
       ],
       expectedVersion: null,
     });
+    // BOC DO co anh that dinh vao, nhu ngoai doi (xem WFTP-19).
+    refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_bocdo_${Date.now()}.png`)]);
     await voiApi(async ({ base, ghiNhan }) => {
       const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
       assert.equal(status, 200, JSON.stringify(body.error ?? {}));
@@ -616,6 +621,8 @@ describe("workflow outfit + attachment contracts", () => {
       ],
       expectedVersion: null,
     });
+    // BOC DO co anh that dinh vao, nhu ngoai doi (xem WFTP-19).
+    refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_bocdo_${Date.now()}.png`)]);
     await voiApi(async ({ base, ghiNhan }) => {
       const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
       assert.equal(status, 200, JSON.stringify(body.error ?? {}));
@@ -768,6 +775,80 @@ describe("workflow outfit + attachment contracts", () => {
       const video = ghiNhan.find((g) => g.duong === "/api/video/generate")!;
       assert.equal(video.than.sourceFilename, undefined);
       assert.equal((video.than.referenceImages as string[]).length, 1);
+    });
+  });
+
+  it("WFTP-20 giao dien nhac ngay tren node BOC DO khi chua co anh", async () => {
+    // Chan o may chu la de khoi ton tien, nhung nguoi dung phai biet TRUOC khi
+    // bam - nhat la sau khi copy tu template, luc node vua trong tron.
+    const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    assert.match(src, /const bocDoThieuAnh = laNodeBocDo/);
+    assert.match(src, /refs\.length === 0/);
+    assert.match(src, /canhAnhVao\(graphEdges, graphNodes, id\)\.length === 0/);
+    assert.match(src, /image-node__thieu-anh/);
+    // Va bam GEN o node do thi khong goi mo hinh: bam vao chi ra mot bo do bia.
+    assert.match(src, /if \(bocDoThieuAnh\) \{ showToast\(t\("node\.bocDoNeedRef"\), true\); return; \}/);
+  });
+
+  it("WFTP-19 node BOC DO khong co anh nao thi tu choi truoc khi ton mot dong", async () => {
+    // Prompt cua vai tro nay la "doc anh tham chieu roi boc tung mon do ra".
+    // Khong anh thi mo hinh BIA ra mot bo, va ca khuon phia sau mac bo do tuong
+    // tuong day - loi chi hien ra o tam anh cuoi, sau khi da tra tien het.
+    //
+    // Hay xay ra khi copy tu template: template khong mang anh dinh theo.
+    const phien = store.createSession({ title: "khuon vua copy" }) as { id: string };
+    store.saveGraph(phien.id, {
+      nodes: [
+        node("start", "bat-dau"),
+        node("bocdo", "trang-phuc", "boc trang phuc"),
+        node("end", "ket-thuc"),
+      ],
+      edges: [
+        { id: "e0", source: "start", target: "bocdo" },
+        { id: "e1", source: "bocdo", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      assert.equal(status, 400, JSON.stringify(body));
+      assert.equal(body.error.code, "WF_REF_MISSING");
+      assert.equal(body.error.nodeId, "bocdo");
+      // Chua goi mo hinh nao ca: do la diem cua viec chan tu dau.
+      assert.deepEqual(ghiNhan, []);
+    });
+
+    // Dinh anh vao la chay duoc.
+    refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_sau_copy_${Date.now()}.png`)]);
+    await voiApi(async ({ base }) => {
+      const { status } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      assert.equal(status, 200);
+    });
+
+    // Anh truyen theo request cung tinh, va mot canh anh vao cung tinh.
+    const phien2 = store.createSession({ title: "boc do co canh vao" }) as { id: string };
+    const anh = node("anh", null, "mot buc anh");
+    // Node nay khong nam trong khuon nen khong duoc chay: no phai co san anh.
+    anh.data.serverNodeId = "n_anh";
+    (anh.data as Record<string, unknown>).imageUrl = "/generated/n_anh.png";
+    store.saveGraph(phien2.id, {
+      nodes: [
+        node("start", "bat-dau"),
+        anh,
+        node("bocdo", "trang-phuc", "boc trang phuc"),
+        node("end", "ket-thuc"),
+      ],
+      edges: [
+        { id: "e0", source: "start", target: "bocdo" },
+        { id: "e1", source: "anh", target: "bocdo" },
+        { id: "e2", source: "bocdo", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+    await voiApi(async ({ base }) => {
+      const { status, body } = await goi(base, `/api/wf/${phien2.id}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
     });
   });
 

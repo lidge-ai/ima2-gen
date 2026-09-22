@@ -3395,6 +3395,13 @@
     "important": false
   },
   {
+    "file": "ui/src/styles/node-workspace.css",
+    "atRule": null,
+    "selector": ".image-node__thieu-anh",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
     "file": "ui/src/styles/wf-runner.css",
     "atRule": null,
     "selector": ".wf-runner",
