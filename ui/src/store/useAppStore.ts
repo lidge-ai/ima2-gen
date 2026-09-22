@@ -78,6 +78,7 @@ import {
 import {
   addNodeReferencesImpl, addNodeReferenceDataUrlImpl,
   addNodeReferenceFromUrlImpl,
+  addNodeReferenceUrlImpl,
   removeNodeReferenceImpl, clearNodeReferencesImpl,
 } from "./storeNodeRefImpl";
 import {
@@ -520,6 +521,7 @@ addChildNode: (parentClientId) => addChildNodeImpl(parentClientId, set, get),
 addNodeReferences: async (clientId, files) => addNodeReferencesImpl(clientId, files, set, get),
 addNodeReferenceDataUrl: (clientId, dataUrl) => addNodeReferenceDataUrlImpl(clientId, dataUrl, set, get),
 addNodeReferenceFromUrl: async (clientId, src, filename) => addNodeReferenceFromUrlImpl(clientId, src, filename, set, get),
+addNodeReferenceUrl: (clientId, url) => addNodeReferenceUrlImpl(clientId, url, set, get),
 removeNodeReference: (clientId, index) => removeNodeReferenceImpl(clientId, index, set, get),
 clearNodeReferences: (clientId) => clearNodeReferencesImpl(clientId, set, get),
 duplicateBranchRoot: (sourceClientId) => duplicateBranchRootImpl(sourceClientId, set, get),

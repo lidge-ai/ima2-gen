@@ -21,6 +21,7 @@ import { effectiveReferenceLimit } from "../lib/referenceLimits";
 import { t } from "../i18n";
 import {
   type PersistedInFlight,
+  compressReferenceSource,
   stripDataUrlPrefix,
   isCanceledGenerationError,
 } from "./storeHelpers";
@@ -171,7 +172,11 @@ function timNodeBocDoCoAnh(clientId: ClientNodeId, get: StoreGet): ClientNodeId 
  * Hong thi chi bao, khong lam hong ket qua vua sinh duoc: anh flat lay van con
  * do, nguoi dung bam "Doc bo do" lai duoc.
  */
-async function docBoDoSauKhiSinh(clientId: ClientNodeId, get: StoreGet): Promise<void> {
+async function docBoDoSauKhiSinh(
+  clientId: ClientNodeId,
+  get: StoreGet,
+  tuyChon: { dinhAnh?: boolean } = {},
+): Promise<void> {
   // Node van phai trong nhu dang BAN trong luc doc: anh da co roi nhung cau ta
   // thi chua, ma node phia sau can chinh cau ta do.
   get().updateNodeData(clientId, { pendingPhase: "doc-bo-do" });
@@ -179,7 +184,9 @@ async function docBoDoSauKhiSinh(clientId: ClientNodeId, get: StoreGet): Promise
     const st = get();
     const kq = await dienMoTaTrangPhuc(
       clientId, st.graphNodes, st.graphEdges, st.updateNodePrompt,
-      (dichId, url) => st.addNodeReferenceFromUrl(dichId, url),
+      // Dinh bang chinh duong dan cua flat lay: chep ra tep moi thi lan doc thu
+      // hai ra mot ten khac va node phia sau chat hai anh giong het nhau.
+      tuyChon.dinhAnh === false ? undefined : (dichId, url) => st.addNodeReferenceUrl(dichId, url),
     );
     get().updateNodeData(clientId, { moTaTrangPhuc: kq.moTa });
   } catch (e) {
@@ -235,7 +242,9 @@ export async function runGenerateNodeInPlaceImpl(
   if (!moTaBoDo && node.data.prompt.includes(`{{${O_TRANG_PHUC}}}`)) {
     const nguon = timNodeBocDoCoAnh(clientId, get);
     if (nguon) {
-      await docBoDoSauKhiSinh(nguon, get);
+      // Chi doc CHU, khong dinh lai anh: anh flat lay da duoc dinh tu lan sinh
+      // node BOC DO, dinh nua la hai anh giong het trong cung mot node.
+      await docBoDoSauKhiSinh(nguon, get, { dinhAnh: false });
       moTaBoDo = moTaTrangPhucGanNhat(clientId, get().graphNodes, get().graphEdges);
     }
   }
@@ -280,7 +289,22 @@ export async function runGenerateNodeInPlaceImpl(
     videoModelSelected: Boolean(s.videoModelSelected),
     mcpProvider: s.mcpProvider ?? null,
   });
-  const nodeRefs = mergeRunReferences(node.data.referenceImages ?? [], elementResolution.referenceDataUrls, variantRefLimit);
+  const nodeRefsTho = mergeRunReferences(node.data.referenceImages ?? [], elementResolution.referenceDataUrls, variantRefLimit);
+  // Anh dinh doc lai tu may chu la DUONG DAN TEP (/generated/...), khong phai
+  // data URL - tu khi anh dinh chuyen ve may chu thi lan nao tai lai trang cung
+  // ra duong dan. May sinh anh chi nhan base64, nen phai doi o day; khong thi
+  // request bi tra ve "references[0] is not valid base64".
+  const nodeRefs: string[] = [];
+  for (const ref of nodeRefsTho) {
+    if (ref.startsWith("data:")) { nodeRefs.push(ref); continue; }
+    try {
+      nodeRefs.push(await compressReferenceSource(ref, "node-reference.png"));
+    } catch {
+      // Bao ra chu khong bo qua im lang: thieu mot anh tham chieu la ket qua
+      // khac han, ma nhin anh khong doan duoc thieu cai gi.
+      get().showToast(t("toast.currentImageLoadFailed"), true);
+    }
+  }
   const nodeModel = (typeof node.data.model === "string" && node.data.model ? node.data.model : s.imageModel) as AppState["imageModel"];
   // Kich thuoc: cua rieng node -> ke thua tu ANH NEN -> ti le cua ca khuon
   // (node BAT DAU) -> bang dieu khien. Cung thu tu voi luot chay o may chu, de
