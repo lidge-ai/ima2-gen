@@ -322,20 +322,48 @@ async function guardPublishCommand(manifestPath, npmTag, ref, sha) {
   console.log(JSON.stringify({ shouldPublish: false, reason: "verified-existing", ...proof }));
 }
 
-async function verifyRegistryEventually(input, timeoutMs = 120_000) {
-  const deadline = Date.now() + timeoutMs;
-  let lastError;
-  do {
+// npm processes provenance-bearing publishes asynchronously; 3.16.1 and 3.17.0 took 5-6 minutes
+// to appear, which the old 120s window turned into red publish jobs for successful publishes.
+export const REGISTRY_PROOF_TIMEOUT_MS = 15 * 60_000;
+export const REGISTRY_PROOF_MAX_TIMEOUT_MS = 20 * 60_000;
+export const REGISTRY_PROOF_POLL_MS = 10_000;
+// Worst case for one attempt, since the deadline is only checked between attempts: two npm views
+// and the provenance fetch (30s each) plus npm install and audit signatures (120s each).
+export const REGISTRY_PROOF_ATTEMPT_BUDGET_MS = 330_000;
+
+/** Local/manual override only; publish.yml does not pass it. An invalid value fails closed. */
+export function registryProofTimeoutMs(env = process.env) {
+  const raw = env.IMA2_REGISTRY_PROOF_TIMEOUT_MS;
+  if (raw === undefined || raw === "") return REGISTRY_PROOF_TIMEOUT_MS;
+  const value = /^\d+$/.test(raw) ? Number(raw) : NaN;
+  if (!Number.isSafeInteger(value) || value <= 0 || value > REGISTRY_PROOF_MAX_TIMEOUT_MS) {
+    throw new Error(`IMA2_REGISTRY_PROOF_TIMEOUT_MS must be 1..${REGISTRY_PROOF_MAX_TIMEOUT_MS} ms, got ${raw}`);
+  }
+  return value;
+}
+
+export async function verifyRegistryEventually(input, {
+  timeoutMs = registryProofTimeoutMs(),
+  pollMs = REGISTRY_PROOF_POLL_MS,
+  verify = verifyRegistry,
+  sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
+  now = Date.now,
+  log = (message) => console.error(message),
+} = {}) {
+  const started = now();
+  const deadline = started + timeoutMs;
+  // Every wait is followed by another attempt, and the last wait ends exactly at the deadline,
+  // so the final attempt sees the registry as late as the window allows.
+  for (;;) {
     try {
-      return await verifyRegistry(input);
+      return await verify(input);
     } catch (error) {
-      lastError = error;
-      if (Date.now() >= deadline) break;
-      console.error(`[release-contract] registry proof pending: ${error.message}`);
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 3_000));
+      if (now() >= deadline) throw error;
+      const elapsed = Math.round((now() - started) / 1000);
+      log(`[release-contract] registry proof pending (${elapsed}s): ${error.message}`);
+      await sleep(Math.min(pollMs, deadline - now()));
     }
-  } while (Date.now() < deadline);
-  throw lastError;
+  }
 }
 
 function runList() {

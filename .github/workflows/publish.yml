@@ -248,6 +248,9 @@ jobs:
           TARBALL=$(node -p "'./release-artifact/' + require('./release-artifact/release-manifest.json').filename")
           npm publish "$TARBALL" --ignore-scripts --tag "${{ needs.prepare.outputs.npm_tag }}" --provenance --access public
       - name: Verify registry, dist-tag, integrity, and provenance
+        # verifyRegistryEventually waits up to 15 min (20 min override) for npm's async processing,
+        # plus one worst-case attempt (REGISTRY_PROOF_ATTEMPT_BUDGET_MS) after the last check.
+        timeout-minutes: 26
         run: >-
           node scripts/release-contract.mjs verify-registry
           release-artifact/release-manifest.json
@@ -325,6 +328,7 @@ jobs:
           TARBALL=$(node -p "'./release-artifact/' + require('./release-artifact/release-manifest.json').filename")
           npm publish "$TARBALL" --ignore-scripts --tag "${{ needs.prepare.outputs.npm_tag }}" --provenance --access public
       - name: Verify registry, dist-tag, integrity, and provenance
+        timeout-minutes: 26
         run: >-
           node scripts/release-contract.mjs verify-registry
           release-artifact/release-manifest.json
