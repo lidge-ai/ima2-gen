@@ -9,6 +9,8 @@ import { WindowManager } from "./lib/windows.mjs";
 import { TrayController } from "./lib/tray.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
+import { wireAppLifecycle } from "./lib/app-lifecycle.mjs";
+import { createUpdaterController } from "./lib/updater.mjs";
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(desktopDir, "..");
@@ -41,6 +43,12 @@ async function boot() {
     getSettings: () => settingsStore.get(),
     onVisibilityChange: () => applyDockVisibility(settingsStore.get(), windows),
   });
+  const lifecycle = wireAppLifecycle({ supervisor, windows, settingsStore, applyDockVisibility, app });
+  const updater = await createUpdaterController({
+    app,
+    dialog,
+    prepareForInstall: () => lifecycle.prepareForUpdateInstall(),
+  });
 
   const configDir = () => settingsStore.get().configDir || process.env.IMA2_CONFIG_DIR || join(homedir(), ".ima2");
   const actions = {
@@ -51,6 +59,8 @@ async function boot() {
     openSettings: () => windows.showSettings(),
     openUrl: (url) => shell.openExternal(url),
     restartServer: () => supervisor.restart(settingsStore.get()),
+    checkForUpdates: () => updater.checkForUpdates({ manual: true }),
+    updaterActive: updater.active,
     configDir,
     quit: () => app.quit(),
   };
@@ -68,7 +78,6 @@ async function boot() {
   });
   settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows }));
 
-  wireAppLifecycle({ supervisor, windows, settingsStore });
   if (settingsStore.get().openAtLogin) applyLoginItem(settingsStore.get());
   applyDockVisibility(settingsStore.get(), windows);
 
@@ -78,6 +87,7 @@ async function boot() {
 
   if (!settingsStore.get().startHidden) windows.showMain();
   await supervisor.start(settingsStore.get());
+  void updater.checkForUpdates();
 }
 
 function onSettingsChanged({ next, changed, supervisor, tray, windows }) {
@@ -100,25 +110,4 @@ function applyDockVisibility(settings, windows) {
   if (!isMac || !app.dock) return;
   if (settings.menubarOnly && !windows.hasVisibleWindow()) app.dock.hide();
   else app.dock.show();
-}
-
-function wireAppLifecycle({ supervisor, windows, settingsStore }) {
-  let shuttingDown = false;
-
-  app.on("second-instance", () => windows.showMain());
-  app.on("activate", () => windows.showMain());
-  app.on("window-all-closed", () => {
-    if (!settingsStore.get().keepRunningOnClose) app.quit();
-    else applyDockVisibility(settingsStore.get(), windows);
-  });
-  app.on("before-quit", (e) => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    e.preventDefault();
-    windows.closeAllForQuit();
-    void supervisor.stop().finally(() => {
-      supervisor.dispose();
-      app.exit(0);
-    });
-  });
 }

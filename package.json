@@ -95,6 +95,7 @@
     "@openai/codex": "0.153.4",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
+    "electron-updater": "6.8.9",
     "express": "^5.1.0",
     "google-auth-library": "^11.0.1",
     "openai": "^7.4.0",

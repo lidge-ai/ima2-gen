@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const TARGETS = [
-  { os: 'macos-latest', label: 'macOS (arm64 + x64)', target: 'mac' },
+  { os: 'macos-latest', label: 'macOS (Apple Silicon)', target: 'mac' },
   { os: 'windows-latest', label: 'Windows (x64 + arm64)', target: 'win' },
   { os: 'ubuntu-latest', label: 'Linux (x64 + arm64)', target: 'linux' },
 ];
@@ -12,12 +12,19 @@ export const MAC_SIGNING_INPUTS = [
   'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID',
 ];
 
-/** @param {{ eventName: string, platform?: string, publish?: boolean | string }} input */
-export function resolveDesktopBuildPolicy({ eventName, platform = 'all', publish = false }) {
+/**
+ * Distribution is Apple Silicon macOS only for now, so scheduled events build
+ * mac alone. The Windows and Linux entries stay selectable through manual
+ * dispatch, which is what keeps re-widening distribution a config decision
+ * rather than a rebuild of this policy.
+ *
+ * @param {{ eventName: string, platform?: string, publish?: boolean | string }} input
+ */
+export function resolveDesktopBuildPolicy({ eventName, platform = 'mac', publish = false }) {
   if (!['pull_request', 'push', 'workflow_dispatch'].includes(eventName)) {
     throw new Error('Unsupported desktop build event');
   }
-  const selected = eventName === 'workflow_dispatch' ? (platform || 'all') : 'all';
+  const selected = eventName === 'workflow_dispatch' ? (platform || 'mac') : 'mac';
   if (!['all', 'mac', 'win', 'linux'].includes(selected)) {
     throw new Error('Desktop platform must be all, mac, win, or linux');
   }
@@ -25,8 +32,10 @@ export function resolveDesktopBuildPolicy({ eventName, platform = 'all', publish
     if (![true, false, 'true', 'false', ''].includes(publish)) {
       throw new Error('Desktop publish input must be true or false');
     }
-    if ((publish === true || publish === 'true') && selected !== 'all') {
-      throw new Error('Publishing requires all desktop platforms');
+    // A tag is the only thing that can reach a release: it pins the version the
+    // build validates against and is the ref a protection rule can guard.
+    if (publish === true || publish === 'true') {
+      throw new Error('Publishing is tag-only; a dispatched desktop build cannot release');
     }
   }
   return {

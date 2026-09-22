@@ -85,21 +85,72 @@ README may still mention a different Node baseline. The operational baseline is 
 `desktop/scripts/desktop-build-policy.mjs` validates platform selection before
 scheduling and checks required signing input presence. Secret-bearing steps and
 publication conditions use GitHub event/ref/input context directly, not outputs
-computed by PR code. A tag selected for manual `publish=false` cannot publish.
+computed by PR code. Distribution is Apple Silicon macOS only: pull requests and
+tag pushes build `mac` alone, while Windows and Linux stay selectable through
+manual dispatch so widening distribution later is a config decision rather than a
+rebuild of this policy. A dispatched build can never publish; a `desktop-v*` tag is
+the only ref that reaches a release, because it pins the version the build
+validates against and is the ref a protection rule can guard.
 
 The existing `desktop/build/sign-extra-binaries.mjs` hook awaits the builder's
 lazy keychain import, then signs loose Mach-O sidecars with the same scoped
 Developer ID identity. Forced signing fails on incomplete discovery or scanning.
 `verify-mac-signature.mjs` supplies native bundle checks;
-`verify-mac-artifacts.mjs` verifies both architectures, extracts ZIPs and mounts
+`verify-mac-artifacts.mjs` verifies every architecture declared by
+`desktop/electron-builder.yml`, extracts ZIPs and mounts
 DMGs read-only, compares each app's signed-content fingerprint to its original,
 and emits source-bound reports and hashes under `desktop/dist/signature-proof`.
 Verification failure blocks installer export. Uncertain mounts are preserved
 for diagnostics instead of recursively cleaned. Builder import failure before
 disposer registration relies on disposable hosted-runner destruction.
 
-Use `gh workflow run desktop.yml --ref <reviewed-branch> -f platform=mac -f publish=false`
+The declared target set is the single source of truth for both packaging and
+verification: re-adding `x64` to `mac.target[].arch` widens what is built and what
+must be proved, with no second architecture list to keep in step.
+
+Use `gh workflow run desktop.yml --ref <reviewed-branch> -f platform=mac`
 for recovery verification. This is distinct from public release publication.
+
+## Desktop release and updates (Apple Silicon)
+
+A `desktop-v*` tag must equal `desktop-v${package.json.version}` at the tagged commit.
+The root manifest is the packaged app selected by `directories.app: ..`, so it owns both
+the shipped version and production dependencies; `desktop/package.json` owns only the
+Electron build toolchain.
+
+`prepare-release-assets.mjs` runs on the release runner with no installed
+dependencies. It reads the signing proof, refuses a proof whose source SHA, ref,
+version, team, authority or export results do not vouch for this exact release,
+re-hashes the downloaded installers against the proof so artifacts cannot be
+swapped in transit, revalidates `latest-mac.yml` file names, sizes and SHA-512
+values, then writes `SHA256SUMS.txt` and release notes carrying the build commit,
+Apple Team ID and signing authority.
+
+The published asset set is exactly the DMG, the ZIP, their blockmaps,
+`latest-mac.yml` and `SHA256SUMS.txt`. The signing proof stays an Actions artifact and
+is never published. `draft_release` creates the draft and records the checksum-list
+and release-notes digests as job outputs. A separate `publish_release` job references
+the `desktop-production` environment, requires its environment-scoped
+`DESKTOP_RELEASE_GATE=required-reviewer-v1` marker, rechecks the exact asset
+allowlist, redownloads the assets to confirm those digests and every listed file,
+and only then flips the draft public without making it the repository's Latest
+release. A rerun against an already public release refuses rather than replacing
+assets.
+
+Keep the gate variable at environment scope: a repository-scoped copy would
+satisfy the marker even with no environment protection. Leave prevent-self-review
+off while the owner is the only reviewer, since enabling it would leave no one
+able to approve. Configure a tag ruleset restricting `desktop-v*` creation before the
+first live release; without it any actor with push access can mint the tag that
+spends the repository signing secrets.
+
+`electron-updater@6.8.9` is active only in a packaged `darwin/arm64` app. It checks
+once after the local server starts and exposes `Check for Updates…` in the macOS app
+menu. Automatic download and install-on-quit are disabled: the user approves
+download and then restart separately. Before `quitAndInstall()`, the app stops and
+disposes the local server. Draft releases stay invisible to installed updaters
+until the approved publication above. A live signed two-version update remains
+separate follow-up proof.
 
 ## Script Surface
 

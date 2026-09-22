@@ -27,12 +27,34 @@ export function probe(cmd, args, run = spawnSync, options = {}) {
   }
 }
 
+export const SUPPORTED_MAC_ARCHITECTURES = ['arm64', 'x64'];
+
+/**
+ * The architectures worth verifying are exactly the ones the builder is
+ * configured to emit. Deriving them here means narrowing distribution to Apple
+ * Silicon - or widening it again later - is a single config change, with no
+ * second list that can silently drift out of step with the packaged output.
+ * An unconfigured target set stays strict and demands both.
+ */
+function readMacArchitectures(builder) {
+  const targets = Array.isArray(builder.mac?.target) ? builder.mac.target : [];
+  const declared = new Set(targets.flatMap((entry) => (Array.isArray(entry?.arch) ? entry.arch : [])));
+  if (declared.size === 0) return [...SUPPORTED_MAC_ARCHITECTURES];
+  const unsupported = [...declared].filter((arch) => !SUPPORTED_MAC_ARCHITECTURES.includes(arch));
+  if (unsupported.length) throw new Error('Unsupported macOS architecture: ' + unsupported.join(', '));
+  return SUPPORTED_MAC_ARCHITECTURES.filter((arch) => declared.has(arch));
+}
+
 export function readMacExpectations(root = repositoryRoot) {
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
   const builder = parse(readFileSync(join(root, 'desktop/electron-builder.yml'), 'utf8'));
   if (typeof pkg.version !== 'string' || !/^[\w.+-]+$/.test(pkg.version)) throw new Error('Invalid root package version');
   if (typeof builder.appId !== 'string' || !builder.appId.trim()) throw new Error('Missing builder appId');
-  return { expectedVersion: pkg.version, expectedAppId: builder.appId };
+  return {
+    expectedVersion: pkg.version,
+    expectedAppId: builder.appId,
+    expectedArchitectures: readMacArchitectures(builder),
+  };
 }
 
 function addCheck(report, name, ok, detail = '') {
