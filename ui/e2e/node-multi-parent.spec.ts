@@ -54,7 +54,9 @@ async function readEdges(page: Page, sessionId: string) {
   return page.evaluate(async (id) => {
     const response = await fetch(`/api/sessions/${encodeURIComponent(id)}`);
     if (!response.ok) throw new Error(`session read failed: ${response.status}`);
-    return (await response.json()).session.edges as Array<{ id: string; source: string; target: string }>;
+    return (await response.json()).session.edges as Array<{
+      id: string; source: string; target: string; data?: { targetHandle?: string | null };
+    }>;
   }, sessionId);
 }
 
@@ -97,6 +99,8 @@ test("WP12 ordered image parents show localized roles and survive graph edits", 
       "base->target",
       "reference->target",
     ]);
+    // The drops land on the visible source dots; the stored edges must use the input handle.
+    expect(edges.map(({ data }) => data?.targetHandle)).toEqual(["target-left", "target-left"]);
 
     await page.reload();
     await expect(page.locator(".react-flow__edge")).toHaveCount(2);
@@ -116,8 +120,9 @@ test("WP12 ordered image parents show localized roles and survive graph edits", 
     await disconnected;
     await expect(page.locator(".react-flow__edge")).toHaveCount(1);
     await expect(page.locator(".react-flow__edge-text")).toHaveCount(0);
-    edges = await readEdges(page, sessionId);
-    expect(edges.map(({ source, target }) => `${source}->${target}`)).toEqual(["base->target"]);
+    // Selecting the edge also queues a delayed save, which may be the PUT awaited above.
+    await expect.poll(async () => (await readEdges(page, sessionId))
+      .map(({ source, target }) => `${source}->${target}`)).toEqual(["base->target"]);
     expect(app.stub.generationRequests).toEqual([]);
   } finally {
     await page.close();

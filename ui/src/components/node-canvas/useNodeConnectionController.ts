@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import type { Connection, OnConnectEnd } from "@xyflow/react";
 import { canConnectPorts, type CompatibilityResult, type PortDescriptor } from "../../lib/nodeCompatibility";
-import { isValidFlowConnection, type FlowConnectionLike } from "../../lib/nodeConnectionValidation";
+import { isValidFlowConnection, normalizeFlowConnection, type FlowConnectionLike } from "../../lib/nodeConnectionValidation";
 import { resolveNodePort } from "../../lib/nodePortCatalog";
 import { buildPaletteInsertion, commitGraphSnapshot } from "../../lib/nodeStudioGraph";
 import type { GraphEdge, GraphNode } from "../../store/useAppStore";
@@ -33,7 +33,8 @@ export function useNodeConnectionController(options: Options) {
     (connection: FlowConnectionLike) => isValidFlowConnection(connection, options.nodes, options.edges),
     [options],
   );
-  const onConnect = useCallback((connection: Connection) => {
+  const onConnect = useCallback((rawConnection: Connection) => {
+    const connection = normalizeFlowConnection(rawConnection, options.nodes);
     const sourceNode = options.nodes.find((node) => node.id === connection.source);
     const targetNode = options.nodes.find((node) => node.id === connection.target);
     const source = sourceNode ? resolveNodePort(sourceNode, connection.sourceHandle, "output") : null;

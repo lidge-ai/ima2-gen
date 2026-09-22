@@ -10,6 +10,29 @@ export type FlowConnectionLike = {
   targetHandle?: string | null;
 };
 
+const IMAGE_SOURCE_HANDLE_PREFIX = "source-";
+const IMAGE_TARGET_HANDLE_PREFIX = "target-";
+
+/**
+ * ImageNode draws a source and a target handle at the same spot, and only the source
+ * handle receives the pointer (node-polish.css). In loose mode React Flow prefers the
+ * handle under the pointer, so dropping on a node's visible dot yields a source-* target
+ * handle. Map it to the target handle at the same position so validation and storage see
+ * the input port the user meant. This does not decide validity.
+ */
+export function normalizeFlowConnection<T extends FlowConnectionLike>(
+  connection: T,
+  nodes: readonly GraphNode[],
+): T {
+  const handle = connection.targetHandle;
+  if (!handle?.startsWith(IMAGE_SOURCE_HANDLE_PREFIX)) return connection;
+  const targetNode = nodes.find((node) => node.id === connection.target);
+  if (!targetNode || targetNode.type !== "imageNode") return connection;
+  const inputHandle = IMAGE_TARGET_HANDLE_PREFIX + handle.slice(IMAGE_SOURCE_HANDLE_PREFIX.length);
+  if (!resolveNodePort(targetNode, inputHandle, "input")) return connection;
+  return { ...connection, targetHandle: inputHandle };
+}
+
 /**
  * Pure drag-time connection validator for React Flow's `isValidConnection`
  * (010_phase1 round2 fold-back #2). Resolves both ends through the port
@@ -17,10 +40,11 @@ export type FlowConnectionLike = {
  * Unresolvable handles are invalid.
  */
 export function isValidFlowConnection(
-  connection: FlowConnectionLike,
+  rawConnection: FlowConnectionLike,
   nodes: readonly GraphNode[],
   edges: readonly GraphEdge[],
 ): boolean {
+  const connection = normalizeFlowConnection(rawConnection, nodes);
   const sourceNode = nodes.find((node) => node.id === connection.source);
   const targetNode = nodes.find((node) => node.id === connection.target);
   if (!sourceNode || !targetNode) return false;

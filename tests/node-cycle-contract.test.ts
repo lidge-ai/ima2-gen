@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import { graphHasCycle, wouldCreateCycle } from "../ui/src/lib/nodeGraph.ts";
 import { findCycleNodeIds } from "../ui/src/lib/nodeBatch.ts";
-import { isValidFlowConnection } from "../ui/src/lib/nodeConnectionValidation.ts";
+import { isValidFlowConnection, normalizeFlowConnection } from "../ui/src/lib/nodeConnectionValidation.ts";
 import type { GraphEdge, GraphNode, ImageNodeData } from "../ui/src/store/storeTypes.ts";
 import type { ClientNodeId } from "../ui/src/lib/graph.ts";
 
@@ -86,6 +86,36 @@ describe("node graph cycle contracts", () => {
     const nodes = [imageNode("a"), imageNode("b", 360)];
     const connection = { source: "a", target: "b", sourceHandle: "bogus", targetHandle: "target-left" };
     assert.equal(isValidFlowConnection(connection, nodes, []), false);
+  });
+  it("CY-05d a drop on a node's visible source dot becomes that side's input", () => {
+    // ImageNode's target handles take no pointer events, so React Flow reports the source
+    // handle under the pointer as the target handle of a loose-mode connection.
+    const nodes = [imageNode("a"), imageNode("b", 360)];
+    const dropped = { source: "a", target: "b", sourceHandle: "source-right", targetHandle: "source-left" };
+    assert.deepEqual(normalizeFlowConnection(dropped, nodes), { ...dropped, targetHandle: "target-left" });
+    assert.equal(isValidFlowConnection(dropped, nodes, []), true);
+    for (const side of ["top", "right", "bottom", "left"]) {
+      assert.equal(normalizeFlowConnection({ ...dropped, targetHandle: `source-${side}` }, nodes).targetHandle, `target-${side}`);
+    }
+  });
+  it("CY-05e leaves canonical, element and unknown target handles unchanged", () => {
+    const element = { id: "el", type: "elementReferenceNode", position: { x: 0, y: 0 }, data: {} } as unknown as GraphNode;
+    const nodes = [imageNode("a"), imageNode("b", 360), element];
+    const canonical = { source: "a", target: "b", sourceHandle: "source-right", targetHandle: "target-left" };
+    assert.equal(normalizeFlowConnection(canonical, nodes), canonical);
+    const intoElement = { source: "a", target: "el", sourceHandle: "source-right", targetHandle: "refs" };
+    assert.equal(normalizeFlowConnection(intoElement, nodes), intoElement);
+    assert.equal(isValidFlowConnection(intoElement, nodes, []), false);
+    const unknown = { source: "a", target: "b", sourceHandle: "source-right", targetHandle: "source-middle" };
+    assert.equal(normalizeFlowConnection(unknown, nodes), unknown);
+    assert.equal(isValidFlowConnection(unknown, nodes, []), false);
+  });
+  it("CY-05f still rejects self and cycle-closing drops onto a source dot", () => {
+    const nodes = [imageNode("a"), imageNode("b", 360)];
+    const self = { source: "a", target: "a", sourceHandle: "source-right", targetHandle: "source-left" };
+    assert.equal(isValidFlowConnection(self, nodes, []), false);
+    const cycle = { source: "b", target: "a", sourceHandle: "source-right", targetHandle: "source-left" };
+    assert.equal(isValidFlowConnection(cycle, nodes, [flowEdge("e1", "a", "b")]), false);
   });
 
   it("CY-06 canvas wires isValidConnection into ReactFlow", () => {
