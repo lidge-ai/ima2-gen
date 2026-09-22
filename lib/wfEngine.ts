@@ -335,14 +335,25 @@ export function kiemTruocKhiChay(ts: ThamSoChay): void {
           : "node nay khong phai moc BAT DAU",
     );
   }
+  const trongKhuon = new Set(chuoi.thuTu);
   for (const id of Object.keys(ts.images)) {
-    if (!nodes.some((n) => n.id === id)) {
-      throw new LoiKhuon("WF_IMAGE_NODE_UNKNOWN", `khong co node ${id} de dinh anh`, id);
+    const n = nodes.find((x) => x.id === id);
+    // Anh nham vao node ngoai khuon thi khong co tac dung gi ca. Bao ra con hon
+    // de nguoi goi tuong da dinh duoc.
+    if (!n || !trongKhuon.has(id) || !laViecThat(n)) {
+      throw new LoiKhuon("WF_IMAGE_NODE_UNKNOWN", `khong co node ${id} de dinh anh trong khuon nay`, id);
+    }
+    // Node GOP nhan DANH SACH MEDIA da sinh ra, khong phai anh tham chieu.
+    if (viecCuaNode(n) === "gop-video") {
+      throw new LoiKhuon(
+        "WF_IMAGE_NODE_UNKNOWN",
+        `node ${id} la node GOP, no lay media tu cac canh vao chu khong nhan anh dinh kem`,
+        id,
+      );
     }
   }
   // Ghi de phai nham vao mot node NAM TRONG khuon nay. Nham node khac thi no
   // khong co tac dung gi ca, ma nguoi goi lai tuong da sua duoc.
-  const trongKhuon = new Set(chuoi.thuTu);
   for (const id of Object.keys(ts.nodes)) {
     if (!trongKhuon.has(id)) {
       throw new LoiKhuon("WF_NODE_OVERRIDE_UNKNOWN", `node ${id} khong nam trong khuon nay`, id);
@@ -410,13 +421,6 @@ export async function chayKhuon(
     capNhat(luot, WF_SU_KIEN.batDau, {
       buoc: luot.buoc.map((b) => ({ nodeId: b.nodeId, viec: b.viec })),
     });
-
-    // Anh dinh kem ghi vao graph truoc khi chay: cac buoc sau doc graph moi nhat
-    // nen phai thay duoc chung, va nguoi dung mo giao dien cung thay dung thu da
-    // dua vao.
-    for (const [id, ds] of Object.entries(ts.images)) {
-      ghiNode(ts.sessionId, id, { referenceImages: ds });
-    }
 
     const raNode: Record<string, { url: string; loai: "anh" | "video" }> = {};
     for (const buoc of luot.buoc) {
@@ -567,7 +571,7 @@ async function chayMotNode(
       sessionId: ts.sessionId,
       clientNodeId: nodeId,
       ...(chaServerId ? { parentNodeId: chaServerId } : {}),
-      ...(thamChieuCuaNode(node).length ? { referenceImages: thamChieuCuaNode(node) } : {}),
+      ...(thamChieuHieuLuc(node, ts).length ? { referenceImages: thamChieuHieuLuc(node, ts) } : {}),
     }, huy);
     const kq = await cho;
     const url = typeof kq.url === "string" ? kq.url : "";
@@ -602,7 +606,7 @@ async function chayMotNode(
     sessionId: ts.sessionId,
     clientNodeId: nodeId,
     contextMode: "parent-plus-refs",
-    ...(thamChieuCuaNode(node).length ? { references: thamChieuCuaNode(node) } : {}),
+    ...(thamChieuHieuLuc(node, ts).length ? { references: thamChieuHieuLuc(node, ts) } : {}),
   }, huy);
   const url = typeof kq.url === "string" ? kq.url : "";
   const serverNodeId = typeof kq.nodeId === "string" ? kq.nodeId : null;
@@ -619,9 +623,16 @@ async function chayMotNode(
   return url;
 }
 
-/** Anh nguoi dung dinh thang len node, dua ve base64 tran nhu giao dien gui. */
-function thamChieuCuaNode(node: WfNode): string[] {
-  return (node.data?.referenceImages ?? [])
+/**
+ * Anh tham chieu HIEU LUC cua mot node, dua ve base64 tran nhu giao dien gui.
+ *
+ * Anh gui kem trong luot chay THAY THE anh dinh san tren node, va chi cho luot
+ * do - giong het inputs va nodes. Khong ghi vao graph: goi mot tram lan voi mot
+ * tram bo anh khac nhau van phai de lai dung mot khuon mau.
+ */
+function thamChieuHieuLuc(node: WfNode, ts: Pick<ThamSoChay, "images">): string[] {
+  const nguon = ts.images[node.id] ?? node.data?.referenceImages ?? [];
+  return nguon
     .filter((s) => typeof s === "string" && s.startsWith("data:"))
     .map(boTienToDataUrl);
 }

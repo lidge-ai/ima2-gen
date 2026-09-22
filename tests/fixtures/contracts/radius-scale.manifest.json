@@ -3379,5 +3379,54 @@
     "selector": ".image-node__api-chep",
     "expected": "var(--r-xs)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner",
+    "expected": "var(--r-xl)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner__dau button",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner__khuon",
+    "expected": "var(--r-md)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner__nut button",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner__luot",
+    "expected": "var(--r-md)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner__mot-buoc img,\r\n.wf-runner__mot-buoc video,\r\n.wf-runner__khong-anh",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/wf-runner.css",
+    "atRule": null,
+    "selector": ".wf-runner__dung",
+    "expected": "var(--r-sm)",
+    "important": false
   }
 ]

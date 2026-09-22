@@ -183,7 +183,7 @@
 .image-node__ref-chip--ke-thua {
   position: relative;
   opacity: .82;
-  outline: 1px dashed var(--border-strong, #8a8a92);
+  outline: 1px dashed var(--border-strong);
   outline-offset: -1px;
 }
 .image-node__ref-vai {
@@ -722,7 +722,7 @@
 .image-node__api-chep {
   justify-self: start;
   padding: 2px 6px;
-  border: 1px solid var(--border-strong, #8a8a92);
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-xs);
   background: none;
   color: var(--text-dim);
@@ -761,7 +761,7 @@
   flex: 0 0 auto;
   font-weight: 700;
 }
-.image-node__api-ls-dong--xong .image-node__api-ls-tt { color: var(--green, #0f9d58); }
+.image-node__api-ls-dong--xong .image-node__api-ls-tt { color: var(--green); }
 .image-node__api-ls-dong--hong .image-node__api-ls-tt { color: var(--red); }
 .image-node__api-ls-dong--da-huy .image-node__api-ls-tt,
 .image-node__api-ls-dong--dang-chay .image-node__api-ls-tt { color: var(--text-dim); }
@@ -780,7 +780,7 @@
   display: grid;
   gap: 2px;
   padding: 3px 4px;
-  border-left: 2px solid var(--border-strong, #8a8a92);
+  border-left: 2px solid var(--border-strong);
 }
 .image-node__api-node-dau {
   display: flex;

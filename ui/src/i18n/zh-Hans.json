@@ -2179,7 +2179,8 @@
       "addImage": "添加图片",
       "templates": "模板",
       "saveTemplate": "保存模板",
-      "branch": "分支"
+      "branch": "分支",
+      "runner": "执行器"
     },
     "empty": {
       "title": "构建图像工作流程",
@@ -2584,5 +2585,21 @@
     "resetDefaults": "恢复默认值",
     "compatTitle": "NovelAI 通道",
     "compatBody": "仅支持文生图。该通道不支持参考图、编辑与批量生成。"
+  },
+  "runner": {
+    "title": "执行器",
+    "refresh": "刷新",
+    "loading": "加载中…",
+    "close": "关闭",
+    "workflows": "工作流（{count}）",
+    "runs": "运行（{count}）",
+    "noWorkflow": "还没有工作流 — 在图上加一个 START 和一个 END 标记",
+    "noRun": "尚未运行过",
+    "steps": "{count} 个步骤",
+    "running": "{count} 个运行中",
+    "open": "打开",
+    "filterOn": "只看这个",
+    "filterOff": "全部",
+    "copyUrl": "复制网址"
   }
 }

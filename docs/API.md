@@ -1305,17 +1305,19 @@ graph.
   `_` only. A slot left unfilled is **refused with 400 `WF_INPUT_MISSING`**
   rather than sent to the model: `{{…}}` reaching a prompt generates nonsense
   and still costs money. At most 64 inputs, 4000 characters each.
-- `images` — attaches reference images to specific nodes before the run, keyed by
-  node id. Each entry must be a **data URL**; file paths and remote URLs are
-  rejected, since accepting them would let a caller read arbitrary files or turn
-  the server into a downloader. At most 8 images per node. Unlike the two fields
-  around it, this one **is written onto the node**, so the picture the run used
-  is visible in the Node Studio afterwards.
+- `images` — reference images for specific nodes, keyed by node id, replacing
+  whatever that node has attached **for this call only**. Each entry must be a
+  **data URL**; file paths and remote URLs are rejected, since accepting them
+  would let a caller read arbitrary files or turn the server into a downloader.
+  At most 8 images per node. The target must be a node in this chain that
+  actually generates something — a merge node takes media from its incoming
+  edges, not attachments, and is refused.
 - `nodes` — replaces a node's content for **this call only**, keyed by node id.
   Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
   let one API call redraw a workflow the user shaped by hand on the canvas. The
   graph is never modified, so calling a hundred times with a hundred different
-  prompts still leaves one template behind. An override is checked against the
+  prompts still leaves one template behind — the same rule as `inputs` and
+  `images`. An override is checked against the
   effective prompt, so one that removes a `{{SLOT}}` needs no input for it, and
   one that introduces a new slot is refused like any other missing input.
 
@@ -1392,6 +1394,15 @@ chain with its current prompt** — the content lives on those nodes, not on the
 marker, so the panel prints them there rather than making the reader hunt for
 ids. `Copy curl` yields a body pre-filled with all of them; each node also has
 its own copy button for a body that overrides just that one.
+
+The **Runner** button in the Node Studio toolbar opens a wider view: every
+workflow on the server (with its endpoint, step count, or the reason it is not
+runnable) beside the recent runs. Expanding a run shows the inputs it was called
+with, each step with its media, and any error. A workflow's runs can be isolated
+with `Only this`, its session opened with `Open`, and a run still going stopped
+from there. The START marker's own panel only knows its own history, and only
+while that session is open — the Runner is where a workflow triggered by another
+system while nobody was looking becomes visible.
 
 ### Status codes
 

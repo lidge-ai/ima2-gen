@@ -2179,7 +2179,8 @@
       "addImage": "Add image",
       "templates": "Templates",
       "saveTemplate": "Save template",
-      "branch": "Branch"
+      "branch": "Branch",
+      "runner": "Runner"
     },
     "empty": {
       "title": "Build an image workflow",
@@ -2584,5 +2585,21 @@
     "resetDefaults": "Reset to defaults",
     "compatTitle": "NovelAI lane",
     "compatBody": "Text-to-image only. Reference images, editing, and batch counts are not available on this lane."
+  },
+  "runner": {
+    "title": "Runner",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "close": "Close",
+    "workflows": "Workflows ({count})",
+    "runs": "Runs ({count})",
+    "noWorkflow": "No workflow yet — add a START and an END marker to a graph",
+    "noRun": "No run yet",
+    "steps": "{count} step(s)",
+    "running": "{count} running",
+    "open": "Open",
+    "filterOn": "Only this",
+    "filterOff": "All",
+    "copyUrl": "Copy URL"
   }
 }

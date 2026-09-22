@@ -54,3 +54,31 @@ export async function lichSuLuotChay(
 export async function huyLuotChayApi(runId: string): Promise<void> {
   await docJson(await fetch(`/api/wf/runs/${encodeURIComponent(runId)}/cancel`, { method: "POST" }));
 }
+
+export type WfKhuonApi = {
+  sessionId: string;
+  title?: string;
+  startNodeId: string;
+  label: string | null;
+  path: string;
+  ready: boolean;
+  steps?: number;
+  reason?: string;
+};
+
+/** Moi khuon dang co tren may chu, ke ca nhung khuon chua noi xong. */
+export async function danhSachKhuon(): Promise<WfKhuonApi[]> {
+  const kq = await docJson(await fetch("/api/wf"));
+  return Array.isArray(kq.workflows) ? kq.workflows as WfKhuonApi[] : [];
+}
+
+/** Lich su chung, khong gioi han o mot node BAT DAU nao. */
+export async function lichSuChung(
+  loc: { sessionId?: string; startNodeId?: string; gioiHan?: number } = {},
+): Promise<WfLuotApi[]> {
+  const q = new URLSearchParams({ limit: String(loc.gioiHan ?? 30) });
+  if (loc.sessionId) q.set("sessionId", loc.sessionId);
+  if (loc.startNodeId) q.set("startNodeId", loc.startNodeId);
+  const kq = await docJson(await fetch(`/api/wf/runs?${q}`));
+  return Array.isArray(kq.runs) ? kq.runs as WfLuotApi[] : [];
+}

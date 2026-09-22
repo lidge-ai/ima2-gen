@@ -176,6 +176,12 @@ describe("workflow API contracts", () => {
       assert.equal(saiAnh.status, 400);
       assert.equal(saiAnh.body.error.code, "WF_IMAGE_NODE_UNKNOWN");
 
+      // Anh nham vao moc thi khong co tac dung gi - bao ra con hon de im lang.
+      const vaoMoc = await goi(base, `/api/wf/${day}/start`, "POST",
+        { inputs: { MAU_SAC: "do" }, images: { end: ["data:image/png;base64,AA=="] } });
+      assert.equal(vaoMoc.status, 400);
+      assert.equal(vaoMoc.body.error.code, "WF_IMAGE_NODE_UNKNOWN");
+
       // Anh phai la data URL: nhan duong dan tep se cho nguoi goi doc tep bat ky.
       const anhLa = await goi(base, `/api/wf/${day}/start`, "POST",
         { inputs: { MAU_SAC: "do" }, images: { canh: ["/etc/passwd"] } });
@@ -313,9 +319,10 @@ describe("workflow API contracts", () => {
       assert.equal(status, 200);
       // Gui len duoi dang base64 tran, dung nhu giao dien gui.
       assert.deepEqual(ghiNhan[0]!.than.references, ["iVBORw0KGgo="]);
-      // Va luu lai tren node de mo giao dien len la thay dung thu da dua vao.
+      // Va KHONG ghi vao graph: giong inputs va nodes, anh gui kem chi ap cho
+      // luot chay do - goi mot tram lan voi mot tram bo anh van la mot khuon.
       const canh = store.getSession(day)!.nodes.find((n: any) => n.id === "canh") as any;
-      assert.deepEqual(canh.data.referenceImages, [anh]);
+      assert.equal(canh.data.referenceImages, undefined);
     });
   });
 });

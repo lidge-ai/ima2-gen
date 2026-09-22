@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Panel } from "@xyflow/react";
 import { useI18n } from "../../i18n";
 import { useModalFocus } from "../../hooks/useModalFocus";
@@ -7,6 +7,7 @@ import { NodeBranchDialog } from "./NodeBranchDialog";
 import { NodeCommandPalette } from "./NodeCommandPalette";
 import { NodeElementTray } from "./NodeElementTray";
 import { NodeTemplatePicker } from "./NodeTemplatePicker";
+import { WfRunnerPanel } from "./WfRunnerPanel";
 
 type StudioController = ReturnType<typeof useNodeStudioController>;
 
@@ -24,9 +25,13 @@ function DialogFrame({ children, onClose }: { children: ReactNode; onClose(): vo
 
 export function NodeStudioOverlays({ studio, graphEmpty, disabled, onAddRoot }: NodeStudioOverlaysProps) {
   const { t } = useI18n();
+  // Runner mo duoc ke ca khi canvas dang trong: no noi ve MOI khuon tren may
+  // chu, khong rieng phien dang mo.
+  const [runnerOpen, setRunnerOpen] = useState(false);
   return <>
     <Panel position="top-right" className="node-studio-toolbar">
       <button type="button" disabled={disabled} onClick={onAddRoot}>{t("nodeStudio.toolbar.addImage")}</button>
+      <button type="button" onClick={() => setRunnerOpen(true)}>{t("nodeStudio.toolbar.runner")}</button>
       <button type="button" disabled={disabled} onClick={studio.openTemplates}>{t("nodeStudio.toolbar.templates")}</button>
       <button type="button" disabled={disabled || graphEmpty} onClick={studio.saveTemplate}>{t("nodeStudio.toolbar.saveTemplate")}</button>
       <button type="button" disabled={disabled || !studio.selectedSource} onClick={studio.openBranch}>{t("nodeStudio.toolbar.branch")}</button>
@@ -37,6 +42,7 @@ export function NodeStudioOverlays({ studio, graphEmpty, disabled, onAddRoot }: 
     <NodeCommandPalette open={Boolean(studio.palette)} anchor={studio.palette?.anchor ?? { clientX: 0, clientY: 0 }} sourcePort={studio.palette?.sourcePort} commands={studio.commands} onInsert={studio.insertCommand} onClose={studio.closePalette} />
     {studio.templateOpen ? <DialogFrame onClose={studio.closeOverlays}><NodeTemplatePicker templates={studio.templates} loading={studio.templateLoading} error={studio.templateError} onCopy={studio.copyTemplate} onRename={studio.renameTemplate} onDelete={studio.removeTemplate} onClose={studio.closeOverlays} /></DialogFrame> : null}
     {studio.branchOpen && studio.selectedSource ? <DialogFrame onClose={studio.closeOverlays}><div role="dialog" aria-modal="true" aria-labelledby="node-branch-dialog-title"><NodeBranchDialog sourceLabel={studio.selectedSource.data.prompt || studio.selectedSource.id} onApply={studio.applyBranch} onClose={studio.closeOverlays} /></div></DialogFrame> : null}
+    {runnerOpen ? <DialogFrame onClose={() => setRunnerOpen(false)}><WfRunnerPanel onClose={() => setRunnerOpen(false)} /></DialogFrame> : null}
     <div className="node-studio-status" role="status" aria-live="polite" aria-atomic="true">{studio.status}</div>
   </>;
 }

@@ -2179,7 +2179,8 @@
       "addImage": "이미지 추가",
       "templates": "템플릿",
       "saveTemplate": "템플릿 저장",
-      "branch": "분기"
+      "branch": "분기",
+      "runner": "러너"
     },
     "empty": {
       "title": "이미지 워크플로 만들기",
@@ -2584,5 +2585,21 @@
     "resetDefaults": "기본값으로 되돌리기",
     "compatTitle": "NovelAI 레인",
     "compatBody": "텍스트로 이미지를 만드는 것만 됩니다. 참조 이미지, 편집, 여러 장 생성은 이 레인에서 지원하지 않습니다."
+  },
+  "runner": {
+    "title": "러너",
+    "refresh": "새로고침",
+    "loading": "불러오는 중…",
+    "close": "닫기",
+    "workflows": "워크플로 ({count})",
+    "runs": "실행 ({count})",
+    "noWorkflow": "아직 워크플로가 없습니다 — 그래프에 START와 END 표식을 추가하세요",
+    "noRun": "아직 실행 없음",
+    "steps": "{count}단계",
+    "running": "{count}개 실행 중",
+    "open": "열기",
+    "filterOn": "이것만",
+    "filterOff": "전체",
+    "copyUrl": "URL 복사"
   }
 }

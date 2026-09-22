@@ -1,0 +1,250 @@
+/* Bang Runner: moi khuon tren may chu va moi lan goi vao chung.
+
+   Mo tu thanh cong cu cua Node Studio, dung chung lop phu voi cac hop thoai
+   khac o do. Hai cot: khuon ben trai, lich su goi ben phai - danh sach goi la
+   thu nguoi dung xem lau nhat nen no duoc phan rong hon. */
+.wf-runner {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, 92vw);
+  max-height: 82vh;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.wf-runner__dau {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.wf-runner__tieu {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.wf-runner__dau button {
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.wf-runner__than {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  min-height: 0;
+}
+.wf-runner__cot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 12px 14px;
+  overflow: auto;
+}
+.wf-runner__cot--luot {
+  border-left: 1px solid var(--border);
+}
+.wf-runner__nhan {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.wf-runner__trong {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ---- khuon ---- */
+.wf-runner__khuon {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.wf-runner__khuon.is-loc {
+  border-color: var(--accent);
+}
+.wf-runner__khuon-dau {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wf-runner__khuon-ten {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-runner__chay {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+.wf-runner__duong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+.wf-runner__khuon-tt {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+.wf-runner__nut {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.wf-runner__nut button {
+  padding: 3px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* ---- luot chay ---- */
+.wf-runner__luot {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.wf-runner__luot-dau {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wf-runner__tt {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.wf-runner__luot--xong .wf-runner__tt { color: var(--green); }
+.wf-runner__luot--hong .wf-runner__tt { color: var(--red); }
+.wf-runner__luot--dang-chay .wf-runner__tt { color: var(--accent); }
+.wf-runner__luot--da-huy .wf-runner__tt { color: var(--text-dim); }
+.wf-runner__luc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-runner__so {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.wf-runner__chitiet {
+  display: grid;
+  gap: 6px;
+  padding: 0 9px 9px;
+}
+.wf-runner__ma {
+  color: var(--text-dim);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.wf-runner__loi {
+  color: var(--red);
+  font-size: 11px;
+  line-height: 1.45;
+}
+/* Dau vao cua lan goi do: chinh no phan biet hai lan chay cung mot khuon. */
+.wf-runner__vao {
+  max-height: 120px;
+  margin: 0;
+  overflow: auto;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.wf-runner__buoc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.wf-runner__mot-buoc {
+  display: grid;
+  gap: 2px;
+  width: 92px;
+}
+.wf-runner__mot-buoc img,
+.wf-runner__mot-buoc video,
+.wf-runner__khong-anh {
+  display: block;
+  width: 92px;
+  height: 92px;
+  border-radius: var(--r-sm);
+  background: var(--control-bg);
+  object-fit: cover;
+}
+.wf-runner__buoc-ma {
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-runner__buoc-tt {
+  color: var(--text-dim);
+  font-size: 9px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.wf-runner__mot-buoc--hong .wf-runner__buoc-tt { color: var(--red); }
+.wf-runner__dung {
+  justify-self: start;
+  padding: 3px 10px;
+  border: 1px solid var(--red);
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--red);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .wf-runner__than {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wf-runner__cot--luot {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+}
