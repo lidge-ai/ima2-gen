@@ -221,7 +221,11 @@ function migrate(database: Database.Database) {
       inputs        TEXT NOT NULL DEFAULT '{}',
       steps         TEXT NOT NULL DEFAULT '[]',
       result        TEXT,
-      error         TEXT
+      error         TEXT,
+      -- Nhung thu dang ngo nhung KHONG chan luot chay (vi du node BOC DO khong
+      -- co anh nao). Giu lai de xem lai mot luot cu con biet no da chay trong
+      -- dieu kien nao.
+      warnings      TEXT
     );
 
     CREATE INDEX IF NOT EXISTS idx_wf_runs_created ON wf_runs(created_at);
@@ -282,6 +286,13 @@ function migrate(database: Database.Database) {
   addColumnIfMissing(database, agentQueueColumns, "agent_queue_items", "position", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing(database, agentQueueColumns, "agent_queue_items", "result_image_ids", "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing(database, agentQueueColumns, "agent_queue_items", "error_code", "TEXT");
+
+  // Bang wf_runs co truoc cot `warnings`: them cho co so du lieu da ton tai.
+  const wfRunColumns = (database
+    .prepare("PRAGMA table_info(wf_runs)")
+    .all() as Array<{ name: string }>)
+    .map((row) => row.name);
+  addColumnIfMissing(database, wfRunColumns, "wf_runs", "warnings", "TEXT");
   addColumnIfMissing(database, agentQueueColumns, "agent_queue_items", "error_class", "TEXT");
   // The wrapper code alone (AGENT_TEXT_ONLY_RESULT) tells the user nothing about WHY.
   // The worker already computes rawCode; without this column it was dropped here.

@@ -53,6 +53,14 @@ export type WfLuotChay = {
   buoc: WfBuoc[];
   ketQua?: WfKetQua | undefined;
   loi?: { code: string; message: string; nodeId?: string | undefined } | undefined;
+  /**
+   * Nhung thu dang ngo nhung KHONG chan luot chay.
+   *
+   * Vi du node BOC DO khong co anh nao: no se bia ra mot bo do. Co nguoi muon
+   * dung the that - khong truyen anh la de no tu nghi ra do - nen day la mot
+   * cau bao, khong phai mot canh cua dong lai.
+   */
+  canhBao?: Array<{ code: string; message: string; nodeId?: string | undefined }> | undefined;
 };
 
 type BanGhi = {
@@ -77,6 +85,7 @@ type Hang = {
   steps: string;
   result: string | null;
   error: string | null;
+  warnings: string | null;
 };
 
 function doc<T>(van: string | null, mac: T): T {
@@ -96,6 +105,7 @@ function thanhLuot(h: Hang): WfLuotChay {
     buoc: doc<WfBuoc[]>(h.steps, []),
     ...(h.result ? { ketQua: doc<WfKetQua>(h.result, { media: [], nodes: {} }) } : {}),
     ...(h.error ? { loi: doc<WfLuotChay["loi"]>(h.error, undefined) } : {}),
+    ...(h.warnings ? { canhBao: doc<WfLuotChay["canhBao"]>(h.warnings, undefined) } : {}),
   };
 }
 
@@ -157,14 +167,15 @@ function donBot(): void {
 export function luuLuotChay(luot: WfLuotChay): void {
   khoiPhuc();
   getDb().prepare(`
-    INSERT INTO wf_runs (id, session_id, start_node_id, status, created_at, finished_at, inputs, steps, result, error)
-    VALUES (@id, @session_id, @start_node_id, @status, @created_at, @finished_at, @inputs, @steps, @result, @error)
+    INSERT INTO wf_runs (id, session_id, start_node_id, status, created_at, finished_at, inputs, steps, result, error, warnings)
+    VALUES (@id, @session_id, @start_node_id, @status, @created_at, @finished_at, @inputs, @steps, @result, @error, @warnings)
     ON CONFLICT(id) DO UPDATE SET
       status = excluded.status,
       finished_at = excluded.finished_at,
       steps = excluded.steps,
       result = excluded.result,
-      error = excluded.error
+      error = excluded.error,
+      warnings = excluded.warnings
   `).run({
     id: luot.id,
     session_id: luot.sessionId,
@@ -176,6 +187,7 @@ export function luuLuotChay(luot: WfLuotChay): void {
     steps: JSON.stringify(luot.buoc ?? []),
     result: luot.ketQua ? JSON.stringify(luot.ketQua) : null,
     error: luot.loi ? JSON.stringify(luot.loi) : null,
+    warnings: luot.canhBao?.length ? JSON.stringify(luot.canhBao) : null,
   });
 }
 

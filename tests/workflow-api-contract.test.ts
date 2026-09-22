@@ -779,15 +779,15 @@ describe("workflow outfit + attachment contracts", () => {
   });
 
   it("WFTP-20 giao dien nhac ngay tren node BOC DO khi chua co anh", async () => {
-    // Chan o may chu la de khoi ton tien, nhung nguoi dung phai biet TRUOC khi
-    // bam - nhat la sau khi copy tu template, luc node vua trong tron.
+    // Nguoi dung phai biet TRUOC khi bam - nhat la sau khi copy tu template,
+    // luc node vua trong tron va khong co gi noi cho biet.
     const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
     assert.match(src, /const bocDoThieuAnh = laNodeBocDo/);
     assert.match(src, /refs\.length === 0/);
     assert.match(src, /canhAnhVao\(graphEdges, graphNodes, id\)\.length === 0/);
     assert.match(src, /image-node__thieu-anh/);
-    // Va bam GEN o node do thi khong goi mo hinh: bam vao chi ra mot bo do bia.
-    assert.match(src, /if \(bocDoThieuAnh\) \{ showToast\(t\("node\.bocDoNeedRef"\), true\); return; \}/);
+    // Chi NHAC, khong chan: bam GEN o node do van chay binh thuong.
+    assert.doesNotMatch(src, /if \(bocDoThieuAnh\)/);
   });
 
   it("WFSZ-01 node khong dat kich thuoc thi ke thua kich thuoc cua anh nen", async () => {
@@ -938,10 +938,11 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
-  it("WFTP-19 node BOC DO khong co anh nao thi tu choi truoc khi ton mot dong", async () => {
-    // Prompt cua vai tro nay la "doc anh tham chieu roi boc tung mon do ra".
-    // Khong anh thi mo hinh BIA ra mot bo, va ca khuon phia sau mac bo do tuong
-    // tuong day - loi chi hien ra o tam anh cuoi, sau khi da tra tien het.
+  it("WFTP-19 node BOC DO khong co anh thi VAN CHAY, kem mot cau bao", async () => {
+    // Khong co anh thi no tu nghi ra mot bo do. Co nguoi co y dung the that -
+    // khong truyen anh la de mo hinh bia ra mot bo - nen day la cau BAO chu
+    // khong phai mot canh cua dong lai. Chan lai la quyet dinh ho tra tien
+    // nhung khong duoc chon.
     //
     // Hay xay ra khi copy tu template: template khong mang anh dinh theo.
     const phien = store.createSession({ title: "khuon vua copy" }) as { id: string };
@@ -960,18 +961,20 @@ describe("workflow outfit + attachment contracts", () => {
 
     await voiApi(async ({ base, ghiNhan }) => {
       const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
-      assert.equal(status, 400, JSON.stringify(body));
-      assert.equal(body.error.code, "WF_REF_MISSING");
-      assert.equal(body.error.nodeId, "bocdo");
-      // Chua goi mo hinh nao ca: do la diem cua viec chan tu dau.
-      assert.deepEqual(ghiNhan, []);
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      assert.equal(ghiNhan.length, 1, "van phai sinh anh");
+      assert.deepEqual(
+        (body.canhBao ?? []).map((c: { code: string; nodeId?: string }) => [c.code, c.nodeId]),
+        [["WF_REF_MISSING", "bocdo"]],
+      );
     });
 
-    // Dinh anh vao la chay duoc.
+    // Dinh anh vao thi khong con cau bao nao.
     refStore.datRefCuaNode(phien.id, "bocdo", [tepAnh(`ref_sau_copy_${Date.now()}.png`)]);
     await voiApi(async ({ base }) => {
-      const { status } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
       assert.equal(status, 200);
+      assert.equal(body.canhBao, undefined);
     });
 
     // Anh truyen theo request cung tinh, va mot canh anh vao cung tinh.

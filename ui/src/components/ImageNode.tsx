@@ -442,13 +442,14 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   /** Node BOC DO thi sinh xong la doc mo ta luon. */
   const laNodeBocDo = d.vaiTro === "trang-phuc";
   /**
-   * Node BOC DO khong co anh nao vao thi no BIA ra mot bo do.
+   * Node BOC DO khong co anh nao vao thi no tu nghi ra mot bo do.
    *
-   * Prompt cua vai tro nay la "doc anh tham chieu roi boc tung mon do ra" -
-   * khong anh thi mo hinh tu nghi ra mot bo, va ca khuon phia sau mac bo do
-   * tuong tuong day. Hay xay ra nhat la khi vua copy tu template: template
-   * KHONG mang anh dinh theo (co y - de data URL khong vao co so du lieu), nen
-   * ban moi copy ra la node trong tron.
+   * Chi NHAC, khong chan: co nguoi co y khong dinh anh de mo hinh tu bia ra mot
+   * bo. Chan lai la quyet dinh ho tra tien nhung khong duoc chon.
+   *
+   * Nhac o day vi hay quen nhat khi vua copy tu template: template KHONG mang
+   * anh dinh theo (co y - de data URL khong vao co so du lieu), nen ban moi copy
+   * ra la node trong tron va khong co gi noi cho biet.
    */
   const bocDoThieuAnh = laNodeBocDo
     && refs.length === 0
@@ -458,15 +459,13 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   }, [laNodeBocDo, docBoDo]);
 
   const onGenerate = useCallback(() => {
-    if (bocDoThieuAnh) { showToast(t("node.bocDoNeedRef"), true); return; }
     if (canhBaoOTrong()) return;
     // Node VIDEO phai di duong runVideoGenerate (biet node) chu khong phai
     // animateImage: duong kia chi nhan ten tep nen khong dat duoc trang thai
     // cho, va ket qua khong gan vao node nao.
     if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
     void generateNode(id).then(sauKhiSinh);
-  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh,
-      bocDoThieuAnh, showToast, t]);
+  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh]);
 
   const onRegenerateInPlace = useCallback(() => {
     if (canhBaoOTrong()) return;
@@ -909,7 +908,7 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           ) : null}
         </div>
         {bocDoThieuAnh ? (
-          <div className="image-node__thieu-anh" role="alert">
+          <div className="image-node__thieu-anh">
             {t("node.bocDoNeedRef")}
           </div>
         ) : null}

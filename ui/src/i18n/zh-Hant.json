@@ -767,7 +767,7 @@
     "videoBase": "基底圖像",
     "videoBaseFirstFrame": "首格",
     "videoBaseReference": "僅作參考",
-    "bocDoNeedRef": "請附上實際服裝照片 — 沒有圖片這個節點會自己編一套。",
+    "bocDoNeedRef": "未附圖片 — 這個節點會自己編一套。附上實際照片才會照著做。",
     "wfSize": "整個流程比例",
     "wfSizeNone": "依節點／面板",
     "outfitNotReadYet": "請先執行拆解節點 — 尚未讀取服裝描述。"

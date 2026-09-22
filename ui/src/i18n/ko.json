@@ -767,7 +767,7 @@
     "videoBase": "베이스 이미지",
     "videoBaseFirstFrame": "첫 프레임",
     "videoBaseReference": "참조로만",
-    "bocDoNeedRef": "실제 의상 사진을 첨부하세요 — 이미지가 없으면 이 노드가 옷을 지어냅니다.",
+    "bocDoNeedRef": "사진이 없습니다 — 이 노드가 의상을 지어냅니다. 실제 사진을 첨부하면 그대로 유지됩니다.",
     "wfSize": "워크플로 전체 비율",
     "wfSizeNone": "노드별 / 패널",
     "outfitNotReadYet": "먼저 추출 노드를 실행하세요 — 의상 설명을 아직 읽지 않았습니다."

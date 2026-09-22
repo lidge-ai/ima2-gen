@@ -233,8 +233,11 @@ export function duongDanKhuon(sessionId: string, startNodeId: string): string {
 
 function traLuot(res: Response, luotTho: WfLuotChay, goc: string): void {
   const luot = luotTuyetDoi(luotTho, goc);
+  // Cau bao dua len CAP TREN cung chu khong chi nam trong `run`: no la thu
+  // nguoi goi can doc ngay, khong phai thu phai dao vao ban ghi moi thay.
+  const canhBao = luot.canhBao?.length ? { canhBao: luot.canhBao } : {};
   if (luot.trangThai === "xong") {
-    res.json({ ok: true, run: luot, result: luot.ketQua });
+    res.json({ ok: true, run: luot, result: luot.ketQua, ...canhBao });
     return;
   }
   if (luot.trangThai === "da-huy") {
@@ -251,6 +254,7 @@ function traLuot(res: Response, luotTho: WfLuotChay, goc: string): void {
   res.status(202).json({
     ok: true,
     run: luot,
+    ...canhBao,
     statusUrl: `${goc}/api/wf/runs/${luot.id}`,
     streamUrl: `${goc}/api/wf/runs/${luot.id}/stream`,
   });
