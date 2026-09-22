@@ -142,3 +142,42 @@ dry run 없이 태그를 올렸다면 첫 실전 릴리스가 여기서 실패�
 계획 영향: desktop 태그는 릴리스 SHA `bfb83da5`가 아니라 이 수정이 dev에 머지된 커밋에 붙는다.
 루트 `package.json` 버전은 그대로 3.17.0이라 태그 검증(desktop.yml:177-181)을 통과하고, 패키징되는
 앱 코드는 npm 3.17.0과 같다(차이는 워크플로·테스트·devlog). 머지 뒤 그 커밋에서 T3를 다시 돌린 다음 T4.
+
+## B 중 발견 2 — 공개 잡의 저장소 추론 실패 (B-2)
+
+태그 실행 35786583768에서 build·draft는 성공했고 승인 뒤 `publish_release`가
+`failed to run git: not a git repository` 다음 "is not a draft; refusing publication"으로 실패했다.
+이 잡은 checkout이 없는데 `gh release view "$DESKTOP_TAG"`가 `--repo`/`GH_REPO` 없이 저장소를
+git remote에서 추론하려 했다. 빈 출력이 "초안 아님"으로 읽혀 fail-closed로 멈췄고 아무것도 공개되지 않았다.
+셸 시뮬레이션 테스트는 gh stub을 쓰므로 이 경로를 볼 수 없었다.
+
+처리:
+
+- 이번 릴리스: 태그 이동(파괴적 복구)은 하지 않았다. 공개 잡의 검사를 로컬에서 같은 값으로 재현했다 —
+  isDraft=true, 자산 6개 allowlist 일치, SHA256SUMS.txt 해시 `49fa3a46…` = 잡의 기대값,
+  개별 체크섬 OK, 노트 해시 `a20627af…` = 기대값, 태그 = `23c421cb`. 소유자 승인은 이 run에 이미 기록됨.
+  그 뒤 잡과 같은 `gh release edit desktop-v3.17.0 --draft=false --latest=false` (21:42:51Z).
+- 수정: 공개 단계에 `GH_REPO: ${{ github.repository }}`. 테스트는 checkout 없는 잡에서 gh를 호출하는 모든
+  단계가 GH_REPO를 갖도록 요구하며, 수정 전 워크플로에서 실패한다.
+
+## 릴리스 영수증
+
+| 항목 | 값 |
+|---|---|
+| npm | `ima2-gen@3.17.0` latest, gitHead `bfb83da5`, SLSA provenance; preview `3.17.0-preview.260922.35777691805.1` |
+| npm 게시 | publish.yml 35781305150 attempt 1 검증 E404(게시 20:50:17 전후, 레지스트리 반영 20:50:53Z) → `rerun --failed` attempt 2 성공, create-github-release 포함 |
+| GitHub Release v3.17.0 | 공개, Latest, 20:54:26Z |
+| ref | main = preview = v3.17.0 = `bfb83da5`; dev는 이후 #264 `23c421cb` |
+| 관리자 게이트 | desktop-production(리뷰어 lidge-jun, admin bypass 금지, tag policy desktop-v*), env 변수 DESKTOP_RELEASE_GATE, 태그 룰셋 23844976 |
+| 서명 dry run | release SHA run 35781284918 실패(B-1 발견) → #264 헤드 run 35784139444 성공, proof ok:true |
+| desktop-v3.17.0 | 태그 `23c421cb`(트리 = #264 헤드 `d6aa32b0`, 버전 3.17.0), run 35786583768 build·draft 성공, 공개 21:42:51Z(B-2 수동 경로) |
+| 공개 자산 SHA-256 | dmg `2425cc60…5ad2`, zip `ae2e8daf…8dbd` (SHA256SUMS.txt 참조) |
+| 로컬 Gatekeeper | 마운트한 ima2.app: codesign --deep --strict OK, runtime flag, TeamIdentifier U9ATA49N28, spctl accepted source=Notarized Developer ID, stapler validate OK, arm64, 3.17.0 |
+| DMG 자체 | 서명·티켓 없음(spctl rejected no usable signature) — 참고 정보, 앱은 공증·스테이플됨 |
+
+## 후속
+
+- 서명 시크릿이 저장소 범위라 push 권한자가 dispatch로 서명을 쓸 수 있다(D7). 태그 전용 환경으로 옮기는 안.
+- DMG 자체 서명·공증(다운로드 직후 Gatekeeper 경험 개선).
+- 두 버전 간 live 자동 업데이트 증명(다음 desktop 버전 필요). `--latest=false`로 공개되는 desktop 릴리스를
+  electron-updater가 찾는지도 그때 확인.

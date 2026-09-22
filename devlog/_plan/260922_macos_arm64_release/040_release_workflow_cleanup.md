@@ -6,13 +6,15 @@ tags: [ima2-gen, desktop, macos, release, github-actions]
 
 # 040 — Apple Silicon 릴리스 워크플로 정리
 
-Status: complete (repository contract); production Environment setup and live release pending
+Status: complete — Environment/ruleset 적용과 첫 live release(desktop-v3.17.0, 2026-09-22)는
+[260923 영수증](../260923_desktop_v3170_release/010_wp1_release_runbook.md#릴리스-영수증) 참조
 
 ## Scope
 
 IN:
 
-- PR·수동 실행은 Apple secret 없는 unsigned candidate Actions artifact로 유지.
+- PR은 Apple secret 없는 unsigned candidate. 수동 dispatch는 (아래 정정 참조) 서명·공증까지 하되
+  Release를 만들지 않는 Actions artifact로 유지.
 - `desktop-vX.Y.Z` 태그는 root app version과 정확히 일치할 때 동일 SHA에서 다시 빌드.
 - Developer ID 서명, hardened runtime, timestamp, Gatekeeper, stapled notarization과 Team ID를
   확인하고 `release-verification.json` receipt를 Actions artifact에 보관.
@@ -29,8 +31,12 @@ OUT:
 ## Final workflow
 
 ```text
-PR / workflow_dispatch
+PR
   -> unsigned arm64 candidate
+  -> Actions artifact only
+
+workflow_dispatch (2026-09-23 정정: desktop.yml은 dispatch에서도 서명·공증한다)
+  -> signed + notarized arm64 build, verification report
   -> Actions artifact only
 
 desktop-vX.Y.Z tag
@@ -172,3 +178,14 @@ References:
 7. focused/full tests, typechecks, inventory, action pin sweep, audit, diff audit가 통과한다.
 
 Fresh 결과는 `041_check_evidence.md`에 기록한다.
+
+### 적용 결과 (2026-09-22 21:0x UTC, 소유자 lidge-jun)
+
+위 명령을 그대로 실행했고 readback으로 확인했다: desktop-production은 required_reviewers=[lidge-jun],
+prevent_self_review=false, can_admins_bypass=false, deployment policy `desktop-v*`(tag); 환경 범위
+`DESKTOP_RELEASE_GATE=required-reviewer-v1`, 저장소 범위 변수 없음; 태그 룰셋 23844976
+"Protect desktop release tags" active, creation/update/deletion, admin bypass, 소유자
+`current_user_can_bypass=always`.
+
+남은 신뢰 경계 공백: Apple 서명 시크릿은 저장소 범위라 push 권한자는 dispatch나 수정한 워크플로로
+태그 없이도 서명을 쓸 수 있다. 태그 룰셋은 공개 경로만 막는다. 시크릿을 태그 제한 환경으로 옮기는 것은 후속.
