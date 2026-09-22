@@ -87,15 +87,17 @@ describe("desktop release asset preparation", () => {
         "latest-mac.yml", "SHA256SUMS.txt",
       ]);
 
-      const checksums = readFileSync(join(run1.directory, "SHA256SUMS.txt"), "utf8");
+      // Exact line membership, so a filename never has to survive regex escaping.
+      const checksums = readFileSync(join(run1.directory, "SHA256SUMS.txt"), "utf8").split("\n").filter(Boolean);
       for (const [name, value] of run1.bytes) {
-        assert.match(checksums, new RegExp("^" + sha256Hex(value) + "  " + name.replace(/\./g, "\\.") + "$", "m"));
+        assert.ok(checksums.includes(sha256Hex(value) + "  " + name), "no checksum line for " + name);
       }
-      assert.doesNotMatch(checksums, /report\.json|RELEASE_NOTES/);
+      assert.equal(checksums.length, run1.bytes.size + 1, "only the published artifacts are listed");
+      assert.ok(!checksums.some((line) => /report\.json|RELEASE_NOTES/.test(line)));
 
       const notes = readFileSync(join(run1.directory, "RELEASE_NOTES.md"), "utf8");
-      assert.match(notes, new RegExp(SHA));
-      assert.match(notes, new RegExp(TEAM));
+      assert.ok(notes.includes(SHA), "notes must record the build commit");
+      assert.ok(notes.includes(TEAM), "notes must record the Apple Team ID");
       assert.match(notes, /Developer ID Application: Example/);
       assert.match(notes, /Architectures: arm64/);
       assert.match(notes, /Stapled notarization ticket: passed/);
