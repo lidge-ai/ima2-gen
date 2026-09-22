@@ -40,6 +40,42 @@ export const CAU_HOI_MO_TA =
   + "worn. Output only the list, no preamble, no numbering.";
 
 type CanhCoNguon = { source: string; target: string };
+type NodeCoPrompt = { id: string; data?: { prompt?: string | undefined } | undefined };
+
+/**
+ * Moi node PHIA SAU `nodeId` con mang khoi "She wears: ...".
+ *
+ * Khong dung duoc "node co canh ref truc tiep" o day. Khoi mo ta duoc chep
+ * xuoi theo chuoi: node MAC DO lay flat lay lam tham chieu, con node CANH chi
+ * lay anh nguoi da mac lam anh nen - no khong co canh nao noi ve node trang
+ * phuc. Chi doi loi ta o nhung node tham chieu truc tiep thi node CANH giu
+ * nguyen cau ta bo do cu, va no mac lai dung bo do cu du anh nen da dung.
+ * Dung loi da xay ra: mac-hong ra ao moi, canh-hong-1 ra ao cu.
+ */
+export function timNodeCanDoiMoTa(
+  nodeId: string,
+  nodes: readonly NodeCoPrompt[],
+  edges: readonly CanhCoNguon[],
+): string[] {
+  const con = new Map<string, string[]>();
+  for (const e of edges) {
+    const ds = con.get(e.source) ?? [];
+    ds.push(e.target);
+    con.set(e.source, ds);
+  }
+  const phiaSau = new Set<string>();
+  const hang = [nodeId];
+  for (let i = 0; i < hang.length; i++) {
+    for (const c of con.get(hang[i]!) ?? []) {
+      if (phiaSau.has(c) || c === nodeId) continue;
+      phiaSau.add(c);
+      hang.push(c);
+    }
+  }
+  return nodes
+    .filter((n) => phiaSau.has(n.id) && KHUON_MO_TA.test(n.data?.prompt ?? ""))
+    .map((n) => n.id);
+}
 
 /**
  * Cac node dung `nodeId` lam anh THAM CHIEU.

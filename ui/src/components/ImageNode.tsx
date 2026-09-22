@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type DragEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { createPortal } from "react-dom";
-import { dienMoTaTrangPhuc, timNodeDungThamChieu } from "../lib/moTaTrangPhuc";
+import { dienMoTaTrangPhuc } from "../lib/moTaTrangPhuc";
 import { khoaPrompt, laNodeMoc, laVaiTroGop, layVaiTro, VAI_TRO } from "../lib/vaiTroNode";
 import { doiCho, ghepThanhVideo, mucGopCuaNode } from "../lib/gopMedia";
 import { dauVaoVideoCuaNode, laViecThat, oTrongCuaKhuon, timChuoiChay } from "../lib/chayWorkflow";
@@ -119,8 +119,11 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   // Node dang duoc may chu sinh cung la node dang ban: khoa o nhap va bay lop
   // phu nhu moi lan sinh khac, khong thi nguoi dung sua vao mot node ma ket qua
   // sap bi ghi de.
+  // Doc mo ta bo do tinh la node con ban: no chay ngay sau khi sinh xong va con
+  // sua prompt cua cac node khac, nen bo lop phu ra qua som la bao "xong" trong
+  // khi viec chua xong.
   const isBusy = d.status === "pending" || d.status === "reconciling"
-    || coViecDangChay || nodeDangChayTuApi;
+    || coViecDangChay || nodeDangChayTuApi || dangDocDo;
   const canAttachRefs = !isBusy && refs.length < MAX_NODE_REFS;
   const nodeStyle = {
     "--node-preview-w": `${getPreviewWidth(d.size)}px`,
@@ -315,34 +318,24 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   );
 
 
-  const onGenerate = useCallback(() => {
-    if (canhBaoOTrong()) return;
-    // Node VIDEO phai di duong runVideoGenerate (biet node) chu khong phai
-    // animateImage: duong kia chi nhan ten tep nen khong dat duoc trang thai
-    // cho, va ket qua khong gan vao node nao.
-    if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
-    void generateNode(id);
-  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo]);
-
-  const onRegenerateInPlace = useCallback(() => {
-    if (canhBaoOTrong()) return;
-    if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
-    void generateNodeInPlace(id);
-  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo]);
-
-  const onNewVariation = useCallback(() => {
-    void generateNodeVariation(id);
-  }, [id, generateNodeVariation]);
-
-  // Node nay co ai dung lam ANH THAM CHIEU khong - chi node trang phuc moi co.
-  const coNodeDungThamChieu = timNodeDungThamChieu(id, graphEdges).length > 0;
-
-  const onDocBoDo = useCallback(async () => {
+  /**
+   * Doc flat lay ra mo ta roi dien vao cac node phia sau.
+   *
+   * Chay NGAY sau khi node BOC DO sinh xong, khong con la mot nut rieng: boc do
+   * ma khong doc lai mo ta thi cac node sau van mang cau ta bo do truoc, va chu
+   * moi la thu quyet dinh mac gi - bo do cu se quay lai. De nguoi dung phai nho
+   * bam them mot nut la de san mot cai bay.
+   *
+   * Doc graph tu store thay vi tu closure: ham nay chay sau khi sinh xong, luc
+   * do anh moi da vao store con ban trong closure thi con la anh cu.
+   */
+  const docBoDo = useCallback(async () => {
+    const st = useAppStore.getState();
     setDangDocDo(true);
     try {
       const kq = await dienMoTaTrangPhuc(
-        id, graphNodes, graphEdges, updateNodePrompt,
-        (dichId, url) => addNodeReferenceFromUrl(dichId, url),
+        id, st.graphNodes, st.graphEdges, st.updateNodePrompt,
+        (dichId, url) => st.addNodeReferenceFromUrl(dichId, url),
       );
       showToast(t("node.outfitFilled", { n: String(kq.daDien.length), fallback: `Da dien mo ta vao ${kq.daDien.length} node` }), false);
     } catch (e) {
@@ -350,7 +343,33 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
     } finally {
       setDangDocDo(false);
     }
-  }, [id, graphNodes, graphEdges, updateNodePrompt, addNodeReferenceFromUrl, showToast, t]);
+  }, [id, showToast, t]);
+
+  /** Node BOC DO thi sinh xong la doc mo ta luon. */
+  const laNodeBocDo = d.vaiTro === "trang-phuc";
+  const sauKhiSinh = useCallback(async () => {
+    if (laNodeBocDo) await docBoDo();
+  }, [laNodeBocDo, docBoDo]);
+
+  const onGenerate = useCallback(() => {
+    if (canhBaoOTrong()) return;
+    // Node VIDEO phai di duong runVideoGenerate (biet node) chu khong phai
+    // animateImage: duong kia chi nhan ten tep nen khong dat duoc trang thai
+    // cho, va ket qua khong gan vao node nao.
+    if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
+    void generateNode(id).then(sauKhiSinh);
+  }, [id, generateNode, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh]);
+
+  const onRegenerateInPlace = useCallback(() => {
+    if (canhBaoOTrong()) return;
+    if (laNodeVideo) { void runVideoGenerate(id, dauVaoVideo.ta); return; }
+    void generateNodeInPlace(id).then(sauKhiSinh);
+  }, [id, generateNodeInPlace, canhBaoOTrong, laNodeVideo, runVideoGenerate, dauVaoVideo, sauKhiSinh]);
+
+  const onNewVariation = useCallback(() => {
+    void generateNodeVariation(id);
+  }, [id, generateNodeVariation]);
+
 
   const onBranch = useCallback(() => {
     if (d.status !== "ready") return;
@@ -928,17 +947,6 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               <button type="button" onClick={onNewVariation} disabled={isBusy} title={t("node.newVariationTitle")} aria-label={t("node.newVariationTitle")}>
                 {t("node.newVariation")}
               </button>
-              {coNodeDungThamChieu && !isVideoUrl(d.imageUrl) && (
-                <button
-                  type="button"
-                  onClick={() => void onDocBoDo()}
-                  disabled={isBusy || dangDocDo}
-                  title={t("node.readOutfitTitle", { fallback: "Read this outfit into the prompts that reference it" })}
-                  aria-label={t("node.readOutfitTitle", { fallback: "Read this outfit into the prompts that reference it" })}
-                >
-                  {dangDocDo ? "..." : t("node.readOutfit", { fallback: "Doc bo do" })}
-                </button>
-              )}
               {/* Chi node VIDEO moi sinh video. Node boc do / mac do / canh
                   deu la buoc lam ANH, bay nut video o do chi to gay bam nham. */}
               {anhNguonVideo && (!d.vaiTro || d.vaiTro === "video") && (

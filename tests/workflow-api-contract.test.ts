@@ -540,6 +540,48 @@ describe("workflow outfit + attachment contracts", () => {
     });
   });
 
+  it("WFTP-07 doi loi ta o MOI node phia sau, khong chi node tham chieu truc tiep", async () => {
+    // Dung hinh dang da lam hong that: BOC DO -> MAC DO -> CANH. Node CANH lay
+    // anh nguoi da mac lam anh NEN nen khong co canh nao noi ve node trang phuc,
+    // ma no van mang cau ta bo do - nen no mac lai dung bo do cu.
+    const phien = store.createSession({ title: "chuoi ba buoc" }) as { id: string };
+    const nodes = [
+      node("start", "bat-dau"),
+      node("mau", null, "mot nguoi mau"),
+      node("bocdo", "trang-phuc", "boc trang phuc"),
+      node("macdo", "mac-do", PROMPT_MAC_DO),
+      node("canh", "canh", PROMPT_MAC_DO + " In a coffee shop."),
+      node("end", "ket-thuc"),
+    ];
+    nodes[1]!.data.serverNodeId = "n_mau";
+    (nodes[1]!.data as Record<string, unknown>).imageUrl = "/generated/n_mau.png";
+    store.saveGraph(phien.id, {
+      nodes,
+      edges: [
+        { id: "e0", source: "start", target: "bocdo" },
+        { id: "e1", source: "mau", target: "macdo" },
+        { id: "e2", source: "bocdo", target: "macdo" },
+        { id: "e3", source: "macdo", target: "canh" },
+        { id: "e4", source: "canh", target: "end" },
+      ],
+      expectedVersion: null,
+    });
+    await voiApi(async ({ base, ghiNhan }) => {
+      const { status, body } = await goi(base, `/api/wf/${phien.id}/start`, "POST", {});
+      assert.equal(status, 200, JSON.stringify(body.error ?? {}));
+      const gui = ghiNhan.filter((g) => g.duong === "/api/node/generate");
+      for (const id of ["macdo", "canh"]) {
+        const g = gui.find((x) => x.than.clientNodeId === id)!;
+        assert.match(String(g.than.prompt), /She wears: a cream cardigan/, `${id} phai nhan do moi`);
+        assert.doesNotMatch(String(g.than.prompt), /mountain landscapes/, `${id} van mang do cu`);
+      }
+      // Nhung flat lay chi dinh vao node tham chieu TRUC TIEP: node CANH da co
+      // anh nen la nguoi da mac, dinh them vao do chi lam loang dau vao.
+      assert.equal((gui.find((x) => x.than.clientNodeId === "macdo")!.than.references as string[]).length, 1);
+      assert.equal(gui.find((x) => x.than.clientNodeId === "canh")!.than.references, undefined);
+    });
+  });
+
   it("WFTP-02 prompt khong co khuon 'She wears' thi khong bi sua gi", async () => {
     const day = taoKhuonThoiTrang("Keep the exact same face. Put her in a coffee shop.");
     await voiApi(async ({ base, ghiNhan }) => {
@@ -601,6 +643,21 @@ describe("workflow outfit + attachment contracts", () => {
       /toi da/,
     );
     assert.deepEqual(await refStore.chuanHoaRef(dir, ["/generated/a.png"]), ["/generated/a.png"]);
+  });
+
+  it("WFTP-08 boc do la doc mo ta luon, khong con nut rieng de nho bam", () => {
+    const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    // Boc do ma khong doc lai mo ta thi cac node sau van mang cau ta bo do
+    // truoc, va chu moi la thu quyet dinh mac gi - bo do cu se quay lai. De
+    // nguoi dung phai nho bam them mot nut la de san mot cai bay.
+    assert.match(src, /const laNodeBocDo = d\.vaiTro === "trang-phuc";/);
+    assert.match(src, /generateNode\(id\)\.then\(sauKhiSinh\)/);
+    assert.match(src, /generateNodeInPlace\(id\)\.then\(sauKhiSinh\)/);
+    assert.doesNotMatch(src, /node\.readOutfit/);
+    // Doc graph tu store, khong tu closure: anh moi chi co trong store.
+    assert.match(src, /const st = useAppStore\.getState\(\);/);
+    // Va node con ban trong luc doc, khong bao "xong" som.
+    assert.match(src, /\|\| nodeDangChayTuApi \|\| dangDocDo;/);
   });
 
   it("WFTP-06 giao dien va may chu dung chung mot khuon 'She wears'", () => {

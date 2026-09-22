@@ -1336,10 +1336,16 @@ while two downstream nodes still described a mountain-print shirt, and the run
 produced the shirt.
 
 So after an extraction node finishes, the run re-reads its fresh flat lay
-(through `/api/prompt-builder/chat`) and rewrites that block in every node
-referencing it, **for that run only** — the template keeps its own text and is
-re-read from scratch next time. The flat lay is also attached to those nodes'
-reference channel, which happens whether or not the description succeeds: the
+(through `/api/prompt-builder/chat`) and rewrites that block in **every node
+downstream of it that carries one**, not just the nodes holding a reference edge
+to it. The block is copied down the chain: a scene node takes the dressed model
+as its base image and has no edge back to the extraction node at all, so
+rewriting only direct reference users left the scene wearing the previous shirt
+on the new silhouette. The rewrite applies **for that run only** — the template keeps its own text and is
+re-read from scratch next time. The flat lay is also attached to the
+reference channel of the nodes that hold a reference edge to it — not to every
+downstream node, since a scene node's base is already the dressed model. That
+attachment happens whether or not the description succeeds: the
 attachment costs no model call and is what holds motif counts and pattern
 direction. A failed description logs `wf.outfit_describe_failed` and the run
 continues with the existing text rather than discarding the steps already paid

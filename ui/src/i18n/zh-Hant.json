@@ -709,8 +709,6 @@
     "zoomImage": "檢視大圖",
     "placeholderLeft": "提示詞中還有未填寫的佔位符 {slot}，請先填寫再生成",
     "copyId": "複製節點 ID",
-    "readOutfit": "讀取服裝",
-    "readOutfitTitle": "讀取此服裝並填入所有引用該節點的提示詞",
     "outfitFilled": "已將服裝描述填入 {n} 個節點",
     "promptLocked": "該節點角色的固定提示詞，無需修改",
     "rolePick": "節點角色",

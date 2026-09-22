@@ -42,7 +42,12 @@ import {
   type WfLuotChay,
 } from "./wfRunStore.js";
 import { WF_KENH, WF_SU_KIEN } from "./wfEvents.js";
-import { CAU_HOI_MO_TA, thayMoTaTrongPrompt, timNodeDungThamChieu } from "./moTaTrangPhuc.js";
+import {
+  CAU_HOI_MO_TA,
+  thayMoTaTrongPrompt,
+  timNodeCanDoiMoTa,
+  timNodeDungThamChieu,
+} from "./moTaTrangPhuc.js";
 
 /** Mot node video co the chay rat lau; qua nguong nay thi coi nhu hong. */
 const HAN_MOT_NODE_MS = 15 * 60 * 1000;
@@ -534,19 +539,25 @@ async function doiLoiTaTrangPhuc(
   huy: AbortSignal,
 ): Promise<void> {
   const { nodes, edges } = docGraph(ts.sessionId);
-  const dich = timNodeDungThamChieu(nodeId, edges)
-    .filter((id) => {
-      const n = nodes.find((x) => x.id === id);
-      return !!n && laViecThat(n);
-    });
-  if (dich.length === 0) return;
+  const chayDuoc = (id: string) => {
+    const n = nodes.find((x) => x.id === id);
+    return !!n && laViecThat(n);
+  };
+  // Dinh flat lay: chi nhung node tham chieu TRUC TIEP. Node CANH lay anh nguoi
+  // da mac lam anh nen, dinh them flat lay vao do khong giup gi ma chi lam loang
+  // dau vao.
+  const dinhVao = timNodeDungThamChieu(nodeId, edges).filter(chayDuoc);
+  // Doi loi ta: MOI node phia sau con mang khoi do. Khoi nay duoc chep xuoi theo
+  // chuoi, nen chi doi o node tham chieu truc tiep la bo sot cac node CANH.
+  const doiTa = timNodeCanDoiMoTa(nodeId, nodes, edges).filter(chayDuoc);
+  if (dinhVao.length === 0 && doiTa.length === 0) return;
 
-  // Dinh THEM flat lay vao tung node truoc da. Viec nay khong can goi mo hinh
-  // nao, va no la thu giu duoc chi tiet bo do: da do bang thuc nghiem, anh vao
-  // qua canh ref thi yeu (hoa tiet in ra sai so luong va cach sap), vao qua
-  // duong dinh kem thi bam sat ban goc. Nen no khong duoc phu thuoc vao viec
-  // doc mo ta co thanh cong hay khong.
-  for (const id of dich) (anhThem[id] ??= []).push(flatLayUrl);
+  // Dinh THEM flat lay truoc da. Viec nay khong can goi mo hinh nao, va no la
+  // thu giu duoc chi tiet bo do: da do bang thuc nghiem, anh vao qua canh ref
+  // thi yeu (hoa tiet in ra sai so luong va cach sap), vao qua duong dinh kem
+  // thi bam sat ban goc. Nen no khong duoc phu thuoc vao viec doc mo ta co
+  // thanh cong hay khong.
+  for (const id of dinhVao) (anhThem[id] ??= []).push(flatLayUrl);
 
   let moTa: string;
   try {
@@ -559,7 +570,7 @@ async function doiLoiTaTrangPhuc(
   }
 
   const daDoi: string[] = [];
-  for (const id of dich) {
+  for (const id of doiTa) {
     const n = nodes.find((x) => x.id === id)!;
     const cu = noiDungNode(n, ts).prompt ?? "";
     const moi = thayMoTaTrongPrompt(cu, moTa);

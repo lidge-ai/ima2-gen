@@ -2,6 +2,7 @@ import type { GraphEdge, GraphNode } from "../store/storeTypes";
 import {
   CAU_HOI_MO_TA,
   thayMoTaTrongPrompt,
+  timNodeCanDoiMoTa,
   timNodeDungThamChieu,
 } from "../../../lib/moTaTrangPhuc.js";
 
@@ -17,6 +18,7 @@ import {
 export {
   KHUON_MO_TA,
   thayMoTaTrongPrompt,
+  timNodeCanDoiMoTa,
   timNodeDungThamChieu,
 } from "../../../lib/moTaTrangPhuc.js";
 
@@ -67,15 +69,22 @@ export async function dienMoTaTrangPhuc(
   const moTa = await docMoTaTuAnh(imageUrl);
   const daDien: string[] = [];
   const boQua: string[] = [];
-  for (const dich of timNodeDungThamChieu(nodeId, edges)) {
+  // Doi loi ta o MOI node phia sau con mang khoi do, khong chi node tham chieu
+  // truc tiep: node CANH lay anh nguoi da mac lam anh nen nen khong co canh nao
+  // noi ve node trang phuc, ma no van mang cau ta bo do.
+  for (const dich of timNodeCanDoiMoTa(nodeId, nodes, edges)) {
     const n = nodes.find((x) => x.id === dich);
     const moi = n ? thayMoTaTrongPrompt(n.data.prompt || "", moTa) : null;
     if (moi) { datPrompt(dich, moi); daDien.push(dich); } else boQua.push(dich);
-    // Dinh THEM anh trang phuc vao chinh node do. Da do bang thuc nghiem: anh
-    // vao qua canh ref thi yeu (hoa tiet in ra sai so luong va cach sap), vao
-    // qua duong dinh kem thi bam sat ban goc - ma van giu duoc mat nguoi mau,
-    // khac voi cach lay flat lay lam anh nen.
-    if (moi && dinhAnh) await dinhAnh(dich, imageUrl);
+  }
+  // Dinh THEM anh trang phuc, chi vao nhung node tham chieu TRUC TIEP. Da do
+  // bang thuc nghiem: anh vao qua canh ref thi yeu (hoa tiet in ra sai so luong
+  // va cach sap), vao qua duong dinh kem thi bam sat ban goc - ma van giu duoc
+  // mat nguoi mau, khac voi cach lay flat lay lam anh nen.
+  if (dinhAnh) {
+    for (const dich of timNodeDungThamChieu(nodeId, edges)) {
+      await dinhAnh(dich, imageUrl);
+    }
   }
   return { moTa, daDien, boQua };
 }
