@@ -1,6 +1,6 @@
 ---
 created: 2026-06-08
-updated: 2026-09-09
+updated: 2026-09-22
 tags: [ima2-gen, structure-docs, devlog, roadmap]
 ---
 
@@ -124,6 +124,7 @@ is empty again; GitHub parity and CI receipts live in the archived closeout.
 
 | Unit | Status | Open issue |
 |---|---|---|
+| `260922_macos_arm64_release/` | Desktop release phases 1–4: Apple Silicon-only DMG/ZIP, exact root-version `desktop-v<version>`, fail-closed signing/notarization, packaged darwin/arm64 updater, exact Draft assets/checksums, and `desktop-production` approval before publication. Environment setup, live tagged notarization and a two-version update remain out of scope. | — |
 | `260917_issue_pr_triage_release/` | Triage of every open issue and PR on 2026-09-17 plus the 3.16.1 cut. Roadmap in 000_plan.md; 010 fixes the grok `--help` defect, 020 gates the dependabot pair, 030 records the PR #229 decision, 050 sequences the release. | #244, #150 |
 | `260902_studio_surfaces/` | NovelAI dual-prompt UI, configurable Prompt Builder backend, Canvas vectorize entry, docs upgrade, and release train. | — |
 

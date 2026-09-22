@@ -59,23 +59,35 @@ files:
 # upload unless they are signed here first.
 afterPack: build/sign-extra-binaries.mjs
 
-publish: null
+# The updater reads this metadata from the packaged app. Draft creation keeps a
+# release invisible to installed updaters until a release operator publishes it.
+electronUpdaterCompatibility: ">=2.16"
+publish:
+  provider: github
+  owner: lidge-jun
+  repo: ima2-gen
+  releaseType: draft
+  tagNamePrefix: desktop-v
 
 mac:
   category: public.app-category.graphics-design
   icon: build/icon.png
   target:
     - target: dmg
-      arch: [arm64, x64]
+      arch: [arm64]
     - target: zip
-      arch: [arm64, x64]
+      arch: [arm64]
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # Distribution is Apple Silicon only for now; re-adding x64 here is what widens
+  # both packaging and verification, since the verifier derives its architecture
+  # list from this target set.
+  #
   # PR previews explicitly disable signing/notarization. Trusted CI requires
-  # forceCodeSigning, distribution signing and notarization, then verifies both
-  # architecture installers. Local builds retain the explicit notarize opt-in.
+  # forceCodeSigning, distribution signing and notarization, then verifies every
+  # declared architecture installer. Local builds retain the explicit notarize opt-in.
   # Required CI signing inputs:
   #   CSC_LINK, CSC_KEY_PASSWORD (Developer ID Application .p12)
   #   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID  (notarytool)

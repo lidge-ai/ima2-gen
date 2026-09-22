@@ -11,10 +11,10 @@
     "prepare:app": "cd .. && npm run build:server && npm run build:cli && npm run ui:build",
     "icons": "node scripts/make-icons.mjs",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux",
+    "dist": "electron-builder --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
     "verify:mac-signature": "node scripts/verify-mac-signature.mjs dist/mac-arm64/ima2.app"
   },
   "devDependencies": {

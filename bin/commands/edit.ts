@@ -49,8 +49,8 @@ const HELP = `
     -o, --out <file>
         --json
         --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-5.6-luna
-        --image-tool-model <id>       API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
                                       Aliases: luna, astra, sol, terra, spark
+        --image-tool-model <id>       API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --provider <${PROVIDER_VALUES.join("|")}>
                                       Provider (oauth = GPT OAuth; grok = xAI Grok; agy/gemini-api = Gemini)
         --mode <auto|direct>       Prompt handling mode. Default: auto

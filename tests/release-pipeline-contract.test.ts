@@ -10,9 +10,15 @@ import {
   buildPreviewVersion,
   classifyPublish,
   parsePackOutput,
+  REGISTRY_PROOF_ATTEMPT_BUDGET_MS,
+  REGISTRY_PROOF_MAX_TIMEOUT_MS,
+  REGISTRY_PROOF_POLL_MS,
+  REGISTRY_PROOF_TIMEOUT_MS,
+  registryProofTimeoutMs,
   validateProvenance,
   validateRemoteRefs,
   verifyArtifactDigest,
+  verifyRegistryEventually,
 } from "../scripts/release-contract.mjs";
 import { gypfileNames, validateBundleParity, validateInstallPolicy } from "../scripts/check-install-policy.mjs";
 import { npmInvocation } from "../scripts/npm-subprocess.mjs";
@@ -762,5 +768,82 @@ describe("release provenance guard (wp2)", () => {
     const release = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
     assert.match(release, /release-cut\.mjs preflight/);
     assert.ok(!release.includes("release-cut.mjs assert-baseline"), "release.yml must not use the readiness command");
+  });
+});
+
+describe("registry proof window", () => {
+  type VerifyFn = NonNullable<Parameters<typeof verifyRegistryEventually>[1]>["verify"];
+  const notFound = () => new Error("E404 No match found for version 3.17.0");
+
+  function harness(failures: number) {
+    let clock = 1_000_000;
+    const calls = { verify: 0, sleeps: [] as number[], logs: [] as string[] };
+    const options = {
+      pollMs: REGISTRY_PROOF_POLL_MS,
+      now: () => clock,
+      sleep: async (ms: number) => { calls.sleeps.push(ms); clock += ms; },
+      log: (message: string) => { calls.logs.push(message); },
+      verify: (async () => {
+        calls.verify += 1;
+        if (calls.verify <= failures) throw notFound();
+        return { version: "3.17.0" };
+      }) as unknown as VerifyFn,
+    };
+    return { calls, options };
+  }
+
+  it("keeps polling through npm's async processing and returns the proof", async () => {
+    const { calls, options } = harness(2);
+    const proof = await verifyRegistryEventually({}, { ...options, timeoutMs: 60_000 });
+    assert.deepEqual(proof, { version: "3.17.0" });
+    assert.equal(calls.verify, 3);
+    assert.deepEqual(calls.sleeps, [REGISTRY_PROOF_POLL_MS, REGISTRY_PROOF_POLL_MS]);
+    assert.equal(calls.logs.length, 2);
+    assert.match(calls.logs[0]!, /registry proof pending \(0s\): E404 No match found/);
+    assert.match(calls.logs[1]!, /registry proof pending \(10s\): E404 No match found/);
+  });
+
+  it("does not wait when the first attempt proves the release", async () => {
+    const { calls, options } = harness(0);
+    await verifyRegistryEventually({}, { ...options, timeoutMs: 60_000 });
+    assert.equal(calls.verify, 1);
+    assert.deepEqual(calls.sleeps, []);
+    assert.deepEqual(calls.logs, []);
+  });
+
+  it("makes a final attempt at the deadline and then rethrows its error", async () => {
+    const { calls, options } = harness(Infinity);
+    await assert.rejects(verifyRegistryEventually({}, { ...options, timeoutMs: 25_000 }), /E404 No match found/);
+    // Attempts at 0s, 10s, 20s and 25s: the last wait is clipped to the deadline, none follows it.
+    assert.equal(calls.verify, 4);
+    assert.deepEqual(calls.sleeps, [10_000, 10_000, 5_000]);
+  });
+
+  it("still makes exactly one attempt with a zero window", async () => {
+    const { calls, options } = harness(Infinity);
+    await assert.rejects(verifyRegistryEventually({}, { ...options, timeoutMs: 0 }), /E404/);
+    assert.equal(calls.verify, 1);
+    assert.deepEqual(calls.sleeps, []);
+  });
+
+  it("covers observed npm delays by default and accepts only a bounded integer override", () => {
+    assert.ok(REGISTRY_PROOF_TIMEOUT_MS >= 2 * 6.2 * 60_000, "default window covers twice the slowest observed delay");
+    assert.equal(registryProofTimeoutMs({}), REGISTRY_PROOF_TIMEOUT_MS);
+    assert.equal(registryProofTimeoutMs({ IMA2_REGISTRY_PROOF_TIMEOUT_MS: "" }), REGISTRY_PROOF_TIMEOUT_MS);
+    assert.equal(registryProofTimeoutMs({ IMA2_REGISTRY_PROOF_TIMEOUT_MS: "60000" }), 60_000);
+    assert.equal(registryProofTimeoutMs({ IMA2_REGISTRY_PROOF_TIMEOUT_MS: String(REGISTRY_PROOF_MAX_TIMEOUT_MS) }), REGISTRY_PROOF_MAX_TIMEOUT_MS);
+    for (const raw of ["0", "-1", "abc", "1.5", "60000abc", String(REGISTRY_PROOF_MAX_TIMEOUT_MS + 1)]) {
+      assert.throws(() => registryProofTimeoutMs({ IMA2_REGISTRY_PROOF_TIMEOUT_MS: raw }), /IMA2_REGISTRY_PROOF_TIMEOUT_MS/, raw);
+    }
+  });
+
+  it("gives both publish verify steps room for the longest window plus one worst-case attempt", () => {
+    const workflow = readFileSync(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+    const steps = [...workflow.matchAll(/- name: Verify registry, dist-tag, integrity, and provenance\n((?:\s+#.*\n)*)\s+timeout-minutes: (\d+)/g)];
+    assert.equal(steps.length, 2);
+    for (const step of steps) {
+      assert.ok(Number(step[2]) * 60_000 >= REGISTRY_PROOF_MAX_TIMEOUT_MS + REGISTRY_PROOF_ATTEMPT_BUDGET_MS);
+    }
+    assert.equal(workflow.includes("IMA2_REGISTRY_PROOF_TIMEOUT_MS"), false, "the override stays local/manual");
   });
 });

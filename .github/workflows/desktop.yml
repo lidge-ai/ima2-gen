@@ -1,4 +1,4 @@
-name: Desktop Build
+name: Desktop Build & Release
 
 permissions:
   contents: read
@@ -7,19 +7,23 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: Desktop platforms to build (publishing requires all)
+        description: Desktop platforms to build; only macOS is distributed today
         type: choice
-        options: [all, mac, win, linux]
-        default: all
-      publish:
-        description: Attach installers to the GitHub release matching desktop/package.json version
-        type: boolean
-        default: false
+        options: [mac, win, linux, all]
+        default: mac
   push:
     tags:
       - 'desktop-v*'
   pull_request:
     paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'server.ts'
+      - 'config.ts'
+      - 'bin/**'
+      - 'lib/**'
+      - 'routes/**'
+      - 'ui/**'
       - 'desktop/**'
       - '.github/workflows/desktop.yml'
 
@@ -42,8 +46,7 @@ jobs:
       - id: policy
         env:
           DESKTOP_EVENT: ${{ github.event_name }}
-          DESKTOP_PLATFORM: ${{ inputs.platform || 'all' }}
-          DESKTOP_PUBLISH: ${{ inputs.publish || false }}
+          DESKTOP_PLATFORM: ${{ inputs.platform || 'mac' }}
         run: node desktop/scripts/desktop-build-policy.mjs --matrix
 
   build:
@@ -93,7 +96,10 @@ jobs:
         if: matrix.target == 'mac' && github.event_name == 'pull_request'
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm --prefix desktop run dist:mac -- --config.forceCodeSigning=false --config.mac.notarize=false --publish never
+        # desktop/package.json dist:* scripts already pass --publish never. Repeating the flag
+        # makes electron-builder's CLI receive ["never", "never"], which is not "never", so a
+        # non-PR build then tries to upload to GitHub and fails without GH_TOKEN.
+        run: npm --prefix desktop run dist:mac -- --config.forceCodeSigning=false --config.mac.notarize=false
 
       - name: Build signed and notarized macOS installers
         id: mac_build
@@ -107,9 +113,9 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           node desktop/scripts/desktop-build-policy.mjs --credentials
-          npm --prefix desktop run dist:mac -- --config.forceCodeSigning=true --config.mac.type=distribution --config.mac.notarize=true --publish never
+          npm --prefix desktop run dist:mac -- --config.forceCodeSigning=true --config.mac.type=distribution --config.mac.notarize=true
 
-      - name: Verify both macOS architectures and exported installers
+      - name: Verify every declared macOS architecture and exported installer
         id: mac_verify
         if: always() && matrix.target == 'mac' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v'))) && steps.mac_build.outcome != 'skipped'
         env:
@@ -155,24 +161,145 @@ jobs:
             desktop/dist/*.blockmap
             desktop/dist/latest*.yml
 
-  release:
-    name: Attach to GitHub release
+  draft_release:
+    name: Create verified draft release
     needs: [prepare, build]
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && (github.event.inputs.platform || 'all') == 'all')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      release_url: ${{ steps.draft.outputs.release_url }}
+      checksums_sha256: ${{ steps.draft.outputs.checksums_sha256 }}
+      notes_sha256: ${{ steps.draft.outputs.notes_sha256 }}
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate desktop release tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          EXPECTED_TAG="desktop-v${VERSION}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ] || [ "${GITHUB_REF_NAME}" != "$EXPECTED_TAG" ]; then
+            echo "Expected tag $EXPECTED_TAG, got ${GITHUB_REF_NAME:-<none>}" >&2
+            exit 1
+          fi
+          echo "DESKTOP_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "DESKTOP_TAG=$EXPECTED_TAG" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: ima2-desktop-*
-          merge-multiple: true
+          name: ima2-desktop-mac
           path: desktop/dist
-      - env:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ima2-macos-signature-proof
+          path: desktop/dist/signature-proof
+      - name: Validate and prepare desktop release assets
+        run: >-
+          node desktop/scripts/prepare-release-assets.mjs
+          --dist desktop/dist
+          --version "$DESKTOP_VERSION"
+          --tag "$DESKTOP_TAG"
+          --sha "$GITHUB_SHA"
+      - name: Create or update draft release
+        id: draft
+        env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          VERSION=$(node -p "require('./desktop/package.json').version")
-          TAG="desktop-v${VERSION}"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "ima2 Desktop ${VERSION}" --notes "Electron desktop builds for ima2-gen." --draft
-          gh release upload "$TAG" desktop/dist/*.dmg desktop/dist/*.zip desktop/dist/*.exe desktop/dist/*.AppImage desktop/dist/*.deb desktop/dist/latest*.yml --clobber
+          if gh release view "$DESKTOP_TAG" --json isDraft --jq '.isDraft' > release-draft.txt 2>/dev/null; then
+            if [ "$(cat release-draft.txt)" != "true" ]; then
+              echo "Release $DESKTOP_TAG is already public; refusing to replace its assets." >&2
+              exit 1
+            fi
+            gh release edit "$DESKTOP_TAG" \
+              --verify-tag \
+              --target "$GITHUB_SHA" \
+              --title "ima2 Desktop ${DESKTOP_VERSION}" \
+              --notes-file desktop/dist/RELEASE_NOTES.md \
+              --draft
+          else
+            gh release create "$DESKTOP_TAG" \
+              --verify-tag \
+              --target "$GITHUB_SHA" \
+              --title "ima2 Desktop ${DESKTOP_VERSION}" \
+              --notes-file desktop/dist/RELEASE_NOTES.md \
+              --draft
+          fi
+          gh release upload "$DESKTOP_TAG" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.dmg" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.zip" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.dmg.blockmap" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.zip.blockmap" \
+            desktop/dist/latest-mac.yml \
+            desktop/dist/SHA256SUMS.txt \
+            --clobber
+          gh release view "$DESKTOP_TAG" --json body --jq '.body' > release-body.md
+          echo "checksums_sha256=$(sha256sum desktop/dist/SHA256SUMS.txt | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "notes_sha256=$(sha256sum release-body.md | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "release_url=$(gh release view "$DESKTOP_TAG" --json url --jq '.url')" >> "$GITHUB_OUTPUT"
+
+  publish_release:
+    name: Publish approved desktop release
+    needs: draft_release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: desktop-production
+      url: ${{ needs.draft_release.outputs.release_url }}
+    permissions:
+      contents: write
+    steps:
+      - name: Require configured production approval gate
+        env:
+          DESKTOP_RELEASE_GATE: ${{ vars.DESKTOP_RELEASE_GATE }}
+        shell: bash
+        run: |
+          if [ "$DESKTOP_RELEASE_GATE" != "required-reviewer-v1" ]; then
+            echo "desktop-production is not configured with the required approval gate." >&2
+            exit 1
+          fi
+      - name: Publish approved desktop release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # This job has no checkout, so gh cannot infer the repository from a git remote.
+          # Without GH_REPO the draft check prints nothing and publication is refused.
+          GH_REPO: ${{ github.repository }}
+          DESKTOP_TAG: ${{ github.ref_name }}
+          EXPECTED_CHECKSUMS_SHA256: ${{ needs.draft_release.outputs.checksums_sha256 }}
+          EXPECTED_NOTES_SHA256: ${{ needs.draft_release.outputs.notes_sha256 }}
+        shell: bash
+        run: |
+          DESKTOP_VERSION="${DESKTOP_TAG#desktop-v}"
+          if [ "$(gh release view "$DESKTOP_TAG" --json isDraft --jq '.isDraft')" != "true" ]; then
+            echo "Release $DESKTOP_TAG is not a draft; refusing publication." >&2
+            exit 1
+          fi
+          EXPECTED_ASSETS=$(printf '%s\n' \
+            "ima2-${DESKTOP_VERSION}-mac-arm64.dmg" \
+            "ima2-${DESKTOP_VERSION}-mac-arm64.zip" \
+            "ima2-${DESKTOP_VERSION}-mac-arm64.dmg.blockmap" \
+            "ima2-${DESKTOP_VERSION}-mac-arm64.zip.blockmap" \
+            "latest-mac.yml" \
+            "SHA256SUMS.txt" | sort)
+          ACTUAL_ASSETS=$(gh release view "$DESKTOP_TAG" --json assets --jq '.assets[].name' | sort)
+          if [ "$ACTUAL_ASSETS" != "$EXPECTED_ASSETS" ]; then
+            echo "Draft release asset set does not match the Apple Silicon allowlist." >&2
+            diff -u <(printf '%s\n' "$EXPECTED_ASSETS") <(printf '%s\n' "$ACTUAL_ASSETS") || true
+            exit 1
+          fi
+          mkdir release-assets
+          gh release download "$DESKTOP_TAG" --dir release-assets
+          ACTUAL_CHECKSUMS_SHA256=$(sha256sum release-assets/SHA256SUMS.txt | awk '{print $1}')
+          if [ "$ACTUAL_CHECKSUMS_SHA256" != "$EXPECTED_CHECKSUMS_SHA256" ]; then
+            echo "SHA256SUMS.txt changed after the verified draft was created." >&2
+            exit 1
+          fi
+          (cd release-assets && sha256sum --check SHA256SUMS.txt)
+          gh release view "$DESKTOP_TAG" --json body --jq '.body' > release-assets/RELEASE_NOTES.md
+          ACTUAL_NOTES_SHA256=$(sha256sum release-assets/RELEASE_NOTES.md | awk '{print $1}')
+          if [ "$ACTUAL_NOTES_SHA256" != "$EXPECTED_NOTES_SHA256" ]; then
+            echo "Release notes changed after the verified draft was created." >&2
+            exit 1
+          fi
+          gh release edit "$DESKTOP_TAG" --draft=false --latest=false

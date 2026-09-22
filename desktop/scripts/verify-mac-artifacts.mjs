@@ -9,8 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { probe, readMacExpectations, verifyMacSignature } from './verify-mac-signature.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const ARCHITECTURES = [{ arch: 'arm64', folder: 'mac-arm64' }, { arch: 'x64', folder: 'mac' }];
+const MAC_FOLDERS = { arm64: 'mac-arm64', x64: 'mac' };
 const EQUIVALENT_FIELDS = ['cdHash', 'bundleId', 'shortVersion', 'buildVersion', 'executable'];
+
+/** Verify exactly the architectures the builder emits, in a stable order. */
+function architectures(expected) {
+  return expected.expectedArchitectures.map((arch) => ({ arch, folder: MAC_FOLDERS[arch] }));
+}
 
 function sourceBinding(root, env, run, report) {
   const result = probe('git', ['rev-parse', 'HEAD'], run, { cwd: root });
@@ -24,9 +29,9 @@ function sourceBinding(root, env, run, report) {
   if (env.GITHUB_SHA && env.GITHUB_SHA !== report.source.sha) throw new Error('GITHUB_SHA differs from actual git HEAD');
 }
 
-function exportPaths(dist, version) {
-  const paths = ARCHITECTURES.flatMap(({ arch }) => ['zip', 'dmg'].map((format) => ({
-    arch, format, name: 'ima2-' + version + '-mac-' + arch + '.' + format,
+function exportPaths(dist, options) {
+  const paths = architectures(options).flatMap(({ arch }) => ['zip', 'dmg'].map((format) => ({
+    arch, format, name: 'ima2-' + options.expectedVersion + '-mac-' + arch + '.' + format,
   })));
   const expected = new Set(paths.map(({ name }) => name));
   const unexpected = readdirSync(dist).filter((name) => (/\.dmg$/i.test(name) || /-mac-.*\.zip$/i.test(name)) && !expected.has(name));
@@ -130,11 +135,11 @@ async function hashInstallers(exports) {
 }
 
 function verifyAll(dist, options, run, report) {
-  for (const { arch, folder } of ARCHITECTURES) {
+  for (const { arch, folder } of architectures(options)) {
     report.originals[arch] = verifyMacSignature(join(dist, folder, 'ima2.app'),
       { ...options, expectedArch: arch, requireStapled: true }, run);
   }
-  for (const entry of exportPaths(dist, options.expectedVersion)) {
+  for (const entry of exportPaths(dist, options)) {
     report.exports.push(inspectExport(entry, report.originals[entry.arch], options, run));
   }
   if (!Object.values(report.originals).every((original) => original.ok) || !report.exports.every((entry) => entry.ok)) {
