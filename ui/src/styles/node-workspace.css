@@ -816,3 +816,9 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.image-node__api-node-anh {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 700;
+}

@@ -752,7 +752,8 @@
     "wfApiNodes": "이 워크플로의 노드 ({count})",
     "wfApiCopyNode": "복사",
     "wfApiCopyNodeTitle": "이 노드를 한 번만 덮어쓰는 본문 복사",
-    "wfApiNoPrompt": "(프롬프트 없음)"
+    "wfApiNoPrompt": "(프롬프트 없음)",
+    "wfApiNodeImages": "이미지 {count}"
   },
   "nodeBatch": {
     "selectionOn": "선택중",

@@ -102,6 +102,13 @@ function docImages(tho: unknown): Record<string, string[]> {
       if (typeof item !== "string" || !/^data:image\/[a-z0-9.+-]+;base64,/i.test(item)) {
         throw new LoiKhuon("WF_IMAGE_INVALID", `anh cho ${nodeId} phai la data URL anh`, nodeId);
       }
+      // Kiem luon phan base64. Khong kiem thi mot cho giu cho nhu "...base64,..."
+      // di thang toi may sinh anh va hong o do, voi mot loi cua nha cung cap
+      // khong noi len duoc rang dau vao moi la cho sai.
+      const than = item.slice(item.indexOf(",") + 1);
+      if (!than || !/^[A-Za-z0-9+/\s]+={0,2}$/.test(than)) {
+        throw new LoiKhuon("WF_IMAGE_INVALID", `anh cho ${nodeId} khong phai base64 hop le`, nodeId);
+      }
       sach.push(item);
     }
     ra[nodeId] = sach;

@@ -417,6 +417,40 @@ describe("workflow node override contracts", () => {
     });
   });
 
+  it("WFGD-07 base64 rac bi chan ngay o tuyen, khong di toi may sinh anh", async () => {
+    const day = taoPhien([{ id: "canh", vaiTro: "canh", prompt: "mot canh" }]);
+    await voiApi(async ({ base, ghiNhan }) => {
+      // Chuoi giu cho trong vi du tren giao dien phai hong o day, voi mot loi
+      // noi dung cho sai - khong phai mot loi kho hieu cua nha cung cap.
+      const giuCho = await goi(base, `/api/wf/${day}/start`, "POST",
+        { images: { canh: ["data:image/png;base64,<base64 cua anh>"] } });
+      assert.equal(giuCho.status, 400);
+      assert.match(giuCho.body.error.message, /base64/);
+
+      const rong = await goi(base, `/api/wf/${day}/start`, "POST",
+        { images: { canh: ["data:image/png;base64,"] } });
+      assert.equal(rong.status, 400);
+
+      const that = await goi(base, `/api/wf/${day}/start`, "POST",
+        { images: { canh: ["data:image/png;base64,iVBORw0KGgo="] } });
+      assert.equal(that.status, 200);
+      assert.deepEqual(ghiNhan[0]!.than.references, ["iVBORw0KGgo="]);
+    });
+  });
+
+  it("WFGD-08 vi du than request luon co phan anh cho node nhan duoc anh", () => {
+    const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
+    // Node CANH va nhung node sau no hau nhu luon co anh dinh kem, nen thieu
+    // phan images trong vi du la thieu dung thu nguoi dung can nhat.
+    assert.match(src, /than\.images = Object\.fromEntries/);
+    // Uu tien node dang co anh; ca khuon khong co node nao thi van phai co mot
+    // vi du, khong thi khong ai doan ra cach truyen.
+    assert.match(src, /const coSan = nodeTrongKhuon\.filter\(\(n\) => n\.nhanAnh && n\.soAnh > 0\)/);
+    assert.match(src, /const dau = nodeTrongKhuon\.find\(\(n\) => n\.nhanAnh\)/);
+    // Node GOP lay media tu canh vao, dua no vao vi du se ra than bi tu choi.
+    assert.match(src, /nhanAnh: n\.data\.vaiTro !== "gop-video" && n\.data\.vaiTro !== "gop-anh"/);
+  });
+
   it("WFGD-06 node BAT DAU bay than cua MOI node trong khuon, khong chi node noi thang", () => {
     const src = readFileSync("ui/src/components/ImageNode.tsx", "utf-8");
     // Dung chuoi chay, khong dung canh noi truc tiep: noi dung that nam rai rac

@@ -752,7 +752,8 @@
     "wfApiNodes": "这个工作流的节点（{count}）",
     "wfApiCopyNode": "复制",
     "wfApiCopyNodeTitle": "复制只覆盖这个节点一次的请求内容",
-    "wfApiNoPrompt": "（没有提示词）"
+    "wfApiNoPrompt": "（没有提示词）",
+    "wfApiNodeImages": "{count} 张图"
   },
   "nodeBatch": {
     "selectionOn": "选择",

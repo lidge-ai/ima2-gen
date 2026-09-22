@@ -1307,11 +1307,20 @@ graph.
   and still costs money. At most 64 inputs, 4000 characters each.
 - `images` — reference images for specific nodes, keyed by node id, replacing
   whatever that node has attached **for this call only**. Each entry must be a
-  **data URL**; file paths and remote URLs are rejected, since accepting them
-  would let a caller read arbitrary files or turn the server into a downloader.
-  At most 8 images per node. The target must be a node in this chain that
-  actually generates something — a merge node takes media from its incoming
-  edges, not attachments, and is refused.
+  **data URL** whose payload is real base64; file paths and remote URLs are
+  rejected, since accepting them would let a caller read arbitrary files or turn
+  the server into a downloader, and a malformed payload is rejected here rather
+  than failing later with an opaque provider error. At most 8 images per node.
+  The target must be a node in this chain that actually generates something — a
+  merge node takes media from its incoming edges, not attachments, and is
+  refused.
+
+  **Attachments added in the Node Studio do not reach the server.** They live in
+  that browser's local storage and are stripped from the saved graph, which is
+  what keeps data URLs out of the database. So a node that shows attachments on
+  the canvas has none as far as an API run is concerned: pass them in `images`.
+  The START marker's panel marks every node that currently has attachments and
+  pre-fills an `images` entry for it in the copied body.
 - `nodes` — replaces a node's content for **this call only**, keyed by node id.
   Only `prompt`, `size` and `model` can be set: allowing `vaiTro` or edges would
   let one API call redraw a workflow the user shaped by hand on the canvas. The

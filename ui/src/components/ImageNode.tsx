@@ -17,6 +17,14 @@ import { buildProvenanceView } from "../lib/provenance";
 import { SavePromptPopover } from "./SavePromptPopover";
 
 const MAX_NODE_REFS = 5;
+/**
+ * Cho giu cho anh trong vi du than request.
+ *
+ * Giu dung tien to that de nhin la biet dinh dang can dua vao; phan than de la
+ * mot chuoi khong phai base64 de may chu tu choi ngay bang mot loi ro rang,
+ * thay vi de mot chuoi rac di toi tan may sinh anh.
+ */
+const ANH_MAU = "data:image/png;base64,<base64 cua anh>";
 const NODE_PREVIEW_HEIGHT = 240;
 const NODE_PREVIEW_MIN_WIDTH = 180;
 const NODE_PREVIEW_MAX_WIDTH = 420;
@@ -202,20 +210,41 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
         id: n.id,
         vaiTro: layVaiTro(n.data.vaiTro)?.nhan ?? null,
         prompt: n.data.prompt ?? "",
+        soAnh: (n.data.referenceImages ?? []).length,
+        // Node GOP lay media tu cac canh vao chu khong nhan anh dinh kem, nen
+        // dua no vao vi du se bay ra mot than request bi may chu tu choi.
+        nhanAnh: n.data.vaiTro !== "gop-video" && n.data.vaiTro !== "gop-anh",
       }));
   }, [chuoi, graphNodes]);
 
-  /** Than request day du: o trong de dien, va noi dung tung node de ghi de. */
+  /**
+   * Node nao nen co vi du ve anh dinh kem.
+   *
+   * Uu tien nhung node DANG co anh dinh san - do la cho nguoi dung thuc su dua
+   * anh vao. Ca khuon chua node nao co anh thi van dua mot vi du o node dau
+   * tien nhan duoc anh: thieu han phan nay thi khong ai doan ra cach truyen.
+   */
+  const nodeCoViDuAnh = useMemo(() => {
+    const coSan = nodeTrongKhuon.filter((n) => n.nhanAnh && n.soAnh > 0);
+    if (coSan.length) return coSan;
+    const dau = nodeTrongKhuon.find((n) => n.nhanAnh);
+    return dau ? [dau] : [];
+  }, [nodeTrongKhuon]);
+
+  /** Than request day du: o trong, anh dinh kem, va noi dung tung node. */
   const thanDayDu = useMemo(() => {
     const than: Record<string, unknown> = {};
     if (oTrongKhuon.length) {
       than.inputs = Object.fromEntries(oTrongKhuon.map((o) => [o, ""]));
     }
+    if (nodeCoViDuAnh.length) {
+      than.images = Object.fromEntries(nodeCoViDuAnh.map((n) => [n.id, [ANH_MAU]]));
+    }
     if (nodeTrongKhuon.length) {
       than.nodes = Object.fromEntries(nodeTrongKhuon.map((n) => [n.id, { prompt: n.prompt }]));
     }
     return JSON.stringify(than, null, 2);
-  }, [oTrongKhuon, nodeTrongKhuon]);
+  }, [oTrongKhuon, nodeCoViDuAnh, nodeTrongKhuon]);
 
   const lenhCurl = useMemo(() => {
     if (!duongApi) return "";
@@ -227,8 +256,13 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
   }, [duongApi, thanDayDu]);
 
   /** Than chi de ghi de MOT node - bam mot cai la co ngay lenh sua node do. */
-  const thanMotNode = useCallback((nodeId: string, prompt: string) =>
-    JSON.stringify({ nodes: { [nodeId]: { prompt } } }, null, 2), []);
+  const thanMotNode = useCallback(
+    (n: { id: string; prompt: string; nhanAnh: boolean; soAnh: number }) => JSON.stringify({
+      ...(n.nhanAnh && n.soAnh > 0 ? { images: { [n.id]: [ANH_MAU] } } : {}),
+      nodes: { [n.id]: { prompt: n.prompt } },
+    }, null, 2),
+    [],
+  );
 
   /**
    * Anh KE THUA tu cac canh vao: canh dau la ANH NEN, cac canh sau la THAM CHIEU.
@@ -606,13 +640,20 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
                             {n.vaiTro ? (
                               <span className="image-node__api-node-vai">{n.vaiTro}</span>
                             ) : null}
+                            {/* Node nao dang co anh dinh san thi gan nhu chac
+                                chan la cho nguoi goi se truyen anh vao. */}
+                            {n.soAnh > 0 ? (
+                              <span className="image-node__api-node-anh">
+                                {t("node.wfApiNodeImages", { count: n.soAnh })}
+                              </span>
+                            ) : null}
                             <button
                               type="button"
                               className="image-node__api-chep"
                               title={t("node.wfApiCopyNodeTitle")}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void navigator.clipboard?.writeText(thanMotNode(n.id, n.prompt));
+                                void navigator.clipboard?.writeText(thanMotNode(n));
                               }}
                             >
                               {t("node.wfApiCopyNode")}

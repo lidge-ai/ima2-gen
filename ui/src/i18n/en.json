@@ -752,7 +752,8 @@
     "wfApiNodes": "Nodes in this workflow ({count})",
     "wfApiCopyNode": "copy",
     "wfApiCopyNodeTitle": "Copy a body that overrides this node for one call",
-    "wfApiNoPrompt": "(no prompt)"
+    "wfApiNoPrompt": "(no prompt)",
+    "wfApiNodeImages": "{count} img"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",
