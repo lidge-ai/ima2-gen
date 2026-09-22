@@ -374,7 +374,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Node graph helpers | `ui/src/lib/nodeGraph.ts` | 129 | Visual-edge parent derivation, incoming-edge conflict, and cycle-detection helpers (`wouldCreateCycle`, `graphHasCycle`) |
 | Node selection | `ui/src/lib/nodeSelection.ts` | 65 | Component-based selection toggling utilities |
 | Node batch | `ui/src/lib/nodeBatch.ts` | 159 | Sequential batch generation queue, cycle-selection guard (`findCycleNodeIds`), and stale-downstream rewiring |
-| Node connection validation | `ui/src/lib/nodeConnectionValidation.ts` | 32 | Pure drag-time `isValidConnection` validator for React Flow (port resolution + compatibility incl. cycle guard) |
+| Node connection validation | `ui/src/lib/nodeConnectionValidation.ts` | 56 | Pure drag-time `isValidConnection` validator for React Flow (port resolution + compatibility incl. cycle guard) |
 | Node error info | `ui/src/lib/nodeErrorInfo.ts` | 46 | Structured inline node-card error state: ImaErrorCode → retry/auth/fix-input action mapping |
 | Node history | `ui/src/lib/nodeHistory.ts` | 104 | Graph undo/redo snapshot ring (structuredClone isolation, pending-protection merge, 30-entry bound) |
 | Node layout | `ui/src/lib/nodeLayout.ts` | 30 | Position-based child node placement |
