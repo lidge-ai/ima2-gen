@@ -262,6 +262,9 @@ jobs:
       - name: Publish approved desktop release
         env:
           GH_TOKEN: ${{ github.token }}
+          # This job has no checkout, so gh cannot infer the repository from a git remote.
+          # Without GH_REPO the draft check prints nothing and publication is refused.
+          GH_REPO: ${{ github.repository }}
           DESKTOP_TAG: ${{ github.ref_name }}
           EXPECTED_CHECKSUMS_SHA256: ${{ needs.draft_release.outputs.checksums_sha256 }}
           EXPECTED_NOTES_SHA256: ${{ needs.draft_release.outputs.notes_sha256 }}

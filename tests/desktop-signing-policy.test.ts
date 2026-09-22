@@ -119,6 +119,17 @@ function assertApprovalBoundary(workflow: Workflow) {
   const prepare = draft.steps.find((step) => step.name === "Validate and prepare desktop release assets")!;
   assert.match(prepare.run!, /prepare-release-assets\.mjs/);
   assert.ok(draft.steps.indexOf(prepare) < draft.steps.findIndex((step) => step.id === "draft"));
+  assertGhRepositoryIsExplicit(workflow);
+}
+
+/** gh reads the repository from the checkout's git remote; a job without a checkout must name it. */
+function assertGhRepositoryIsExplicit(workflow: Workflow) {
+  for (const [name, job] of Object.entries(workflow.jobs) as [string, { steps: Step[] }][]) {
+    if (job.steps.some((step) => step.uses?.startsWith("actions/checkout@"))) continue;
+    for (const step of job.steps.filter((candidate) => /(^|[\s;(|&$])gh\s/m.test(candidate.run ?? ""))) {
+      assert.equal(step.env?.GH_REPO, "${{ github.repository }}", `${name}/${step.name} runs gh without a checkout or GH_REPO`);
+    }
+  }
 }
 
 test("desktop matrix filters before scheduling and rejects partial publication", () => {
