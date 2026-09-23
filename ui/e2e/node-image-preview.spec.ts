@@ -96,6 +96,9 @@ test("WP2 node image zoom, copyable id and drag separation", async ({ page }, te
     // The id strip selects the node; keyboard opens the zoom without hovering.
     await node.locator(".image-node__id-text").click();
     await expect(node).toHaveClass(/selected/);
+    const cardPath = testInfo.outputPath("wp12-node-card-ko-1280.png");
+    await node.screenshot({ path: cardPath });
+    await testInfo.attach("wp12-node-card-ko-1280.png", { path: cardPath, contentType: "image/png" });
     const zoom = node.getByRole("button", { name: "크게 보기", exact: true });
     await zoom.focus();
     await page.keyboard.press("Enter");
