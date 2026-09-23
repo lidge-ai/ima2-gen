@@ -93,3 +93,9 @@ Reflection: Locke ALIGNED, gap 5건(17-18행, 파일 지도, N2/N3 증거, 복�
 6. MINOR 키 차단 E2E는 노드가 .selected인지 먼저 확인.
 7. MINOR 복사 성공에 기존 toast.metadataCopied 토스트.
 8. MINOR clipboard stub은 page.goto 전 addInitScript, navigator.clipboard는 Object.defineProperty로 교체.
+
+## B 중 관찰
+
+첫 hosted 실행(run 35801885466)에서 E2E가 undo 기록을 만들려고 누른 "자식 노드 추가" 뒤에도 노드가 1개였다
+(실패 컨텍스트에 DOM 스냅샷 없음). 원인은 확인하지 못했다. 이 경로를 증명 수단에서 빼고 WP1에서 hosted로
+검증된 드래그 연결을 undo 기록으로 쓴다. 후속: hosted에서 자식 추가 버튼이 노드를 만드는지 별도 확인.
