@@ -29,6 +29,7 @@ import { normalizeBodyRequestId, validateBoundedCount, validateGenerationPrompt 
 import { getElementById } from "./assetsStore.js";
 import { compileElements, ELEMENT_CAPACITY_DEFAULTS, type ElementDefinition, type ExistingReferenceInput } from "./elementCompiler.js";
 import { errorEnvelopeFields } from "./errors/envelope.js";
+import { upstreamLabelFields } from "./diagnosticLabel.js";
 import { getProviderSurfaceSupport } from "./providers/derive.js";
 
 async function resolveMultimodeElements(
@@ -516,7 +517,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       finishHttpStatus = err.status || 500;
       finishErrorCode = fallbackCode || "MULTIMODE_GENERATE_FAILED";
       logError("multimode", "error", err.raw, { requestId, code: finishErrorCode });
-      dualEmitMultimode(res, requestId, "error", { error: err.message, code: finishErrorCode, status: finishHttpStatus, requestId, upstreamCode: ext.upstreamCode || null, upstreamType: ext.upstreamType || null, upstreamParam: ext.upstreamParam || null, ...errorEnvelopeFields(err.raw) });
+      dualEmitMultimode(res, requestId, "error", { error: err.message, code: finishErrorCode, status: finishHttpStatus, requestId, ...upstreamLabelFields(ext), ...errorEnvelopeFields(err.raw) });
     } finally {
       if (jobOwned) finishJob(requestId, {
         canceled: finishCanceled,

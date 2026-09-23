@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseStream, safeDiagnosticLabel } from "../lib/responsesParse.ts";
+import { upstreamLabelFields } from "../lib/diagnosticLabel.ts";
 import { emptyResponseError } from "../lib/responsesErrors.ts";
 import { errorCodeFrom, normalizeGenerationFailure } from "../lib/generationErrors.ts";
 import { upstreamErrorFields } from "../lib/routeHelpers.ts";
@@ -262,4 +263,27 @@ test("WP3 the final_error log filters raw upstream code and type from passthroug
   assert.equal(lines.length, 1);
   assert.match(lines[0]!, /final_error/);
   assertClean("final_error log", lines[0]!);
+});
+
+test("WP3 every envelope filters raw upstream label fields", () => {
+  const raw = { upstreamCode: `Bearer ${SECRETS[0]}`, upstreamType: SECRETS[3], upstreamParam: "password:hunter2" };
+  const redacted = { upstreamCode: "_redacted", upstreamType: "_redacted", upstreamParam: "_redacted" };
+  assert.deepEqual(upstreamLabelFields(raw), redacted);
+  const envelope = upstreamErrorFields(raw);
+  assert.deepEqual([envelope.upstreamCode, envelope.upstreamType, envelope.upstreamParam], ["_redacted", "_redacted", "_redacted"]);
+  const node = nodeErrorDetails({}, raw as never);
+  assert.deepEqual([node.upstreamCode, node.upstreamType, node.upstreamParam], ["_redacted", "_redacted", "_redacted"]);
+  assertClean("envelopes", JSON.stringify({ envelope, node }));
+  assert.deepEqual(upstreamLabelFields({ upstreamCode: "invalid_value", upstreamType: "invalid_request_error", upstreamParam: "size" }),
+    { upstreamCode: "invalid_value", upstreamType: "invalid_request_error", upstreamParam: "size" });
+  assert.deepEqual(upstreamLabelFields(null), { upstreamCode: null, upstreamType: null, upstreamParam: null });
+});
+
+test("WP3 edit, multimode and node catch paths use the shared label filter", async () => {
+  const { readFileSync } = await import("node:fs");
+  for (const path of ["routes/edit.ts", "lib/multimodePipeline.ts", "lib/nodeGeneration.ts", "lib/routeHelpers.ts"]) {
+    const source = readFileSync(path, "utf8");
+    assert.match(source, /\.\.\.upstreamLabelFields\(/, path);
+    assert.doesNotMatch(source, /upstreamCode: ext\.upstreamCode \|\| null/, path);
+  }
 });

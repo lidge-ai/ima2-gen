@@ -85,7 +85,7 @@ routes/
 | `routes/mcpMultishot.ts` | 116 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
 | `routes/generate.ts` | 13 | Classic generation API route wiring |
-| `routes/edit.ts` | 423 | Edit API, mask validation, cancellation, OAuth/API edit response save, alpha verification (alphaVerified/alphaReason), provider/web-search/reasoning-effort plumbing |
+| `routes/edit.ts` | 422 | Edit API, mask validation, cancellation, OAuth/API edit response save, alpha verification (alphaVerified/alphaReason), provider/web-search/reasoning-effort plumbing |
 | `routes/multimode.ts` | 10 | `POST /api/generate/multimode` route wiring |
 | `routes/video.ts` | 684 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
 | `routes/videoExtended.ts` | 487 | Video edit, extension, frame extraction, and configured-planner first/last-frame analysis (Grok 4.5 default) |
@@ -199,10 +199,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/multimodeGenerators.ts` | 304 | OAuth Responses multimode and edit generators, masked-edit guard |
 | `lib/generatePipeline.ts` | 731 | Classic admission/idempotency, shared execution facade, persistence, background-preset prompt shaping, and event publication |
 | `lib/backgroundPresets.ts` | 78 | Background preset contract for asset generation: enum parse, prompt suffixes, planner constraint |
-| `lib/multimodePipeline.ts` | 531 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
+| `lib/multimodePipeline.ts` | 532 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
 | `lib/comparisonMatrix.ts` | 77 | Prompt-locked comparison axes: deterministic cartesian expansion, 9-cell cost cap, varying-axis labels |
 | `lib/comparisonRunner.ts` | 111 | Per-cell generation orchestrator with bounded concurrency, isolated failures, single-cell retry, and two-level cancel |
-| `lib/nodeGeneration.ts` | 493 | Node admission and execution facade, caller-owned retry, persistence, and SSE publication |
+| `lib/nodeGeneration.ts` | 492 | Node admission and execution facade, caller-owned retry, persistence, and SSE publication |
 | `lib/nodeValidation.ts` | 89 | Node prompt, references, and moderation validation |
 | `lib/nodeReferences.ts` | 96 | Ordered extra-parent loading, combined reference bounds, and provider input admission |
 | `lib/oauthProxy/streams.ts` | 233 | SSE/event-stream helpers and safe stream diagnostics |
@@ -311,9 +311,9 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/responsesErrors.ts` | 94 | Responses API error normalization helpers |
 | `lib/responsesFallback.ts` | 173 | Responses API fallback routing helpers |
 | `lib/responsesParse.ts` | 444 | Responses API output parsing and normalization |
-| `lib/diagnosticLabel.ts` | 44 | Dependency-free `safeDiagnosticLabel`: accepts short upstream code/type/param labels, redacts long values, sentences and credential shapes |
+| `lib/diagnosticLabel.ts` | 53 | Dependency-free `safeDiagnosticLabel`: accepts short upstream code/type/param labels, redacts long values, sentences and credential shapes |
 | `lib/responsesTools.ts` | 41 | Responses API tool-call definitions and helpers |
-| `lib/routeHelpers.ts` | 58 | Shared Express route request/response helpers |
+| `lib/routeHelpers.ts` | 57 | Shared Express route request/response helpers |
 | `lib/storyboardPrefix.ts` | 29 | Storyboard prompt-prefix construction |
 | `lib/thumbBackfill.ts` | 79 | Generated-media thumbnail backfill helpers |
 | `lib/vertexAuth.ts` | 48 | Vertex AI authentication resolution helpers |

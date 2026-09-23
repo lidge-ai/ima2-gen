@@ -41,3 +41,12 @@ export function safeDiagnosticLabel(value: unknown, fallback: string | null = nu
   if (!SAFE_DIAGNOSTIC_LABEL.test(value)) return "_redacted";
   return value;
 }
+
+/** The three provider label fields every error envelope may expose, each filtered. */
+export function upstreamLabelFields(src: { upstreamCode?: unknown; upstreamType?: unknown; upstreamParam?: unknown } | null | undefined) {
+  return {
+    upstreamCode: safeDiagnosticLabel(src?.upstreamCode),
+    upstreamType: safeDiagnosticLabel(src?.upstreamType),
+    upstreamParam: safeDiagnosticLabel(src?.upstreamParam),
+  };
+}

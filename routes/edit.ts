@@ -26,6 +26,7 @@ import { invalidateHistoryIndex } from "../lib/historyIndex.js";
 import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
+import { upstreamLabelFields } from "../lib/diagnosticLabel.js";
 import { getProviderSurfaceSupport } from "../lib/providers/derive.js";
 function validateModeration(ctx: RuntimeContext, moderation: unknown) {
   if (typeof moderation !== "string" || !ctx.config.oauth.validModeration.has(moderation)) {
@@ -387,9 +388,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         error: err.message,
         code: fallbackCode,
         ...errorEnvelopeFields(err.raw),
-        upstreamCode: ext.upstreamCode || null,
-        upstreamType: ext.upstreamType || null,
-        upstreamParam: ext.upstreamParam || null,
+        ...upstreamLabelFields(ext),
         diagnosticReason: ext.diagnosticReason || null,
         retryKind: ext.retryKind || null,
         initialEventCount: ext.initialEventCount ?? null,

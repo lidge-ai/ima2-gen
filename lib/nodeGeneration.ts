@@ -25,6 +25,7 @@ import { type NodeGenerateBody, asUpstream, wantsSse, writeNodeError, loadParent
 import { normalizeBodyRequestId, validateGenerationPrompt } from "./generationInputValidation.js";
 import { getProviderSurfaceSupport } from "./providers/derive.js";
 import { errorEnvelopeFields } from "./errors/envelope.js";
+import { upstreamLabelFields } from "./diagnosticLabel.js";
 export async function runNodeGeneration(req: Request, res: Response, ctx: RuntimeContext) {
     const body = (req.body ?? {}) as NodeGenerateBody;
     const promptError = validateGenerationPrompt(body.prompt);
@@ -476,9 +477,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         // pre-attached rawCode/errorClass left MiniMax 402 empty when the
         // adapter throw skipped normalizeGenerationFailure.
         ...errorEnvelopeFields(err.raw),
-        upstreamCode: ext.upstreamCode || null,
-        upstreamType: ext.upstreamType || null,
-        upstreamParam: ext.upstreamParam || null,
+        ...upstreamLabelFields(ext),
       }, requestId);
     } finally {
       if (jobOwned) finishJob(requestId, {
