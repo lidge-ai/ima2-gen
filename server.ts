@@ -35,6 +35,8 @@ import { stopAgentQueueWorker } from "./lib/agentQueueWorker.js";
 import { reapCardNewsJobs } from "./lib/cardNewsJobStore.js";
 import { reapTerminalJobs } from "./lib/inflight.js";
 import { errInfo } from "./lib/errInfo.js";
+import { TEMPLATE_FILE_MAX_BYTES } from "./lib/nodeTemplateFile.js";
+import { templateImportBodyErrors } from "./routes/nodeTemplates.js";
 import { loadGrokCredentials } from "./lib/xaiAuth.js";
 import {
   cleanupExpiredMcpTempReferences,
@@ -260,6 +262,9 @@ export function buildApp(ctx: RuntimeContext) {
   app.use(access.guard);
   app.use(budget);
   app.use("/api/mcp/temp-references", express.json({ limit: MCP_TEMP_REFERENCE_JSON_BODY_LIMIT_BYTES }));
+  // Template files are untrusted input with their own 2MB byte limit; the global
+  // parser skips bodies this one already read.
+  app.use("/api/node-templates/import", express.json({ limit: TEMPLATE_FILE_MAX_BYTES }), templateImportBodyErrors);
   app.use(express.json({ limit: ctx.config.server.bodyLimit }));
   app.use(express.static(join(ctx.rootDir, "ui", "dist"), {
     setHeaders: setUiStaticHeaders,

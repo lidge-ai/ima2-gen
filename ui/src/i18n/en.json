@@ -2216,7 +2216,19 @@
       "saveError": "Could not save the template.",
       "renamePrompt": "Rename template",
       "renameError": "Could not rename the template.",
-      "deleteError": "Could not delete the template."
+      "deleteError": "Could not delete the template.",
+      "export": "Export",
+      "import": "Import a file",
+      "importHint": "A .ima2-template.json file exported from ima2 on another machine.",
+      "exported": "Exported “{name}”.",
+      "exportError": "Could not export the template.",
+      "imported": "Imported “{name}”.",
+      "importError": "Could not import the file.",
+      "importNotTemplate": "That file is not an ima2 template export.",
+      "importNewerVersion": "That file was made by a newer version of ima2. Update this app first.",
+      "importTooLarge": "That template file is too large (2 MB limit).",
+      "importBadName": "The template in that file has no usable name.",
+      "importInvalidGraph": "The graph in that file is damaged or unsupported."
     },
     "palette": {
       "ariaLabel": "Insert node command",

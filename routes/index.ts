@@ -66,7 +66,7 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   registerSessionRoutes(app, ctx);
   registerEditRoutes(app, ctx);
   registerNodeRoutes(app, ctx);
-  registerNodeTemplateRoutes(app);
+  registerNodeTemplateRoutes(app, ctx);
   if (ctx.config.features.cardNews) registerCardNewsRoutes(app, ctx);
   registerMultimodeRoutes(app, ctx);
   registerGenerateRoutes(app, ctx);

@@ -2216,7 +2216,19 @@
       "saveError": "템플릿을 저장하지 못했어요.",
       "renamePrompt": "템플릿 이름 변경",
       "renameError": "템플릿 이름을 바꾸지 못했어요.",
-      "deleteError": "템플릿을 삭제하지 못했어요."
+      "deleteError": "템플릿을 삭제하지 못했어요.",
+      "export": "내보내기",
+      "import": "파일 가져오기",
+      "importHint": "다른 기기의 ima2에서 내보낸 .ima2-template.json 파일",
+      "exported": "“{name}” 템플릿을 내보냈어요.",
+      "exportError": "템플릿을 내보내지 못했어요.",
+      "imported": "“{name}” 템플릿을 가져왔어요.",
+      "importError": "파일을 가져오지 못했어요.",
+      "importNotTemplate": "ima2 템플릿 파일이 아니에요.",
+      "importNewerVersion": "더 새 버전의 ima2에서 만든 파일이에요. 앱을 먼저 업데이트해 주세요.",
+      "importTooLarge": "템플릿 파일이 너무 커요(최대 2MB).",
+      "importBadName": "파일 속 템플릿 이름을 쓸 수 없어요.",
+      "importInvalidGraph": "파일 속 그래프가 손상됐거나 지원하지 않는 형식이에요."
     },
     "palette": {
       "ariaLabel": "노드 삽입 명령",

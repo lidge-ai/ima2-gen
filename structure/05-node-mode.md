@@ -51,6 +51,7 @@ sequenceDiagram
 | `ui/src/components/ImageNode.tsx` | Node card UI, four-direction source/target handles, status display, image rendering |
 | `ui/src/components/node-canvas/NodeImagePreview.tsx` | Zoom button on a ready image; portals `AssetMediaLightbox` with `showAssetActions={false}` and stops dialog clicks and graph keys (except Escape and Tab) at a `.nokey` wrapper |
 | `ui/src/components/node-canvas/NodeIdentityHeader.tsx` | Node id above the preview: the text stays a drag grip, copying uses a separate `nodrag` icon |
+| `ui/src/components/node-canvas/NodeTemplatePicker.tsx` + `useNodeTemplateController.ts` | Template picker with per-card export (seed and user) and file import; the client refuses files over 2 MB before reading them and shows import errors next to the action without hiding the list |
 | `ui/src/components/SessionPicker.tsx` | Session selection and creation UX |
 | `ui/src/store/useAppStore.ts` | `graphNodes`, `graphEdges`, `graphVersion`, session actions |
 | `ui/src/lib/graph.ts` | Client node IDs and initial-position helpers |

@@ -805,6 +805,25 @@ Node graph templates (higgsfield 120). Seed templates ship with the app and are 
 | `POST` | `/api/node-templates/:id/instantiate` | Return a graph copy with fresh node IDs (never auto-runs) |
 | `PATCH` | `/api/node-templates/:id` | Rename a user template (seed → `403`) |
 | `DELETE` | `/api/node-templates/:id` | Delete a user template (seed → `403`) |
+| `GET` | `/api/node-templates/:id/export` | Download a portable template file (seed or user) as `attachment; filename="<slug>.ima2-template.json"` |
+| `POST` | `/api/node-templates/import` | Create a user template from a portable file (`201 { template }`); never instantiates or runs |
+
+### Portable template files
+
+A file is `{ kind: "ima2.node-template", version: 1, exportedAt, sourceId?, name, description, tags, graph }`. `sourceId` is informational; imports always get a new id, and a taken name becomes `Name (2)`, `Name (3)`… within 80 characters.
+
+Both directions rebuild the graph from allowlists. Nodes keep only `id`, `type`, `position`, `width`, `height` and `data`; edges keep `id`, `source`, `target`, handles and `label`. `data` keeps prompt, provider, model, size, kind, node type, reasoning effort, variation, style, element name, video settings and unresolved media placeholders, with `status` reset to `idle`. Runtime ids, generated media URLs, filenames, secrets and any other key are dropped. Element nodes come back with `missing: true` because their asset ids only exist on the exporting machine.
+
+Import limits: 2 MB of request bytes (its own parser, ahead of the global body limit), the smaller of 300 nodes/1200 edges and the server's graph limits, 16 levels of nesting, names of 1-80 characters, descriptions up to 2000 characters, 20 tags of up to 40 characters. Structural problems are rejected rather than repaired. Errors use fixed messages and never echo file content:
+
+| Code | Status | Meaning |
+|---|---|---|
+| `TEMPLATE_FILE_INVALID` | 400 | Body is not JSON of the expected shape (including parser and charset errors) |
+| `TEMPLATE_FILE_KIND` | 400 | Not an `ima2.node-template` file |
+| `TEMPLATE_FILE_VERSION` | 400 | `version` is not exactly `1` |
+| `TEMPLATE_FILE_TOO_LARGE` | 413 | Over 2 MB, or too many nodes or edges |
+| `INVALID_TEMPLATE_NAME` | 400 | Empty or over 80 characters |
+| `INVALID_TEMPLATE_GRAPH` | 400 | No nodes, bad ids or positions, duplicate ids, dangling edges, cycles, forbidden keys (`__proto__`, `constructor`, `prototype`) or excess nesting |
 
 Graph save requests may include observability headers:
 

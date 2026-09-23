@@ -67,5 +67,8 @@ export function useNodeStudioController(wrapperRef: RefObject<HTMLElement | null
     hasRecentGraph: Boolean(recent), onKeyDown, resumeRecent, closeOverlays, closePalette: closeOverlays,
     openTemplates: () => void template.openTemplates(), saveTemplate: () => void templateMutations.saveTemplate(),
     copyTemplate: template.copyTemplate, renameTemplate: (item: NodeTemplateSummary) => void templateMutations.renameTemplate(item),
-    removeTemplate: (item: NodeTemplateSummary) => void templateMutations.removeTemplate(item), openBranch: () => branch.setBranchOpen(true) };
+    removeTemplate: (item: NodeTemplateSummary) => void templateMutations.removeTemplate(item),
+    exportTemplate: (item: NodeTemplateSummary) => void templateMutations.exportTemplate(item),
+    importTemplate: (file: File) => void templateMutations.importTemplate(file),
+    openBranch: () => branch.setBranchOpen(true) };
 }

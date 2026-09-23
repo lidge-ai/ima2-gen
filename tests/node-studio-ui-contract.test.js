@@ -73,7 +73,7 @@ describe("NT — empty state and template integration", () => {
     assert.match(routes, /app\.post\("\/api\/node-templates\/:id\/instantiate"/);
     assert.match(routes, /app\.patch\("\/api\/node-templates\/:id"/);
     assert.match(routes, /app\.delete\("\/api\/node-templates\/:id"/);
-    assert.match(routeIndex, /registerNodeTemplateRoutes\(app\)/);
+    assert.match(routeIndex, /registerNodeTemplateRoutes\(app, ctx\)/);
     for (const name of ["listNodeTemplates", "createNodeTemplate", "instantiateNodeTemplate", "renameNodeTemplate", "deleteNodeTemplate"]) {
       assert.match(templateApi, new RegExp(`export async function ${name}\\b`));
     }

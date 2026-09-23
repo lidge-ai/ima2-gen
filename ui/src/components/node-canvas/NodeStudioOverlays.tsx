@@ -35,7 +35,7 @@ export function NodeStudioOverlays({ studio, graphEmpty, disabled, onAddRoot }: 
       <NodeElementTray disabled={disabled} onAdd={studio.addElement} />
     </Panel>
     <NodeCommandPalette open={Boolean(studio.palette)} anchor={studio.palette?.anchor ?? { clientX: 0, clientY: 0 }} sourcePort={studio.palette?.sourcePort} commands={studio.commands} onInsert={studio.insertCommand} onClose={studio.closePalette} />
-    {studio.templateOpen ? <DialogFrame onClose={studio.closeOverlays}><NodeTemplatePicker templates={studio.templates} loading={studio.templateLoading} error={studio.templateError} onCopy={studio.copyTemplate} onRename={studio.renameTemplate} onDelete={studio.removeTemplate} onClose={studio.closeOverlays} /></DialogFrame> : null}
+    {studio.templateOpen ? <DialogFrame onClose={studio.closeOverlays}><NodeTemplatePicker templates={studio.templates} loading={studio.templateLoading} error={studio.templateError} importError={studio.importError} onCopy={studio.copyTemplate} onRename={studio.renameTemplate} onDelete={studio.removeTemplate} onExport={studio.exportTemplate} onImport={studio.importTemplate} onClose={studio.closeOverlays} /></DialogFrame> : null}
     {studio.branchOpen && studio.selectedSource ? <DialogFrame onClose={studio.closeOverlays}><div role="dialog" aria-modal="true" aria-labelledby="node-branch-dialog-title"><NodeBranchDialog sourceLabel={studio.selectedSource.data.prompt || studio.selectedSource.id} onApply={studio.applyBranch} onClose={studio.closeOverlays} /></div></DialogFrame> : null}
     <div className="node-studio-status" role="status" aria-live="polite" aria-atomic="true">{studio.status}</div>
   </>;

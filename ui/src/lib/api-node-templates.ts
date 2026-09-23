@@ -72,3 +72,33 @@ export async function deleteNodeTemplate(id: string): Promise<void> {
     throw error instanceof Error ? error : new Error(String(error));
   }
 }
+
+/** The server enforces the same byte limit independently; this only avoids reading a huge file. */
+export const NODE_TEMPLATE_FILE_MAX_BYTES = 2 * 1024 * 1024;
+
+export type NodeTemplateFileDto = {
+  kind: string;
+  version: number;
+  exportedAt: number;
+  sourceId?: string;
+  name: string;
+  description: string;
+  tags: string[];
+  graph: NodeTemplateGraphDto;
+};
+
+export async function exportNodeTemplate(id: string): Promise<NodeTemplateFileDto> {
+  return jsonFetch<NodeTemplateFileDto>(`/api/node-templates/${encodeURIComponent(id)}/export`);
+}
+
+/** Sends the file text as-is: the server parses and validates it at the file boundary. */
+export async function importNodeTemplate(fileText: string): Promise<NodeTemplateSummary> {
+  const response = await jsonFetch<{ template: NodeTemplateSummary }>("/api/node-templates/import", {
+    method: "POST",
+    headers: jsonHeaders,
+    body: fileText,
+  });
+  return response.template;
+}
+
+export { nodeTemplateFileName } from "./nodeTemplateFileName";

@@ -304,6 +304,8 @@ When `groupBy=session` is used, session groups include `title` and `label` when 
 
 `routes/assets.ts` and `lib/assetsStore.ts` implement a SQLite catalog over files already stored in the configured generated directory; the catalog does not duplicate image or video bytes. Asset kinds are the closed enum `image | video | element | preset | template`. Image and video creation requires a validated regular file under generated storage, while the other kinds may be metadata-only. Listing supports kind, folder, tag, and name/notes search filters with opaque `(createdAt, id)` cursor pagination (default 50, maximum 500).
 
+Node templates are `template` assets (`lib/nodeTemplateStore.ts`, `routes/nodeTemplates.ts`). `GET /api/node-templates/:id/export` and `POST /api/node-templates/import` move one template between machines as an `ima2.node-template` v1 file (`lib/nodeTemplateFile.ts`). The file is a boundary for untrusted input. The graph is rebuilt from node, edge and data allowlists in both directions, because React Flow applies node-level keys such as `style` and `domAttributes` to the DOM. The import route has its own 2 MB JSON parser in `server.ts`, ahead of the global body limit, and it maps parser failures to fixed codes. Imports get new ids and are never instantiated or run. See `docs/API.md` for limits and error codes.
+
 `routes/assetDerived.ts` registers `POST /api/assets/derived`, which writes a derived
 file next to its source and registers it as an `image` asset carrying a `derivedKind`
 metadata marker. `keyed-png` uploads a client-composited alpha PNG as a raw body.
