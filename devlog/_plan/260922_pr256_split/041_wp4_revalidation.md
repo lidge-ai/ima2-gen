@@ -130,3 +130,17 @@ create에는 {name, description, tags, graph}만 넘긴다(thumbnail·stripOptio
 - registerNodeTemplateRoutes(app, ctx) 시그니처 변경에 맞춰 node-studio-ui-contract 소스 검사 갱신.
 - 가져오기 버튼은 footer의 기존 버튼 스타일을 쓴다(새 CSS·radius manifest 변경 없음). 가져오기 오류는 목록을 가리지 않는
   별도 role=alert.
+
+## C — PR #269 최종 재검증 (2026-09-23)
+
+- 헤드 29f5d682의 모든 체크런 완료 확인: PR fast gate / PR frontend checks (Playwright E2E) / PR backend checks /
+  CodeQL / Analyze JS-TS / macOS / filesystem 4종 성공, 데스크톱 릴리스 2종은 게이트상 skipped(정상).
+- 보안 재검토(git diff origin/dev...HEAD): 가져오기는 lib/nodeTemplateFile.ts 허용 목록으로 node/edge/data를 재구성해
+  style·className·domAttributes·parentId·media URL·elementId·thumbnailUrl·비밀 필드가 DOM에 도달하지 않는다.
+  ElementReferenceNode의 --element-thumb url() 싱크는 imported 요소 노드가 thumbnailUrl을 싣지 않고 missing:true로 닫힘.
+  파서/charset 오류는 고정 코드(TEMPLATE_FILE_INVALID/TOO_LARGE)로 매핑하고 입력을 되돌려 보내지 않는다.
+  깊이(16, 명시적 스택)·바이트(2MB)·노드/엣지 수·문자열/좌표 상한이 있다. 내보내기는 동일 허용 목록으로 재구성해
+  런타임 id·미디어 URL·비밀이 새지 않는다(sourceId는 정보용).
+- MINOR(수정 불요): ui/src/lib/nodeStudioGraph.ts normalizeTemplateNode/Edge가 node/edge를 스프레드해 서버 허용 목록에
+  의존한다 — 방어 심화로 클라이언트 측 키 드롭을 추가할 수 있다. sourceId는 내부 ULID를 노출하나 공개 API id라 위해 낮음.
+- 변경 없음: BLOCKER/MAJOR 0건, 로컬 스위트 미실행(코드 변경 없음), 포커스 테스트만 확인.
