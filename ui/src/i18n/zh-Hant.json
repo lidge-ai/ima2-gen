@@ -701,7 +701,8 @@
     "errorAuthCta": "檢查您的帳戶或 API 金鑰，然後重新產生。",
     "errorFixCta": "調整提示或引用，然後再次產生。",
     "zoomImage": "檢視大圖",
-    "copyId": "複製節點 ID"
+    "copyId": "複製節點 ID",
+    "animateTitle": "用此圖片生成影片"
   },
   "nodeBatch": {
     "selectionOn": "選擇",

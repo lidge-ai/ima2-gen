@@ -260,8 +260,6 @@ const KNOWN_MISSING = new Set<string>([
   // CardNewsWorkspace.tsx references these mobile banner literals directly.
   "mobile.cardNewsBanner",
   "mobile.dismiss",
-  // ImageNode.tsx passes an ineffective fallback variable to this missing literal key.
-  "node.animateTitle",
   // ReferenceTray.tsx references this provider-limit copy directly.
   "prompt.refOverProviderLimit",
   // resultChaining.ts uses this missing fork-failure toast literal.

@@ -8,6 +8,11 @@ import { useAgentDialogFocus } from "../agent/useAgentDialogFocus";
 type Props = {
   item: GenerateItem;
   onClose: () => void;
+  /**
+   * Keying, vectorize and sprite-curator actions open panels that only asset
+   * workspaces mount. Surfaces without those panels (Node mode) hide them.
+   */
+  showAssetActions?: boolean;
 };
 
 function CloseIcon() {
@@ -28,7 +33,7 @@ function ZoomIcon({ zoomed }: { zoomed: boolean }) {
   );
 }
 
-export function AssetMediaLightbox({ item, onClose }: Props) {
+export function AssetMediaLightbox({ item, onClose, showAssetActions = true }: Props) {
   const { t } = useI18n();
   const [zoomed, setZoomed] = useState(false);
   const inlineMetadata = (item as GenerateItem & { metadata?: Record<string, unknown> | null }).metadata ?? null;
@@ -139,14 +144,14 @@ export function AssetMediaLightbox({ item, onClose }: Props) {
             <img src={item.url || item.image} alt={prompt} />
           )}
         </div>
-        {!isVideo || canKey || canCurate ? (
+        {!isVideo || (showAssetActions && (canKey || canCurate)) ? (
           <footer className="assetgen-lightbox__footer">
-            {canCurate ? (
+            {showAssetActions && canCurate ? (
               <button type="button" className="assetgen-lightbox__zoom assetgen-lightbox__curate" onClick={openCurator}>
                 {t("spriteCurator.open")}
               </button>
             ) : null}
-            {canKey ? (
+            {showAssetActions && canKey ? (
               <button
                 type="button"
                 className="assetgen-lightbox__zoom assetgen-lightbox__keybtn"
@@ -155,7 +160,7 @@ export function AssetMediaLightbox({ item, onClose }: Props) {
                 {t("keying.open")}
               </button>
             ) : null}
-            {canVectorize ? (
+            {showAssetActions && canVectorize ? (
               <button
                 type="button"
                 className="assetgen-lightbox__zoom assetgen-lightbox__vectorbtn"

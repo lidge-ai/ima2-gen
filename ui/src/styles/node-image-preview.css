@@ -1,4 +1,4 @@
-/* Node image zoom and node identity strip (PR 256 WP2). No border-radius here:
+/* Node image zoom and node identity strip (PR 256 WP2). No corner radii here:
    radii are frozen by tests/ui-radius-scale-contract. */
 .image-node__preview {
   position: relative;

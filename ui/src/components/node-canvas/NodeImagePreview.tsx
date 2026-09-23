@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../../i18n";
 import { AssetMediaLightbox } from "../assetgen/AssetMediaLightbox";
@@ -8,11 +8,21 @@ type Props = {
   prompt: string;
 };
 
+/** Keys the lightbox's document-level focus handling must still receive. */
+const DIALOG_KEYS = new Set(["Escape", "Tab"]);
+
+function keepInsideDialog(event: MouseEvent | KeyboardEvent) {
+  if ("key" in event && DIALOG_KEYS.has(event.key)) return;
+  event.stopPropagation();
+}
+
 /**
  * A ready node image with a zoom button that opens the shared lightbox.
  * The lightbox is portalled to document.body: the node sits inside React Flow's
  * scaled viewport, where the panel's percentage width would resolve against the
- * node (~300px) instead of the window.
+ * node (~300px) instead of the window. React still bubbles portal events through
+ * the node, so the wrapper keeps clicks and graph keys (Delete, arrows, undo)
+ * from reaching the node and canvas; .nokey also stops React Flow's own handlers.
  */
 export function NodeImagePreview({ imageUrl, prompt }: Props) {
   const { t } = useI18n();
@@ -33,7 +43,8 @@ export function NodeImagePreview({ imageUrl, prompt }: Props) {
         </svg>
       </button>
       {open ? createPortal(
-        <AssetMediaLightbox
+        <div className="nokey" onClick={keepInsideDialog} onKeyDown={keepInsideDialog}>
+          <AssetMediaLightbox
             item={{
               image: imageUrl,
               url: imageUrl,
@@ -41,8 +52,10 @@ export function NodeImagePreview({ imageUrl, prompt }: Props) {
               filename: imageUrl.replace(/^\/generated\//, ""),
               mediaType: "image",
             }}
+            showAssetActions={false}
             onClose={() => setOpen(false)}
-          />,
+          />
+        </div>,
         document.body,
       ) : null}
     </>

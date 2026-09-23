@@ -701,7 +701,8 @@
     "errorAuthCta": "检查您的帐户或 API 密钥，然后重新生成。",
     "errorFixCta": "调整提示或引用，然后再次生成。",
     "zoomImage": "查看大图",
-    "copyId": "复制节点 ID"
+    "copyId": "复制节点 ID",
+    "animateTitle": "用此图片生成视频"
   },
   "nodeBatch": {
     "selectionOn": "选择",

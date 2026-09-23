@@ -435,6 +435,8 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `RightPanel.tsx` | 114 | Quality, size, format, moderation, count controls |
 | `prompt-builder/*`, `settings/PromptBuilderSettings.tsx`, `store/promptBuilderStore.ts` | n/a | Conversational prompt refinement, persisted backend/model catalogs, settings hydration, typed failures, and the successful response's `via <backend>` badge |
 | `ImageNode.tsx` | 355 | Node-mode image card, four-direction source/target handles, fixed-height preview, partial preview, node-local references, compact footer, regenerate/new-variant actions |
+| `node-canvas/NodeImagePreview.tsx` | n/a | Ready node image with a zoom button; opens the shared lightbox portalled to `document.body` without asset-workspace actions, keeping dialog clicks and graph keys off the node |
+| `node-canvas/NodeIdentityHeader.tsx` | n/a | Draggable node-id strip with a separate nodrag copy icon, truncating long ids |
 | `MultimodeSequencePreview.tsx` | 99 | Multimode sequence preview/result strip with partial, complete, canceled, and error states |
 | `GenerateButton.tsx` | n/a | Shared generate-action button (classic + multimode) |
 | `ReasoningEffortSelect.tsx` / `WebSearchToggle.tsx` | n/a | Reasoning-effort and web-search controls (Settings + composer) |

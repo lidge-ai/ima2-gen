@@ -701,7 +701,8 @@
     "errorAuthCta": "계정 또는 API 키를 확인한 뒤 다시 생성해 주세요.",
     "errorFixCta": "프롬프트나 참조 이미지를 고친 뒤 다시 생성해 주세요.",
     "zoomImage": "크게 보기",
-    "copyId": "노드 ID 복사"
+    "copyId": "노드 ID 복사",
+    "animateTitle": "이 이미지로 동영상 생성"
   },
   "nodeBatch": {
     "selectionOn": "선택중",
