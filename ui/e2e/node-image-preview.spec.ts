@@ -105,7 +105,7 @@ test("WP2 node image zoom, copyable id and drag separation", async ({ page }, te
     const dialogBox = await dialog.boundingBox();
     expect(nodeBox && dialogBox && dialogBox.width > nodeBox.width * 1.5).toBe(true);
     await expect(dialog.getByRole("button", { name: /배경 제거|SVG 변환|큐레이션/ })).toHaveCount(0);
-    await attach(page, testInfo, "wp2-node-zoom-ko-1280.png");
+    await attach(page, testInfo, "wp12-node-zoom-ko-1280.png");
 
     for (const key of ["ArrowRight", "ArrowRight", "Delete", "Backspace", "Control+z"]) {
       await page.keyboard.press(key);
@@ -143,7 +143,7 @@ test("WP2 node image zoom, copyable id and drag separation", async ({ page }, te
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(node.locator(".image-node__id-text")).toBeVisible();
-    await attach(page, testInfo, "wp2-node-id-ko-390.png");
+    await attach(page, testInfo, "wp12-node-id-ko-390.png");
     expect(app.stub.generationRequests).toEqual([]);
   } finally {
     await page.close();
