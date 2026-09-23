@@ -117,7 +117,7 @@ describe("kho khuon thoi trang", () => {
   it("TP-11 khung hinh goi ten thu NAM TRONG KHUNG, khong dung tu chi co canh", () => {
     // "full body / waist-up / close portrait" chay rat khong on dinh. Goi ten
     // thu phai nam trong khung thi mo hinh buoc phai danh cho cho chung.
-    const CO_CANH = /(full body|waist-up|close portrait|three-quarter length|whole figure)/i;
+    const CO_CANH = /\b(full body|waist-up|close portrait|three-quarter length|whole figure)\b/i;
     for (const k of khuonThoiTrang) {
       for (const n of nodesCua(k).filter((x) => x.data?.vaiTro === "canh")) {
         const dang = String(n.data.prompt).split("LOCATION (keep identical in every shot):")[0];
@@ -132,7 +132,7 @@ describe("kho khuon thoi trang", () => {
     // Nhac mot tu la keo theo no, KE CA khi da phu dinh: "no text" keo chu vao.
     for (const k of khuonThoiTrang) {
       for (const n of nodesCua(k).filter((x) => ["canh", "mac-do", "mau"].includes(x.data?.vaiTro))) {
-        assert.doesNotMatch(String(n.data.prompt), /no text|no watermark/i, `${k.name}/${n.id}`);
+        assert.doesNotMatch(String(n.data.prompt), /\bno text\b|\bno watermark\b/i, `${k.name}/${n.id}`);
       }
     }
   });

@@ -162,3 +162,33 @@ test("an upstream sentence carrying a secret or a URL is dropped, not logged", a
     assert.equal(parsed.diagnostics.upstreamErrorMessage, "_redacted", doc);
   }
 });
+
+test("when the image tool fails mutely, the model's own words are kept", async () => {
+  // Da gap that: cong cu ve anh bao `failed` tran - khong ma, khong cau - nhung
+  // cung luot do co `messageOutputSeen=true`, tuc mo hinh CO viet mot doan chu.
+  // Doan do thuong la ly do that. Khong doc no thi log chi con nhan cua chinh
+  // minh, va khong sua duoc gi.
+  const { emptyResponseError } = await import("../lib/responsesErrors.ts");
+  const res = sseResponse([
+    {
+      type: "response.output_item.done",
+      item: { type: "image_generation_call", status: "failed" },
+    },
+    {
+      type: "response.output_item.done",
+      item: {
+        type: "message",
+        status: "completed",
+        content: [{ type: "output_text", text: "I could not create that image because the description reads as a minor." }],
+      },
+    },
+    { type: "response.completed", response: {} },
+  ]);
+
+  const parsed = await parseStream(res, { scope: "test-model-text", maxImages: 1 });
+  assert.equal(parsed.diagnostics.upstreamErrorMessage, null, "upstream khong kem cau nao");
+  const err = emptyResponseError("no image", parsed, {});
+  assert.equal(err.code, "IMAGE_TOOL_FAILED");
+  assert.match(err.message, /reads as a minor/);
+  assert.match(String(err.upstreamMessage), /^I could not create that image/);
+});

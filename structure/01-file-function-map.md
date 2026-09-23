@@ -304,13 +304,14 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/nodeHelpers.ts` | 121 | Node workflow graph and payload helpers |
 | `lib/vectorizeImage.ts` | 179 | Raster-to-SVG tracing (VTracer) with named presets, size/dimension guards, and SVG optimization |
 | `lib/nodeTemplateSeeds.ts` | 88 | Built-in node workflow template seed definitions |
-| `lib/nodeTemplateThoiTrang.ts` | 729 | Fashion concept template library: one outfit in, models wearing it per concept |
+| `lib/nodeTemplateThoiTrang.ts` | 734 | Fashion concept template library: one outfit in, models wearing it per concept |
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/presetCompiler.ts` | 67 | Named preset prompt compilation helpers |
+| `lib/diagnosticText.ts` | 39 | Sanitizers for log/UI diagnostic text (dependency-free) |
 | `lib/responsesDoctor.ts` | 457 | Responses API diagnostics and provider health checks |
-| `lib/responsesErrors.ts` | 95 | Responses API error normalization helpers |
+| `lib/responsesErrors.ts` | 103 | Responses API error normalization helpers |
 | `lib/responsesFallback.ts` | 173 | Responses API fallback routing helpers |
-| `lib/responsesParse.ts` | 497 | Responses API output parsing and normalization |
+| `lib/responsesParse.ts` | 469 | Responses API output parsing and normalization |
 | `lib/responsesTools.ts` | 39 | Responses API tool-call definitions and helpers |
 | `lib/routeHelpers.ts` | 58 | Shared Express route request/response helpers |
 | `lib/storyboardPrefix.ts` | 29 | Storyboard prompt-prefix construction |

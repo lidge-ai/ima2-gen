@@ -41,6 +41,10 @@ before(async () => {
     ...["ping", "models", "defaults", "capabilities", "gen", "video", "upscale", "service", "prompt", "tools"].map((n) => `bin/commands/${n}`),
     ...["eventsPolicy", "jobStatus", "errInfo", "pngInfo", "sizeNudge", "backgroundPresets", "videoClientTimeouts"].map((n) => `lib/${n}`),
     "lib/contracts/discovery", "lib/mcp/sanitizer", "lib/errors/providerMap", "lib/responsesErrors",
+    // `responsesErrors` doc cau upstream/cau mo hinh viet ra qua
+    // `safeDiagnosticMessage`, nen no can ca module nay luc CHAY chu khong chi
+    // luc bien dich.
+    "lib/diagnosticText",
   ];
   for (const path of sources) emit(`${path}.js`, ts.transpileModule(readFileSync(join(root, `${path}.ts`), "utf8"), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }, fileName: `${path}.ts`,

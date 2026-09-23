@@ -1,3 +1,4 @@
+import { safeDiagnosticMessage } from "./diagnosticText.js";
 import type { ParsedResponsesResult } from "./responsesParse.js";
 
 const RESPONSES_ERROR_MARKER = "ima2ResponsesError";
@@ -74,7 +75,14 @@ export function emptyResponseError(message: string, result: ParsedResponsesResul
   // "Responses image tool call failed." la ten minh dat cho tinh huong, khong
   // phai thu upstream noi - doc mot minh no thi khong sua duoc gi. Cau that
   // nam trong `error.message` cua muc ve anh, da duoc lam sach.
-  const tuUpstream = result.diagnostics.upstreamErrorMessage;
+  // Thu tu: cau upstream gan vao muc ve anh -> chu CHINH MO HINH VIET RA.
+  //
+  // Da gap: cong cu ve anh bao `failed` tran, khong ma khong cau - nhung trong
+  // cung luot do `messageOutputSeen=true`, tuc la mo hinh co viet mot doan chu.
+  // Doan do thuong la ly do that (vi du no tu choi ve). Khong doc no thi log
+  // chi con mot cai nhan cua chinh minh, va khong sua duoc gi.
+  const tuUpstream = result.diagnostics.upstreamErrorMessage
+    ?? safeDiagnosticMessage(result.text);
   const nhan = messageForCode(code, message);
   const err = new Error(tuUpstream ? `${nhan} ${tuUpstream}` : nhan) as ResponsesError;
   if (tuUpstream) err.upstreamMessage = tuUpstream;

@@ -197,7 +197,7 @@ mkdirSync(join(transpiledDir, "lib"), { recursive: true });
 mkdirSync(join(transpiledDir, "lib", "errors"), { recursive: true });
 for (const [sourceDir, targetDir, names] of [
   [binLibDir, join(transpiledDir, "bin", "lib"), ["sse", "mcpJob", "client"]],
-  [serverLibDir, join(transpiledDir, "lib"), ["jobStatus", "eventsPolicy", "responsesErrors"]],
+  [serverLibDir, join(transpiledDir, "lib"), ["jobStatus", "eventsPolicy", "responsesErrors", "diagnosticText"]],
   [join(serverLibDir, "errors"), join(transpiledDir, "lib", "errors"), ["providerMap"]],
 ] as const) {
   for (const name of names) {

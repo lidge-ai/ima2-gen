@@ -66,8 +66,8 @@ const KHOA =
  * sau phai xoa mot quan ca phe di truoc da.
  */
 const MAC_DO_MAC_DINH =
-  "Standing in the same neutral pose as the base image, plain light grey seamless background, full body"
-  + " from head to shoes, photorealistic, no text.";
+  "Standing in the same neutral pose as the base image, plain light grey seamless background, hair,"
+  + " hem and both shoes inside the frame, photorealistic.";
 
 export type CanhConcept = {
   /** Hau to id node, phai khong trung trong cung mot khuon. */
@@ -195,11 +195,11 @@ const CONCEPTS: Concept[] = [
     moTa: "Tiec tra ngoai vuon: hang cot trang, ban linen, hoa hong kem, nang trua gat va bong sac net.",
     tags: ["thoi-trang", "tiec-vuon", "sang-trong"],
     size: "1024x1536",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, long"
-      + " loose wavy hair, warm dewy skin, soft red lip, elegant posture. Relaxed neutral stance facing"
-      + " camera, arms slightly away from the body. Plain cream fitted top, plain beige shorts, nude heels,"
-      + " no accessories. Soft even studio lighting, plain light grey seamless background, photorealistic,"
-      + " head to shoes, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " long loose wavy hair, warm dewy skin, soft red lip, elegant posture. Relaxed neutral stance"
+      + " facing camera, arms slightly away from the body. Plain grey fitted t-shirt and plain grey"
+      + " leggings, plain white trainers, bare ears, bare wrists and bare neck. Soft even studio"
+      + " lighting, plain light grey seamless background, photorealistic, head to shoes.",
     dacTrung: "a row of tall white stone columns",
     boiCanh: "a row of tall white stone columns standing close behind her, each column fluted from base to"
       + " capital under a plain square block, the gaps between them open to the daylight sky, a low white"
@@ -251,11 +251,11 @@ const CONCEPTS: Concept[] = [
     moTa: "Set sen dung trong studio: phong nen ve, sen that, khay nuoc nong phan chieu, khoi mo va anh sang toa.",
     tags: ["thoi-trang", "sen", "co-dien"],
     size: "1024x1536",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, very"
-      + " long dark wavy hair, porcelain dewy skin, soft pink lip, delicate build. Relaxed neutral stance"
-      + " facing camera, arms slightly away from the body. Plain cream fitted top, plain cream shorts, bare"
-      + " feet, small white flowers pinned in the hair. Soft even studio lighting, plain light grey seamless"
-      + " background, photorealistic, head to feet, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " very long dark wavy hair, porcelain dewy skin, soft pink lip, delicate build. Relaxed"
+      + " neutral stance facing camera, arms slightly away from the body. Plain grey fitted t-shirt"
+      + " and plain grey leggings, plain white trainers, bare ears, bare wrists and bare neck. Soft"
+      + " even studio lighting, plain light grey seamless background, photorealistic, head to feet.",
     dacTrung: "a studio lotus set",
     boiCanh: "a studio lotus set: a hand-painted misty lotus backdrop in pale green and grey, real white and"
       + " cream lotus blooms with round green pads standing in a shallow black water tray that mirrors"
@@ -305,11 +305,12 @@ const CONCEPTS: Concept[] = [
     moTa: "Nang xien cuoi chieu tren san dat nen, ghe khan dai xanh nhoe phia sau, da bong mo hoi.",
     tags: ["thoi-trang", "the-thao", "golden-hour"],
     size: "1024x1536",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, hair"
-      + " pulled into a high ponytail with loose strands, clear-framed glasses, bare skin with a light"
-      + " sheen, athletic slim build. Relaxed neutral stance facing camera, arms slightly away from the"
-      + " body. Plain white fitted top, plain black shorts, white court shoes, no accessories. Soft even"
-      + " studio lighting, plain light grey seamless background, photorealistic, head to shoes, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " hair pulled into a high ponytail with loose strands, clear-framed glasses, bare skin with a"
+      + " light sheen, athletic slim build. Relaxed neutral stance facing camera, arms slightly away"
+      + " from the body. Plain grey fitted t-shirt and plain grey leggings, plain white trainers, bare"
+      + " ears, bare wrists and bare neck. Soft even studio lighting, plain light grey seamless"
+      + " background, photorealistic, head to shoes.",
     dacTrung: "an outdoor clay tennis court",
     boiCanh: "an outdoor clay tennis court late in the afternoon, rows of blue stadium seats rising out of"
       + " focus behind, crisp white court lines on red-orange clay, a net at the far edge, floodlight masts"
@@ -358,11 +359,12 @@ const CONCEPTS: Concept[] = [
     moTa: "Nen trang tron, do cu toi thieu: mot doa moc lan va mot buc chan dung co. Mau vai la thu duy nhat co mau.",
     tags: ["thoi-trang", "co-phuc", "editorial"],
     size: "1024x1536",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, very"
-      + " long straight black hair parted in the middle, matte porcelain skin, deep red lip, sharp"
-      + " cheekbones. Relaxed neutral stance facing camera, arms slightly away from the body. Plain white"
-      + " fitted top, plain white trousers, bare feet, no accessories. Soft even studio lighting, plain"
-      + " light grey seamless background, photorealistic, head to feet, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " very long straight black hair parted in the middle, matte porcelain skin, deep red lip,"
+      + " sharp cheekbones. Relaxed neutral stance facing camera, arms slightly away from the body."
+      + " Plain grey fitted t-shirt and plain grey leggings, plain white trainers, bare ears, bare"
+      + " wrists and bare neck. Soft even studio lighting, plain light grey seamless background,"
+      + " photorealistic, head to feet.",
     dacTrung: "a pure white studio cyclorama",
     boiCanh: "a pure white studio cyclorama with a seamless white floor, one fresh white magnolia bloom and"
       + " a small framed antique painted portrait propped on the floor as the only props, nothing else in"
@@ -410,11 +412,11 @@ const CONCEPTS: Concept[] = [
     moTa: "Bon goc chuan cua mot trang lookbook: chinh dien, ba phan tu, sau lung, va mot tam can canh chat lieu.",
     tags: ["thoi-trang", "lookbook", "studio"],
     size: "1024x1536",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, natural"
-      + " healthy skin, hair pulled back simply, minimal makeup, slim build. Relaxed neutral stance facing"
-      + " camera, arms slightly away from the body. Plain white fitted top, plain light grey shorts, bare"
-      + " feet, no accessories. Soft even studio lighting, plain light grey seamless background,"
-      + " photorealistic, head to feet, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " natural healthy skin, hair pulled back simply, minimal makeup, slim build. Relaxed neutral"
+      + " stance facing camera, arms slightly away from the body. Plain grey fitted t-shirt and plain"
+      + " grey leggings, plain white trainers, bare ears, bare wrists and bare neck. Soft even studio"
+      + " lighting, plain light grey seamless background, photorealistic, head to feet.",
     dacTrung: "a professional photo studio",
     boiCanh: "a professional photo studio with a plain warm-grey seamless paper backdrop, the floor the same"
       + " tone as the wall with no visible seam, one large softbox at 45 degrees and a white bounce card"
@@ -462,11 +464,12 @@ const CONCEPTS: Concept[] = [
     moTa: "Kieu anh chup nhanh ngoai pho: 35mm, co chuyen dong, nang chieu xuong giua cac toa nha.",
     tags: ["thoi-trang", "street", "candid"],
     size: "1152x2048",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, natural"
-      + " skin texture with visible pores, loose hair, bare natural makeup, athletic slim build. Relaxed neutral"
-      + " stance facing camera, arms slightly away from the body. Plain grey fitted top, plain black shorts,"
-      + " white sneakers, no accessories. Soft even studio lighting, plain light grey seamless background,"
-      + " photorealistic, head to shoes, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " natural skin texture with visible pores, loose hair, bare natural makeup, athletic slim"
+      + " build. Relaxed neutral stance facing camera, arms slightly away from the body. Plain grey"
+      + " fitted t-shirt and plain grey leggings, plain white trainers, bare ears, bare wrists and"
+      + " bare neck. Soft even studio lighting, plain light grey seamless background, photorealistic,"
+      + " head to shoes.",
     dacTrung: "a wide city sidewalk",
     boiCanh: "a wide city sidewalk between tall buildings, pale stone paving with painted crossing lines, a"
       + " row of parked cars along the kerb, glass shopfronts reflecting the street, a few blurred passers-by"
@@ -515,11 +518,12 @@ const CONCEPTS: Concept[] = [
     moTa: "Noi that am, go nhat va nang sang - kieu anh de ban do thuong ngay.",
     tags: ["thoi-trang", "lifestyle", "cafe"],
     size: "1152x2048",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, glossy"
-      + " dark hair with face-framing layers, dewy skin, soft gradient lips, slim delicate build. Relaxed"
-      + " neutral pose facing camera, arms slightly away from the body. Plain white crop top, light grey"
-      + " shorts, white sneakers, no accessories. Soft even studio lighting, plain light grey seamless"
-      + " background, photorealistic, head to shoes, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " glossy dark hair with face-framing layers, dewy skin, soft gradient lips, slim delicate"
+      + " build. Relaxed neutral pose facing camera, arms slightly away from the body. Plain grey"
+      + " fitted t-shirt and plain grey leggings, plain white trainers, bare ears, bare wrists and"
+      + " bare neck. Soft even studio lighting, plain light grey seamless background, photorealistic,"
+      + " head to shoes.",
     dacTrung: "a warm cosy coffee shop",
     boiCanh: "a warm cosy coffee shop with pale oak furniture, white brick walls, tall arched windows with"
       + " sheer linen curtains, brass pendant lights, a long marble counter with a chrome espresso machine,"
@@ -568,11 +572,11 @@ const CONCEPTS: Concept[] = [
     moTa: "Nguoc sang gio vang: vien sang quanh nguoi, troi cam, gio lam bay vat ao.",
     tags: ["thoi-trang", "golden-hour", "rooftop"],
     size: "1152x2048",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, long"
-      + " loose hair, sun-kissed skin, bare natural makeup, tall slim build. Relaxed neutral stance facing"
-      + " camera, arms slightly away from the body. Plain cream fitted top, plain sand-coloured shorts, bare"
-      + " feet, no accessories. Soft even studio lighting, plain light grey seamless background,"
-      + " photorealistic, head to feet, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " long loose hair, sun-kissed skin, bare natural makeup, tall slim build. Relaxed neutral"
+      + " stance facing camera, arms slightly away from the body. Plain grey fitted t-shirt and plain"
+      + " grey leggings, plain white trainers, bare ears, bare wrists and bare neck. Soft even studio"
+      + " lighting, plain light grey seamless background, photorealistic, head to feet.",
     dacTrung: "an open concrete rooftop terrace",
     boiCanh: "an open concrete rooftop terrace above a city at sunset, a low parapet wall along the edge, the"
       + " skyline hazy and far behind, the sun sitting just above the horizon directly behind the model, the"
@@ -621,11 +625,12 @@ const CONCEPTS: Concept[] = [
     moTa: "Mot nguon sang cung, bong do gat, tuong be tong tron - kieu anh bia tap chi.",
     tags: ["thoi-trang", "editorial", "minimal"],
     size: "1024x1536",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, sharp"
-      + " bone structure, hair slicked back flat, matte skin, bare lips, very slim build. Relaxed neutral"
-      + " stance facing camera, arms slightly away from the body. Plain black fitted top, plain black shorts,"
-      + " bare feet, no accessories. Soft even studio lighting, plain light grey seamless background,"
-      + " photorealistic, head to feet, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " sharp bone structure, hair slicked back flat, matte skin, bare lips, very slim build."
+      + " Relaxed neutral stance facing camera, arms slightly away from the body. Plain grey fitted"
+      + " t-shirt and plain grey leggings, plain white trainers, bare ears, bare wrists and bare neck."
+      + " Soft even studio lighting, plain light grey seamless background, photorealistic, head to"
+      + " feet.",
     dacTrung: "an empty room with smooth pale concrete walls",
     boiCanh: "an empty room with smooth pale concrete walls and floor of the same tone, one tall narrow"
       + " window out of frame to the right throwing a single hard shaft of daylight across the wall, nothing"
@@ -673,11 +678,11 @@ const CONCEPTS: Concept[] = [
     moTa: "Kieu anh bat gap o san bay: den tran deu, san bong, keo vali - de ban do mac ca ngay.",
     tags: ["thoi-trang", "airport", "candid"],
     size: "1152x2048",
-    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties, glossy"
-      + " straight hair, fresh dewy skin, light natural makeup, slim build. Relaxed neutral stance facing"
-      + " camera, arms slightly away from the body. Plain white fitted top, plain grey shorts, white"
-      + " sneakers, no accessories. Soft even studio lighting, plain light grey seamless background,"
-      + " photorealistic, head to shoes, no text.",
+    mau: "Full-body model reference sheet photograph of a young adult fashion model, early twenties,"
+      + " glossy straight hair, fresh dewy skin, light natural makeup, slim build. Relaxed neutral"
+      + " stance facing camera, arms slightly away from the body. Plain grey fitted t-shirt and plain"
+      + " grey leggings, plain white trainers, bare ears, bare wrists and bare neck. Soft even studio"
+      + " lighting, plain light grey seamless background, photorealistic, head to shoes.",
     dacTrung: "a bright modern airport terminal",
     boiCanh: "a bright modern airport terminal, polished pale stone floor reflecting the ceiling lights, a"
       + " long glass curtain wall on the left showing aircraft tails on the apron, rows of empty seats and a"
