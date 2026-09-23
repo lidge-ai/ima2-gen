@@ -3,6 +3,7 @@ import { expect, seedBrowser, startApp, test } from "./fixtures/appServer";
 
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 const NODE_ID = "wp2-node-with-a-long-generated-identifier-0123456789";
+const SOURCE_ID = "wp2-source";
 
 async function stubClipboard(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -21,7 +22,7 @@ async function stubClipboard(page: Page): Promise<void> {
 }
 
 async function seedGraph(page: Page, imageUrl: string): Promise<void> {
-  await page.evaluate(async ({ id, url }) => {
+  await page.evaluate(async ({ id, sourceId, url }) => {
     const created = await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,15 +30,14 @@ async function seedGraph(page: Page, imageUrl: string): Promise<void> {
     });
     if (!created.ok) throw new Error(`session create failed: ${created.status}`);
     const { session } = await created.json();
-    const nodes = [{
-      id,
-      x: 0,
-      y: 0,
-      data: {
-        clientId: id, serverNodeId: "server-wp2", parentServerNodeId: null, extraParentServerNodeIds: [],
-        prompt: "wp2 synthetic prompt", imageUrl: url, status: "ready", pendingRequestId: null,
-      },
-    }];
+    const data = (clientId: string, serverNodeId: string) => ({
+      clientId, serverNodeId, parentServerNodeId: null, extraParentServerNodeIds: [],
+      prompt: "wp2 synthetic prompt", imageUrl: url, status: "ready", pendingRequestId: null,
+    });
+    const nodes = [
+      { id: sourceId, x: 0, y: 0, data: data(sourceId, "server-wp2-source") },
+      { id, x: 560, y: 0, data: data(id, "server-wp2") },
+    ];
     const saved = await fetch(`/api/sessions/${encodeURIComponent(session.id)}/graph`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "If-Match": "0" },
@@ -45,7 +45,19 @@ async function seedGraph(page: Page, imageUrl: string): Promise<void> {
     });
     if (!saved.ok) throw new Error(`graph seed failed: ${saved.status}`);
     localStorage.setItem("ima2.activeSessionId", session.id);
-  }, { id: NODE_ID, url: imageUrl });
+  }, { id: NODE_ID, sourceId: SOURCE_ID, url: imageUrl });
+}
+
+async function connect(page: Page, sourceId: string, targetId: string): Promise<void> {
+  const source = page.locator(`.react-flow__node[data-id="${sourceId}"] [data-handleid="source-right"]`);
+  const target = page.locator(`.react-flow__node[data-id="${targetId}"] [data-handleid="target-left"]`);
+  const sourceBox = await source.boundingBox();
+  const targetBox = await target.boundingBox();
+  if (!sourceBox || !targetBox) throw new Error("missing connection handles");
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 8 });
+  await page.mouse.up();
 }
 
 async function attach(page: Page, testInfo: TestInfo, name: string): Promise<void> {
@@ -77,8 +89,9 @@ test("WP2 node image zoom, copyable id and drag separation", async ({ page }, te
     await expect(node).toBeVisible();
 
     // A graph edit that Ctrl+Z could undo if dialog keys leaked to the canvas.
-    await node.getByRole("button", { name: "자식 노드 추가", exact: true }).click();
     await expect(page.locator(".react-flow__node")).toHaveCount(2);
+    await connect(page, SOURCE_ID, NODE_ID);
+    await expect(page.locator(".react-flow__edge")).toHaveCount(1);
 
     // The id strip selects the node; keyboard opens the zoom without hovering.
     await node.locator(".image-node__id-text").click();
@@ -99,6 +112,7 @@ test("WP2 node image zoom, copyable id and drag separation", async ({ page }, te
     }
     await expect(dialog).toBeVisible();
     await expect(page.locator(".react-flow__node")).toHaveCount(2);
+    await expect(page.locator(".react-flow__edge")).toHaveCount(1);
     const afterKeys = await node.boundingBox();
     expect(Math.abs((afterKeys?.x ?? 0) - (nodeBox?.x ?? 0))).toBeLessThanOrEqual(1);
 
