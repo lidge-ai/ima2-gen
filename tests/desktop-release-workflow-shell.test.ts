@@ -32,6 +32,13 @@ const GH_STUB = [
   "set -eo pipefail",
   'S="$GH_STUB_STATE"',
   'echo "$*" >> "$S/calls.log"',
+  // gh reads the repository from the checkout's git remote and fails without
+  // one, which is how a job with no checkout and no GH_REPO silently loses
+  // every query. Refusing the same way is what makes that reachable here.
+  'if [ -z "$GH_REPO" ] && ! git rev-parse --git-dir >/dev/null 2>&1; then',
+  '  echo "failed to run git: fatal: not a git repository (or any of the parent directories): .git" >&2',
+  "  exit 1",
+  "fi",
   "shift",
   'sub="$1"; shift',
   'tag="$1"; shift',
@@ -108,6 +115,32 @@ function stepScript(job: string, name: string): string {
   return step.run;
 }
 
+/**
+ * Resolve a step's declared env the way Actions would. Reading it from the
+ * workflow instead of hardcoding it here is the point: whatever a step never
+ * declares is simply absent when the script runs, exactly as on the runner.
+ */
+const EXPRESSIONS: Record<string, string> = {
+  "${{ github.token }}": "fixture-token",
+  "${{ github.repository }}": "lidge-jun/ima2-gen",
+  "${{ github.ref_name }}": TAG,
+};
+
+function stepEnv(job: string, name: string, supplied: Record<string, string> = {}): Record<string, string> {
+  const step = workflow.jobs[job].steps.find((candidate: any) => candidate.name === name);
+  assert.ok(step, `missing workflow step ${job}/${name}`);
+  const resolved: Record<string, string> = {};
+  for (const [key, value] of Object.entries(step.env ?? {})) {
+    resolved[key] = supplied[key] ?? EXPRESSIONS[value as string] ?? String(value);
+  }
+  return resolved;
+}
+
+/** Only a job that checks out the repository gives gh its git context. */
+function jobHasCheckout(job: string): boolean {
+  return workflow.jobs[job].steps.some((step: any) => step.uses?.startsWith("actions/checkout@"));
+}
+
 const DRAFT_SCRIPT = stepScript("draft_release", "Create or update draft release");
 const GATE_SCRIPT = stepScript("publish_release", "Require configured production approval gate");
 const PUBLISH_SCRIPT = stepScript("publish_release", "Publish approved desktop release");
@@ -170,6 +203,9 @@ class Harness {
       env: {
         PATH: `${this.bin}:${process.env["PATH"] ?? ""}`,
         HOME: this.dir,
+        // Keep the git lookup inside the harness so an unlucky TMPDIR cannot
+        // hand a job git context the real runner would never give it.
+        GIT_CEILING_DIRECTORIES: this.dir,
         GH_STUB_STATE: this.state,
         GITHUB_SHA: SHA,
         GITHUB_OUTPUT: this.githubOutput,
@@ -178,20 +214,34 @@ class Harness {
     });
   }
 
+  /** Mirror the job: a checkout step is what leaves a git repository behind. */
+  private applyCheckout(cwd: string, job: string): void {
+    if (!jobHasCheckout(job)) return;
+    spawnSync("git", ["init", "--quiet"], { cwd, encoding: "utf8" });
+  }
+
   runDraft() {
-    return this.run(DRAFT_SCRIPT, { DESKTOP_TAG: TAG, DESKTOP_VERSION: VERSION });
+    this.applyCheckout(this.workspace, "draft_release");
+    // DESKTOP_TAG and DESKTOP_VERSION reach the real step through GITHUB_ENV.
+    return this.run(DRAFT_SCRIPT, {
+      ...stepEnv("draft_release", "Create or update draft release"),
+      DESKTOP_TAG: TAG,
+      DESKTOP_VERSION: VERSION,
+    });
   }
 
   runPublish(overrides: Record<string, string> = {}) {
     const outputs = this.outputs();
     const publishCwd = join(this.dir, `publish-${Math.random().toString(36).slice(2)}`);
     mkdirSync(publishCwd);
+    this.applyCheckout(publishCwd, "publish_release");
     return this.run(
       PUBLISH_SCRIPT,
       {
-        DESKTOP_TAG: TAG,
-        EXPECTED_CHECKSUMS_SHA256: outputs["checksums_sha256"] ?? "",
-        EXPECTED_NOTES_SHA256: outputs["notes_sha256"] ?? "",
+        ...stepEnv("publish_release", "Publish approved desktop release", {
+          EXPECTED_CHECKSUMS_SHA256: outputs["checksums_sha256"] ?? "",
+          EXPECTED_NOTES_SHA256: outputs["notes_sha256"] ?? "",
+        }),
         ...overrides,
       },
       publishCwd,
@@ -290,6 +340,22 @@ describe("desktop release workflow shell", {
       assert.deepEqual(harness.publishedAssets(), [...PUBLIC_ASSETS].sort());
       assert.match(harness.calls(), /release edit desktop-v3\.16\.1 --draft=false --latest=false/);
       assert.equal(harness.calls().match(/release upload/g)?.length, 1);
+    });
+  });
+
+  it("refuses blindly when a job without a checkout loses its repository context", () => {
+    // This is how desktop-v3.17.0 actually failed: gh could not resolve the
+    // repository, the isDraft probe returned nothing, and a valid draft was
+    // refused. The release then went out by hand, skipping this job's checks.
+    withHarness((harness) => {
+      harness.seedBuildOutput();
+      assert.equal(harness.runDraft().status, 0);
+
+      const blind = harness.runPublish({ GH_REPO: "" });
+      assert.notEqual(blind.status, 0);
+      assert.match(blind.stderr, /not a git repository/);
+      assert.equal(harness.isDraft(), "true", "the draft must survive a blind run");
+      assert.doesNotMatch(harness.calls(), /--draft=false/);
     });
   });
 
