@@ -286,6 +286,7 @@ body::after {
 @import "./styles/node-workspace.css";
 @import "./styles/node-polish.css";
 @import "./styles/node-canvas-extras.css";
+@import "./styles/node-image-preview.css";
 @import "./styles/card-news-layout.css";
 @import "./styles/card-news-templates.css";
 @import "./styles/prompt-library-core.css";

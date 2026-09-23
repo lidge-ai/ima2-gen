@@ -699,7 +699,9 @@
     "retry": "Retry",
     "retryTitle": "Retry this node's generation",
     "errorAuthCta": "Check your account or API key, then generate again.",
-    "errorFixCta": "Adjust the prompt or references, then generate again."
+    "errorFixCta": "Adjust the prompt or references, then generate again.",
+    "zoomImage": "View larger",
+    "copyId": "Copy node id"
   },
   "nodeBatch": {
     "selectionOn": "Selecting",

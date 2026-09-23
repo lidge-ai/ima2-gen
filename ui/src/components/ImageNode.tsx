@@ -7,6 +7,8 @@ import { formatReasoningLabel } from "../lib/reasoning";
 import { isVideoUrl } from "../lib/videoMedia";
 import { buildProvenanceView } from "../lib/provenance";
 import { SavePromptPopover } from "./SavePromptPopover";
+import { NodeIdentityHeader } from "./node-canvas/NodeIdentityHeader";
+import { NodeImagePreview } from "./node-canvas/NodeImagePreview";
 
 const MAX_NODE_REFS = 5;
 const NODE_PREVIEW_HEIGHT = 240;
@@ -239,12 +241,13 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
           className={`image-node__handle image-node__handle--target image-node__handle--${handleId}`}
         />
       ))}
+      <NodeIdentityHeader nodeId={id} />
       <div className="image-node__preview">
         {d.imageUrl && d.status !== "asset-missing" ? (
           isVideoUrl(d.imageUrl) ? (
             <video src={d.imageUrl} controls loop playsInline muted className="image-node__video nodrag" />
           ) : (
-            <img src={d.imageUrl} alt={t("node.nodeImageAlt")} />
+            <NodeImagePreview imageUrl={d.imageUrl} prompt={d.prompt || ""} />
           )
         ) : isBusy && d.partialImageUrl ? (
           <img
@@ -391,7 +394,12 @@ function ImageNodeImpl({ id, data, selected }: NodeProps<GraphNode>) {
               </button>
               {!isVideoUrl(d.imageUrl) && (
                 <button type="button" onClick={onAnimate} disabled={isBusy} title={t("node.animateTitle", { fallback: "Animate" })} aria-label={t("node.animateTitle", { fallback: "Animate" })}>
-                  ▶
+                  {/* A film strip, not a play triangle: this starts a paid video
+                      generation from the image rather than playing anything. */}
+                  <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                    <rect x="3" y="5.5" width="18" height="13" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M7.5 5.5v13M16.5 5.5v13M3 12h18" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                  </svg>
                 </button>
               )}
             </>

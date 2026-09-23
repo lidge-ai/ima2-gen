@@ -1,0 +1,81 @@
+/* Node image zoom and node identity strip (PR 256 WP2). No border-radius here:
+   radii are frozen by tests/ui-radius-scale-contract. */
+.image-node__preview {
+  position: relative;
+}
+.image-node__zoom {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  color: var(--on-scrim);
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  cursor: zoom-in;
+}
+.image-node__preview:hover .image-node__zoom,
+.image-node__zoom:focus-visible,
+.image-node__zoom:focus-within {
+  opacity: 1;
+}
+.image-node__zoom:hover {
+  background: var(--scrim-strong);
+}
+@media (hover: none), (pointer: coarse) {
+  .image-node__zoom {
+    width: 32px;
+    height: 32px;
+    opacity: 1;
+  }
+}
+
+.image-node__id {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 2px 4px;
+  font-size: 10px;
+  line-height: 1.3;
+  /* The whole strip is a drag grip for the node. */
+  cursor: grab;
+}
+.image-node__id:active {
+  cursor: grabbing;
+}
+.image-node__id-text {
+  /* A max-width instead of flex shrinking: shrinking would also cut short ids. */
+  flex: 0 0 auto;
+  max-width: 58%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Dragging should move the node, not select the id text. */
+  user-select: none;
+}
+.image-node__id-copy {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 1px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  cursor: copy;
+  opacity: .6;
+}
+.image-node__id-copy:hover,
+.image-node__id-copy:focus-visible {
+  color: var(--accent);
+  opacity: 1;
+}
