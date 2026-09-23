@@ -302,15 +302,16 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/historyIndex.ts` | 57 | Generated-history index construction and lookup |
 | `lib/imageThumb.ts` | 50 | Image thumbnail generation helpers |
 | `lib/multimodeHelpers.ts` | 48 | Shared multimode generation helpers |
-| `lib/nodeHelpers.ts` | 122 | Node workflow graph and payload helpers |
+| `lib/nodeHelpers.ts` | 134 | Node workflow graph and payload helpers |
 | `lib/vectorizeImage.ts` | 179 | Raster-to-SVG tracing (VTracer) with named presets, size/dimension guards, and SVG optimization |
 | `lib/nodeTemplateSeeds.ts` | 84 | Built-in node workflow template seed definitions |
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/presetCompiler.ts` | 67 | Named preset prompt compilation helpers |
 | `lib/responsesDoctor.ts` | 457 | Responses API diagnostics and provider health checks |
-| `lib/responsesErrors.ts` | 85 | Responses API error normalization helpers |
+| `lib/responsesErrors.ts` | 94 | Responses API error normalization helpers |
 | `lib/responsesFallback.ts` | 173 | Responses API fallback routing helpers |
-| `lib/responsesParse.ts` | 453 | Responses API output parsing and normalization |
+| `lib/responsesParse.ts` | 444 | Responses API output parsing and normalization |
+| `lib/diagnosticLabel.ts` | 44 | Dependency-free `safeDiagnosticLabel`: accepts short upstream code/type/param labels, redacts long values, sentences and credential shapes |
 | `lib/responsesTools.ts` | 41 | Responses API tool-call definitions and helpers |
 | `lib/routeHelpers.ts` | 58 | Shared Express route request/response helpers |
 | `lib/storyboardPrefix.ts` | 29 | Storyboard prompt-prefix construction |

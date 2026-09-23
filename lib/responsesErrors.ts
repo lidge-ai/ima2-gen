@@ -77,6 +77,15 @@ export function emptyResponseError(message: string, result: ParsedResponsesResul
   err.webSearchCalls = result.webSearchCalls;
   err.responseDiagnostics = result.diagnostics;
   Object.assign(err, meta);
+  // Carry the failed image item's own code and type as labels. errorCodeFrom returns
+  // the diagnostic code above first, so this adds detail without changing
+  // classification. The upstream sentence is deliberately not carried: redaction
+  // patterns cannot prove a free-form sentence free of prompts or credentials.
+  const imageError = result.diagnostics.outputItemSummary.find(
+    (item) => item.itemType === "image_generation_call" && item.errorCode,
+  );
+  if (imageError?.errorCode) err.upstreamCode = imageError.errorCode;
+  if (imageError?.errorType) err.upstreamType = imageError.errorType;
   const reason = diagnosticReason(code);
   if (reason) err.diagnosticReason = reason;
   Object.defineProperty(err, RESPONSES_ERROR_MARKER, { value: true });

@@ -1,5 +1,8 @@
 import { setJobPhase } from "./inflight.js";
 import { logEvent } from "./logger.js";
+import { safeDiagnosticLabel } from "./diagnosticLabel.js";
+
+export { safeDiagnosticLabel };
 
 export interface ParsedImage {
   b64: string;
@@ -146,18 +149,6 @@ function createState(): ParseState {
     webSearchCallSeen: false,
     messageOutputSeen: false,
   };
-}
-
-const MAX_DIAGNOSTIC_LABEL_CHARS = 120;
-const UNSAFE_DIAGNOSTIC_LABEL = /(bearer\s+|sk-[a-z0-9_-]{4,}|data:image\/|https?:\/\/|[a-z][a-z0-9+.-]*:\/\/|@|[\r\n])/i;
-const SAFE_DIAGNOSTIC_LABEL = /^[A-Za-z0-9_.:[\]-]+$/;
-
-export function safeDiagnosticLabel(value: unknown, fallback: string | null = null): string | null {
-  if (typeof value !== "string" || value.length === 0) return fallback;
-  const trimmed = value.slice(0, MAX_DIAGNOSTIC_LABEL_CHARS);
-  if (UNSAFE_DIAGNOSTIC_LABEL.test(trimmed)) return "_redacted";
-  if (!SAFE_DIAGNOSTIC_LABEL.test(trimmed)) return "_redacted";
-  return trimmed;
 }
 
 function extractSseData(block: string): string {

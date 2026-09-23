@@ -50,7 +50,9 @@ describe("node diagnostics contract", () => {
 
   it("does not collapse stream context into only SAFETY_REFUSAL", () => {
     assert.match(nodes, /logEvent\("node", "final_error"/);
-    assert.match(nodes, /upstreamCode: lastErr\?\.upstreamCode \|\| lastErr\?\.code/);
+    // The upstream code (falling back to the ima2 code) and type are emitted as
+    // filtered labels; tests/responses-parse-diagnostics.test.ts checks their values.
+    assert.match(nodes, /\.\.\.finalErrorUpstreamLabels\(lastErr\)/);
     assert.match(nodes, /errorEventType: lastErr\?\.eventType/);
     assert.match(nodes, /errorEventCount: lastErr\?\.eventCount/);
   });
@@ -64,4 +66,3 @@ describe("node diagnostics contract", () => {
     assert.doesNotMatch(oauth, /logEvent\("oauth-edit", "request", \{[^}]*imageB64/);
   });
 });
-

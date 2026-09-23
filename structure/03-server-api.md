@@ -531,7 +531,9 @@ Node context is explicit. `contextMode` defaults to `parent-plus-refs`, meaning 
 
 `/api/node/generate` also supports an SSE response when the client sends `Accept: text/event-stream`. In that mode validation still happens before headers are opened. After the stream opens, the server may emit `phase`, `partial`, `done`, and `error` events. Root generation opts into OAuth `partial_images: 2`; child/edit generation stays final-only for now. If an upstream stream error happens after headers are committed, the outer HTTP status may remain `200`; clients must read the SSE `error` event and node state. Clients must treat partial events as progressive previews only and use the `done` payload as the canonical saved node.
 
-Upstream request/validation failures are normalized to `INVALID_REQUEST` while preserving raw provider diagnostics as `upstreamCode`, `upstreamType`, and `upstreamParam`. In SSE mode these fields travel inside the `error` event payload together with `status`.
+Upstream request/validation failures are normalized to `INVALID_REQUEST` while preserving provider diagnostics as `upstreamCode`, `upstreamType`, and `upstreamParam`. In SSE mode these fields travel inside the `error` event payload together with `status`.
+
+Provider diagnostic fields are machine labels, never sentences. `upstreamCode`, `upstreamType` and `upstreamParam` pass through `safeDiagnosticLabel` (`lib/responsesParse.ts`): values over 120 characters, values that are not a single code-like token, and credential shapes (Bearer, `sk-`, `sk_live_`/`sk_test_`, `xai-`/`xai_`, `AIza`, `AKIA`, JWTs, `gh[pousr]_`, `password`/`secret`/`token`/`api_key` key=value, unbroken alphanumeric runs of 32+ characters, URLs, `@`) become `_redacted`. When a Responses image item fails, `emptyResponseError` carries that item's code and type labels in `upstreamCode`/`upstreamType`; the stable ima2 code (for example `IMAGE_TOOL_FAILED`) still decides classification and retries, and the user-facing message stays fixed. The provider's own `error.message` sentence is not parsed into diagnostics, logs or envelopes, because redaction patterns cannot prove a free-form sentence free of prompts or credentials (PR 256 WP3 deliberately rejected that). Providers remain untrusted. Known remaining exposure: the OAuth passthrough keeps the provider's message (`lib/oauthProxy/errors.ts`); node envelopes and the `node.final_error` log filter its code and type labels at emission.
 
 Node sidecars include `requestId` as recovery metadata. `/api/history` exposes the same field so a reloaded graph can match completed assets by request id before falling back to `(sessionId, clientNodeId, createdAt)`.
 
@@ -714,7 +716,7 @@ Generation, edit, node, OAuth stream, inflight, history, and session graph saves
 
 Logs must never include raw prompts, effective prompts, revised prompts, OAuth/API tokens, authorization headers, cookies, raw request bodies, reference data URLs, generated base64, or raw upstream response bodies. Use counts and sizes instead: `promptChars`, `refs`, `imageChars`, `durationMs`, `httpStatus`, and `errorCode`.
 
-Node retry diagnostics include safe context such as `operation`, `clientNodeId`, `parentNodeId`, `errorEventType`, `errorEventCount`, and `upstreamCode`. They must not log prompt text or image payloads.
+Node retry diagnostics include safe context such as `operation`, `clientNodeId`, `parentNodeId`, `errorEventType`, `errorEventCount`, and the filtered `upstreamCode`/`upstreamType` labels (`finalErrorUpstreamLabels`). They must not log prompt text or image payloads.
 
 ## Sync Checklist
 

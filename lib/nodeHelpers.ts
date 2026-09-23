@@ -7,6 +7,7 @@ import type { RuntimeContext } from "./runtimeContext.js";
 import { writeSse } from "./routeHelpers.js";
 import { publishJobEvent } from "./ssePublish.js";
 import { errorEnvelopeFields } from "./errors/envelope.js";
+import { safeDiagnosticLabel } from "./diagnosticLabel.js";
 import type { NaiRequestOptions } from "./naiOptions.js";
 
 /**
@@ -101,15 +102,26 @@ export function toGrokReferences(parentB64: string | null, refs: Array<GrokRefer
   return [...parentRefs, ...normalizedRefs];
 }
 
+/**
+ * Upstream code and type for node error envelopes and the final_error log, passed
+ * through the diagnostic label filter. Some paths (the OAuth passthrough) carry the
+ * provider's raw code and type, so these are filtered where they are emitted.
+ */
+export function finalErrorUpstreamLabels(lastErr: UpstreamErr | null | undefined) {
+  return {
+    upstreamCode: safeDiagnosticLabel(lastErr?.upstreamCode || lastErr?.code),
+    upstreamType: safeDiagnosticLabel(lastErr?.upstreamType),
+  };
+}
+
 export function nodeErrorDetails(finalErr: Record<string, unknown>, lastErr: UpstreamErr | null) {
   return {
     // The normalized error carries the provider identity that 061 attached;
     // without copying it here the nested Node envelope loses both fields even
     // though writeNodeError knows how to nest them.
     ...errorEnvelopeFields(finalErr),
-    upstreamCode: lastErr?.upstreamCode || lastErr?.code || null,
-    upstreamType: lastErr?.upstreamType || null,
-    upstreamParam: lastErr?.upstreamParam || null,
+    ...finalErrorUpstreamLabels(lastErr),
+    upstreamParam: safeDiagnosticLabel(lastErr?.upstreamParam),
     errorEventType: lastErr?.eventType || null,
     errorEventCount: lastErr?.eventCount ?? null,
     diagnosticReason: finalErr.diagnosticReason || lastErr?.diagnosticReason || null,

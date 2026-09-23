@@ -21,7 +21,7 @@ import { validateExtraParentNodeIds } from "./nodeValidation.js";
 import { resolveNodeReferences } from "./nodeReferences.js";
 import { publish } from "./eventBus.js";
 import { publishJobEvent } from "./ssePublish.js";
-import { type NodeGenerateBody, asUpstream, wantsSse, writeNodeError, loadParentNodeB64, nodeErrorDetails, } from "./nodeHelpers.js";
+import { type NodeGenerateBody, asUpstream, wantsSse, writeNodeError, loadParentNodeB64, nodeErrorDetails, finalErrorUpstreamLabels, } from "./nodeHelpers.js";
 import { normalizeBodyRequestId, validateGenerationPrompt } from "./generationInputValidation.js";
 import { getProviderSurfaceSupport } from "./providers/derive.js";
 import { errorEnvelopeFields } from "./errors/envelope.js";
@@ -342,7 +342,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
           requestId,
           operation,
           finalCode: finishErrorCode,
-          upstreamCode: lastErr?.upstreamCode || lastErr?.code,
+          ...finalErrorUpstreamLabels(lastErr),
           errorEventType: lastErr?.eventType,
           errorEventCount: lastErr?.eventCount,
           diagnosticReason: lastErr?.diagnosticReason,
