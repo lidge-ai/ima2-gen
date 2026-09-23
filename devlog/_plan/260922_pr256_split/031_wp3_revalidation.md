@@ -106,3 +106,12 @@ S5 로그 캡처: `configureLogger({ sink })`(lib/logger.ts:131). 추가 형식 
   봉투로 가는 경로를 함께 줄인다(메시지 경로는 여전히 범위 밖).
 - tests/node-diagnostics-contract.test.js의 소스 문자열 검사를 새 헬퍼 사용 확인으로 바꾸고 값 검사는
   responses-parse-diagnostics 테스트가 맡는다.
+
+## C 전 최종 diff 보안 검토 (`01a0cc10-36ad-7013-bac8-85251fd99b7f`) NEAR-PASS → 처분
+
+1. MAJOR 문서가 코드보다 넓게 약속 → 문서를 줄이지 않고 코드를 맞춘다: `upstreamLabelFields`를 diagnosticLabel.ts에 두고
+   generate/edit(upstreamErrorFields), edit 라우트, multimode, 노드 catch 경로가 모두 쓴다. 테스트로 고정.
+2. MINOR 문서의 정의 파일 → lib/diagnosticLabel.ts로 정정.
+3. MINOR 구분자로 쪼개진 짧은 토큰 → structure/03에 알려진 한계로 기재.
+4. MINOR 실제 runNodeGeneration 경로 미실행 → final_error는 헬퍼+로거 sink로, 봉투는 upstreamLabelFields와
+   nodeErrorDetails(upstreamParam 포함) 값 테스트와 소스 연결 테스트로 보완. 전체 노드 경로 통합 테스트는 범위 밖.
