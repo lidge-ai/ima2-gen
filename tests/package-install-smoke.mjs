@@ -186,7 +186,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
 
     const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
     const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
-    assert.equal(oauthPackage.version, "1.0.2-ima2.1");
+    assert.equal(oauthPackage.version, "1.0.2-ima2.2");
     assert.match(oauthPackage.ima2Patch, /originator\/version headers/);
     const oauthRuntime = readdirSync(join(oauthRoot, "dist"))
       .filter((name) => name.endsWith(".js"))
@@ -260,7 +260,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     assert.match(doctor.stdout, /Doctor/);
     assert.match(doctor.stdout, /runtime dependencies resolvable/);
     assert.match(doctor.stdout, /Storage/);
-    assert.match(doctor.stdout, /no file-backed Codex session/i);
+    assert.match(doctor.stdout, /GPT OAuth has no ChatGPT session; run 'ima2 login'/);
 
     const port = await freePort();
     const logs = { stdout: "", stderr: "" };

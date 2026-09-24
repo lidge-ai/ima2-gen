@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import * as realFs from "node:fs";
 import { readFileSync } from "node:fs";
 import { request } from "node:http";
 import test, { mock } from "node:test";
@@ -14,6 +15,7 @@ import type { QuotaResult } from "../routes/quota.ts";
 
 // Keep mounted quota tests independent of the developer's local credentials.
 mock.module("node:fs", { namedExports: {
+  ...realFs,
   readFileSync: (...args: unknown[]) => String(args[0]).endsWith("auth.json")
     ? "{}" : Reflect.apply(readFileSync, undefined, args),
 } });

@@ -211,6 +211,7 @@ function renderNaiQuota(props: NaiQuotaProps, locale = "en"): string {
       if (name === "react" || name === "react/jsx-runtime") return requireUi(name);
       if (name === "../../i18n") return { useI18n: () => ({ t }) };
       if (name === "../../lib/api-core" || name === "../../lib/lanSession") return {};
+      if (name === "../../hooks/useOAuthStatus") return { OAUTH_CHANGED_EVENT: "ima2:oauth-changed" };
       throw new Error(`Unexpected quota dependency: ${name}`);
     },
   }, { timeout: 2000 });

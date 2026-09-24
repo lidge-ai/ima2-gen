@@ -1,6 +1,6 @@
 {
   "name": "ima2-gen",
-  "version": "3.18.0",
+  "version": "3.19.0",
   "packageManager": "npm@11.18.0",
   "description": "Local-first visual generation runtime and studio for people and coding agents, with reproducible image and video workflows across multiple providers.",
   "type": "module",
@@ -92,18 +92,18 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
     "@neplex/vectorizer": "0.1.0",
-    "@openai/codex": "0.153.4",
+    "@openai/codex": "0.155.1",
     "better-sqlite3": "^13.0.3",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.1",
     "electron-updater": "6.8.9",
     "express": "^5.1.0",
     "google-auth-library": "^11.0.1",
     "openai": "^7.4.0",
-    "openai-oauth": "file:vendor/openai-oauth-1.0.2-ima2.1.tgz",
+    "openai-oauth": "file:vendor/openai-oauth-1.0.2-ima2.2.tgz",
     "sharp": "^0.35.3",
     "trash": "^10.1.1",
     "ulid": "^3.0.2",
-    "zod": "4.5.4"
+    "zod": "4.6.5"
   },
   "overrides": {
     "fast-uri": "3.1.7"
@@ -124,6 +124,6 @@
     "node-gyp": "13.0.2",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   }
 }

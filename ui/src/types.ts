@@ -291,9 +291,26 @@ export type MultimodeGenerateResponse = {
   extraIgnored?: number;
 };
 
+export type ProviderAuthStatus = {
+  provider: "gpt" | "grok";
+  loggedIn: boolean;
+  health: "healthy" | "warning" | "reauth_required" | "not_logged_in";
+  reason?: string;
+  source?: string;
+  email?: string;
+  plan?: string;
+  accountId?: string;
+  expiresAt?: string;
+  refreshable: boolean;
+  action?: string;
+  note?: string;
+};
+
 export type OAuthStatus = {
   status: "ready" | "auth_required" | "offline" | "starting";
   models?: string[];
+  auth?: ProviderAuthStatus;
+  grokAuth?: ProviderAuthStatus;
 };
 
 export type BillingResponse = {

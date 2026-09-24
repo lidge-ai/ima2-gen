@@ -1,8 +1,10 @@
 name: Agy artifact filesystem check
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+  # Cross-platform evidence is post-merge: PRs carry only the fast Ubuntu
+  # contract, and the four-leg filesystem matrix runs once a change lands on dev.
+  push:
+    branches: [dev]
   workflow_dispatch:
     inputs:
       sha:
@@ -43,7 +45,7 @@ jobs:
             npm: '12.0.0'
             mode: light
     env:
-      WANT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.sha }}
+      WANT_SHA: ${{ inputs.sha || github.sha }}
       WANT_NODE: ${{ matrix.node }}
       WANT_NPM: ${{ matrix.npm }}
       WANT_PLATFORM: ${{ matrix.platform }}
@@ -51,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.sha }}
+          ref: ${{ inputs.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

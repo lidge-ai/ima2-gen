@@ -34,10 +34,13 @@ files:
   - vendor/**
   - assets/card-news/templates/**
   - assets/mcp-snapshots/**
+  - assets/logo.png
   - desktop/main.mjs
   - desktop/preload.cjs
   - desktop/lib/**
   - desktop/pages/**
+  # lib/icons.mjs regenerates missing icons at boot via this script (needs assets/logo.png).
+  - desktop/scripts/make-icons.mjs
   - desktop/build/icon.png
   - desktop/build/tray*.png
   - "!desktop/node_modules"
@@ -50,6 +53,10 @@ files:
   - "!node_modules/tsx/**"
   - "!node_modules/node-gyp/**"
   - "!node_modules/@types/**"
+
+# Generates the gitignored app/tray icons before packaging so every build path
+# (npm run dist, npx electron-builder, CI) ships a real icon set.
+beforeBuild: build/ensure-icons.mjs
 
 # Runs before electron-builder signs the bundle, awaiting its imported keychain
 # before resolving the sidecar identity. With asar:false the whole

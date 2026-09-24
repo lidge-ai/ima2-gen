@@ -3,7 +3,15 @@ import { abortJob, listJobs, listTerminalJobs } from "../lib/inflight.js";
 
 import { errInfo } from "../lib/errInfo.js";
 import { loadGrokCredentials } from "../lib/xaiAuth.js";
+import { gptAuthStatus, grokAuthStatus } from "../lib/authStatus.js";
+import { resolveChatgptSession } from "../lib/chatgptAuth.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
+
+// Upstream auth refusals surfaced through the proxy's /v1/models error body. Kept narrow:
+// generic 5xx/network text must never read as "re-login needed" — status 401 covers
+// non-standard auth rejections regardless of wording.
+const AUTH_FAILURE_BODY_RE = /invalidated oauth|invalid_token|invalid_grant|access token not found|account id not found|not logged in/i;
+
 export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   const runtimePorts = () => ({
@@ -49,25 +57,40 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
     });
   });
 
+  // `auth` is the session verdict (lib/authStatus.ts): account, health, and the action that
+  // fixes it. `status` stays the proxy's live verdict the UI already switches on.
   app.get("/api/oauth/status", async (_req: Request, res: Response) => {
-    if (ctx.oauthReadyState === "starting") {
-      return res.json({ status: "starting", runtime: runtimePorts() });
-    }
-    if (ctx.oauthReadyState === "failed") {
-      return res.json({ status: "offline", runtime: runtimePorts() });
-    }
+    ctx.syncOAuthProxySession?.();
+    const session = resolveChatgptSession();
+    const reply = (status: "ready" | "auth_required" | "offline" | "starting", extra: Record<string, unknown> = {}) => res.json({
+      status,
+      ...extra,
+      auth: gptAuthStatus(session, { proxyStatus: status }),
+      grokAuth: grokAuthStatus(loadGrokCredentials(ctx.grokAuthHomeDir)),
+      runtime: runtimePorts(),
+    });
+    // With IMA2_NO_OAUTH_PROXY an external proxy owns its own session; local files say nothing.
+    const missingSession = ctx.config.oauth.autoStart && !session;
+    if (ctx.oauthReadyState === "starting") return reply("starting");
+    // The proxy exits at boot when there is no session file; that is a login problem, not an outage.
+    if (ctx.oauthReadyState === "failed") return reply(missingSession ? "auth_required" : "offline");
     try {
       const r = await fetch(`${ctx.oauthUrl}/v1/models`, {
         signal: AbortSignal.timeout(ctx.config.oauth.statusTimeoutMs),
       });
       if (r.ok) {
         const data = (await r.json()) as { data?: Array<{ id: string }> };
-        res.json({ status: "ready", models: data.data?.map((m) => m.id) || [], runtime: runtimePorts() });
+        reply("ready", { models: data.data?.map((m) => m.id) || [] });
       } else {
-        res.json({ status: "auth_required", runtime: runtimePorts() });
+        // A non-OK /v1/models means the proxy's authed upstream call failed — not always
+        // a dead session. 401 is always a refused session; for any other status only an
+        // auth-shaped error body is. Everything else (5xx, network) is an outage, so a
+        // usable session file stays logged in instead of flipping to "log in required".
+        const body = (await r.text().catch(() => "")).slice(0, 4000);
+        reply(r.status === 401 || missingSession || AUTH_FAILURE_BODY_RE.test(body) ? "auth_required" : "offline");
       }
     } catch {
-      res.json({ status: "offline", runtime: runtimePorts() });
+      reply(missingSession ? "auth_required" : "offline");
     }
   });
 

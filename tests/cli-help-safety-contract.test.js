@@ -167,4 +167,24 @@ describe("CLI help safety", () => {
       await fixture.cleanup();
     }
   });
+  // Same contract for the ChatGPT session: help must never start a login (which would
+  // bind localhost:1455 and open a browser) or delete ima2's stored session.
+  for (const argv of [["gpt", "login", "--help"], ["gpt", "logout", "--help"], ["login", "--help"], ["gpt", "--help"]]) {
+    it(`${argv.join(" ")} prints help without logging in or out`, async () => {
+      const fixture = await grokFixture();
+      const gptFile = join(fixture.env.IMA2_CONFIG_DIR, "chatgpt-auth.json");
+      await writeFile(gptFile, SENTINEL_CREDENTIALS);
+      try {
+        const result = await runCLI(argv, fixture.env);
+        assert.equal(result.timedOut, false, "help must not wait for a login callback");
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /ima2 gpt|ima2 login/);
+        assert.doesNotMatch(result.stdout, /Usage: ima2 <command>/);
+        assert.equal(fixture.trap.requests, 0, "help must not reach a running server");
+        assert.equal(await readFile(gptFile, "utf8"), SENTINEL_CREDENTIALS);
+      } finally {
+        await fixture.cleanup();
+      }
+    });
+  }
 });

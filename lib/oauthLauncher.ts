@@ -11,8 +11,12 @@ export function startOAuthProxy(options: any = {}) {
   let stopping = false;
   let restartTimer: NodeJS.Timeout | null = null;
   let hasBeenReady = false;
-  let restartCount = 0;
+  let crashTimes: number[] = [];
+  let launchedAuthFile: string | null = null;
   const MAX_RESTARTS = 3;
+  // Only crashes inside this window count against the budget; a proxy that ran
+  // healthy and exits later resets it, so spread-out crashes never give up permanently.
+  const CRASH_WINDOW_MS = 60_000;
   const detectAuth = options.detectAuth ?? detectCodexAuth;
   const execPath = options.execPath ?? process.execPath;
   const resolveOAuthBin = options.resolveOAuthBin ?? (() => resolvePackageBin("openai-oauth", "openai-oauth"));
@@ -22,6 +26,7 @@ export function startOAuthProxy(options: any = {}) {
     // Guard: don't start if no auth file exists (avoids pointless crash loops
     // and prevents openai-oauth from corrupting state on refresh failure)
     const auth = detectAuth();
+    launchedAuthFile = typeof auth.proxyAuthFile === "string" ? auth.proxyAuthFile : null;
     if (!auth.proxyReady || typeof auth.proxyAuthFile !== "string") {
       console.log("[gpt-oauth] No file-backed Codex session found. Run `ima2 login` to enable GPT OAuth.");
       options.onExit?.({ code: 0, reason: "missing-auth-file" });
@@ -90,12 +95,14 @@ export function startOAuthProxy(options: any = {}) {
         return;
       }
       options.onExit?.({ code });
-      if (restartCount >= MAX_RESTARTS) {
-        console.log(`[gpt-oauth] max restarts (${MAX_RESTARTS}) reached. Giving up — Grok-only mode is fine.`);
+      const exitedAt = Date.now();
+      crashTimes = crashTimes.filter((t) => exitedAt - t < CRASH_WINDOW_MS);
+      crashTimes.push(exitedAt);
+      if (crashTimes.length > MAX_RESTARTS) {
+        console.log(`[gpt-oauth] crashed ${crashTimes.length} times within ${CRASH_WINDOW_MS / 1000}s. Giving up — Grok-only mode is fine.`);
         return;
       }
-      restartCount++;
-      console.log(`[gpt-oauth] exited with code ${code}, restarting in ${Math.round(restartDelayMs / 1000)}s... (attempt ${restartCount}/${MAX_RESTARTS})`);
+      console.log(`[gpt-oauth] exited with code ${code}, restarting in ${Math.round(restartDelayMs / 1000)}s... (attempt ${crashTimes.length}/${MAX_RESTARTS})`);
       restartTimer = setTimeout(spawnProxy, restartDelayMs);
     });
   };
@@ -113,6 +120,30 @@ export function startOAuthProxy(options: any = {}) {
       stopping = true;
       if (restartTimer) clearTimeout(restartTimer);
       try { currentChild?.kill(signal); } catch {}
+    },
+    /**
+     * Stop and wait until the child has exited so its port is free. SIGTERM first; after
+     * timeoutMs, SIGKILL and wait again. Rejects if the child is still alive after both, so a
+     * caller never starts a replacement that would fall back to another port.
+     */
+    stopAndWait(timeoutMs = 3000): Promise<void> {
+      const child = currentChild;
+      this.stop();
+      if (!child || child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+      const exited = new Promise<void>((resolve) => { child.once("exit", () => resolve()); });
+      const within = (ms: number) => Promise.race([
+        exited.then(() => true),
+        new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), ms); }),
+      ]);
+      return within(timeoutMs).then(async (done) => {
+        if (done) return;
+        try { child.kill("SIGKILL"); } catch {}
+        if (!(await within(2000))) throw new Error("GPT OAuth proxy did not exit after SIGKILL");
+      });
+    },
+    /** The session file this launcher handed to the proxy (null when it found none). */
+    get authFile() {
+      return launchedAuthFile;
     },
   };
 }

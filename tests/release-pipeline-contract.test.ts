@@ -569,6 +569,12 @@ describe("package install policy contract", () => {
     const ci = parse(readFileSync(join(repoRoot(), ".github/workflows/ci.yml"), "utf8"));
     const ref = "${{ github.event.inputs.sha || github.sha }}";
     assert.equal(ci.on.workflow_dispatch.inputs.sha.type, "string");
+    // Cross-platform coverage is post-merge: pushes to the integration and
+    // release lines run every leg, scoped by the changes filter on the same
+    // pushed range. There is no pull_request trigger — the PR contract is the
+    // PR fast gate alone.
+    assert.equal(ci.on.pull_request, undefined);
+    assert.deepEqual(ci.on.push.branches, ["main", "dev", "preview"]);
     for (const name of ["test", "windows", "macos-install", "e2e"]) {
       const steps = ci.jobs[name].steps;
       const checkout = steps.filter((s: any) => s.uses?.startsWith("actions/checkout@"));
@@ -585,10 +591,19 @@ describe("package install policy contract", () => {
         assert.match(steps[index].run, /execFileSync\("git", \["rev-parse", "HEAD"\]/);
         assert.match(steps[index].run, /wanted !== actual/);
       } else assert.equal(steps[index].env.EXPECTED_SHA, ref);
+      // Every heavy leg is scoped to what the push changed; dispatch and
+      // schedule always request it, so the release candidate gate is whole.
+      assert.equal(ci.jobs[name].needs, "changes", name);
+      assert.equal(ci.jobs[name].if, "github.event_name != 'push' || needs.changes.outputs.ci == 'true'", name);
     }
+    // The aggregate names every producer, so a job that never started cannot
+    // report green through a skipped dependency chain.
+    assert.deepEqual([...ci.jobs.ci.needs].sort(), ["changes", "e2e", "macos-install", "test", "windows"]);
+    assert.equal(ci.jobs.ci.if, "always()");
     const mac = ci.jobs["macos-install"];
     assert.equal(mac["runs-on"], "macos-latest");
-    assert.equal(mac.if, "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'");
+    assert.equal(mac.needs, "changes");
+    assert.equal(mac.if, "github.event_name != 'push' || needs.changes.outputs.ci == 'true'");
     assert.ok(mac.steps.some((s: any) => s.run === "npm run test:package-install"));
     assert.ok(mac.steps.some((s: any) => s.run?.includes("tests/install-runtime-contract.test.ts")));
   });
