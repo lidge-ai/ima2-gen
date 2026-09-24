@@ -360,10 +360,40 @@
     "noteSignIn": "如需在此加星，請先登入 GitHub CLI（gh auth login）。"
   },
   "onboarding": {
-    "title": "你好！第一次來這裡？",
-    "body": "登入以開始產生。您可以連接 ChatGPT、Grok 或 Gemini。",
-    "login": "是的，讓我登入",
-    "skip": "我自己設定一下"
+    "title": "歡迎使用 ima2",
+    "lead": "本機影像與影片工作室。三個步驟就能開始生成。",
+    "stepsLabel": "開始使用",
+    "steps": {
+      "signIn": {
+        "title": "登入一個服務商",
+        "hint": "使用你已有的方案"
+      },
+      "firstImage": {
+        "title": "生成第一張影像",
+        "hint": "輸入提示詞並按下生成"
+      },
+      "star": {
+        "title": "在 GitHub 上加星",
+        "hint": "選用"
+      }
+    },
+    "recommended": "推薦",
+    "choices": {
+      "chatgpt": {
+        "title": "ChatGPT",
+        "body": "透過瀏覽器登入使用你的 ChatGPT 方案，不需要 API 金鑰。"
+      },
+      "grok": {
+        "title": "Grok",
+        "body": "使用 xAI 帳號登入，可使用 Grok Imagine 影像與影片。"
+      },
+      "apiKey": {
+        "title": "API 金鑰",
+        "body": "OpenAI、Gemini 或其他服務商的金鑰，由該服務商計費。"
+      }
+    },
+    "privacy": "提示詞只會傳給你選擇的服務商，影像儲存在本機圖庫。",
+    "skip": "稍後再說"
   },
   "readiness": {
     "title": "生成準備狀態",

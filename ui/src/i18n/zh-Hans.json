@@ -360,10 +360,40 @@
     "noteSignIn": "如需在此加星，请先登录 GitHub CLI（gh auth login）。"
   },
   "onboarding": {
-    "title": "你好！第一次来这里？",
-    "body": "登录以开始生成。您可以连接 ChatGPT、Grok 或 Gemini。",
-    "login": "是的，让我登录",
-    "skip": "我自己设置一下"
+    "title": "欢迎使用 ima2",
+    "lead": "本地图像与视频工作室。三步即可开始生成。",
+    "stepsLabel": "开始使用",
+    "steps": {
+      "signIn": {
+        "title": "登录一个服务商",
+        "hint": "使用你已有的套餐"
+      },
+      "firstImage": {
+        "title": "生成第一张图像",
+        "hint": "输入提示词并点击生成"
+      },
+      "star": {
+        "title": "在 GitHub 上加星",
+        "hint": "可选"
+      }
+    },
+    "recommended": "推荐",
+    "choices": {
+      "chatgpt": {
+        "title": "ChatGPT",
+        "body": "通过浏览器登录使用你的 ChatGPT 套餐，无需 API 密钥。"
+      },
+      "grok": {
+        "title": "Grok",
+        "body": "使用 xAI 账户登录，可使用 Grok Imagine 图像和视频。"
+      },
+      "apiKey": {
+        "title": "API 密钥",
+        "body": "OpenAI、Gemini 或其他服务商的密钥，由该服务商计费。"
+      }
+    },
+    "privacy": "提示词只发送给你选择的服务商，图像保存在本地图库中。",
+    "skip": "稍后再说"
   },
   "readiness": {
     "title": "生成准备状态",

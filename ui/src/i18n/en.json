@@ -360,10 +360,40 @@
     "noteSignIn": "To star from here, sign in with the GitHub CLI (gh auth login)."
   },
   "onboarding": {
-    "title": "Hello! First time here?",
-    "body": "Sign in to start generating. You can connect ChatGPT, Grok, or Gemini.",
-    "login": "Yes, sign me in",
-    "skip": "I'll set it up myself"
+    "title": "Welcome to ima2",
+    "lead": "A local studio for images and video. Three steps and you are making images.",
+    "stepsLabel": "Getting started",
+    "steps": {
+      "signIn": {
+        "title": "Sign in to a provider",
+        "hint": "Use a plan you already have"
+      },
+      "firstImage": {
+        "title": "Make your first image",
+        "hint": "Type a prompt and press Generate"
+      },
+      "star": {
+        "title": "Star on GitHub",
+        "hint": "Optional"
+      }
+    },
+    "recommended": "Recommended",
+    "choices": {
+      "chatgpt": {
+        "title": "ChatGPT",
+        "body": "Uses your ChatGPT plan through a browser sign-in. No API key needed."
+      },
+      "grok": {
+        "title": "Grok",
+        "body": "Sign in with your xAI account. Adds Grok Imagine images and video."
+      },
+      "apiKey": {
+        "title": "API key",
+        "body": "OpenAI, Gemini or another provider key, billed by that provider."
+      }
+    },
+    "privacy": "Prompts go only to the provider you choose. Images stay in your local gallery.",
+    "skip": "Skip for now"
   },
   "readiness": {
     "title": "Generation readiness",

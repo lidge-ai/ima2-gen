@@ -282,6 +282,7 @@ body::after {
 @import "./styles/element-mention.css";
 @import "./styles/toast-modal.css";
 @import "./styles/star-prompt.css";
+@import "./styles/onboarding.css";
 @import "./styles/responsive-layout.css";
 @import "./styles/responsive-mobile.css";
 @import "./styles/node-workspace.css";

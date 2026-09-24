@@ -33,6 +33,8 @@ export const PERSISTED_KEYS = [
   // anywhere but the end silently repoints an existing exported key.
   "ima2.naiOptions",
   "ima2.coreSelectionMemory.v1",
+  // onboarding: first-run welcome skipped or a provider chosen
+  "ima2.onboardingDismissed",
 ] as const;
 
 export type PersistedKey = (typeof PERSISTED_KEYS)[number];
@@ -58,6 +60,7 @@ export const VIDEO_DEFAULTS_STORAGE_KEY = PERSISTED_KEYS[17];
 export const AGENT_PANE_PREFERENCE_STORAGE_KEY = PERSISTED_KEYS[18];
 export const NAI_OPTIONS_STORAGE_KEY = PERSISTED_KEYS[19];
 export const CORE_SELECTION_MEMORY_STORAGE_KEY = PERSISTED_KEYS[20];
+export const ONBOARDING_DISMISSED_STORAGE_KEY = PERSISTED_KEYS[21];
 
 export const PERSISTED_REGISTRY: Record<
   PersistedKey,
@@ -90,4 +93,5 @@ export const PERSISTED_REGISTRY: Record<
   // the operator's configuration instead of a compiled-in constant.
   "ima2.naiOptions": { domain: "generation", shape: "json:NaiOptionOverrides", resetSafe: true },
   "ima2.coreSelectionMemory.v1": { domain: "generation", shape: "json:{version:1,lanes:CoreSelectionMemory}", resetSafe: true },
+  "ima2.onboardingDismissed": { domain: "layout", shape: "\"1\"", resetSafe: true },
 };

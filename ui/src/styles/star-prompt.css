@@ -1,6 +1,7 @@
-/* One-time GitHub star request (StarPrompt.tsx). Shape tokens come from .modal. */
+/* One-time GitHub star request (StarPrompt.tsx). Shape tokens come from .modal.
+   Layering band: above mobile chrome (150/160) and onboarding (167), below compose (170). */
 .star-prompt-backdrop {
-  z-index: 160;
+  z-index: 168;
 }
 .star-prompt {
   width: min(420px, calc(100vw - 32px));
