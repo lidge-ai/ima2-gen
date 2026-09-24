@@ -10,7 +10,6 @@ const slugCache = new Map();
 
 function slug(text) {
   return text.trim().toLowerCase()
-    .replace(/<[^>]+>/g, "")
     .replace(/[`*_~]/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
