@@ -99,6 +99,21 @@ references/) and the agent reads them natively. Avoid piping large bundled outpu
 - Wrap async work in try/catch only where the error is transformed, logged, or surfaced at a boundary (route handler, job runner, CLI entry). A catch that only rethrows is noise; let the error propagate.
 - Config values in config.js or .env, never hardcode
 
+## Pull requests
+- PRs that change files under `ui/` (except `ui/e2e/**` and `*.test.*`/`*.spec.*`
+  files), `public/`, or an image under `assets/` must embed a screenshot of the
+  UI change in the PR description. The `screenshot-gate` check
+  (`pull_request_target`, `.github/scripts/pr-screenshot.cjs`) re-runs on
+  description edits until the image is present.
+- Never commit screenshot evidence to a PR branch — it rides the merge into the
+  integration branch. Drag the image into the description editor, or, when
+  uploading from the CLI as an agent with push access, commit it to the orphan
+  `pr-assets` branch (one directory per PR or date slug) and link by commit SHA:
+  `https://raw.githubusercontent.com/lidge-jun/ima2-gen/<sha>/<pr-or-date-slug>/<name>.png`.
+- A maintainer waives the gate with the `ui-screenshot-waived` label (must be
+  applied by someone with write/admin permission) or a comment stating the
+  change does not touch the UI.
+
 ## Test Command
 ```bash
 npm run typecheck          # tsc --noEmit (server + lib)
@@ -107,6 +122,11 @@ npm test                   # scripts/run-tests.mjs canonical node:test runner
 npm run test:inventory     # verify test file registry
 cd ui && npm run build     # Vite production build
 ```
+
+## CI Layout
+- PRs run only the minimal `PR fast gate` contract (`pr-fast.yml`, Ubuntu-only). Do not add Windows/macOS legs to it.
+- Cross-platform CI is post-merge: pushes to `dev`/`main`/`preview` run the full `CI` workflow, the Agy filesystem matrix, and the unsigned macOS desktop build (path-filtered so docs-only pushes stay green).
+- A red `dev` run is fixed forward on `dev`; details in CONTRIBUTING.md `## CI`.
 
 ## Heartbeat
 - 20분마다 devlog/_plan 점검 및 다음 작업 제안

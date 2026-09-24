@@ -57,6 +57,7 @@ export class TrayController {
       { label: "Restart Server", click: () => this.actions.restartServer(), enabled: !this.status.external },
       { label: "Open Server Log", click: () => this.actions.openLogs() },
       { type: "separator" },
+      { label: "Check for Updates…", enabled: this.actions.updaterActive, click: () => this.actions.checkForUpdates() },
       { label: "Settings…", accelerator: "CmdOrCtrl+,", click: () => this.actions.openSettings() },
       { type: "separator" },
       { label: "Quit ima2", accelerator: "CmdOrCtrl+Q", click: () => this.actions.quit() },

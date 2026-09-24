@@ -11,9 +11,12 @@ export function startOAuthProxy(options: any = {}) {
   let stopping = false;
   let restartTimer: NodeJS.Timeout | null = null;
   let hasBeenReady = false;
-  let restartCount = 0;
+  let crashTimes: number[] = [];
   let launchedAuthFile: string | null = null;
   const MAX_RESTARTS = 3;
+  // Only crashes inside this window count against the budget; a proxy that ran
+  // healthy and exits later resets it, so spread-out crashes never give up permanently.
+  const CRASH_WINDOW_MS = 60_000;
   const detectAuth = options.detectAuth ?? detectCodexAuth;
   const execPath = options.execPath ?? process.execPath;
   const resolveOAuthBin = options.resolveOAuthBin ?? (() => resolvePackageBin("openai-oauth", "openai-oauth"));
@@ -92,12 +95,14 @@ export function startOAuthProxy(options: any = {}) {
         return;
       }
       options.onExit?.({ code });
-      if (restartCount >= MAX_RESTARTS) {
-        console.log(`[gpt-oauth] max restarts (${MAX_RESTARTS}) reached. Giving up — Grok-only mode is fine.`);
+      const exitedAt = Date.now();
+      crashTimes = crashTimes.filter((t) => exitedAt - t < CRASH_WINDOW_MS);
+      crashTimes.push(exitedAt);
+      if (crashTimes.length > MAX_RESTARTS) {
+        console.log(`[gpt-oauth] crashed ${crashTimes.length} times within ${CRASH_WINDOW_MS / 1000}s. Giving up — Grok-only mode is fine.`);
         return;
       }
-      restartCount++;
-      console.log(`[gpt-oauth] exited with code ${code}, restarting in ${Math.round(restartDelayMs / 1000)}s... (attempt ${restartCount}/${MAX_RESTARTS})`);
+      console.log(`[gpt-oauth] exited with code ${code}, restarting in ${Math.round(restartDelayMs / 1000)}s... (attempt ${crashTimes.length}/${MAX_RESTARTS})`);
       restartTimer = setTimeout(spawnProxy, restartDelayMs);
     });
   };

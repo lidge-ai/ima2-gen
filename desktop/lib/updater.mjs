@@ -5,6 +5,7 @@ function inactiveController() {
   return {
     active: false,
     checkForUpdates: async () => false,
+    setAutoDownload: () => {},
   };
 }
 
@@ -49,6 +50,7 @@ export async function createUpdaterController(options) {
     arch = process.arch,
     logger = console,
     loadUpdater = () => import("electron-updater"),
+    autoDownload = true,
   } = options;
   if (!app.isPackaged || platform !== "darwin" || arch !== "arm64") return inactiveController();
 
@@ -61,7 +63,8 @@ export async function createUpdaterController(options) {
     return inactiveController();
   }
 
-  autoUpdater.autoDownload = false;
+  // Auto-update mode downloads in the background; manual checks still prompt first.
+  autoUpdater.autoDownload = autoDownload;
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on("error", (error) => {
     logger.error(`[desktop:update] ${errorMessage(error)}`);
@@ -78,8 +81,11 @@ export async function createUpdaterController(options) {
         if (manual) await dialog.showMessageBox({ type: "info", title: "ima2 Update", message: "ima2 is up to date." });
         return true;
       }
-      const prompt = await dialog.showMessageBox(updateAvailableDialog(result.updateInfo.version));
-      if (prompt.response === UPDATE_DOWNLOAD_BUTTON) await autoUpdater.downloadUpdate();
+      // With autoDownload on, electron-updater is already downloading; no prompt needed.
+      if (!autoUpdater.autoDownload) {
+        const prompt = await dialog.showMessageBox(updateAvailableDialog(result.updateInfo.version));
+        if (prompt.response === UPDATE_DOWNLOAD_BUTTON) await autoUpdater.downloadUpdate();
+      }
       return true;
     } catch (error) {
       logger.error(`[desktop:update] check failed: ${errorMessage(error)}`);
@@ -102,5 +108,9 @@ export async function createUpdaterController(options) {
     });
   });
 
-  return { active: true, checkForUpdates };
+  return {
+    active: true,
+    checkForUpdates,
+    setAutoDownload: (enabled) => { autoUpdater.autoDownload = enabled === true; },
+  };
 }

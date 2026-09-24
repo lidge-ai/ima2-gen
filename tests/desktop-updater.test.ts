@@ -76,13 +76,22 @@ describe("desktop updater", () => {
     }
   });
 
-  it("disables automatic download and install-on-quit", async () => {
+  it("auto-downloads by default, keeps install-on-quit off, and follows setAutoDownload", async () => {
     const { autoUpdater, create } = fixture();
     const controller = await create();
 
     assert.equal(controller.active, true);
-    assert.equal(autoUpdater.autoDownload, false);
+    assert.equal(autoUpdater.autoDownload, true);
     assert.equal(autoUpdater.autoInstallOnAppQuit, false);
+
+    controller.setAutoDownload(false);
+    assert.equal(autoUpdater.autoDownload, false);
+    controller.setAutoDownload(true);
+    assert.equal(autoUpdater.autoDownload, true);
+
+    const manual = fixture();
+    await manual.create({ autoDownload: false });
+    assert.equal(manual.autoUpdater.autoDownload, false);
   });
 
   it("fails soft when the packaged updater dependency cannot load", async () => {
@@ -105,17 +114,27 @@ describe("desktop updater", () => {
     assert.deepEqual(autoUpdater.calls, ["check", "check"]);
   });
 
-  it("downloads an available update only after consent", async () => {
+  it("auto-update mode checks without prompting for the download", async () => {
+    const { autoUpdater, dialogs, create } = fixture();
+    autoUpdater.checkResult = { isUpdateAvailable: true, updateInfo: { version: "3.17.0" } };
+    const controller = await create();
+
+    assert.equal(await controller.checkForUpdates(), true);
+    assert.equal(dialogs.length, 0);
+    assert.deepEqual(autoUpdater.calls, ["check"]);
+  });
+
+  it("downloads an available update only after consent when auto-download is off", async () => {
     const accepted = fixture({ responses: [0] });
     accepted.autoUpdater.checkResult = { isUpdateAvailable: true, updateInfo: { version: "3.17.0" } };
-    const acceptedController = await accepted.create();
+    const acceptedController = await accepted.create({ autoDownload: false });
     await acceptedController.checkForUpdates({ manual: true });
     assert.deepEqual(accepted.autoUpdater.calls, ["check", "download"]);
     assert.match(accepted.dialogs[0].message, /3\.17\.0/);
 
     const declined = fixture({ responses: [1] });
     declined.autoUpdater.checkResult = { isUpdateAvailable: true, updateInfo: { version: "3.17.0" } };
-    const declinedController = await declined.create();
+    const declinedController = await declined.create({ autoDownload: false });
     await declinedController.checkForUpdates({ manual: true });
     assert.deepEqual(declined.autoUpdater.calls, ["check"]);
   });

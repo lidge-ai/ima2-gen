@@ -1,0 +1,57 @@
+name: PR screenshot gate
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+      - ready_for_review
+      - labeled
+      - unlabeled
+
+# Read-only gate: it never checks out PR head code and never writes to the PR.
+# contents:read is required by actions/checkout; issues:read covers comments
+# and timeline events (waiver provenance).
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: screenshot-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  screenshot-gate:
+    name: screenshot-gate
+    # Label churn on unrelated labels should not re-run the gate; only the
+    # waiver label changes the verdict.
+    if: >-
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+      github.event.label.name == 'ui-screenshot-waived'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted gate script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # pull_request_target runs the workflow file from the repository
+          # default branch, and a ref-less checkout gets that same trusted
+          # commit. No ref is set on purpose: PR head code is never checked
+          # out. The gate therefore activates only once this file reaches the
+          # default branch (main).
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts
+
+      - name: Require UI screenshot evidence
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const path = require("path");
+            const { runScreenshotGate } = require(
+              path.join(process.cwd(), ".github", "scripts", "pr-screenshot.cjs")
+            );
+            await runScreenshotGate({ github, context, core });

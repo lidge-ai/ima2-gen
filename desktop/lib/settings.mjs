@@ -9,12 +9,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
   startHidden: false,
   menubarOnly: false,
   keepRunningOnClose: true,
+  autoUpdate: true,
   devLogging: false,
   nodeBinary: "",
   configDir: "",
 });
 
-const BOOL_KEYS = ["openAtLogin", "startHidden", "menubarOnly", "keepRunningOnClose", "devLogging"];
+const BOOL_KEYS = ["openAtLogin", "startHidden", "menubarOnly", "keepRunningOnClose", "autoUpdate", "devLogging"];
 const STR_KEYS = ["nodeBinary", "configDir"];
 
 export function sanitizeSettings(input) {

@@ -185,6 +185,7 @@ function launchWith(child: StubbornChild) {
     detectAuth: () => ({ authed: true, proxyReady: true, proxyAuthFile: "/tmp/ima2-auth.json" }),
     resolveOAuthBin: () => "/x/cli.js",
     spawnImpl: () => child,
+    onExit: () => {},
   });
 }
 
@@ -192,6 +193,50 @@ test("OAuth launcher reports the session file it handed to the proxy", () => {
   assert.equal(launchWith(new StubbornChild("SIGTERM")).authFile, "/tmp/ima2-auth.json");
   const none = startOAuthProxy({ detectAuth: () => ({ authed: false, proxyReady: false, proxyAuthFile: null }), onExit: () => {} });
   assert.equal(none.authFile, null);
+});
+
+test("OAuth launcher keeps restarting crashes spaced past the crash window", async (t) => {
+  t.mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  const children = [0, 1, 2, 3, 4].map(() => new StubbornChild(null));
+  let spawned = 0;
+  const launcher = startOAuthProxy({
+    detectAuth: () => ({ authed: true, proxyReady: true, proxyAuthFile: "/tmp/a.json" }),
+    resolveOAuthBin: () => "/x/cli.js",
+    restartDelayMs: 1000,
+    spawnImpl: () => children[Math.min(spawned++, children.length - 1)],
+    onExit: () => {},
+  });
+  // Each child lives >5s (not an immediate-exit) and crashes >60s after the previous one.
+  for (let i = 0; i < 4; i++) {
+    t.mock.timers.tick(6000);
+    children[i].emit("exit", 1);
+    t.mock.timers.tick(61_000);
+  }
+  assert.equal(spawned, 5, "spread-out crashes must never exhaust the restart budget");
+  launcher.stop();
+});
+
+test("OAuth launcher gives up on a rapid crash loop inside the window", async (t) => {
+  t.mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  const children = [0, 1, 2, 3, 4].map(() => new StubbornChild(null));
+  let spawned = 0;
+  const launcher = startOAuthProxy({
+    detectAuth: () => ({ authed: true, proxyReady: true, proxyAuthFile: "/tmp/a.json" }),
+    resolveOAuthBin: () => "/x/cli.js",
+    restartDelayMs: 1000,
+    spawnImpl: () => children[Math.min(spawned++, children.length - 1)],
+    onExit: () => {},
+  });
+  // Four crashes ~7s apart: the 4th lands inside the window and ends restarts.
+  for (let i = 0; i < 4; i++) {
+    t.mock.timers.tick(6000);
+    children[i].emit("exit", 1);
+    t.mock.timers.tick(1000);
+  }
+  assert.equal(spawned, 4);
+  t.mock.timers.tick(10_000);
+  assert.equal(spawned, 4, "no fifth spawn after the windowed budget is exhausted");
+  launcher.stop();
 });
 
 test("stopAndWait resolves only after the child exits, escalating to SIGKILL", async () => {

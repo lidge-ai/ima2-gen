@@ -6,13 +6,16 @@ import { parse } from "yaml";
 import { assertCiSha } from "../scripts/assert-ci-sha.mjs";
 
 type Step = { name?: string; uses?: string; run?: string; if?: unknown; "continue-on-error"?: unknown; with?: Record<string, unknown>; env?: Record<string, string> };
-type Workflow = { jobs: { windows: { if: string; steps: Step[]; strategy: { matrix: { include: { node: string; npm: string }[] } } } } };
+type Workflow = { jobs: { windows: { if: string; needs: string; steps: Step[]; strategy: { matrix: { include: { node: string; npm: string }[] } } } } };
 const workflow = (): Workflow => parse(readFileSync(".github/workflows/ci.yml", "utf8"));
 const ref = "${{ github.event.inputs.sha || github.sha }}";
 
 function assertWindowsCandidate(value: Workflow) {
   const job = value.jobs.windows, steps = job.steps;
-  assert.equal(job.if, "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'");
+  // Post-merge evidence: pushes run the Windows lanes through the changes
+  // filter; schedule and dispatched candidates always request them.
+  assert.equal(job.needs, "changes");
+  assert.equal(job.if, "github.event_name != 'push' || needs.changes.outputs.ci == 'true'");
   const checkouts = steps.filter((step) => step.uses?.startsWith("actions/checkout@"));
   assert.equal(checkouts.length, 1);
   assert.equal(checkouts[0].with?.ref, ref);
@@ -42,6 +45,7 @@ test("Windows candidate assertions reject missing or bypassed proof, not step la
     (value) => { delete value.jobs.windows.steps[0].with?.ref; },
     (value) => { value.jobs.windows.steps[0].with!.ref = "main"; },
     (value) => { value.jobs.windows.if = "github.event_name == 'schedule'"; },
+    (value) => { delete (value.jobs.windows as { needs?: string }).needs; },
     (value) => { const steps = value.jobs.windows.steps; steps.push(...steps.splice(steps.findIndex((step) => step.run?.includes("assert-ci-sha")), 1)); },
     (value) => { value.jobs.windows.steps.find((step) => step.run?.includes("assert-ci-sha"))!.if = "false"; },
     (value) => { value.jobs.windows.strategy.matrix.include.pop(); },
