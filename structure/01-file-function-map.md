@@ -211,7 +211,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/streams.ts` | 233 | SSE/event-stream helpers and safe stream diagnostics |
 | `lib/oauthProxy/prompts.ts` | 158 | Prompt assembly with injected `SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts` |
 | `lib/oauthProxy/references.ts` | 46 | Reference image preparation and validation for the OAuth path |
-| `lib/oauthProxy/runtime.ts` | 118 | OAuth runtime context and request execution |
+| `lib/oauthProxy/runtime.ts` | 119 | OAuth runtime context and request execution |
 | `lib/oauthProxy/errors.ts` | 129 | OAuth-specific error codes and normalization |
 | `lib/oauthProxy/types.ts` | 10 | Shared OAuth proxy types (re-exported from `index`) |
 | `lib/promptSafetyPolicy.ts` | 3 | `SAFETY_INTENT_POLICY` constant: 3-line intent policy injected by oauthProxy/prompts and the API-key Responses adapter |

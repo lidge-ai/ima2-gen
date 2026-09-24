@@ -208,3 +208,10 @@ test("stopAndWait rejects when the child survives SIGKILL, so no replacement rac
   const immortal = new StubbornChild(null);
   await assert.rejects(launchWith(immortal).stopAndWait(20), /did not exit/);
 });
+
+test("generation admission re-syncs the proxy session file even while the proxy is ready", async () => {
+  const { waitForOAuthReady } = await import("../lib/oauthProxy/runtime.js");
+  let syncs = 0;
+  await waitForOAuthReady({ oauthReadyState: "ready", syncOAuthProxySession: () => { syncs++; return false; } });
+  assert.equal(syncs, 1);
+});
