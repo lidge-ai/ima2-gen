@@ -24,9 +24,11 @@ function templateGlyph() {
 export async function generateIcons(outDir = defaultOutDir) {
   mkdirSync(outDir, { recursive: true });
   await sharp(logo).resize(1024, 1024).png().toFile(join(outDir, "icon.png"));
-  await sharp(favicon, { density: 300 }).resize(32, 32).png().toFile(join(outDir, "tray.png"));
+  // favicon.svg is 512px intrinsic, mark.svg is ~1400px from its viewBox: both already
+  // rasterize well above the 22-44px targets at the default density.
+  await sharp(favicon).resize(32, 32).png().toFile(join(outDir, "tray.png"));
   for (const [name, size] of [["trayTemplate.png", 22], ["trayTemplate@2x.png", 44]]) {
-    await sharp(templateGlyph(), { density: 300 })
+    await sharp(templateGlyph())
       .resize(size, size, { fit: "contain", background: CLEAR })
       .png()
       .toFile(join(outDir, name));
