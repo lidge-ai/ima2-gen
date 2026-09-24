@@ -45,7 +45,7 @@
 
 1. 從最新的 [ima2 Desktop 發行版本](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true) 下載 `ima2-<version>-mac-arm64.dmg`。
 2. 開啟 DMG，把 **ima2** 拖進 **應用程式** 資料夾。
-3. 啟動 ima2，在歡迎畫面選擇一個服務商。
+3. 啟動 ima2，在歡迎畫面選擇一個供應商。
 
 應用程式內建執行環境，不需要另外安裝 Node.js。總和檢查碼、更新與設定請參閱 [Mac App 指南](https://lidge-jun.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用下方的 npm 或一鍵安裝。
 
@@ -182,7 +182,7 @@ Web UI 使用單一 `GET /api/events` 伺服器發送事件（SSE）連線，接
 - API 金鑰產生支援經典模式的產生、編輯、遮罩導向編輯、多階段與節點產生。
 - Grok 產生支援經典、節點與代理模式。如果有經典參考圖、節點父圖片或代理模式目前圖片，ima2 會將最後一次 Grok 呼叫切換為 xAI 圖片編輯，以保留圖片轉圖片的上下文。
 
-如果未指定提供者，應用程式將保留目前的GPT OAuth/預設行為。GPT OAuth和API-金鑰產生預設為`gpt-5.6-luna`;這API-key路徑也預設為`low`推理和`1024x1024`除非請求通過了經過驗證的選項。Grok影像生成預設為`grok-imagine-image-quality`.
+如果未指定提供者，應用程式將保留目前的GPT OAuth/預設行為。GPT OAuth和API-金鑰產生預設為`gpt-5.6-luna`;這API-key路徑也預設為`low`推理和`1024x1024`除非請求通過了經過驗證的選項。Grok影像生成預設為`grok-imagine-image-2.0`.
 
 關於OAuth Grok通道有一點需要說明：xAI只把`/v1/me`記錄為接受OAuth權杖的端點，所以用該權杖呼叫`api.x.ai`的影像與影片介面走的是未文件化的路徑。它目前可用——progrok一直依賴同一條路徑——但沒有任何相容性承諾。如果xAI關閉這條路徑，用`XAI_API_KEY`的`provider: "grok-api"`是有文件的方案，且不受影響。
 

@@ -41,9 +41,9 @@
 
 ### Mac 앱 (Apple Silicon)
 
-Apple Silicon Mac에서는 데스크톱 앱이 가장 빠릅니다. 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행하고, Apple 서명과 공증을 거쳤습니다.
+Apple Silicon Mac에서는 데스크톱 앱이 가장 빠른 방법입니다. 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행하고, Apple 서명과 공증을 거쳤습니다.
 
-1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<버전>-mac-arm64.dmg`를 받습니다.
+1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<version>-mac-arm64.dmg`를 받습니다.
 2. DMG를 열고 **ima2**를 **응용 프로그램** 폴더로 옮깁니다.
 3. ima2를 실행하고 환영 화면에서 제공자를 고릅니다.
 
@@ -157,7 +157,7 @@ Ctrl+C로 DB, 소켓, 자식 프로세스를 정리할 수 있습니다. Windows
 - `provider: "agy"`는 로컬 Antigravity CLI(`agy -p`)로 Gemini `nano-banana-2` 이미지를 생성합니다 (`IMA2_AGY_BIN`).
 - `provider: "gemini-api"`는 Google Generative Language API 또는 Vertex AI를 사용합니다 (`GEMINI_API_KEY` / `VERTEX_SERVICE_ACCOUNT_JSON`; 둘 다 있으면 Vertex 우선).
 
-Grok은 Classic, Node, Agent 흐름을 지원합니다. Classic 레퍼런스, Node 부모 이미지, Agent 현재 이미지가 있으면 최종 Grok 호출은 xAI image edit 경로로 전환되어 image-to-image 맥락을 유지합니다. 기본 이미지 모델은 `grok-imagine-image-quality`입니다.
+Grok은 Classic, Node, Agent 흐름을 지원합니다. Classic 레퍼런스, Node 부모 이미지, Agent 현재 이미지가 있으면 최종 Grok 호출은 xAI image edit 경로로 전환되어 image-to-image 맥락을 유지합니다. 기본 이미지 모델은 `grok-imagine-image-2.0`입니다.
 
 Grok video 기본값은 정식 `grok-imagine-video-1.5`입니다. `grok-imagine-video`는 Ref2V, V2V edit, extension 호환 경로에서 계속 쓰며, 기존 `grok-imagine-video-1.5-preview` 문자열도 호환 alias로 받습니다. 레퍼런스 수에 따라 T2V(0), I2V(1), Ref2V(2-14, grok-imagine-video-1.5는 15초 / grok-imagine-video는 10초)가 자동 선택되며, 1080p는 `grok-imagine-video-1.5` 프롬프트 전용 T2V와 단일 이미지/프레임 I2V에서 활성화됩니다. 프롬프트 전용 1.5 T2V는 upstream 요청 전에 내부 흰 캔버스 I2V shim을 사용합니다. duration(1-15s), resolution(480p/720p/지원 시 1080p), aspect ratio 컨트롤을 제공합니다.
 

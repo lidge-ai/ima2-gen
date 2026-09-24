@@ -53,4 +53,4 @@ Translations (ko, ja, zh-CN, zh-TW)
 - zh-CN: 多变的 → 变量, 满的 → 完整, 客户 → 客户端 (CLI client heading), self-link → zh-TW; zh-TW: 客戶 → 用戶端.
 - Other translated sections stay as they are (English README is canonical).
 
-Verifier: `node devlog/_plan/260925_brand_refresh/scripts/check-readme-links.mjs` (NEW) exit 0; `rg -n "grok-4\.5\`|x64\)|both arm64 and x64|publish=false|🌐|📖|up to 7 references|最多 7|8 個 core|8 个 core|core lane 8|8 つの" README.md docs/README.*.md` empty; tests/runtime-install-projection.test.ts passes (generated tables untouched).
+Verifier: `node devlog/_plan/260925_brand_refresh/scripts/check-readme-links.mjs` (NEW) exit 0; `rg -n "default: \`grok-4\.5|기본: \`grok-4\.5|默认：\`grok-4\.5|預設：\`grok-4\.5|x64\)|both arm64 and x64|publish=false|🌐|📖|up to 7 references|最多 7|8 個 core|8 个 core|core lane 8|8 つの" README.md docs/README.*.md` empty; tests/runtime-install-projection.test.ts passes (generated tables untouched).
