@@ -99,6 +99,21 @@ references/) and the agent reads them natively. Avoid piping large bundled outpu
 - Wrap async work in try/catch only where the error is transformed, logged, or surfaced at a boundary (route handler, job runner, CLI entry). A catch that only rethrows is noise; let the error propagate.
 - Config values in config.js or .env, never hardcode
 
+## Pull requests
+- PRs that change files under `ui/` (except `ui/e2e/**` and `*.test.*`/`*.spec.*`
+  files), `public/`, or an image under `assets/` must embed a screenshot of the
+  UI change in the PR description. The `screenshot-gate` check
+  (`pull_request_target`, `.github/scripts/pr-screenshot.cjs`) re-runs on
+  description edits until the image is present.
+- Never commit screenshot evidence to a PR branch — it rides the merge into the
+  integration branch. Drag the image into the description editor, or, when
+  uploading from the CLI as an agent with push access, commit it to the orphan
+  `pr-assets` branch (one directory per PR or date slug) and link by commit SHA:
+  `https://raw.githubusercontent.com/lidge-jun/ima2-gen/<sha>/<pr-or-date-slug>/<name>.png`.
+- A maintainer waives the gate with the `ui-screenshot-waived` label (must be
+  applied by someone with write/admin permission) or a comment stating the
+  change does not touch the UI.
+
 ## Test Command
 ```bash
 npm run typecheck          # tsc --noEmit (server + lib)
