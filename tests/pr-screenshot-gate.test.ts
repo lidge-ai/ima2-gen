@@ -1,8 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { parseDocument } from "yaml";
 
 const require = createRequire(import.meta.url);
@@ -112,19 +112,49 @@ describe("pr-screenshot gate helper", () => {
     });
   });
 
+  describe("UI_OVERRIDE_RE", () => {
+    const yes = [
+      "No UI changes here.",
+      "doesn't touch the ui",
+      "does not change the UI",
+      "not touching the frontend",
+      "the UI is unchanged",
+      "ui surface is untouched",
+      "UI 변경 없음",
+      "frontend 수정 없다",
+    ];
+    const no = [
+      // Negations that demand a screenshot must not waive the gate.
+      "without a UI screenshot",
+      "do not merge without a UI screenshot",
+      "I do not think we should skip the UI screenshot",
+      "Never ship frontend changes",
+      "touches ui but only config",
+      // The negation window must not cross a sentence boundary.
+      "This does not change the API. Please add a ui screenshot.",
+      "random text",
+    ];
+    it("accepts statements that the UI was not changed", () => {
+      for (const body of yes) {
+        assert.equal(gate.UI_OVERRIDE_RE.test(body), true, body);
+      }
+    });
+    it("rejects screenshot demands and unrelated clauses", () => {
+      for (const body of no) {
+        assert.equal(gate.UI_OVERRIDE_RE.test(body), false, body);
+      }
+    });
+  });
+
   describe("hasUiOverride", () => {
     const comment = (body: string, association = "MEMBER") => ({
       body,
       author_association: association,
     });
 
-    it("waives on a maintainer negation, not on a contributor one", () => {
+    it("prefilters on maintainer association only", () => {
       assert.equal(
         gate.hasUiOverride({ comments: [comment("No UI changes here.")] }),
-        true,
-      );
-      assert.equal(
-        gate.hasUiOverride({ comments: [comment("doesn't touch the ui")] }),
         true,
       );
       assert.equal(
@@ -137,13 +167,6 @@ describe("pr-screenshot gate helper", () => {
       );
       assert.equal(
         gate.hasUiOverride({ comments: [comment("touches ui but only config")] }),
-        false,
-      );
-      // The negation window must not cross a sentence boundary.
-      assert.equal(
-        gate.hasUiOverride({
-          comments: [comment("This does not change the API. Please add a ui screenshot.")],
-        }),
         false,
       );
       assert.equal(gate.hasUiOverride({ comments: [] }), false);
@@ -185,7 +208,7 @@ describe("pr-screenshot gate helper", () => {
       changedFilePaths: ["ui/src/App.tsx"],
       filesTruncated: false,
       body: "no image here",
-      comments: [],
+      commentOverride: false,
       waiverLabelPresent: false,
       waiverActorPermission: null,
     };
@@ -230,10 +253,7 @@ describe("pr-screenshot gate helper", () => {
         "fail",
       );
       assert.equal(
-        gate.evaluateScreenshotGate({
-          ...base,
-          comments: [{ body: "No UI changes.", author_association: "MEMBER" }],
-        }).status,
+        gate.evaluateScreenshotGate({ ...base, commentOverride: true }).status,
         "waived",
       );
     });
@@ -264,10 +284,15 @@ describe("pr-screenshot-gate workflow", () => {
   });
 
   it("stays read-only and never checks out the PR head", () => {
+    // actions/checkout cannot run at all without contents: read.
+    assert.match(text, /contents: read/);
     assert.match(text, /pull-requests: read/);
     assert.match(text, /issues: read/);
     assert.doesNotMatch(text, /contents: write|pull-requests: write|issues: write/);
     assert.doesNotMatch(text, /pull_request\.head|github\.event\.pull_request\.head\.ref/);
+    // pull_request_target executes the default-branch workflow, so no ref may
+    // be set — a ref is the only way PR code could be checked out.
+    assert.doesNotMatch(text, /^\s+ref:\s/m);
     assert.match(text, /pull_request_target/);
     assert.match(text, /persist-credentials: false/);
   });
@@ -276,29 +301,19 @@ describe("pr-screenshot-gate workflow", () => {
 // PR screenshot evidence belongs in the PR description or on the orphan
 // `pr-assets` branch — never committed to a source branch, where it would ride
 // a merge into the integration branch (the `docs/pr-assets/` lesson in
-// opencodex). This guards the folder names rather than image extensions so
-// legitimate product screenshots (assets/screenshots/) stay untouched.
+// opencodex). This guards tracked paths only (git ls-files): an untracked local
+// `pr-assets/` folder must not fail the suite. Folder names are checked rather
+// than image extensions so legitimate product screenshots
+// (assets/screenshots/) stay untouched.
 describe("pr-assets evidence hygiene", () => {
-  const SKIP_DIRS = new Set([".git", "node_modules", "dist"]);
   const EVIDENCE_DIR_RE = /^(pr-assets|pr-screenshots?|screenshot-evidence)$/i;
 
-  function trackedDirs(): string[] {
-    const out: string[] = [];
-    const walk = (dir: string): void => {
-      for (const entry of readdirSync(dir)) {
-        const path = join(dir, entry);
-        if (!statSync(path).isDirectory()) continue;
-        out.push(path);
-        if (!SKIP_DIRS.has(entry)) walk(path);
-      }
-    };
-    walk(".");
-    return out;
-  }
-
   it("keeps committed evidence folders out of the source tree", () => {
-    const offenders = trackedDirs().filter((path) =>
-      path.split("/").some((segment) => EVIDENCE_DIR_RE.test(segment)),
+    const tracked = execFileSync("git", ["ls-files"], { encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean);
+    const offenders = tracked.filter((path) =>
+      path.split("/").slice(0, -1).some((segment) => EVIDENCE_DIR_RE.test(segment)),
     );
     assert.deepEqual(offenders, []);
   });

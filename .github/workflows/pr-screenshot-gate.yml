@@ -12,8 +12,10 @@ on:
       - unlabeled
 
 # Read-only gate: it never checks out PR head code and never writes to the PR.
-# issues:read covers comments and timeline events (waiver provenance).
+# contents:read is required by actions/checkout; issues:read covers comments
+# and timeline events (waiver provenance).
 permissions:
+  contents: read
   pull-requests: read
   issues: read
 
@@ -35,10 +37,11 @@ jobs:
       - name: Checkout trusted gate script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Source the script from a promoted branch, never the PR head. A
-          # stacked PR's base is another open PR's head, so base.ref is not
-          # trusted there either — anything but main falls back to dev.
-          ref: ${{ github.event.pull_request.base.ref == 'main' && 'main' || 'dev' }}
+          # pull_request_target runs the workflow file from the repository
+          # default branch, and a ref-less checkout gets that same trusted
+          # commit. No ref is set on purpose: PR head code is never checked
+          # out. The gate therefore activates only once this file reaches the
+          # default branch (main).
           persist-credentials: false
           sparse-checkout: |
             .github/scripts

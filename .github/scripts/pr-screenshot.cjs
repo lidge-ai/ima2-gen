@@ -116,30 +116,76 @@ function hasScreenshotEvidence(body) {
 
 /**
  * Phrases in a maintainer comment that waive the UI-screenshot gate. A comment
- * saying the change does not touch the UI means the path cue is a false
- * positive and no screenshot is required. The negation word must appear within
- * a short window before the surface name, so "this touches ui but only the
- * config" (no negation) keeps the gate. The window cannot cross a sentence or
- * line boundary: "This does not change the API. Please add a ui screenshot."
- * must not waive the gate.
+ * waives only when it asserts the UI itself was not changed: a negation word,
+ * the surface name, and a change verb must all appear inside one clause, or
+ * the surface must be declared unchanged/untouched (Korean "UI 변경 없음"
+ * included). Narrower than opencodex's GUI_OVERRIDE_RE on purpose: "without a
+ * UI screenshot" or "do not merge without a UI screenshot" demand an image and
+ * must NOT waive, so `without`/`never` are not negations here and the surface
+ * word alone next to a negation is not enough.
  */
-const UI_OVERRIDE_RE =
-  /\b(?:no|not|doesn'?t|does not|never|without)\b[^.!?\n]{0,40}?\b(?:ui|gui|front[-\s]?end)\b/i;
+// \b never matches around Hangul in JS regex, so the surface word stays ASCII;
+// Korean waivers work through the UI_CHANGE_VERB Hangul alternatives instead.
+const UI_SURFACE_WORD = "(?:ui|gui|front[-\\s]?end)";
+const UI_CHANGE_VERB = "(?:chang|touch|affect|modif|alter|impact|involv|edit|render|visual)\\w*";
+const UI_OVERRIDE_RE = new RegExp(
+  [
+    `\\b(?:no|not|doesn'?t|does not)\\b` +
+      `(?=[^.!?\\n]{0,60}?\\b${UI_SURFACE_WORD}\\b)` +
+      `(?=[^.!?\\n]{0,60}?(?:\\b${UI_CHANGE_VERB}\\b|변경|수정|영향))`,
+    `\\b${UI_SURFACE_WORD}\\b[^.!?\\n]{0,30}?` +
+      `(?:\\bunchanged\\b|\\buntouched\\b|\\bunaffected\\b|\\bunmodified\\b|없음|없다|없어)`,
+  ].join("|"),
+  "i"
+);
 
 /**
- * True when a maintainer (OWNER / COLLABORATOR / MEMBER) issue comment waives
- * the UI-screenshot requirement. Only the comment author's association counts:
- * the PR author (`CONTRIBUTOR`/`NONE`) cannot override their own requirement.
+ * Prefilter for the comment waiver: a comment can waive only when its author
+ * carries a maintainer-ish association and its body matches UI_OVERRIDE_RE.
+ * The workflow still verifies the author's collaborator permission via the
+ * API (`resolveCommentOverride`) — association alone is not the waiver.
  */
-function hasUiOverride({ comments = [] }) {
-  return comments.some(
-    (comment) =>
-      (comment?.author_association === "OWNER" ||
-        comment?.author_association === "COLLABORATOR" ||
-        comment?.author_association === "MEMBER") &&
-      typeof comment?.body === "string" &&
-      UI_OVERRIDE_RE.test(comment.body)
+function isUiOverrideCandidate(comment) {
+  return (
+    (comment?.author_association === "OWNER" ||
+      comment?.author_association === "COLLABORATOR" ||
+      comment?.author_association === "MEMBER") &&
+    typeof comment?.body === "string" &&
+    UI_OVERRIDE_RE.test(comment.body)
   );
+}
+
+function hasUiOverride({ comments = [] }) {
+  return comments.some(isUiOverrideCandidate);
+}
+
+/**
+ * Resolve the comment waiver to a permission decision. Each candidate comment
+ * author's collaborator permission is looked up; the comment waives only when
+ * its author holds write/maintain/admin. Lookup failures fail closed.
+ */
+async function hasPrivilegedUiOverride({ github, owner, repo, comments, core }) {
+  const authors = new Set(
+    comments.filter(isUiOverrideCandidate).map((comment) => comment.user?.login).filter(Boolean)
+  );
+  for (const login of authors) {
+    try {
+      const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+        owner,
+        repo,
+        username: login,
+      });
+      if (hasWritePermission(data?.permission)) {
+        return { waived: true, actor: login };
+      }
+      core.info(`${login} lacks write/admin permission; ignoring UI override comment.`);
+    } catch (error) {
+      core.warning(
+        `Could not look up collaborator permission for ${login}: ${error.message}`
+      );
+    }
+  }
+  return { waived: false, actor: null };
 }
 
 function hasWritePermission(permission) {
@@ -179,7 +225,7 @@ function evaluateScreenshotGate({
   changedFilePaths = [],
   filesTruncated = false,
   body = "",
-  comments = [],
+  commentOverride = false,
   waiverLabelPresent = false,
   waiverActorPermission = null,
 }) {
@@ -193,7 +239,7 @@ function evaluateScreenshotGate({
   if (waiverLabelPresent && hasWritePermission(waiverActorPermission)) {
     return { status: "waived", reason: "label", uiPaths };
   }
-  if (hasUiOverride({ comments })) {
+  if (commentOverride) {
     return { status: "waived", reason: "comment", uiPaths };
   }
   return { status: "fail", reason: "missing_ui_screenshot", uiPaths };
@@ -326,11 +372,21 @@ async function runScreenshotGate({ github, context, core }) {
     );
   }
 
+  // A comment waive requires the same write/admin permission as the label:
+  // association (OWNER/COLLABORATOR/MEMBER) alone is only a prefilter.
+  const { waived: commentOverride } = await hasPrivilegedUiOverride({
+    github,
+    owner,
+    repo,
+    comments,
+    core,
+  });
+
   const verdict = evaluateScreenshotGate({
     changedFilePaths,
     filesTruncated,
     body: pr.body ?? "",
-    comments,
+    commentOverride,
     waiverLabelPresent,
     waiverActorPermission,
   });
@@ -374,7 +430,9 @@ module.exports = {
   stripNonRenderedRegions,
   hasRenderableReferenceImage,
   hasScreenshotEvidence,
+  isUiOverrideCandidate,
   hasUiOverride,
+  hasPrivilegedUiOverride,
   hasWritePermission,
   waiverLabelActorLogin,
   evaluateScreenshotGate,
