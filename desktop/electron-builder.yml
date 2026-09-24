@@ -51,6 +51,10 @@ files:
   - "!node_modules/node-gyp/**"
   - "!node_modules/@types/**"
 
+# Generates the gitignored app/tray icons before packaging so every build path
+# (npm run dist, npx electron-builder, CI) ships a real icon set.
+beforeBuild: build/ensure-icons.mjs
+
 # Runs before electron-builder signs the bundle, awaiting its imported keychain
 # before resolving the sidecar identity. With asar:false the whole
 # production node_modules tree ships as loose files, and electron-builder does

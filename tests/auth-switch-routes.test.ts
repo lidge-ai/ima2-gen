@@ -186,4 +186,37 @@ describe("/api/auth/switch (codex)", () => {
       await new Promise((r) => s.close(r));
     }
   });
+
+  it("GET /api/oauth/status: transient /v1/models failures do not ask for re-login, auth refusals do", async () => {
+    const { saveChatgptTokenResponse } = await import("../lib/chatgptAuth.js");
+    saveChatgptTokenResponse({ access_token: jwt({ exp: 2_000_000_000 }), refresh_token: "rt", id_token: ID_TOKEN }, root);
+    let modelsReply = new Response("upstream blew up", { status: 502 });
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/v1/models")) return modelsReply.clone();
+      return new Response("unexpected", { status: 500 });
+    }) as typeof fetch;
+
+    const app = express();
+    const ctx = createTestRuntimeContext({
+      oauthReadyState: "ready",
+      grokAuthHomeDir: root,
+      config: { ...config, oauth: { ...config.oauth, autoStart: true } },
+    });
+    registerHealthRoutes(app, ctx);
+    const s = await new Promise<Server>((resolve) => { const x = app.listen(0, "127.0.0.1", () => resolve(x)); });
+    try {
+      const url = `http://127.0.0.1:${(s.address() as AddressInfo).port}/api/oauth/status`;
+      // A live proxy failing upstream with a usable session file is an outage, not a logout.
+      const transient = await (await realFetch(url)).json() as { status: string; auth: { health: string } };
+      assert.equal(transient.status, "offline");
+      assert.equal(transient.auth.health, "healthy");
+
+      modelsReply = new Response("Encountered invalidated oauth token", { status: 502 });
+      const refused = await (await realFetch(url)).json() as { status: string; auth: { health: string } };
+      assert.equal(refused.status, "auth_required");
+      assert.equal(refused.auth.health, "reauth_required");
+    } finally {
+      await new Promise((r) => s.close(r));
+    }
+  });
 });

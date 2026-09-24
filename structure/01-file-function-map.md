@@ -93,7 +93,7 @@ routes/
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
 | `routes/history.ts` | 234 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
-| `routes/health.ts` | 136 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
+| `routes/health.ts` | 146 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
 | `routes/mcpConnections.ts` | 164 | MCP provider list/status/connect/callback/refresh/disconnect/model routes; truthful state-to-HTTP mapping and secret-free responses |
 | `routes/storage.ts` | 48 | Gallery storage status and generated-folder open action |
 | `routes/metadata.ts` | 81 | `/api/metadata/read` for embedded XMP image metadata extraction |
@@ -196,7 +196,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
 | `lib/mcp/shutdown.ts` | 24 | Post-listen restore activation plus concurrent HTTP/MCP shutdown coordination and grace bound |
 | `lib/mcp/snapshotPipeline.ts` | 113 | Generation/epoch-safe live tool snapshot ingest and stale-result suppression |
-| `lib/oauthLauncher.ts` | 145 | OAuth proxy child process startup and actual ready-port capture |
+| `lib/oauthLauncher.ts` | 150 | OAuth proxy child process startup and actual ready-port capture |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
 | `lib/oauthProxy/generators.ts` | 229 | OAuth Responses single-image generation and stable generator exports |

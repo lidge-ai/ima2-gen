@@ -6,6 +6,11 @@ import { loadGrokCredentials } from "../lib/xaiAuth.js";
 import { gptAuthStatus, grokAuthStatus } from "../lib/authStatus.js";
 import { resolveChatgptSession } from "../lib/chatgptAuth.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
+
+// Upstream auth refusals surfaced through the proxy's /v1/models error body. Kept narrow:
+// generic 5xx/network text must never read as "re-login needed".
+const AUTH_FAILURE_BODY_RE = /invalidated oauth|invalid_token|invalid_grant|unauthorized|access token not found|account id not found|not logged in|authentication/i;
+
 export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   const runtimePorts = () => ({
@@ -76,7 +81,12 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
         const data = (await r.json()) as { data?: Array<{ id: string }> };
         reply("ready", { models: data.data?.map((m) => m.id) || [] });
       } else {
-        reply("auth_required");
+        // A non-OK /v1/models means the proxy's authed upstream call failed — not always
+        // a dead session. Transient upstream errors (5xx, network) must not report
+        // "log in required" while a usable session file exists; only an auth-shaped
+        // error body does. The file itself already says when login is truly missing.
+        const body = (await r.text().catch(() => "")).slice(0, 4000);
+        reply(missingSession || AUTH_FAILURE_BODY_RE.test(body) ? "auth_required" : "offline");
       }
     } catch {
       reply(missingSession ? "auth_required" : "offline");

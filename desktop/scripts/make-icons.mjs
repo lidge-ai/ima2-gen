@@ -1,7 +1,8 @@
-// Generates desktop/build icons from assets/logo.png:
+// Generates desktop icons from assets/logo.png:
 //   icon.png            1024x1024 app icon (electron-builder derives .icns/.ico)
 //   tray.png            32x32 colored tray icon (Windows/Linux)
 //   trayTemplate.png    22x22 + @2x monochrome template icon (macOS menubar)
+// Callable as a CLI (`npm run icons`) or imported (main.mjs self-heal, beforeBuild hook).
 import { mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,7 +10,7 @@ import sharp from "sharp";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(here, "..", "..");
-const outDir = resolve(here, "..", "build");
+const defaultOutDir = resolve(here, "..", "build");
 const logo = join(rootDir, "assets", "logo.png");
 const WHITE_CUTOFF = 240;
 
@@ -35,7 +36,7 @@ const TRAY_GLYPH = `
   </g>
 </svg>`;
 
-async function main() {
+export async function generateIcons(outDir = defaultOutDir) {
   mkdirSync(outDir, { recursive: true });
   const transparent = await knockOutWhite(logo);
   const png = await transparent.png().toBuffer();
@@ -43,7 +44,11 @@ async function main() {
   await sharp(png).resize(32, 32).png().toFile(join(outDir, "tray.png"));
   await sharp(Buffer.from(TRAY_GLYPH)).resize(22, 22).png().toFile(join(outDir, "trayTemplate.png"));
   await sharp(Buffer.from(TRAY_GLYPH)).resize(44, 44).png().toFile(join(outDir, "trayTemplate@2x.png"));
-  console.log(`[desktop] icons written to ${outDir}`);
+  return outDir;
 }
 
-await main();
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (invokedDirectly) {
+  const outDir = await generateIcons();
+  console.log(`[desktop] icons written to ${outDir}`);
+}
