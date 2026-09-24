@@ -5,6 +5,7 @@
     "costUnavailable": "暂无费用估算"
   },
   "lan": {
+    "brand": "ima2",
     "title": "连接到工作室",
     "body": "请输入工作室设置的 LAN 令牌。令牌不会保存在浏览器存储中。",
     "token": "LAN 令牌",
@@ -46,6 +47,7 @@
     "cardDeck": "卡牌组"
   },
   "appBar": {
+    "brand": "ima2",
     "modeImage": "图像",
     "settings": "设置",
     "controls": "发电控制",

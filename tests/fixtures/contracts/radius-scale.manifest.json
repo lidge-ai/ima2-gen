@@ -3075,20 +3075,6 @@
   {
     "file": "ui/src/styles/sidebar.css",
     "atRule": null,
-    "selector": ".logo-mark",
-    "expected": "var(--r-pill)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/sidebar.css",
-    "atRule": null,
-    "selector": ".logo-mark::after",
-    "expected": "var(--r-pill)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/sidebar.css",
-    "atRule": null,
     "selector": ".settings-button",
     "expected": "var(--r-md)",
     "important": false

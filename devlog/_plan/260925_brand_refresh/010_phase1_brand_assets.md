@@ -94,3 +94,12 @@ Verifier additions: `node --import tsx --test tests/browser-attention-badge-cont
 - Badge stays synchronous: `renderBadgeFavicon(count)` draws the dark rounded tile and the mark with `new Path2D(BRAND_MARK_PATH)` (the mark.svg path data, exported from a new `ui/src/lib/brandMarkPath.ts`, scaled from viewBox `1170 1128 1386 1506`), then the unseen dot. No image loading, so no async re-render and no Safari/Firefox intrinsic-size issue.
 - assets/brand/favicon.svg and the copies carry `width="512" height="512"` for intrinsic size.
 - Activation: `tests/browser-attention-badge-contract.test.js` pins remain; add a pin that the source references `Path2D` and `BRAND_MARK_PATH`. The drawn result is checked in a headless page at C (canvas toDataURL screenshot read back).
+
+## wp1 P re-verification (2026-09-25, HEAD 839bc871)
+
+- `.logo-title--gen` gradient (sidebar.css:68-75) is already grey chrome (#c8ccd8/#6f7484/#e8eaf1); kept. 002 row corrected here.
+- New `ui/src/components/BrandMark.tsx` imports its own `ui/src/styles/brand-mark.css` (`.brand-mark` = mask of /brand-mark.svg, background currentColor) so LanSignIn (rendered before App styles, main.tsx) gets it too. Sidebar/MobileAppBar render `<BrandMark className="logo-mark" />`; `.logo-mark` keeps only size + colour; `.logo-mark::after` rule deleted.
+- tests/fixtures/contracts/radius-scale.manifest.json pins `.logo-mark` and `.logo-mark::after` radius rows and tests/ui-radius-scale-contract.test.ts:141 freezes the row count (482). Removing the ::after rule deletes that row and the count moves to 481; `.logo-mark` drops its radius (mask shape) so its row goes too (480). New CSS files in later phases add rows the same way. This is a declared manifest update, not a bypass.
+- MobileAppBar title text "ima2-gen" → `t("appBar.brand")` ("ima2"); LanSignIn brand line stays literal "ima2" in the copy object (component imports dictionaries directly, LanSignIn.tsx:10-11) — add `brand` to its per-locale copy.
+- ui/index.html `<title>`: "Image Gen" is also the server log prefix matched by ui/e2e/fixtures/appServer.ts:257 ("Image Gen running at") — that is server stdout, not the HTML title; title change is safe.
+Verifier: `node --import tsx --test tests/ui-radius-scale-contract.test.ts tests/browser-attention-badge-contract.test.js tests/i18n-dictionary-contract.test.ts tests/i18n-coverage-contract.test.ts tests/a11y-modal-contract.test.ts`, `cd ui && npm run build`, `node desktop/scripts/make-icons.mjs` (run with repo NODE_PATH for sharp), headless render of built UI.

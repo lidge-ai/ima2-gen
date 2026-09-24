@@ -1,0 +1,9 @@
+.brand-mark {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url("/brand-mark.svg") center / contain no-repeat;
+  mask: url("/brand-mark.svg") center / contain no-repeat;
+}

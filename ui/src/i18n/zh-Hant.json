@@ -5,6 +5,7 @@
     "costUnavailable": "暫無費用估算"
   },
   "lan": {
+    "brand": "ima2",
     "title": "連線至工作室",
     "body": "請輸入工作室設定的 LAN 權杖。權杖不會儲存在瀏覽器儲存空間中。",
     "token": "LAN 權杖",
@@ -46,6 +47,7 @@
     "cardDeck": "卡牌組"
   },
   "appBar": {
+    "brand": "ima2",
     "modeImage": "影像",
     "settings": "設定",
     "controls": "發電控制",

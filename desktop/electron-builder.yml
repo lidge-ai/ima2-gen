@@ -35,11 +35,14 @@ files:
   - assets/card-news/templates/**
   - assets/mcp-snapshots/**
   - assets/logo.png
+  - assets/brand/mark.svg
+  - assets/brand/favicon.svg
   - desktop/main.mjs
   - desktop/preload.cjs
   - desktop/lib/**
   - desktop/pages/**
-  # lib/icons.mjs regenerates missing icons at boot via this script (needs assets/logo.png).
+  # lib/icons.mjs regenerates missing icons at boot via this script (needs assets/logo.png,
+  # assets/brand/mark.svg and assets/brand/favicon.svg).
   - desktop/scripts/make-icons.mjs
   - desktop/build/icon.png
   - desktop/build/tray*.png

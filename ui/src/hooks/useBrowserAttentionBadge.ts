@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { BRAND_MARK_PATH, BRAND_MARK_VIEWBOX } from "../lib/brandMarkPath";
 
 type BadgeNavigator = Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -6,7 +7,8 @@ type BadgeNavigator = Navigator & {
 };
 
 const BADGE_SIZE = 64;
-const BASE_TITLE_FALLBACK = "Image Gen";
+const BASE_TITLE_FALLBACK = "ima2";
+const MARK_HEIGHT = 34;
 
 let baseTitle = BASE_TITLE_FALLBACK;
 let initialized = false;
@@ -47,20 +49,11 @@ function renderBadgeFavicon(count: number): string {
 
   ctx.clearRect(0, 0, BADGE_SIZE, BADGE_SIZE);
 
-  ctx.fillStyle = "#0a0a0a";
+  ctx.fillStyle = "#1c1d21";
   roundRect(ctx, 6, 6, 52, 52, 12);
   ctx.fill();
 
-  ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.arc(30, 32, 14, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(30, 32, 5, 0, Math.PI * 2);
-  ctx.fill();
+  drawBrandMark(ctx, 30, 33);
 
   ctx.beginPath();
   ctx.arc(48, 16, count > 1 ? 13 : 10, 0, Math.PI * 2);
@@ -79,6 +72,19 @@ function renderBadgeFavicon(count: number): string {
   }
 
   return canvas.toDataURL("image/png");
+}
+
+/** Draws the ima2 mark centred on (cx, cy); synchronous so the badge needs no image load. */
+function drawBrandMark(ctx: CanvasRenderingContext2D, cx: number, cy: number): void {
+  const { x, y, width, height } = BRAND_MARK_VIEWBOX;
+  const scale = MARK_HEIGHT / height;
+  ctx.save();
+  ctx.translate(cx - (width * scale) / 2, cy - MARK_HEIGHT / 2);
+  ctx.scale(scale, scale);
+  ctx.translate(-x, -y);
+  ctx.fillStyle = "#f2f3f5";
+  ctx.fill(new Path2D(BRAND_MARK_PATH));
+  ctx.restore();
 }
 
 function roundRect(

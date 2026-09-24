@@ -5,6 +5,7 @@
     "costUnavailable": "예상 비용 미제공"
   },
   "lan": {
+    "brand": "ima2",
     "title": "스튜디오에 연결",
     "body": "스튜디오에 설정된 LAN 토큰을 입력하세요. 토큰은 브라우저 저장소에 저장하지 않습니다.",
     "token": "LAN 토큰",
@@ -46,6 +47,7 @@
     "cardDeck": "카드 덱"
   },
   "appBar": {
+    "brand": "ima2",
     "modeImage": "이미지",
     "settings": "설정",
     "controls": "생성 옵션",

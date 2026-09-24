@@ -5,6 +5,7 @@
     "costUnavailable": "Estimate unavailable"
   },
   "lan": {
+    "brand": "ima2",
     "title": "Connect to your studio",
     "body": "Enter the LAN token configured on this studio. It is not saved in browser storage.",
     "token": "LAN token",
@@ -46,6 +47,7 @@
     "cardDeck": "Card deck"
   },
   "appBar": {
+    "brand": "ima2",
     "modeImage": "Image",
     "settings": "Settings",
     "controls": "Generation controls",
