@@ -34,10 +34,13 @@ files:
   - vendor/**
   - assets/card-news/templates/**
   - assets/mcp-snapshots/**
+  - assets/logo.png
   - desktop/main.mjs
   - desktop/preload.cjs
   - desktop/lib/**
   - desktop/pages/**
+  # lib/icons.mjs regenerates missing icons at boot via this script (needs assets/logo.png).
+  - desktop/scripts/make-icons.mjs
   - desktop/build/icon.png
   - desktop/build/tray*.png
   - "!desktop/node_modules"

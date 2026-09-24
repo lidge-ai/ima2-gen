@@ -211,6 +211,17 @@ describe("/api/auth/switch (codex)", () => {
       assert.equal(transient.status, "offline");
       assert.equal(transient.auth.health, "healthy");
 
+      // Generic auth-ish wording inside a 5xx must not count as a refused session.
+      modelsReply = new Response("upstream authentication service unavailable", { status: 503 });
+      const noise = await (await realFetch(url)).json() as { status: string };
+      assert.equal(noise.status, "offline");
+
+      // 401 means the session was refused no matter how the body is phrased.
+      modelsReply = new Response("invalid_api_key", { status: 401 });
+      const unauthed = await (await realFetch(url)).json() as { status: string; auth: { health: string } };
+      assert.equal(unauthed.status, "auth_required");
+      assert.equal(unauthed.auth.health, "reauth_required");
+
       modelsReply = new Response("Encountered invalidated oauth token", { status: 502 });
       const refused = await (await realFetch(url)).json() as { status: string; auth: { health: string } };
       assert.equal(refused.status, "auth_required");

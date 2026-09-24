@@ -8,8 +8,9 @@ import { resolveChatgptSession } from "../lib/chatgptAuth.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 
 // Upstream auth refusals surfaced through the proxy's /v1/models error body. Kept narrow:
-// generic 5xx/network text must never read as "re-login needed".
-const AUTH_FAILURE_BODY_RE = /invalidated oauth|invalid_token|invalid_grant|unauthorized|access token not found|account id not found|not logged in|authentication/i;
+// generic 5xx/network text must never read as "re-login needed" — status 401 covers
+// non-standard auth rejections regardless of wording.
+const AUTH_FAILURE_BODY_RE = /invalidated oauth|invalid_token|invalid_grant|access token not found|account id not found|not logged in/i;
 
 export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
@@ -82,11 +83,11 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
         reply("ready", { models: data.data?.map((m) => m.id) || [] });
       } else {
         // A non-OK /v1/models means the proxy's authed upstream call failed — not always
-        // a dead session. Transient upstream errors (5xx, network) must not report
-        // "log in required" while a usable session file exists; only an auth-shaped
-        // error body does. The file itself already says when login is truly missing.
+        // a dead session. 401 is always a refused session; for any other status only an
+        // auth-shaped error body is. Everything else (5xx, network) is an outage, so a
+        // usable session file stays logged in instead of flipping to "log in required".
         const body = (await r.text().catch(() => "")).slice(0, 4000);
-        reply(missingSession || AUTH_FAILURE_BODY_RE.test(body) ? "auth_required" : "offline");
+        reply(r.status === 401 || missingSession || AUTH_FAILURE_BODY_RE.test(body) ? "auth_required" : "offline");
       }
     } catch {
       reply(missingSession ? "auth_required" : "offline");
