@@ -244,6 +244,12 @@ async function runBrowserFlow(opts: RunChatgptLoginOptions, doFetch: typeof fetc
       res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found");
       return;
     }
+    // State first, for errors too: any page can navigate the browser to this loopback URL, and
+    // without the unguessable state it must not be able to end (or complete) this login.
+    if (url.searchParams.get("state") !== state) {
+      res.writeHead(400, { "Content-Type": "text/html" }).end(page("&#9888; Login failed", "State mismatch. Start the login again from ima2."));
+      return;
+    }
     const error = url.searchParams.get("error");
     if (error) {
       res.writeHead(400, { "Content-Type": "text/html" }).end(page("&#9888; Login failed", "Return to ima2 and try again."));
@@ -251,9 +257,8 @@ async function runBrowserFlow(opts: RunChatgptLoginOptions, doFetch: typeof fetc
       return;
     }
     const code = url.searchParams.get("code");
-    if (!code || url.searchParams.get("state") !== state) {
-      // A stale tab or a forged request: answer it, but keep waiting for the real callback.
-      res.writeHead(400, { "Content-Type": "text/html" }).end(page("&#9888; Login failed", "State mismatch. Start the login again from ima2."));
+    if (!code) {
+      res.writeHead(400, { "Content-Type": "text/html" }).end(page("&#9888; Login failed", "The callback carried no code. Start the login again from ima2."));
       return;
     }
     res.writeHead(200, { "Content-Type": "text/html" }).end(page("&#9989; Login complete", "You can close this tab and return to ima2."));
@@ -290,5 +295,8 @@ export async function runChatgptLogin(opts: RunChatgptLoginOptions): Promise<Cha
   const payload = opts.flow === "device"
     ? await runDeviceFlow(opts, doFetch)
     : await runBrowserFlow(opts, doFetch);
+  // A login that was cancelled or superseded while its token request was in flight must not
+  // overwrite the session a newer login just saved.
+  if (opts.signal?.aborted) throw new Error("Login cancelled");
   return saveChatgptTokenResponse(payload, opts.configDir);
 }

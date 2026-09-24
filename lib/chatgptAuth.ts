@@ -179,6 +179,14 @@ function describeSession(source: ChatgptSessionSource, path: string, file: Chatg
   };
 }
 
+/** Path of the first candidate that holds a usable session (what the proxy must be given). */
+export function resolveChatgptSessionFile(configDir?: string): { source: ChatgptSessionSource; path: string } | null {
+  for (const candidate of chatgptSessionCandidates(configDir)) {
+    if (readChatgptAuthFile(candidate.path)) return candidate;
+  }
+  return null;
+}
+
 /** The session the GPT OAuth proxy will use: the first readable candidate file. */
 export function resolveChatgptSession(configDir?: string): ChatgptSession | null {
   for (const candidate of chatgptSessionCandidates(configDir)) {

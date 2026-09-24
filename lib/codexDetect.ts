@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { errInfo } from "./errInfo.js";
 import { resolvePackageBin } from "./packageCli.js";
-import { chatgptAuthFilePath } from "./chatgptAuth.js";
+import { chatgptAuthFilePath, resolveChatgptSessionFile } from "./chatgptAuth.js";
 const HOME = homedir();
 
 type CodexProbeOptions = {
@@ -141,15 +141,9 @@ export function detectCodexAuth(options: { probe?: boolean } = {}) {
     chatgpt: existsSync(files.chatgpt),
     xdgCodex: existsSync(files.xdgCodex),
   };
-  const proxyAuthFile = fileHits.ima2
-    ? files.ima2
-    : fileHits.codex
-      ? files.codex
-      : fileHits.chatgpt
-        ? files.chatgpt
-        : fileHits.xdgCodex
-          ? files.xdgCodex
-          : null;
+  // Same validated choice as status and quota (lib/chatgptAuth.ts): a malformed or
+  // token-less file must not win just because it exists.
+  const proxyAuthFile = resolveChatgptSessionFile()?.path ?? null;
   const shouldProbe = options.probe ?? proxyAuthFile === null;
   const probe = shouldProbe ? codexLoginStatus() : "skipped" as const;
   const authed = probe === "authed" || proxyAuthFile !== null;

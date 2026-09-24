@@ -172,9 +172,9 @@ remain owned by inflight. `ui/src/store/inflightReconciliation.ts` owns request-
 scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/logger.ts` | 171 | Safe structured logging, redaction, level filtering, and test sink helpers |
 | `lib/requestLogger.ts` | 50 | API-only request lifecycle logging and sanitized request ID middleware |
-| `lib/chatgptAuth.ts` | 259 | ima2-owned ChatGPT session store (~/.ima2/chatgpt-auth.json, Codex auth.json shape), JWT identity helpers, session-file priority |
-| `lib/chatgptLogin.ts` | 295 | Native ChatGPT login (OpenCodex port): browser PKCE on localhost:1455 and the deviceauth grant |
-| `lib/codexDetect.ts` | 166 | GPT OAuth session file detection (ima2 store first, then Codex CLI files) |
+| `lib/chatgptAuth.ts` | 267 | ima2-owned ChatGPT session store (~/.ima2/chatgpt-auth.json, Codex auth.json shape), JWT identity helpers, session-file priority |
+| `lib/chatgptLogin.ts` | 303 | Native ChatGPT login (OpenCodex port): browser PKCE on localhost:1455 and the deviceauth grant |
+| `lib/codexDetect.ts` | 160 | GPT OAuth session file detection (ima2 store first, then Codex CLI files) |
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
 | `lib/generationErrors.ts` | 245 | Generation error normalization, retry classification, status mapping |

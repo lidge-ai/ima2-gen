@@ -158,6 +158,9 @@ describe("native ChatGPT OAuth store and login", () => {
         void (async () => {
           const forged = await fetch(`http://127.0.0.1:${port}/auth/callback?code=evil&state=wrong`);
           assert.equal(forged.status, 400);
+          // A cross-site navigation without the state must not be able to cancel the login either.
+          const forgedError = await fetch(`http://127.0.0.1:${port}/auth/callback?error=access_denied`);
+          assert.equal(forgedError.status, 400);
           const ok = await fetch(`http://127.0.0.1:${port}/auth/callback?code=good&state=${encodeURIComponent(state)}`);
           assert.equal(ok.status, 200);
         })();
@@ -174,5 +177,26 @@ describe("native ChatGPT OAuth store and login", () => {
     assert.equal(url.searchParams.get("client_id"), "app_EMoamEEZ73f0CkXaXp7hrann");
     assert.equal(url.searchParams.get("codex_cli_simplified_flow"), "true");
     assert.equal(url.searchParams.get("id_token_add_organizations"), "true");
+  });
+  it("the proxy file choice skips a malformed ima2 file, like status and quota do", () => {
+    mkdirSync(join(root, ".codex"), { recursive: true });
+    writeFileSync(join(root, ".codex", "auth.json"), JSON.stringify({ tokens: { access_token: ACCESS(2_000_000_000), refresh_token: "codex-rt", account_id: "acct-codex" } }));
+    mkdirSync(join(root, ".ima2"), { recursive: true });
+    writeFileSync(chatgptAuthFilePath(), "{ not json");
+    assert.equal(detectCodexAuth({ probe: false }).proxyAuthFile, join(root, ".codex", "auth.json"));
+    assert.equal(resolveChatgptSession()?.source, "codex");
+  });
+
+  it("a login aborted while its token exchange is in flight writes nothing", async () => {
+    const abort = new AbortController();
+    const fetchImpl = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/deviceauth/usercode")) return json(200, { device_auth_id: "d", user_code: "C" });
+      if (url.endsWith("/deviceauth/token")) return json(200, { authorization_code: "c", code_verifier: "v" });
+      abort.abort();
+      return json(200, { access_token: ACCESS(2_000_000_000), refresh_token: "rt-late", id_token: ID_TOKEN });
+    }) as typeof fetch;
+    await assert.rejects(runChatgptLogin({ flow: "device", fetchImpl, signal: abort.signal, sleep: async () => {}, onPrompt: () => {} }), /cancelled/);
+    assert.equal(resolveChatgptSession(), null);
   });
 });
