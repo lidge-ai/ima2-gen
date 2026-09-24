@@ -744,7 +744,7 @@
     "authActive": "已激活",
     "oauthNotReady": "GPT OAuth 代理尚未准备好。",
     "codexLoginRequired": "需要 Codex 登录。",
-    "codexLoginHint": "在终端中运行 `codex login`，然后刷新此页面。",
+    "codexLoginHint": "在终端运行 `ima2 login`，或在 设置 → 切换 Codex 帐户 中登录。",
     "oauthStarting": "GPT OAuth 代理正在启动。几秒钟后重试。",
     "serverUnreachable": "无法到达服务器。确保后端正在运行。",
     "apiInvalid": "API 密钥丢失或无效。检查服务器.env 中的 OPENAI_API_KEY。",

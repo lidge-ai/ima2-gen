@@ -3,6 +3,8 @@ import { abortJob, listJobs, listTerminalJobs } from "../lib/inflight.js";
 
 import { errInfo } from "../lib/errInfo.js";
 import { loadGrokCredentials } from "../lib/xaiAuth.js";
+import { gptAuthStatus, grokAuthStatus } from "../lib/authStatus.js";
+import { resolveChatgptSession } from "../lib/chatgptAuth.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
@@ -49,26 +51,35 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
     });
   });
 
+  // `auth` is the session verdict (lib/authStatus.ts): account, health, and the action that
+  // fixes it. `status` stays the proxy's live verdict the UI already switches on.
   app.get("/api/oauth/status", async (_req: Request, res: Response) => {
     ctx.syncOAuthProxySession?.();
-    if (ctx.oauthReadyState === "starting") {
-      return res.json({ status: "starting", runtime: runtimePorts() });
-    }
-    if (ctx.oauthReadyState === "failed") {
-      return res.json({ status: "offline", runtime: runtimePorts() });
-    }
+    const session = resolveChatgptSession();
+    const reply = (status: "ready" | "auth_required" | "offline" | "starting", extra: Record<string, unknown> = {}) => res.json({
+      status,
+      ...extra,
+      auth: gptAuthStatus(session, { proxyStatus: status }),
+      grokAuth: grokAuthStatus(loadGrokCredentials(ctx.grokAuthHomeDir)),
+      runtime: runtimePorts(),
+    });
+    // With IMA2_NO_OAUTH_PROXY an external proxy owns its own session; local files say nothing.
+    const missingSession = ctx.config.oauth.autoStart && !session;
+    if (ctx.oauthReadyState === "starting") return reply("starting");
+    // The proxy exits at boot when there is no session file; that is a login problem, not an outage.
+    if (ctx.oauthReadyState === "failed") return reply(missingSession ? "auth_required" : "offline");
     try {
       const r = await fetch(`${ctx.oauthUrl}/v1/models`, {
         signal: AbortSignal.timeout(ctx.config.oauth.statusTimeoutMs),
       });
       if (r.ok) {
         const data = (await r.json()) as { data?: Array<{ id: string }> };
-        res.json({ status: "ready", models: data.data?.map((m) => m.id) || [], runtime: runtimePorts() });
+        reply("ready", { models: data.data?.map((m) => m.id) || [] });
       } else {
-        res.json({ status: "auth_required", runtime: runtimePorts() });
+        reply("auth_required");
       }
     } catch {
-      res.json({ status: "offline", runtime: runtimePorts() });
+      reply(missingSession ? "auth_required" : "offline");
     }
   });
 

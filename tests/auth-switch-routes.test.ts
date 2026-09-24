@@ -12,6 +12,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import express from "express";
 import { registerAuthRoutes } from "../routes/auth.js";
+import { registerHealthRoutes } from "../routes/health.js";
+import { createTestRuntimeContext } from "../lib/runtimeContext.js";
+import { config } from "../config.js";
 import { chatgptAuthFilePath } from "../lib/chatgptAuth.js";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 
@@ -42,8 +45,11 @@ async function waitFor<T>(fn: () => Promise<T | undefined>, timeoutMs = 5000): P
 describe("/api/auth/switch (codex)", () => {
   beforeEach(async () => {
     root = mkdtempSync(join(tmpdir(), "ima2-auth-switch-"));
-    savedEnv.IMA2_CONFIG_DIR = process.env.IMA2_CONFIG_DIR;
+    for (const key of ["IMA2_CONFIG_DIR", "HOME", "USERPROFILE", "CODEX_HOME"]) savedEnv[key] = process.env[key];
     process.env.IMA2_CONFIG_DIR = root;
+    process.env.HOME = root;
+    process.env.USERPROFILE = root;
+    process.env.CODEX_HOME = join(root, ".codex");
     restarts = 0;
     realFetch = globalThis.fetch;
     const app = express();
@@ -68,8 +74,10 @@ describe("/api/auth/switch (codex)", () => {
   afterEach(async () => {
     globalThis.fetch = realFetch;
     await new Promise((r) => server.close(r));
-    if (savedEnv.IMA2_CONFIG_DIR === undefined) delete process.env.IMA2_CONFIG_DIR;
-    else process.env.IMA2_CONFIG_DIR = savedEnv.IMA2_CONFIG_DIR;
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
     rmSync(root, { recursive: true, force: true });
   });
 
@@ -149,5 +157,33 @@ describe("/api/auth/switch (codex)", () => {
     const res = await realFetch(`${base}/api/oauth/restart`, { method: "POST" });
     assert.deepEqual(await res.json(), { restarted: true });
     assert.equal(restarts, 1);
+  });
+  it("GET /api/oauth/status: a failed proxy with no session is a login problem, with an action", async () => {
+    const app = express();
+    const ctx = createTestRuntimeContext({
+      oauthReadyState: "failed",
+      grokAuthHomeDir: root,
+      config: { ...config, oauth: { ...config.oauth, autoStart: true } },
+    });
+    registerHealthRoutes(app, ctx);
+    const s = await new Promise<Server>((resolve) => { const x = app.listen(0, "127.0.0.1", () => resolve(x)); });
+    try {
+      const url = `http://127.0.0.1:${(s.address() as AddressInfo).port}/api/oauth/status`;
+      const before = await (await realFetch(url)).json() as { status: string; auth: { health: string; action?: string }; grokAuth: { health: string } };
+      assert.equal(before.status, "auth_required");
+      assert.equal(before.auth.health, "not_logged_in");
+      assert.equal(before.auth.action, "ima2 login");
+      assert.equal(before.grokAuth.health, "not_logged_in");
+
+      // With a session on disk, the same dead proxy is an outage, not a missing login.
+      const { saveChatgptTokenResponse } = await import("../lib/chatgptAuth.js");
+      saveChatgptTokenResponse({ access_token: jwt({ exp: 2_000_000_000 }), refresh_token: "rt", id_token: ID_TOKEN }, root);
+      const after = await (await realFetch(url)).json() as { status: string; auth: { health: string; email?: string } };
+      assert.equal(after.status, "offline");
+      assert.equal(after.auth.health, "healthy");
+      assert.equal(after.auth.email, "a@b.c");
+    } finally {
+      await new Promise((r) => s.close(r));
+    }
   });
 });

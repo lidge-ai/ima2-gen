@@ -17,7 +17,7 @@ import {
 } from "../lib/chatgptAuth.js";
 import { buildChatgptAuthorizeUrl, runChatgptLogin, type ChatgptLoginPrompt } from "../lib/chatgptLogin.js";
 import { detectCodexAuth } from "../lib/codexDetect.js";
-import { gptSessionState } from "../bin/commands/gpt.js";
+import { gptAuthStatus, gptSessionState } from "../lib/authStatus.js";
 
 function jwt(payload: Record<string, unknown>): string {
   const enc = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -198,5 +198,31 @@ describe("native ChatGPT OAuth store and login", () => {
     }) as typeof fetch;
     await assert.rejects(runChatgptLogin({ flow: "device", fetchImpl, signal: abort.signal, sleep: async () => {}, onPrompt: () => {} }), /cancelled/);
     assert.equal(resolveChatgptSession(), null);
+
+  it("status verdicts follow OpenCodex health: action on every non-healthy state, masked ids, no tokens", () => {
+    assert.deepEqual(
+      { health: gptAuthStatus(null).health, action: gptAuthStatus(null).action },
+      { health: "not_logged_in", action: "ima2 login" },
+    );
+    const own = saveChatgptTokenResponse({ access_token: ACCESS(2_000_000_000), refresh_token: "rt-1", id_token: ID_TOKEN });
+    const healthy = gptAuthStatus(own);
+    assert.equal(healthy.health, "healthy");
+    assert.equal(healthy.accountId, "acct-123".slice(0, 2) + "…");
+    assert.doesNotMatch(JSON.stringify(healthy), /rt-1|eyJ/);
+
+    const expired = gptAuthStatus({ ...own, accessExpiresAt: Date.now() - 1000 });
+    assert.equal(expired.health, "healthy", "an expired access token with a refresh token still works");
+    assert.match(expired.note ?? "", /refreshes/);
+
+    const shared = gptAuthStatus({ ...own, source: "codex" });
+    assert.equal(shared.health, "warning");
+    assert.equal(shared.reason, "shared_with_codex_cli");
+
+    const rejected = gptAuthStatus(own, { proxyStatus: "auth_required" });
+    assert.equal(rejected.health, "reauth_required");
+    assert.equal(rejected.loggedIn, false);
+    assert.equal(rejected.action, "ima2 login");
+
+    assert.equal(gptAuthStatus({ ...own, refreshable: false }).reason, "no_refresh_token");
   });
 });

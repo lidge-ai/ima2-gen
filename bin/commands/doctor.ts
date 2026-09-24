@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { buildHardeningDoctorLines, type DoctorCheckLine } from "../lib/doctor-checks.js";
 import { buildStorageDoctorLines } from "../lib/storage-doctor.js";
 import { detectCodexAuth } from "../../lib/codexDetect.js";
+import { gptAuthStatus } from "../../lib/authStatus.js";
 import { runImageDoctorProbe } from "../../lib/responsesDoctor.js";
 import { config as runtimeConfig } from "../../config.js";
 import { exitFlushed } from "../lib/output.js";
@@ -191,17 +192,19 @@ async function standardDoctor(args: string[] = []) {
   console.log("");
   for (const line of storageLines) console.log(line);
 
-  const auth = detectCodexAuth();
-  if (fileConfig.provider === "oauth" && !auth.proxyReady) {
+  const gpt = gptAuthStatus();
+  if (fileConfig.provider === "oauth" && !gpt.loggedIn) {
+    const keyringOnly = gpt.reason === "no_session" && detectCodexAuth().probe === "authed";
     console.log(
-      auth.authed
-        ? "  ✗ Codex is keyring-authenticated, but GPT OAuth needs a file-backed session; run 'ima2 login'"
-        : "  ✗ GPT OAuth has no file-backed Codex session; run 'ima2 login'",
+      keyringOnly
+        ? "  ✗ Codex is keyring-authenticated, but GPT OAuth needs a session file; run 'ima2 login'"
+        : `  ✗ GPT OAuth ${gpt.reason === "no_refresh_token" ? "session cannot refresh" : "has no ChatGPT session"}; run 'ima2 login'`,
     );
     fail++;
-  } else if (auth.proxyReady) {
-    console.log("  ✓ GPT OAuth file-backed Codex session is ready");
-    ok++;
+  } else if (gpt.loggedIn) {
+    console.log(`  ${gpt.health === "warning" ? "⚠" : "✓"} GPT OAuth ChatGPT session ready (${gpt.source}${gpt.email ? `, ${gpt.email}` : ""})`);
+    if (gpt.health === "warning") console.log("    Shared with the Codex CLI; run 'ima2 login' for an ima2-owned session");
+    else ok++;
   }
 
   const providerLines = buildProviderDoctorLines(fileConfig as Record<string, unknown>);

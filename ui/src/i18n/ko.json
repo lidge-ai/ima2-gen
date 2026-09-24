@@ -744,7 +744,7 @@
     "authActive": "사용 중",
     "oauthNotReady": "GPT OAuth 프록시가 아직 준비되지 않았습니다.",
     "codexLoginRequired": "Codex 로그인이 필요합니다.",
-    "codexLoginHint": "터미널에서 `codex login`을 실행한 뒤 이 페이지를 새로고침해 주세요.",
+    "codexLoginHint": "터미널에서 `ima2 login`을 실행하거나, 설정 → Codex 계정 전환에서 로그인하세요.",
     "oauthStarting": "GPT OAuth 프록시가 시작 중입니다. 몇 초 후 다시 시도하세요.",
     "serverUnreachable": "서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.",
     "apiInvalid": "API 키가 없거나 유효하지 않습니다. 서버의 .env 파일에서 OPENAI_API_KEY를 확인하세요.",

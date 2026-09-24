@@ -4,6 +4,7 @@ import type { CoreProviderManifest, ProviderCredential } from "../../lib/provide
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { detectCodexAuth } from "../../lib/codexDetect.js";
+import { gptAuthStatus } from "../../lib/authStatus.js";
 import { config as runtimeConfig } from "../../config.js";
 import { normalizeComfyOrigin } from "../../lib/comfyBridge.js";
 import type { DoctorCheckLine } from "./doctor-checks.js";
@@ -42,9 +43,24 @@ function inspectApiKey(lane: string, credential: Extract<ProviderCredential, { k
 
 function inspectOauth(lane: string): ProviderDoctorLine {
   if (lane === "oauth") {
-    const auth = detectCodexAuth();
-    if (auth.proxyReady) return { code: "OAUTH_FILE_READY", lane, kind: "pass", text: `${lane}: file-backed Codex session ready` };
-    return { code: "OAUTH_FILE_REQUIRED", lane, kind: "fail", text: `${lane}: no file-backed Codex session; run ima2 login` };
+    const status = gptAuthStatus();
+    if (status.health === "healthy") {
+      return { code: "OAUTH_FILE_READY", lane, kind: "pass", text: `${lane}: ChatGPT session ready (${status.source})` };
+    }
+    if (status.health === "warning") {
+      return { code: "OAUTH_FILE_READY", lane, kind: "warn", text: `${lane}: ChatGPT session shared with the Codex CLI; run ima2 login for an ima2-owned session` };
+    }
+    const keyringOnly = !status.loggedIn && status.reason === "no_session" && detectCodexAuth().probe === "authed";
+    return {
+      code: "OAUTH_FILE_REQUIRED",
+      lane,
+      kind: "fail",
+      text: keyringOnly
+        ? `${lane}: Codex is keyring-only; run ima2 login`
+        : status.reason === "no_refresh_token"
+          ? `${lane}: ChatGPT session has no refresh token; run ima2 login`
+          : `${lane}: no ChatGPT session; run ima2 login`,
+    };
   }
   if (lane === "grok") {
     const home = homedir();

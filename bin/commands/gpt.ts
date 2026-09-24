@@ -16,6 +16,7 @@ import {
   type ChatgptSession,
 } from "../../lib/chatgptAuth.js";
 import { runChatgptLogin, type ChatgptLoginPrompt } from "../../lib/chatgptLogin.js";
+import { gptAuthStatus, type ProviderAuthStatus } from "../../lib/authStatus.js";
 
 const HELP = `
   ima2 gpt <subcommand> [options]
@@ -79,47 +80,7 @@ function rejectUnknownFlags(args: { _unknown?: string[] }): void {
   if (args._unknown?.length) die(2, `unknown option: ${args._unknown[0]}`);
 }
 
-export type GptSessionState = "ready" | "access_expired" | "no_refresh_token" | "none";
-
-export interface GptStatusJson {
-  auth: "oauth" | "none";
-  state: GptSessionState;
-  source?: ChatgptSession["source"];
-  file?: string;
-  email?: string;
-  plan?: string;
-  accountId?: string;
-  expiresAt?: string;
-  refreshable: boolean;
-}
-
-/**
- * An expired access token with a refresh token is still a usable session: the proxy refreshes
- * it on the next request (OpenCodex getLoginStatus treats it the same way).
- */
-export function gptSessionState(session: ChatgptSession | null, now = Date.now()): GptSessionState {
-  if (!session) return "none";
-  if (session.accessExpiresAt !== undefined && session.accessExpiresAt <= now) {
-    return session.refreshable ? "access_expired" : "no_refresh_token";
-  }
-  return session.refreshable ? "ready" : "no_refresh_token";
-}
-
-export function gptStatusJson(session: ChatgptSession | null): GptStatusJson {
-  if (!session) return { auth: "none", state: "none", refreshable: false };
-  return {
-    auth: "oauth",
-    state: gptSessionState(session),
-    source: session.source,
-    file: session.path,
-    ...(session.email ? { email: session.email } : {}),
-    ...(session.plan ? { plan: session.plan } : {}),
-    ...(session.accountId ? { accountId: `${session.accountId.slice(0, 8)}…` } : {}),
-    ...(session.accessExpiresAt !== undefined ? { expiresAt: new Date(session.accessExpiresAt).toISOString() } : {}),
-    refreshable: session.refreshable,
-  };
-}
-
+/** Relative rendering of an absolute expiry, e.g. "in 58m" or "expired 2h ago". */
 export function relativeTime(epochMs: number): string {
   const deltaMs = epochMs - Date.now();
   const minutes = Math.round(Math.abs(deltaMs) / 60_000);
@@ -127,28 +88,36 @@ export function relativeTime(epochMs: number): string {
   return deltaMs >= 0 ? `in ${span}` : `expired ${span} ago`;
 }
 
-function sourceLabel(source: ChatgptSession["source"]): string {
-  return source === "ima2" ? "ima2 (own session)" : `${source} (shared with Codex CLI)`;
+const HEALTH_LABEL: Record<ProviderAuthStatus["health"], string> = {
+  healthy: "healthy",
+  warning: "warning",
+  reauth_required: "login required",
+  not_logged_in: "not logged in",
+};
+
+function healthMark(health: ProviderAuthStatus["health"]): string {
+  if (health === "healthy") return color.green("✓");
+  if (health === "warning") return color.yellow("⚠");
+  if (health === "reauth_required") return color.red("✗");
+  return color.yellow("○");
 }
 
-/** Human status lines shared by `ima2 gpt status` and `ima2 status`. */
-export function gptStatusLines(session: ChatgptSession | null, indent = "  "): string[] {
-  const state = gptSessionState(session);
-  if (!session) return [`${color.yellow("○ ")}Not logged in to ChatGPT. Run: ima2 login`];
-  const who = [session.email ?? "email unknown", session.plan].filter(Boolean).join(" · ");
-  const head = state === "no_refresh_token"
-    ? `${color.red("✗ ")}ChatGPT session cannot refresh (${who}). Run: ima2 login`
-    : `${color.green("✓ ")}ChatGPT session (${who})`;
-  const lines = [
-    head,
-    `${indent}source: ${sourceLabel(session.source)}`,
-    `${indent}access token: ${session.accessExpiresAt === undefined ? "expiry unknown" : relativeTime(session.accessExpiresAt)}${state === "access_expired" ? " (refreshes on next use)" : ""}`,
-    `${indent}refresh token: ${session.refreshable ? "present" : "absent"}`,
-    color.dim(`${indent}file: ${session.path}`),
-  ];
-  if (session.source !== "ima2") {
-    lines.push(color.dim(`${indent}tip: 'ima2 login' gives ima2 its own session so Codex CLI refreshes cannot log it out`));
+/**
+ * Human status block shared by `ima2 status`, `ima2 gpt status` and `ima2 grok`-style output:
+ * verdict, account, source, expiry, then the note and the one action that fixes it.
+ */
+export function authStatusLines(label: string, status: ProviderAuthStatus, file?: string, indent = "  "): string[] {
+  const who = [status.email, status.plan].filter(Boolean).join(" · ");
+  const lines = [`${healthMark(status.health)} ${label}: ${HEALTH_LABEL[status.health]}${who ? ` (${who})` : ""}`];
+  if (status.source) lines.push(`${indent}source: ${status.source}`);
+  if (status.accountId) lines.push(`${indent}account: ${status.accountId}`);
+  if (status.loggedIn || status.expiresAt) {
+    const expiry = status.expiresAt ? relativeTime(Date.parse(status.expiresAt)) : "expiry unknown";
+    lines.push(`${indent}access token: ${expiry}, refresh token ${status.refreshable ? "present" : "absent"}`);
   }
+  if (file) lines.push(color.dim(`${indent}file: ${file}`));
+  if (status.note) lines.push(color.dim(`${indent}${status.note}`));
+  if (status.action) lines.push(`${indent}Action: run '${status.action}'`);
   return lines;
 }
 
@@ -206,11 +175,12 @@ function statusCmd(argv: string[]): void {
   if (args.help) { out(STATUS_HELP); return; }
   rejectUnknownFlags(args);
   const session = resolveChatgptSession();
+  const status = gptAuthStatus(session);
   if (args.json) {
-    json(gptStatusJson(session));
+    json({ ...status, ...(session ? { file: session.path } : {}) });
     return;
   }
-  for (const line of gptStatusLines(session)) out(line);
+  for (const line of authStatusLines("ChatGPT (GPT OAuth)", status, session?.path)) out(line);
 }
 
 async function logoutCmd(argv: string[]): Promise<void> {

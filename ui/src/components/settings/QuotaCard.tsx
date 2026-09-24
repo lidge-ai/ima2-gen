@@ -2,6 +2,7 @@ import { fetchApi } from "../../lib/api-core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
 import { getLanAuthEpoch, isLanSessionLocked, LAN_AUTH_REQUIRED_EVENT } from "../../lib/lanSession";
+import { OAUTH_CHANGED_EVENT } from "../../hooks/useOAuthStatus";
 
 interface QuotaWindow {
   label: string;
@@ -159,6 +160,7 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
         if (cancelled || isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
         if (data.status === "complete") {
           setState({ phase: "complete" });
+          window.dispatchEvent(new Event(OAUTH_CHANGED_EVENT));
           return;
         }
         if (data.status === "error" || data.status === "expired") {
