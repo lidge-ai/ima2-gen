@@ -11,6 +11,7 @@ import { join } from "node:path";
 
 import { errInfo } from "./errInfo.js";
 import { resolvePackageBin } from "./packageCli.js";
+import { chatgptAuthFilePath } from "./chatgptAuth.js";
 const HOME = homedir();
 
 type CodexProbeOptions = {
@@ -40,6 +41,7 @@ export function codexFileLoginArgs(options: { deviceAuth?: boolean } = {}) {
 export function codexAuthPaths() {
   const codexHome = process.env.CODEX_HOME || join(HOME, ".codex");
   return {
+    ima2: chatgptAuthFilePath(),
     codex: join(codexHome, "auth.json"),
     chatgpt: join(HOME, ".chatgpt-local", "auth.json"),
     xdgCodex: join(HOME, ".config", "codex", "auth.json"),
@@ -48,7 +50,7 @@ export function codexAuthPaths() {
 
 export function hasAuthFile() {
   const p = codexAuthPaths();
-  return existsSync(p.codex) || existsSync(p.chatgpt) || existsSync(p.xdgCodex);
+  return existsSync(p.ima2) || existsSync(p.codex) || existsSync(p.chatgpt) || existsSync(p.xdgCodex);
 }
 
 function commandErrorText(error: unknown) {
@@ -125,21 +127,31 @@ export function codexLoginStatus(timeoutMs = 2000, options: CodexProbeOptions = 
   return sawError ? "error" : "missing";
 }
 
-export function detectCodexAuth() {
+/**
+ * Which file the GPT OAuth proxy will read. ima2's own store (lib/chatgptAuth.ts, written by
+ * `ima2 login`) wins over Codex CLI files so the two never rotate one refresh token.
+ * The `codex login status` probe only runs when no file exists (keyring-only detection),
+ * because it spawns the Codex CLI synchronously.
+ */
+export function detectCodexAuth(options: { probe?: boolean } = {}) {
   const files = codexAuthPaths();
   const fileHits = {
+    ima2: existsSync(files.ima2),
     codex: existsSync(files.codex),
     chatgpt: existsSync(files.chatgpt),
     xdgCodex: existsSync(files.xdgCodex),
   };
-  const proxyAuthFile = fileHits.codex
-    ? files.codex
-    : fileHits.chatgpt
-      ? files.chatgpt
-      : fileHits.xdgCodex
-        ? files.xdgCodex
-        : null;
-  const probe = codexLoginStatus();
+  const proxyAuthFile = fileHits.ima2
+    ? files.ima2
+    : fileHits.codex
+      ? files.codex
+      : fileHits.chatgpt
+        ? files.chatgpt
+        : fileHits.xdgCodex
+          ? files.xdgCodex
+          : null;
+  const shouldProbe = options.probe ?? proxyAuthFile === null;
+  const probe = shouldProbe ? codexLoginStatus() : "skipped" as const;
   const authed = probe === "authed" || proxyAuthFile !== null;
   return {
     authed,

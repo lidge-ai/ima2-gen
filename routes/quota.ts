@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { fetchNaiSubscription } from "../lib/naiSubscription.js";
+import { readChatgptAccess } from "../lib/chatgptAuth.js";
 
 export interface QuotaWindow {
   label: string;
@@ -22,15 +23,10 @@ export interface QuotaResult {
   nai?: { active: boolean; isNegative: boolean; anlasFixed: number; anlasPurchased: number; meter: "charge" | "missing" };
 }
 
+/** Same file the GPT OAuth proxy reads (ima2 store first, then Codex CLI files). */
 function readCodexTokens(): { access_token: string; account_id: string } | null {
-  const codexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
-  try {
-    const j = JSON.parse(readFileSync(join(codexHome, "auth.json"), "utf8"));
-    if (j?.tokens?.access_token) {
-      return { access_token: j.tokens.access_token, account_id: j.tokens.account_id ?? "" };
-    }
-  } catch {}
-  return null;
+  const access = readChatgptAccess();
+  return access ? { access_token: access.accessToken, account_id: access.accountId } : null;
 }
 
 async function fetchCodexUsage(tokens: { access_token: string; account_id: string }): Promise<QuotaResult> {
