@@ -9,7 +9,9 @@ aliases: [ima2 file map, ima2 str_func, image_gen file map]
 LAN access owners: `lib/localAccessPolicy.ts` parses serving origins and request
 Host/Origin; `lib/lanSessionStore.ts` owns digest sessions, expiry and bootstrap
 failure limits; `lib/localLanAccess.ts` owns authentication/session routes and
-response revocation; `lib/generatedMediaAccess.ts` applies media privacy and static
+response revocation, and decides the token gate per connection: binding past
+loopback turns it on, but a request arriving from 127.x/::1 is exempt unless
+`IMA2_LAN_TOKEN_ON_LOOPBACK` forces it; `lib/generatedMediaAccess.ts` applies media privacy and static
 serving. `server.ts` wires one instance and disposes it before HTTP close. CLI
 destination binding remains in `bin/lib/client.ts`, browser state in `lanSession.ts`.
 
@@ -80,7 +82,7 @@ routes/
 | File | Lines | Responsibility |
 |---|---:|---|
 | `server.ts` | 570 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 523 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `config.ts` | 527 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 99 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 116 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |

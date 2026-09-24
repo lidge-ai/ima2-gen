@@ -55,7 +55,7 @@ test("generation pipelines reject oversized prompts and counts with JSON 400", a
 test("non-loopback API access requires the configured LAN token", async () => {
   const lanConfig = {
     ...config,
-    server: { ...config.server, host: "0.0.0.0", lanToken: "test-lan-secret" },
+    server: { ...config.server, host: "0.0.0.0", lanToken: "test-lan-secret", lanTokenOnLoopback: true },
   };
   const running = await listen(buildApp(createTestRuntimeContext({ config: lanConfig })));
   try {

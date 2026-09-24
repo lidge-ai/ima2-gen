@@ -136,6 +136,10 @@ export const config = {
     port: pickInt(firstDefined(env.IMA2_PORT, env.PORT), fileCfg.server?.port, 3333),
     host: pickStr(env.IMA2_HOST, fileCfg.server?.host, "127.0.0.1"),
     lanToken: env.IMA2_LAN_TOKEN || "",
+    // Bind ra 0.0.0.0 la de may khac trong tailnet vao duoc, chu khong phai
+    // de khoa chinh may nay: ket noi den tu loopback duoc mien token. Bat co
+    // nay len de doi lai, khi may co nhieu nguoi dung hoac co proxy dung truoc.
+    lanTokenOnLoopback: pickBool(env.IMA2_LAN_TOKEN_ON_LOOPBACK, fileCfg.server?.lanTokenOnLoopback, false),
     // Lazy validation permits config rm to repair a bad file-layer value.
     // Access policy snapshots this before listening; inputs stay import-time fixed.
     get publicOrigins(): readonly string[] {

@@ -2,7 +2,7 @@ import express from "express";
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { CookieOptions, Express, Request, RequestHandler, Response } from "express";
 import type { RuntimeContext } from "./runtimeContext.js";
-import { createLocalAccessPolicy, isLocalBind, localAccessError, protectedRequestPath, singleHeader } from "./localAccessPolicy.js";
+import { createLocalAccessPolicy, isLocalBind, laKetNoiLoopback, localAccessError, protectedRequestPath, singleHeader } from "./localAccessPolicy.js";
 import { createLanAuthThrottle, createLanSessionStore } from "./lanSessionStore.js";
 
 const SESSION_PATH = /^\/api\/auth\/lan\/session$/i;
@@ -88,21 +88,34 @@ export function createLanApiGuard(host: string | undefined, token: string | unde
 class LocalLanAccess {
   private readonly policy: ReturnType<typeof createLocalAccessPolicy>;
   private readonly lan: boolean;
+  private readonly tokenTrenLoopback: boolean;
   private readonly token: string;
   private readonly bounds: RuntimeContext["config"]["security"];
   private readonly store: ReturnType<typeof createLanSessionStore>;
   private readonly throttle: ReturnType<typeof createLanAuthThrottle>;
   private readonly tracked = new WeakSet<Response>();
-  private readonly sessionState = new WeakMap<Request, { origin: string; credentials: ReturnType<typeof readCredentials> }>();
+  private readonly sessionState = new WeakMap<Request, { origin: string; lan: boolean; credentials: ReturnType<typeof readCredentials> }>();
 
   constructor(ctx: RuntimeContext) {
     this.policy = createLocalAccessPolicy(ctx.config);
     this.lan = !isLocalBind(ctx.config.server.host); this.token = ctx.config.server.lanToken;
+    this.tokenTrenLoopback = !!ctx.config.server.lanTokenOnLoopback;
     this.bounds = ctx.config.security;
     const { lan, token, bounds } = this;
     if ((lan && !token) || Buffer.byteLength(token) > bounds.lanTokenMaxBytes) throw localAccessError("INVALID_LAN_TOKEN", 500);
     this.store = createLanSessionStore({ ttlMs: bounds.lanSessionTtlMs, maxSessions: bounds.lanMaxSessions });
     this.throttle = createLanAuthThrottle({ windowMs: bounds.lanAuthWindowMs, maxFailures: bounds.lanAuthMaxFailures, maxBuckets: bounds.lanAuthMaxBuckets });
+  }
+  /**
+   * Cua token co dong voi RIENG request nay khong.
+   *
+   * `this.lan` chi noi server dang bind ra ngoai loopback - mot quyet dinh cho
+   * ca tien trinh. Nhung cai can biet la ai dang goi: mo `localhost:3333` tren
+   * chinh may nay thi khong phai la truy cap tu mang, va truoc khi bind ra
+   * 0.0.0.0 cho Tailscale no chua bao gio bi hoi token.
+   */
+  private lanCho(req: Request): boolean {
+    return this.lan && (this.tokenTrenLoopback || !laKetNoiLoopback(req));
   }
   readonly mediaHeaders: RequestHandler = (req, res, next) => {
     // The canonical raw prefix still receives headers when its tail has bad escapes.
@@ -115,7 +128,8 @@ class LocalLanAccess {
   };
   readonly guard: RequestHandler = (req, res, next) => {
     try {
-      const { policy, lan, bounds } = this;
+      const { policy, bounds } = this;
+      const lan = this.lanCho(req);
       const route = protectedRequestPath(req);
       if (!route.api && !route.media) return next();
       if (route.alias) throw localAccessError("LOCAL_PATH_REJECTED", 400);
@@ -149,7 +163,8 @@ class LocalLanAccess {
     if (!tracked.has(res)) { tracked.add(res); trackResponse(store, credentials.cookie, res); }
   }
   private sessionCheck(req: Request, res: Response) {
-    const { policy, lan, bounds, throttle } = this;
+    const { policy, bounds, throttle } = this;
+    const lan = this.lanCho(req);
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
@@ -168,11 +183,11 @@ class LocalLanAccess {
       this.validateToken(credentials.explicit, peer);
     }
     if (lan && req.method === "DELETE" && !credentials.cookie) throw localAccessError("LAN_TOKEN_REQUIRED", 401);
-    return { origin, credentials };
+    return { origin, lan, credentials };
   }
   private sessionResult(req: Request, res: Response): void {
-    const { sessionState, lan, store } = this;
-    const { origin, credentials } = sessionState.get(req)!;
+    const { sessionState, store } = this;
+    const { origin, lan, credentials } = sessionState.get(req)!;
     if (req.method === "GET") {
       const session = credentials.cookie ? store.validate(credentials.cookie, origin) : null;
       res.json({ mode: lan ? "lan" : "local", authenticated: !lan || credentials.explicit !== undefined || !!session,

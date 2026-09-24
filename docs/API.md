@@ -10,10 +10,17 @@ http://localhost:3333
 
 ## Local and LAN access
 
-The configured bind determines access mode. Loopback keeps single-user no-token
-use; a non-loopback bind requires `IMA2_LAN_TOKEN`, including requests arriving
-from a loopback proxy. LAN protects both `/api` and `/generated` before file,
-Range or conditional-response processing. UI/static assets remain public.
+The bind sets the mode, the connection decides the gate. A loopback bind keeps
+single-user no-token use. A non-loopback bind turns on `IMA2_LAN_TOKEN` for
+callers arriving over the network — but a connection whose source address is
+`127.x`/`::1` is exempt, because opening the port for the tailnet is not a
+reason to lock the machine the server runs on. Set
+`IMA2_LAN_TOKEN_ON_LOOPBACK=1` to demand the token there too; do that when the
+machine has other users, or when anything proxies into the server, since every
+connection through a local proxy looks like loopback. The exemption reads the
+socket, never `X-Forwarded-For`. LAN protects both `/api` and `/generated`
+before file, Range or conditional-response processing. UI/static assets remain
+public.
 
 | Endpoint | Contract |
 |---|---|
@@ -1345,8 +1352,8 @@ Three things have to hold at once, and the script sets all three:
 
 The token lives at `~/.ima2/lan-token.txt`, never in the repo. Send it as
 `x-ima2-token` on API calls; a browser is asked for it once and keeps a session.
-Note that with the server bound past loopback, **every** caller needs the token,
-including one on the machine itself.
+Opening the UI on the serving machine itself needs nothing — see **Local and LAN
+access** for when that exemption does not apply.
 
 The CLI does **not** attach the token to a server it discovered by probing — a
 token only ever binds to a server named on purpose. So in this mode point it at

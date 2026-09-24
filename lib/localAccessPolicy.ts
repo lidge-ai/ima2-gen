@@ -68,6 +68,27 @@ function literalHost(address: string): string {
   return isIP(address) === 6 ? `[${address}]` : address;
 }
 
+/**
+ * Ket noi den tu chinh may nay.
+ *
+ * Dia chi nguon cua mot ket noi TCP da bat tay xong thi khong the gia mao tu
+ * mang ngoai, nen loopback la bang chung du manh de mien token: may khac trong
+ * tailnet den qua giao dien Tailscale voi dia chi 100.x, khong bao gio 127.x.
+ *
+ * Phan chong CSRF tu mot trang web khac van do `checkBrowserRequest` lo
+ * (sec-fetch-site phai la same-origin, va Origin phai khop) - mien token o day
+ * chi tra lai dung trang thai truoc khi bind ra 0.0.0.0, khong noi long them.
+ *
+ * Doc thang tu socket, khong qua `X-Forwarded-For`: mot proxy dat truoc server
+ * se lam moi ket noi trong nhu loopback, va header thi ai cung dat duoc.
+ */
+export function laKetNoiLoopback(req: Request): boolean {
+  const address = req.socket.remoteAddress;
+  if (!address) return false;
+  const literal = literalHost(address.trim().toLowerCase());
+  return literal === "[::1]" || /^127\./.test(literal);
+}
+
 function servingOrigins(req: Request, host: string, publicOrigins: readonly string[]): string[] {
   const origins = new Map<string, string>();
   const port = req.socket.localPort;

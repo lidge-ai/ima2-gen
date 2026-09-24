@@ -16,7 +16,7 @@ async function fixture(t: import("node:test").TestContext, host = "0.0.0.0") {
   await fs.writeFile(join(generatedDir, "metadata.JSON"), '{"private":"synthetic-sidecar"}');
   await fs.writeFile(join(directory, "outside.png"), "synthetic-outside");
   // Middleware-only context; unrelated provider/runtime fields are intentionally absent.
-  const ctx = { config: { server: { host, lanToken: "synthetic-media-token", publicOrigins: [] },
+  const ctx = { config: { server: { host, lanToken: "synthetic-media-token", lanTokenOnLoopback: true, publicOrigins: [] },
     storage: { generatedDir, staticMaxAge: "1y" }, security: { lanSessionTtlMs: 28800000, lanMaxSessions: 256,
       lanAuthWindowMs: 60000, lanAuthMaxFailures: 10, lanAuthMaxBuckets: 4096, lanTokenMaxBytes: 4096 } } } as unknown as RuntimeContext;
   const app = express(), access = createLocalLanAccess(ctx);

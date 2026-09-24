@@ -160,12 +160,12 @@ test("pure middleware: failed token guesses share cooldown across API media and 
 
 // Imports of real buildApp/config/native modules stay inside hosted callbacks below.
 // These are NOT part of the locally allowed --test-name-pattern='pure ' run.
-async function httpFixture(t: import("node:test").TestContext, options: { publicOrigins?: string[]; host?: string } = {}) {
+async function httpFixture(t: import("node:test").TestContext, options: { publicOrigins?: string[]; host?: string; tokenTrenLoopback?: boolean } = {}) {
   const [{ default: express }, { createServer }, { createLocalLanAccess }, { createApiRequestBudget }] = await Promise.all([
     import("express"), import("node:http"), import("../lib/localLanAccess.ts"), import("../lib/apiRequestBudget.ts"),
   ]);
   // This middleware-only fixture deliberately supplies just the consumed config fields.
-  const ctx = { config: { server: { host: options.host ?? "0.0.0.0", lanToken: "synthetic-session-token", publicOrigins: options.publicOrigins ?? [] },
+  const ctx = { config: { server: { host: options.host ?? "0.0.0.0", lanToken: "synthetic-session-token", lanTokenOnLoopback: options.tokenTrenLoopback ?? true, publicOrigins: options.publicOrigins ?? [] },
     security: { lanSessionTtlMs: 28800000, lanMaxSessions: 256, lanAuthWindowMs: 60000, lanAuthMaxFailures: 10, lanAuthMaxBuckets: 4096, lanTokenMaxBytes: 4096 } } } as unknown as RuntimeContext;
   const app = express(), access = createLocalLanAccess(ctx);
   const budget = createApiRequestBudget({ windowMs: 60000, requests: 600, mutations: 120, maxPeers: 4096 });
@@ -282,11 +282,43 @@ test("hosted HTTP: shared token cooldown preserves existing cookie sessions", as
   assert.equal((await (await fetch(`${base}/api/auth/lan/session`)).json()).authenticated, false);
 });
 
+test("hosted HTTP: mo tu chinh may nay thi khong bi hoi token, may khac thi co", async t => {
+  // Bind ra 0.0.0.0 la de may trong tailnet vao duoc, khong phai de khoa chinh
+  // may dang chay server: truoc khi bat Tailscale, localhost:3333 chua bao gio
+  // bi hoi token, va khong co ly do gi de doi.
+  const { base } = await httpFixture(t, { tokenTrenLoopback: false });
+  const probe = await fetch(`${base}/api/probe`);
+  assert.equal(probe.status, 200);
+  assert.deepEqual(await probe.json(), { ok: true });
+  const status = await fetch(`${base}/api/auth/lan/session`);
+  assert.deepEqual(await status.json(), { mode: "local", authenticated: true, expiresAt: null });
+
+  // Dia chi nguon moi la bang chung, khong phai header: khai la may khac khong
+  // mo duoc cua, ma khai la loopback cung khong mo duoc cua.
+  const noiDoi = await fetch(`${base}/api/probe`, { headers: {
+    "x-forwarded-for": "100.64.0.9", "x-real-ip": "100.64.0.9", forwarded: "for=100.64.0.9",
+  } });
+  assert.equal(noiDoi.status, 200);
+});
+
+test("pure policy: chi ket noi that su tu loopback moi duoc mien", async () => {
+  const { laKetNoiLoopback } = await import("../lib/localAccessPolicy.ts");
+  const req = (remoteAddress: string | undefined) =>
+    ({ socket: { remoteAddress } }) as unknown as import("express").Request;
+  for (const address of ["127.0.0.1", "127.1.2.3", "::1", "::ffff:127.0.0.1", "::ffff:7f00:1", " 127.0.0.1 "]) {
+    assert.equal(laKetNoiLoopback(req(address)), true, address);
+  }
+  // 100.x la dai Tailscale; 0.0.0.0 va socket da dong thi coi nhu tu mang.
+  for (const address of ["100.64.0.9", "192.168.1.20", "::ffff:100.64.0.9", "2001:db8::1", "0.0.0.0", "", undefined]) {
+    assert.equal(laKetNoiLoopback(req(address)), false, String(address));
+  }
+});
+
 test("hosted HTTP: pending parsed bootstrap cannot issue after disposal", async t => {
   const { default: express } = await import("express");
   const { createServer, request } = await import("node:http");
   const { createLocalLanAccess } = await import("../lib/localLanAccess.ts");
-  const ctx = { config: { server: { host: "0.0.0.0", lanToken: "synthetic-pending", publicOrigins: [] },
+  const ctx = { config: { server: { host: "0.0.0.0", lanToken: "synthetic-pending", lanTokenOnLoopback: true, publicOrigins: [] },
     security: { lanSessionTtlMs: 28800000, lanMaxSessions: 256, lanAuthWindowMs: 60000, lanAuthMaxFailures: 10, lanAuthMaxBuckets: 4096, lanTokenMaxBytes: 4096 } } } as unknown as RuntimeContext;
   const app = express(), access = createLocalLanAccess(ctx);
   let admitted!: () => void;
@@ -337,7 +369,7 @@ test("hosted real app: expiry and disposal close admitted SSE before server clos
   const app = (() => {
     try {
       Date.now = () => clock;
-      return buildApp(createTestRuntimeContext({ config: { ...config, server: { ...config.server, host: "0.0.0.0", lanToken: "synthetic-teardown-token", publicOrigins: [] } } }));
+      return buildApp(createTestRuntimeContext({ config: { ...config, server: { ...config.server, host: "0.0.0.0", lanToken: "synthetic-teardown-token", lanTokenOnLoopback: true, publicOrigins: [] } } }));
     } finally { Date.now = originalNow; }
   })();
   const server = createServer(app);
