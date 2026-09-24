@@ -93,5 +93,5 @@ export const PERSISTED_REGISTRY: Record<
   // the operator's configuration instead of a compiled-in constant.
   "ima2.naiOptions": { domain: "generation", shape: "json:NaiOptionOverrides", resetSafe: true },
   "ima2.coreSelectionMemory.v1": { domain: "generation", shape: "json:{version:1,lanes:CoreSelectionMemory}", resetSafe: true },
-  "ima2.onboardingDismissed": { domain: "layout", shape: "\"1\"", resetSafe: true },
+  "ima2.onboardingDismissed": { domain: "layout", shape: "string:1", resetSafe: true },
 };

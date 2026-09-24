@@ -34,7 +34,7 @@ Interplay: ProviderReadinessPopup and StarPrompt must not stack with onboarding 
 - HomeHero "no lane ready" button dropped for the same reason: `readyLanes` is always ≥ 1, so `home.lanesNone` never renders.
 - Close semantics: Escape / close reason from `useModalFocus` hides for this page load only (component state); "Skip for now" and any provider choice write `ima2.onboardingDismissed` = "1" (key unchanged for e2e fixtures). The key is appended to PERSISTED_KEYS (append-only list).
 - Initial focus on the ChatGPT choice (`data-modal-initial-focus`).
-- Layout: `.modal.onboarding` width min(760px, 100vw - 32px); two columns ≥ 760px (intro + steps | choices), one column below. Backdrop `onboarding-backdrop` z-index 150 (above gallery 110, below star prompt 160 and metadata dialogs 230+).
+- Layout: `.modal.onboarding` width min(760px, 100vw - 32px); two columns ≥ 760px (intro + steps | choices), one column below. Backdrop `onboarding-backdrop` z-index 167 (A-round fix: band 165-169 above mobile chrome 150/160 and gallery 110, below compose 170/180; star prompt moved to 168).
 - Radius: new rules `.onboarding__step-num` (var(--r-pill)) and `.onboarding__choice` (var(--r-md)) add two manifest rows; count 480 → 482 in tests/ui-radius-scale-contract.test.ts. No gradients.
 - i18n (4 locales): onboarding.{title, lead, stepsLabel, steps.signIn.{title,hint}, steps.firstImage.{title,hint}, steps.star.{title,hint}, recommended, choices.chatgpt.{title,body}, choices.grok.{title,body}, choices.apiKey.{title,body}, privacy, skip}; old `body`/`login` removed if unreferenced (`rg -n "onboarding\.(body|login)" ui/src tests`).
 - Render: the :3345 worktree server (temp HOME, all providers signed out) shows the popup live; screenshot at 1280x800 and 390x844.
