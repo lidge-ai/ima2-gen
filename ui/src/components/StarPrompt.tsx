@@ -7,6 +7,7 @@ import {
   dismissStarPrompt,
   fetchStarCount,
   fetchStarStatus,
+  isSessionImage,
   shouldOpenStarPrompt,
   starRepo,
   type StarStatus,
@@ -22,22 +23,27 @@ export function StarPrompt() {
   const settingsOpen = useAppStore((s) => s.settingsOpen);
   const readinessOpen = useAppStore((s) => s.readinessPopupOpen);
   const mountedAt = useRef(Date.now());
+  const statusRequested = useRef(false);
   const [status, setStatus] = useState<StarStatus | null>(null);
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("ask");
   const [count, setCount] = useState<number | null>(null);
+  const headInput = head ? { createdAt: head.createdAt, mediaType: head.mediaType } : null;
+  const sessionImage = isSessionImage(headInput, mountedAt.current);
 
+  // Ask the server only after this session has produced an image: sessions that never
+  // generate (and fixture transports that allow-list API reads) never see the request.
   useEffect(() => {
-    let alive = true;
-    fetchStarStatus().then((next) => { if (alive) setStatus(next); }).catch(() => { /* stay closed */ });
-    return () => { alive = false; };
-  }, []);
+    if (statusRequested.current || !sessionImage) return;
+    statusRequested.current = true;
+    fetchStarStatus().then(setStatus).catch(() => { /* stay closed */ });
+  }, [sessionImage]);
 
   useEffect(() => {
     if (open) return;
     const shouldOpen = shouldOpenStarPrompt({
       status,
-      head: head ? { createdAt: head.createdAt, mediaType: head.mediaType } : null,
+      head: headInput,
       mountedAt: mountedAt.current,
       settingsOpen,
       readinessOpen,

@@ -40,15 +40,20 @@ export interface StarPromptInput {
   readinessOpen: boolean;
 }
 
+/** True once the newest history item is an image made after this page loaded. */
+export function isSessionImage(head: StarPromptInput["head"], mountedAt: number): boolean {
+  if (!head || head.mediaType === "video") return false;
+  return typeof head.createdAt === "number" && head.createdAt >= mountedAt;
+}
+
 /**
  * Opens once, after the first image made in this session, for people who have not
  * starred or answered yet. A failed status read (for example 403 in LAN mode) keeps
  * it closed.
  */
 export function shouldOpenStarPrompt(input: StarPromptInput): boolean {
-  const { status, head } = input;
+  const { status } = input;
   if (!status || status.prompted || status.state === "starred") return false;
-  if (input.settingsOpen || input.readinessOpen || !head) return false;
-  if (head.mediaType === "video") return false;
-  return typeof head.createdAt === "number" && head.createdAt >= input.mountedAt;
+  if (input.settingsOpen || input.readinessOpen) return false;
+  return isSessionImage(input.head, input.mountedAt);
 }
