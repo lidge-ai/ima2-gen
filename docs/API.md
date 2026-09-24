@@ -160,8 +160,10 @@ inventing a runtime `lanes` availability result.
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/api/auth/switch` | Start a device-code OAuth flow. Body: `{ "provider": "grok" \| "codex" }`. Returns `{ sessionId, userCode, verificationUrl }`. |
+| `POST` | `/api/auth/switch` | Start an OAuth login. Body: `{ "provider": "grok" \| "codex", "flow"?: "browser" \| "device" }`. `codex` defaults to the browser flow (callback on `localhost:1455`, so the browser must be on the server machine); `device` works from any machine. Grok always uses the device code. Returns `{ sessionId, flow, userCode, verificationUrl, expiresIn }`; `userCode` is empty for the browser flow. A completed `codex` login restarts the GPT OAuth proxy. |
 | `GET` | `/api/auth/switch/:sessionId` | Poll switch-account session status. Returns `{ status }` where status is `pending`, `complete`, `error`, or `expired`. |
+| `DELETE` | `/api/auth/switch/:sessionId` | Cancel a pending login and release its callback port. |
+| `POST` | `/api/oauth/restart` | Respawn the GPT OAuth proxy so it reads the current session file (used by `ima2 login` / `ima2 gpt login` / `ima2 gpt logout`). Returns `{ restarted, reason? }`. |
 
 The Switch Account flow opens a browser verification URL. Once the user completes the device-code step, the server saves the new credentials (Grok: `~/.progrok/auth.json`; Codex: via `codex login --device-auth`) and the session transitions to `complete`. This endpoint is surfaced as a **Switch Account** button in the Settings QuotaCard for Grok and Codex providers.
 
@@ -1053,7 +1055,8 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `GET /api/storage/status` / `POST /api/storage/open-generated-dir` | `ima2 storage status` / `ima2 storage open` |
 | `GET /api/billing` / `GET /api/providers` / `GET /api/oauth/status` / `GET /api/grok/status` | `ima2 billing` / `ima2 providers` / `ima2 oauth status` / `ima2 grok status` |
 | `GET /api/quota` | Web UI only (Grok and NovelAI quota in Settings) |
-| `POST /api/auth/switch` / `GET /api/auth/switch/:sessionId` | Web UI only (Settings > QuotaCard > Switch Account) |
+| `POST /api/auth/switch` / `GET /api/auth/switch/:sessionId` | Web UI (Settings > QuotaCard > Switch Account) and `ima2 grok login` |
+| `POST /api/oauth/restart` | `ima2 login`, `ima2 gpt login`, `ima2 gpt logout` |
 | `GET /api/health` | `ima2 ping` |
 | `GET /api/capabilities` | `ima2 capabilities` |
 | `GET /api/config/grok-planner` | — (Grok planner model query) |

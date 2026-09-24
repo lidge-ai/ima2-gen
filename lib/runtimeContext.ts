@@ -30,6 +30,11 @@ export interface RuntimeContext {
   oauthReadyPromise: Promise<void> | null;
   oauthReadyState: OAuthReadyState;
   oauthUrl: string;
+  /**
+   * Respawn the GPT OAuth proxy so it reads the current session file. Set by server.ts once
+   * the proxy launcher exists; undefined in tests and when the proxy is not auto-started.
+   */
+  restartOAuthProxy?: (() => { restarted: boolean; reason?: string }) | undefined;
   openai: OpenAI | null;
   packageVersion: string;
   rootDir: string;

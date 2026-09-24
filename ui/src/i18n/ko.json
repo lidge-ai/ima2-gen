@@ -1370,6 +1370,8 @@
       "switchAccount": "{provider} 계정 전환",
       "startingLogin": "로그인 시작 중…",
       "enterCode": "열린 탭에 이 코드를 입력하세요:",
+      "completeInBrowser": "열린 ChatGPT 페이지에서 로그인을 마무리하세요. 끝나면 이 카드가 알아서 바뀌어요.",
+      "useDeviceCode": "디바이스 코드로 로그인",
       "retry": "다시 시도",
       "copyLink": "링크 복사",
       "copied": "복사됨",

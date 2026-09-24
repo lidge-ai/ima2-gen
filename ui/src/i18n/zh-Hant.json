@@ -1370,6 +1370,8 @@
       "switchAccount": "切換 {provider} 帳戶",
       "startingLogin": "開始登入...",
       "enterCode": "在打開的選項卡中輸入此代碼：",
+      "completeInBrowser": "請在開啟的 ChatGPT 頁面完成登入，此卡片會自動更新。",
+      "useDeviceCode": "改用裝置代碼登入",
       "retry": "重試",
       "copyLink": "複製連結",
       "copied": "已複製",

@@ -114,5 +114,21 @@ export function startOAuthProxy(options: any = {}) {
       if (restartTimer) clearTimeout(restartTimer);
       try { currentChild?.kill(signal); } catch {}
     },
+    /** Stop and wait until the child has exited (so its port is free), bounded by timeoutMs. */
+    stopAndWait(timeoutMs = 3000): Promise<void> {
+      const child = currentChild;
+      this.stop();
+      if (!child || child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+          try { child.kill("SIGKILL"); } catch {}
+          resolve();
+        }, timeoutMs);
+        child.once("exit", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+    },
   };
 }

@@ -47,6 +47,8 @@ import {
 type BootRuntimeContext = RuntimeContext & {
   markOAuthReady: (info?: { url?: string; port?: number }) => void;
   markOAuthFailed: () => void;
+  /** Arm a fresh readiness promise before a proxy respawn. */
+  markOAuthStarting: () => void;
 };
 
 type ApiKeyLoadResult = { apiKey: string | null; apiKeySource: ApiKeySource };
@@ -364,7 +366,7 @@ function unadvertise(ctx: RuntimeContext) {
 type StartServerOverrides = RuntimeContextOverrides & {
   startedAt?: number;
   packageVersion?: string;
-  oauthChild?: { stop?: () => void; kill?: () => void } | null;
+  oauthChild?: { stop?: () => void; kill?: () => void; stopAndWait?: (timeoutMs?: number) => Promise<void> } | null;
 };
 
 export async function createRuntimeContext(overrides: StartServerOverrides = {}): Promise<BootRuntimeContext> {
@@ -386,9 +388,10 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
   const openai = overrides.openai ?? await createOpenAI(apiKey);
   const oauthPort = config.oauth.proxyPort;
   let resolveOAuthReady: (value: string | null) => void = () => {};
-  const oauthReadyPromise = new Promise<string | null>((resolve) => {
+  const newOAuthReadyPromise = () => new Promise<string | null>((resolve) => {
     resolveOAuthReady = resolve;
   });
+  const oauthReadyPromise = newOAuthReadyPromise();
   const ctx: BootRuntimeContext = {
     rootDir,
     config,
@@ -436,6 +439,11 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
       ctx.oauthReadyState = "failed";
       resolveOAuthReady(null);
     },
+    markOAuthStarting: () => {
+      resolveOAuthReady(null);
+      ctx.oauthReadyPromise = newOAuthReadyPromise() as unknown as Promise<void>;
+      ctx.oauthReadyState = "starting";
+    },
   };
   if (!config.oauth.autoStart) ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   if (loadedVertexKey.json) {
@@ -460,20 +468,37 @@ export async function startServer(overrides: StartServerOverrides = {}) {
   }
   purgeStaleJobs();
   const app = buildApp(ctx);
-  const oauthChild =
+  const launchOAuthProxy = () => startOAuthProxy({
+    oauthPort: ctx.oauthPort,
+    restartDelayMs: ctx.config.oauth.restartDelayMs,
+    onReady: ({ url, port }: { url: string; port: number }) => {
+      ctx.markOAuthReady({ url, port });
+      advertise(ctx);
+    },
+    onExit: () => ctx.markOAuthFailed(),
+  });
+  let oauthChild: StartServerOverrides["oauthChild"] =
     overrides.oauthChild !== undefined
       ? overrides.oauthChild
       : !ctx.config.oauth.autoStart
         ? null
-        : startOAuthProxy({
-            oauthPort: ctx.oauthPort,
-            restartDelayMs: ctx.config.oauth.restartDelayMs,
-            onReady: ({ url, port }: { url: string; port: number }) => {
-              ctx.markOAuthReady({ url, port });
-              advertise(ctx);
-            },
-            onExit: () => ctx.markOAuthFailed(),
-          });
+        : launchOAuthProxy();
+  if (overrides.oauthChild === undefined && ctx.config.oauth.autoStart) {
+    // A login (web or CLI) writes a new session file; the running proxy only read the old one
+    // (or none, and exited), so the new session was invisible until a server restart.
+    let restarting: Promise<void> | null = null;
+    ctx.restartOAuthProxy = () => {
+      ctx.markOAuthStarting();
+      if (!restarting) {
+        const previous = oauthChild;
+        restarting = (async () => {
+          try { await previous?.stopAndWait?.(); } catch {}
+          oauthChild = launchOAuthProxy();
+        })().finally(() => { restarting = null; });
+      }
+      return { restarted: true };
+    };
+  }
   if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart) {
     ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   }
