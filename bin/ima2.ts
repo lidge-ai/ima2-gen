@@ -284,27 +284,50 @@ async function showStatus() {
     console.log("  Run 'ima2 setup' to configure.\n");
   }
 
-  // Check OAuth auth files + codex CLI probe
-  const auth = detectCodexAuth();
-  console.log(`  GPT OAuth sessions:`);
-  console.log(`    ${auth.files.codex}          ${auth.fileHits.codex ? "✓" : "✗"}`);
-  console.log(`    ${auth.files.chatgpt}  ${auth.fileHits.chatgpt ? "✓" : "✗"}`);
-  if (auth.fileHits.xdgCodex) {
-    console.log(`    ${auth.files.xdgCodex}  ✓`);
+  const report = await buildAuthReport();
+  console.log("  Logins");
+  const { authStatusLines } = await import("./commands/gpt.js");
+  for (const line of authStatusLines("GPT OAuth (ChatGPT)", report.gpt, report.gptFile, "      ")) console.log(`    ${line}`);
+  if (report.keyringOnly) {
+    console.log("      Codex CLI is signed in through the OS keyring only; the GPT OAuth proxy cannot read that.");
   }
-  const probeLabel =
-    auth.probe === "authed" ? "✓ authed"
-    : auth.probe === "unauthed" ? "✗ not logged in"
-    : auth.probe === "error" ? "✗ codex CLI failed"
-    : auth.probe === "skipped" ? "– not checked (file session found)"
-    : "– codex CLI not found";
-  console.log(`    codex login status           ${probeLabel}`);
-  if (auth.authed && !auth.proxyReady) {
-    console.log("    GPT OAuth proxy             ✗ keyring-only; run 'ima2 login'");
-  } else if (auth.proxyReady) {
-    console.log("    GPT OAuth proxy             ✓ file-backed session ready");
+  for (const line of authStatusLines("Grok OAuth (xAI)", report.grok, undefined, "      ")) console.log(`    ${line}`);
+  console.log("");
+  if (report.server) {
+    const proxy = report.server.proxy ?? "unknown";
+    const mark = proxy === "ready" ? "✓" : proxy === "starting" ? "…" : "✗";
+    console.log(`  Server ${report.server.url}: GPT OAuth proxy ${mark} ${proxy}`);
+  } else {
+    console.log("  Server: not running (start it with 'ima2 serve')");
   }
   console.log("");
+}
+
+/**
+ * Auth verdicts for `ima2 status`. When a server is advertised, its live proxy verdict is
+ * folded in: a session file can look fine while ChatGPT has already revoked it.
+ */
+async function buildAuthReport() {
+  const { gptAuthStatus, grokAuthStatus } = await import("../lib/authStatus.js");
+  const { resolveChatgptSession } = await import("../lib/chatgptAuth.js");
+  const session = resolveChatgptSession();
+  let server: { url: string; proxy?: "ready" | "auth_required" | "starting" | "offline" } | null = null;
+  const url = advertisedServerUrl();
+  if (url) {
+    try {
+      const res = await fetch(`${url}/api/oauth/status`, { signal: AbortSignal.timeout(2500) });
+      const body = await res.json() as { status?: string };
+      const proxy = body.status;
+      server = proxy === "ready" || proxy === "auth_required" || proxy === "starting" || proxy === "offline"
+        ? { url, proxy }
+        : { url };
+    } catch {
+      server = null;
+    }
+  }
+  const gpt = gptAuthStatus(session, server?.proxy ? { proxyStatus: server.proxy } : {});
+  const keyringOnly = !session && detectCodexAuth().probe === "authed";
+  return { gpt, gptFile: session?.path, grok: grokAuthStatus(), keyringOnly, server };
 }
 
 function openBrowser() {
@@ -476,7 +499,12 @@ switch (command) {
     });
     break;
   case "status":
-    showStatus();
+    if (args.includes("--json")) {
+      const report = await buildAuthReport();
+      console.log(JSON.stringify({ version: pkg.version, provider: loadConfig().provider ?? null, ...report }, null, 2));
+    } else {
+      await showStatus();
+    }
     break;
   case "doctor":
     await doctor(args.slice(1));
