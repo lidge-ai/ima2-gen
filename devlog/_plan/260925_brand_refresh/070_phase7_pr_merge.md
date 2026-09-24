@@ -8,3 +8,10 @@
 
 Authority: user message 2026-09-25 "dev에 머지해놔" (push + PR + merge into dev). No tag, release, version bump or npm publish.
 
+
+## wp7 P re-verification (HEAD 5352a3fd)
+
+- origin/dev gained only the v3.20.0 release commit (e78bbbaa: package.json + package-lock.json version); rebase is expected to be clean. No open PRs target dev.
+- Screenshots are committed on a detached worktree of origin/pr-assets at `/tmp/ima2-pr-assets` (commit 8a74cf43, `brand-refresh/01..10`), pushed to `pr-assets` before the PR body is written; the PR branch carries no screenshot files.
+- PR fast gate (`.github/workflows/pr-fast.yml`): blob budget (`check-new-blob-budget.mjs --base HEAD^1`, 5 MiB per new blob; largest new blob is assets/brand/icon-1024.png ≈ 363 KB), structure line counts, provider types, native deps, install policy, typecheck x2, test:inventory, builds, npm test, lint:pkg, and the frontend e2e job (GitHub-hosted only; fixture pre-answers the star prompt). screenshot-gate reads the PR body.
+- Merge: squash into dev (user authorization "dev에 머지해놔"), then watch the post-merge CI run on dev for the merge SHA.
