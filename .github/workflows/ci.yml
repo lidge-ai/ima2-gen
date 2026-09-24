@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, preview]
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
@@ -22,8 +22,93 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Which parts of the suite this event has to prove. Pushes diff the pushed
+  # range on that branch through paths-filter, so a docs-only merge lands green
+  # without paying for Windows/macOS runners. Schedule and dispatch runs always
+  # request the full scope.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ci: ${{ steps.scope.outputs.ci }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          ref: ${{ github.event.inputs.sha || github.sha }}
+          fetch-depth: 0
+      - name: Detect CI-relevant changes
+        id: filter
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          # On a branch push the action diffs the pushed range (before..head).
+          # Without `base` it would compare against the default branch, so every
+          # dev push would re-read the whole dev..main drift as changed.
+          base: ${{ github.ref }}
+          filters: |
+            ci:
+              - 'Dockerfile'
+              - 'docker-compose.yml'
+              - '.dockerignore'
+              - '.gitattributes'
+              - '.npmignore'
+              - '.node-version'
+              - 'flake.nix'
+              - 'flake.lock'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig*.json'
+              - 'server.ts'
+              - 'config.ts'
+              - 'bin/**'
+              - 'lib/**'
+              - 'routes/**'
+              - 'ui/**'
+              - 'desktop/**'
+              - 'tests/**'
+              - 'scripts/**'
+              - 'integrations/**'
+              - 'skills/**'
+              - 'presets/**'
+              - 'public/**'
+              - 'assets/**'
+              - 'metrics/**'
+              - 'nix/**'
+              - 'vendor/**'
+              - 'site/**'
+              - 'structure/**'
+              - 'devlog/**'
+              - '.release/**'
+              - '.codexclaw/**'
+              - '.github/workflows/**'
+              - '.github/actions/**'
+              - '.github/scripts/**'
+      - name: Resolve the requested scope
+        id: scope
+        # A missing or malformed filter output must fail this job instead of
+        # silently making every expensive job skip. Non-push events always
+        # request the full scope.
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            value="${{ steps.filter.outputs.ci }}"
+          else
+            value="true"
+          fi
+          case "$value" in
+            true|false)
+              printf 'ci=%s\n' "$value" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              printf '::error::changes scope was %q, expected true or false\n' "$value"
+              exit 1
+              ;;
+          esac
+
   test:
     name: test (${{ matrix.os }}, node ${{ matrix.node }}, npm ${{ matrix.npm }})
+    needs: changes
+    if: github.event_name != 'push' || needs.changes.outputs.ci == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -143,11 +228,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.npm == '11.18.0'
         run: npm run publish:dry-run
 
-  # Supported Windows installers are verified on the exact dispatched candidate.
-  # Nightly coverage remains; candidate failures must be repaired before release.
+  # Supported Windows installers are verified on the exact dispatched candidate,
+  # on every main/dev/preview push (post-merge evidence), and nightly.
+  # Candidate failures must be repaired before release.
   windows:
     name: windows (node ${{ matrix.node }}, npm ${{ matrix.npm }})
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: changes
+    if: github.event_name != 'push' || needs.changes.outputs.ci == 'true'
     runs-on: windows-latest
     timeout-minutes: 45
     strategy:
@@ -207,7 +294,8 @@ jobs:
 
   macos-install:
     name: macOS native installation
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: changes
+    if: github.event_name != 'push' || needs.changes.outputs.ci == 'true'
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -250,6 +338,8 @@ jobs:
 
   e2e:
     name: frontend e2e (ubuntu)
+    needs: changes
+    if: github.event_name != 'push' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     # The retained serial suite reached case253/258 at the former20-minute
     # job bound. Reserve time to finish and upload; individual test limits stay unchanged.
@@ -379,3 +469,34 @@ jobs:
             ui/test-results/**/wp07-*.json
           if-no-files-found: error
           retention-days: 14
+
+  # The post-merge gate this workflow exists to produce. It derives what the
+  # event asked for from the same condition the scoped jobs carry, then requires
+  # `success` from every requested job and `skipped` from every unrequested one —
+  # both directions are checked, so a job that never started (or one that ran
+  # when the gate did not expect it) fails here by name instead of passing over.
+  ci:
+    name: ci
+    if: always()
+    needs: [changes, test, windows, macos-install, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every requested job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          SCOPED: ${{ github.event_name != 'push' || needs.changes.outputs.ci == 'true' }}
+        run: |
+          node --input-type=module -e '
+            const needs = JSON.parse(process.env.RESULTS);
+            const scoped = process.env.SCOPED === "true";
+            const failures = [];
+            for (const [name, job] of Object.entries(needs)) {
+              const expected = (name === "changes" || scoped) ? "success" : "skipped";
+              if (job.result !== expected) failures.push(`${name}: ${job.result} (wanted ${expected})`);
+            }
+            if (failures.length) {
+              console.error(failures.join("\n"));
+              process.exit(1);
+            }
+          '
