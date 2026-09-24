@@ -46,6 +46,7 @@ Total: 505 (runtime: 229, contract: 276)
 - `tests/capabilities-video-modes-contract.test.ts`
 - `tests/card-news-contract.test.ts`
 - `tests/card-news-template.test.ts`
+- `tests/chatgpt-auth-contract.test.ts`
 - `tests/classic-generate-async.test.ts`
 - `tests/cli-error-hints.test.ts`
 - `tests/cli-lan-auth.test.ts`
