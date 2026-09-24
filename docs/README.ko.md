@@ -13,23 +13,43 @@
 
 설치 프로그램은 패키지 메타데이터에서 Node.js 최소 버전을 읽고 서버 시작 전에 오프라인 설치 검사를 수행합니다.
 
+<p align="center">
+  <img src="../assets/logo.png" alt="ima2" width="160">
+</p>
+
+<p align="center">
+  <strong>사람과 코딩 에이전트를 위한 로컬 이미지·영상 스튜디오.</strong>
+</p>
+
 [![npm version](https://img.shields.io/npm/v/ima2-gen)](https://www.npmjs.com/package/ima2-gen)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-> 🌐 **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어 페이지](https://lidge-jun.github.io/ima2-gen/ko/)
+> **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어 페이지](https://lidge-jun.github.io/ima2-gen/ko/)
 >
-> 📖 **개발자 문서**: [문서 사이트](https://lidge-jun.github.io/ima2-gen/ko/docs) · [English](https://lidge-jun.github.io/ima2-gen/docs)
+> **개발자 문서**: [문서 사이트](https://lidge-jun.github.io/ima2-gen/ko/docs) · [English](https://lidge-jun.github.io/ima2-gen/docs)
 >
 > **다른 언어로 읽기**: [English](../README.md) · [日本語](README.ja.md) · [正體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
 `ima2-gen`은 사람과 코딩 에이전트가 여러 프로바이더에서 재현 가능한 이미지·영상 워크플로를 실행하는 로컬 우선 비주얼 생성 런타임이자 스튜디오입니다.
 
-전역 설치 후 OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax로 구성된 core lane 8개에서 이미지와 영상을 생성합니다. Runway와 Higgsfield는 별도 MCP integration입니다.
+전역 설치 후 OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI, ComfyUI 워크플로로 구성된 core lane 10개에서 이미지와 영상을 생성합니다. Runway와 Higgsfield는 별도 MCP integration입니다.
 
 ![프롬프트 작성창, 생성 이미지, 모델 표시, 결과 메타데이터가 보이는 ima2-gen 클래식 생성 화면](../assets/screenshots/classic-generate-light.png)
 
 ## 빠른 시작
+
+### Mac 앱 (Apple Silicon)
+
+Apple Silicon Mac에서는 데스크톱 앱이 가장 빠릅니다. 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행하고, Apple 서명과 공증을 거쳤습니다.
+
+1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<버전>-mac-arm64.dmg`를 받습니다.
+2. DMG를 열고 **ima2**를 **응용 프로그램** 폴더로 옮깁니다.
+3. ima2를 실행하고 환영 화면에서 제공자를 고릅니다.
+
+앱에 런타임이 들어 있어 Node.js를 따로 설치하지 않아도 됩니다. 체크섬, 업데이트, 설정은 [Mac 앱 가이드](https://lidge-jun.github.io/ima2-gen/ko/docs/desktop)를 보세요. Intel Mac, Windows, Linux에서는 아래 npm이나 원클릭 설치를 쓰세요.
+
+### npm
 
 ```bash
 npm install -g ima2-gen
@@ -132,7 +152,7 @@ Ctrl+C로 DB, 소켓, 자식 프로세스를 정리할 수 있습니다. Windows
 
 - `provider: "oauth"`는 로컬 Codex OAuth 프록시를 사용합니다.
 - `provider: "api"`는 OpenAI Responses API의 `image_generation` 도구를 사용합니다.
-- `provider: "grok"`는 `~/.progrok/auth.json`에 저장된 xAI OAuth 세션으로 `https://api.x.ai`를 직접 호출합니다. xAI Web Search와 플래너(기본: `grok-4.5`, 설정 또는 `--planner-model`로 변경 가능)를 거친 뒤 xAI Images API로 이어집니다. `grok-4.3`은 호환 선택지로 유지합니다. 처음 한 번 `ima2 grok login` 또는 설정 화면의 **Switch Account**로 로그인하면, 이후에는 만료 2분 전에 토큰이 자동으로 갱신됩니다.
+- `provider: "grok"`는 `~/.progrok/auth.json`에 저장된 xAI OAuth 세션으로 `https://api.x.ai`를 직접 호출합니다. xAI Web Search와 플래너(기본: `grok-4.3`, 설정 또는 `--planner-model`로 변경 가능)를 거친 뒤 xAI Images API로 이어집니다. `grok-4.5`, `grok-4.6`도 고를 수 있습니다. 처음 한 번 `ima2 grok login` 또는 설정 화면의 **Switch Account**로 로그인하면, 이후에는 만료 2분 전에 토큰이 자동으로 갱신됩니다.
 - `provider: "grok-api"`는 `XAI_API_KEY`로 xAI Images API를 직접 호출합니다 (OAuth 세션을 쓰지 않습니다).
 - `provider: "agy"`는 로컬 Antigravity CLI(`agy -p`)로 Gemini `nano-banana-2` 이미지를 생성합니다 (`IMA2_AGY_BIN`).
 - `provider: "gemini-api"`는 Google Generative Language API 또는 Vertex AI를 사용합니다 (`GEMINI_API_KEY` / `VERTEX_SERVICE_ACCOUNT_JSON`; 둘 다 있으면 Vertex 우선).
@@ -264,8 +284,8 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_GENERATED_DIR` | `~/.ima2/generated` | 생성 이미지 저장 위치 |
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | 서버 fallback 이미지 모델 |
 | `IMA2_NO_OAUTH_PROXY` | — | `1`이면 OAuth 프록시 자동 시작 비활성화 |
-| `IMA2_GROK_PLANNER_MODEL` | `grok-4.5` | Grok 플래너 모델 (설정 UI 또는 `--planner-model` CLI 플래그로도 변경 가능) |
-| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-quality` | 기본 Grok 이미지 모델 |
+| `IMA2_GROK_PLANNER_MODEL` | `grok-4.3` | Grok 플래너 모델 (설정 UI 또는 `--planner-model` CLI 플래그로도 변경 가능) |
+| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-2.0` | 기본 Grok 이미지 모델 |
 | `IMA2_GROK_VIDEO_MODEL_DEFAULT` | `grok-imagine-video-1.5` | 기본 Grok 비디오 모델 |
 | `IMA2_LOG_LEVEL` | `info` | 일반 `serve`는 `info`, dev 모드는 `debug`. `debug`, `info`, `warn`, `error`, `silent` 지원 |
 | `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | 디버그용 최근 작업 보존 시간 (5분) |
