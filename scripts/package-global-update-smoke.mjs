@@ -288,7 +288,7 @@ async function main() {
     if (doctor.timedOut) throw deadlineError(doctor, "ima2-doctor");
     assert.equal(doctor.status, 1, "doctor should fail when OAuth is configured without a file-backed session");
     assert.match(doctor.stdout, /runtime dependencies resolvable/i);
-    assert.match(doctor.stdout, /no file-backed Codex session/i);
+    assert.match(doctor.stdout, /GPT OAuth has no ChatGPT session; run 'ima2 login'/);
 
     const updatedVersion = runGlobalShim(prefix, ["--version"], { cwd: unrelatedCwd }).stdout.trim();
     assert.equal(updatedVersion, installed.version);

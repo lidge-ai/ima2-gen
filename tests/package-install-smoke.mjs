@@ -260,7 +260,7 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     assert.match(doctor.stdout, /Doctor/);
     assert.match(doctor.stdout, /runtime dependencies resolvable/);
     assert.match(doctor.stdout, /Storage/);
-    assert.match(doctor.stdout, /no file-backed Codex session/i);
+    assert.match(doctor.stdout, /GPT OAuth has no ChatGPT session; run 'ima2 login'/);
 
     const port = await freePort();
     const logs = { stdout: "", stderr: "" };
