@@ -26,6 +26,8 @@ const token = (name: string) => jwt({ exp: EXP, name, "https://api.openai.com/au
 const TOKEN_A = token("a");
 const TOKEN_B = token("b");
 const TOKEN_C = token("c");
+const TOKEN_D = token("d");
+const TOKEN_E = token("e");
 
 let root: string;
 let authFile: string;
@@ -34,6 +36,9 @@ let proxy: ChildProcess;
 let proxyUrl: string;
 const seen: string[] = [];
 let refreshCalls = 0;
+/** Runs inside the fake token endpoint before it answers (simulates work during a refresh). */
+let onRefresh: (() => Promise<void>) | null = null;
+let refreshResult = () => ({ access_token: TOKEN_C, refresh_token: "rt-c", id_token: token("id2") });
 
 function writeSession(accessToken: string, refreshToken: string) {
   writeFileSync(authFile, JSON.stringify({
@@ -75,8 +80,11 @@ describe("bundled OAuth proxy follows the session file", () => {
     upstream = createServer((req, res) => {
       if (req.url?.startsWith("/oauth/token")) {
         refreshCalls++;
-        res.writeHead(200, { "content-type": "application/json" });
-        res.end(JSON.stringify({ access_token: TOKEN_C, refresh_token: "rt-c", id_token: token("id2") }));
+        void (async () => {
+          await onRefresh?.();
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify(refreshResult()));
+        })();
         return;
       }
       const bearer = String(req.headers.authorization ?? "").replace(/^Bearer /, "");
@@ -128,5 +136,34 @@ describe("bundled OAuth proxy follows the session file", () => {
     assert.equal(stored.auth_mode, "chatgpt", "unknown Codex keys survive the write-back");
     assert.ok("OPENAI_API_KEY" in stored);
     if (process.platform !== "win32") assert.equal(statSync(authFile).mode & 0o777, 0o600);
+  });
+  it("concurrent 401s share one refresh: the rotating refresh token is spent once", async () => {
+    writeSession(TOKEN_B, "rt-b2");
+    refreshCalls = 0;
+    refreshResult = () => ({ access_token: TOKEN_E, refresh_token: "rt-e", id_token: token("id3") });
+    onRefresh = () => new Promise((r) => setTimeout(r, 80));
+    try {
+      const results = await Promise.all([responsesCall(), responsesCall(), responsesCall()]);
+      assert.equal(refreshCalls, 1, "one refresh for the whole burst");
+      for (const attempts of results) assert.equal(attempts.at(-1), TOKEN_E);
+    } finally {
+      onRefresh = null;
+    }
+  });
+
+  it("a login that replaces the file during a refresh wins; the stale refresh is not written", async () => {
+    writeSession(TOKEN_B, "rt-b3");
+    refreshCalls = 0;
+    refreshResult = () => ({ access_token: TOKEN_C, refresh_token: "rt-stale", id_token: token("id4") });
+    onRefresh = async () => { writeSession(TOKEN_D, "rt-new-login"); };
+    try {
+      const attempts = await responsesCall();
+      assert.equal(attempts.at(-1), TOKEN_D, "the retry uses the new login");
+      const stored = JSON.parse(readFileSync(authFile, "utf8"));
+      assert.equal(stored.tokens.access_token, TOKEN_D);
+      assert.equal(stored.tokens.refresh_token, "rt-new-login");
+    } finally {
+      onRefresh = null;
+    }
   });
 });
