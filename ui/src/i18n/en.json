@@ -1370,6 +1370,8 @@
       "switchAccount": "Switch {provider} account",
       "startingLogin": "Starting login…",
       "enterCode": "Enter this code in the opened tab:",
+      "completeInBrowser": "Finish signing in on the ChatGPT page that opened. This card updates on its own.",
+      "useDeviceCode": "Use a device code instead",
       "retry": "Retry",
       "copyLink": "Copy link",
       "copied": "Copied",
