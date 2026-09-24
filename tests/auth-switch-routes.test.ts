@@ -96,6 +96,39 @@ describe("/api/auth/switch (codex)", () => {
     assert.equal(JSON.parse(readFileSync(chatgptAuthFilePath(root), "utf8")).tokens.refresh_token, "rt-web");
   });
 
+  it("two near-simultaneous codex starts save exactly one session and restart once", async () => {
+    let exchanges = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith(base)) return realFetch(input, init);
+      if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
+      if (url.endsWith("/deviceauth/usercode")) {
+        await new Promise((r) => setTimeout(r, 30));
+        return Response.json({ device_auth_id: "d", user_code: "CODE-1", interval: 1 });
+      }
+      if (url.endsWith("/deviceauth/token")) return Response.json({ authorization_code: "c", code_verifier: "v" });
+      exchanges++;
+      return Response.json({ access_token: jwt({ exp: 2_000_000_000 }), refresh_token: `rt-${exchanges}`, id_token: ID_TOKEN });
+    }) as typeof fetch;
+    const start = () => realFetch(`${base}/api/auth/switch`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: "codex", flow: "device" }),
+    });
+    const [first, second] = await Promise.all([start(), start()]);
+    const winner = await second.json() as { sessionId: string };
+    assert.equal(second.status, 200);
+    await first.text();
+    const done = await waitFor(async () => {
+      const json = await (await realFetch(`${base}/api/auth/switch/${winner.sessionId}`)).json() as { status: string };
+      return json.status === "pending" ? undefined : json;
+    });
+    assert.equal(done.status, "complete");
+    await new Promise((r) => setTimeout(r, 100));
+    assert.equal(restarts, 1, "the superseded login must not complete or restart the proxy");
+    assert.equal(exchanges, 1, "the superseded login must not reach the token exchange");
+  });
+
   it("an upstream failure before a code exists is a 502 with the reason", async () => {
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

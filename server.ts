@@ -16,6 +16,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { onShutdown } from "./bin/lib/platform.js";
 import { ensureDefaultSession } from "./lib/sessionStore.js";
 import { startOAuthProxy } from "./lib/oauthLauncher.js";
+import { detectCodexAuth } from "./lib/codexDetect.js";
 import { migrateGeneratedStorage } from "./lib/storageMigration.js";
 import { purgeStaleJobs } from "./lib/inflight.js";
 import { configureLogger, logError } from "./lib/logger.js";
@@ -366,7 +367,7 @@ function unadvertise(ctx: RuntimeContext) {
 type StartServerOverrides = RuntimeContextOverrides & {
   startedAt?: number;
   packageVersion?: string;
-  oauthChild?: { stop?: () => void; kill?: () => void; stopAndWait?: (timeoutMs?: number) => Promise<void> } | null;
+  oauthChild?: { stop?: () => void; kill?: () => void; stopAndWait?: (timeoutMs?: number) => Promise<void>; readonly authFile?: string | null } | null;
 };
 
 export async function createRuntimeContext(overrides: StartServerOverrides = {}): Promise<BootRuntimeContext> {
@@ -492,11 +493,29 @@ export async function startServer(overrides: StartServerOverrides = {}) {
       if (!restarting) {
         const previous = oauthChild;
         restarting = (async () => {
-          try { await previous?.stopAndWait?.(); } catch {}
+          try {
+            await previous?.stopAndWait?.();
+          } catch (error) {
+            console.error(`[gpt-oauth] restart aborted: ${(error as Error).message}`);
+            ctx.markOAuthFailed();
+            return;
+          }
           oauthChild = launchOAuthProxy();
         })().finally(() => { restarting = null; });
       }
       return { restarted: true };
+    };
+    // A CLI login (or logout) can change which session file the proxy should read without
+    // being able to reach this server (e.g. a LAN-bound server the CLI cannot authenticate to).
+    // Status polls and generation admission call this to catch up on their own.
+    ctx.syncOAuthProxySession = () => {
+      if (restarting) return false;
+      const wanted = detectCodexAuth({ probe: false }).proxyAuthFile;
+      const launched = (oauthChild as { authFile?: string | null } | null)?.authFile ?? null;
+      if (wanted === launched) return false;
+      console.log(`[gpt-oauth] session file changed (${launched ?? "none"} -> ${wanted ?? "none"}); restarting proxy`);
+      ctx.restartOAuthProxy?.();
+      return true;
     };
   }
   if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart) {

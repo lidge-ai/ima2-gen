@@ -67,9 +67,11 @@ function startSession(
   provider: AuthSession["provider"],
   run: (signal: AbortSignal, onPrompt: (prompt: { flow: AuthSession["flow"]; url: string; userCode?: string; expiresIn: number }) => void) => Promise<{ email?: string }>,
   onComplete?: () => void,
+  live?: Set<AbortController>,
 ): Promise<StartResult> {
   const id = sid();
   const abort = new AbortController();
+  live?.add(abort);
   return new Promise<StartResult>((resolve, reject) => {
     let prompted = false;
     const promptTimer = setTimeout(() => {
@@ -93,7 +95,7 @@ function startSession(
       // Server-side reaper: an abandoned flow must not hold its poll loop or port forever.
       setTimeout(() => finish(id, "expired"), prompt.expiresIn * 1000 + 5_000).unref?.();
       resolve({ sessionId: id, flow: prompt.flow, userCode: session.userCode, verificationUrl: prompt.url, expiresIn: prompt.expiresIn });
-    }).then((result) => {
+    }).finally(() => live?.delete(abort)).then((result) => {
       const session = sessions.get(id);
       if (session && result.email) session.email = result.email;
       if (session?.status === "pending") onComplete?.();
@@ -109,8 +111,17 @@ function startSession(
   });
 }
 
+/**
+ * Every codex login that has started but not settled, including ones still waiting for their
+ * first prompt (not yet in `sessions`). A new start aborts all of them synchronously, before
+ * its own first await, so two near-simultaneous starts can never both save a session.
+ */
+const liveCodexLogins = new Set<AbortController>();
+
 function startCodexLogin(flow: ChatgptLoginFlow, ctx?: RouteRuntimeContext): Promise<StartResult> {
   cancelPending("codex");
+  for (const controller of liveCodexLogins) controller.abort();
+  liveCodexLogins.clear();
   return startSession(
     "codex",
     async (signal, onPrompt) => {
@@ -122,6 +133,7 @@ function startCodexLogin(flow: ChatgptLoginFlow, ctx?: RouteRuntimeContext): Pro
       return session.email ? { email: session.email } : {};
     },
     () => { ctx?.restartOAuthProxy?.(); },
+    liveCodexLogins,
   );
 }
 

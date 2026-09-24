@@ -68,6 +68,8 @@ export function createOAuthGenerationTimeout(ctx: RouteRuntimeContext = {}, requ
 
 export async function waitForOAuthReady(ctx: RouteRuntimeContext = {}) {
   if (!ctx || ctx.oauthReadyState === undefined) return;
+  // A new login may have landed since the proxy started (or gave up); restart onto it first.
+  if (ctx.oauthReadyState === "failed") ctx.syncOAuthProxySession?.();
   const initialState = ctx.oauthReadyState;
   if (initialState === "ready" || initialState === "disabled") return;
   if (initialState === "failed") {

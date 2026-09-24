@@ -50,6 +50,7 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
   });
 
   app.get("/api/oauth/status", async (_req: Request, res: Response) => {
+    ctx.syncOAuthProxySession?.();
     if (ctx.oauthReadyState === "starting") {
       return res.json({ status: "starting", runtime: runtimePorts() });
     }

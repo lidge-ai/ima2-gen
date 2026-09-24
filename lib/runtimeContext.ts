@@ -35,6 +35,8 @@ export interface RuntimeContext {
    * the proxy launcher exists; undefined in tests and when the proxy is not auto-started.
    */
   restartOAuthProxy?: (() => { restarted: boolean; reason?: string }) | undefined;
+  /** Restart the proxy if the session file it should read differs from the one it was given. */
+  syncOAuthProxySession?: (() => boolean) | undefined;
   openai: OpenAI | null;
   packageVersion: string;
   rootDir: string;
