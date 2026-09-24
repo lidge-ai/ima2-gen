@@ -13,9 +13,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const compiled = await build({ entryPoints: [resolve(root, "bin/lib/doctor-providers.ts")], bundle: true,
   write: false, platform: "node", format: "cjs", external: ["node:*"], logLevel: "silent",
   plugins: [{ name: "doctor-owned-observations", setup(builder) {
-    builder.onResolve({ filter: /(?:config|codexDetect)\.js$/ }, (args) => ({ path: args.path, namespace: "doctor-fixture" }));
+    builder.onResolve({ filter: /(?:config|codexDetect|authStatus)\.js$/ }, (args) => ({ path: args.path, namespace: "doctor-fixture" }));
     builder.onLoad({ filter: /.*/, namespace: "doctor-fixture" }, (args) => ({ loader: "js", contents: args.path.endsWith("codexDetect.js")
-      ? 'export const detectCodexAuth=()=>({proxyReady:false,authed:false});'
+      ? 'export const detectCodexAuth=()=>({proxyReady:false,authed:false,probe:"missing"});'
+      : args.path.endsWith("authStatus.js")
+      ? 'export const gptAuthStatus=()=>({provider:"gpt",loggedIn:false,health:"not_logged_in",reason:"no_session",refreshable:false,action:"ima2 login"});'
       : 'export const config={comfy:{defaultUrl:"http://127.0.0.1:8188"},minimaxProvider:{region:"global_en",globalBaseUrl:"https://api.minimax.io/v1",cnBaseUrl:"https://api.minimax.chat/v1"},diagnostics:{keyTimeoutMs:5000}};' }));
   } }],
 });

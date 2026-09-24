@@ -63,7 +63,7 @@ routes/
   metadata.ts           POST /api/metadata/read
   capabilities.ts       GET /api/capabilities, GET/PATCH /api/config/grok-planner
   keys.ts               GET/PUT/DELETE /api/keys/:provider, /api/keys/vertex
-  auth.ts               POST /api/auth/switch, GET /api/auth/switch/:sessionId
+  auth.ts               POST/GET/DELETE /api/auth/switch[/:sessionId], POST /api/oauth/restart
   quota.ts              GET /api/quota
   grok.ts               GET /api/grok/status (live api.x.ai probe with the stored xAI session)
   agy.ts                GET /api/agy/status + Antigravity CLI bridge
@@ -79,7 +79,7 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 575 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
+| `server.ts` | 619 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
 | `config.ts` | 523 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 93 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 116 | Multishot (multi-scene) video generation route via Runway MCP |
@@ -93,7 +93,7 @@ routes/
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
 | `routes/history.ts` | 234 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
-| `routes/health.ts` | 124 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
+| `routes/health.ts` | 136 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
 | `routes/mcpConnections.ts` | 164 | MCP provider list/status/connect/callback/refresh/disconnect/model routes; truthful state-to-HTTP mapping and secret-free responses |
 | `routes/storage.ts` | 48 | Gallery storage status and generated-folder open action |
 | `routes/metadata.ts` | 81 | `/api/metadata/read` for embedded XMP image metadata extraction |
@@ -115,7 +115,7 @@ routes/
 | `lib/jobs/terminalStore.ts` | 79 | Terminal snapshot disk read/write/reap and per-ID admission cleanup; no inflight import |
 | `ui/src/lib/eventChannel.ts` | 224 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
-| `bin/ima2.ts` | 563 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/ima2.ts` | 594 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 417 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 171 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
@@ -133,7 +133,8 @@ routes/
 | `bin/commands/cardnews.ts` | 250 | CLI dev-gated card-news client |
 | `bin/commands/config.ts` | 194 | CLI config get/set client |
 | `bin/commands/observability.ts` | 177 | Shared CLI handler for `storage`, `billing`, `providers`, `oauth`, and `inflight` aliases (`ima2.ts` routes those commands here) |
-| `bin/commands/doctor.ts` | 310 | CLI diagnostics: storage, OAuth, providers, image probe |
+| `bin/commands/doctor.ts` | 313 | CLI diagnostics: storage, OAuth, providers, image probe |
+| `bin/commands/gpt.ts` | 211 | ChatGPT (GPT OAuth) login/status/logout; `ima2 login` delegates here |
 | `bin/commands/grok.ts` | 252 | Grok OAuth login and status helpers |
 | `bin/commands/defaults.ts` | 270 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 143 | CLI wrapper for `GET /api/capabilities` |
@@ -171,7 +172,10 @@ remain owned by inflight. `ui/src/store/inflightReconciliation.ts` owns request-
 scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/logger.ts` | 171 | Safe structured logging, redaction, level filtering, and test sink helpers |
 | `lib/requestLogger.ts` | 50 | API-only request lifecycle logging and sanitized request ID middleware |
-| `lib/codexDetect.ts` | 154 | Codex OAuth session detection helper |
+| `lib/authStatus.ts` | 119 | Shared login verdicts (health, masked account, action) for `ima2 status`, `ima2 gpt status`, doctor, and `/api/oauth/status` |
+| `lib/chatgptAuth.ts` | 267 | ima2-owned ChatGPT session store (~/.ima2/chatgpt-auth.json, Codex auth.json shape), JWT identity helpers, session-file priority |
+| `lib/chatgptLogin.ts` | 303 | Native ChatGPT login (OpenCodex port): browser PKCE on localhost:1455 and the deviceauth grant |
+| `lib/codexDetect.ts` | 160 | GPT OAuth session file detection (ima2 store first, then Codex CLI files) |
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
 | `lib/generationErrors.ts` | 245 | Generation error normalization, retry classification, status mapping |
@@ -192,7 +196,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
 | `lib/mcp/shutdown.ts` | 24 | Post-listen restore activation plus concurrent HTTP/MCP shutdown coordination and grace bound |
 | `lib/mcp/snapshotPipeline.ts` | 113 | Generation/epoch-safe live tool snapshot ingest and stale-result suppression |
-| `lib/oauthLauncher.ts` | 119 | OAuth proxy child process startup and actual ready-port capture |
+| `lib/oauthLauncher.ts` | 145 | OAuth proxy child process startup and actual ready-port capture |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
 | `lib/oauthProxy/generators.ts` | 229 | OAuth Responses single-image generation and stable generator exports |
@@ -208,7 +212,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/streams.ts` | 233 | SSE/event-stream helpers and safe stream diagnostics |
 | `lib/oauthProxy/prompts.ts` | 158 | Prompt assembly with injected `SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts` |
 | `lib/oauthProxy/references.ts` | 46 | Reference image preparation and validation for the OAuth path |
-| `lib/oauthProxy/runtime.ts` | 116 | OAuth runtime context and request execution |
+| `lib/oauthProxy/runtime.ts` | 119 | OAuth runtime context and request execution |
 | `lib/oauthProxy/errors.ts` | 129 | OAuth-specific error codes and normalization |
 | `lib/oauthProxy/types.ts` | 10 | Shared OAuth proxy types (re-exported from `index`) |
 | `lib/promptSafetyPolicy.ts` | 3 | `SAFETY_INTENT_POLICY` constant: 3-line intent policy injected by oauthProxy/prompts and the API-key Responses adapter |
@@ -218,7 +222,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/providers/adapters/openaiOperations.ts` | 251 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
 | `lib/providers/adapters/openaiExecution.ts` | 142 | Typed four-surface OpenAI owner, classic retry and native callback/result mapping |
 | `lib/providerOptions.ts` | 169 | Per-provider option assembly; rejects catalog-only Comfy video workflows on the classic image path |
-| `lib/runtimeContext.ts` | 220 | Per-request runtime context plumbing for routes and lib helpers |
+| `lib/runtimeContext.ts` | 227 | Per-request runtime context plumbing for routes and lib helpers |
 | `lib/errInfo.ts` | 44 | Error info shape and helpers shared across routes/lib |
 | `lib/oauthNormalize.ts` | 51 | Upstream OAuth response field normalization |
 | `lib/openDirectory.ts` | 48 | Cross-platform open of the generated directory (used by `/api/storage/open-generated-dir`) |
@@ -363,7 +367,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 |---|---|---:|---|
 | App shell | `ui/src/App.tsx` | 213 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, prompt library overlay, mobile shell (dark-only since Phase 010) |
 | Entry | `ui/src/main.tsx` | 89 | React mount |
-| Types | `ui/src/types.ts` | 306 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
+| Types | `ui/src/types.ts` | 323 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
 | Store | `ui/src/store/useAppStore.ts` | 682 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
 | Persistence registry | `ui/src/store/persistenceRegistry.ts` | 94 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, and settings keys (theme keys removed in Phase 010); prevents drift between hydration helpers and setters (#43) |

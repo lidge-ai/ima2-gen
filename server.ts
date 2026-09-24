@@ -16,6 +16,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { onShutdown } from "./bin/lib/platform.js";
 import { ensureDefaultSession } from "./lib/sessionStore.js";
 import { startOAuthProxy } from "./lib/oauthLauncher.js";
+import { detectCodexAuth } from "./lib/codexDetect.js";
 import { migrateGeneratedStorage } from "./lib/storageMigration.js";
 import { purgeStaleJobs } from "./lib/inflight.js";
 import { configureLogger, logError } from "./lib/logger.js";
@@ -47,6 +48,8 @@ import {
 type BootRuntimeContext = RuntimeContext & {
   markOAuthReady: (info?: { url?: string; port?: number }) => void;
   markOAuthFailed: () => void;
+  /** Arm a fresh readiness promise before a proxy respawn. */
+  markOAuthStarting: () => void;
 };
 
 type ApiKeyLoadResult = { apiKey: string | null; apiKeySource: ApiKeySource };
@@ -364,7 +367,7 @@ function unadvertise(ctx: RuntimeContext) {
 type StartServerOverrides = RuntimeContextOverrides & {
   startedAt?: number;
   packageVersion?: string;
-  oauthChild?: { stop?: () => void; kill?: () => void } | null;
+  oauthChild?: { stop?: () => void; kill?: () => void; stopAndWait?: (timeoutMs?: number) => Promise<void>; readonly authFile?: string | null } | null;
 };
 
 export async function createRuntimeContext(overrides: StartServerOverrides = {}): Promise<BootRuntimeContext> {
@@ -386,9 +389,10 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
   const openai = overrides.openai ?? await createOpenAI(apiKey);
   const oauthPort = config.oauth.proxyPort;
   let resolveOAuthReady: (value: string | null) => void = () => {};
-  const oauthReadyPromise = new Promise<string | null>((resolve) => {
+  const newOAuthReadyPromise = () => new Promise<string | null>((resolve) => {
     resolveOAuthReady = resolve;
   });
+  const oauthReadyPromise = newOAuthReadyPromise();
   const ctx: BootRuntimeContext = {
     rootDir,
     config,
@@ -436,6 +440,11 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
       ctx.oauthReadyState = "failed";
       resolveOAuthReady(null);
     },
+    markOAuthStarting: () => {
+      resolveOAuthReady(null);
+      ctx.oauthReadyPromise = newOAuthReadyPromise() as unknown as Promise<void>;
+      ctx.oauthReadyState = "starting";
+    },
   };
   if (!config.oauth.autoStart) ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   if (loadedVertexKey.json) {
@@ -460,20 +469,55 @@ export async function startServer(overrides: StartServerOverrides = {}) {
   }
   purgeStaleJobs();
   const app = buildApp(ctx);
-  const oauthChild =
+  const launchOAuthProxy = () => startOAuthProxy({
+    oauthPort: ctx.oauthPort,
+    restartDelayMs: ctx.config.oauth.restartDelayMs,
+    onReady: ({ url, port }: { url: string; port: number }) => {
+      ctx.markOAuthReady({ url, port });
+      advertise(ctx);
+    },
+    onExit: () => ctx.markOAuthFailed(),
+  });
+  let oauthChild: StartServerOverrides["oauthChild"] =
     overrides.oauthChild !== undefined
       ? overrides.oauthChild
       : !ctx.config.oauth.autoStart
         ? null
-        : startOAuthProxy({
-            oauthPort: ctx.oauthPort,
-            restartDelayMs: ctx.config.oauth.restartDelayMs,
-            onReady: ({ url, port }: { url: string; port: number }) => {
-              ctx.markOAuthReady({ url, port });
-              advertise(ctx);
-            },
-            onExit: () => ctx.markOAuthFailed(),
-          });
+        : launchOAuthProxy();
+  if (overrides.oauthChild === undefined && ctx.config.oauth.autoStart) {
+    // A login (web or CLI) writes a new session file; the running proxy only read the old one
+    // (or none, and exited), so the new session was invisible until a server restart.
+    let restarting: Promise<void> | null = null;
+    ctx.restartOAuthProxy = () => {
+      ctx.markOAuthStarting();
+      if (!restarting) {
+        const previous = oauthChild;
+        restarting = (async () => {
+          try {
+            await previous?.stopAndWait?.();
+          } catch (error) {
+            console.error(`[gpt-oauth] restart aborted: ${(error as Error).message}`);
+            ctx.markOAuthFailed();
+            return;
+          }
+          oauthChild = launchOAuthProxy();
+        })().finally(() => { restarting = null; });
+      }
+      return { restarted: true };
+    };
+    // A CLI login (or logout) can change which session file the proxy should read without
+    // being able to reach this server (e.g. a LAN-bound server the CLI cannot authenticate to).
+    // Status polls and generation admission call this to catch up on their own.
+    ctx.syncOAuthProxySession = () => {
+      if (restarting) return false;
+      const wanted = detectCodexAuth({ probe: false }).proxyAuthFile;
+      const launched = (oauthChild as { authFile?: string | null } | null)?.authFile ?? null;
+      if (wanted === launched) return false;
+      console.log(`[gpt-oauth] session file changed (${launched ?? "none"} -> ${wanted ?? "none"}); restarting proxy`);
+      ctx.restartOAuthProxy?.();
+      return true;
+    };
+  }
   if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart) {
     ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   }

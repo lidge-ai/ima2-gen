@@ -167,3 +167,51 @@ test("OAuth launcher starts its bundled JS with the detected auth file", () => {
   launcher.stop();
   assert.equal(child.killed, true);
 });
+
+class StubbornChild extends FakeChild {
+  exitCode: number | null = null;
+  signalCode: NodeJS.Signals | null = null;
+  signals: string[] = [];
+  constructor(private readonly exitOn: string | null) { super(); }
+  override kill(signal: string = "SIGTERM") {
+    this.signals.push(signal);
+    if (signal === this.exitOn) setImmediate(() => { this.signalCode = signal as NodeJS.Signals; this.emit("exit", null, signal); });
+    return true;
+  }
+}
+
+function launchWith(child: StubbornChild) {
+  return startOAuthProxy({
+    detectAuth: () => ({ authed: true, proxyReady: true, proxyAuthFile: "/tmp/ima2-auth.json" }),
+    resolveOAuthBin: () => "/x/cli.js",
+    spawnImpl: () => child,
+  });
+}
+
+test("OAuth launcher reports the session file it handed to the proxy", () => {
+  assert.equal(launchWith(new StubbornChild("SIGTERM")).authFile, "/tmp/ima2-auth.json");
+  const none = startOAuthProxy({ detectAuth: () => ({ authed: false, proxyReady: false, proxyAuthFile: null }), onExit: () => {} });
+  assert.equal(none.authFile, null);
+});
+
+test("stopAndWait resolves only after the child exits, escalating to SIGKILL", async () => {
+  const polite = new StubbornChild("SIGTERM");
+  await launchWith(polite).stopAndWait(50);
+  assert.deepEqual(polite.signals, ["SIGTERM"]);
+
+  const stubborn = new StubbornChild("SIGKILL");
+  await launchWith(stubborn).stopAndWait(50);
+  assert.deepEqual(stubborn.signals, ["SIGTERM", "SIGKILL"]);
+});
+
+test("stopAndWait rejects when the child survives SIGKILL, so no replacement races its port", async () => {
+  const immortal = new StubbornChild(null);
+  await assert.rejects(launchWith(immortal).stopAndWait(20), /did not exit/);
+});
+
+test("generation admission re-syncs the proxy session file even while the proxy is ready", async () => {
+  const { waitForOAuthReady } = await import("../lib/oauthProxy/runtime.js");
+  let syncs = 0;
+  await waitForOAuthReady({ oauthReadyState: "ready", syncOAuthProxySession: () => { syncs++; return false; } });
+  assert.equal(syncs, 1);
+});

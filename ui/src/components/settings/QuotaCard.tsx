@@ -2,6 +2,7 @@ import { fetchApi } from "../../lib/api-core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
 import { getLanAuthEpoch, isLanSessionLocked, LAN_AUTH_REQUIRED_EVENT } from "../../lib/lanSession";
+import { OAUTH_CHANGED_EVENT } from "../../hooks/useOAuthStatus";
 
 interface QuotaWindow {
   label: string;
@@ -33,6 +34,7 @@ interface QuotaResponse {
 
 interface SwitchState {
   phase: "idle" | "starting" | "waiting" | "complete" | "error";
+  flow?: "browser" | "device";
   userCode?: string;
   verificationUrl?: string;
   sessionId?: string;
@@ -97,14 +99,24 @@ function ChargeBar({ window: w }: { window: QuotaWindow }) {
   );
 }
 
+/**
+ * The ChatGPT browser login calls back to localhost:1455 on the server machine, so it only
+ * works when this browser runs there. Anywhere else (LAN), the device code is the only path.
+ */
+function defaultCodexFlow(): "browser" | "device" {
+  const host = window.location.hostname.replace(/^\[|\]$/g, "");
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" ? "browser" : "device";
+}
+
 function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "codex"; onComplete: () => void }) {
   const { t } = useI18n();
   const [state, setState] = useState<SwitchState>({ phase: "idle" });
   const [copied, setCopied] = useState(false);
   const switching = useRef(false);
 
-  const startSwitch = useCallback(async () => {
+  const startSwitch = useCallback(async (flowOverride?: "browser" | "device") => {
     if (switching.current || isLanSessionLocked()) return;
+    const flow = provider === "codex" ? (flowOverride ?? defaultCodexFlow()) : "device";
     const epoch = getLanAuthEpoch();
     switching.current = true;
     setState({ phase: "starting" });
@@ -112,16 +124,16 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
       const res = await fetchApi("/api/auth/switch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider }),
+        body: JSON.stringify({ provider, flow }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: t("settings.quota.switchFailed") })) as { error?: string };
         setState({ phase: "error", error: err.error || `HTTP ${res.status}` });
         return;
       }
-      const data = await res.json() as { sessionId: string; userCode: string; verificationUrl: string };
+      const data = await res.json() as { sessionId: string; userCode: string; verificationUrl: string; flow?: "browser" | "device" };
       if (isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
-      setState({ phase: "waiting", ...data });
+      setState({ phase: "waiting", ...data, flow: data.flow ?? flow });
       window.open(data.verificationUrl, "_blank");
     } catch (e) {
       switching.current = false;
@@ -148,6 +160,7 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
         if (cancelled || isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
         if (data.status === "complete") {
           setState({ phase: "complete" });
+          window.dispatchEvent(new Event(OAUTH_CHANGED_EVENT));
           return;
         }
         if (data.status === "error" || data.status === "expired") {
@@ -179,7 +192,7 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
         type="button"
         className="settings-action-btn"
         style={{ width: "100%", marginTop: "6px" }}
-        onClick={startSwitch}
+        onClick={() => { void startSwitch(); }}
       >
         {t("settings.quota.switchAccount", { provider: provider === "grok" ? "Grok" : "Codex" })}
       </button>
@@ -197,19 +210,27 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
   if (state.phase === "waiting") {
     return (
       <div style={{ marginTop: "6px", padding: "8px", background: "var(--surface, #f5f5f5)", borderRadius: "var(--r-sm)", fontSize: "12px" }}>
-        <div style={{ textAlign: "center", marginBottom: "4px" }}>
-          {t("settings.quota.enterCode")}
-        </div>
-        <div style={{ textAlign: "center", fontSize: "18px", fontWeight: 700, fontFamily: "monospace", letterSpacing: "2px", margin: "6px 0" }}>
-          {state.userCode}
-        </div>
+        {state.userCode ? (
+          <>
+            <div style={{ textAlign: "center", marginBottom: "4px" }}>
+              {t("settings.quota.enterCode")}
+            </div>
+            <div style={{ textAlign: "center", fontSize: "18px", fontWeight: 700, fontFamily: "monospace", letterSpacing: "2px", margin: "6px 0" }}>
+              {state.userCode}
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign: "center", marginBottom: "4px" }}>
+            {t("settings.quota.completeInBrowser")}
+          </div>
+        )}
         {state.verificationUrl && (
           <div style={{ display: "flex", gap: "4px", margin: "6px 0" }}>
             <button
               type="button"
               className="settings-action-btn"
               style={{ flex: 1, fontSize: "11px" }}
-              onClick={() => { switching.current = false; startSwitch(); }}
+              onClick={() => { switching.current = false; void startSwitch(state.flow); }}
             >
               {t("settings.quota.retry")}
             </button>
@@ -231,6 +252,16 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
         <div style={{ textAlign: "center", color: "var(--text-dim, #888)", fontSize: "11px" }}>
           {t("settings.quota.waitingApproval")}
         </div>
+        {provider === "codex" && state.flow === "browser" && (
+          <button
+            type="button"
+            className="settings-action-btn"
+            style={{ width: "100%", fontSize: "11px", marginTop: "6px" }}
+            onClick={() => { switching.current = false; void startSwitch("device"); }}
+          >
+            {t("settings.quota.useDeviceCode")}
+          </button>
+        )}
       </div>
     );
   }

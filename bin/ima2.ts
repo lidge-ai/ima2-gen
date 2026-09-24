@@ -9,8 +9,8 @@ import { spawn, execFileSync } from "child_process";
 import { confirmDestructiveAction } from "./lib/destructive-confirm.js";
 import { openUrl, killProcessTree } from "./lib/platform.js";
 import { ensureFreshUiDist } from "./lib/ui-build.js";
-import { codexFileLoginArgs, detectCodexAuth } from "../lib/codexDetect.js";
-import { packageCliCommand } from "../lib/packageCli.js";
+import { detectCodexAuth } from "../lib/codexDetect.js";
+import { resolveChatgptSession } from "../lib/chatgptAuth.js";
 
 import { errInfo } from "../lib/errInfo.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -54,12 +54,12 @@ function runSelf(args: string[]) {
   execFileSync(process.execPath, [join(ROOT, "bin", "ima2.js"), ...args], { stdio: "inherit" });
 }
 
-function runCodexLogin() {
-  const codex = packageCliCommand("@openai/codex", "codex", codexFileLoginArgs());
-  execFileSync(codex.command, codex.args, { stdio: "inherit", windowsHide: true });
-  if (!detectCodexAuth().proxyReady) {
-    throw new Error("Codex login completed without a file-backed session for the GPT OAuth proxy");
-  }
+/** Native ChatGPT login into ima2's own store (lib/chatgptLogin.ts); no Codex CLI child. */
+async function runGptLogin() {
+  const { gptLogin, notifyServerOfGptLogin } = await import("./commands/gpt.js");
+  const session = await gptLogin();
+  console.log(`\n  ChatGPT session saved to ${session.path}${session.email ? ` (${session.email})` : ""}\n`);
+  await notifyServerOfGptLogin();
 }
 
 function loadConfig() {
@@ -134,19 +134,16 @@ async function setup() {
     saveConfig(config);
     console.log("\n  Setting up both GPT OAuth + Grok OAuth...\n");
     // GPT OAuth
-    const auth = detectCodexAuth();
-    if (!auth.proxyReady) {
-      if (auth.authed) {
-        console.log("  Codex is signed in through the OS keyring; ima2 needs a file-backed session.\n");
-      }
+    const existing = resolveChatgptSession();
+    if (existing?.source === "ima2" && existing.refreshable) {
+      console.log(`  GPT OAuth session found (${existing.email ?? existing.path}).\n`);
+    } else {
       console.log("  Running GPT OAuth login...\n");
       try {
-        runCodexLogin();
-      } catch {
-        console.log("\n  GPT login failed. Continuing with Grok...\n");
+        await runGptLogin();
+      } catch (e) {
+        console.log(`\n  GPT login failed: ${(e as Error).message}\n  Continuing with Grok...\n`);
       }
-    } else {
-      console.log(`  GPT OAuth session found.\n`);
     }
     // Grok OAuth
     console.log("  Running Grok OAuth login...\n");
@@ -165,24 +162,21 @@ async function setup() {
     saveConfig(config);
     console.log("\n  Starting GPT OAuth login...\n");
 
-    const auth = detectCodexAuth();
-    const hasAuth = auth.proxyReady;
-
-    if (!hasAuth) {
-      if (auth.authed) {
-        console.log("  Codex is signed in through the OS keyring; ima2 needs a file-backed session.\n");
-      }
-      console.log("  Running 'codex login' — follow the browser prompt.\n");
+    // Setup reuses an ima2 session it already has; 'ima2 login' always signs in again.
+    const existing = resolveChatgptSession();
+    const reuse = existing?.source === "ima2" && existing.refreshable;
+    if (!reuse) {
+      console.log("  Signing in with your ChatGPT account — follow the browser prompt.\n");
       try {
-        runCodexLogin();
-      } catch {
-        console.log("\n  Login failed or cancelled. You can retry with 'ima2 serve'.\n");
+        await runGptLogin();
+      } catch (e) {
+        console.log(`\n  Login failed: ${(e as Error).message}`);
+        console.log("  Retry with 'ima2 login' (or 'ima2 login --device' on a headless machine).\n");
         rl.close();
         exitFlushed(1);
       }
     } else {
-      const how = auth.probe === "authed" ? "codex CLI" : "auth file";
-      console.log(`  Existing GPT OAuth session found (${how}).\n`);
+      console.log(`  Existing GPT OAuth session found (${existing.email ?? existing.path}).\n`);
     }
 
     saveConfig(config);
@@ -290,26 +284,50 @@ async function showStatus() {
     console.log("  Run 'ima2 setup' to configure.\n");
   }
 
-  // Check OAuth auth files + codex CLI probe
-  const auth = detectCodexAuth();
-  console.log(`  GPT OAuth sessions:`);
-  console.log(`    ${auth.files.codex}          ${auth.fileHits.codex ? "✓" : "✗"}`);
-  console.log(`    ${auth.files.chatgpt}  ${auth.fileHits.chatgpt ? "✓" : "✗"}`);
-  if (auth.fileHits.xdgCodex) {
-    console.log(`    ${auth.files.xdgCodex}  ✓`);
+  const report = await buildAuthReport();
+  console.log("  Logins");
+  const { authStatusLines } = await import("./commands/gpt.js");
+  for (const line of authStatusLines("GPT OAuth (ChatGPT)", report.gpt, report.gptFile, "      ")) console.log(`    ${line}`);
+  if (report.keyringOnly) {
+    console.log("      Codex CLI is signed in through the OS keyring only; the GPT OAuth proxy cannot read that.");
   }
-  const probeLabel =
-    auth.probe === "authed" ? "✓ authed"
-    : auth.probe === "unauthed" ? "✗ not logged in"
-    : auth.probe === "error" ? "✗ codex CLI failed"
-    : "– codex CLI not found";
-  console.log(`    codex login status           ${probeLabel}`);
-  if (auth.authed && !auth.proxyReady) {
-    console.log("    GPT OAuth proxy             ✗ keyring-only; run 'ima2 login'");
-  } else if (auth.proxyReady) {
-    console.log("    GPT OAuth proxy             ✓ file-backed session ready");
+  for (const line of authStatusLines("Grok OAuth (xAI)", report.grok, undefined, "      ")) console.log(`    ${line}`);
+  console.log("");
+  if (report.server) {
+    const proxy = report.server.proxy ?? "unknown";
+    const mark = proxy === "ready" ? "✓" : proxy === "starting" ? "…" : "✗";
+    console.log(`  Server ${report.server.url}: GPT OAuth proxy ${mark} ${proxy}`);
+  } else {
+    console.log("  Server: not running (start it with 'ima2 serve')");
   }
   console.log("");
+}
+
+/**
+ * Auth verdicts for `ima2 status`. When a server is advertised, its live proxy verdict is
+ * folded in: a session file can look fine while ChatGPT has already revoked it.
+ */
+async function buildAuthReport() {
+  const { gptAuthStatus, grokAuthStatus } = await import("../lib/authStatus.js");
+  const { resolveChatgptSession } = await import("../lib/chatgptAuth.js");
+  const session = resolveChatgptSession();
+  let server: { url: string; proxy?: "ready" | "auth_required" | "starting" | "offline" } | null = null;
+  const url = advertisedServerUrl();
+  if (url) {
+    try {
+      const res = await fetch(`${url}/api/oauth/status`, { signal: AbortSignal.timeout(2500) });
+      const body = await res.json() as { status?: string };
+      const proxy = body.status;
+      server = proxy === "ready" || proxy === "auth_required" || proxy === "starting" || proxy === "offline"
+        ? { url, proxy }
+        : { url };
+    } catch {
+      server = null;
+    }
+  }
+  const gpt = gptAuthStatus(session, server?.proxy ? { proxyStatus: server.proxy } : {});
+  const keyringOnly = !session && detectCodexAuth().probe === "authed";
+  return { gpt, gptFile: session?.path, grok: grokAuthStatus(), keyringOnly, server };
 }
 
 function openBrowser() {
@@ -336,7 +354,8 @@ function showHelp() {
 
   Server commands:
     serve [--dev] [--force]  Start the server (--force allows a second instance)
-    setup, login   Configure API key or GPT OAuth (interactive)
+    setup          Choose providers and sign in (interactive)
+    login          Sign in with ChatGPT for GPT OAuth (--device for headless)
     status         Show current configuration status
     doctor         Diagnose environment and setup
     open           Open web UI in browser
@@ -366,6 +385,7 @@ function showHelp() {
     billing        API usage / quota
     providers      Configured providers
     oauth <sub>    GPT OAuth proxy status              (ima2 oauth --help)
+    gpt <sub>      ChatGPT OAuth login/status/logout (ima2 gpt --help)
     grok <sub>     xAI OAuth login/status/logout    (ima2 grok --help)
     config <sub>   Config get/set/ls/path/rm       (ima2 config --help)
     defaults <sub> Inspect/change model defaults   (ima2 defaults --help)
@@ -440,7 +460,7 @@ if (args.includes("-v") || args.includes("--version")) {
   exitFlushed(0);
 }
 
-const helpOwningCommands = ["doctor", "gen", "video", "edit", "vectorize", "ls", "show", "ps", "cancel", "session", "history", "prompt", "multimode", "node", "annotate", "canvas-versions", "metadata", "comfy", "cardnews", "inflight", "storage", "billing", "providers", "oauth", "grok", "config", "defaults", "models", "capabilities", "tools", "skill", "ping", "backfill-thumbs", "service"];
+const helpOwningCommands = ["doctor", "gen", "video", "edit", "vectorize", "ls", "show", "ps", "cancel", "session", "history", "prompt", "multimode", "node", "annotate", "canvas-versions", "metadata", "comfy", "cardnews", "inflight", "storage", "billing", "providers", "oauth", "grok", "gpt", "login", "config", "defaults", "models", "capabilities", "tools", "skill", "ping", "backfill-thumbs", "service"];
 if (!command) {
   showHelp();
   exitFlushed(1);
@@ -466,15 +486,25 @@ switch (command) {
     exitFlushed(Number(process.exitCode ?? 0));
     break;
   }
+  case "login": {
+    // 'ima2 login' signs in to ChatGPT now; it no longer rewrites the provider config.
+    const { default: gptCmd } = await import("./commands/gpt.js");
+    await gptCmd(["login", ...args.slice(1)]);
+    break;
+  }
   case "setup":
-  case "login":
     setup().then(() => console.log("  Done. Run 'ima2 serve' to start.")).catch((e) => {
       console.error(`Setup failed: ${e?.message || e}`);
       exitFlushed(1);
     });
     break;
   case "status":
-    showStatus();
+    if (args.includes("--json")) {
+      const report = await buildAuthReport();
+      console.log(JSON.stringify({ version: pkg.version, provider: loadConfig().provider ?? null, ...report }, null, 2));
+    } else {
+      await showStatus();
+    }
     break;
   case "doctor":
     await doctor(args.slice(1));
@@ -527,6 +557,7 @@ switch (command) {
   case "tools":
   case "skill":
   case "grok":
+  case "gpt":
   case "ping": {
     const { setCliVersion } = await import("./lib/client.js");
     setCliVersion(pkg.version);
