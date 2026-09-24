@@ -8,6 +8,9 @@ const npmUrl = 'https://www.npmjs.com/package/ima2-gen';
 const koReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.ko.md';
 const jaReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.ja.md';
 const zhReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh-CN.md';
+const zhTwReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh-TW.md';
+// Desktop builds are published as separate desktop-v* releases next to the npm releases.
+const desktopUrl = 'https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true';
 ---
 
 <section class="std install-section" id="install">
@@ -16,6 +19,19 @@ const zhReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh
     <h2 class="install-heading chrome-text reveal" style="--i:1">{t(lang, 'install.h.before')}<span>{t(lang, 'install.h.em')}</span></h2>
     <p class="section-lede reveal" style="--i:2">{t(lang, 'install.lede')}</p>
     <div class="install-flow">
+      <div class="desktop reveal" style="--i:3">
+        <div class="desktop-head">
+          <p class="oneclick-title">{t(lang, 'install.desktop.title')}</p>
+          <span class="desktop-note">{t(lang, 'install.desktop.note')}</span>
+        </div>
+        <ol class="desktop-steps">
+          <li>{t(lang, 'install.desktop.step1')}</li>
+          <li>{t(lang, 'install.desktop.step2')}</li>
+          <li>{t(lang, 'install.desktop.step3')}</li>
+        </ol>
+        <a class="desktop-dl" href={desktopUrl} target="_blank" rel="noopener"><span>{t(lang, 'install.desktop.cta')}</span><span aria-hidden="true">↗</span></a>
+        <p class="desktop-other">{t(lang, 'install.desktop.other')}</p>
+      </div>
       <div class="install-codes reveal" style="--i:3"><CodeCopy command="npm install -g ima2-gen" /><CodeCopy command="ima2 setup" /><CodeCopy command="ima2 serve" /></div>
       <div class="install-meta reveal" style="--i:4">
         <div class="oneclick">
@@ -33,6 +49,7 @@ const zhReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh
           <li><a href={koReadme} target="_blank" rel="noopener"><span>{t(lang, 'install.link.ko')}</span><span aria-hidden="true">↗</span></a></li>
           <li><a href={jaReadme} target="_blank" rel="noopener"><span>{t(lang, 'install.link.ja')}</span><span aria-hidden="true">↗</span></a></li>
           <li><a href={zhReadme} target="_blank" rel="noopener"><span>{t(lang, 'install.link.zh')}</span><span aria-hidden="true">↗</span></a></li>
+          <li><a href={zhTwReadme} target="_blank" rel="noopener"><span>{t(lang, 'install.link.zhTw')}</span><span aria-hidden="true">↗</span></a></li>
         </ul>
       </div>
     </div>
@@ -45,6 +62,14 @@ const zhReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh
   .install-heading span { display: block; }
   .install-flow { display: flex; flex-direction: column; gap: 48px; max-width: 860px; margin-top: 68px; }
   .install-codes { display: flex; flex-direction: column; gap: 12px; }
+  .desktop { display: flex; flex-direction: column; gap: 14px; padding: 22px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .desktop-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+  .desktop-head .oneclick-title { margin: 0; }
+  .desktop-note { color: var(--text-dim); font: 500 10px/1.6 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+  .desktop-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text-dim); font: 400 14px/1.55 var(--font-body); }
+  .desktop-dl { align-self: flex-start; display: inline-flex; gap: 10px; align-items: center; padding: 12px 18px; border: 1px solid var(--glass-line); color: var(--text); font: 600 14px/1 var(--font-display); transition: opacity 180ms ease; }
+  .desktop-dl:hover { opacity: .72; }
+  .desktop-other { margin: 0; color: var(--text-dim); font: 400 12px/1.5 var(--font-body); }
   .install-codes :global(.codeblock) { min-height: 72px; padding: 18px 20px; font-size: 15px; }
   .install-meta { display: flex; flex-direction: column; gap: 22px; }
   .oneclick-title { margin: 0 0 14px; font: 600 16px/1.3 var(--font-display); letter-spacing: 0; }

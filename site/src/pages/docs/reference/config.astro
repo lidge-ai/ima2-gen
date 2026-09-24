@@ -42,11 +42,13 @@ const cliMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md';
       <tr><td><code>IMA2_API_REASONING_EFFORT</code></td><td><code>low</code></td><td>Default reasoning effort for the API path.</td></tr>
       <tr><td><code>IMA2_API_IMAGE_SIZE</code></td><td><code>1024x1024</code></td><td>Default size for the API path.</td></tr>
       <tr><td><code>IMA2_API_ALLOW_WEB_SEARCH</code></td><td><code>true</code></td><td>Toggle web search for the API path.</td></tr>
-      <tr><td><code>IMA2_GROK_PLANNER_MODEL</code></td><td><code>grok-4.5</code></td><td>xAI search/planner model. Grok 4.3 remains an explicit compatibility override.</td></tr>
-      <tr><td><code>IMA2_GROK_PLANNER_TIMEOUT_MS</code></td><td><code>60000</code></td><td>Timeout for each Grok search/planner step.</td></tr>
-      <tr><td><code>IMA2_GROK_IMAGE_MODEL_DEFAULT</code></td><td><code>grok-imagine-image-quality</code></td><td>Default xAI image model for Grok image calls.</td></tr>
+      <tr><td><code>IMA2_GROK_PLANNER_MODEL</code></td><td><code>grok-4.3</code></td><td>xAI search/planner model. Grok 4.5 and 4.6 are selectable.</td></tr>
+      <tr><td><code>IMA2_GROK_PLANNER_TIMEOUT_MS</code></td><td><code>900000</code></td><td>Timeout for each Grok search/planner step.</td></tr>
+      <tr><td><code>IMA2_GROK_SEARCH_TIMEOUT_MS</code></td><td><code>300000</code></td><td>Timeout for the mandatory xAI web-search step.</td></tr>
+      <tr><td><code>IMA2_GROK_VIDEO_PLAN_TOTAL_TIMEOUT_MS</code></td><td><code>1500000</code></td><td>Ceiling for the whole video search + planner phase.</td></tr>
+      <tr><td><code>IMA2_GROK_IMAGE_MODEL_DEFAULT</code></td><td><code>grok-imagine-image-2.0</code></td><td>Default xAI image model for Grok image calls.</td></tr>
       <tr><td><code>IMA2_GROK_VIDEO_MODEL_DEFAULT</code></td><td><code>grok-imagine-video-1.5</code></td><td>Default xAI video model for Grok generation.</td></tr>
-      <tr><td><code>IMA2_GROK_GENERATION_TIMEOUT_MS</code></td><td><code>120000</code></td><td>Timeout for final Grok image generation/edit calls.</td></tr>
+      <tr><td><code>IMA2_GROK_GENERATION_TIMEOUT_MS</code></td><td><code>300000</code></td><td>Timeout for final Grok image generation/edit calls.</td></tr>
       <tr><td><code>IMA2_GROK_STATUS_TIMEOUT_MS</code></td><td><code>3000</code></td><td>Timeout for <code>/api/grok/status</code> model probes.</td></tr>
       <tr><td><code>GEMINI_API_KEY</code></td><td>—</td><td>API key for the <code>gemini-api</code> provider direct path.</td></tr>
       <tr><td><code>VERTEX_SERVICE_ACCOUNT_JSON</code></td><td>—</td><td>Google Cloud service-account JSON (inline) for Vertex AI auth on the <code>gemini-api</code> provider. When both <code>GEMINI_API_KEY</code> and this are set, Vertex takes priority unless the last-saved <code>geminiAuthMode</code> overrides it.</td></tr>

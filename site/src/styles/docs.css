@@ -40,7 +40,7 @@
   color: var(--text);
   border-bottom: 1px solid var(--line);
 }
-.docs-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.docs-brand .mark { width: 14px; height: 15px; flex: none; background: var(--text, currentColor); -webkit-mask: var(--mark) center / contain no-repeat; mask: var(--mark) center / contain no-repeat; }
 .docs-brand .tag { color: var(--muted); font-size: 11px; }
 
 .docs-search { padding: 12px 18px; }

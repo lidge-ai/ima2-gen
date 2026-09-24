@@ -9,7 +9,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
   lang="ko"
   active="quickstart"
   title="빠른 시작"
-  description="ima2-gen 설치, 인증 선택 (ChatGPT/Grok/Both/API), 로컬 서버 실행, 이미지와 영상 생성 시작."
+  description="ima2-gen 설치(Mac 앱, 설치 스크립트, npm), 인증 선택(ChatGPT/Grok/Both/웹 설정), 로컬 서버 실행, 이미지와 영상 생성 시작."
 >
   <p class="docs-eyebrow">시작하기</p>
   <h1>빠른 시작</h1>
@@ -18,7 +18,14 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
     기본 OAuth 경로에는 API 키가 필요 없습니다.
   </p>
 
+  <h2>Mac 앱</h2>
+  <p>
+    Apple Silicon Mac이라면 데스크톱 앱이 가장 빠릅니다. 서명된 DMG를 받아 ima2를 응용 프로그램 폴더로
+    옮기고 실행하세요. 자세한 내용은 <a href={d('desktop')}>Mac 앱</a>을 보세요.
+  </p>
+
   <h2>설치 및 실행</h2>
+  <p>Node.js 22 이상이 필요합니다.</p>
   <pre><code>npm install -g ima2-gen
 ima2 setup
 ima2 serve</code></pre>
@@ -41,7 +48,7 @@ ima2 serve</code></pre>
 
   <p>
     각 스크립트는 nvm/fnm/brew/winget을 확인하고, 가장 적합한 방법으로
-    Node LTS를 설치하며, 멈춘 프로세스 정리도 자동으로 처리합니다.
+    Node LTS를 설치한 뒤 ima2-gen을 설치합니다.
   </p>
 
   <div class="docs-callout docs-callout-info">
@@ -56,14 +63,14 @@ ima2 serve</code></pre>
     <li><strong>GPT OAuth</strong> — ChatGPT 계정으로 로그인 (무료, 이미지만)</li>
     <li><strong>Grok OAuth</strong> — xAI/Grok 계정으로 로그인 (이미지 + 영상)</li>
     <li><strong>Both</strong> — GPT + Grok 둘 다 (전체 기능)</li>
-    <li><strong>API Key</strong> — OpenAI API 키 입력 (유료)</li>
+    <li><strong>Web setup</strong> — 터미널 대신 웹 UI 설정에서 제공자를 고르거나 API 키를 넣습니다</li>
   </ol>
   <p>영상 생성은 Grok OAuth(2번 또는 3번)가 필요합니다. 나중에 <code>ima2 grok login</code>으로 추가할 수도 있고, 이 명령은 manual-paste 흐름을 기본으로 씁니다.</p>
   <p>GPT OAuth 토큰이 만료되면 <code>ima2 setup</code>을 다시 실행하세요(옵션 1).</p>
   <div class="docs-callout docs-callout-warn">
     <strong>업데이트.</strong> Ctrl+C로 서버를 종료하세요 — ima2-gen은 DB, 소켓, 자식 프로세스를
     정리하는 clean shutdown을 수행합니다. 그 다음 <code>npm install -g ima2-gen@latest</code>를
-    실행하세요. Windows에서 <code>EBUSY</code>가 나면 <a href="/ima2-gen/install-windows.ps1">설치 스크립트</a>를 사용하세요.
+    실행하세요. Windows에서 <code>EBUSY</code>가 나면 실행 중인 ima2를 모두 멈춘 뒤(<code>ima2 stop</code>) 다시 설치하세요.
   </div>
 
   <h2>소스에서 개발</h2>

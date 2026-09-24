@@ -17,6 +17,8 @@ const { lang = 'en', active = '', title, description } = Astro.props;
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, ''); // '/ima2-gen'
 const siteRoot = 'https://lidge-jun.github.io/ima2-gen/';
+// Built from BASE_URL here: a url() in docs.css cannot see the /ima2-gen/ prefix.
+const markStyle = `--mark: url("${base}/brand-mark.svg")`;
 const langBase = lang === 'ko' ? `${base}/ko` : base; // '/ima2-gen' | '/ima2-gen/ko'
 const docsRoot = `${langBase}/docs`;
 
@@ -53,10 +55,12 @@ const koAlt = `${siteRoot}ko/docs${slugSuffix}`;
 
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={`${siteRoot}og.png`} />
     <meta property="og:type" content="article" />
     <meta property="og:url" content={canonical} />
 
     <link rel="icon" type="image/svg+xml" href={faviconHref} />
+    <link rel="apple-touch-icon" href={`${base}/apple-touch-icon.png`} />
 
     <link rel="preconnect" href="https://api.fontshare.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -76,8 +80,8 @@ const koAlt = `${siteRoot}ko/docs${slugSuffix}`;
     <div class="docs-layout">
       <nav class="docs-sidebar" aria-label={docsT(lang, 'nav.aria')}>
         <a class="docs-brand" href={siteHref('')}>
-          <span class="dot" aria-hidden="true"></span>
-          <span>ima2-gen</span>
+          <span class="mark" style={markStyle} aria-hidden="true"></span>
+          <span>ima2</span>
           <span class="tag">{docsT(lang, 'brand.tag')}</span>
         </a>
 
