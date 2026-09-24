@@ -128,7 +128,7 @@ export function startOAuthProxy(options: any = {}) {
       const exited = new Promise<void>((resolve) => { child.once("exit", () => resolve()); });
       const within = (ms: number) => Promise.race([
         exited.then(() => true),
-        new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), ms).unref?.(); }),
+        new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), ms); }),
       ]);
       return within(timeoutMs).then(async (done) => {
         if (done) return;
