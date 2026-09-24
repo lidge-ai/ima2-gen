@@ -198,6 +198,7 @@ describe("native ChatGPT OAuth store and login", () => {
     }) as typeof fetch;
     await assert.rejects(runChatgptLogin({ flow: "device", fetchImpl, signal: abort.signal, sleep: async () => {}, onPrompt: () => {} }), /cancelled/);
     assert.equal(resolveChatgptSession(), null);
+  });
 
   it("status verdicts follow OpenCodex health: action on every non-healthy state, masked ids, no tokens", () => {
     assert.deepEqual(
