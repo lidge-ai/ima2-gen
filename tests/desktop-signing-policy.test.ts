@@ -10,9 +10,9 @@ import { MAC_SIGNING_INPUTS, resolveDesktopBuildPolicy, validateMacSigningCreden
 
 const REQUIRED = ["CSC_LINK", "CSC_KEY_PASSWORD", "APPLE_ID", "APPLE_APP_SPECIFIC_PASSWORD", "APPLE_TEAM_ID"];
 type Step = { id?: string; name?: string; uses?: string; if?: string; run?: string; env?: Record<string, string>; with?: Record<string, unknown>; "continue-on-error"?: boolean };
-type Workflow = { on: { workflow_dispatch: { inputs: Record<string, { default: unknown }> }; push: { tags: string[] }; pull_request: unknown; pull_request_target?: unknown }; jobs: {
-  prepare: { outputs: { matrix: string }; steps: Step[] };
-  build: { needs: string; strategy: { matrix: string }; steps: Step[] };
+type Workflow = { on: { workflow_dispatch: { inputs: Record<string, { default: unknown }> }; push: { tags: string[]; branches: string[] }; pull_request?: unknown; pull_request_target?: unknown }; jobs: {
+  prepare: { outputs: { matrix: string; changed: string }; steps: Step[] };
+  build: { needs: string; if: string; strategy: { matrix: string }; steps: Step[] };
   draft_release: { needs: string[]; if: string; steps: Step[] };
   publish_release: { needs: string; if: string; environment: { name: string; url: string }; steps: Step[] };
 } };
@@ -20,11 +20,11 @@ const loadWorkflow = (): Workflow => parse(readFileSync(".github/workflows/deskt
 const distMacScript = (): string => JSON.parse(readFileSync("desktop/package.json", "utf8")).scripts["dist:mac"];
 const publishFlagCount = (command: string) => command.match(/--publish\b/g)?.length ?? 0;
 
-function condition(expression: string, eventName: string, ref: string, platform = "all", publish = false, target = "mac", outcome = "success") {
+function condition(expression: string, eventName: string, ref: string, platform = "all", publish = false, target = "mac", outcome = "success", changed = "") {
   return Boolean(runInNewContext(expression, {
     github: { event_name: eventName, ref, event: { inputs: { platform, publish: String(publish) } } },
     inputs: { platform, publish }, matrix: { target, signed: true, trusted: true },
-    needs: { prepare: { outputs: { signed: "true", trusted: "true", release: "true" } } },
+    needs: { prepare: { outputs: { signed: "true", trusted: "true", release: "true", changed } } },
     steps: { mac_build: { outcome }, mac_verify: { outcome } },
     always: () => true, startsWith: (value: string, prefix: string) => value.startsWith(prefix),
   }, { timeout: 1000 }));
@@ -32,11 +32,19 @@ function condition(expression: string, eventName: string, ref: string, platform 
 
 function assertWorkflowBoundary(workflow: Workflow) {
   assert.equal(workflow.on.pull_request_target, undefined);
+  // Desktop matrix builds are post-merge evidence: the unsigned preview moved
+  // from pull_request to dev pushes, keeping the PR contract minimal.
+  assert.equal(workflow.on.pull_request, undefined);
   assert.deepEqual(workflow.on.push.tags, ["desktop-v*"]);
+  assert.deepEqual(workflow.on.push.branches, ["dev"]);
   // A tag is the only ref that can reach a release, so dispatch has no publish input.
   assert.equal(workflow.on.workflow_dispatch.inputs.publish, undefined);
   assert.equal(workflow.on.workflow_dispatch.inputs.platform.default, "mac");
   assert.equal(workflow.jobs.build.needs, "prepare");
+  // prepare's paths step only runs on branch pushes; '' keeps tags/dispatches
+  // unconditionally selected while 'false' skips the matrix on docs-only pushes.
+  assert.equal(workflow.jobs.prepare.outputs.changed, "${{ steps.paths.outputs.desktop }}");
+  assert.equal(workflow.jobs.build.if, "needs.prepare.outputs.changed != 'false'");
   assert.equal(workflow.jobs.prepare.outputs.matrix, "${{ steps.policy.outputs.matrix }}");
   assert.equal(workflow.jobs.build.strategy.matrix, "${{ fromJSON(needs.prepare.outputs.matrix) }}");
   const prepare = workflow.jobs.prepare.steps.find((step) => step.id === "policy")!;
@@ -78,7 +86,8 @@ function assertWorkflowBoundary(workflow: Workflow) {
   for (const ref of ["refs/heads/dev", "refs/tags/desktop-v3.16.1"]) {
     assert.equal(condition(signed.if!, "pull_request", ref), false, "PR outputs cannot grant signing");
     assert.equal(condition(verify.if!, "pull_request", ref), false);
-    assert.equal(condition(preview.if!, "pull_request", ref), true);
+    // The unsigned preview runs on branch pushes only, never on a tag or a PR.
+    assert.equal(condition(preview.if!, "pull_request", ref), false);
     assert.equal(condition(workflow.jobs.draft_release.if, "pull_request", ref, "all", true), false);
     for (const platform of ["all", "mac", "win", "linux"]) {
       // No dispatch input combination can reach a release.
@@ -95,6 +104,12 @@ function assertWorkflowBoundary(workflow: Workflow) {
   assert.equal(condition(workflow.jobs.draft_release.if, "push", "refs/tags/desktop-v3.16.1"), true);
   assert.equal(condition(workflow.jobs.draft_release.if, "push", "refs/heads/dev"), false);
   assert.equal(condition(signed.if!, "push", "refs/heads/dev"), false);
+  assert.equal(condition(preview.if!, "push", "refs/heads/dev"), true);
+  assert.equal(condition(preview.if!, "push", "refs/tags/desktop-v3.16.1"), false);
+  // The build matrix is skipped only when a branch push touched nothing desktop.
+  assert.equal(condition(workflow.jobs.build.if, "push", "refs/heads/dev", "all", false, "mac", "success", "false"), false);
+  assert.equal(condition(workflow.jobs.build.if, "push", "refs/heads/dev", "all", false, "mac", "success", "true"), true);
+  assert.equal(condition(workflow.jobs.build.if, "push", "refs/tags/desktop-v3.16.1"), true);
 }
 
 /**

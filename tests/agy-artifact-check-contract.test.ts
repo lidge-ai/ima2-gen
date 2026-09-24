@@ -294,7 +294,7 @@ test('Agy workflow verifies the prefix-installed npm before exporting its CLI bi
   });
 });
 
-const HEAD_EXPRESSION = "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.sha }}";
+const HEAD_EXPRESSION = "${{ inputs.sha || github.sha }}";
 const MATRIX = [
   { os: 'ubuntu-latest', platform: 'linux', node: '22.23.0', npm: '11.18.0', mode: 'hosted-heavy' },
   { os: 'ubuntu-latest', platform: 'linux', node: '24.17.0', npm: '12.0.0', mode: 'hosted-heavy' },
@@ -309,8 +309,10 @@ function parsed(source: string) {
 
 function validateWorkflow(source: string) {
   const workflow = parsed(source);
-  assert.deepEqual(Object.keys(workflow.on).sort(), ['pull_request', 'workflow_dispatch']);
-  assert.deepEqual(workflow.on.pull_request.types, ['opened', 'synchronize', 'reopened', 'ready_for_review']);
+  // Cross-platform evidence moved post-merge: the four-leg matrix runs on dev
+  // pushes and manual dispatch, while PRs carry only the fast Ubuntu contract.
+  assert.deepEqual(Object.keys(workflow.on).sort(), ['push', 'workflow_dispatch']);
+  assert.deepEqual(workflow.on.push.branches, ['dev']);
   assert.equal(workflow.on.workflow_dispatch.inputs.sha.required, true);
   assert.equal(workflow.on.workflow_dispatch.inputs.sha.type, 'string');
   assert.deepEqual(workflow.permissions, { contents: 'read' });
