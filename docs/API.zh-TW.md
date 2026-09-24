@@ -705,6 +705,17 @@ X-Ima2-Tab-Id
 | `POST` | `/api/cardnews/cards/:cardId/regenerate` |重新生成一張卡|
 | `POST` | `/api/cardnews/export` |匯出已完成的設定資產|
 
+## GitHub Star
+
+工作室的一次性 Star 提示透過使用者自己的 `gh` 登入替儲存庫加星；ima2 不保存任何 GitHub 權杖。這些路由只回應本機（回送位址）請求，區域網路用戶端會收到 `403 LOCAL_ONLY`。提示狀態檔與 CLI 提示共用（`<configDir>/state/star-prompt.json`）。
+
+| 方法 | 路徑 | 結果 |
+|---|---|---|
+| `GET` | `/api/github/star` | `{ state: "starred" \| "not-starred" \| "unauthenticated" \| null, prompted, repo, url }`，未安裝或未登入 `gh` 時為 `unauthenticated`；已提示後為 `null`（不再呼叫 gh） |
+| `POST` | `/api/github/star` | 透過 `gh api -X PUT /user/starred/lidge-jun/ima2-gen` 加星並標記已提示；`409 GH_UNAUTHENTICATED`、`502 GH_FAILED` |
+| `POST` | `/api/github/star/dismiss` | 不加星，只標記已提示 |
+
+
 ## 常見錯誤代碼
 
 |程式碼|意義|

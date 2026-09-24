@@ -36,7 +36,7 @@ function appMenu(actions) {
     submenu: [
       { role: "about" },
       { type: "separator" },
-      { label: "Check for Updates…", enabled: actions.updaterActive, click: () => actions.checkForUpdates() },
+      { label: "Check for Updates…", enabled: actions.updaterActive, visible: Boolean(actions.updaterActive), click: () => actions.checkForUpdates() },
       { type: "separator" },
       { label: "Settings…", accelerator: "Cmd+,", click: () => actions.openSettings() },
       { type: "separator" },

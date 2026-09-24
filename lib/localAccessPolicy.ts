@@ -68,6 +68,13 @@ function literalHost(address: string): string {
   return isIP(address) === 6 ? `[${address}]` : address;
 }
 
+/** True when a socket peer is this computer (127.0.0.0/8, ::1, IPv4-mapped loopback). */
+export function isLoopbackPeer(address: string | undefined): boolean {
+  if (!address) return false;
+  const host = literalHost(address);
+  return host === "[::1]" || /^127\.\d+\.\d+\.\d+$/.test(host);
+}
+
 function servingOrigins(req: Request, host: string, publicOrigins: readonly string[]): string[] {
   const origins = new Map<string, string>();
   const port = req.socket.localPort;

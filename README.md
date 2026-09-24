@@ -14,16 +14,20 @@
 The installer derives its Node.js floor from package metadata and runs an offline installation check before launching the server.
 
 <p align="center">
-  <img src="assets/logo.png" alt="ima2-gen logo" width="240">
+  <img src="assets/logo.png" alt="ima2" width="160">
+</p>
+
+<p align="center">
+  <strong>A local image and video studio for people and coding agents.</strong>
 </p>
 
 [![npm version](https://img.shields.io/npm/v/ima2-gen)](https://www.npmjs.com/package/ima2-gen)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> 🌐 **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/)
+> **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/)
 >
-> 📖 **Developer docs**: [Documentation site](https://lidge-jun.github.io/ima2-gen/docs) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/docs)
+> **Developer docs**: [Documentation site](https://lidge-jun.github.io/ima2-gen/docs) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/docs)
 >
 > **Read in other languages**: [한국어](docs/README.ko.md) · [日本語](docs/README.ja.md) · [正體中文](docs/README.zh-TW.md) · [简体中文](docs/README.zh-CN.md)
 
@@ -35,6 +39,18 @@ Install globally and generate images and videos through the core registry: OpenA
 
 ## Quick Start
 
+### Mac app (Apple Silicon)
+
+The desktop app is the quickest way in on an Apple Silicon Mac. It runs the same local server and studio in a Mac window with a menu bar icon, and it is signed and notarized by Apple.
+
+1. Download `ima2-<version>-mac-arm64.dmg` from the newest [ima2 Desktop release](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true).
+2. Open the DMG and drag **ima2** into **Applications**.
+3. Launch ima2 and pick a provider on the welcome screen.
+
+The app brings its own runtime, so no Node.js install is needed. See the [Mac App guide](https://lidge-jun.github.io/ima2-gen/docs/desktop) for checksums, updates and settings. On an Intel Mac, Windows or Linux, use npm or the one-click installer below.
+
+### npm
+
 ```bash
 npm install -g ima2-gen
 ima2 setup
@@ -43,14 +59,7 @@ ima2 serve
 
 Then open `http://localhost:3333`.
 
-### Docker
-
-```bash
-docker build -t ima2-gen .
-docker run -d -p 3333:3333 -e IMA2_LAN_TOKEN=change-me -v ima2-data:/data ima2-gen
-```
-
-See [docs/DOCKER.md](docs/DOCKER.md) for compose usage, required environment, and limitations.
+### Generate from the CLI
 
 To generate from the CLI, inspect the live lane catalog and choose explicit image/video defaults once:
 
@@ -68,6 +77,15 @@ ima2 video "animate this scene" --ref photo.png --duration 10
 If `3333` is already occupied, `ima2-gen` binds the next available port and writes the actual URL to `~/.ima2/server.json`. Use `ima2 open` or the URL printed in the terminal instead of assuming the port.
 
 > **Using npx?** See [docs/NPX_QUICKSTART.md](docs/NPX_QUICKSTART.md) for the `npx ima2-gen serve` workflow.
+
+### Docker
+
+```bash
+docker build -t ima2-gen .
+docker run -d -p 3333:3333 -e IMA2_LAN_TOKEN=change-me -v ima2-data:/data ima2-gen
+```
+
+See [docs/DOCKER.md](docs/DOCKER.md) for compose usage, required environment, and limitations.
 
 ### One-Click Install (no npm required)
 
@@ -103,8 +121,7 @@ Video generation requires Grok OAuth (option 2 or 3). Run `ima2 grok login` sepa
 
 ### Updating
 
-Stop the running server with Ctrl+C, then:
-(or from another terminal: `ima2 stop`)
+Stop the running server with Ctrl+C (or run `ima2 stop` from another terminal), then:
 
 ```bash
 npm install -g ima2-gen@latest
@@ -125,7 +142,7 @@ Ctrl+C now performs a clean shutdown — closing the database, stopping child pr
 - **Prompt Builder backend choice**: Settings > Providers can keep Builder routing on **Auto** or pin a supported text backend and model, and the **via &lt;backend&gt;** badge shows which backend actually answered.
 - **Light & dark themes**: a token-based light mode with tinted neutrals and AA contrast, switchable between light / dark / system in Settings, with no flash on load.
 - **Local gallery**: keep generated assets on your machine with session-aware history. By default the gallery shows the current session and an All Images toggle reveals the full history; the default scope is sticky across sessions. Each image records its generation time and reasoning effort in the result metadata, so they persist across reloads.
-- **Reference images**: drag, drop, paste, and attach up to 5 references (images) or up to 7 references (video); large images are compressed before upload.
+- **Reference images**: drag, drop, paste, and attach up to 5 references (images) or up to 14 references (video); large images are compressed before upload.
 - **Prompt library imports**: import local prompt packs, GitHub folders, and curated GPT-image prompt hints into the built-in prompt library.
 - **Mobile shell**: use the app bar, compose sheet, and compact settings toggle on smaller screens.
 - **Observable jobs**: active and recent jobs are tracked with safe logs and request IDs.
@@ -140,7 +157,7 @@ generation, frontend asset production, and design direction discovery.
 |-------|---------|----------------|
 | **Core** | `ima2 skill` | CLI reference, prompting protocol, provider routing, Korean text, video workflows |
 | **Frontend** | `ima2 skill front` | Asset pipeline (parallel gen, variant selection, provider routing), motion/video for web, responsive, a11y, anti-slop, 30+ reference files |
-| **UI/UX Design** | `ima2 skill uiux` | Image-first design direction discovery, UX states, design-isms, product personalities, DESIGN.md workflow, 18 reference files |
+| **UI/UX Design** | `ima2 skill uiux` | Image-first design direction discovery, UX states, design-isms, product personalities, DESIGN.md workflow, 21 reference files |
 
 ```bash
 ima2 skill ls            # list available skills
@@ -148,7 +165,7 @@ ima2 skill front         # print the frontend skill
 ima2 skill uiux          # print the design skill
 ima2 skill front path    # print file path (for agents)
 ima2 skill front --json  # JSON wrapper (for agents)
-ima2 skill front refs    # list reference modules (35 files)
+ima2 skill front refs    # list reference modules (32 files)
 ima2 skill front ref motion        # load one reference module
 ima2 skill install --dir <path>     # install skills to agent's skill dir
 ima2 skill install --tmp            # install to temp dir (fallback)
@@ -170,7 +187,7 @@ Image generation can run through the local Codex/ChatGPT OAuth path, a configure
 
 - `provider: "oauth"` uses the local Codex OAuth proxy.
 - `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool.
-- `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`, running mandatory xAI Web Search plus a planner pass (default: `grok-4.5`, configurable in settings or via `--planner-model`) before the xAI Images API call. `grok-4.3` remains available as an explicit compatibility override. Log in once with `ima2 grok login` or the Settings **Switch Account** button; the session refreshes itself two minutes before expiry.
+- `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`, running mandatory xAI Web Search plus a planner pass (default: `grok-4.3`, configurable in settings or via `--planner-model`) before the xAI Images API call. `grok-4.5` and `grok-4.6` are also selectable. Log in once with `ima2 grok login` or the Settings **Switch Account** button; the session refreshes itself two minutes before expiry.
 - `provider: "grok-api"` calls the xAI Images API directly with `XAI_API_KEY` (no OAuth session involved).
 - `provider: "nai"` calls the NovelAI image API with a persistent API token (saved in Settings > API Keys or `NOVELAI_API_KEY`; no fixed token prefix is required). Four models: `nai-diffusion-5-full`, `nai-diffusion-5-curated`, `nai-diffusion-4-5-full`, `nai-diffusion-4-5-curated`. Responses arrive as a ZIP archive that ima2 decodes to PNG. Text-to-image only — reference images, edits, and masks are refused rather than silently dropped. Browser and CLI surfaces expose negative prompt, sampler/schedule, steps/guidance/CFG rescale, seed, presets, Auto SMEA, Decrisper, Variety+, and V5 alpha.
 - `provider: "agy"` spawns the Antigravity CLI (`agy -p`) to generate images via Google Gemini's `default_api:generate_image` tool (model: `nano-banana-2`). Output is fixed at 1024×1024 JPEG, max 3 reference images. No web search, quality, or size controls.
@@ -178,11 +195,11 @@ Image generation can run through the local Codex/ChatGPT OAuth path, a configure
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
 - Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
 
-If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth and API-key generation default to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-quality`.
+If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth and API-key generation default to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
 
 One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
 
-Grok image generation exposes a model picker (`grok-imagine-image` / `grok-imagine-image-quality`) and a size picker (aspect ratio + 1k/2k resolution). The Settings page prefers the Grok Build weekly credits percentage and reset time from `GET /v1/billing?format=credits`; if that source is unavailable, it falls back to the legacy monthly billing window and `$used/$limit`. A **Switch Account** button starts a device-code OAuth flow (`POST /api/auth/switch`) for re-authenticating without leaving the app.
+Grok image generation exposes a Fast/Best model picker (`grok-imagine-image` / `grok-imagine-image-quality`; new sessions start on `grok-imagine-image-2.0`) and a size picker (aspect ratio + 1k/2k resolution). The Settings page prefers the Grok Build weekly credits percentage and reset time from `GET /v1/billing?format=credits`; if that source is unavailable, it falls back to the legacy monthly billing window and `$used/$limit`. A **Switch Account** button starts a device-code OAuth flow (`POST /api/auth/switch`) for re-authenticating without leaving the app.
 
 Grok video generation defaults to canonical `grok-imagine-video-1.5`; `grok-imagine-video` remains available for base-model-only Ref2V, V2V edit, and extension paths, and the legacy `grok-imagine-video-1.5-preview` string is accepted as an alias. Three modes are auto-detected from reference count: text-to-video (0 refs), image-to-video (1 ref), and reference-to-video (2-14 refs; up to 15s on grok-imagine-video-1.5, 10s on grok-imagine-video). 1080p is available for `grok-imagine-video-1.5` prompt-only text-to-video and single image/frame image-to-video; prompt-only 1.5 uses the internal white-canvas I2V shim before the upstream request. Video controls include duration (1-15s), resolution (480p, 720p, 1080p when supported), and aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto).
 
@@ -355,13 +372,13 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_API_REASONING_EFFORT` | `low` | Default reasoning effort for `provider: "api"` |
 | `IMA2_API_IMAGE_SIZE` | `1024x1024` | Default size for `provider: "api"` |
 | `IMA2_API_ALLOW_WEB_SEARCH` | `true` | Toggle web search for `provider: "api"` |
-| `IMA2_GROK_PLANNER_MODEL` | `grok-4.5` | Grok search/planner model (also configurable via settings UI or `--planner-model` CLI flag) |
+| `IMA2_GROK_PLANNER_MODEL` | `grok-4.3` | Grok search/planner model; `grok-4.5`, `grok-4.6` and GPT planners are selectable (settings UI or `--planner-model`) |
 | `IMA2_GROK_PLANNER_TIMEOUT_MS` | `900000` | Timeout for the Grok planner call |
 | `IMA2_GROK_SEARCH_TIMEOUT_MS` | `300000` | Timeout for the Grok web-search brief (degrades instead of failing) |
 | `IMA2_GROK_VIDEO_PLAN_TOTAL_TIMEOUT_MS` | `1500000` | Ceiling on the whole video planning phase (clamped above search + planner) |
-| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-quality` | Default final Grok image model |
+| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-2.0` | Default final Grok image model |
 | `IMA2_GROK_VIDEO_MODEL_DEFAULT` | `grok-imagine-video-1.5` | Default Grok video model |
-| `IMA2_GROK_GENERATION_TIMEOUT_MS` | `120000` | Timeout for the final Grok Images API call |
+| `IMA2_GROK_GENERATION_TIMEOUT_MS` | `300000` | Timeout for the final Grok Images API call |
 | `IMA2_OAUTH_MASKED_EDIT_ENABLED` | `false` | Opt-in feature flag for masked-edit requests on the OAuth path (#31, groundwork only) |
 | `GEMINI_API_KEY` | — | API key for `provider: "gemini-api"` direct Generative Language API path |
 | `VERTEX_SERVICE_ACCOUNT_JSON` | — | Google service account JSON for Vertex AI auth with `provider: "gemini-api"`; takes priority over `GEMINI_API_KEY` when both are set |
@@ -392,6 +409,7 @@ Useful references:
 - [Korean README](docs/README.ko.md)
 - [Japanese README](docs/README.ja.md)
 - [Chinese README](docs/README.zh-CN.md)
+- [Traditional Chinese README](docs/README.zh-TW.md)
 
 ## Troubleshooting
 
@@ -408,7 +426,7 @@ Check that the local OAuth proxy is reachable. On networks that require a proxy,
 Set `OPENAI_API_KEY` or configure an API key before using `provider: "api"`. The default GPT OAuth path still works without an API key.
 
 **Image generation returns `EMPTY_RESPONSE` or no image data**
-Run `ima2 doctor image-probe --json > ima2-image-probe.json` and attach the safe JSON when opening an issue. For GPT OAuth cases, also capture `ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json` and `ima2 gen "고양이" --model oauth/gpt-5.6-luna --json` while `ima2 serve` is running. Do not share ChatGPT cookies, OAuth token files, API keys, raw upstream responses, prompt history, or generated base64. See the [FAQ support bundle](docs/FAQ.md#what-should-i-share-when-oauth-image-generation-returns-no-image).
+Run `ima2 doctor image-probe --json > ima2-image-probe.json` and attach the safe JSON when opening an issue. For GPT OAuth cases, also capture `ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json` and `ima2 gen "고양이" --model oauth/gpt-5.6-luna --json` while `ima2 serve` is running. Do not share ChatGPT cookies, OAuth token files, API keys, raw upstream responses, prompt history, or generated base64. See the [FAQ support bundle](docs/FAQ.md#what-should-i-share-when-gpt-oauth-image-generation-returns-no-image).
 
 **A large reference image fails**
 The app compresses large JPEG/PNG references before upload. If a file still fails, convert it to JPEG or PNG at a lower resolution and try again. HEIC/HEIF files are not supported by the browser path.
@@ -450,20 +468,20 @@ cd desktop
 npm install
 npm run prepare:app     # builds server + CLI + UI at the repo root
 npm start               # run unpackaged
-npm run dist:mac        # dmg + zip (arm64, x64)
+npm run dist:mac        # dmg + zip (Apple Silicon / arm64)
 npm run dist:win        # nsis + zip
 npm run dist:linux      # AppImage + deb
 ```
 
-Installers are produced by `.github/workflows/desktop.yml` on `desktop-v*` tag pushes, desktop PRs, or manual dispatch. PRs produce unsigned macOS previews without Apple credentials. Trusted macOS builds require `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`; missing or invalid authentication fails the build instead of producing an unsigned success.
+Only the macOS app is distributed today, for Apple Silicon. `.github/workflows/desktop.yml` runs in three ways: a push to `dev` builds an unsigned macOS validation build, a manual dispatch builds signed and notarized installers without publishing anything, and a `desktop-v*` tag push builds, verifies, and publishes the desktop release. Trusted macOS builds require `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`; missing or invalid authentication fails the build instead of producing an unsigned success.
 
-For a macOS-only verification build without publishing, run:
+For a signed macOS verification build without publishing, run:
 
 ```bash
-gh workflow run desktop.yml --ref <reviewed-branch> -f platform=mac -f publish=false
+gh workflow run desktop.yml --ref <reviewed-branch> -f platform=mac
 ```
 
-The workflow verifies Developer ID, team, architecture, hardened runtime, secure timestamp, nested signatures, Gatekeeper and stapled notarization tickets for both arm64 and x64. It checks the apps recovered from the final ZIP and DMG against the original signed content, then exports `ima2-macos-signature-proof` reports and installer SHA-256 hashes. Failed verification blocks installer upload. Manual dispatch with `publish=false` never publishes, even when its ref is a desktop tag; publishing a manual build requires `platform=all`.
+The workflow verifies Developer ID, team, architecture (arm64), hardened runtime, secure timestamp, nested signatures, Gatekeeper and stapled notarization tickets. It checks the apps recovered from the final ZIP and DMG against the original signed content, then exports `ima2-macos-signature-proof` reports and installer SHA-256 hashes. Failed verification blocks installer upload. Only a `desktop-v*` tag push creates and publishes a release.
 
 Signing credential imports run on disposable GitHub-hosted macOS. The builder cleans successfully imported keychains; if import/setup fails before its cleanup registration, runner destruction is the final cleanup boundary. Local recovery should reuse an existing login-keychain identity in the same unlocked session, rather than importing credential packages into a persistent machine. This does not require changing automatic locking or key access rules.
 

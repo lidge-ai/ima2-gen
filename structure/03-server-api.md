@@ -64,6 +64,8 @@ graph TD
 | `GET` | `/api/oauth/status` | `{ status, models?, auth, grokAuth, runtime }` | Proxy readiness plus login verdicts (`lib/authStatus.ts`); a dead proxy with no session file reports `auth_required` |
 | `GET` | `/api/billing` | `{ oauth, apiKeyValid, apiKeySource, credits?, costs? }` | Probes billing/model state when an API key exists |
 | `GET` | `/api/quota` | `{ codex?, grok? }` | Grok Build weekly credits percentage/reset via `billing?format=credits`; optional legacy monthly dollar fallback; web-UI only |
+| `GET` | `/api/github/star` | `{ state, prompted, repo, url }` | One-time GitHub star prompt state (`lib/githubStar.ts`, shared with the CLI prompt). `state` is null once prompted; loopback peers only (403 `LOCAL_ONLY`) |
+| `POST` | `/api/github/star`, `/api/github/star/dismiss` | `{ ok, state? }` | Star through the user's own `gh` (trusted install paths, output never captured) or record the dismissal; 409 `GH_UNAUTHENTICATED`, 502 `GH_FAILED` |
 | `GET` | `/api/keys/status` | masked key status + `geminiAuthMode` | Settings > API Keys aggregate |
 | `PUT` | `/api/keys/:provider` | `{ apiKey }` | Save an `openai` / `xai` / `gemini` / `atlascloud` / `minimax` / `nai` key. Unknown ids answer 400 `INVALID_PROVIDER`. Lanes with no fixed key prefix (`minimax`, `nai`) skip the format check and rely on the upstream validation call. |
 | `DELETE` | `/api/keys/:provider` | none | Remove config-sourced key |

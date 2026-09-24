@@ -316,6 +316,12 @@ async function initializeHome(home: string, provider: string, withoutKey: boolea
     ...(withoutKey ? {} : { minimaxApiKey: "e2e-minimax-key" }),
     oauth: { disableAutoStart: true }, mcp: { enabledProviders: [] },
   }), { flag: "wx" });
+  // The one-time GitHub star prompt would cover journeys after their first image;
+  // mark it answered (shared state with the CLI prompt) so specs never meet it.
+  if (fresh) {
+    await mkdir(join(home, "state"), { recursive: true });
+    await writeFile(join(home, "state", "star-prompt.json"), JSON.stringify({ prompted_at: "2026-01-01T00:00:00.000Z" }), { flag: "wx" });
+  }
 }
 export async function startApp(mode: StubMode = "minimax", options: AppStartOptions = {}): Promise<AppHandle> {
   const isolation = assertJ6Isolation();

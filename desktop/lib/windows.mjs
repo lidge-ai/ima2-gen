@@ -88,6 +88,12 @@ export class WindowManager {
       e.preventDefault();
       void shell.openExternal(url);
     });
+    // A server that is up but fails the page load would otherwise leave Chromium's error
+    // page with no way back; show the loading screen (and its restart/log actions) instead.
+    content.webContents.on("did-fail-load", (_e, code, _desc, url, isMainFrame) => {
+      if (!isMainFrame || code === -3 || String(url).startsWith("file:")) return;
+      void content.webContents.loadFile(LOADING_PAGE);
+    });
     this.syncMainContent();
     return win;
   }

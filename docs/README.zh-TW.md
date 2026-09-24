@@ -14,26 +14,42 @@
 安裝程式從套件中繼資料讀取 Node.js 最低版本，並在啟動伺服器前執行離線安裝檢查。
 
 <p align="center">
-  <img src="../assets/logo.png" alt="ima2-gen logo" width="240">
+  <img src="../assets/logo.png" alt="ima2" width="160">
+</p>
+
+<p align="center">
+  <strong>為使用者與程式設計代理打造的本機圖片與影片工作室。</strong>
 </p>
 
 [![npm 版本](https://img.shields.io/npm/v/ima2-gen)](https://www.npmjs.com/package/ima2-gen)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
 [![授權條款：MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-> 🌐 **線上網站**：[lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/)
+> **線上網站**：[lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/)
 >
-> 📖 **開發者文件**：[文件網站](https://lidge-jun.github.io/ima2-gen/docs) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/docs)
+> **開發者文件**：[文件網站](https://lidge-jun.github.io/ima2-gen/docs) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/docs)
 >
 > **閱讀其他語言版本**：[English](../README.md) · [한국어](README.ko.md) · [日本語](README.ja.md) · [正體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
 `ima2-gen` 是面向使用者與程式設計代理的本機優先視覺生成執行環境與工作室，支援跨多個供應商的可重現圖片與影片工作流程。
 
-全域安裝後，可在 OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud 與 MiniMax 組成的 8 個 core lane 中生成圖片與影片。Runway 與 Higgsfield 屬於獨立的 MCP integration。
+全域安裝後，可在 OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI 與 ComfyUI 工作流程組成的 10 個 core lane 中生成圖片與影片。Runway 與 Higgsfield 屬於獨立的 MCP integration。
 
-![ima2-gen 播放影片時的畫面，右側圖庫顯示產生的圖片與影片。](../assets/screenshots/classic-generate-light.png)
+![ima2-gen 經典工作區（淺色模式），畫布上顯示生成結果。](../assets/screenshots/classic-generate-light.png)
 
 ## 快速入門
+
+### Mac 應用程式（Apple Silicon）
+
+在 Apple Silicon Mac 上，桌面應用程式是最快的上手方式。它在 Mac 視窗與選單列圖示中執行同樣的本機伺服器與工作室，並已通過 Apple 簽署與公證。
+
+1. 從最新的 [ima2 Desktop 發行版本](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true) 下載 `ima2-<version>-mac-arm64.dmg`。
+2. 開啟 DMG，把 **ima2** 拖進 **應用程式** 資料夾。
+3. 啟動 ima2，在歡迎畫面選擇一個供應商。
+
+應用程式內建執行環境，不需要另外安裝 Node.js。總和檢查碼、更新與設定請參閱 [Mac App 指南](https://lidge-jun.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用下方的 npm 或一鍵安裝。
+
+### npm
 
 ```bash
 npm install -g ima2-gen
@@ -120,7 +136,7 @@ npm install -g ima2-gen@latest
 - **分鏡模式**：在編輯器中開啟分鏡模式，維持連續影格中的角色與場景一致性。圖片與影片生成都支援此模式；圖片關鍵影格可用於影片製作，影片片段則會沿用角色／環境鎖定規則。
 - **畫布模式**：縮放、平移、加註解、擦除、清理背景、預覽透明圖片，並匯出透明度或指定底色的版本。
 - **本機圖庫**：將產生的資產保存在電腦上，並以工作階段管理歷史記錄。圖庫預設顯示目前工作階段；切換「所有圖片」即可查看完整歷史記錄，而且範圍設定會跨工作階段保留。每張圖片的產生時間與推理強度都會記錄在結果中繼資料裡，重新載入後仍可查看。
-- **參考圖片**：拖放、貼上並附加最多 5 張圖片參考，或最多 7 張影片參考；大型圖片會在上傳前自動壓縮。
+- **參考圖片**：拖放、貼上並附加最多 5 張圖片參考，或最多 14 張影片參考；大型圖片會在上傳前自動壓縮。
 - **提示詞庫匯入**：將本機提示詞包、GitHub 資料夾、精選來源與 GPT 圖片提示詞提示包匯入內建提示詞庫。
 - **行動版介面**：在小螢幕上使用應用程式列、撰寫面板與精簡設定切換。
 - **可觀測的工作**：透過安全日誌與請求 ID 追蹤目前及最近的工作。
@@ -133,7 +149,7 @@ ima2-gen 內建三套提供給 AI 程式碼代理使用的技能。這些 Markdo
 |-------|---------|----------------|
 | **核** | `ima2 skill` | CLI參考、提示協定、提供者路由、韓文文字、影片工作流程|
 | **前端** | `ima2 skill front` | 資產流程（平行產生、變體選擇、提供者路由）、Web 動態／影片、響應式設計、無障礙、防止 AI 味設計，以及 30 多份參考文件 |
-| **UI／UX 設計** | `ima2 skill uiux` | 以圖片為核心的設計方向探索、UX 狀態、設計語彙、產品個性、DESIGN.md 工作流程，以及 18 份參考文件 |
+| **UI／UX 設計** | `ima2 skill uiux` | 以圖片為核心的設計方向探索、UX 狀態、設計語彙、產品個性、DESIGN.md 工作流程，以及 21 份參考文件 |
 
 ```bash
 ima2 skill ls            # list available skills
@@ -141,7 +157,7 @@ ima2 skill front         # print the frontend skill
 ima2 skill uiux          # print the design skill
 ima2 skill front path    # print file path (for agents)
 ima2 skill front --json  # JSON wrapper (for agents)
-ima2 skill front refs    # list reference modules (35 files)
+ima2 skill front refs    # list reference modules (32 files)
 ima2 skill front ref motion        # load one reference module
 ima2 skill install --dir <path>     # install skills to agent's skill dir
 ima2 skill install --tmp            # install to temp dir (fallback)
@@ -159,14 +175,14 @@ Web UI 使用單一 `GET /api/events` 伺服器發送事件（SSE）連線，接
 
 - `provider: "oauth"` 使用本機 Codex OAuth 代理程式。
 - `provider: "api"` 使用 OpenAI Responses API 的 `image_generation` 工具。
-- `provider: "grok"`使用`~/.progrok/auth.json`中的xAI OAuth工作階段直接呼叫`https://api.x.ai`, 強制運行xAI網路搜尋加上規劃者通行證（預設：`grok-4.5`，可在設定中配置或透過`--planner-model`），然後調用xAI圖片API。`grok-4.3`仍然可以作為顯式相容性覆蓋使用。用`ima2 grok login`或網頁UI登入一次；權杖在過期前 2 分鐘自動更新。
+- `provider: "grok"`使用`~/.progrok/auth.json`中的xAI OAuth工作階段直接呼叫`https://api.x.ai`, 強制運行xAI網路搜尋加上規劃者通行證（預設：`grok-4.3`，可在設定中配置或透過`--planner-model`），然後調用xAI圖片API。也可以選擇`grok-4.5`和`grok-4.6`。用`ima2 grok login`或網頁UI登入一次；權杖在過期前 2 分鐘自動更新。
 - `provider: "grok-api"`稱為xAI圖片API直接與`XAI_API_KEY`（使用API金鑰而不是OAuth工作階段）。
 - `provider: "agy"` 啟動 Antigravity CLI（`agy -p`），透過 Google Gemini 的 `default_api:generate_image` 工具產生圖片（模型：`nano-banana-2`）。輸出固定為 1024×1024 JPEG，最多 3 張參考圖，不提供網路搜尋、品質或尺寸控制。
 - `provider: "gemini-api"` 直接呼叫 Google Generative Language API。支援 `nano-banana-2`（Gemini 3.1 Flash Image）與 `nano-banana-pro`（Gemini 3 Pro Image）；驗證方式包括 `GEMINI_API_KEY` 環境變數、Web UI 金鑰管理，或 Vertex AI 服務帳戶 JSON（`VERTEX_SERVICE_ACCOUNT_JSON`）。同時設定 API 金鑰與 Vertex 憑證時，優先使用 Vertex。支援 1:1 至 21:9 的長寬比與 512px、1K、2K、4K 四種解析度；這些控制只有直接 API 路徑有效，Vertex AI 端點不接受 `response_format` 欄位，因此會忽略長寬比與尺寸設定。
 - API 金鑰產生支援經典模式的產生、編輯、遮罩導向編輯、多階段與節點產生。
 - Grok 產生支援經典、節點與代理模式。如果有經典參考圖、節點父圖片或代理模式目前圖片，ima2 會將最後一次 Grok 呼叫切換為 xAI 圖片編輯，以保留圖片轉圖片的上下文。
 
-如果未指定提供者，應用程式將保留目前的GPT OAuth/預設行為。GPT OAuth和API-金鑰產生預設為`gpt-5.6-luna`;這API-key路徑也預設為`low`推理和`1024x1024`除非請求通過了經過驗證的選項。Grok影像生成預設為`grok-imagine-image-quality`.
+如果未指定提供者，應用程式將保留目前的GPT OAuth/預設行為。GPT OAuth和API-金鑰產生預設為`gpt-5.6-luna`;這API-key路徑也預設為`low`推理和`1024x1024`除非請求通過了經過驗證的選項。Grok影像生成預設為`grok-imagine-image-2.0`.
 
 關於OAuth Grok通道有一點需要說明：xAI只把`/v1/me`記錄為接受OAuth權杖的端點，所以用該權杖呼叫`api.x.ai`的影像與影片介面走的是未文件化的路徑。它目前可用——progrok一直依賴同一條路徑——但沒有任何相容性承諾。如果xAI關閉這條路徑，用`XAI_API_KEY`的`provider: "grok-api"`是有文件的方案，且不受影響。
 
@@ -257,7 +273,7 @@ Card News 仍處於開發階段且處於實驗階段。預設是隱藏的
 | `ima2 open` |開啟網路UI |
 | `ima2 reset` |刪除已儲存的配置|
 
-### 客戶
+### 用戶端
 
 以下指令都需要先執行 `ima2 serve`。CLI 覆蓋伺服器提供的各項功能；下面列出最常用的指令，完整清單請參閱 [CLI 參考](CLI.md)（包含產生、歷史記錄、工作階段、提示詞庫、註解、Card News、可觀測性與設定）。
 
@@ -320,11 +336,11 @@ environment variables > ~/.ima2/config.json > built-in defaults
 | `IMA2_API_REASONING_EFFORT` | `low` |默認推理工作`provider: "api"` |
 | `IMA2_API_IMAGE_SIZE` | `1024x1024` |預設尺寸為`provider: "api"` |
 | `IMA2_API_ALLOW_WEB_SEARCH` | `true` |切換網路搜尋`provider: "api"` |
-| `IMA2_GROK_PLANNER_MODEL` | `grok-4.5` | Grok搜尋/規劃器模型（也可透過設定進行配置UI或者`--planner-model` CLI旗幟）|
-| `IMA2_GROK_PLANNER_TIMEOUT_MS` | `60000` |超時時間為Grok搜尋和規劃呼叫|
-| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-quality` |預設最終Grok影像模型|
+| `IMA2_GROK_PLANNER_MODEL` | `grok-4.3` | Grok搜尋/規劃器模型（也可透過設定進行配置UI或者`--planner-model` CLI旗幟）|
+| `IMA2_GROK_PLANNER_TIMEOUT_MS` | `900000` |超時時間為Grok搜尋和規劃呼叫|
+| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-2.0` |預設最終Grok影像模型|
 | `IMA2_GROK_VIDEO_MODEL_DEFAULT` | `grok-imagine-video-1.5` |預設Grok視訊模型|
-| `IMA2_GROK_GENERATION_TIMEOUT_MS` | `120000` |決賽暫停Grok圖片API稱呼|
+| `IMA2_GROK_GENERATION_TIMEOUT_MS` | `300000` | Grok 圖片 API 最終呼叫的逾時 |
 | `IMA2_OAUTH_MASKED_EDIT_ENABLED` | `false` |針對屏蔽編輯請求的選擇加入功能標誌OAuth路徑（#31，僅基礎）|
 | `GEMINI_API_KEY` | — | API關鍵是`provider: "gemini-api"`直接生成語言API小路|
 | `VERTEX_SERVICE_ACCOUNT_JSON` | — |谷歌服務帳戶JSON為了Vertex AI授權與`provider: "gemini-api"`;優先於`GEMINI_API_KEY`當兩者都設定時|
@@ -370,7 +386,7 @@ environment variables > ~/.ima2/config.json > built-in defaults
 放`OPENAI_API_KEY`或配置一個API使用前按鍵`provider: "api"`。預設GPT OAuth路徑仍然有效，無需API鑰匙。
 
 **圖像生成返回`EMPTY_RESPONSE`或沒有影像數據**
-跑步`ima2 doctor image-probe --json > ima2-image-probe.json`並附上保險箱JSON打開問題時。為了GPT OAuth案例，也捕獲`ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json`和`ima2 gen "고양이" --model oauth/gpt-5.6-luna --json`儘管`ima2 serve`正在運行。請勿分享ChatGPT餅乾,OAuth令牌文件，API鍵、原始上游回應、提示歷史記錄或產生的 base64。請參閱[常見問題支援包](FAQ.md#what-should-i-share-when-oauth-image-generation-returns-no-image).
+跑步`ima2 doctor image-probe --json > ima2-image-probe.json`並附上保險箱JSON打開問題時。為了GPT OAuth案例，也捕獲`ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json`和`ima2 gen "고양이" --model oauth/gpt-5.6-luna --json`儘管`ima2 serve`正在運行。請勿分享ChatGPT餅乾,OAuth令牌文件，API鍵、原始上游回應、提示歷史記錄或產生的 base64。請參閱[常見問題支援包](FAQ.md#what-should-i-share-when-gpt-oauth-image-generation-returns-no-image).
 
 **大參考影像失敗**
 該應用程式壓縮較大JPEG/PNG上傳前參考。如果文件仍然失敗，請將其轉換為JPEG或者PNG降低解析度並重試。瀏覽器路徑不支援 HEIC/HEIF 檔案。

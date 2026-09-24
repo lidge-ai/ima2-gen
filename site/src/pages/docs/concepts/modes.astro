@@ -59,8 +59,8 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
     in-flight queue.
   </p>
   <p>
-    A Grok planner (default <code>grok-4.5</code>, overridable in video settings or via
-    <code>--planner-model</code>; Grok 4.3 remains a compatibility override) rewrites prompts with web-search context before generation.
+    A Grok planner (default <code>grok-4.3</code>, overridable in video settings or via
+    <code>--planner-model</code>; Grok 4.5 and 4.6 are selectable) rewrites prompts with web-search context before generation.
     For multi-character scenes, planners identify speakers by visual appearance — clothing,
     physique, position, and props — rather than names, so dialogue attribution stays consistent
     across clips.

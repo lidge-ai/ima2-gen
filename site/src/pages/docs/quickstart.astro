@@ -9,7 +9,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
   lang="en"
   active="quickstart"
   title="Quickstart"
-  description="Install ima2-gen, choose auth (ChatGPT/Grok/Both/API), run the local server, and start generating images and videos."
+  description="Install ima2-gen (Mac app, install script or npm), choose auth (ChatGPT/Grok/Both/Web setup), run the local server, and start generating images and videos."
 >
   <p class="docs-eyebrow">Getting Started</p>
   <h1>Quickstart</h1>
@@ -18,7 +18,14 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
     No API key required for the default OAuth paths.
   </p>
 
+  <h2>Mac app</h2>
+  <p>
+    On an Apple Silicon Mac the desktop app is the quickest start: download the signed DMG, drag ima2
+    into Applications and open it. See <a href={d('desktop')}>Mac App</a>.
+  </p>
+
   <h2>Install and run</h2>
+  <p>Requires Node.js 22 or newer.</p>
   <pre><code>npm install -g ima2-gen
 ima2 setup
 ima2 serve</code></pre>
@@ -41,7 +48,7 @@ ima2 serve</code></pre>
 
   <p>
     Each script checks for nvm/fnm/brew/winget, installs Node LTS through
-    the best available method, and handles stale process cleanup automatically.
+    the best available method, then installs ima2-gen.
   </p>
 
   <div class="docs-callout docs-callout-info">
@@ -56,14 +63,14 @@ ima2 serve</code></pre>
     <li><strong>GPT OAuth</strong> — sign in with ChatGPT (free, images only)</li>
     <li><strong>Grok OAuth</strong> — sign in with xAI/Grok (images + video)</li>
     <li><strong>Both</strong> — GPT + Grok (full feature access)</li>
-    <li><strong>API Key</strong> — paste your OpenAI API key (paid)</li>
+    <li><strong>Web setup</strong> — skip the terminal and pick providers or add API keys in the web UI Settings</li>
   </ol>
   <p>Video generation requires Grok OAuth (option 2 or 3). Add it later with <code>ima2 grok login</code>, which defaults to the manual-paste flow.</p>
   <p>If your GPT OAuth token expires, re-run <code>ima2 setup</code> (option 1) to refresh it.</p>
   <div class="docs-callout docs-callout-warn">
     <strong>Updating.</strong> Stop the server with Ctrl+C — ima2-gen performs a clean shutdown
     (closes DB, sockets, and child processes). Then run <code>npm install -g ima2-gen@latest</code>.
-    If you see <code>EBUSY</code> on Windows, use the <a href="/ima2-gen/install-windows.ps1">install script</a> which handles stale process cleanup automatically.
+    If you see <code>EBUSY</code> on Windows, stop every running ima2 process (<code>ima2 stop</code>) and run the install again.
   </div>
 
   <h2>Develop from source</h2>

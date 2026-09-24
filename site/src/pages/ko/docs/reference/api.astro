@@ -53,7 +53,7 @@ const genBody = `{
       <tr><td><code>POST /api/video/edit</code></td><td>Grok 비디오-투-비디오 편집. 결과 MP4를 generated artifact로 저장.</td></tr>
       <tr><td><code>POST /api/video/extend</code></td><td>기존 MP4의 마지막 프레임에서 이어붙이기.</td></tr>
       <tr><td><code>GET /api/video/frame</code></td><td>generated MP4에서 PNG 프레임 추출.</td></tr>
-      <tr><td><code>POST /api/video/analyze</code></td><td>생성 MP4의 첫·마지막 프레임을 설정된 플래너 모델(기본 Grok 4.5)로 분석.</td></tr>
+      <tr><td><code>POST /api/video/analyze</code></td><td>생성 MP4의 첫·마지막 프레임을 설정된 플래너 모델(기본 Grok 4.3)로 분석.</td></tr>
     </tbody>
   </table>
   <h4>POST /api/generate — 요청 바디</h4>
@@ -61,7 +61,7 @@ const genBody = `{
   <p>
     품질: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api, agy, gemini-api, atlascloud, minimax, nai, comfy.
     앱 기본 OpenAI 모델은 <code>gpt-5.6-luna</code>입니다.
-    Grok 모델은 <code>grok-imagine-image</code>와 <code>grok-imagine-image-quality</code>입니다.
+    Grok 이미지 모델은 <code>grok-imagine-image-2.0</code>(기본), <code>grok-imagine-image</code>, <code>grok-imagine-image-quality</code>입니다.
     Gemini 모델은 <code>nano-banana-2</code>(Flash)와 <code>nano-banana-pro</code>(Pro)입니다.
     웹 UI는 <code>GET /api/events</code> (SSE 멀티플렉싱)로 모든 생성 진행 이벤트를 받습니다:
     POST 라우트에 <code>{"{ async: true, requestId }"}</code>를 보내면 <code>202</code> 응답 후
@@ -83,7 +83,7 @@ const genBody = `{
     extension은 기본 모델 경로로 유지됩니다. CLI:
     <code>ima2 video</code>. 확장 표면은 <code>ima2 video edit</code>,
     <code>ima2 video extend</code>, <code>ima2 video frame</code>, <code>ima2 video analyze</code>입니다.
-    요청 본문은 <code>plannerModel</code>(기본 <code>grok-4.5</code>, Grok 4.3은 호환 선택지)와 순차 클립 연속성용
+    요청 본문은 <code>plannerModel</code>(기본 <code>grok-4.3</code>, Grok 4.5·4.6도 선택 가능)와 순차 클립 연속성용
     <code>storyboard</code>를 받습니다. frame/analyze는 generated MP4 파일을 대상으로 하며 analyze는
     임의 원격 URL을 거부합니다.
   </div>

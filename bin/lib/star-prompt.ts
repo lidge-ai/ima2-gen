@@ -1,34 +1,22 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { config } from "../../config.js";
+import {
+  STAR_REPO,
+  ghAuthStatusArgs,
+  ghStarWriteArgs,
+  ghVersionArgs,
+  hasBeenPrompted,
+  markPrompted,
+  starPromptStatePath,
+} from "../../lib/githubStar.js";
 import { isAgentDriven } from "./agent-driven.js";
 import { interactiveConfirm } from "./interactive-confirm.js";
 
-const REPO = "lidge-jun/ima2-gen";
+// The studio's star dialog (routes/github.ts) shares this state file and these
+// gh commands; the CLI keeps a synchronous spawn because it prompts before the
+// server exists.
+export { hasBeenPrompted, markPrompted, starPromptStatePath };
 
-export function starPromptStatePath() {
-  return join(config.storage.configDir, "state", "star-prompt.json");
-}
-
-export async function hasBeenPrompted() {
-  const path = starPromptStatePath();
-  if (!existsSync(path)) return false;
-  try {
-    const content = await readFile(path, "utf8");
-    const state = JSON.parse(content);
-    return typeof state.prompted_at === "string";
-  } catch {
-    return false;
-  }
-}
-
-export async function markPrompted() {
-  const path = starPromptStatePath();
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify({ prompted_at: new Date().toISOString() }, null, 2));
-}
+const REPO = STAR_REPO;
 
 /**
  * Whether `gh` is both installed and logged in. Starring goes through the
@@ -37,7 +25,7 @@ export async function markPrompted() {
  * then fail to do.
  */
 export function isGhInstalled(spawnSyncFn = spawnSync) {
-  const version = spawnSyncFn("gh", ["--version"], {
+  const version = spawnSyncFn("gh", ghVersionArgs(), {
     encoding: "utf8",
     stdio: ["ignore", "ignore", "ignore"],
     timeout: 3000,
@@ -45,7 +33,7 @@ export function isGhInstalled(spawnSyncFn = spawnSync) {
   });
   if (version.error || version.status !== 0) return false;
 
-  const auth = spawnSyncFn("gh", ["auth", "status"], {
+  const auth = spawnSyncFn("gh", ghAuthStatusArgs(), {
     encoding: "utf8",
     stdio: ["ignore", "ignore", "ignore"],
     timeout: 5000,
@@ -55,7 +43,7 @@ export function isGhInstalled(spawnSyncFn = spawnSync) {
 }
 
 export function starRepo(spawnSyncFn = spawnSync) {
-  const result = spawnSyncFn("gh", ["api", "-X", "PUT", `/user/starred/${REPO}`], {
+  const result = spawnSyncFn("gh", ghStarWriteArgs(), {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 10000,

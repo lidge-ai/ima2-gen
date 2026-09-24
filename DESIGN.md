@@ -72,9 +72,22 @@ canonical token names above.
 | Token | Role |
 |-------|------|
 | `--prism` | Rainbow gradient for branding |
-| `--chrome` | Metallic gradient for logo |
+| `--chrome` | Metallic gradient for the `ima2` wordmark text |
 | `--glass` | Frosted glass overlay |
 | `--skeleton-shimmer` | Loading skeleton animation gradient |
+
+## Brand mark
+
+The mark is a rounded numeral "2" with a dot above its left shoulder, read as "i2". It is monochrome everywhere; colour never carries the brand.
+
+| Asset | Use |
+|-------|-----|
+| `assets/brand/mark.svg` | Vector mark, `fill="currentColor"`. UI (`ui/public/brand-mark.svg` via `BrandMark`), site header, macOS menubar template icon |
+| `assets/brand/favicon.svg` | Graphite tile (`#1c1d21`) with the mark in `#f2f3f5`. UI and site favicon, Windows/Linux tray, apple-touch-icon |
+| `assets/brand/icon-1024.png` (= `assets/logo.png`) | Liquid-metal app icon on a graphite tile. Desktop app icon and README |
+| `assets/brand/mark-chrome.png` | Liquid-metal mark without the tile. Desktop loading screen and large brand moments |
+
+Rules: the flat mark takes the surrounding text colour; the chrome rendering is reserved for the app icon and loading screen. Do not recolour, outline or add effects to the flat mark. Keep clear space of at least half the mark width.
 
 ## Typography
 

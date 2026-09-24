@@ -23,7 +23,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
   <ul>
     <li><code>provider: "oauth"</code> — 로컬 Codex OAuth 프록시를 사용합니다. 기본 경로이며 API key가 필요 없습니다.</li>
     <li><code>provider: "api"</code> — 호스티드 <code>image_generation</code> 도구로 OpenAI Responses API를 호출합니다. <code>OPENAI_API_KEY</code>가 필요합니다.</li>
-    <li><code>provider: "grok"</code> — <code>~/.progrok/auth.json</code>의 xAI OAuth 세션으로 <code>api.x.ai</code>를 직접 호출합니다. 필수 xAI Web Search와 planner pass(기본 <code>grok-4.5</code>, 설정 또는 <code>--planner-model</code>로 변경)를 거친 뒤 xAI Images API를 호출합니다. Grok 4.3은 호환 선택지로 유지합니다.</li>
+    <li><code>provider: "grok"</code> — <code>~/.progrok/auth.json</code>의 xAI OAuth 세션으로 <code>api.x.ai</code>를 직접 호출합니다. 필수 xAI Web Search와 planner pass(기본 <code>grok-4.3</code>, 설정 또는 <code>--planner-model</code>로 변경)를 거친 뒤 xAI Images API를 호출합니다. Grok 4.5·4.6도 고를 수 있습니다.</li>
     <li><code>provider: "grok-api"</code> — <code>grok</code>과 같은 xAI pipeline을 직접 <code>XAI_API_KEY</code>로 실행합니다.</li>
     <li><code>provider: "agy"</code> — Antigravity CLI(<code>agy -p</code>)를 통해 Google Gemini(<code>nano-banana-2</code>)로 이미지를 생성합니다. 고정 1024×1024 JPEG 출력, 최대 3장 참조.</li>
     <li><code>provider: "gemini-api"</code> — Google Generative Language API 또는 Vertex AI를 직접 호출합니다. 모델 <code>nano-banana-2</code>(Gemini 3.1 Flash Image)와 <code>nano-banana-pro</code>(Gemini 3 Pro Image) 지원. 가변 화면비와 해상도(512px–4K) 지원. <code>GEMINI_API_KEY</code> 또는 Vertex AI 서비스 계정 JSON이 필요합니다.</li>
@@ -77,7 +77,8 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
       <tr><td><code>gpt-5.4</code></td><td>권장 균형 선택지.</td></tr>
       <tr><td><code>gpt-5.5</code></td><td>Codex CLI/OAuth 백엔드가 지원할 때 가장 강한 품질. 할당량을 더 쓰거나 Codex CLI 업데이트가 필요할 수 있습니다.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>빠른 호환 Grok 이미지 모델.</td></tr>
-      <tr><td><code>grok-imagine-image-quality</code></td><td>기본 Grok 이미지 모델.</td></tr>
+      <tr><td><code>grok-imagine-image-quality</code></td><td>최고 품질 Grok 이미지 모델.</td></tr>
+      <tr><td><code>grok-imagine-image-2.0</code></td><td>새 세션의 기본 Grok 이미지 모델.</td></tr>
       <tr><td><code>grok-imagine-video</code></td><td>Ref2V·edit·extension 호환 경로용 모델.</td></tr>
       <tr><td><code>grok-imagine-video-1.5</code></td><td>기본 Grok 비디오 모델. 프롬프트 전용 T2V, 단일 이미지/프레임 I2V와 지원 시 1080p에 사용합니다.</td></tr>
       <tr><td><code>nano-banana-2</code></td><td>Gemini 이미지 모델(Flash). <code>agy</code> 경로는 1024×1024 고정. <code>gemini-api</code> 경로는 512px–4K·가변 화면비 지원.</td></tr>
@@ -97,8 +98,8 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
   <h2>Grok 파이프라인</h2>
   <p>
     Grok Classic, Node, Agent 요청은 세 단계로 동작합니다: 필수 xAI Web Search,
-    planner pass(기본 <code>grok-4.5</code>, <code>IMA2_GROK_PLANNER_MODEL</code>·설정 UI·비디오
-    CLI의 <code>--planner-model</code>로 변경)로 영어 최종 이미지 프롬프트를 만든 뒤, xAI 이미지를 생성합니다. Grok 4.3은 호환 선택지로 유지합니다.
+    planner pass(기본 <code>grok-4.3</code>, <code>IMA2_GROK_PLANNER_MODEL</code>·설정 UI·비디오
+    CLI의 <code>--planner-model</code>로 변경)로 영어 최종 이미지 프롬프트를 만든 뒤, xAI 이미지를 생성합니다. Grok 4.5·4.6도 고를 수 있습니다.
     텍스트만 있는 요청은 <code>/v1/images/generations</code>를 쓰고, 레퍼런스 이미지·Node 부모 이미지·Agent 현재 이미지가 있으면
     image-to-image 문맥을 유지하기 위해 <code>/v1/images/edits</code>를 씁니다. 이 경로의 입력 이미지는 총 세 장까지입니다.
   </p>

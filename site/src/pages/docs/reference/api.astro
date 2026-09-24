@@ -55,15 +55,15 @@ const genBody = `{
       <tr><td><code>POST /api/video/edit</code></td><td>Video-to-video edit via Grok; saves a generated MP4 artifact.</td></tr>
       <tr><td><code>POST /api/video/extend</code></td><td>Extend a generated or remote MP4 from its last frame.</td></tr>
       <tr><td><code>GET /api/video/frame</code></td><td>Extract a PNG frame from a generated MP4.</td></tr>
-      <tr><td><code>POST /api/video/analyze</code></td><td>Analyze first/last frames with the configured planner model (Grok 4.5 by default).</td></tr>
+      <tr><td><code>POST /api/video/analyze</code></td><td>Analyze first/last frames with the configured planner model (Grok 4.3 by default).</td></tr>
     </tbody>
   </table>
   <h4>POST /api/generate — request body</h4>
   <pre><code>{genBody}</code></pre>
   <p>
     Quality: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api,
-    agy, gemini-api, atlascloud, minimax, nai, comfy. The app default is <code>gpt-5.6-luna</code>. Grok image models: <code>grok-imagine-image</code> and
-    <code>grok-imagine-image-quality</code>. Gemini API models: <code>nano-banana-2</code>
+    agy, gemini-api, atlascloud, minimax, nai, comfy. The app default is <code>gpt-5.6-luna</code>. Grok image models: <code>grok-imagine-image-2.0</code> (default),
+    <code>grok-imagine-image</code> and <code>grok-imagine-image-quality</code>. Gemini API models: <code>nano-banana-2</code>
     (default) and <code>nano-banana-pro</code>. The web UI uses <code>GET /api/events</code>
     (SSE multiplexing) for all generation progress: POST routes accept
     <code>{"{ async: true, requestId }"}</code> and respond <code>202</code>;
@@ -85,7 +85,7 @@ const genBody = `{
     image/frame source; Ref2V, V2V edit, and extension remain base-model paths. CLI:
     <code>ima2 video</code>. Extended CLI/API surfaces include <code>ima2 video edit</code>,
     <code>ima2 video extend</code>, <code>ima2 video frame</code>, and <code>ima2 video analyze</code>.
-    Request body accepts <code>plannerModel</code> (default <code>grok-4.5</code>; Grok 4.3 remains compatible) and
+    Request body accepts <code>plannerModel</code> (default <code>grok-4.3</code>; Grok 4.5 and 4.6 are selectable) and
     <code>storyboard</code> for sequential clip continuity. Frame/analyze accept generated MP4 files;
     analyze rejects arbitrary remote URLs.
   </div>

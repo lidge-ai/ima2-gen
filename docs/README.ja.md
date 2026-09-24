@@ -13,21 +13,43 @@
 
 インストーラーはパッケージメタデータから Node.js の最低バージョンを読み、サーバー起動前にオフライン検査を行います。
 
+<p align="center">
+  <img src="../assets/logo.png" alt="ima2" width="160">
+</p>
+
+<p align="center">
+  <strong>人とコーディングエージェントのためのローカル画像・動画スタジオ。</strong>
+</p>
+
 [![npm version](https://img.shields.io/npm/v/ima2-gen)](https://www.npmjs.com/package/ima2-gen)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-> 🌐 **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/)
+> **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/)
+>
+> **開発者ドキュメント**: [ドキュメントサイト](https://lidge-jun.github.io/ima2-gen/docs) · [한국어](https://lidge-jun.github.io/ima2-gen/ko/docs)
 >
 > **他の言語で読む**: [English](../README.md) · [한국어](README.ko.md) · [正體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
 `ima2-gen` は、人とコーディングエージェント向けのローカルファーストなビジュアル生成ランタイム兼スタジオです。複数プロバイダーで再現可能な画像・動画ワークフローを扱います。
 
-グローバルインストール後、OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax の 8 つの core lane で画像と動画を生成できます。Runway と Higgsfield は別枠の MCP integration です。
+グローバルインストール後、OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI、ComfyUI ワークフローの 10 の core lane で画像と動画を生成できます。Runway と Higgsfield は別枠の MCP integration です。
 
 ![プロンプト入力、生成画像、モデル表示、結果メタデータが見える ima2-gen classic 画面](../assets/screenshots/classic-generate-light.png)
 
 ## Quick Start
+
+### Mac アプリ (Apple Silicon)
+
+Apple Silicon の Mac ではデスクトップアプリが一番手早い方法です。同じローカルサーバーとスタジオを Mac のウィンドウとメニューバーアイコンで動かし、Apple の署名と公証を受けています。
+
+1. 最新の [ima2 Desktop リリース](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true) から `ima2-<version>-mac-arm64.dmg` をダウンロードします。
+2. DMG を開き、**ima2** を **アプリケーション** フォルダへドラッグします。
+3. ima2 を起動し、ウェルカム画面でプロバイダーを選びます。
+
+ランタイムを同梱しているので Node.js のインストールは不要です。チェックサム、アップデート、設定は [Mac App ガイド](https://lidge-jun.github.io/ima2-gen/docs/desktop) を参照してください。Intel Mac、Windows、Linux では下の npm かワンクリックインストールを使います。
+
+### npm
 
 ```bash
 npm install -g ima2-gen
@@ -99,7 +121,7 @@ Ctrl+C は DB クローズ、子プロセス停止、ファイルロック解放
 - **Video generation**: テキスト、画像、複数参照から短い動画を生成。SSE で planning→submitted→progress→done。First/Mid/Last フレームコピー対応。
 - **Storyboard mode**: コンポーザーの storyboard トグルで連続フレームのキャラクター・シーン連続性を維持（画像・動画両対応）。
 - **Local gallery**: 生成物をローカル保存。デフォルトは現在セッション、All Images トグルで全履歴。生成時間と reasoning effort をメタデータに記録。
-- **Reference images**: ドラッグ/ペースト/ファイル選択。画像最大5、動画最大7。大きい画像は自動圧縮。
+- **Reference images**: ドラッグ/ペースト/ファイル選択。画像最大5、動画最大14。大きい画像は自動圧縮。
 - **Prompt library imports**: local prompt pack、GitHub folder、curated GPT-image hint を built-in prompt library に取り込めます。
 - **Mobile shell**: 小さい画面では app bar、compose sheet、compact settings toggle で操作できます。
 - **Observable jobs**: 進行中の生成と最近の生成を request ID で追跡できます。
@@ -276,7 +298,7 @@ Endpoint 一覧は [API Reference](API.md) に分離しました。
 `provider: "api"` request に使う API key が設定されていません。API key を設定するか OAuth provider に切り替えてください。
 
 **画像生成が `EMPTY_RESPONSE` になる、または画像データが返らない**
-`ima2 doctor image-probe --json > ima2-image-probe.json` を実行し、issue 作成時に安全な JSON を添付してください。GPT OAuth の場合は、`ima2 serve` 実行中に `ima2 gen "猫" --no-web-search --json` と `ima2 gen "猫" --json` も取得してください。ChatGPT cookie、OAuth トークンファイル、API key、生の upstream 応答、プロンプト履歴、生成 base64 は共有しないでください。詳細は [FAQ サポートバンドル](FAQ.md#what-should-i-share-when-oauth-image-generation-returns-no-image) を参照してください。
+`ima2 doctor image-probe --json > ima2-image-probe.json` を実行し、issue 作成時に安全な JSON を添付してください。GPT OAuth の場合は、`ima2 serve` 実行中に `ima2 gen "猫" --no-web-search --json` と `ima2 gen "猫" --json` も取得してください。ChatGPT cookie、OAuth トークンファイル、API key、生の upstream 応答、プロンプト履歴、生成 base64 は共有しないでください。詳細は [FAQ サポートバンドル](FAQ.md#what-should-i-share-when-gpt-oauth-image-generation-returns-no-image) を参照してください。
 
 **大きな参照画像が失敗する**
 JPEG/PNG は送信前に自動圧縮されます。それでも失敗する場合は、解像度を下げた JPEG/PNG に変換してください。HEIC/HEIF は browser path ではサポートしていません。

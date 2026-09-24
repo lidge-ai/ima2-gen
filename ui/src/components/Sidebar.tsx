@@ -1,4 +1,5 @@
 import { PromptComposer } from "./PromptComposer";
+import { BrandMark } from "./BrandMark";
 import { GenerateButton } from "./GenerateButton";
 import { InFlightList } from "./InFlightList";
 import { InFlightBadge } from "./composer/InFlightBadge";
@@ -83,7 +84,7 @@ export function SidebarChrome() {
   return (
     <>
       <div className="logo">
-        <div className="logo-mark" aria-hidden="true" />
+        <BrandMark className="logo-mark" />
         <div className="logo-copy">
           <div className="logo-title">ima2</div>
           <div className="logo-title logo-title--gen">gen</div>
