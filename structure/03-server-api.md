@@ -70,8 +70,10 @@ graph TD
 | `PUT` | `/api/keys/vertex` | `{ serviceAccountJson }` | Save Vertex service account |
 | `DELETE` | `/api/keys/vertex` | none | Remove Vertex credentials |
 | `PUT` | `/api/keys/gemini-auth-mode` | `{ mode }` | Persist `apikey` or `vertex` mode |
-| `POST` | `/api/auth/switch` | `{ provider }` | Start Switch Account device OAuth |
+| `POST` | `/api/auth/switch` | `{ provider, flow? }` | Start Switch Account OAuth (codex: native browser PKCE or device code; grok: device code) |
 | `GET` | `/api/auth/switch/:sessionId` | none | Poll Switch Account session |
+| `DELETE` | `/api/auth/switch/:sessionId` | none | Cancel a pending login and free the callback port |
+| `POST` | `/api/oauth/restart` | none | Respawn the GPT OAuth proxy to read the current session file |
 | `GET` | `/api/agy/status` | `{ ready, ... }` | AGY CLI provider probe |
 | `GET` | `/api/generation-requests` | `{ items }` | Last 200 generation attempts (#95) |
 | `GET` | `/api/storage/status` | `{ ok, data: { generatedDirLabel, generatedCount, legacyCandidatesScanned, legacySourcesFound, legacyFilesFound, state, messageKind, recoveryDocsPath, doctorCommand, overrides } }` | Summarizes gallery storage and legacy recovery state for UI support banners |
