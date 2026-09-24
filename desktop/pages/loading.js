@@ -65,10 +65,14 @@ $("logs").addEventListener("click", () => api.openLogs());
 $("settings").addEventListener("click", () => api.openSettings());
 
 async function init() {
-  const [settings, info] = await Promise.all([api.getSettings(), api.getInfo()]);
-  port = settings?.port ?? null;
-  $("foot").textContent = `ima2 ${info.appVersion} · Runs on this computer`;
   api.onStatus(render);
+  // Port and version only decorate the page; a failed read must not block status updates.
+  const [settings, info] = await Promise.all([
+    api.getSettings().catch(() => null),
+    api.getInfo().catch(() => null),
+  ]);
+  port = settings?.port ?? null;
+  if (info?.appVersion) $("foot").textContent = `ima2 ${info.appVersion} · Runs on this computer`;
   render(await api.getStatus());
 }
 
