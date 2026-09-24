@@ -54,6 +54,7 @@ async function boot() {
     app,
     dialog,
     prepareForInstall: () => lifecycle.prepareForUpdateInstall(),
+    autoDownload: settingsStore.get().autoUpdate,
   });
 
   const configDir = () => settingsStore.get().configDir || process.env.IMA2_CONFIG_DIR || join(homedir(), ".ima2");
@@ -82,7 +83,7 @@ async function boot() {
     windows.broadcast("desktop:status", status);
     windows.syncMainContent();
   });
-  settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows }));
+  settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows, updater }));
 
   if (settingsStore.get().openAtLogin) applyLoginItem(settingsStore.get());
   applyDockVisibility(settingsStore.get(), windows);
@@ -93,11 +94,12 @@ async function boot() {
 
   if (!settingsStore.get().startHidden) windows.showMain();
   await supervisor.start(settingsStore.get());
-  void updater.checkForUpdates();
+  if (settingsStore.get().autoUpdate) void updater.checkForUpdates();
 }
 
-function onSettingsChanged({ next, changed, supervisor, tray, windows }) {
+function onSettingsChanged({ next, changed, supervisor, tray, windows, updater }) {
   tray.update({ settings: next });
+  if (changed.includes("autoUpdate")) updater.setAutoDownload(next.autoUpdate);
   windows.broadcast("desktop:status", supervisor.snapshot());
   if (changed.includes("openAtLogin") || (next.openAtLogin && changed.includes("startHidden"))) applyLoginItem(next);
   if (changed.includes("menubarOnly")) applyDockVisibility(next, windows);

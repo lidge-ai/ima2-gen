@@ -48,6 +48,17 @@
 
     <section>
       <div class="row">
+        <label>Auto-update<small>Download new versions in the background; prompt when ready</small></label>
+        <label class="switch"><input id="autoUpdate" type="checkbox" /><span></span></label>
+      </div>
+      <div class="row">
+        <label>Updates<small>Download and install updates manually</small></label>
+        <button id="check-updates">Check for Updates</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="row">
         <label>Config directory<small>Default ~/.ima2 (IMA2_CONFIG_DIR)</small></label>
         <input id="configDir" type="text" class="wide" placeholder="~/.ima2" />
       </div>
