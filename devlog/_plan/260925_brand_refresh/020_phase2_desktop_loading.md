@@ -56,3 +56,12 @@ Error box + actions only for stopped/error (same as today). Elapsed timer runs o
 - desktop/lib/windows.mjs: `content.webContents.on("did-fail-load", (_e, code, _d, url, isMainFrame) => { if (isMainFrame && code !== -3) void content.webContents.loadFile(LOADING_PAGE); })` — activation: harness cannot run Electron here; verified by code read + existing desktop tests; recorded as not render-verified.
 - desktop/lib/menu.mjs:39 and tray.mjs:60: "Check for Updates…" item gets `visible: Boolean(actions.updaterActive)`; label literal unchanged for tests/desktop-updater.test.ts:180.
 Verifier additions: `node --import tsx --test tests/desktop-*.test.ts` exit 0.
+
+## wp2 P re-verification (HEAD fa851b0c)
+
+- `.drag` stays in desktop.css: settings.html:10 uses it (settings window has no titlebar view). Only loading.html stops using it.
+- desktop.css `main { padding: 0 28px 28px }` applies to settings; loading uses `<main class="boot">` and loading.css resets padding.
+- titlebar lives at desktop/pages/titlebar.html (not lib/): img → `brand-mark.png` (238x256, rendered height 16px, width auto, no radius), title text "ima2". Its CSP already allows `img-src 'self' file:`.
+- tests/desktop-updater.test.ts:180 pins only `Check for Updates…[\s\S]*actions.checkForUpdates()`; adding `visible` keeps the match.
+- Status colours: `--ok`/`--danger` and the starting amber stay (functional status, not brand); the loading page itself uses monochrome row icons and keeps red only for the error row.
+- Verification: harness `.concepts/qa/loading-harness.html` (git-excluded) iframes nothing; it loads the real pages/loading.html via file:// with a preload-like stub script injected by Playwright (`page.addInitScript` defining window.ima2Desktop with getStatus/onStatus/getSettings/getInfo), rendering starting, running(external), error. Screenshots read back.

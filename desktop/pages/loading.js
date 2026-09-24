@@ -1,30 +1,75 @@
 const api = window.ima2Desktop;
-const dot = document.getElementById("dot");
-const label = document.getElementById("label");
-const urlEl = document.getElementById("url");
-const errorEl = document.getElementById("error");
-const actions = document.getElementById("actions");
+const $ = (id) => document.getElementById(id);
+const rowServer = $("row-server");
+const rowOpen = $("row-open");
+const tag = $("tag");
+const errorEl = $("error");
+const actions = $("actions");
 
-const LABELS = {
-  starting: "Starting ima2 server…",
-  running: "Server ready — opening…",
+const TAGS = {
+  starting: "Starting your local studio",
+  running: "Ready",
   stopped: "Server stopped",
   error: "Server failed to start",
 };
 
+let port = null;
+let startedAt = 0;
+let timer = null;
+let lastStatus = null;
+
+function setRow(row, state, detail) {
+  row.dataset.state = state;
+  row.querySelector(".d").textContent = detail ?? "";
+}
+
+function serverDetail(status) {
+  if (status.state === "running") {
+    return status.external ? `Using the server already running at ${status.url}` : status.url ?? "";
+  }
+  if (status.state === "starting") {
+    const seconds = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+    return [port ? `port ${port}` : null, `${seconds}s`].filter(Boolean).join(" · ");
+  }
+  if (status.state === "stopped") return "Stopped";
+  return (status.lastError ?? "").split("\n")[0] || "Failed";
+}
+
+function tick() {
+  if (lastStatus?.state === "starting") setRow(rowServer, "active", serverDetail(lastStatus));
+}
+
 function render(status) {
-  dot.className = `dot ${status.state}`;
-  label.textContent = LABELS[status.state] ?? status.state;
-  urlEl.textContent = status.url ?? "";
+  lastStatus = status;
+  if (status.state === "starting") {
+    if (!timer) {
+      startedAt = Date.now();
+      timer = setInterval(tick, 1000);
+    }
+  } else if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
   const failed = status.state === "error" || status.state === "stopped";
+  const serverState = status.state === "running" ? "done" : failed ? "error" : "active";
+  setRow(rowServer, serverState, serverDetail(status));
+  setRow(rowOpen, status.state === "running" ? "active" : "wait", status.state === "running" ? "Opening…" : "");
+  tag.textContent = TAGS[status.state] ?? status.state;
   errorEl.hidden = !(failed && status.lastError);
   errorEl.textContent = status.lastError ?? "";
   actions.hidden = !failed;
 }
 
-document.getElementById("restart").addEventListener("click", () => api.restartServer());
-document.getElementById("logs").addEventListener("click", () => api.openLogs());
-document.getElementById("settings").addEventListener("click", () => api.openSettings());
+$("restart").addEventListener("click", () => api.restartServer());
+$("logs").addEventListener("click", () => api.openLogs());
+$("settings").addEventListener("click", () => api.openSettings());
 
-api.onStatus(render);
-api.getStatus().then(render);
+async function init() {
+  const [settings, info] = await Promise.all([api.getSettings(), api.getInfo()]);
+  port = settings?.port ?? null;
+  $("foot").textContent = `ima2 ${info.appVersion} · Runs on this computer`;
+  api.onStatus(render);
+  render(await api.getStatus());
+}
+
+void init();
