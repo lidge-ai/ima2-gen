@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createSettingsStore } from "./lib/settings.mjs";
+import { resolveIconPaths } from "./lib/icons.mjs";
 import { ServerSupervisor } from "./lib/server.mjs";
 import { WindowManager } from "./lib/windows.mjs";
 import { TrayController } from "./lib/tray.mjs";
@@ -16,8 +17,6 @@ const desktopDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(desktopDir, "..");
 const isMac = process.platform === "darwin";
 const buildDir = join(desktopDir, "build");
-const appIcon = join(buildDir, process.platform === "win32" ? "icon.ico" : "icon.png");
-const trayIcon = join(buildDir, isMac ? "trayTemplate.png" : "tray.png");
 
 app.setName("ima2");
 if (process.platform === "win32") app.setAppUserModelId("com.lidge.ima2");
@@ -30,6 +29,13 @@ if (!app.requestSingleInstanceLock()) {
 
 async function boot() {
   await app.whenReady();
+
+  const { appIcon: appIconPng, trayIcon } = await resolveIconPaths({
+    buildDir,
+    fallbackDir: join(app.getPath("userData"), "icons"),
+    log: (line) => console.warn(line),
+  });
+  const appIcon = process.platform === "win32" ? join(buildDir, "icon.ico") : appIconPng;
 
   const settingsStore = createSettingsStore(app.getPath("userData"));
   const supervisor = new ServerSupervisor({
@@ -48,6 +54,7 @@ async function boot() {
     app,
     dialog,
     prepareForInstall: () => lifecycle.prepareForUpdateInstall(),
+    autoDownload: settingsStore.get().autoUpdate,
   });
 
   const configDir = () => settingsStore.get().configDir || process.env.IMA2_CONFIG_DIR || join(homedir(), ".ima2");
@@ -76,7 +83,7 @@ async function boot() {
     windows.broadcast("desktop:status", status);
     windows.syncMainContent();
   });
-  settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows }));
+  settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows, updater }));
 
   if (settingsStore.get().openAtLogin) applyLoginItem(settingsStore.get());
   applyDockVisibility(settingsStore.get(), windows);
@@ -87,11 +94,12 @@ async function boot() {
 
   if (!settingsStore.get().startHidden) windows.showMain();
   await supervisor.start(settingsStore.get());
-  void updater.checkForUpdates();
+  if (settingsStore.get().autoUpdate) void updater.checkForUpdates();
 }
 
-function onSettingsChanged({ next, changed, supervisor, tray, windows }) {
+function onSettingsChanged({ next, changed, supervisor, tray, windows, updater }) {
   tray.update({ settings: next });
+  if (changed.includes("autoUpdate")) updater.setAutoDownload(next.autoUpdate);
   windows.broadcast("desktop:status", supervisor.snapshot());
   if (changed.includes("openAtLogin") || (next.openAtLogin && changed.includes("startHidden"))) applyLoginItem(next);
   if (changed.includes("menubarOnly")) applyDockVisibility(next, windows);
