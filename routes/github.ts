@@ -34,7 +34,8 @@ export function createGithubStarHandlers(deps?: StarDeps) {
     },
     async dismiss(req: Request, res: Response) {
       if (!localOnly(req, res)) return;
-      await dismissStarPrompt(deps);
+      // Unwritable state only means the prompt may ask again next launch.
+      await dismissStarPrompt(deps).catch(() => {});
       res.json({ ok: true });
     },
   };

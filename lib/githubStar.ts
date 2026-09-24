@@ -9,7 +9,7 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, posix, win32 } from "node:path";
+import { delimiter, dirname, join, posix, win32 } from "node:path";
 import { homedir } from "node:os";
 import { config } from "../config.js";
 
@@ -104,18 +104,30 @@ async function spawnGh(args: string[], timeoutMs: number): Promise<{ status: num
   if (!executable) return null;
   const pathApi = process.platform === "win32" ? win32 : posix;
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "path"));
-  env.PATH = pathApi.dirname(executable);
+  // gh's own directory plus system tools only: credential helpers and the macOS keychain
+  // (/usr/bin/security) still resolve, while the caller's PATH never picks the binary.
+  const systemDirs = process.platform === "win32" ? [] : ["/usr/bin", "/bin", "/usr/sbin", "/sbin"];
+  env.PATH = [pathApi.dirname(executable), ...systemDirs].join(delimiter);
   return new Promise((resolve) => {
+    let settled = false;
+    const settle = (value: { status: number | null } | null) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
     let child: ReturnType<typeof spawn>;
     try {
       child = spawn(executable, args, { cwd: homedir(), env, stdio: "ignore", windowsHide: true, shell: false });
     } catch {
-      resolve(null);
+      settle(null);
       return;
     }
-    const timer = setTimeout(() => child.kill(), timeoutMs);
-    child.once("error", () => { clearTimeout(timer); resolve(null); });
-    child.once("exit", (code) => { clearTimeout(timer); resolve({ status: code }); });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      settle(null);
+    }, timeoutMs);
+    child.once("error", () => { clearTimeout(timer); settle(null); });
+    child.once("exit", (code) => { clearTimeout(timer); settle({ status: code }); });
   });
 }
 
@@ -170,7 +182,8 @@ export async function starRepository(deps: StarDeps = defaultDeps): Promise<Star
   generation += 1;
   inflight = null;
   cached = { at: deps.nowMs(), state: "starred" };
-  await markPrompted(deps.statePath());
+  // The star already landed; an unwritable config dir must not report it as a failure.
+  await markPrompted(deps.statePath()).catch(() => {});
   return { ok: true };
 }
 
