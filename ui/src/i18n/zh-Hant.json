@@ -346,6 +346,19 @@
       "insertedPrompts": "插入的提示"
     }
   },
+  "starPrompt": {
+    "title": "影像已生成",
+    "thanks": "感謝你的 Star",
+    "body": "ima2 免費且開源。GitHub Star 能讓更多人發現它。",
+    "star": "在 GitHub 上加星",
+    "starring": "正在加星…",
+    "open": "在 GitHub 上開啟",
+    "notNow": "稍後再說",
+    "count": "{count} 個 Star",
+    "failed": "無法在此加星。你仍可以在 GitHub 上加星。",
+    "noteGh": "使用你自己的 GitHub CLI 登入。ima2 不會保存 GitHub 權杖。",
+    "noteSignIn": "如需在此加星，請先登入 GitHub CLI（gh auth login）。"
+  },
   "onboarding": {
     "title": "你好！第一次來這裡？",
     "body": "登入以開始產生。您可以連接 ChatGPT、Grok 或 Gemini。",

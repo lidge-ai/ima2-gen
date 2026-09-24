@@ -281,6 +281,7 @@ body::after {
 @import "./styles/provenance-chip.css";
 @import "./styles/element-mention.css";
 @import "./styles/toast-modal.css";
+@import "./styles/star-prompt.css";
 @import "./styles/responsive-layout.css";
 @import "./styles/responsive-mobile.css";
 @import "./styles/node-workspace.css";

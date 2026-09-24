@@ -83,3 +83,12 @@ Activation for UI branches: covered by a small pure helper `shouldOpenStarPrompt
 - File map additions: `bin/lib/star-prompt.ts` MODIFY (import constants, arg builders and state helpers from ../../lib/githubStar.js), `tests/star-prompt.test.ts` unchanged (must stay green).
 - StarPrompt also stays closed while `readinessPopupOpen` (ui/src/store/storeTypes.ts:414) is true.
 - Citation fixes: `DEFAULT_GROK_PLANNER_MODEL` is config.ts:29 (050), `checkBrowserRequest` is lib/localAccessPolicy.ts:128.
+
+## wp3 P re-verification (HEAD f146922d)
+
+- routes/github.ts exports `createGithubStarHandlers(deps?)` → `{ status, star, dismiss }` Express handlers plus `registerGithubRoutes(app)`; tests call the handlers with fake req/res (`socket.remoteAddress` controls the loopback branch), because any real socket request in a test arrives from loopback and could not reach the LOCAL_ONLY path.
+- `isLoopbackPeer(address)` exported from lib/localAccessPolicy.ts, built on the existing private `literalHost`: true for 127.0.0.0/8, ::1, ::ffff:127.x (dotted and hex forms).
+- State helpers take an optional path for tests; production path stays `join(config.storage.configDir, "state", "star-prompt.json")` (bin/lib/star-prompt.ts:11-13). Server writes `{ prompted_at }` in the same shape the CLI writes, so either surface suppresses the other.
+- Trusted gh resolution (server only): literal dirs /opt/homebrew/bin, /usr/local/bin, /usr/bin, /bin, /opt/local/bin, /home/linuxbrew/.linuxbrew/bin, /snap/bin, /run/current-system/sw/bin, C:\\Program Files\\GitHub CLI, C:\\Program Files (x86)\\GitHub CLI. Spawn uses `shell: false`, `stdio: "ignore"`, `windowsHide`, PATH limited to the gh directory, kill on timeout (auth 5s, api 10s).
+- Tests: tests/github-star.test.ts (runtime test: imports lib/ and routes/), tests/star-prompt-ui-contract.test.ts (pure `shouldOpenStarPrompt` from ui/src/lib/githubStar.ts, imported via tsx). `node scripts/classify-tests.mjs` regenerates docs/migration/runtime-test-inventory.md.
+- UI: `ui/src/lib/githubStar.ts` uses `jsonFetch`/`fetchApi` from api-core.ts; star-count fetch goes to api.github.com with `fetch` directly (cross-origin, public, no credentials) and is optional.

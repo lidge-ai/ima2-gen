@@ -11,6 +11,7 @@ import { CustomSizeConfirmModal } from "./components/CustomSizeConfirmModal";
 import { MetadataRestoreDialog } from "./components/MetadataRestoreDialog";
 import { ProviderReadinessPopup } from "./components/ProviderReadinessPopup";
 import { OnboardingPopup } from "./components/OnboardingPopup";
+import { StarPrompt } from "./components/StarPrompt";
 import { TrashUndoToast } from "./components/TrashUndoToast";
 import { MobileSettingsToggle } from "./components/MobileSettingsToggle";
 import { MobileAppBar } from "./components/MobileAppBar";
@@ -200,6 +201,7 @@ export default function App() {
       <MetadataRestoreDialog />
       <ProviderReadinessPopup />
       <OnboardingPopup />
+      <StarPrompt />
       <MobileComposeSheet />
       <MobileSettingsToggle />
       {uiMode === "card-news" ? (

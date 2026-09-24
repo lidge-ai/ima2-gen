@@ -1,0 +1,50 @@
+/* One-time GitHub star request (StarPrompt.tsx). Shape tokens come from .modal. */
+.star-prompt-backdrop {
+  z-index: 160;
+}
+.star-prompt {
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.star-prompt__mark {
+  width: 36px;
+  height: 39px;
+  margin-top: 6px;
+  color: var(--text);
+}
+.star-prompt__title {
+  margin: 4px 0 0;
+  text-wrap: balance;
+}
+.star-prompt .modal__body p {
+  text-wrap: balance;
+}
+.star-prompt__repo {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.star-prompt__count {
+  color: var(--text);
+}
+.star-prompt__actions {
+  width: 100%;
+  justify-content: center;
+}
+.star-prompt__note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-wrap: balance;
+}

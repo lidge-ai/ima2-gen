@@ -346,6 +346,19 @@
       "insertedPrompts": "Inserted prompts"
     }
   },
+  "starPrompt": {
+    "title": "Your image is ready",
+    "thanks": "Thanks for the star",
+    "body": "ima2 is free and open source. A GitHub star is how other people find it.",
+    "star": "Star on GitHub",
+    "starring": "Starring…",
+    "open": "Open on GitHub",
+    "notNow": "Not now",
+    "count": "{count} stars",
+    "failed": "Starring from here did not work. You can still star it on GitHub.",
+    "noteGh": "Uses your own GitHub CLI sign-in. ima2 never stores a GitHub token.",
+    "noteSignIn": "To star from here, sign in with the GitHub CLI (gh auth login)."
+  },
   "onboarding": {
     "title": "Hello! First time here?",
     "body": "Sign in to start generating. You can connect ChatGPT, Grok, or Gemini.",

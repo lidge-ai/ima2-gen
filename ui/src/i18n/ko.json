@@ -346,6 +346,19 @@
       "insertedPrompts": "삽입된 프롬프트"
     }
   },
+  "starPrompt": {
+    "title": "이미지가 완성됐어요",
+    "thanks": "스타 고마워요",
+    "body": "ima2는 무료 오픈소스예요. GitHub 스타가 쌓여야 다른 사람들이 찾아올 수 있어요.",
+    "star": "GitHub 스타 누르기",
+    "starring": "스타 누르는 중…",
+    "open": "GitHub에서 열기",
+    "notNow": "나중에",
+    "count": "스타 {count}개",
+    "failed": "여기서는 스타를 누르지 못했어요. GitHub에서 직접 눌러도 돼요.",
+    "noteGh": "내 GitHub CLI 로그인으로 누릅니다. ima2는 GitHub 토큰을 저장하지 않아요.",
+    "noteSignIn": "여기서 바로 누르려면 GitHub CLI에 로그인하세요 (gh auth login)."
+  },
   "onboarding": {
     "title": "안녕하세요, 처음이신가요?",
     "body": "여기서 로그인하세요. ChatGPT, Grok, Gemini를 연결할 수 있어요.",
