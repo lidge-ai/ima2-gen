@@ -1,8 +1,9 @@
 /**
- * The bundled openai-oauth proxy (vendor/openai-oauth-1.0.2-ima2.2.tgz) must follow the
- * session file instead of the first token it read. Before the ima2.2 patch it cached that
- * token forever, so after the Codex CLI rotated it (or the user logged in again) every
- * request failed with "Encountered invalidated oauth token" until the server restarted.
+ * The bundled openai-oauth proxy (vendor/openai-oauth-2.0.0-ima2.1.tgz) must follow the
+ * session file instead of the first token it read, and recover from an upstream 401 with one
+ * shared refresh. Without that patch (1.0.2-ima2.2, carried to 2.0.0-ima2.1 in
+ * scripts/vendor/openai-oauth/ima2-session.js) every request failed with "Encountered
+ * invalidated oauth token" after the Codex CLI rotated the token, until the server restarted.
  *
  * Runs the real proxy binary against a local fake upstream and a fake token endpoint.
  */
@@ -88,7 +89,8 @@ describe("bundled OAuth proxy follows the session file", () => {
         return;
       }
       const bearer = String(req.headers.authorization ?? "").replace(/^Bearer /, "");
-      seen.push(bearer);
+      // openai-oauth 2 also fetches the model catalog upstream; only count /responses calls.
+      if (req.url?.includes("/responses")) seen.push(bearer);
       // TOKEN_B plays the token another client already rotated away.
       res.writeHead(bearer === TOKEN_B ? 401 : 500, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: { message: bearer === TOKEN_B ? "Encountered invalidated oauth token" : "nope" } }));
@@ -104,7 +106,12 @@ describe("bundled OAuth proxy follows the session file", () => {
       "--models", "gpt-test",
       "--base-url", `http://127.0.0.1:${upstreamPort}/backend-api/codex`,
       "--oauth-token-url", `http://127.0.0.1:${upstreamPort}/oauth/token`,
-    ], { stdio: ["ignore", "pipe", "pipe"] });
+    ], {
+      stdio: ["ignore", "pipe", "pipe"],
+      // openai-oauth 2 keeps a single-instance lock under the user's state dir; isolate it
+      // so a proxy the developer already runs does not make this one exit "already running".
+      env: { ...process.env, OPENAI_OAUTH_INTERNAL_RUNTIME_DIR: join(root, "runtime") },
+    });
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("proxy did not start")), 15_000);
       proxy.stdout?.on("data", (chunk: Buffer) => {
