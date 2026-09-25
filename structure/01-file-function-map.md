@@ -80,7 +80,7 @@ routes/
 | File | Lines | Responsibility |
 |---|---:|---|
 | `server.ts` | 585 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 528 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `config.ts` | 530 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 95 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 116 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
@@ -136,7 +136,7 @@ routes/
 | `bin/commands/doctor.ts` | 313 | CLI diagnostics: storage, OAuth, providers, image probe |
 | `bin/commands/gpt.ts` | 211 | ChatGPT (GPT OAuth) login/status/logout; `ima2 login` delegates here |
 | `bin/commands/grok.ts` | 252 | Grok OAuth login and status helpers |
-| `bin/commands/defaults.ts` | 294 | CLI default provider/model/size/reasoning-effort get/set |
+| `bin/commands/defaults.ts` | 292 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 143 | CLI wrapper for `GET /api/capabilities` |
 | `bin/commands/skill.ts` | 402 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
 | `bin/commands/backfillThumbs.ts` | 35 | Gallery thumbnail backfill command |

@@ -367,6 +367,8 @@ export const config = {
     validReasoningEfforts: new Set(["none", "low", "medium", "high", "xhigh", "max"]),
   },
   apiProvider: {
+    /** The OpenAI API-key lane's own image models (GPT OAuth keeps only GPT-6). */
+    validImageModels: deriveSupportedImageModels("api"),
     defaultImageModel: pickStr(
       env.IMA2_API_IMAGE_MODEL_DEFAULT,
       fileCfg.apiProvider?.defaultImageModel,

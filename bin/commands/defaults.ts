@@ -1,5 +1,4 @@
 import { config } from "../../config.js";
-import { deriveSupportedImageModels } from "../../lib/providers/derive.js";
 import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
 import { parseArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
@@ -20,7 +19,6 @@ import {
 import { color, die, exitCodeForError, fail, json, out } from "../lib/output.js";
 
 const MODEL_KEYS = ["imageModels.default", "apiProvider.defaultImageModel"] as const;
-const API_IMAGE_MODELS = deriveSupportedImageModels("api");
 const REASONING_KEYS = ["imageModels.reasoningEffort", "apiProvider.defaultReasoningEffort"] as const;
 type CliKind = "image" | "video";
 
@@ -110,8 +108,8 @@ function printDefaults(payload: any): void {
 }
 
 function validateModel(value: string): void {
-  if (!config.imageModels.valid.has(migrateOAuthImageModel(value)) && !API_IMAGE_MODELS.has(value)) {
-    const choices = [...new Set([...config.imageModels.valid, ...API_IMAGE_MODELS])];
+  if (!config.imageModels.valid.has(migrateOAuthImageModel(value)) && !config.apiProvider.validImageModels.has(value)) {
+    const choices = [...new Set([...config.imageModels.valid, ...config.apiProvider.validImageModels])];
     die(2, `model must be one of: ${choices.join(", ")}`);
   }
 }
@@ -126,7 +124,7 @@ function laneValue(key: string, value: string): string | undefined {
     const oauth = migrateOAuthImageModel(value);
     return config.imageModels.valid.has(oauth) ? oauth : undefined;
   }
-  if (key === "apiProvider.defaultImageModel") return API_IMAGE_MODELS.has(value) ? value : undefined;
+  if (key === "apiProvider.defaultImageModel") return config.apiProvider.validImageModels.has(value) ? value : undefined;
   return value;
 }
 
