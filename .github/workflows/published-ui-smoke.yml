@@ -1,13 +1,6 @@
 name: Installed artifact UI proof
 
 on:
-  # Bootstrap candidate evidence before this new workflow exists on main.
-  push:
-    branches: [codex/prod-wp13-release]
-    paths:
-      - .github/workflows/published-ui-smoke.yml
-      - scripts/package-published-ui-smoke.mjs
-      - tests/package-install-smoke.mjs
   workflow_dispatch:
     inputs:
       artifact_kind:

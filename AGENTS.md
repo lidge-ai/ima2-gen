@@ -124,7 +124,7 @@ cd ui && npm run build     # Vite production build
 ```
 
 ## CI Layout
-- PRs run only the minimal `PR fast gate` contract (`pr-fast.yml`, Ubuntu-only). Do not add Windows/macOS legs to it.
+- PRs run only the minimal `PR fast gate` contract (`pr-fast.yml`, Ubuntu-only; docs/devlog-only PRs skip the backend/frontend jobs via a `changes` filter). Do not add Windows/macOS legs to it.
 - Cross-platform CI is post-merge: pushes to `dev`/`main`/`preview` run the full `CI` workflow, the Agy filesystem matrix, and the unsigned macOS desktop build (path-filtered so docs-only pushes stay green).
 - A red `dev` run is fixed forward on `dev`; details in CONTRIBUTING.md `## CI`.
 
