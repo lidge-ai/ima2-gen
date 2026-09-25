@@ -119,14 +119,15 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
   }
 
   it("direct adapters omit tool model and absent quality on legacy API/OAuth calls", async () => {
-    await harness.run("classic", { upstream: (call) => (call.url.startsWith("https://api.openai.com") ? success() : oauthSuccess(call)) }, async (f) => {
+    const isApi = (call: { url: string }) => new URL(call.url).host === "api.openai.com";
+    await harness.run("classic", { upstream: (call) => (isApi(call) ? success() : oauthSuccess(call)) }, async (f) => {
       const { generateViaResponses, editViaResponses } = await import("../lib/responsesImageAdapter.ts");
       for (const provider of ["api", "oauth"]) {
         const options = { model: "gpt-5.4", webSearchEnabled: false };
         await generateViaResponses(provider, "fixture", undefined, "1024x1024", "low", [], null, "auto", f.ctx, options);
         await editViaResponses(provider, "fixture", source, undefined, "1024x1024", "low", "auto", f.ctx, null, options);
       }
-      const api = f.calls.filter((call) => call.url.startsWith("https://api.openai.com"));
+      const api = f.calls.filter(isApi);
       assert.equal(api.length, 2);
       for (const call of api) {
         const body = JSON.parse(call.body);

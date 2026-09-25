@@ -196,7 +196,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
 | `lib/mcp/shutdown.ts` | 24 | Post-listen restore activation plus concurrent HTTP/MCP shutdown coordination and grace bound |
 | `lib/mcp/snapshotPipeline.ts` | 113 | Generation/epoch-safe live tool snapshot ingest and stale-result suppression |
-| `lib/codexBackend/index.ts` | 151 | GPT OAuth transport: in-process Codex backend routes (`/v1/responses`, chat, images, models) or an external endpoint |
+| `lib/codexBackend/index.ts` | 158 | GPT OAuth transport: in-process Codex backend routes (`/v1/responses`, chat, images, models) or an external endpoint |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
 | `lib/oauthProxy/generators.ts` | 231 | OAuth Responses single-image generation and stable generator exports |
