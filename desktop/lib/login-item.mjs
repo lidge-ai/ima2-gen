@@ -36,9 +36,11 @@ export function createLoginItem({ app, platform = process.platform, env = proces
     return {
       supported: true,
       isEnabled: () => app.getLoginItemSettings().openAtLogin === true,
-      set: (enabled) => {
-        if (app.getLoginItemSettings().openAtLogin === enabled) return;
-        app.setLoginItemSettings({ openAtLogin: enabled });
+      set: (enabled, { hidden = false } = {}) => {
+        const current = app.getLoginItemSettings();
+        const darwin = platform === "darwin";
+        if (current.openAtLogin === enabled && (!darwin || current.openAsHidden === hidden)) return;
+        app.setLoginItemSettings(darwin ? { openAtLogin: enabled, openAsHidden: hidden } : { openAtLogin: enabled });
       },
     };
   }

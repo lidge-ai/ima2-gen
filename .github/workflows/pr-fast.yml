@@ -33,9 +33,6 @@ jobs:
               - '**'
               - '!devlog/**'
               - '!**/*.md'
-              - '!**/*.png'
-              - '!**/*.jpg'
-              - '!**/*.webp'
               - '!LICENSE'
       - name: Resolve scope
         id: scope
@@ -165,19 +162,68 @@ jobs:
           WP08_BUILD_COMMAND: npm --prefix ui run build:fixture
           WP08_BUILD_OUTCOME: ${{ steps.wp08_ui_build.outcome }}
         run: npm --prefix ui run test:e2e
-      - name: Upload e2e evidence
+      - name: Upload WP09 isolation and journey evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pr-e2e-evidence-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: wp09-journeys-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           include-hidden-files: true
           path: |
-            ui/test-results/**/wp0*-*.png
-            ui/test-results/**/wp0*-*.json
+            ui/test-results/**/wp09-*.png
+            ui/test-results/**/wp09-*.json
             ui/test-results/**/wp12-*.png
             ui/test-results/**/wp12-*.json
             ui/dist/.ima2-ui-build-receipt.json
           if-no-files-found: error
+          retention-days: 14
+      - name: Upload composer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wp08-composer-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ui/test-results/**/wp08-*.png
+            ui/test-results/**/wp08-*.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload WP08c evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wp08c-provider-display-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ui/test-results/**/wp08c-*.png
+            ui/test-results/**/wp08c-*.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload provider surface visual evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wp01-provider-surface-visual
+          path: ui/test-results/**/wp01-*.png
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload selection evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wp02-selection-evidence
+          path: |
+            ui/test-results/**/wp02-*.png
+            ui/test-results/**/wp02-*.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload execution error evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wp03-error-evidence
+          path: |
+            ui/test-results/**/wp03-*.png
+            ui/test-results/**/wp03-*.json
+          if-no-files-found: ignore
           retention-days: 14
       - name: Upload e2e failure artifacts
         if: failure()

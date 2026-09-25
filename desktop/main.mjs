@@ -120,7 +120,7 @@ function onSettingsChanged({ next, changed, supervisor, tray, windows, updater, 
   tray.update({ settings: next });
   if (changed.includes("autoUpdate")) updater.setAutoDownload(next.autoUpdate);
   windows.broadcast("desktop:status", supervisor.snapshot());
-  if (changed.includes("openAtLogin")) applyLoginItem(loginItem, next);
+  if (changed.includes("openAtLogin") || changed.includes("startHidden")) applyLoginItem(loginItem, next);
   if (changed.includes("menubarOnly")) applyDockVisibility(next, windows);
   const needsRestart = ["port", "devLogging", "nodeBinary", "configDir"];
   if (changed.some((k) => needsRestart.includes(k))) void supervisor.restart(next);
@@ -129,7 +129,7 @@ function onSettingsChanged({ next, changed, supervisor, tray, windows, updater, 
 function applyLoginItem(loginItem, settings) {
   if (!app.isPackaged) return;
   try {
-    loginItem.set(settings.openAtLogin);
+    loginItem.set(settings.openAtLogin, { hidden: settings.startHidden === true });
   } catch (error) {
     console.warn(`[desktop] login item update failed: ${error instanceof Error ? error.message : String(error)}`);
   }

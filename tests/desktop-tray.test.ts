@@ -69,6 +69,20 @@ describe("login item", () => {
     assert.equal(item.isEnabled(), true);
   });
 
+  it("passes openAsHidden through on macOS only", () => {
+    const calls: unknown[] = [];
+    let state = { openAtLogin: false, openAsHidden: false };
+    const app = {
+      getLoginItemSettings: () => state,
+      setLoginItemSettings: (s: { openAtLogin: boolean; openAsHidden: boolean }) => { calls.push(s); state = s; },
+    };
+    const item = createLoginItem({ app, platform: "darwin" });
+    item.set(true, { hidden: true });
+    item.set(true, { hidden: true });
+    item.set(true, { hidden: false });
+    assert.deepEqual(calls, [{ openAtLogin: true, openAsHidden: true }, { openAtLogin: true, openAsHidden: false }]);
+  });
+
   it("leaves plain exec paths unquoted", () => {
     assert.match(linuxAutostartEntry("/usr/bin/ima2"), /^Exec=\/usr\/bin\/ima2$/m);
   });
