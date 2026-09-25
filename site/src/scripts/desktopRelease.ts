@@ -1,9 +1,11 @@
-export const RELEASES_API = 'https://api.github.com/repos/lidge-ai/ima2-gen/releases?per_page=30';
+export const RELEASES_API = 'https://api.github.com/repos/lidge-ai/ima2-gen/releases';
 export const RELEASES_PAGE = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true';
 const TAG_PREFIX = 'desktop-v';
 const CACHE_KEY = 'ima2:desktop-release';
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 6000;
+const PER_PAGE = 100;
+const MAX_PAGES = 3;
 
 export type PlatformId = 'mac-arm64' | 'win-x64' | 'win-arm64' | 'linux-x64-appimage' | 'linux-arm64-appimage' | 'linux-x64-deb' | 'linux-arm64-deb';
 export type Os = 'mac' | 'win' | 'linux' | 'unknown';
@@ -55,12 +57,12 @@ export function pickLatestDesktopRelease(releases: GitHubRelease[]): DesktopRele
   };
 }
 
-function readCache(): DesktopRelease | null {
+function readCache(): { release: DesktopRelease | null } | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const cached = JSON.parse(raw) as { at: number; release: DesktopRelease | null };
-    return Date.now() - cached.at < CACHE_TTL_MS ? cached.release : null;
+    return Date.now() - cached.at < CACHE_TTL_MS ? { release: cached.release } : null;
   } catch {
     return null;
   }
@@ -80,14 +82,22 @@ let pending: Promise<DesktopRelease | null> | null = null;
 export function loadDesktopRelease(): Promise<DesktopRelease | null> {
   if (pending) return pending;
   const cached = readCache();
-  if (cached) return (pending = Promise.resolve(cached));
+  if (cached) return (pending = Promise.resolve(cached.release));
   pending = (async () => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
-      const res = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' }, signal: controller.signal });
-      if (!res.ok) return null;
-      const release = pickLatestDesktopRelease((await res.json()) as GitHubRelease[]);
+      let release: DesktopRelease | null = null;
+      for (let page = 1; page <= MAX_PAGES && !release; page++) {
+        const res = await fetch(`${RELEASES_API}?per_page=${PER_PAGE}&page=${page}`, {
+          headers: { Accept: 'application/vnd.github+json' },
+          signal: controller.signal,
+        });
+        if (!res.ok) return null;
+        const releases = (await res.json()) as GitHubRelease[];
+        release = pickLatestDesktopRelease(releases);
+        if (releases.length < PER_PAGE) break;
+      }
       writeCache(release);
       return release;
     } catch {

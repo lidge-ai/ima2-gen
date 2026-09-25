@@ -93,10 +93,12 @@ const desktopLabels = {
           link.href = asset.url;
           link.removeAttribute('target');
           meta.textContent = formatSize(asset.size) || '↓';
+          meta.removeAttribute('aria-hidden');
         } else {
           link.href = release.url;
           item.classList.add('is-soon');
           meta.textContent = labels.soon;
+          meta.removeAttribute('aria-hidden');
         }
       });
 
