@@ -9,8 +9,14 @@ const koReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.ko.
 const jaReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.ja.md';
 const zhReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.zh-CN.md';
 const zhTwReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.zh-TW.md';
-// Desktop builds are published as separate desktop-v* releases next to the npm releases.
-const desktopUrl = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true';
+import { PLATFORM_ORDER, RELEASES_PAGE } from '../scripts/desktopRelease';
+const desktopLabels = {
+  ctaFor: t(lang, 'install.desktop.ctaFor'),
+  detected: t(lang, 'install.desktop.detected'),
+  soon: t(lang, 'install.desktop.soon'),
+  platforms: Object.fromEntries(PLATFORM_ORDER.map((id) => [id, t(lang, `dl.platform.${id}`)])),
+  os: { mac: t(lang, 'dl.os.mac'), win: t(lang, 'dl.os.win'), linux: t(lang, 'dl.os.linux') },
+};
 ---
 
 <section class="std install-section" id="install">
@@ -29,7 +35,17 @@ const desktopUrl = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expa
           <li>{t(lang, 'install.desktop.step2')}</li>
           <li>{t(lang, 'install.desktop.step3')}</li>
         </ol>
-        <a class="desktop-dl" href={desktopUrl} target="_blank" rel="noopener"><span>{t(lang, 'install.desktop.cta')}</span><span aria-hidden="true">↗</span></a>
+        <div class="desktop-download" data-desktop-download data-labels={JSON.stringify(desktopLabels)}>
+          <a class="desktop-dl" data-dl-primary href={RELEASES_PAGE} target="_blank" rel="noopener"><span data-dl-primary-label>{t(lang, 'install.desktop.cta')}</span><span aria-hidden="true">↓</span></a>
+          <p class="desktop-detected" data-dl-detected hidden></p>
+          <p class="desktop-others-title">{t(lang, 'install.desktop.others')}</p>
+          <ul class="desktop-platforms" data-dl-list>
+            {PLATFORM_ORDER.map((id) => (
+              <li data-platform={id}><a href={RELEASES_PAGE} target="_blank" rel="noopener"><span>{t(lang, `dl.platform.${id}`)}</span><span class="desktop-platform-meta" data-dl-meta aria-hidden="true">↗</span></a></li>
+            ))}
+            <li><a href={RELEASES_PAGE} target="_blank" rel="noopener"><span>{t(lang, 'install.desktop.all')}</span><span aria-hidden="true">↗</span></a></li>
+          </ul>
+        </div>
         <p class="desktop-other">{t(lang, 'install.desktop.other')}</p>
       </div>
       <div class="install-codes reveal" style="--i:4"><CodeCopy command="npm install -g ima2-gen" /><CodeCopy command="ima2 setup" /><CodeCopy command="ima2 serve" /></div>
@@ -56,6 +72,55 @@ const desktopUrl = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expa
   </div>
 </section>
 
+<script>
+  import { detectPlatform, formatSize, loadDesktopRelease, preferredPlatforms, type Os, type PlatformId } from '../scripts/desktopRelease';
+
+  interface Labels { ctaFor: string; detected: string; soon: string; platforms: Record<PlatformId, string>; os: Record<Exclude<Os, 'unknown'>, string>; }
+  const root = document.querySelector<HTMLElement>('[data-desktop-download]');
+
+  if (root) {
+    const labels = JSON.parse(root.dataset.labels ?? '{}') as Labels;
+    void Promise.all([loadDesktopRelease(), detectPlatform()]).then(([release, detected]) => {
+      if (!release) return;
+      const byPlatform = new Map(release.assets.map((a) => [a.platform, a]));
+
+      root.querySelectorAll<HTMLLIElement>('[data-platform]').forEach((item) => {
+        const asset = byPlatform.get(item.dataset.platform as PlatformId);
+        const link = item.querySelector('a');
+        const meta = item.querySelector('[data-dl-meta]');
+        if (!link || !meta) return;
+        if (asset) {
+          link.href = asset.url;
+          link.removeAttribute('target');
+          meta.textContent = formatSize(asset.size) || '↓';
+          meta.removeAttribute('aria-hidden');
+        } else {
+          link.href = release.url;
+          item.classList.add('is-soon');
+          meta.textContent = labels.soon;
+          meta.removeAttribute('aria-hidden');
+        }
+      });
+
+      const primary = preferredPlatforms(detected).map((id) => byPlatform.get(id)).find(Boolean);
+      const primaryLink = root.querySelector<HTMLAnchorElement>('[data-dl-primary]');
+      const primaryLabel = root.querySelector('[data-dl-primary-label]');
+      if (!primary || !primaryLink || !primaryLabel || detected.os === 'unknown') return;
+      primaryLink.href = primary.url;
+      primaryLink.removeAttribute('target');
+      primaryLabel.textContent = labels.ctaFor.replace('{platform}', labels.os[detected.os]);
+      root.querySelector(`[data-platform="${primary.platform}"]`)?.classList.add('is-primary');
+      const detectedEl = root.querySelector<HTMLElement>('[data-dl-detected]');
+      if (detectedEl) {
+        detectedEl.textContent = labels.detected
+          .replace('{platform}', labels.platforms[primary.platform])
+          .replace('{version}', `v${release.version}`);
+        detectedEl.hidden = false;
+      }
+    });
+  }
+</script>
+
 <style>
   .install-section { overflow: clip; }
   .install-heading { max-width: 1100px; margin: 18px 0 22px; font: 600 64px/.96 var(--font-display); letter-spacing: 0; text-wrap: balance; }
@@ -69,6 +134,16 @@ const desktopUrl = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expa
   .desktop-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text-dim); font: 400 14px/1.55 var(--font-body); }
   .desktop-dl { align-self: flex-start; display: inline-flex; gap: 10px; align-items: center; padding: 12px 18px; border: 1px solid var(--glass-line); color: var(--text); font: 600 14px/1 var(--font-display); transition: opacity 180ms ease; }
   .desktop-dl:hover { opacity: .72; }
+  .desktop-download { display: flex; flex-direction: column; gap: 10px; }
+  .desktop-detected { margin: 0; color: var(--text-dim); font: 500 11px/1.6 var(--font-mono); letter-spacing: .04em; }
+  .desktop-detected[hidden] { display: none; }
+  .desktop-others-title { margin: 8px 0 0; color: var(--text-dim); font: 500 10px/1.6 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+  .desktop-platforms { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+  .desktop-platforms a { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--text-dim); font: 500 13px/1.3 var(--font-display); transition: opacity 180ms ease; }
+  .desktop-platforms a:hover { opacity: .68; }
+  .desktop-platforms .is-primary a { color: var(--text); }
+  .desktop-platforms .is-soon a { opacity: .5; }
+  .desktop-platform-meta { flex: none; font: 500 10px/1.6 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
   .desktop-other { margin: 0; color: var(--text-dim); font: 400 12px/1.5 var(--font-body); }
   .install-codes :global(.codeblock) { min-height: 72px; padding: 18px 20px; font-size: 15px; }
   .install-meta { display: flex; flex-direction: column; gap: 22px; }
@@ -85,5 +160,5 @@ const desktopUrl = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expa
   .links li:last-child a { border-bottom: 1px solid var(--line); }
   .links a:hover { opacity: .68; }
   @media (max-width: 900px) { .install-heading { font-size: 48px; } .install-flow { gap: 40px; margin-top: 52px; } }
-  @media (max-width: 480px) { .install-heading { font-size: 36px; } .install-codes :global(.codeblock) { min-height: 62px; padding: 14px; font-size: 12px; } .oneclick-row { grid-template-columns: 1fr; gap: 4px; } }
+  @media (max-width: 480px) { .desktop-platforms { grid-template-columns: 1fr; } .install-heading { font-size: 36px; } .install-codes :global(.codeblock) { min-height: 62px; padding: 14px; font-size: 12px; } .oneclick-row { grid-template-columns: 1fr; gap: 4px; } }
 </style>

@@ -14,6 +14,23 @@ const SHA = "a".repeat(40);
 const TEAM = "AB12CD34EF";
 const BASE = "ima2-" + VERSION + "-mac-arm64";
 const INSTALLERS = [BASE + ".dmg", BASE + ".zip"];
+const WIN_ARCHES = ["x64", "arm64"] as const;
+const LINUX_LEGS = [
+  { arch: "x64", appImage: `ima2-${VERSION}-linux-x86_64.AppImage`, deb: `ima2-${VERSION}-linux-amd64.deb`, channel: "latest-linux.yml" },
+  { arch: "arm64", appImage: `ima2-${VERSION}-linux-arm64.AppImage`, deb: `ima2-${VERSION}-linux-arm64.deb`, channel: "latest-linux-arm64.yml" },
+] as const;
+
+/** Published names in the exact order the script emits them. */
+const EXPECTED_PUBLIC = [
+  BASE + ".dmg", BASE + ".zip", BASE + ".dmg.blockmap", BASE + ".zip.blockmap",
+  "latest-mac.yml",
+  `ima2-${VERSION}-win-x64.exe`, `ima2-${VERSION}-win-x64.exe.blockmap`,
+  `ima2-${VERSION}-win-arm64.exe`, `ima2-${VERSION}-win-arm64.exe.blockmap`,
+  "latest.yml",
+  `ima2-${VERSION}-linux-x86_64.AppImage`, `ima2-${VERSION}-linux-amd64.deb`, "latest-linux.yml",
+  `ima2-${VERSION}-linux-arm64.AppImage`, `ima2-${VERSION}-linux-arm64.deb`, "latest-linux-arm64.yml",
+  "SHA256SUMS.txt",
+];
 
 function sha512Base64(value: Buffer): string {
   return createHash("sha512").update(value).digest("base64");
@@ -23,33 +40,71 @@ function sha256Hex(value: Buffer): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+/** The update-metadata shape electron-builder writes for one build leg. */
+function updateMetadata(version: string, entries: Array<{ url: string; bytes: Buffer }>, extras = ""): string {
+  return [
+    "version: " + version,
+    "files:",
+    ...entries.flatMap((entry) => [
+      "  - url: " + entry.url,
+      "    sha512: " + sha512Base64(entry.bytes),
+      "    size: " + entry.bytes.length,
+      extras ? "    " + extras : "",
+    ].filter(Boolean)),
+    "path: " + entries[0].url,
+    "sha512: " + sha512Base64(entries[0].bytes),
+    "releaseDate: '2026-09-23T00:00:00.000Z'",
+    "",
+  ].join("\n");
+}
+
 type Proof = Record<string, any>;
 
-function fixture(mutateProof: (proof: Proof) => void = () => {}) {
+function fixture(
+  mutateProof: (proof: Proof) => void = () => {},
+  options: { windowsSigned?: string } = {},
+) {
   const directory = mkdtempSync(join(tmpdir(), "ima2-desktop-release-"));
   mkdirSync(join(directory, "signature-proof"));
 
+  // Every name the release publishes, mapped to its payload bytes.
   const bytes = new Map<string, Buffer>();
-  for (const name of INSTALLERS) bytes.set(name, Buffer.from("signed bytes for " + name));
-  for (const name of INSTALLERS) bytes.set(name + ".blockmap", Buffer.from("blockmap for " + name));
-  for (const [name, value] of bytes) writeFileSync(join(directory, name), value);
+  const put = (dir: string, name: string, payload = "bytes for " + name) => {
+    const value = Buffer.from(payload);
+    writeFileSync(join(dir, name), value);
+    return value;
+  };
 
-  const zip = bytes.get(BASE + ".zip")!;
-  const dmg = bytes.get(BASE + ".dmg")!;
-  writeFileSync(join(directory, "latest-mac.yml"), [
-    "version: " + VERSION,
-    "files:",
-    "  - url: " + BASE + ".zip",
-    "    sha512: " + sha512Base64(zip),
-    "    size: " + zip.length,
-    "  - url: " + BASE + ".dmg",
-    "    sha512: " + sha512Base64(dmg),
-    "    size: " + dmg.length,
-    "path: " + BASE + ".zip",
-    "sha512: " + sha512Base64(zip),
-    "releaseDate: '2026-09-23T00:00:00.000Z'",
-    "",
-  ].join("\n"));
+  for (const name of INSTALLERS) bytes.set(name, put(directory, name, "signed bytes for " + name));
+  for (const name of INSTALLERS) bytes.set(name + ".blockmap", put(directory, name + ".blockmap"));
+  bytes.set("latest-mac.yml", Buffer.from(updateMetadata(VERSION, [
+    { url: BASE + ".zip", bytes: bytes.get(BASE + ".zip")! },
+    { url: BASE + ".dmg", bytes: bytes.get(BASE + ".dmg")! },
+  ])));
+  writeFileSync(join(directory, "latest-mac.yml"), bytes.get("latest-mac.yml")!);
+
+  const marker = options.windowsSigned ?? "unsigned";
+  for (const arch of WIN_ARCHES) {
+    const dir = join(directory, "win-" + arch);
+    mkdirSync(dir);
+    const exe = `ima2-${VERSION}-win-${arch}.exe`;
+    bytes.set(exe, put(dir, exe));
+    bytes.set(exe + ".blockmap", put(dir, exe + ".blockmap"));
+    writeFileSync(join(dir, "latest.yml"), updateMetadata(VERSION, [{ url: exe, bytes: bytes.get(exe)! }]));
+    writeFileSync(join(dir, "signing-windows.txt"), marker);
+  }
+  for (const leg of LINUX_LEGS) {
+    const dir = join(directory, "linux-" + leg.arch);
+    mkdirSync(dir);
+    bytes.set(leg.appImage, put(dir, leg.appImage));
+    bytes.set(leg.deb, put(dir, leg.deb));
+
+    bytes.set(leg.channel, Buffer.from(updateMetadata(VERSION, [
+      { url: leg.appImage, bytes: bytes.get(leg.appImage)! },
+      { url: leg.deb, bytes: bytes.get(leg.deb)! },
+    ], "blockMapSize: 42")));
+    writeFileSync(join(dir, leg.channel), bytes.get(leg.channel)!);
+  }
 
   const proof: Proof = {
     schemaVersion: 1,
@@ -78,14 +133,16 @@ describe("desktop release asset preparation", () => {
     assert.ok(imports.every((specifier) => specifier.startsWith("node:")), imports.join(", "));
   });
 
-  it("derives the public checksum list and notes from the signing proof", () => {
+  it("derives the public checksum list and notes for every shipped platform", () => {
     const run1 = fixture();
     try {
       const result = run(run1.directory);
-      assert.deepEqual(result.publicAssets, [
-        BASE + ".dmg", BASE + ".zip", BASE + ".dmg.blockmap", BASE + ".zip.blockmap",
-        "latest-mac.yml", "SHA256SUMS.txt",
-      ]);
+      assert.deepEqual(result.publicAssets, EXPECTED_PUBLIC);
+
+      // Every installer is lifted flat into dist for the release upload.
+      for (const name of EXPECTED_PUBLIC.filter((name) => name !== "SHA256SUMS.txt")) {
+        assert.ok(readFileSync(join(run1.directory, name)).length > 0, "missing flat asset " + name);
+      }
 
       // Exact line membership, so a filename never has to survive regex escaping.
       const checksums = readFileSync(join(run1.directory, "SHA256SUMS.txt"), "utf8").split("\n").filter(Boolean);
@@ -93,7 +150,7 @@ describe("desktop release asset preparation", () => {
         assert.ok(checksums.includes(sha256Hex(value) + "  " + name), "no checksum line for " + name);
       }
       assert.equal(checksums.length, run1.bytes.size + 1, "only the published artifacts are listed");
-      assert.ok(!checksums.some((line) => /report\.json|RELEASE_NOTES/.test(line)));
+      assert.ok(!checksums.some((line) => /report\.json|RELEASE_NOTES|signing-windows/.test(line)));
 
       const notes = readFileSync(join(run1.directory, "RELEASE_NOTES.md"), "utf8");
       assert.ok(notes.includes(SHA), "notes must record the build commit");
@@ -101,8 +158,54 @@ describe("desktop release asset preparation", () => {
       assert.match(notes, /Developer ID Application: Example/);
       assert.match(notes, /Architectures: arm64/);
       assert.match(notes, /Stapled notarization ticket: passed/);
+      assert.match(notes, /not Authenticode signed/);
+      assert.match(notes, /deb installs update through the package manager/);
     } finally {
       run1.cleanup();
+    }
+  });
+
+  it("merges both Windows legs into one latest.yml the updater can pick an arch from", () => {
+    const run1 = fixture();
+    try {
+      run(run1.directory);
+      const merged = readFileSync(join(run1.directory, "latest.yml"), "utf8");
+      assert.ok(merged.includes("url: ima2-" + VERSION + "-win-x64.exe"));
+      assert.ok(merged.includes("url: ima2-" + VERSION + "-win-arm64.exe"));
+      assert.ok(merged.includes("path: ima2-" + VERSION + "-win-x64.exe"));
+      // Leg metadata stays internal; only the merged file publishes.
+      const checksums = readFileSync(join(run1.directory, "SHA256SUMS.txt"), "utf8");
+      assert.equal((checksums.match(/latest\.yml/g) ?? []).length, 1);
+    } finally {
+      run1.cleanup();
+    }
+  });
+
+  it("labels the Windows installers signed only when both legs proved it", () => {
+    const signed = fixture(() => {}, { windowsSigned: "signed" });
+    try {
+      run(signed.directory);
+      const notes = readFileSync(join(signed.directory, "RELEASE_NOTES.md"), "utf8");
+      assert.match(notes, /Authenticode signed/);
+      assert.doesNotMatch(notes, /not Authenticode signed/);
+    } finally {
+      signed.cleanup();
+    }
+
+    const mixed = fixture();
+    try {
+      writeFileSync(join(mixed.directory, "win-arm64/signing-windows.txt"), "signed");
+      assert.throws(() => run(mixed.directory), /disagree/);
+    } finally {
+      mixed.cleanup();
+    }
+
+    const missing = fixture();
+    try {
+      rmSync(join(missing.directory, "win-x64/signing-windows.txt"));
+      assert.throws(() => run(missing.directory), /missing required file/);
+    } finally {
+      missing.cleanup();
     }
   });
 
@@ -144,7 +247,7 @@ describe("desktop release asset preparation", () => {
     try {
       const path = join(metadata.directory, "latest-mac.yml");
       writeFileSync(path, readFileSync(path, "utf8").replace("version: " + VERSION, "version: 9.9.9"));
-      assert.throws(() => run(metadata.directory), /metadata version/);
+      assert.throws(() => run(metadata.directory), /latest-mac\.yml version/);
     } finally {
       metadata.cleanup();
     }
@@ -153,7 +256,7 @@ describe("desktop release asset preparation", () => {
     try {
       const path = join(duplicate.directory, "latest-mac.yml");
       writeFileSync(path, readFileSync(path, "utf8").replace("  - url: " + BASE + ".dmg", "  - url: " + BASE + ".zip"));
-      assert.throws(() => run(duplicate.directory), /metadata files/);
+      assert.throws(() => run(duplicate.directory), /latest-mac\.yml files must contain exactly/);
     } finally {
       duplicate.cleanup();
     }
@@ -164,6 +267,45 @@ describe("desktop release asset preparation", () => {
       assert.throws(() => run(missing.directory), /missing required file/);
     } finally {
       missing.cleanup();
+    }
+  });
+
+  it("refuses Windows and Linux artifacts whose bytes drifted from their update metadata", () => {
+    const tamperedExe = fixture();
+    try {
+      const path = join(tamperedExe.directory, "win-arm64/latest.yml");
+      writeFileSync(path, readFileSync(path, "utf8").replace(/size: \d+/, "size: 1"));
+      assert.throws(() => run(tamperedExe.directory), /win-arm64\/latest\.yml size mismatch/);
+    } finally {
+      tamperedExe.cleanup();
+    }
+
+    const tamperedAppImage = fixture();
+    try {
+      const path = join(tamperedAppImage.directory, "linux-arm64/latest-linux-arm64.yml");
+      writeFileSync(path, readFileSync(path, "utf8").replace("version: " + VERSION, "version: 9.9.9"));
+      assert.throws(() => run(tamperedAppImage.directory), /latest-linux-arm64\.yml version/);
+    } finally {
+      tamperedAppImage.cleanup();
+    }
+
+    const noAppImage = fixture();
+    try {
+      // A channel file that records only the deb is not updatable metadata.
+      const path = join(noAppImage.directory, "linux-x64/latest-linux.yml");
+      writeFileSync(path, readFileSync(path, "utf8")
+        .replace(/  - url: [^\n]+AppImage\n(?:    [A-Za-z0-9]+: [^\n]+\n)+/, ""));
+      assert.throws(() => run(noAppImage.directory), /must list/);
+    } finally {
+      noAppImage.cleanup();
+    }
+
+    const missingDeb = fixture();
+    try {
+      rmSync(join(missingDeb.directory, "linux-x64", `ima2-${VERSION}-linux-amd64.deb`));
+      assert.throws(() => run(missingDeb.directory), /missing required file/);
+    } finally {
+      missingDeb.cleanup();
     }
   });
 });
