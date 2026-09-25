@@ -466,6 +466,9 @@ export async function getGrokAccessToken(opts: GetAccessTokenOptions = {}): Prom
       `Grok session expired and cannot be refreshed. ${LOGIN_REQUIRED_MESSAGE}`,
     );
   }
+  // A caller that is already dead must not start a shared refresh: its fetch would
+  // still hit the server and still write the file.
+  if (opts.signal?.aborted) throw opts.signal.reason as unknown;
   const fresh = await raceWithAbort(runRefreshFlight(stored, opts), opts.signal);
   return fresh.accessToken;
 }
@@ -474,12 +477,14 @@ export async function getGrokAccessToken(opts: GetAccessTokenOptions = {}): Prom
 function raceWithAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return promise;
   if (signal.aborted) return Promise.reject(signal.reason as unknown);
-  return Promise.race([
-    promise,
-    new Promise<never>((_resolve, reject) => {
-      signal.addEventListener("abort", () => reject(signal.reason as unknown), { once: true });
-    }),
-  ]);
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason as unknown);
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => { signal.removeEventListener("abort", onAbort); resolve(value); },
+      (error: unknown) => { signal.removeEventListener("abort", onAbort); reject(error); },
+    );
+  });
 }
 
 /** Test-only: clears the single-flight slot and the terminal-failure negative cache. */

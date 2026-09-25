@@ -318,6 +318,46 @@ describe("lib/xaiAuth contract", () => {
     assert.equal(readStored().accessToken, "access-new");
   });
 
+  it("an already-aborted caller rejects without starting a refresh", async () => {
+    seedCredentials({ expiresAt: Date.now() + 60_000 });
+    stubFetch(async () => jsonResponse(200, { access_token: "access-new", expires_in: 3600 }));
+
+    const controller = new AbortController();
+    const abortReason = new Error("job cancelled before it even asked");
+    controller.abort(abortReason);
+
+    await assert.rejects(
+      getGrokAccessToken({ homeDir, deps, signal: controller.signal }),
+      (error: unknown) => error === abortReason,
+    );
+    assert.equal(fetchCalls.length, 0, "a dead caller must not spend a refresh on the server");
+    assert.equal(readStored().accessToken, "access-old", "nothing may be written either");
+  });
+
+  it("drops the abort listener once the shared refresh settles", async () => {
+    seedCredentials({ expiresAt: Date.now() + 60_000 });
+    stubFetch(async () => jsonResponse(200, { access_token: "access-new", expires_in: 3600 }));
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+    let added = 0;
+    let removed = 0;
+    const addListener = signal.addEventListener.bind(signal);
+    const removeListener = signal.removeEventListener.bind(signal);
+    signal.addEventListener = ((type: string, listener: EventListenerOrEventListenerObject | null, options?: AddEventListenerOptions | boolean) => {
+      added += 1;
+      return addListener(type, listener, options);
+    }) as typeof signal.addEventListener;
+    signal.removeEventListener = ((type: string, listener: EventListenerOrEventListenerObject | null, options?: EventListenerOptions | boolean) => {
+      removed += 1;
+      return removeListener(type, listener, options);
+    }) as typeof signal.removeEventListener;
+
+    assert.equal(await getGrokAccessToken({ homeDir, deps, signal }), "access-new");
+    assert.equal(added, 1);
+    assert.equal(removed, 1, "a settled refresh must not keep the caller's abort listener");
+  });
+
   it("leaves no temp files behind after a refresh", async () => {
     seedCredentials({ expiresAt: Date.now() + 60_000 });
     stubFetch(async () => jsonResponse(200, { access_token: "access-new", expires_in: 3600 }));
