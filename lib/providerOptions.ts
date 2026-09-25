@@ -3,6 +3,16 @@ import { normalizeImageToolModel } from "./oauthNormalize.js";
 import { ATLASCLOUD_TEXT_TO_IMAGE_MODEL } from "./atlasCloudImageAdapter.js";
 import { API_FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, normalizeImageModel, normalizeReasoningEffort, normalizeGrokImageModel, normalizeGeminiApiModel, normalizeMinimaxImageModel, normalizeNaiImageModel, normalizeComfyWorkflowModel } from "./imageModels.js";
 
+export interface ProviderOptionsInput {
+  provider?: string | undefined;
+  rawModel?: string | undefined;
+  rawImageToolModel?: unknown;
+  rawReasoningEffort?: string | undefined;
+  rawSize?: string | undefined;
+  rawWebSearchEnabled?: unknown;
+  searchMode?: string | undefined;
+}
+
 export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   provider = "oauth",
   rawModel,
@@ -11,7 +21,7 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   rawSize = "1024x1024",
   rawWebSearchEnabled = true,
   searchMode = "on",
-}: any = {}) {
+}: ProviderOptionsInput = {}) {
   if (provider === "agy") {
     return {
       provider: "agy" as const,
@@ -24,7 +34,7 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
 
   if (provider === "gemini-api") {
     const geminiModelCheck = normalizeGeminiApiModel(rawModel || "nano-banana-2");
-    if (geminiModelCheck.error) return { error: geminiModelCheck.error, code: geminiModelCheck.code, status: geminiModelCheck.status };
+    if (geminiModelCheck.error !== undefined) return { error: geminiModelCheck.error, code: geminiModelCheck.code, status: geminiModelCheck.status };
     return {
       provider: "gemini-api" as const,
       model: geminiModelCheck.model,
@@ -45,10 +55,10 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   }
 
   if (provider === "minimax") {
-    const minimaxCfg: { defaultImageModel?: string } = (ctx?.config as any)?.minimaxProvider || {};
+    const minimaxCfg: { defaultImageModel?: string } = ctx?.config?.minimaxProvider || {};
     const modelInput = rawModel || minimaxCfg.defaultImageModel;
     const minimaxModelCheck = normalizeMinimaxImageModel(modelInput);
-    if (minimaxModelCheck.error) return { error: minimaxModelCheck.error, code: minimaxModelCheck.code, status: minimaxModelCheck.status };
+    if (minimaxModelCheck.error !== undefined) return { error: minimaxModelCheck.error, code: minimaxModelCheck.code, status: minimaxModelCheck.status };
     return {
       provider: "minimax" as const,
       model: minimaxModelCheck.model,
@@ -59,9 +69,9 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   }
 
   if (provider === "nai") {
-    const naiCfg: { defaultImageModel?: string } = (ctx?.config as any)?.naiProvider || {}; // justified: resolveProviderOptions takes a loosely-typed ctx; every sibling provider branch reads its config block through the same cast
+    const naiCfg: { defaultImageModel?: string } = ctx?.config?.naiProvider || {};
     const naiModelCheck = normalizeNaiImageModel(rawModel || naiCfg.defaultImageModel);
-    if (naiModelCheck.error) return { error: naiModelCheck.error, code: naiModelCheck.code, status: naiModelCheck.status };
+    if (naiModelCheck.error !== undefined) return { error: naiModelCheck.error, code: naiModelCheck.code, status: naiModelCheck.status };
     return {
       provider: "nai" as const,
       model: naiModelCheck.model,
@@ -78,7 +88,7 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
     // Shape only here; the pipeline confirms the workflow exists because that
     // read is async and this function is not.
     const comfyCheck = normalizeComfyWorkflowModel(rawModel);
-    if (comfyCheck.error) return { error: comfyCheck.error, code: comfyCheck.code, status: comfyCheck.status };
+    if (comfyCheck.error !== undefined) return { error: comfyCheck.error, code: comfyCheck.code, status: comfyCheck.status };
     const workflow = ctx?.comfyWorkflows?.find((entry) => entry.id === comfyCheck.model);
     if (workflow?.mediaKind === "video") {
       return {
@@ -100,10 +110,10 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   }
 
   if (provider === "grok") {
-    const grokCfg: { defaultImageModel?: string } = (ctx?.config as any)?.grokProvider || {};
+    const grokCfg: { defaultImageModel?: string } = ctx?.config?.grokProvider || {};
     const modelInput = rawModel || grokCfg.defaultImageModel;
     const grokModelCheck = normalizeGrokImageModel(modelInput);
-    if (grokModelCheck.error) return { error: grokModelCheck.error, code: grokModelCheck.code, status: grokModelCheck.status };
+    if (grokModelCheck.error !== undefined) return { error: grokModelCheck.error, code: grokModelCheck.code, status: grokModelCheck.status };
     return {
       provider: "grok" as const,
       model: grokModelCheck.model,
@@ -116,10 +126,10 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   }
 
   if (provider === "grok-api") {
-    const grokCfg: { defaultImageModel?: string } = (ctx?.config as any)?.grokProvider || {};
+    const grokCfg: { defaultImageModel?: string } = ctx?.config?.grokProvider || {};
     const modelInput = rawModel || grokCfg.defaultImageModel;
     const grokModelCheck = normalizeGrokImageModel(modelInput);
-    if (grokModelCheck.error) return { error: grokModelCheck.error, code: grokModelCheck.code, status: grokModelCheck.status };
+    if (grokModelCheck.error !== undefined) return { error: grokModelCheck.error, code: grokModelCheck.code, status: grokModelCheck.status };
     return {
       provider: "grok-api" as const,
       model: grokModelCheck.model,
@@ -131,19 +141,19 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
 
   const activeProvider = provider === "api" ? "api" : "oauth";
   const toolModelCheck = normalizeImageToolModel(activeProvider, rawImageToolModel);
-  if (toolModelCheck.error) return { error: toolModelCheck.error, code: toolModelCheck.code, status: toolModelCheck.status };
-  const apiConfig: { defaultImageModel?: string; defaultReasoningEffort?: string; defaultSize?: string; allowWebSearch?: boolean } = (ctx?.config as { apiProvider?: any })?.apiProvider || {};
+  if (toolModelCheck.error !== undefined) return { error: toolModelCheck.error, code: toolModelCheck.code, status: toolModelCheck.status };
+  const apiConfig: { defaultImageModel?: string; defaultReasoningEffort?: string; defaultSize?: string; allowWebSearch?: boolean } = ctx?.config?.apiProvider || {};
   const modelInput = activeProvider === "api"
     ? (rawModel || apiConfig.defaultImageModel || API_FALLBACK_IMAGE_MODEL)
     : rawModel;
   const modelCheck = normalizeImageModel(ctx, modelInput, activeProvider);
-  if (modelCheck.error) return { error: modelCheck.error, code: modelCheck.code, status: modelCheck.status };
+  if (modelCheck.error !== undefined) return { error: modelCheck.error, code: modelCheck.code, status: modelCheck.status };
 
   const reasoningInput = activeProvider === "api"
     ? (rawReasoningEffort || apiConfig.defaultReasoningEffort || "low")
     : rawReasoningEffort;
   const reasoningCheck = normalizeReasoningEffort(ctx, reasoningInput);
-  if (reasoningCheck.error) {
+  if (reasoningCheck.error !== undefined) {
     return { error: reasoningCheck.error, code: reasoningCheck.code, status: reasoningCheck.status };
   }
   // Applied after validation so an unsupported model/effort pairing cannot reach

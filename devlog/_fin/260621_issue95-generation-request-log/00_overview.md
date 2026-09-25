@@ -1,6 +1,6 @@
 # Issue #95 — 로그 기능 추가요청
 
-- **Issue**: https://github.com/lidge-jun/ima2-gen/issues/95
+- **Issue**: https://github.com/lidge-ai/ima2-gen/issues/95
 - **Contributor**: Sanguk Ko ([@ChatPoongKun](https://github.com/ChatPoongKun)) `<samko@samlab.co.kr>` — fork: `ChatPoongKun/ima2-gen` branch `codex/classic-workflow-improvements`
 - **Co-authored-by**: `Sanguk Ko <samko@samlab.co.kr>`
 - **Status**: plan — contributor reference implementation 검토 완료, upstream 통합 대기

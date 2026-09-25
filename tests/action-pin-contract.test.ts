@@ -14,11 +14,9 @@ import {
 const SHA = "a".repeat(40);
 const WORKFLOW_DIR = ".github/workflows";
 
-// Workflows that legitimately declare no actions. ci-timing-report.yml is a
-// workflow_run observer that only shells out to gh, and it never checks out
-// source. Naming them explicitly is the point: a numeric ref-count threshold
+// Workflows that legitimately declare no actions. Naming them explicitly is the point: a numeric ref-count threshold
 // would let someone convert pages.yml into a run-only workflow and still pass.
-const RUN_ONLY_WORKFLOWS = new Set(["ci-timing-report.yml"]);
+const RUN_ONLY_WORKFLOWS = new Set<string>();
 
 function workflowFiles(): string[] {
   return readdirSync(WORKFLOW_DIR)

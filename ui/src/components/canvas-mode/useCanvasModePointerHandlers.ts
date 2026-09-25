@@ -1,3 +1,4 @@
+import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import { useRef, useState, type PointerEvent, type RefObject } from "react";
 import { isEditableTarget } from "../../lib/domEvents";
 import { screenToNormalized } from "../../lib/canvas/coordinates";
@@ -19,7 +20,7 @@ interface UseCanvasModePointerHandlersArgs {
   isBackgroundCleanupActive: boolean;
   cleanupTool: CanvasBackgroundCleanupTool;
   annotationFrameRef: RefObject<HTMLDivElement | null>;
-  annotations: any;
+  annotations: ReturnType<typeof useCanvasAnnotations>;
   setCanvasPan: (x: number, y: number) => void;
   addBackgroundCleanupClick: (point: NormalizedPoint) => void;
   startBackgroundCleanupBrushStroke: (point: NormalizedPoint) => void;

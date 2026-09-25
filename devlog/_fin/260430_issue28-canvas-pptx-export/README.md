@@ -3,7 +3,7 @@ title: "Issue #28 — Canvas Composition PPTX Export"
 status: open / implementation-ready hardened
 created: 2026-04-30
 updated: 2026-05-16
-github: https://github.com/lidge-jun/ima2-gen/issues/28
+github: https://github.com/lidge-ai/ima2-gen/issues/28
 tags: [canvas, pptx, export, pptxgenjs]
 ---
 
@@ -16,7 +16,7 @@ a one-slide deck containing the current source image plus visible annotations.
 
 Canonical issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/28
+- https://github.com/lidge-ai/ima2-gen/issues/28
 
 ## 2026-05-16 Implementation Lock
 

@@ -23,7 +23,7 @@
 ## lib/githubStar.ts shape
 
 ```ts
-export const STAR_REPO = "lidge-jun/ima2-gen";
+export const STAR_REPO = "lidge-ai/ima2-gen";
 export const STAR_REPO_URL = `https://github.com/${STAR_REPO}`;
 export type StarState = "starred" | "not-starred" | "unauthenticated";
 export interface StarDeps {
@@ -57,7 +57,7 @@ export function setStarDepsForTests(deps: StarDeps | null): void;
 - Suppressed while the onboarding popup is open (checks the same dismissed key / store flag).
 - not-starred: primary "Star on GitHub" → POST; success → thank-you line, localStorage starred, auto-close.
 - unauthenticated: primary "Open on GitHub" (`window.open(url, "_blank", "noopener")`), note about `gh auth login`.
-- Star count from `https://api.github.com/repos/lidge-jun/ima2-gen` `stargazers_count`; hidden on any failure.
+- Star count from `https://api.github.com/repos/lidge-ai/ima2-gen` `stargazers_count`; hidden on any failure.
 - a11y: role=dialog, aria-modal, aria-labelledby, `useModalFocus`, Escape = dismiss.
 
 
@@ -79,7 +79,7 @@ Activation for UI branches: covered by a small pure helper `shouldOpenStarPrompt
 ## A round 2 amendments
 
 - Shared gh contract: `lib/githubStar.ts` exports `STAR_REPO`, `GH_HOSTNAME`, `ghVersionArgs()`, `ghAuthStatusArgs()`, `ghStarredProbeArgs()`, `ghStarWriteArgs()` and the state helpers. The server path runs them with an async spawn; the CLI (`bin/lib/star-prompt.ts`) keeps a synchronous spawn because it prompts before the server exists, but builds every argument list from those exports. The spawn mode differs; the commands cannot drift.
-- `ghStarWriteArgs()` returns `["api", "-X", "PUT", "/user/starred/lidge-jun/ima2-gen"]`, identical to the literal `tests/star-prompt.test.ts:23` pins, so the CLI test stays green unchanged. `--hostname github.com` is added only to the server's probe/auth calls, where GHES logins could otherwise answer.
+- `ghStarWriteArgs()` returns `["api", "-X", "PUT", "/user/starred/lidge-ai/ima2-gen"]`, identical to the literal `tests/star-prompt.test.ts:23` pins, so the CLI test stays green unchanged. `--hostname github.com` is added only to the server's probe/auth calls, where GHES logins could otherwise answer.
 - File map additions: `bin/lib/star-prompt.ts` MODIFY (import constants, arg builders and state helpers from ../../lib/githubStar.js), `tests/star-prompt.test.ts` unchanged (must stay green).
 - StarPrompt also stays closed while `readinessPopupOpen` (ui/src/store/storeTypes.ts:414) is true.
 - Citation fixes: `DEFAULT_GROK_PLANNER_MODEL` is config.ts:29 (050), `checkBrowserRequest` is lib/localAccessPolicy.ts:128.

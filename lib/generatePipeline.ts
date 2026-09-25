@@ -457,7 +457,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       const images: Array<{
         image: string;
         filename: string;
-        revisedPrompt: any;
+        revisedPrompt: string | null;
         providerUrl?: string | undefined;
         createdAt: number;
       }> = [];
@@ -578,7 +578,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
             ...(elementRefReadFailures.length > 0 ? { refReadFailures: elementRefReadFailures } : {}),
           };
           const rawBuffer = Buffer.from(r.value.b64, "base64");
-          const embedded: any = await embedImageMetadataBestEffort(rawBuffer, resultFormat, meta, {
+          const embedded = await embedImageMetadataBestEffort(rawBuffer, resultFormat, meta, {
             version: ctx.packageVersion,
           });
           if (!embedded.embedded) {

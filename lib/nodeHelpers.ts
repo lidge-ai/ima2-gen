@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { loadNodeB64, loadNodeMeta } from "./nodeStore.js";
 import { detectImageMimeFromB64 } from "./refs.js";
 import type { GrokReferenceImage } from "./grokImageAdapter.js";
-import type { UpstreamErr } from "./generationErrors.js";
+import type { GenerationFailure, UpstreamErr } from "./generationErrors.js";
 import type { RuntimeContext } from "./runtimeContext.js";
 import { writeSse } from "./routeHelpers.js";
 import { publishJobEvent } from "./ssePublish.js";
@@ -114,7 +114,7 @@ export function finalErrorUpstreamLabels(lastErr: UpstreamErr | null | undefined
   };
 }
 
-export function nodeErrorDetails(finalErr: Record<string, unknown>, lastErr: UpstreamErr | null) {
+export function nodeErrorDetails(finalErr: Partial<GenerationFailure>, lastErr: UpstreamErr | null) {
   return {
     // The normalized error carries the provider identity that 061 attached;
     // without copying it here the nested Node envelope loses both fields even

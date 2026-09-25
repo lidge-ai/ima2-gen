@@ -1,6 +1,8 @@
+import { thrownFields } from "./errInfo.js";
 import { logEvent, logWarn } from "./logger.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { grokError, searchGrokVisualContext } from "./grokImageAdapter.js";
+import type { GrokChatResponse } from "./grokImageCore.js";
 import { grokFetchWithRetry } from "./grokUpstreamRetry.js";
 import { detectImageMimeFromB64 } from "./refs.js";
 import { aspectToCanvas, generateWhiteCanvasB64 } from "./grokVideoCanvas.js";
@@ -77,7 +79,8 @@ export interface GrokVideoPlannerDegradation {
  * malfunctioned, which is a judgment about the request rather than an availability problem.
  * Billing a video start on the back of a refusal is worse for the user than an honest error.
  */
-export function isDegradablePlannerFailure(err: any): { reason: GrokVideoPlannerDegradation["reason"]; message: string } | null {
+export function isDegradablePlannerFailure(failure: unknown): { reason: GrokVideoPlannerDegradation["reason"]; message: string } | null {
+  const err = thrownFields(failure);
   const message = typeof err?.message === "string" ? err.message : "planner unavailable";
   if (err?.name === "AbortError") return { reason: "timeout", message };
   const code = typeof err?.code === "string" ? err.code : "";
@@ -148,7 +151,10 @@ export function buildGrokVideoPlannerPayload(
     ? `${voiceCount} preset voice${voiceCount > 1 ? "s are" : " is"} attached, referred to as <AUDIO_0>..<AUDIO_${voiceCount - 1}>. Say who speaks with which voice in the prompt (for example "the person from <IMAGE_1> speaks with <AUDIO_0>"); a voice nobody is assigned to will not be used.`
     : "";
   const lineageText = formatVideoContinuityForPlanner(opts.continuityLineage);
-  const userContent: any[] = [
+  const userContent: Array<
+    | { type: "text"; text: string }
+    | { type: "image_url"; image_url: { url: string; detail: string } }
+  > = [
     {
       type: "text",
       text: [
@@ -210,13 +216,13 @@ export function buildGrokVideoPlannerPayload(
   };
 }
 
-export function parseGrokVideoPlanPrompt(response: any): string {
+export function parseGrokVideoPlanPrompt(response: GrokChatResponse): string {
   const toolCalls = response?.choices?.[0]?.message?.tool_calls || [];
-  const call = toolCalls.find((item: any) => item.type === "function" && item.function?.name === "generate_video");
+  const call = toolCalls.find((item) => item.type === "function" && item.function?.name === "generate_video");
   if (!call?.function?.arguments) {
     throw grokError("Grok planner did not call generate_video", 502, "GROK_PLANNER_EMPTY_TOOL_CALL");
   }
-  let args: any;
+  let args: { prompt?: unknown };
   try {
     args = JSON.parse(call.function.arguments);
   } catch {
@@ -259,17 +265,18 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
     // getPlannerConfig().searchTimeoutMs.
     const search = await searchGrokVisualContext(prompt, ctx, { signal: phaseSignal, ...(options.requestId ? { requestId: options.requestId } : {}), credential, plannerModel });
     searchSummary = search.summary;
-  } catch (e: any) { // justified: adapter rejections are untyped; the shape is narrowed here
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     // A user cancellation is a real cancellation and must never be swallowed. Neither is
     // the planning-phase ceiling: searchGrokVisualContext reports an inherited abort as its
     // own cancellation, so without this check a ceiling hit would "degrade" and then start
     // the planner after the phase had already expired.
     if (options.signal?.aborted) throw e;
     if (phaseExpired()) throw grokError("Grok video planning timed out", 504, "GROK_VIDEO_PLAN_TIMEOUT");
-    if (e?.code === "GENERATION_CANCELED") throw e;
+    if (eFields.code === "GENERATION_CANCELED") throw e;
     searchDegraded = {
-      reason: e?.code === "GROK_SEARCH_TIMEOUT" ? "timeout" : "failed",
-      message: typeof e?.message === "string" ? e.message : "web search unavailable",
+      reason: eFields.code === "GROK_SEARCH_TIMEOUT" ? "timeout" : "failed",
+      message: typeof eFields.message === "string" ? eFields.message : "web search unavailable",
     };
     logWarn("grok", "video:search:degraded", {
       requestId: options.requestId,
@@ -306,7 +313,7 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
       const text = await res.text().catch(() => "");
       throw grokError(`Grok video planner failed: ${text || `HTTP ${res.status}`}`, res.status >= 500 ? 502 : res.status, "GROK_PLANNER_BAD_REQUEST");
     }
-    const planPrompt = parseGrokVideoPlanPrompt(await res.json());
+    const planPrompt = parseGrokVideoPlanPrompt(await res.json() as GrokChatResponse);
     logEvent("grok", "video:planner:done", { requestId: options.requestId, mode, promptChars: planPrompt.length });
     return {
       prompt: planPrompt,
@@ -318,14 +325,15 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
       webSearchCalls: searchDegraded ? 0 : 1,
       ...(searchDegraded ? { searchDegraded } : {}),
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     clearTimeout(timer);
     // Real cancellation and the planning-phase ceiling are always fatal.
     if (options.signal?.aborted) throw grokError("Generation canceled", 499, "GENERATION_CANCELED");
     if (phaseExpired()) throw grokError("Grok video planning timed out", 504, "GROK_VIDEO_PLAN_TIMEOUT");
-    const normalized = e.name === "AbortError"
+    const normalized = eFields.name === "AbortError"
       ? grokError("Grok video planner timed out", 504, "GROK_PLANNER_TIMEOUT")
-      : (e.code && e.status ? e : grokError(`Grok video planner request failed: ${e.message}`, 502, "GROK_PLANNER_NETWORK_FAILED"));
+      : (eFields.code && eFields.status ? e : grokError(`Grok video planner request failed: ${eFields.message}`, 502, "GROK_PLANNER_NETWORK_FAILED"));
     // A stalled or broken planner must not cost the user their video: the user's own
     // prompt is already usable, so compose one locally and continue. 4xx stays fatal.
     // devlog/_plan/260817_grok_video_planner_timeout/040_planner_fallback.md
@@ -420,18 +428,19 @@ export async function startVideoRequest(ctx: RouteRuntimeContext, payload: Recor
       const text = await res.text().catch(() => "");
       throw grokError(`Grok video request failed: ${text || `HTTP ${res.status}`}`, res.status >= 500 ? 502 : res.status, "GROK_VIDEO_REQUEST_FAILED");
     }
-    const data: any = await res.json();
+    const data = await res.json() as { request_id?: string; id?: string };
     const requestId = data?.request_id || data?.id;
     if (!requestId) throw grokError("Grok video start returned no request id", 502, "GROK_VIDEO_REQUEST_FAILED");
     return requestId;
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     clearTimeout(timer);
-    if (e.name === "AbortError") {
+    if (eFields.name === "AbortError") {
       if (options.signal?.aborted) throw grokError("Generation canceled", 499, "GENERATION_CANCELED");
       throw grokError("Grok video start timed out", 504, "GROK_VIDEO_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw grokError(`Grok video start request failed: ${e.message}`, 502, "GROK_VIDEO_REQUEST_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw grokError(`Grok video start request failed: ${eFields.message}`, 502, "GROK_VIDEO_REQUEST_FAILED");
   }
 }
 
@@ -475,7 +484,8 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
 
   try {
     xaiVideoRequestId = await startVideoRequest(ctx, effectivePayload, effective);
-  } catch (e: any) {
+  } catch (caught: unknown) {
+    const e = thrownFields(caught);
     // Fallback: if 1.5-preview still fails, retry with base model.
     // Not when voices are attached: the base model rejects reference_audios outright, so
     // the retry would only replace one 400 with a more confusing one. Dropping the voice
@@ -486,7 +496,7 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
       xaiVideoRequestId = await startVideoRequest(ctx, fallbackPayload, effective);
       logEvent("grok", "video:fallback", { requestId: options.requestId, from: model, to: effectiveModel });
     } else {
-      throw e;
+      throw caught;
     }
   }
   const modelFallback = effectiveModel === model ? null : { from: model, to: effectiveModel };

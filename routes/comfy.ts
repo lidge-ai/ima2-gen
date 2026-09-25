@@ -210,7 +210,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       return res.json(result);
     } catch (error) {
       if (isComfyBridgeError(error)) {
-        return res.status((error as any).status).json(errorPayload((error as any).code, error.message));
+        return res.status(error.status).json(errorPayload(error.code, error.message));
       }
       return res.status(502).json(errorPayload(
         "COMFY_UPLOAD_FAILED",

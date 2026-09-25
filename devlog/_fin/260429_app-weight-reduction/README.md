@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-29
 **Status**: implemented / closeout pending archive
-**GitHub**: https://github.com/lidge-jun/ima2-gen/issues/36
+**GitHub**: https://github.com/lidge-ai/ima2-gen/issues/36
 **Scope**: Reduce perceived app weight after `v1.1.7` without removing shipped features.
 
 ## Problem

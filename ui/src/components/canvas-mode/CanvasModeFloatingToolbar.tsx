@@ -1,10 +1,12 @@
 import { CanvasToolbar } from "./CanvasToolbar";
+import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
+import type { useCanvasBackgroundCleanup } from "./useCanvasBackgroundCleanup";
 import type { CanvasExportBackground, HexColor } from "../../types/canvas";
 import type { CanvasExportFormat } from "../../lib/canvas/exportRenderer";
 
 interface CanvasModeFloatingToolbarProps {
-  annotations: any;
-  backgroundCleanup: any;
+  annotations: ReturnType<typeof useCanvasAnnotations>;
+  backgroundCleanup: ReturnType<typeof useCanvasBackgroundCleanup>;
   backgroundCleanupPreview: unknown;
   canvasState: {
     exportBackground: CanvasExportBackground;

@@ -61,10 +61,10 @@
     "gemini"
   ],
   "license": "MIT",
-  "homepage": "https://lidge-jun.github.io/ima2-gen/",
+  "homepage": "https://lidge-ai.github.io/ima2-gen/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lidge-jun/ima2-gen.git"
+    "url": "git+https://github.com/lidge-ai/ima2-gen.git"
   },
   "files": [
     "bin/**/*.js",

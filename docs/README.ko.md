@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=npm&label=npm" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/dm/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&label=downloads" alt="npm downloads"></a>
   <img src="https://img.shields.io/node/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=node.js&label=node" alt="Node.js version">
-  <a href="https://github.com/lidge-jun/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-jun/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-ai/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-3f3f46?style=flat-square&labelColor=18181b" alt="MIT license"></a>
 </p>
 
@@ -19,7 +19,7 @@ ima2 serve
 ```
 
 <p align="center">
-  <a href="https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Mac 앱 다운로드 (.dmg)"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Mac 앱 다운로드 (.dmg)"></a>
   <a href="#one-line-installers"><img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-one--line%20installer-18181b?style=for-the-badge&logo=gnubash&logoColor=white" alt="Windows와 Linux용 한 줄 설치"></a>
 </p>
 
@@ -75,7 +75,7 @@ ima2 serve
 </table>
 
 <p align="center">
-  <a href="../README.md">English</a> · <b>한국어</b> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="https://lidge-jun.github.io/ima2-gen/ko/"><b>웹사이트</b></a> · <a href="https://lidge-jun.github.io/ima2-gen/ko/docs"><b>문서 →</b></a>
+  <a href="../README.md">English</a> · <b>한국어</b> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="https://lidge-ai.github.io/ima2-gen/ko/"><b>웹사이트</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/ko/docs"><b>문서 →</b></a>
 </p>
 
 `ima2-gen`은 사람과 코딩 에이전트가 여러 프로바이더에서 재현 가능한 이미지·영상 워크플로를 돌리는 로컬 우선 비주얼 생성 런타임이자 스튜디오입니다. 내 컴퓨터에서 작은 서버를 띄우고, 모든 결과물을 `~/.ima2/generated`에 보관하며, 연결한 프로바이더와만 통신합니다. 지원하는 곳은 OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI, 등록된 ComfyUI 워크플로이고, Runway와 Higgsfield는 별도 MCP 연동입니다. 프롬프트와 레퍼런스는 작업마다 고른 프로바이더에게만 전달됩니다.
@@ -86,11 +86,11 @@ ima2 serve
 
 데스크톱 앱은 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행합니다. Developer ID로 서명되고 Apple 공증을 받았으며, 런타임을 자체 포함해서 Node.js를 따로 설치하지 않아도 됩니다.
 
-1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<version>-mac-arm64.dmg`를 받습니다.
+1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<version>-mac-arm64.dmg`를 받습니다.
 2. DMG를 열고 **ima2**를 **응용 프로그램** 폴더로 끌어다 놓습니다.
 3. ima2를 실행하고 환영 화면에서 프로바이더를 고릅니다.
 
-체크섬, 업데이트, 설정은 [Mac 앱 가이드](https://lidge-jun.github.io/ima2-gen/ko/docs/desktop)에 있습니다. Intel Mac, Windows, Linux에서는 npm이나 한 줄 설치를 쓰세요.
+체크섬, 업데이트, 설정은 [Mac 앱 가이드](https://lidge-ai.github.io/ima2-gen/ko/docs/desktop)에 있습니다. Intel Mac, Windows, Linux에서는 npm이나 한 줄 설치를 쓰세요.
 
 ### npm
 
@@ -125,19 +125,19 @@ ima2 video "a cat playing piano" --duration 5 --resolution 720p
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
 ```
 
 <details>
@@ -444,13 +444,13 @@ GPT OAuth 레인은 ChatGPT 요금제에 열린 GPT-6 모델을 씁니다. ima2-
 
 ## 문서
 
-- [개발자 문서 사이트](https://lidge-jun.github.io/ima2-gen/ko/docs) — 개요, 빠른 시작, 아키텍처, 모드, 프로바이더, CLI, 설정, 서버 API
+- [개발자 문서 사이트](https://lidge-ai.github.io/ima2-gen/ko/docs) — 개요, 빠른 시작, 아키텍처, 모드, 프로바이더, CLI, 설정, 서버 API
 - [CLI 레퍼런스](CLI.md) · [API 레퍼런스](API.md) · [Prompt Studio 사용 설명서](PROMPT_STUDIO.ko.md) · [FAQ](FAQ.ko.md) · [예전 이미지 복구](RECOVER_OLD_IMAGES.md)
 
 ## 개발
 
 ```bash
-git clone https://github.com/lidge-jun/ima2-gen.git
+git clone https://github.com/lidge-ai/ima2-gen.git
 cd ima2-gen
 npm install
 npm run dev

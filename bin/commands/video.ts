@@ -1,6 +1,6 @@
 import { parseArgs } from "../lib/args.js";
 import { resolveServer, fetchServer } from "../lib/client.js";
-import { streamSse } from "../lib/sse.js";
+import { streamSse, sseFields } from "../lib/sse.js";
 import { out, die, color, exitCodeForError, fail } from "../lib/output.js";
 import { writeFile, mkdir, readFile, stat } from "node:fs/promises";
 import { basename, dirname } from "node:path";
@@ -234,18 +234,19 @@ async function runVideoGenerateRequest(serverBase: string, body: Record<string, 
     signal: timeoutSignal(timeout),
     headers: typeof body.requestId === "string" ? { "X-Request-Id": body.requestId } : undefined,
   })) {
+    const data = sseFields(ev.data);
     if (ev.event === "progress") {
-      const pct = typeof ev.data.progress === "number" ? Math.round(ev.data.progress * 100) : null;
+      const pct = typeof data.progress === "number" ? Math.round(data.progress * 100) : null;
       if (pct !== null && pct !== lastProgress && !silent) {
         process.stdout.write(`\r  ${renderBar(pct)} ${pct}%`);
         lastProgress = pct;
       }
     } else if (ev.event === "done") {
       if (!silent && lastProgress >= 0) process.stdout.write("\n");
-      doneData = ev.data;
+      doneData = data;
     } else if (ev.event === "error") {
       if (!silent && lastProgress >= 0) process.stdout.write("\n");
-      die(1, `video error: ${ev.data.error || ev.data}${ev.data.guidance ? `\n${ev.data.guidance}` : ""}${ev.data.code ? ` (${ev.data.code})` : ""}`);
+      die(1, `video error: ${data.error || ev.data}${data.guidance ? `\n${data.guidance}` : ""}${data.code ? ` (${data.code})` : ""}`);
     }
   }
   if (!doneData) die(1, "server did not return a video result");
@@ -414,6 +415,6 @@ async function videoAnalyzeCmd(argv: string[]) {
   const server = await resolveServer({ serverFlag: args.server });
   const res = await fetchServer(server.base, "/api/video/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ videoUrl }), signal: timeoutSignal(args.timeout) });
   const data = await readJsonResponse(res, "analyze");
-  if (!res.ok) die(1, `analyze failed: ${(data as any).error || res.status}`);
-  if (args.json) { out(JSON.stringify(data, null, 2)); } else { out((data as any).analysis); }
+  if (!res.ok) die(1, `analyze failed: ${data.error || res.status}`);
+  if (args.json) { out(JSON.stringify(data, null, 2)); } else { out(data.analysis as string); }
 }

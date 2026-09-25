@@ -2,7 +2,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { requireRuntimeContext, type RouteRuntimeContext } from "./runtimeContext.js";
 
-import { errInfo } from "./errInfo.js";
+import { errInfo, type CodedError, thrownFields } from "./errInfo.js";
 import { assertSafeSetId, resolveCardNewsSetDir } from "./cardNewsPath.js";
 
 interface CardNewsManifest {
@@ -97,9 +97,10 @@ export async function readCardNewsManifest(ctxIn: RouteRuntimeContext, setId: st
       "utf8",
     );
     return JSON.parse(raw) as CardNewsManifest;
-  } catch (err: any) {
-    if (err.code === "CARD_NEWS_SET_NOT_FOUND") throw err;
-    const notFound: any = new Error("Card News set not found");
+  } catch (err: unknown) {
+    const errFields = thrownFields(err);
+    if (errFields.code === "CARD_NEWS_SET_NOT_FOUND") throw err;
+    const notFound: CodedError = new Error("Card News set not found");
     notFound.status = 404;
     notFound.code = "CARD_NEWS_SET_NOT_FOUND";
     throw notFound;
@@ -110,7 +111,7 @@ export async function listCardNewsSets(ctxIn: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxIn);
   const root = join(ctx.config.storage.generatedDir, "cardnews");
   const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
-  const sets: any[] = [];
+  const sets: Array<Record<string, unknown> & { createdAt: number }> = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     try {

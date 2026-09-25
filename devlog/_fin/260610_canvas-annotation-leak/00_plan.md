@@ -2,7 +2,7 @@
 
 날짜: 2026-06-10
 상태: P (plan)
-이슈: https://github.com/lidge-jun/ima2-gen/issues/96
+이슈: https://github.com/lidge-ai/ima2-gen/issues/96
 골 ID: 2fbd96ea-b47
 
 ## 배경 (Part 1 — 쉬운 설명)

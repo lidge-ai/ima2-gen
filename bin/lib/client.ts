@@ -173,7 +173,7 @@ export async function findRunningServer({ includeEnv = true }: { includeEnv?: bo
   return null;
 }
 
-export async function resolveServer({ serverFlag }: any = {}) {
+export async function resolveServer({ serverFlag }: { serverFlag?: unknown } = {}) {
   clearServerBinding();
   if (serverFlag !== undefined) return selectServer(serverFlag);
   const found = await findRunningServer();
@@ -195,13 +195,48 @@ async function selectServer(value: unknown) {
   }
 }
 
-export async function request(base: string, path: string, {
+export type JsonRecord = Record<string, unknown>;
+
+export interface InflightListResponse {
+  jobs?: JsonRecord[];
+  items?: JsonRecord[];
+  terminalJobs?: JsonRecord[];
+}
+
+export interface HistoryListResponse {
+  items?: JsonRecord[];
+  history?: JsonRecord[];
+}
+
+export interface RequestOptions {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+  raw?: boolean;
+  timeoutMs?: number;
+}
+
+export interface CliRequestError extends Error {
+  status?: number;
+  code?: unknown;
+  body?: unknown;
+}
+
+function errorField(json: unknown, key: "message" | "code"): unknown {
+  if (!json || typeof json !== "object") return undefined;
+  const error = (json as { error?: unknown }).error;
+  if (!error || typeof error !== "object") return undefined;
+  return (error as Record<string, unknown>)[key];
+}
+
+// Response bodies are server JSON; callers declare the shape they consume via T.
+export async function request<T = unknown>(base: string, path: string, {
   method = "GET",
   body,
   headers: extraHeaders,
   raw = false,
   timeoutMs = 180_000,
-}: any = {}) {
+}: RequestOptions = {}): Promise<T> {
   const baseHeaders: Record<string, string> = raw
     ? { "X-ima2-client": `cli/${CLI_VERSION}` }
     : { "Content-Type": "application/json", "X-ima2-client": `cli/${CLI_VERSION}` };
@@ -217,25 +252,25 @@ export async function request(base: string, path: string, {
       method,
       // connection: close — see the health-check note above.
       headers: { connection: "close", ...finalHeaders },
-      body: body === undefined ? undefined
-          : raw ? body
-          : JSON.stringify(body),
+      ...(body === undefined ? {} : { body: raw ? body as NonNullable<RequestInit["body"]> : JSON.stringify(body) }),
       signal: controller.signal,
     });
     text = await res.text();
   } finally {
     clearTimeout(timer);
   }
-  let json: any = null;
+  let json: unknown = null;
   try { json = JSON.parse(text!); } catch {}
   if (!res.ok) {
-    const err: any = new Error(json?.error?.message || json?.error || `HTTP ${res.status}`);
+    const top = json && typeof json === "object" ? json as { error?: unknown; code?: unknown } : undefined;
+    const message = errorField(json, "message") || top?.error || `HTTP ${res.status}`;
+    const err: CliRequestError = new Error(String(message));
     err.status = res.status;
-    err.code = json?.error?.code || json?.code || null;
+    err.code = errorField(json, "code") || top?.code || null;
     err.body = json || text;
     throw err;
   }
-  return json;
+  return json as T;
 }
 
 export interface CliHistoryItem {
@@ -246,7 +281,7 @@ export interface CliHistoryItem {
 }
 
 export async function resolveLastHistoryItem(base: string): Promise<CliHistoryItem> {
-  const response = await request(base, "/api/history?limit=1");
+  const response = await request<HistoryListResponse | null>(base, "/api/history?limit=1");
   const item = Array.isArray(response?.items) ? response.items[0] : undefined;
   if (!item || typeof item.filename !== "string" || !item.filename) {
     const error = new Error("no history image available for @last") as Error & { code: string };

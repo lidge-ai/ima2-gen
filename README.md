@@ -10,7 +10,7 @@ Use it from the browser, the Mac app, the CLI, or hand it to your coding agent.<
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=npm&label=npm" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/dm/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&label=downloads" alt="npm downloads"></a>
   <img src="https://img.shields.io/node/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=node.js&label=node" alt="Node.js version">
-  <a href="https://github.com/lidge-jun/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-jun/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-ai/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3f3f46?style=flat-square&labelColor=18181b" alt="MIT license"></a>
 </p>
 
@@ -20,7 +20,7 @@ ima2 serve
 ```
 
 <p align="center">
-  <a href="https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Download the Mac app (.dmg)"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Download the Mac app (.dmg)"></a>
   <a href="#one-line-installers"><img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-one--line%20installer-18181b?style=for-the-badge&logo=gnubash&logoColor=white" alt="One-line installers for Windows and Linux"></a>
 </p>
 
@@ -76,7 +76,7 @@ See which lanes are ready, type a prompt, and pick up recent work without diggin
 </table>
 
 <p align="center">
-  <b>English</b> · <a href="docs/README.ko.md">한국어</a> · <a href="docs/README.ja.md">日本語</a> · <a href="docs/README.zh-CN.md">简体中文</a> · <a href="docs/README.zh-TW.md">正體中文</a> · <a href="https://lidge-jun.github.io/ima2-gen/"><b>Website</b></a> · <a href="https://lidge-jun.github.io/ima2-gen/docs"><b>Docs →</b></a>
+  <b>English</b> · <a href="docs/README.ko.md">한국어</a> · <a href="docs/README.ja.md">日本語</a> · <a href="docs/README.zh-CN.md">简体中文</a> · <a href="docs/README.zh-TW.md">正體中文</a> · <a href="https://lidge-ai.github.io/ima2-gen/"><b>Website</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/docs"><b>Docs →</b></a>
 </p>
 
 `ima2-gen` is a local-first visual generation runtime and studio for people and coding agents, with reproducible image and video workflows across multiple providers. It runs a small server on your machine, keeps every image in `~/.ima2/generated`, and talks to the providers you connect: OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI and registered ComfyUI workflows. Runway and Higgsfield stay separate MCP-backed integrations. Prompts and references go only to the provider you pick for each job.
@@ -87,11 +87,11 @@ See which lanes are ready, type a prompt, and pick up recent work without diggin
 
 The desktop app runs the same local server and studio in a Mac window with a menu bar icon. It is signed with a Developer ID and notarized by Apple, and it brings its own runtime, so you do not need Node.js.
 
-1. Download `ima2-<version>-mac-arm64.dmg` from the newest [ima2 Desktop release](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true).
+1. Download `ima2-<version>-mac-arm64.dmg` from the newest [ima2 Desktop release](https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true).
 2. Open the DMG and drag **ima2** into **Applications**.
 3. Launch ima2 and pick a provider on the welcome screen.
 
-The [Mac App guide](https://lidge-jun.github.io/ima2-gen/docs/desktop) covers checksums, updates and settings. On an Intel Mac, Windows or Linux, use npm or a one-line installer.
+The [Mac App guide](https://lidge-ai.github.io/ima2-gen/docs/desktop) covers checksums, updates and settings. On an Intel Mac, Windows or Linux, use npm or a one-line installer.
 
 ### npm
 
@@ -126,19 +126,19 @@ Each script checks the package-derived Node.js floor, installs Node LTS if neede
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
 ```
 
 <details>
@@ -445,7 +445,7 @@ More answers live in the [FAQ](docs/FAQ.md).
 
 ## Documentation
 
-- [Developer documentation site](https://lidge-jun.github.io/ima2-gen/docs) — overview, quickstart, architecture, modes, providers, CLI, config and server API
+- [Developer documentation site](https://lidge-ai.github.io/ima2-gen/docs) — overview, quickstart, architecture, modes, providers, CLI, config and server API
 - [CLI reference](docs/CLI.md) · [API reference](docs/API.md) · [Prompt Studio](docs/PROMPT_STUDIO.md) · [FAQ](docs/FAQ.md) · [Recover old images](docs/RECOVER_OLD_IMAGES.md)
 
 The API reference covers `POST /api/assets/derived` with `kind=vector-svg`, NovelAI's `negativePrompt` field, `POST /api/prompt-builder/chat`, and `GET`/`PUT /api/prompt-builder/config`.
@@ -453,7 +453,7 @@ The API reference covers `POST /api/assets/derived` with `kind=vector-svg`, Nove
 ## Development
 
 ```bash
-git clone https://github.com/lidge-jun/ima2-gen.git
+git clone https://github.com/lidge-ai/ima2-gen.git
 cd ima2-gen
 npm install
 npm run dev

@@ -909,7 +909,7 @@ The studio's one-time star prompt stars the repository with the user's own `gh` 
 | Method | Path | Result |
 |---|---|---|
 | `GET` | `/api/github/star` | `{ state: "starred" \| "not-starred" \| "unauthenticated" \| null, prompted, repo, url }` — `unauthenticated` when `gh` is missing or logged out; `null` once `prompted` (gh is no longer asked) |
-| `POST` | `/api/github/star` | Stars via `gh api -X PUT /user/starred/lidge-jun/ima2-gen` and marks prompted; `409 GH_UNAUTHENTICATED`, `502 GH_FAILED` |
+| `POST` | `/api/github/star` | Stars via `gh api -X PUT /user/starred/lidge-ai/ima2-gen` and marks prompted; `409 GH_UNAUTHENTICATED`, `502 GH_FAILED` |
 | `POST` | `/api/github/star/dismiss` | Marks prompted without starring |
 
 

@@ -1,8 +1,9 @@
 import { parseArgs } from "../lib/args.js";
 import { resolveServer } from "../lib/client.js";
-import { streamSse } from "../lib/sse.js";
+import { streamSse, sseFields } from "../lib/sse.js";
 import { dataUriToFile, defaultOutName, fileToDataUri } from "../lib/files.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 import { config } from "../../config.js";
 import { createCliRequestId, recoverGeneratedOutputs, formatRecoveryHint } from "../lib/recover-output.js";
 import { canonicalizeImageModel } from "../lib/model-aliases.js";
@@ -99,7 +100,7 @@ export default async function multimodeCmd(argv: string[]) {
 
   let server;
   try { server = await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 
   const maxImages = Math.max(1, Math.min(MAX_GENERATION_COUNT, parseInt(String(args.count ?? args["max-images"])) || 4));
   const refs = (Array.isArray(args.ref) ? args.ref : []) as string[];
@@ -110,7 +111,7 @@ export default async function multimodeCmd(argv: string[]) {
   const requestId = createCliRequestId("req_cli_multimode");
   const timeoutMs = (parseInt(String(args.timeout)) || 600) * 1000;
 
-  const body: any = {
+  const body: Record<string, unknown> = {
     prompt,
     quality: args.quality,
     size: args.size,
@@ -141,32 +142,34 @@ export default async function multimodeCmd(argv: string[]) {
   process.once("SIGTERM", onSig);
 
   const url = `${server.base}/api/generate/multimode`;
-  const images: any[] = [];
-  let doneInfo: any = null;
+  const images: Record<string, unknown>[] = [];
+  let doneInfo: Record<string, unknown> | null = null;
   try {
     for await (const ev of streamSse(url, { body, signal: ac.signal, headers: { "X-Request-Id": requestId } })) {
+      const data = sseFields(ev.data);
       switch (ev.event) {
         case "phase":
-          if (!args.json) out(color.dim(`[phase] ${ev.data.phase} (max ${ev.data.maxImages ?? maxImages})`));
+          if (!args.json) out(color.dim(`[phase] ${data.phase} (max ${data.maxImages ?? maxImages})`));
           break;
         case "partial":
           if (args["show-partial"] && !args.json) {
-            const len = (ev.data.image || "").length;
-            out(color.dim(`[partial #${ev.data.index}] (${len}B preview)`));
+            const len = String(data.image || "").length;
+            out(color.dim(`[partial #${data.index}] (${len}B preview)`));
           }
           break;
         case "image":
-          images.push(ev.data);
+          images.push(data);
           if (!args.json) out(color.green(`✓ image ${images.length}`));
           break;
         case "done":
-          doneInfo = ev.data;
+          doneInfo = data;
           break;
         case "error":
-          die(1, `multimode error: ${ev.data.error || ev.data}${ev.data.code ? ` (${ev.data.code})` : ""}`);
+          die(1, `multimode error: ${data.error || ev.data}${data.code ? ` (${data.code})` : ""}`);
       }
     }
-  } catch (e: any) {
+  } catch (caught: unknown) {
+    const e = errInfo(caught);
     const isTimeout = e.name === "TimeoutError" || (e.name === "AbortError" && timedOut);
     if (e.name === "AbortError" && !timedOut) return;
     if (isTimeout && (explicitOut || outDir)) {
@@ -187,7 +190,7 @@ export default async function multimodeCmd(argv: string[]) {
       }
       if (!args.json) out(formatRecoveryHint(result));
     }
-    die(exitCodeForError(e), `${e.message}${e.code ? ` (${e.code})` : ""}`);
+    die(exitCodeForError(caught), `${e.message}${e.code ? ` (${e.code})` : ""}`);
   } finally {
     clearTimeout(timeoutTimer);
     process.off("SIGINT", onSig);
@@ -201,14 +204,14 @@ export default async function multimodeCmd(argv: string[]) {
 
   const savedPaths: string[] = [];
   for (let i = 0; i < images.length; i++) {
-    const im = images[i];
-    if (!im.image) continue;
+    const image = images[i]?.image;
+    if (!image) continue;
     let target;
     if (explicitOut && i === 0) target = explicitOut;
     else if (outDir) target = `${outDir}/${defaultOutName(i, images.length)}`;
     else target = `${config.storage.generatedDir}/${defaultOutName(i, images.length)}`;
     if (target) {
-      await dataUriToFile(im.image, target);
+      await dataUriToFile(String(image), target);
       savedPaths.push(target);
     }
   }

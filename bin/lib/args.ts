@@ -4,7 +4,7 @@
 export type FlagValue = string | string[] | boolean | undefined;
 
 export interface FlagDef {
-  type?: "string" | "boolean";
+  type?: string;
   short?: string;
   default?: string | boolean;
   repeatable?: boolean;
@@ -21,14 +21,20 @@ export interface ParsedArgs {
   [key: string]: FlagValue;
 }
 
-export function parseArgs(argv: string[], spec: any = {}): ParsedArgs {
-  const shortMap: any = {};
-  for (const [name, def] of Object.entries<any>(spec.flags || {})) {
+function pushRepeatable(out: ParsedArgs, name: string, val: string | undefined): void {
+  const list = out[name];
+  if (Array.isArray(list)) list.push(val as string);
+}
+
+export function parseArgs(argv: string[], spec: ParseSpec = {}): ParsedArgs {
+  const flags = spec.flags || {};
+  const shortMap: Record<string, string> = {};
+  for (const [name, def] of Object.entries(flags)) {
     if (def.short) shortMap[def.short] = name;
   }
 
-  const out: any = { positional: [], _unknown: [], _present: [] };
-  for (const [name, def] of Object.entries<any>(spec.flags || {})) {
+  const out: ParsedArgs = { positional: [], _unknown: [], _present: [] };
+  for (const [name, def] of Object.entries(flags)) {
     if (def.repeatable) out[name] = [];
     else if ("default" in def) out[name] = def.default;
   }
@@ -51,7 +57,7 @@ export function parseArgs(argv: string[], spec: any = {}): ParsedArgs {
     if (a.startsWith("--")) {
       const eq = a.indexOf("=");
       const name = eq > -1 ? a.slice(2, eq) : a.slice(2);
-      const def = (spec.flags || {})[name];
+      const def = flags[name];
       if (!def) {
         out._unknown.push(a);
         i++;
@@ -64,7 +70,7 @@ export function parseArgs(argv: string[], spec: any = {}): ParsedArgs {
       } else {
         const val = eq > -1 ? a.slice(eq + 1) : argv[i + 1];
         if (eq === -1) i++;
-        if (def.repeatable) out[name].push(val);
+        if (def.repeatable) pushRepeatable(out, name, val);
         else out[name] = val;
         i++;
       }
@@ -77,13 +83,14 @@ export function parseArgs(argv: string[], spec: any = {}): ParsedArgs {
         continue;
       }
       out._present.push(name);
-      const def = spec.flags[name];
+      const def = flags[name];
+      if (!def) break;
       if (def.type === "boolean") {
         out[name] = true;
         i++;
       } else {
         const val = argv[i + 1];
-        if (def.repeatable) out[name].push(val);
+        if (def.repeatable) pushRepeatable(out, name, val);
         else out[name] = val;
         i += 2;
       }

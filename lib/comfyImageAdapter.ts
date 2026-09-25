@@ -117,7 +117,18 @@ function parseSize(size: string | undefined): { width?: number; height?: number 
   return { width: Number(match[1]), height: Number(match[2]) };
 }
 
-async function readJson(res: Response): Promise<any> {
+/** ComfyUI JSON bodies; `/history` is keyed by prompt id, so other keys stay unknown. */
+interface ComfyJson {
+  system?: { comfyui_version?: unknown };
+  queue_running?: unknown;
+  queue_pending?: unknown;
+  error?: { message?: string };
+  prompt_id?: unknown;
+  raw?: string;
+  [key: string]: unknown;
+}
+
+async function readJson(res: Response): Promise<ComfyJson> {
   const text = await res.text();
   if (!text) return {};
   try {
@@ -240,7 +251,7 @@ async function queuePosition(
   promptId: string,
   fetchImpl: typeof fetch,
 ): Promise<ComfyQueueInfo | null> {
-  let json: any;
+  let json: ComfyJson;
   try {
     const res = await fetchImpl(`${origin}/queue`);
     json = await readJson(res);
@@ -455,7 +466,7 @@ async function runComfyWorkflow(
 
   logEvent("comfy", "generate:start", { requestId, workflow: workflowId, origin, refs: reference ? 1 : 0 });
 
-  let submitJson: any;
+  let submitJson: ComfyJson;
   try {
     const res = await fetchImpl(`${origin}/prompt`, {
       method: "POST",
@@ -499,7 +510,7 @@ async function runComfyWorkflow(
       throw comfyError(COMFY_ERR.TIMEOUT, `ComfyUI did not finish within ${Math.round(cfg.generationTimeoutMs / 1000)}s.`, 504);
     }
 
-    let history: any;
+    let history: ComfyJson;
     try {
       const res = await fetchImpl(`${origin}/history/${encodeURIComponent(promptId)}`);
       history = await readJson(res);
@@ -507,7 +518,7 @@ async function runComfyWorkflow(
       throw comfyError(COMFY_ERR.OFFLINE, `Lost contact with ComfyUI at ${origin}: ${error instanceof Error ? error.message : "unknown error"}`);
     }
 
-    const entry: HistoryEntry | undefined = history?.[promptId];
+    const entry = history?.[promptId] as HistoryEntry | undefined;
     if (entry) {
       // An interrupted run also lands in history, with completed:false — so
       // presence alone would report a canceled generation as a success.

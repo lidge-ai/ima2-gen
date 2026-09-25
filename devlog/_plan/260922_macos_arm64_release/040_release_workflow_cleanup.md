@@ -100,7 +100,7 @@ rulesets                            branch ruleset 1개("Preserve main preview d
 실행·검증하지 못했다.
 
 ```bash
-gh api -X PUT repos/lidge-jun/ima2-gen/environments/desktop-production --input - <<'JSON'
+gh api -X PUT repos/lidge-ai/ima2-gen/environments/desktop-production --input - <<'JSON'
 {
   "wait_timer": 0,
   "prevent_self_review": false,
@@ -110,13 +110,13 @@ gh api -X PUT repos/lidge-jun/ima2-gen/environments/desktop-production --input -
 }
 JSON
 
-gh api -X POST repos/lidge-jun/ima2-gen/environments/desktop-production/deployment-branch-policies \
+gh api -X POST repos/lidge-ai/ima2-gen/environments/desktop-production/deployment-branch-policies \
   -f name='desktop-v*' -f type=tag
 
-gh variable set DESKTOP_RELEASE_GATE --repo lidge-jun/ima2-gen \
+gh variable set DESKTOP_RELEASE_GATE --repo lidge-ai/ima2-gen \
   --env desktop-production --body required-reviewer-v1
 
-gh api -X POST repos/lidge-jun/ima2-gen/rulesets --input - <<'JSON'
+gh api -X POST repos/lidge-ai/ima2-gen/rulesets --input - <<'JSON'
 {
   "name": "Protect desktop release tags",
   "target": "tag",

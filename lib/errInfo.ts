@@ -41,3 +41,32 @@ export function errInfo(e: unknown): ErrInfo {
 export function asError(e: unknown): Error {
   return e instanceof Error ? e : new Error(typeof e === "string" ? e : JSON.stringify(e));
 }
+
+/** Error carrying the HTTP-facing status/code metadata attached at throw sites. */
+export interface CodedError extends Error {
+  status?: number | undefined;
+  code?: string | undefined;
+}
+
+/** Unverified fields of a caught value; each must be checked before use as a typed value. */
+export interface ThrownFields {
+  name?: unknown;
+  message?: unknown;
+  code?: unknown;
+  status?: unknown;
+  stderr?: unknown;
+  isOperational?: unknown;
+}
+
+/** Field view of a caught value; non-object throws expose no fields. */
+export function thrownFields(e: unknown): ThrownFields {
+  return e !== null && typeof e === "object" ? e : {};
+}
+
+export function stringField(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+export function numberField(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}

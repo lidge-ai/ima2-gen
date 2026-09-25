@@ -306,7 +306,9 @@ function validateCoreFlags(args: ParsedArgs): void {
   if (args["web-search"] && args["no-web-search"]) die(2, "--web-search and --no-web-search are mutually exclusive");
 }
 
-async function requestCoreImage(args: ParsedArgs, context: ImageContext, n: number, requestId: string) {
+async function requestCoreImage(
+  args: ParsedArgs, context: ImageContext, n: number, requestId: string,
+): Promise<Parameters<typeof normalizeGenerate>[0]> {
   const references = await Promise.all(context.refs.map((path: string) => fileToDataUri(path)));
   const body: Record<string, unknown> = { prompt: context.prompt, quality: args.quality, size: args.size, n, references,
     ...(args["no-size-nudge"] ? { sizeNudge: false } : {}),

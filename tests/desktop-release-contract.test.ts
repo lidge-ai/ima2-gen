@@ -48,7 +48,7 @@ describe("Apple Silicon desktop release contract", () => {
 
     assert.deepEqual(config.publish, {
       provider: "github",
-      owner: "lidge-jun",
+      owner: "lidge-ai",
       repo: "ima2-gen",
       releaseType: "draft",
       tagNamePrefix: "desktop-v",

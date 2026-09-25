@@ -61,7 +61,7 @@ OUT:
 |---|---|---|---|
 | `package.json` / `package-lock.json` | MODIFY | updater runtime dependency 없음 | app package production dependency에 exact `electron-updater@6.8.9` |
 | `desktop/package.json` / lock | MODIFY | dist가 publish mode를 명시하지 않음 | dist scripts가 `--publish never`; toolchain package에는 updater를 중복 선언하지 않음 |
-| `desktop/electron-builder.yml` | MODIFY | `publish:null` | public GitHub `lidge-jun/ima2-gen`, `desktop-v`, draft, update metadata config |
+| `desktop/electron-builder.yml` | MODIFY | `publish:null` | public GitHub `lidge-ai/ima2-gen`, `desktop-v`, draft, update metadata config |
 | `desktop/lib/updater.mjs` | NEW | updater owner 없음 | packaged darwin/arm64 guard, event/dialog/download/install controller |
 | `desktop/lib/app-lifecycle.mjs` | NEW | `main.mjs`의 boolean shutdown handler | normal quit와 update-install preparation을 직렬화하는 lifecycle owner |
 | `desktop/main.mjs` | MODIFY | server start와 menu 뒤 updater 없음 | lifecycle/controller 연결, server start 완료 뒤 background check |
@@ -106,7 +106,7 @@ OUT:
 4. 다운로드와 재시작은 각각 사용자 동의 뒤에만 실행된다.
 5. 설치 전 local server가 graceful stop/dispose되고 기존 `before-quit`가 updater quit를
    가로채지 않는다.
-6. builder publish config는 GitHub `lidge-jun/ima2-gen`, `desktop-v`, draft이며 모든 build
+6. builder publish config는 GitHub `lidge-ai/ima2-gen`, `desktop-v`, draft이며 모든 build
    command는 `--publish never`로 업로드를 release job에만 남긴다.
 7. root app version이 workflow tag, packaged app, `latest-mac.yml`의 단일 버전 원천이다.
 8. focused tests, typechecks, inventory, full suite, high dependency audit, unsigned package

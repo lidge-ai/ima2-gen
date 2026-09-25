@@ -44,7 +44,7 @@ export async function generateViaGrok(
     webSearchEnabled?: boolean | undefined;
   } = {},
 ): Promise<GrokGenerateResult> {
-  const model = options.model || (ctx.config as any).grokProvider?.defaultImageModel || "grok-imagine-image-quality";
+  const model = options.model || ctx.config?.grokProvider?.defaultImageModel || "grok-imagine-image-quality";
   const references = options.references || [];
   const credential = await requireCredential(ctx, options);
   const plan = options.plannedPrompt
@@ -91,7 +91,7 @@ export async function editViaGrok(
   ctx: RouteRuntimeContext,
   options: { model?: string | undefined; size?: string | undefined; signal?: AbortSignal | undefined; requestId?: string | undefined; credential?: GrokCredential | undefined } = {},
 ): Promise<GrokGenerateResult> {
-  const model = options.model || (ctx.config as any).grokProvider?.defaultImageModel || "grok-imagine-image-quality";
+  const model = options.model || ctx.config?.grokProvider?.defaultImageModel || "grok-imagine-image-quality";
   const detectedInputMime = detectImageMimeFromB64(imageB64) || "image/png";
   const imageUrl = imageB64.startsWith("data:") ? imageB64 : `data:${detectedInputMime};base64,${imageB64}`;
   const payload: Record<string, unknown> = { model, prompt, n: 1, response_format: "url", image: { type: "image_url", url: imageUrl }, ...mapSizeToGrokImageParams(options.size) };

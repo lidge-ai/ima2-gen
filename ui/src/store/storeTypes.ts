@@ -223,6 +223,8 @@ export type GenerationDefaults = Partial<{
   sizePreset: SizePreset;
   customW: number;
   customH: number;
+  grokAspectRatio: string;
+  grokResolution: "1k" | "2k";
   format: Format;
   moderation: Moderation;
   count: Count;

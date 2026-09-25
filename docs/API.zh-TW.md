@@ -712,7 +712,7 @@ X-Ima2-Tab-Id
 | 方法 | 路徑 | 結果 |
 |---|---|---|
 | `GET` | `/api/github/star` | `{ state: "starred" \| "not-starred" \| "unauthenticated" \| null, prompted, repo, url }`，未安裝或未登入 `gh` 時為 `unauthenticated`；已提示後為 `null`（不再呼叫 gh） |
-| `POST` | `/api/github/star` | 透過 `gh api -X PUT /user/starred/lidge-jun/ima2-gen` 加星並標記已提示；`409 GH_UNAUTHENTICATED`、`502 GH_FAILED` |
+| `POST` | `/api/github/star` | 透過 `gh api -X PUT /user/starred/lidge-ai/ima2-gen` 加星並標記已提示；`409 GH_UNAUTHENTICATED`、`502 GH_FAILED` |
 | `POST` | `/api/github/star/dismiss` | 不加星，只標記已提示 |
 
 

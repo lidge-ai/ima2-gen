@@ -1,3 +1,4 @@
+import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import type { CSSProperties, PointerEventHandler, ReactNode, RefObject } from "react";
 import type { CanvasObjectKey } from "../../lib/canvas/objectKeys";
 import { CanvasAnnotationLayer } from "./CanvasAnnotationLayer";
@@ -15,7 +16,7 @@ interface CanvasModeStageProps {
   canvasOpen: boolean;
   maskOverlayUrl: string | null;
   cleanupLayer?: ReactNode;
-  annotations: any;
+  annotations: ReturnType<typeof useCanvasAnnotations>;
   hoveredAnnotationId?: CanvasObjectKey | null;
   onOpenCanvas: () => void;
   onPointerDown: PointerEventHandler<HTMLDivElement>;

@@ -1,5 +1,5 @@
 import { parseArgs } from "../lib/args.js";
-import { resolveServer, request, resolveLastHistoryItem } from "../lib/client.js";
+import { resolveServer, request, resolveLastHistoryItem, type CliHistoryItem } from "../lib/client.js";
 import { openUrl } from "../lib/platform.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
 import { fileToDataUri } from "../lib/files.js";
@@ -27,12 +27,12 @@ export default async function showCmd(argv: string[]) {
   catch (e) {
     const err = errInfo(e); die(exitCodeForError(e), err.message); }
 
-  let item: Record<string, any> | undefined;
+  let item: CliHistoryItem | undefined;
   try {
     if (name === "@last") item = await resolveLastHistoryItem(server.base);
     else {
-      const resp = await request(server.base, "/api/history");
-      const items: Record<string, any>[] = resp.items || [];
+      const resp = await request<{ items?: CliHistoryItem[] }>(server.base, "/api/history");
+      const items: CliHistoryItem[] = resp.items || [];
       item = items.find((it) => it.filename === name || (it.filename && it.filename.endsWith(name)));
     }
   }
@@ -40,7 +40,7 @@ export default async function showCmd(argv: string[]) {
     const err = errInfo(e); die(err.code === "HISTORY_EMPTY" ? 5 : exitCodeForError(e), err.message); }
   if (!item) die(1, `not found: ${name}`);
 
-  let metadata: any = null;
+  let metadata: unknown = null;
   if (args.metadata) {
     try {
       const dataUrl = await fileToDataUri(`${config.storage.generatedDir}/${item.filename}`);
@@ -48,8 +48,8 @@ export default async function showCmd(argv: string[]) {
         method: "POST",
         body: { dataUrl },
       });
-    } catch (e: any) {
-      out(color.dim(`(metadata unavailable: ${e?.message || e})`));
+    } catch (e: unknown) {
+      out(color.dim(`(metadata unavailable: ${(e as { message?: string } | null)?.message || e})`));
     }
   }
 

@@ -1,7 +1,7 @@
 # Issue #53 - Gallery Scale: Favorites Cursor, Index, and Virtualization
 
-**GitHub**: https://github.com/lidge-jun/ima2-gen/issues/53
-**Repo**: https://github.com/lidge-jun/ima2-gen
+**GitHub**: https://github.com/lidge-ai/ima2-gen/issues/53
+**Repo**: https://github.com/lidge-ai/ima2-gen
 **Status**: done / shipped on main
 **Date**: 2026-05-07
 

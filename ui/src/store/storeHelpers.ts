@@ -134,6 +134,15 @@ export function mergeMultimodeImages(current: GenerateItem[], incoming: Generate
   );
 }
 
+type RawPersistedInFlight = Record<string, unknown> & { id: string; prompt: string; startedAt: number };
+
+function isRawPersistedInFlight(x: unknown): x is RawPersistedInFlight {
+  return typeof x === "object" && x !== null &&
+    "id" in x && typeof x.id === "string" &&
+    "prompt" in x && typeof x.prompt === "string" &&
+    "startedAt" in x && typeof x.startedAt === "number";
+}
+
 export function loadInFlight({ includeExpired = false }: { includeExpired?: boolean } = {}): PersistedInFlight[] {
   try {
     const raw = localStorage.getItem(IN_FLIGHT_STORAGE_KEY);
@@ -143,11 +152,10 @@ export function loadInFlight({ includeExpired = false }: { includeExpired?: bool
     const now = Date.now();
     return arr
       .filter(
-        (x: any) =>
-          x && typeof x.id === "string" && typeof x.prompt === "string" &&
-          typeof x.startedAt === "number" && (includeExpired || now - x.startedAt < INFLIGHT_TTL_MS),
+        (x: unknown): x is RawPersistedInFlight =>
+          isRawPersistedInFlight(x) && (includeExpired || now - x.startedAt < INFLIGHT_TTL_MS),
       )
-      .map((x: any) => ({
+      .map((x) => ({
         id: x.id,
         prompt: x.prompt,
         startedAt: x.startedAt,
