@@ -1,6 +1,7 @@
 import { fetchApi } from "../lib/api-core";
 import { useEffect, useState } from "react";
 import { getLanAuthEpoch, isLanSessionLocked, LAN_AUTH_REQUIRED_EVENT } from "../lib/lanSession";
+import { OAUTH_CHANGED_EVENT } from "./useOAuthStatus";
 
 export interface GrokStatus {
   status: "ready" | "no_image_model" | "error" | "offline";
@@ -29,16 +30,23 @@ export function useGrokStatus(): GrokStatus | null {
           timer = setTimeout(poll, 10_000);
         }
       } catch {
-        if (!cancelled) setStatus({ status: "offline" });
+        if (cancelled) return;
+        setStatus({ status: "offline" });
+        // One dropped request is not a verdict: keep polling like any other non-ready
+        // status so the chip recovers when the server does.
+        timer = setTimeout(poll, 10_000);
       }
     };
 
+    const onChanged = () => { void poll(); };
     const stop = () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
       window.removeEventListener(LAN_AUTH_REQUIRED_EVENT, stop);
+      window.removeEventListener(OAUTH_CHANGED_EVENT, onChanged);
     };
     window.addEventListener(LAN_AUTH_REQUIRED_EVENT, stop);
+    window.addEventListener(OAUTH_CHANGED_EVENT, onChanged);
     void poll();
     return stop;
   }, []);
