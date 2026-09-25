@@ -36,7 +36,13 @@ describe("Grok size mapper", () => {
   });
 
   it("passes through every valid xAI aspect in the picker's native format", () => {
+    // xAI's documented aspect list; `auto` is covered above. Keeps the
+    // accept-list honest when xAI adds or renames ratios.
+    const ratios = ["1:1", "3:4", "4:3", "9:16", "16:9", "2:3", "3:2", "9:19.5",
+      "19.5:9", "9:20", "20:9", "1:2", "2:1", "21:9", "5:2"];
+    for (const ratio of ratios) {
+      assert.deepEqual(mapSizeToGrokImageParams(`grok:${ratio}:1k`), { aspect_ratio: ratio, resolution: "1k" });
+    }
     assert.deepEqual(mapSizeToGrokImageParams("grok:21:9:2k"), { aspect_ratio: "21:9", resolution: "2k" });
-    assert.deepEqual(mapSizeToGrokImageParams("grok:5:2:1k"), { aspect_ratio: "5:2", resolution: "1k" });
   });
 });
