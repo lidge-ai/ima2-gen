@@ -17,6 +17,7 @@ import { commitMediaResult } from "../lib/mcp/commitMediaResult.js";
 import { appendMcpJobLog, logMcpJobError } from "../lib/mcp/jobLog.js";
 import { buildRunwayActionCall, REFERENCE_TAG_PATTERN, runwayAdapter, type RunwayMediaAction, type UpscaleImageParams } from "../lib/mcp/adapters/runway.js";
 import { uploadLocalMediaToRunway } from "../lib/mcp/adapters/runwayUpload.js";
+import { importUrlToHiggsfield, uploadLocalMediaToHiggsfield } from "../lib/mcp/adapters/higgsfieldUpload.js";
 import { resolveMediaAction, type MediaOperation } from "../lib/mcp/mediaWorkflowRouter.js";
 import { loadEffectiveSnapshot } from "../lib/mcp/snapshotStore.js";
 import { scrubValue } from "../lib/mcp/sanitizer.js";
@@ -34,6 +35,7 @@ export interface McpMediaDeps {
   download: typeof downloadMediaResult;
   writeSidecar: typeof atomicWriteJson;
   upload: typeof uploadLocalMediaToRunway;
+  uploadHiggsfield: typeof uploadLocalMediaToHiggsfield;
   concat: typeof concatVideos;
   adapters?: Record<string, MediaProviderAdapter>;
 }
@@ -75,7 +77,7 @@ export async function localMediaPath(
   return resolved;
 }
 
-function imageMime(filePath: string): string {
+export function imageMime(filePath: string): string {
   const ext = extname(filePath).toLowerCase();
   return ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
 }
@@ -290,7 +292,7 @@ async function runMediaAction(input: {
     const code = errorCode(error);
     // Secret-scrub (030): tool-error text can embed signed URLs/emails from the provider.
     console.error(`[mcp-action ERROR] requestId=${requestId} operation=${input.operation} code=${code} message=${scrubValue(String((error as Error)?.message ?? "").slice(0, 500))} stack=${scrubValue(String((error as Error)?.stack ?? "").slice(0, 300))}`);
-    void logMcpJobError(ctx.config.storage.generatedDir, { requestId, provider: "runway" }, error);
+    void logMcpJobError(ctx.config.storage.generatedDir, { requestId, provider: input.provider }, error);
     finishJob(requestId, { status: "error", errorCode: code });
     publishJobEvent(requestId, "error", { code, message: "media action failed", ...errorEnvelopeFields(error) });
   }
@@ -304,7 +306,7 @@ function actionForOperation(operation: MediaOperation): RunwayMediaAction {
   return "edit-video";
 }
 
-function extensionFor(kind: "image" | "video", contentType: string, url: string): string {
+export function extensionFor(kind: "image" | "video", contentType: string, url: string): string {
   const fromUrl = url.match(/\.(png|jpe?g|webp|mp4|mov|webm)(?:\?|$)/i)?.[1]?.toLowerCase();
   if (fromUrl) return fromUrl === "jpeg" ? "jpg" : fromUrl;
   if (contentType.includes("png")) return "png";
@@ -322,6 +324,7 @@ export function registerMcpMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext
     download: depsPartial.download ?? downloadMediaResult,
     writeSidecar: depsPartial.writeSidecar ?? atomicWriteJson,
     upload: depsPartial.upload ?? uploadLocalMediaToRunway,
+    uploadHiggsfield: depsPartial.uploadHiggsfield ?? uploadLocalMediaToHiggsfield,
     concat: depsPartial.concat ?? concatVideos,
     ...(depsPartial.adapters ? { adapters: depsPartial.adapters } : {}),
   };
@@ -533,31 +536,42 @@ async function runMcpMediaJob(input: {
       setJobPhase(requestId, "uploading");
       publishJobEvent(requestId, "progress", { phase: "uploading", current: uploadCurrent, total: uploadTotal });
     };
+    // Media input upload is provider-specific: runway hosts assets via
+    // init_upload, higgsfield requires media_upload + media_confirm media_ids
+    // (higgsfield cannot consume runway-hosted URLs or other https values).
+    const upload = adapter.provider === "higgsfield" ? deps.uploadHiggsfield : deps.upload;
     let startFrameUrl = input.startFrameUrl;
     if (input.localStartFramePath) {
       publishUploading();
-      startFrameUrl = await deps.upload(manager, input.localStartFramePath, {
+      startFrameUrl = await upload(manager, input.localStartFramePath, {
         fileName: basename(input.localStartFramePath), mimeType: imageMime(input.localStartFramePath),
       });
+    } else if (adapter.provider === "higgsfield" && startFrameUrl && /^https:/i.test(startFrameUrl)) {
+      startFrameUrl = await importUrlToHiggsfield(manager, startFrameUrl, "image");
     }
     let endFrameUrl: string | undefined;
     if (input.localEndFramePath) {
       publishUploading();
-      endFrameUrl = await deps.upload(manager, input.localEndFramePath, {
+      endFrameUrl = await upload(manager, input.localEndFramePath, {
         fileName: basename(input.localEndFramePath), mimeType: imageMime(input.localEndFramePath),
       });
     }
     const referenceImages: Array<{ url: string; tag?: string }> = [];
     for (const entry of input.localReferences ?? []) {
       publishUploading();
-      const url = await deps.upload(manager, entry.path, { fileName: basename(entry.path), mimeType: imageMime(entry.path) });
+      const url = await upload(manager, entry.path, { fileName: basename(entry.path), mimeType: imageMime(entry.path) });
       referenceImages.push({ url, ...(entry.tag ? { tag: entry.tag } : {}) });
     }
     let referenceVideoUrl: string | undefined;
     if (input.localReferenceVideoPath) {
+      // higgsfield declares no video-input role — surface the contract error
+      // before a media_upload the adapter will reject anyway.
+      if (adapter.provider === "higgsfield") {
+        throw new Error("MCP_INPUT_ROLE_UNSUPPORTED:higgsfield:video_references");
+      }
       publishUploading();
       const mimeType = extname(input.localReferenceVideoPath).toLowerCase() === ".mov" ? "video/quicktime" : "video/mp4";
-      referenceVideoUrl = await deps.upload(manager, input.localReferenceVideoPath, {
+      referenceVideoUrl = await upload(manager, input.localReferenceVideoPath, {
         fileName: basename(input.localReferenceVideoPath), mimeType, maxBytes: VIDEO_INPUT_MAX_BYTES,
       });
     }

@@ -1,0 +1,64 @@
+---
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const labels = {
+  text: t(lang, 'banner.text'),
+  platforms: t(lang, 'banner.platforms'),
+  os: { mac: t(lang, 'dl.os.mac'), win: t(lang, 'dl.os.win'), linux: t(lang, 'dl.os.linux') },
+};
+const downloadHref = `${import.meta.env.BASE_URL.replace(/\/$/, '')}${lang === 'ko' ? '/ko' : ''}/#install`;
+---
+
+<div class="release-banner" data-release-banner data-labels={JSON.stringify(labels)} hidden>
+  <div class="release-banner-inner">
+    <span class="release-banner-tag prism-text">{t(lang, 'banner.tag')}</span>
+    <p class="release-banner-text" data-release-banner-text></p>
+    <a class="release-banner-link" href={downloadHref}>{t(lang, 'banner.download')}</a>
+    <a class="release-banner-link" data-release-banner-notes href="#" target="_blank" rel="noopener">{t(lang, 'banner.notes')} <span aria-hidden="true">↗</span></a>
+    <button type="button" class="release-banner-close" data-release-banner-close aria-label={t(lang, 'banner.dismiss')}>×</button>
+  </div>
+</div>
+
+<script>
+  import { loadDesktopRelease, platformOs, type Os } from '../scripts/desktopRelease';
+
+  const DISMISS_KEY = 'ima2:release-banner-dismissed';
+  const root = document.querySelector<HTMLElement>('[data-release-banner]');
+
+  if (root) {
+    const labels = JSON.parse(root.dataset.labels ?? '{}') as { text: string; platforms: string; os: Record<Exclude<Os, 'unknown'>, string> };
+    void loadDesktopRelease().then((release) => {
+      if (!release) return;
+      let dismissed: string | null = null;
+      try { dismissed = localStorage.getItem(DISMISS_KEY); } catch { /* storage unavailable: always show */ }
+      if (dismissed === release.version) return;
+
+      const oses = [...new Set(release.assets.map((a) => platformOs(a.platform)))]
+        .filter((os): os is Exclude<Os, 'unknown'> => os !== 'unknown')
+        .map((os) => labels.os[os]);
+      const text = labels.text.replace('{version}', `v${release.version}`);
+      const textEl = root.querySelector('[data-release-banner-text]');
+      if (textEl) textEl.textContent = oses.length ? `${text} · ${labels.platforms.replace('{platforms}', oses.join(' · '))}` : text;
+      root.querySelector<HTMLAnchorElement>('[data-release-banner-notes]')?.setAttribute('href', release.url);
+      root.querySelector('[data-release-banner-close]')?.addEventListener('click', () => {
+        root.hidden = true;
+        try { localStorage.setItem(DISMISS_KEY, release.version); } catch { /* best effort */ }
+      });
+      root.hidden = false;
+    });
+  }
+</script>
+
+<style>
+  .release-banner { position: relative; z-index: 60; border-bottom: 1px solid var(--glass-line); background: rgba(20, 20, 26, 0.92); backdrop-filter: blur(10px); }
+  .release-banner[hidden] { display: none; }
+  .release-banner-inner { max-width: var(--max); margin: 0 auto; padding: 10px var(--gutter-d); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+  .release-banner-tag { font: 600 10px/1.6 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+  .release-banner-text { margin: 0; color: var(--text); font: 500 14px/1.4 var(--font-body); }
+  .release-banner-link { color: var(--text-dim); font: 600 13px/1.4 var(--font-display); text-decoration: underline; text-underline-offset: 3px; transition: opacity 180ms ease; }
+  .release-banner-link:hover { opacity: .72; }
+  .release-banner-close { margin-left: auto; width: 28px; height: 28px; border: 1px solid var(--glass-line); border-radius: 3px; background: transparent; color: var(--text-dim); font: 400 18px/1 var(--font-body); cursor: pointer; }
+  .release-banner-close:hover { color: var(--text); }
+  @media (max-width: 900px) { .release-banner-inner { padding: 10px var(--gutter-m); } }
+</style>

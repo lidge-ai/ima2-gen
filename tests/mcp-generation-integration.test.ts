@@ -367,3 +367,36 @@ test("guards: unknown provider 400, locked provider 409, disconnected 409", asyn
     assert.equal((await malformed.json() as { error: { code: string } }).error.code, "INVALID_MCP_PARAMETERS");
   });
 });
+
+test("higgsfield media inputs upload via media_upload path, never runway init_upload", async () => {
+  writeFileSync(join(dir, "generated", "hf-start.png"), "image");
+  writeFileSync(join(dir, "generated", "hf-ref.png"), "image");
+  const uploads: string[] = [];
+  const higgsfieldUploads: string[] = [];
+  const captured: Array<Record<string, unknown>> = [];
+  const deps = {
+    ...makeDeps({ capture: captured }),
+    upload: async (_manager: unknown, path: string) => { uploads.push(path); return "https://runway.example/wrong"; },
+    uploadHiggsfield: async (_manager: unknown, path: string) => {
+      higgsfieldUploads.push(basename(path));
+      return `media-uuid-${higgsfieldUploads.length}`;
+    },
+  };
+  await withApp(deps as never, async (base) => {
+    const response = await fetch(`${base}/api/mcp/generate`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        provider: "higgsfield", kind: "video", prompt: "x", model: "cinematic_studio_3_0",
+        requestId: "mcp-test-hf-media", startFrameFilename: "hf-start.png",
+        referenceFilenames: ["hf-ref.png"],
+      }),
+    });
+    assert.equal(response.status, 202);
+    await waitForEvent("mcp-test-hf-media", "done");
+    assert.deepEqual(higgsfieldUploads, ["hf-start.png", "hf-ref.png"]);
+    assert.deepEqual(uploads, []);
+    // Uploaded media_ids flow into the execute request as provider values.
+    assert.equal(captured[0].startFrameUrl, "media-uuid-1");
+    assert.deepEqual(captured[0].referenceImages, [{ url: "media-uuid-2" }]);
+  });
+});

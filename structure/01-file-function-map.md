@@ -19,7 +19,7 @@ The map matters because the repository looks small, but runtime responsibility i
 
 Snapshot note, 2026-09-05: TypeScript is source of truth for `server`, `config`, `routes/*`, `lib/*`, and `bin/*`. Paired `*.js` files are generated runtime outputs ignored in the current checkout, produced by `tsc -p tsconfig.build.json` (server/lib/routes), `tsc -p tsconfig.bin.json` (CLI), and `prepack`; do not edit them by hand. Line counts refer to the `.ts` source unless otherwise noted. CLI parity #61 added provider overrides, multimode refs/mode, multimode inflight help, server-side favorites listing, and source-contract tests.
 
-Snapshot note, 2026-06-28 (v2.0.4): full `lib/*`, `bin/commands/*`, `bin/lib/*`, `routes/*`, and selected `ui/src/lib/*` line counts refreshed via `npm run docs:refresh-line-counts` (`scripts/refresh-structure-line-counts.mjs`). Contract tests: `tests/structure-line-counts-contract.test.js`, `tests/api-docs-contract.test.js`.
+Snapshot note, 2026-06-28 (v2.0.4): full `lib/*`, `bin/commands/*`, `bin/lib/*`, `routes/*`, and selected `ui/src/lib/*` line counts refreshed via `npm run docs:refresh-line-counts` (`scripts/refresh-structure-line-counts.mjs`). Contract tests: `tests/structure-line-counts-contract.test.ts`, `tests/api-docs-contract.test.ts`.
 
 Before adding a feature, choose the surface first. For CLI work, read `bin/` and `[[02-command-reference]]`. For API work, read `server.ts`, `routes/*.ts`, `lib/*.ts`, and `[[03-server-api]]`. For UI work, read `ui/src/` and `[[04-frontend-architecture]]`. For graph workflow work, also read `[[05-node-mode]]`.
 
@@ -82,7 +82,7 @@ routes/
 | `server.ts` | 592 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
 | `config.ts` | 532 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 95 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
-| `routes/mcpMultishot.ts` | 116 | Multishot (multi-scene) video generation route via Runway MCP |
+| `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
 | `routes/generate.ts` | 13 | Classic generation API route wiring |
 | `routes/edit.ts` | 422 | Edit API, mask validation, cancellation, OAuth/API edit response save, alpha verification (alphaVerified/alphaReason), provider/web-search/reasoning-effort plumbing |
@@ -135,7 +135,7 @@ routes/
 | `bin/commands/observability.ts` | 178 | Shared CLI handler for `storage`, `billing`, `providers`, `oauth`, and `inflight` aliases (`ima2.ts` routes those commands here) |
 | `bin/commands/doctor.ts` | 313 | CLI diagnostics: storage, OAuth, providers, image probe |
 | `bin/commands/gpt.ts` | 211 | ChatGPT (GPT OAuth) login/status/logout; `ima2 login` delegates here |
-| `bin/commands/grok.ts` | 252 | Grok OAuth login and status helpers |
+| `bin/commands/grok.ts` | 258 | Grok OAuth login and status helpers |
 | `bin/commands/defaults.ts` | 306 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 145 | CLI wrapper for `GET /api/capabilities` |
 | `bin/commands/skill.ts` | 402 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
@@ -192,7 +192,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/mcp/tokenStore.ts` | 325 | Versioned 0600 MCP token records, endpoint/origin binding inspection, revision/tombstone CAS, and PID+nonce recovery lock |
 | `lib/mcp/oauthProvider.ts` | 150 | SDK OAuth provider, memory-only PKCE/state, bound credential persistence, scoped invalidation, and legacy binding migration |
 | `lib/mcp/connectionRuntime.ts` | 124 | MCP session/connection identity helpers, restore inspection, terminal/session-invalid error classification, and bounded concurrency |
-| `lib/mcp/connectionManager.ts` | 536 | Generation/epoch-safe connect, callback, refresh, disconnect, post-listen restore, budgeted auto-reconnect (3 consecutive drops without RPC), tool calls (with error content capture), and shutdown |
+| `lib/mcp/connectionManager.ts` | 566 | Generation/epoch-safe connect, callback, refresh, disconnect, post-listen restore, budgeted auto-reconnect (3 consecutive drops without RPC), tool calls (with error content capture), and shutdown |
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
 | `lib/mcp/shutdown.ts` | 24 | Post-listen restore activation plus concurrent HTTP/MCP shutdown coordination and grace bound |
 | `lib/mcp/snapshotPipeline.ts` | 113 | Generation/epoch-safe live tool snapshot ingest and stale-result suppression |
@@ -295,10 +295,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/pinnedHttpGet.ts` | 173 | Shared validated-address GET lifecycle, public redirect handling and bounded text bodies |
 | `lib/grokMultimodeAdapter.ts` | 6 | Compatibility re-exports of actual Grok multimode operation/type |
 | `lib/grokRuntime.ts` | 94 | Grok transport: api.x.ai endpoint, per-lane credential resolution, single 401 refresh replay |
-| `lib/xaiDeviceLogin.ts` | 209 | Stateless xAI device-code login used by the CLI when no server is running |
-| `lib/xaiAuth.ts` | 464 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
+| `lib/xaiDeviceLogin.ts` | 232 | Stateless xAI device-code login used by the CLI when no server is running |
+| `lib/xaiAuth.ts` | 495 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
 | `lib/grokUpstreamRetry.ts` | 165 | Pre-response retry guard for idempotent Grok fetches: socket resets, transient 5xx, Retry-After backoff |
-| `lib/grokSizeMapper.ts` | 86 | Grok model image-size mapping and validation |
+| `lib/grokSizeMapper.ts` | 88 | Grok model image-size mapping and validation |
 | `lib/grokVideoCanvas.ts` | 41 | Grok video canvas/source preparation helpers |
 | `lib/grokVideoDownload.ts` | 167 | Bounded incremental video download, validation and reader cleanup; callers own persistence |
 | `lib/videoExtendI2vOperation.ts` | 105 | Actual whole last-frame background operation Promise, preserving phase/persistence/terminal order |
@@ -392,7 +392,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 310 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 31 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 276 | UI-side image model labels and `resolveCoreModelValue` lane gating |
+| Image models | `ui/src/lib/imageModels.ts` | 286 | UI-side image model labels and `resolveCoreModelValue` lane gating |
 | Core selection policy | `ui/src/lib/coreSelection.ts` | 155 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
 | Core selection persistence | `ui/src/store/coreSelectionPersistence.ts` | 59 | Legacy active snapshot and bounded versioned lane-memory storage boundary |
 | Core selection actions | `ui/src/store/storeCoreSelectionImpl.ts` | 84 | One selection patch for provider/image/video/workflow choices, including explicit slot clearing |
@@ -484,85 +484,85 @@ The table below includes representative historical contracts, not a current test
 | `tests/runtime-install-projection.test.ts` | n/a | Package metadata projection, no-write checks, invalid-input and source/public drift |
 | `tests/ci-windows-candidate.test.ts` | n/a | Exact-SHA checkout and mandatory Windows installer verification |
 | `tests/pages-publication-contract.test.ts` | n/a | Published registry/source/report compatibility and Pages upload ordering |
-| `tests/structure-line-counts-contract.test.js` | n/a | `structure/01` lib/bin/route line counts match live sources (`docs:refresh-line-counts --check`) |
-| `tests/api-docs-contract.test.js` | n/a | Every `routes/*.ts` `/api/*` path is documented in `docs/API.md` |
-| `tests/cli-feature-parity-contract.test.js` | n/a | CLI provider/web-search parity and `docs/CLI.md` public contract |
-| `tests/health.test.js` | 245 | `/api/health`, advertisement, generate provider payload, terminal inflight |
-| `tests/history-tombstone.test.js` | 159 | History soft delete, restore, pagination, session-title grouping |
-| `tests/history-metadata-fallback.test.js` | 82 | History rebuild from embedded XMP metadata when sidecars are missing |
-| `tests/inflight.test.js` | 68 | Active/terminal inflight registry behavior |
-| `tests/inflight-persistence.test.js` | 68 | SQLite-backed inflight job recovery |
-| `tests/logging.test.js` | 109 | Safe log redaction and structured format |
-| `tests/request-logging.test.js` | 157 | API-only request lifecycle logging and request-id propagation |
-| `tests/oauth-proxy-error-safety.test.js` | 158 | OAuth upstream error body log-safety regression |
-| `tests/oauth-normalize.test.js` | 51 | OAuth response normalization |
-| `tests/cli-commands.test.js` | 209 | Live CLI command behavior |
-| `tests/cli-default-output-dir-contract.test.js` | 18 | CLI default `out-dir` contract |
-| `tests/cli-error-hints.test.js` | 21 | CLI error hint formatting |
-| `tests/cli-lib.test.js` | 111 | Client, args, files, output helpers |
-| `tests/bin.test.js` | 121 | CLI entry behavior |
-| `tests/server.test.js` | 94 | Basic server API contracts |
-| `tests/server-fallback-contract.test.js` | 55 | Server static/SPA fallback contract |
-| `tests/runtime-ports.test.js` | 51 | Server/OAuth port fallback contract |
+| `tests/structure-line-counts-contract.test.ts` | n/a | `structure/01` lib/bin/route line counts match live sources (`docs:refresh-line-counts --check`) |
+| `tests/api-docs-contract.test.ts` | n/a | Every `routes/*.ts` `/api/*` path is documented in `docs/API.md` |
+| `tests/cli-feature-parity-contract.test.ts` | n/a | CLI provider/web-search parity and `docs/CLI.md` public contract |
+| `tests/health.test.ts` | 245 | `/api/health`, advertisement, generate provider payload, terminal inflight |
+| `tests/history-tombstone.test.ts` | 159 | History soft delete, restore, pagination, session-title grouping |
+| `tests/history-metadata-fallback.test.ts` | 82 | History rebuild from embedded XMP metadata when sidecars are missing |
+| `tests/inflight.test.ts` | 68 | Active/terminal inflight registry behavior |
+| `tests/inflight-persistence.test.ts` | 68 | SQLite-backed inflight job recovery |
+| `tests/logging.test.ts` | 109 | Safe log redaction and structured format |
+| `tests/request-logging.test.ts` | 157 | API-only request lifecycle logging and request-id propagation |
+| `tests/oauth-proxy-error-safety.test.ts` | 158 | OAuth upstream error body log-safety regression |
+| `tests/oauth-normalize.test.ts` | 51 | OAuth response normalization |
+| `tests/cli-commands.test.ts` | 209 | Live CLI command behavior |
+| `tests/cli-default-output-dir-contract.test.ts` | 18 | CLI default `out-dir` contract |
+| `tests/cli-error-hints.test.ts` | 21 | CLI error hint formatting |
+| `tests/cli-lib.test.ts` | 111 | Client, args, files, output helpers |
+| `tests/bin.test.ts` | 121 | CLI entry behavior |
+| `tests/server.test.ts` | 94 | Basic server API contracts |
+| `tests/server-fallback-contract.test.ts` | 55 | Server static/SPA fallback contract |
+| `tests/runtime-ports.test.ts` | 51 | Server/OAuth port fallback contract |
 | `tests/runtime-ports.test.ts` | 81 | Runtime port fallback, concurrent shutdown, and post-listen-only MCP restore activation |
 | `tests/mcp-token-store.test.ts` | 236 | Credential binding, malformed-token rejection, 0600 atomic persistence, revision/tombstone races, invalidation, and recovery-lock contracts |
 | `tests/mcp-connection-manager.test.ts` | 489 | Startup restore, generation/epoch races, transport and post-connect probe failures, bounded reconnect, refresh, and shutdown |
 | `tests/mcp-connection-routes.test.ts` | 178 | MCP callback/connect/refresh state-to-HTTP mapping, post-connect auth failure, and secret-free route responses |
 | `tests/mcp-snapshot-pipeline.test.ts` | 117 | Stale snapshot suppression across connection generations and epochs |
-| `tests/vite-dev-port-contract.test.js` | 39 | Vite dev proxy discovery contract |
-| `tests/size-presets.test.js` | 57 | Size preset validation |
-| `tests/size-custom-input-contract.test.js` | 232 | Custom size keyboard and confirmation contract |
-| `tests/image-model.test.js` | 89 | Image model allowlist and route rejection contract |
-| `tests/error-classify.test.js` | 72 | Error string classifier contract |
-| `tests/generation-errors.test.js` | 96 | Generation error normalization, status mapping, retry classification |
-| `tests/generate-route-validation-error.test.js` | 74 | Classic generate route validation error contract |
-| `tests/generation-controls-ux-contract.test.js` | 116 | Right-panel generation controls UX contract |
-| `tests/billing-source.test.js` | 108 | `/api/billing` `apiKeySource` contract |
-| `tests/config.test.js` | 192 | Centralized config priority and shape |
-| `tests/refs-size.test.js` | 70 | Reference size and count limits |
-| `tests/reference-image-compress.test.js` | 52 | Sharp-based reference compression |
-| `tests/style-sheet.test.js` | 88 | Session style-sheet extract/save/enable |
-| `tests/style-feature-removal-contract.test.js` | 64 | Style feature removal/relocation contract |
-| `tests/star-prompt.test.js` | 77 | CLI GitHub star prompt helper |
-| `tests/storage-migration.test.js` | 248 | Legacy generated-folder migration scan |
-| `tests/storage-open-generated-dir.test.js` | 11 | Open-generated-dir endpoint contract |
-| `tests/open-directory.test.js` | 138 | Cross-platform open-directory helper |
-| `tests/session-conflict.test.js` | 80 | Graph version conflict semantics |
-| `tests/gallery-navigation-ux-contract.test.js` | 125 | Gallery navigation UX contract |
-| `tests/ui-error-code-contract.test.js` | 32 | UI error code contract surface |
-| `tests/prompt-fidelity.test.js` | 71 | Prompt fidelity contract |
-| `tests/prompt-library-ui-contract.test.js` | 171 | Prompt library UI/API contract |
-| `tests/prompt-import-github-contract.test.js` | 161 | Prompt import GitHub normalization, redirect safety, parser, config, and route registration contract |
-| `tests/prompt-import-dialog-ui-contract.test.js` | 53 | Prompt import dialog-first UI and `.markdown` support contract |
-| `tests/prompt-import-folder-contract.test.js` | 164 | GitHub folder normalization, Contents API filtering, selected path validation, and route/config contract |
-| `tests/prompt-import-folder-ui-contract.test.js` | 69 | Folder browse UI/API helper, no-auto-import, bounded list CSS, and i18n contract |
-| `tests/prompt-discovery-contract.test.js` | 273 | GitHub discovery search, rate limit, server-only token, review registry, allowed-path validation, and reviewed source contract |
-| `tests/prompt-discovery-ui-contract.test.js` | 73 | Discovery UI/API helper, no-auto-import, bounded list CSS, and i18n contract |
-| `tests/prompt-index-ranking-contract.test.js` | 60 | Curated registry, gpt-image-2 hint extraction, warning extraction, and ranking contract |
-| `tests/prompt-curated-search-contract.test.js` | 46 | Curated search route, commit-compatible candidate, no-auto-import, and file-cache contract |
-| `tests/image-metadata-route.test.js` | 111 | `/api/metadata/read` route contract |
-| `tests/image-metadata-xmp.test.js` | 74 | XMP build/parse round trip |
-| `tests/image-metadata-ui-contract.test.js` | 89 | Drag/drop metadata restore UI contract |
-| `tests/card-news-contract.test.js` | 478 | Card-news API and store contract |
-| `tests/card-news-frontend-contract.test.js` | 209 | Card-news workspace frontend contract |
-| `tests/card-news-smoke.test.js` | 107 | Card-news end-to-end smoke |
-| `tests/card-news-42-43-contract.test.js` | 96 | Card-news editor polish and gallery export contract |
-| `tests/node-batch-contract.test.js` | 73 | Node graph selection and batch generation contracts |
-| `tests/node-edge-disconnect-contract.test.js` | 94 | Edge-only disconnect, parent metadata cleanup, reconnectable target-handle contracts |
-| `tests/node-regen-actions-contract.test.js` | 40 | Ready-node regenerate/new-variant and custom-size continuation contracts |
-| `tests/node-layout-contract.test.js` | 21 | Position-based node placement contract |
-| `tests/node-diagnostics-contract.test.js` | 47 | Safe node retry/SSE stream diagnostics contract |
-| `tests/node-child-refs-contract.test.js` | 37 | Child/edit node reference attachment contract |
-| `tests/node-route-refs.test.js` | 71 | Node route reference validation and child/edit acceptance |
-| `tests/node-parent-source-contract.test.js` | 69 | Graph-edge source-of-truth and server graph normalization contract |
-| `tests/node-child-refs-payload.test.js` | 37 | Child reference payload and browser-local ref persistence contract |
-| `tests/node-context-policy.test.js` | 28 | Node context/search policy and safe logging contract |
-| `tests/node-footer-compact-contract.test.js` | 31 | Compact one-line node footer contract |
-| `tests/node-streaming-sse.test.js` | 151 | Node SSE partial/done/error stream contract |
-| `tests/node-pending-recovery-contract.test.js` | 72 | Pending node recovery via requestId / clientNodeId fallback |
-| `tests/node-ui-contract.test.js` | 213 | Node UI handles, connection, and reconnect contract |
-| `tests/node-validation-error-contract.test.js` | 101 | Upstream validation error → `INVALID_REQUEST` contract |
-| `tests/package-smoke.test.js` | 88 | Publish manifest dry-run contract |
+| `tests/vite-dev-port-contract.test.ts` | 39 | Vite dev proxy discovery contract |
+| `tests/size-presets.test.ts` | 57 | Size preset validation |
+| `tests/size-custom-input-contract.test.ts` | 232 | Custom size keyboard and confirmation contract |
+| `tests/image-model.test.ts` | 89 | Image model allowlist and route rejection contract |
+| `tests/error-classify.test.ts` | 72 | Error string classifier contract |
+| `tests/generation-errors.test.ts` | 96 | Generation error normalization, status mapping, retry classification |
+| `tests/generate-route-validation-error.test.ts` | 74 | Classic generate route validation error contract |
+| `tests/generation-controls-ux-contract.test.ts` | 116 | Right-panel generation controls UX contract |
+| `tests/billing-source.test.ts` | 108 | `/api/billing` `apiKeySource` contract |
+| `tests/config.test.ts` | 192 | Centralized config priority and shape |
+| `tests/refs-size.test.ts` | 70 | Reference size and count limits |
+| `tests/reference-image-compress.test.ts` | 52 | Sharp-based reference compression |
+| `tests/style-sheet.test.ts` | 88 | Session style-sheet extract/save/enable |
+| `tests/style-feature-removal-contract.test.ts` | 64 | Style feature removal/relocation contract |
+| `tests/star-prompt.test.ts` | 77 | CLI GitHub star prompt helper |
+| `tests/storage-migration.test.ts` | 248 | Legacy generated-folder migration scan |
+| `tests/storage-open-generated-dir.test.ts` | 11 | Open-generated-dir endpoint contract |
+| `tests/open-directory.test.ts` | 138 | Cross-platform open-directory helper |
+| `tests/session-conflict.test.ts` | 80 | Graph version conflict semantics |
+| `tests/gallery-navigation-ux-contract.test.ts` | 125 | Gallery navigation UX contract |
+| `tests/ui-error-code-contract.test.ts` | 32 | UI error code contract surface |
+| `tests/prompt-fidelity.test.ts` | 71 | Prompt fidelity contract |
+| `tests/prompt-library-ui-contract.test.ts` | 171 | Prompt library UI/API contract |
+| `tests/prompt-import-github-contract.test.ts` | 161 | Prompt import GitHub normalization, redirect safety, parser, config, and route registration contract |
+| `tests/prompt-import-dialog-ui-contract.test.ts` | 53 | Prompt import dialog-first UI and `.markdown` support contract |
+| `tests/prompt-import-folder-contract.test.ts` | 164 | GitHub folder normalization, Contents API filtering, selected path validation, and route/config contract |
+| `tests/prompt-import-folder-ui-contract.test.ts` | 69 | Folder browse UI/API helper, no-auto-import, bounded list CSS, and i18n contract |
+| `tests/prompt-discovery-contract.test.ts` | 273 | GitHub discovery search, rate limit, server-only token, review registry, allowed-path validation, and reviewed source contract |
+| `tests/prompt-discovery-ui-contract.test.ts` | 73 | Discovery UI/API helper, no-auto-import, bounded list CSS, and i18n contract |
+| `tests/prompt-index-ranking-contract.test.ts` | 60 | Curated registry, gpt-image-2 hint extraction, warning extraction, and ranking contract |
+| `tests/prompt-curated-search-contract.test.ts` | 46 | Curated search route, commit-compatible candidate, no-auto-import, and file-cache contract |
+| `tests/image-metadata-route.test.ts` | 111 | `/api/metadata/read` route contract |
+| `tests/image-metadata-xmp.test.ts` | 74 | XMP build/parse round trip |
+| `tests/image-metadata-ui-contract.test.ts` | 89 | Drag/drop metadata restore UI contract |
+| `tests/card-news-contract.test.ts` | 478 | Card-news API and store contract |
+| `tests/card-news-frontend-contract.test.ts` | 209 | Card-news workspace frontend contract |
+| `tests/card-news-smoke.test.ts` | 107 | Card-news end-to-end smoke |
+| `tests/card-news-42-43-contract.test.ts` | 96 | Card-news editor polish and gallery export contract |
+| `tests/node-batch-contract.test.ts` | 73 | Node graph selection and batch generation contracts |
+| `tests/node-edge-disconnect-contract.test.ts` | 94 | Edge-only disconnect, parent metadata cleanup, reconnectable target-handle contracts |
+| `tests/node-regen-actions-contract.test.ts` | 40 | Ready-node regenerate/new-variant and custom-size continuation contracts |
+| `tests/node-layout-contract.test.ts` | 21 | Position-based node placement contract |
+| `tests/node-diagnostics-contract.test.ts` | 47 | Safe node retry/SSE stream diagnostics contract |
+| `tests/node-child-refs-contract.test.ts` | 37 | Child/edit node reference attachment contract |
+| `tests/node-route-refs.test.ts` | 71 | Node route reference validation and child/edit acceptance |
+| `tests/node-parent-source-contract.test.ts` | 69 | Graph-edge source-of-truth and server graph normalization contract |
+| `tests/node-child-refs-payload.test.ts` | 37 | Child reference payload and browser-local ref persistence contract |
+| `tests/node-context-policy.test.ts` | 28 | Node context/search policy and safe logging contract |
+| `tests/node-footer-compact-contract.test.ts` | 31 | Compact one-line node footer contract |
+| `tests/node-streaming-sse.test.ts` | 151 | Node SSE partial/done/error stream contract |
+| `tests/node-pending-recovery-contract.test.ts` | 72 | Pending node recovery via requestId / clientNodeId fallback |
+| `tests/node-ui-contract.test.ts` | 213 | Node UI handles, connection, and reconnect contract |
+| `tests/node-validation-error-contract.test.ts` | 101 | Upstream validation error → `INVALID_REQUEST` contract |
+| `tests/package-smoke.test.ts` | 88 | Publish manifest dry-run contract |
 | `tests/package-install-smoke.mjs` | 202 | Optional tarball install smoke |
 
 ## Refactor Signals
@@ -620,7 +620,7 @@ Installation and publication script owners:
 - 2026-04-30: Closed out the TypeScript migration — switched core/route/lib/bin tables from `.js` to `.ts` source paths and updated line counts. Added `routes/multimode.ts`, `routes/annotations.ts`, `routes/canvasVersions.ts`, `routes/comfy.ts`, `lib/canvasVersionStore.ts`, `lib/comfyBridge.ts`, `lib/pngInfo.ts`, `lib/systemTrash.ts`, `bin/lib/sse.ts`, `bin/lib/browser-id.ts`. Documented the CLI feature-parity #45 surface (annotate, canvas-versions, cardnews, comfy, config, history, inflight, metadata, multimode, node, oauth, prompt, providers, session, storage, billing). Added the `ui/src/components/canvas-mode/*` subtree (~3300 lines), mobile shell components, multimode preview, web-search/reasoning controls, and `ui/src/lib/canvas/*`. Bumped `useAppStore.ts` to 3555, `index.css` to 5780, `lib/oauthProxy.ts` to 986, `lib/api.ts` to 992, hooks total to 882, i18n to 1811. Refreshed test map intro to reflect ~114 tests with new canvas-mode/multimode/import/comfy contracts.
 - 2026-05-06: Replaced the monolithic `lib/oauthProxy.ts` row with the `lib/oauthProxy/*` subtree (`generators`, `streams`, `prompts`, `references`, `runtime`, `errors`, `types`, `index`); kept `lib/oauthProxy.ts` as a re-export shim. Added `lib/promptSafetyPolicy.ts`, `lib/responsesImageAdapter.ts`, `lib/providerOptions.ts`, `lib/runtimeContext.ts`, `lib/errInfo.ts`. Added `ui/src/store/persistenceRegistry.ts` as the single source of truth for `ima2.*` localStorage keys (#43) and bumped `ui/src/store/useAppStore.ts` to 3715 lines to cover gallery scope (#42). Refreshed the test-map intro to ~125 entries listing `api-provider-parity`, `oauth-masked-edit`, `gallery-session-scope`, `gallery-shortcuts-visible-domain`, `settings-persistence`, `toast-stack`, `node-generation-lock`, `mobile-generate-entry`, `prompt-import-search-ux`, and the inflight-reload pair (#47).
 - 2026-06-27: Added `routes/generationRequestLog.ts` + `lib/generationRequestLog.ts` (#95); refreshed `routes/index.ts` (62 lines) and `useAppStore.ts` facade count (507 + `store*Impl.ts` split) at ima2-gen 2.0.4.
-- 2026-06-28: WP6 phase 2 — added `lib/agent*.ts` cluster table, refreshed UI Refactor Signals (`index.css` 105, canvas-mode ~3404), `tests/api-docs-contract.test.js` for full route coverage; expanded `docs/API.md` with Prompt Library, Prompt Import, and Card News sections.
+- 2026-06-28: WP6 phase 2 — added `lib/agent*.ts` cluster table, refreshed UI Refactor Signals (`index.css` 105, canvas-mode ~3404), `tests/api-docs-contract.test.ts` for full route coverage; expanded `docs/API.md` with Prompt Library, Prompt Import, and Card News sections.
 - 2026-06-01: Updated the map for Grok video runtime: `routes/video.ts`, `routes/videoExtended.ts`, `lib/videoContinuity.ts`, `lib/videoFrameExtract.ts`, `ima2 video continue`, and Grok 4.3 prompt surface inventory.
 
 Previous document: `[[00-structure-hub]]`

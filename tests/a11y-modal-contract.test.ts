@@ -92,7 +92,7 @@ test("in-flight progress is announced by progressbar semantics, not a list live 
   // Each row already exposes role="progressbar" with aria-valuenow/aria-label, so the
   // per-job state is announced on change. Wrapping the list in aria-live on top of that
   // double-announces every tick — with up to 12 parallel jobs it floods the screen
-  // reader. This contract is owned by tests/inflight-popup-polish-contract.test.js and
+  // reader. This contract is owned by tests/inflight-popup-polish-contract.test.ts and
   // is restated here so the modal/a11y sweep cannot silently reintroduce the overlap.
   assert.match(src, /role="progressbar"/, "progress rows must expose progressbar semantics");
   assert.doesNotMatch(src, /aria-live/, "the list itself must not duplicate live output");

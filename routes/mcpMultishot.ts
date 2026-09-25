@@ -14,7 +14,7 @@ import { buildMultishotCall, runwayAdapter } from "../lib/mcp/adapters/runway.js
 import { uploadLocalMediaToRunway } from "../lib/mcp/adapters/runwayUpload.js";
 import { atomicWriteJson } from "../lib/atomicWrite.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
-import { localMediaPath, IMAGE_INPUT_MAX_BYTES } from "./mcpMedia.js";
+import { localMediaPath, imageMime, IMAGE_INPUT_MAX_BYTES } from "./mcpMedia.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
 
 export function registerMcpMultishotRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
@@ -47,15 +47,11 @@ export function registerMcpMultishotRoutes(app: Express, ctxRaw: RouteRuntimeCon
     const firstSceneFilename = typeof req.body?.firstSceneFilename === "string" && req.body.firstSceneFilename
       ? req.body.firstSceneFilename : null;
 
-    let firstSceneImageUrl: string | undefined;
+    let firstScenePath: string | null = null;
     if (firstSceneFilename) {
       try {
-        const resolved = await localMediaPath(ctx.config.storage.generatedDir, firstSceneFilename, {
+        firstScenePath = await localMediaPath(ctx.config.storage.generatedDir, firstSceneFilename, {
           label: "first scene image", maxBytes: IMAGE_INPUT_MAX_BYTES, extensions: /\.(png|jpe?g|webp)$/i,
-        });
-        setJobPhase("multishot-upload", "uploading");
-        firstSceneImageUrl = await uploadLocalMediaToRunway(manager, resolved, {
-          fileName: basename(resolved), mimeType: "image/png",
         });
       } catch (error) {
         return res.status(400).json({ error: { code: "INVALID_FIRST_SCENE", message: String((error as Error)?.message ?? error).slice(0, 120) } });
@@ -73,6 +69,14 @@ export function registerMcpMultishotRoutes(app: Express, ctxRaw: RouteRuntimeCon
     const abort = new AbortController();
     registerJobAbortController(requestId, abort);
     try {
+      let firstSceneImageUrl: string | undefined;
+      if (firstScenePath) {
+        setJobPhase(requestId, "uploading");
+        publishJobEvent(requestId, "progress", { phase: "uploading" });
+        firstSceneImageUrl = await uploadLocalMediaToRunway(manager, firstScenePath, {
+          fileName: basename(firstScenePath), mimeType: imageMime(firstScenePath),
+        });
+      }
       const plan = buildMultishotCall({
         storyPrompt: prompt ?? undefined, shots: shots ?? undefined,
         duration, resolution, aspectRatio, sound, firstSceneImageUrl,

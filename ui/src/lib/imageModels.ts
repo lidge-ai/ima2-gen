@@ -30,17 +30,18 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   { value: "gpt-6-luna", shortLabel: "6l", fullLabelKey: "settings.imageModel.gpt6Luna" },
   { value: "gpt-6-sol", shortLabel: "6s", fullLabelKey: "settings.imageModel.gpt6Sol" },
   { value: "gpt-6-astra", shortLabel: "6a", fullLabelKey: "settings.imageModel.gpt6Astra" },
-  { value: "gpt-5.6-luna", shortLabel: "5.6l", fullLabelKey: "settings.imageModel.gpt56Luna" },
-  { value: "gpt-5.6-terra", shortLabel: "5.6t", fullLabelKey: "settings.imageModel.gpt56Terra" },
-  { value: "gpt-5.6-sol", shortLabel: "5.6s", fullLabelKey: "settings.imageModel.gpt56Sol" },
-  { value: "gpt-5.5", shortLabel: "5.5", fullLabelKey: "settings.imageModel.gpt55" },
-  { value: "gpt-5.4", shortLabel: "5.4", fullLabelKey: "settings.imageModel.gpt54" },
-  { value: "gpt-5.4-mini", shortLabel: "5.4m", fullLabelKey: "settings.imageModel.gpt54Mini" },
+  { value: "gpt-5.6-luna", shortLabel: "5.6l", fullLabelKey: "settings.imageModel.gpt56Luna", providerHint: "api" },
+  { value: "gpt-5.6-terra", shortLabel: "5.6t", fullLabelKey: "settings.imageModel.gpt56Terra", providerHint: "api" },
+  { value: "gpt-5.6-sol", shortLabel: "5.6s", fullLabelKey: "settings.imageModel.gpt56Sol", providerHint: "api" },
+  { value: "gpt-5.5", shortLabel: "5.5", fullLabelKey: "settings.imageModel.gpt55", providerHint: "api" },
+  { value: "gpt-5.4", shortLabel: "5.4", fullLabelKey: "settings.imageModel.gpt54", providerHint: "api" },
+  { value: "gpt-5.4-mini", shortLabel: "5.4m", fullLabelKey: "settings.imageModel.gpt54Mini", providerHint: "api" },
   { value: "grok-imagine-image-2.0", shortLabel: "grok2", fullLabelKey: "settings.imageModel.grokImagine20" },
   { value: "grok-imagine-image-quality", shortLabel: "grok+", fullLabelKey: "settings.imageModel.grokImagineQuality" },
   { value: "grok-imagine-image", shortLabel: "grok", fullLabelKey: "settings.imageModel.grokImagine" },
   { value: "nano-banana-2", shortLabel: "nb2 agy", fullLabelKey: "settings.imageModel.nanoBanana2", providerHint: "agy" },
   { value: "nano-banana-2", shortLabel: "nb2 api", fullLabelKey: "settings.imageModel.nanoBanana2Api", providerHint: "gemini-api" },
+  { value: "nano-banana-pro", shortLabel: "nbp agy", fullLabelKey: "settings.imageModel.nanoBananaPro", providerHint: "agy" },
   { value: "nano-banana-pro", shortLabel: "nbp api", fullLabelKey: "settings.imageModel.nanoBananaPro", providerHint: "gemini-api" },
   { value: "openai/gpt-image-2/text-to-image", shortLabel: "atlas", fullLabelKey: "settings.imageModel.atlasCloudGptImage2", providerHint: "atlascloud" },
   { value: "openai/gpt-image-2/edit", shortLabel: "atlas edit", fullLabelKey: "settings.imageModel.atlasCloudGptImage2Edit", providerHint: "atlascloud" },
@@ -60,7 +61,7 @@ const NAI_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.nai.image);
 const OAUTH_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.oauth.image);
 const API_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.api.image);
 
-type OpenAIOption = { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string };
+type OpenAIOption = { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string; providerHint?: Provider };
 
 /** GPT OAuth (the default GPT lane): GPT-6 sol / luna / astra. */
 export const OAUTH_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
@@ -131,7 +132,16 @@ export function isNaiImageModel(value: unknown): boolean {
 
 export function getImageModelOptionsForProvider(provider: Provider) {
   if (provider === "grok" || provider === "grok-api") return GROK_IMAGE_MODEL_OPTIONS;
-  if (provider === "agy" || provider === "gemini-api") return GEMINI_IMAGE_MODEL_OPTIONS;
+  // The two Gemini lanes share catalog values, so the family list carries one
+  // row per lane ("nbp agy" vs "nbp api"). Returning it whole would list each
+  // value twice and label the stored model with whichever row sorts first —
+  // each lane gets its own hinted rows plus any lane-agnostic ones, matching
+  // the resolver pickers use for the stored value.
+  if (provider === "agy" || provider === "gemini-api") {
+    return GEMINI_IMAGE_MODEL_OPTIONS.filter(
+      (option) => !option.providerHint || option.providerHint === provider,
+    );
+  }
   if (provider === "atlascloud") return ATLASCLOUD_IMAGE_MODEL_OPTIONS;
   if (provider === "minimax") return MINIMAX_IMAGE_MODEL_OPTIONS;
   if (provider === "nai") return NAI_IMAGE_MODEL_OPTIONS;

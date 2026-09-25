@@ -30,7 +30,8 @@ interface StartResult {
 }
 
 const MAX_CONCURRENT_SESSIONS = 20;
-const PROMPT_TIMEOUT_MS = 30_000;
+// Must outlast the slowest healthy prompt path: discovery (30s) + device code (15s).
+const PROMPT_TIMEOUT_MS = 60_000;
 const sessions = new Map<string, AuthSession>();
 
 function sid(): string {
@@ -137,15 +138,30 @@ function startCodexLogin(flow: ChatgptLoginFlow, ctx?: RouteRuntimeContext): Pro
   );
 }
 
+/**
+ * Every grok login that has started but not settled. The ~/.progrok/auth.json file is a
+ * singleton like codex's localhost port: two overlapping device logins would race on the
+ * same file, so a new start aborts all pending ones before its own first await.
+ */
+const liveGrokLogins = new Set<AbortController>();
+
 function startGrokLogin(ctx?: RouteRuntimeContext): Promise<StartResult> {
-  return startSession("grok", async (signal, onPrompt) => {
-    const creds = await runXaiDeviceLogin({
-      signal,
-      ...(ctx?.grokAuthHomeDir ? { homeDir: ctx.grokAuthHomeDir } : {}),
-      onUserCode: (info) => onPrompt({ flow: "device", url: info.verificationUrl, userCode: info.userCode, expiresIn: info.expiresIn }),
-    });
-    return creds.email ? { email: creds.email } : {};
-  });
+  cancelPending("grok");
+  for (const controller of liveGrokLogins) controller.abort();
+  liveGrokLogins.clear();
+  return startSession(
+    "grok",
+    async (signal, onPrompt) => {
+      const creds = await runXaiDeviceLogin({
+        signal,
+        ...(ctx?.grokAuthHomeDir ? { homeDir: ctx.grokAuthHomeDir } : {}),
+        onUserCode: (info) => onPrompt({ flow: "device", url: info.verificationUrl, userCode: info.userCode, expiresIn: info.expiresIn }),
+      });
+      return creds.email ? { email: creds.email } : {};
+    },
+    undefined,
+    liveGrokLogins,
+  );
 }
 
 export function registerAuthRoutes(app: Express, ctx?: RouteRuntimeContext) {

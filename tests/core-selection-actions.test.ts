@@ -9,7 +9,9 @@ type Runtime = typeof import("../ui/src/store/useAppStore.ts")
   & typeof import("../ui/src/store/coreSelectionPersistence.ts")
   & typeof import("../ui/src/store/storeSettingsImpl.ts")
   & typeof import("../ui/src/store/storeUIImpl.ts")
-  & typeof import("../ui/src/store/storeHistoryImpl.ts");
+  & typeof import("../ui/src/store/storeHistoryImpl.ts")
+  & typeof import("../ui/src/lib/imageModels.ts")
+  & typeof import("../ui/src/generated/providers.ts");
 const GENERATION = "ima2.generationDefaults";
 const IMAGE = "ima2.imageModel";
 const VIDEO = "ima2.videoDefaults";
@@ -22,9 +24,10 @@ async function loadRuntime(): Promise<Runtime> {
   try {
     bundle ??= build({
       stdin: {
-        contents: ["useAppStore", "storeCoreSelectionImpl", "coreSelectionPersistence",
-          "storeSettingsImpl", "storeUIImpl", "storeHistoryImpl"]
-          .map((name) => `export * from './ui/src/store/${name}.ts';`).join("\n"),
+        contents: ["store/useAppStore", "store/storeCoreSelectionImpl", "store/coreSelectionPersistence",
+          "store/storeSettingsImpl", "store/storeUIImpl", "store/storeHistoryImpl",
+          "lib/imageModels", "generated/providers"]
+          .map((name) => `export * from './ui/src/${name}.ts';`).join("\n"),
         resolveDir: repoRoot,
       },
       bundle: true, write: false, platform: "browser", format: "esm",
@@ -419,4 +422,68 @@ test("reload fixture distinguishes unsaved version0 from an already-saved empty 
     if (oldStorage) Object.defineProperty(globalThis, "localStorage", oldStorage);
     else Reflect.deleteProperty(globalThis, "localStorage");
   }
+});
+
+test("settings hinted rows route to their lane before the model click lands", async () => {
+  await isolated(async (storage) => {
+    const runtime = await loadRuntime();
+    // ImageModelSelect's settings onChange commits providerHint first, then the
+    // model value — a bare setImageModel lets inferProvider fall back to oauth.
+    const cases = [
+      ["oauth", "gpt-6-luna", "api", "gpt-5.5"],
+      ["oauth", "gpt-6-luna", "gemini-api", "nano-banana-2"],
+      ["oauth", "gpt-6-luna", "agy", "nano-banana-2"],
+      ["gemini-api", "nano-banana-pro", "agy", "nano-banana-pro"],
+    ] as const;
+    for (const [provider, imageModel, lane, model] of cases) {
+      const f = fixture(runtime, { provider, imageModel });
+      runtime.setProviderImpl(lane, f.set, f.get);
+      runtime.setImageModelImpl(model, f.set, f.get);
+      assert.equal(f.get().provider, lane);
+      assert.equal(f.get().imageModel, model);
+      assert.equal(storage.json(GENERATION).provider, lane);
+      assert.equal(storage.getItem(IMAGE), model);
+    }
+  });
+});
+
+test("image model options keep one lane-tagged value per row and stay in the generated catalog", async () => {
+  await isolated(async () => {
+    const runtime = await loadRuntime();
+    const encoded = runtime.IMAGE_MODEL_OPTIONS.map(
+      (option) => `${option.providerHint ?? ""}:${option.value}`,
+    );
+    assert.equal(new Set(encoded).size, encoded.length);
+    for (const option of runtime.IMAGE_MODEL_OPTIONS) {
+      if (!option.providerHint) continue;
+      assert.ok(
+        (runtime.PROVIDER_MODELS[option.providerHint].image as readonly string[]).includes(option.value),
+        `${option.providerHint} catalog lacks ${option.value}`,
+      );
+    }
+    // Lane lists must carry one row per value, honoring each row's declared
+    // hint: shared catalog values (nano-banana-*) exist on both Gemini lanes,
+    // so a first-match find on a merged list resolves the wrong lane's label.
+    for (const provider of ["agy", "gemini-api", "atlascloud", "minimax", "nai", "api", "oauth"] as const) {
+      const rows = runtime.getImageModelOptionsForProvider(provider);
+      assert.ok(rows.length > 0, `${provider} option list is empty`);
+      assert.equal(
+        new Set(rows.map((option) => option.value)).size,
+        rows.length,
+        `${provider} option list repeats a model value`,
+      );
+      for (const option of rows) {
+        if ("providerHint" in option && option.providerHint) {
+          assert.equal(option.providerHint, provider, `${provider} list carries a ${option.providerHint} row`);
+        }
+      }
+    }
+    // The exact labels the WP02 storage-event spec asserts on the trigger:
+    // a stored nano-banana-pro resolves to the stored lane's row.
+    for (const [provider, shortLabel] of [["gemini-api", "nbp api"], ["agy", "nbp agy"]] as const) {
+      const row = runtime.getImageModelOptionsForProvider(provider)
+        .find((option) => option.value === "nano-banana-pro");
+      assert.equal(row?.shortLabel, shortLabel);
+    }
+  });
 });

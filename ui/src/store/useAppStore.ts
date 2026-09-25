@@ -1,6 +1,6 @@
 // All localStorage keys this store touches MUST be listed in
 // ./persistenceRegistry.ts. The contract test
-// tests/settings-persistence-contract.test.js enforces this invariant.
+// tests/settings-persistence-contract.test.ts enforces this invariant.
 // Legacy generation-controls contract: GENERATION_DEFAULTS_STORAGE_KEY = "ima2.generationDefaults".
 import { create } from "zustand";
 import type { VideoResolutionUI } from "../types";
