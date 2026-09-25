@@ -9,6 +9,13 @@ export interface ParsedImage {
   revisedPrompt: string | null;
 }
 
+/** A client function-tool call the model emitted (the OAuth planner's image_gen call). */
+export interface ParsedFunctionCall {
+  name: string;
+  arguments: string;
+  callId: string | null;
+}
+
 export type FinalImageHandler = (image: ParsedImage, index: number) => Promise<void> | void;
 
 export interface ResponseOutputSummary {
@@ -56,6 +63,7 @@ export interface ParsedResponsesResult {
   extraIgnored: number;
   text: string | null;
   diagnostics: ResponseDiagnostics;
+  functionCalls?: ParsedFunctionCall[];
 }
 
 interface SseItem {
@@ -68,6 +76,9 @@ interface SseItem {
   index?: number;
   revised_prompt?: string;
   status?: string;
+  name?: string;
+  arguments?: string;
+  call_id?: string;
   error?: {
     code?: string;
     type?: string;
@@ -97,6 +108,7 @@ interface SseData {
 
 interface ParseState {
   images: ParsedImage[];
+  functionCalls: ParsedFunctionCall[];
   eventTypes: Record<string, number>;
   outputItemSummary: ResponseOutputSummary[];
   usage: Record<string, number> | null;
@@ -125,6 +137,7 @@ interface ParseState {
 function createState(): ParseState {
   return {
     images: [],
+    functionCalls: [],
     eventTypes: {},
     outputItemSummary: [],
     usage: null,
@@ -253,6 +266,17 @@ function recordOutputItem(state: ParseState, eventType: string, item: SseItem | 
   }
   if (item.type === "web_search_call") state.webSearchCallSeen = true;
   if (item.type === "message") state.messageOutputSeen = true;
+  if (item.type === "function_call" && typeof item.name === "string") {
+    const callId = typeof item.call_id === "string" ? item.call_id : null;
+    const duplicate = callId !== null && state.functionCalls.some((call) => call.callId === callId);
+    if (!duplicate) {
+      state.functionCalls.push({
+        name: item.name,
+        arguments: typeof item.arguments === "string" ? item.arguments : "",
+        callId,
+      });
+    }
+  }
 }
 
 function diagnosticsFromState(state: ParseState): ResponseDiagnostics {
@@ -292,6 +316,7 @@ function resultFromState(state: ParseState): ParsedResponsesResult {
     extraIgnored: state.extraIgnored,
     text,
     diagnostics: diagnosticsFromState(state),
+    ...(state.functionCalls.length ? { functionCalls: state.functionCalls } : {}),
   };
 }
 

@@ -24,14 +24,9 @@ export function isCoreProviderId(value: unknown): value is CoreProviderId {
 export const PROVIDER_MODELS = {
   "oauth": {
     "image": [
-      "gpt-5.5",
-      "gpt-5.4",
-      "gpt-5.4-mini",
-      "gpt-5.6-sol",
-      "gpt-5.6-terra",
-      "gpt-5.6-luna",
-      "gpt-6-astra",
-      "gpt-5.3-codex-spark"
+      "gpt-6-luna",
+      "gpt-6-sol",
+      "gpt-6-astra"
     ],
     "video": []
   },
@@ -116,13 +111,15 @@ export const PROVIDER_MODELS = {
   }
 } as const;
 export const IMAGE_MODEL_IDS = [
+  "gpt-6-luna",
+  "gpt-6-sol",
+  "gpt-6-astra",
   "gpt-5.5",
   "gpt-5.4",
   "gpt-5.4-mini",
   "gpt-5.6-sol",
   "gpt-5.6-terra",
   "gpt-5.6-luna",
-  "gpt-6-astra",
   "grok-imagine-image-2.0",
   "grok-imagine-image",
   "grok-imagine-image-quality",
@@ -138,9 +135,7 @@ export const IMAGE_MODEL_IDS = [
   "nai-diffusion-4-5-curated"
 ] as const;
 export type ImageModelId = typeof IMAGE_MODEL_IDS[number];
-export const UNSUPPORTED_IMAGE_MODEL_IDS = [
-  "gpt-5.3-codex-spark"
-] as const;
+export const UNSUPPORTED_IMAGE_MODEL_IDS = [] as const;
 export type UnsupportedImageModelId = typeof UNSUPPORTED_IMAGE_MODEL_IDS[number];
 export const VIDEO_MODEL_IDS = [
   "grok-imagine-video",
@@ -189,8 +184,8 @@ export const PROVIDER_SURFACE_SUPPORT = {
   "oauth": {
     "generate": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
     "edit": {"supported":true,"references":true,"mask":true,"streaming":false,"catalogAccess":"static"},
-    "multimode": {"supported":true,"references":true,"mask":false,"streaming":true,"catalogAccess":"static"},
-    "node": {"supported":true,"references":true,"mask":false,"streaming":true,"catalogAccess":"static"},
+    "multimode": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
+    "node": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
     "video": {"supported":false,"references":false,"mask":false,"streaming":false,"catalogAccess":"static"}
   },
   "api": {

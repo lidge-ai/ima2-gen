@@ -12,10 +12,12 @@ import { collectCallArguments } from "./_executionImportEdges.mjs";
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const CORE_IDS = ["oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai", "comfy"];
-const OPENAI_MODELS = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra"];
+// GPT OAuth keeps only GPT-6; the API-key lane keeps its own GPT list.
+const OAUTH_MODELS = ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"];
+const API_MODELS = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra"];
 const CLI_IMAGE_MODELS = [
-  ...OPENAI_MODELS,
-  "gpt-5.3-codex-spark",
+  ...OAUTH_MODELS,
+  ...API_MODELS.filter((id) => !OAUTH_MODELS.includes(id)),
   "grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality",
   "nano-banana-2", "nano-banana-pro", "image-01", "image-01-live",
   "nai-diffusion-5-full", "nai-diffusion-5-curated", "nai-diffusion-4-5-full", "nai-diffusion-4-5-curated",
@@ -39,8 +41,8 @@ function referenceLimits(mode: "image" | "edit" | "video") {
 describe("core provider registry parity", () => {
   it("preserves core ids and model sets exactly", () => {
     assert.deepEqual(REGISTRY.map((entry) => entry.id), CORE_IDS);
-    assert.deepEqual(models("oauth", "image").filter((id) => id !== "gpt-5.3-codex-spark"), OPENAI_MODELS);
-    assert.deepEqual(models("oauth", "image").filter((id) => id === "gpt-5.3-codex-spark"), ["gpt-5.3-codex-spark"]);
+    assert.deepEqual(models("oauth", "image"), OAUTH_MODELS);
+    assert.deepEqual(models("api", "image"), API_MODELS);
     assert.deepEqual(models("grok", "image"), ["grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality"]);
     assert.deepEqual(models("gemini-api", "image"), ["nano-banana-2", "nano-banana-pro"]);
     assert.deepEqual(models("atlascloud", "image"), [
@@ -49,7 +51,7 @@ describe("core provider registry parity", () => {
     assert.deepEqual(models("minimax", "image"), ["image-01", "image-01-live"]);
     const cliModels = [...new Set(REGISTRY.flatMap((entry) => models(entry.id, "image")))].filter((id) => !id.includes("/"));
     assert.deepEqual(cliModels, CLI_IMAGE_MODELS);
-    assert.deepEqual([...config.imageModels.valid], OPENAI_MODELS);
+    assert.deepEqual([...config.imageModels.valid], OAUTH_MODELS);
   });
 
   it("preserves all four reference-capacity layers", () => {

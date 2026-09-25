@@ -186,7 +186,7 @@ export function registerAuthRoutes(app: Express, ctx?: RouteRuntimeContext) {
 
   /** CLI logins write the session file directly; this lets them tell a running server. */
   app.post("/api/oauth/restart", (_req, res) => {
-    const result = ctx?.restartOAuthProxy?.() ?? { restarted: false, reason: "oauth proxy is not managed by this server" };
+    const result = ctx?.restartOAuthProxy?.() ?? { restarted: false, reason: "GPT OAuth is not managed by this server" };
     res.json(result);
   });
 }

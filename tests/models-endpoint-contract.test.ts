@@ -37,8 +37,8 @@ const STATIC_IMAGE_SURFACES = {
 const OAUTH_SURFACES = {
   generate: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
   edit: { supported: true, references: true, mask: true, streaming: false, catalogAccess: "static" },
-  multimode: { supported: true, references: true, mask: false, streaming: true, catalogAccess: "static" },
-  node: { supported: true, references: true, mask: false, streaming: true, catalogAccess: "static" },
+  multimode: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+  node: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
   video: { supported: false, references: false, mask: false, streaming: false, catalogAccess: "static" },
 };
 const NAI_SURFACES = {
@@ -407,7 +407,13 @@ test("OAuth/API and all NovelAI rows expose fixed surface facts regardless of cr
       assert.equal(body.lanes.api.status, ready ? "ready" : "key-missing");
       assert.equal(body.lanes.nai.status, ready ? "ready" : "key-missing");
       for (const id of ["oauth", "api"] as const) {
-        assert.deepEqual(body.lanes[id].surfaces, OAUTH_SURFACES);
+        // The API-key lane streams partial frames through the Responses image tool; GPT OAuth
+        // renders through the Images API, which has none.
+        assert.deepEqual(body.lanes[id].surfaces, id === "api" ? {
+          ...OAUTH_SURFACES,
+          multimode: { ...OAUTH_SURFACES.multimode, streaming: true },
+          node: { ...OAUTH_SURFACES.node, streaming: true },
+        } : OAUTH_SURFACES);
         assert.deepEqual(body.lanes[id].models.image.map((model) => model.capabilities.inputRoles), [
           ["text", "image_references"], ["text", "image_references"],
         ]);

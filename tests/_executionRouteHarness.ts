@@ -14,6 +14,8 @@ import { seedGrokAuth } from "./_grokAuthFixture.ts";
 export type Surface = "classic" | "node" | "multimode" | "edit";
 export interface UpstreamCall {
   url: string; method: string; headers: Headers; body: string;
+  /** Exact request bytes: multipart image uploads do not survive the text decode in `body`. */
+  raw?: Uint8Array | undefined;
   signal: AbortSignal | undefined;
 }
 export interface RecordedEvent { event: string; data: Record<string, unknown> }
@@ -113,8 +115,9 @@ async function loadRuntime(rootDir: string) {
 
 async function normalizeCall(input: string | URL | Request, init?: RequestInit): Promise<UpstreamCall> {
   const request = new Request(input, init);
+  const raw = new Uint8Array(await request.arrayBuffer());
   return { url: request.url, method: request.method, headers: request.headers,
-    body: await request.text(), signal: init?.signal ?? (input instanceof Request ? input.signal : undefined) };
+    body: new TextDecoder().decode(raw), raw, signal: init?.signal ?? (input instanceof Request ? input.signal : undefined) };
 }
 
 export async function openRouteHarness(): Promise<RouteHarness> {

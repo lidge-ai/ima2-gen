@@ -14,12 +14,11 @@ English version: [FAQ.md](FAQ.md)
 | GPT OAuth 로그인이 안 됨 | `ima2 setup`을 다시 실행하고(옵션 1) `ima2 serve`를 다시 시작합니다. |
 | API key provider가 `API_KEY_REQUIRED`를 반환함 | API 키를 설정하거나 GPT OAuth 공급자로 다시 전환합니다. |
 | 업데이트 후 예전 이미지가 안 보임 | `ima2 doctor`를 실행한 뒤 [예전 이미지 복구 안내](RECOVER_OLD_IMAGES.md)를 확인합니다. |
-| `gpt-5.5`만 실패함 | Codex CLI를 업데이트하고, 안정 대안으로 `gpt-5.4`를 사용합니다. |
+| GPT OAuth에서 GPT-6 모델 하나만 실패함 | `ima2 gpt login`으로 다시 로그인하고 `ima2 models --kind image`를 확인한 뒤 `gpt-6-luna`로 바꿔 보세요. |
 | 레퍼런스 업로드 실패 | JPEG/PNG로 변환하고 해상도를 낮춰 보세요. 레퍼런스는 최대 5장입니다. |
 | Prompt Studio 기능이 헷갈림 | [Prompt Studio 사용 설명서](PROMPT_STUDIO.ko.md)에서 멀티모드, Direct, 추론 강도, 갤러리 동작을 확인하세요. |
 | 이미지 생성이 `EMPTY_RESPONSE` 또는 no image data로 끝남 | `ima2 doctor image-probe --json`을 실행한 뒤 아래의 안전한 지원 번들을 모아 주세요. |
-| Windows에서 `10531` 포트 관련 OAuth/proxy 오류가 남 | `ima2 doctor`를 실행하고, 필요하면 `IMA2_OAUTH_PROXY_PORT=11531 ima2 serve`로 시작하세요. |
-| 프록시/VPN 환경에서 `fetch failed`가 반복됨 | 프록시 클라이언트의 TUN/TURN류 모드를 켜거나, 같은 터미널에 `HTTP_PROXY` / `HTTPS_PROXY`를 설정하세요. |
+| 프록시/VPN 환경에서 `fetch failed`가 반복됨 | 프록시 클라이언트의 TUN/TURN류 모드를 켜거나, `HTTPS_PROXY`와 `NODE_USE_ENV_PROXY=1`을 설정하고 `ima2 serve`를 시작하세요. |
 
 ## 설치와 업데이트
 
@@ -101,16 +100,17 @@ ima2 serve
 
 ### 어떤 모델부터 쓰면 좋나요?
 
-앱은 `gpt-5.6-luna`로 시작합니다. 계정 지원 범위나 호환성 때문에 필요할 때만 다른 모델을 고르세요.
+GPT OAuth에서는 `gpt-6-luna`로 시작합니다. 이 레인에는 GPT-6 모델이 세 개 있고, 고른 모델이 이미지를 기획하면 `gpt-image-2`가 그립니다.
 
-- `gpt-5.6-luna`: 현재 앱 기본값입니다.
-- `gpt-6-astra`: 가장 최신 GPT 이미지 모델입니다. 선택 가능하지만 기본값은 아닙니다.
-- `gpt-5.6-terra` / `gpt-5.6-sol`: 계정에서 지원할 때 고를 수 있는 GPT-5.6 대안입니다.
-- `gpt-5.5` / `gpt-5.4` / `gpt-5.4-mini`: 호환 선택지로 유지합니다.
+- `gpt-6-luna`: 기본값입니다.
+- `gpt-6-sol`: 또 하나의 일상용 GPT-6 모델입니다.
+- `gpt-6-astra`: 가장 오래 추론하는 대신 가장 느립니다. 추론 강도 `none`은 `low`로 실행됩니다.
 
-### `gpt-5.5`만 실패하는 이유는 뭔가요?
+예전 OAuth 모델 ID(`gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`)는 저장된 설정과 스크립트에서 그대로 동작합니다. `gpt-5.6-sol`은 `gpt-6-sol`로, 나머지는 `gpt-6-luna`로 실행됩니다. API 키 레인(`provider: "api"`)은 자체 목록을 유지하고 기본값은 `gpt-5.6-luna`입니다.
 
-`gpt-5.5`는 최신 Codex CLI, 백엔드 capability, 계정 또는 quota 상태의 영향을 받을 수 있습니다. 먼저 Codex CLI를 업데이트하세요. 그래도 실패하면 안정 대안으로 `gpt-5.4`를 사용하세요.
+### GPT-6 모델 하나만 실패하는 이유는 뭔가요?
+
+GPT OAuth 레인은 ChatGPT 요금제에 열린 GPT-6 모델을 씁니다. ima2-gen을 업데이트하고 `ima2 gpt login`으로 다시 로그인한 뒤 `ima2 models --kind image`로 확인하세요. 특정 모델만 계속 실패하면 `gpt-6-luna`로 바꿔 보세요.
 
 ### Plus/Pro는 몇 장까지 생성할 수 있나요?
 
@@ -207,29 +207,25 @@ API에서는 `REF_TOO_MANY`, `REF_TOO_LARGE`, `REF_NOT_BASE64`, `REF_EMPTY` 같�
 
 ## 네트워크와 OAuth 오류
 
-### 백엔드나 OAuth 프록시가 왜 다른 포트로 열리나요?
+### 백엔드가 왜 다른 포트로 열리나요?
 
-`ima2-gen`은 로컬 앱입니다. 기본 백엔드 포트 `3333` 또는 OAuth 프록시 포트 `10531`이 이미 사용 중이면 다음 사용 가능한 포트로 fallback할 수 있고, 실제 URL은 아래 파일에 기록됩니다.
+`ima2-gen`은 로컬 앱입니다. 기본 백엔드 포트 `3333`이 이미 사용 중이면 다음 사용 가능한 포트로 fallback하고, 실제 URL은 아래 파일에 기록됩니다.
 
 ```text
 ~/.ima2/server.json
 ```
 
-아래 명령으로 configured/actual 포트를 확인하세요.
+아래 명령으로 설정한 백엔드 URL과 실제 URL을 확인하세요.
 
 ```bash
 ima2 doctor
 ```
 
-### Windows에서 `AnySign4PC.exe`가 `10531`을 쓰면 어떻게 하나요?
+GPT OAuth는 로컬 포트를 쓰지 않습니다. 서버가 ChatGPT를 직접 호출합니다.
 
-일부 Windows 보안 프로그램이 기본 OAuth 프록시 포트 `10531`을 점유할 수 있습니다. 현재 빌드는 fallback된 실제 포트를 추적하지만, 원하면 포트를 직접 바꿀 수 있습니다.
+### 프런트엔드를 따로 개발할 때 실제 백엔드는 어떻게 가리키나요?
 
-```bash
-IMA2_OAUTH_PROXY_PORT=11531 ima2 serve
-```
-
-프론트엔드만 따로 개발 서버로 띄우는 경우에는 Vite가 실제 백엔드를 보게 지정하세요.
+`ima2 doctor`가 알려 주는 백엔드 URL을 Vite에 넘기세요.
 
 ```bash
 VITE_IMA2_API_TARGET=http://localhost:3334 npm run ui:dev
@@ -239,7 +235,7 @@ VITE_IMA2_API_TARGET=http://localhost:3334 npm run ui:dev
 
 보통 아래 중 하나입니다.
 
-- 로컬 OAuth 프록시가 아직 준비되지 않았습니다.
+- GPT OAuth가 `chatgpt.com`에 닿지 못했습니다.
 - 서버가 재시작되었습니다.
 - VPN, 프록시, 방화벽이 요청을 막았습니다.
 - Windows에서 자동 실행되는 DNS/파편화 우회 프로그램(예: SecretDNS)이 OAuth 또는 스트리밍 이미지 응답을 깨뜨렸습니다.
@@ -272,8 +268,8 @@ ima2 doctor image-probe --json > ima2-image-probe.json
 `ima2 serve`가 실행 중이면 검색을 끈 생성과 일반 생성 결과도 하나씩 저장하세요.
 
 ```bash
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json > ima2-cat-no-search.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --json > ima2-cat-current.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json > ima2-cat-no-search.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --json > ima2-cat-current.json
 ```
 
 probe JSON은 공개 이슈에 첨부할 수 있도록 설계되어 있습니다. 진단 코드,
@@ -301,24 +297,19 @@ generated base64는 공유하지 마세요.
 - 검색 끈 생성은 되지만 일반 생성이 실패: web-search/tool-choice 상호작용 가능성이 큽니다.
 - bytes는 읽었지만 event가 없음: SSE delimiter 또는 `data:` parsing 가능성이 큽니다.
 
-### 프록시나 VPN 뒤에서 `fetch failed`가 계속 나면 어떻게 하나요?
+### 프록시나 VPN 환경에서 `fetch failed`가 계속 나면 어떻게 하나요?
 
-대부분 로컬 OAuth 프록시가 현재 네트워크 경로로 upstream 서비스에 닿지 못하는 상황입니다. `openai-oauth`는 보통 `10531` 포트의 localhost 프록시로 실행됩니다.
+GPT OAuth 요청은 `ima2 serve` 프로세스에서 `chatgpt.com`으로 바로 나갑니다. 그래서 그 프로세스의 네트워크 경로가 중요합니다.
 
-먼저 시도하세요.
-
-```bash
-openai-oauth --port 10531
-```
-
-프록시가 필요한 네트워크라면 터미널 프로세스도 프록시를 타도록 프록시 클라이언트의 TUN/TURN류 모드를 켜세요. Windows에서는 SecretDNS처럼 부팅 때 자동 실행되는 DNS/파편화 우회 프로그램도 잠시 끄고 재시도해 보세요. 그래도 안 되면 `openai-oauth` 또는 `ima2 serve`를 실행하는 같은 터미널에 프록시 환경 변수를 설정합니다.
+프록시가 필요한 네트워크라면 터미널 프로세스도 프록시를 타도록 프록시 클라이언트의 TUN/TURN류 모드를 켜세요. Windows에서는 SecretDNS처럼 부팅 때 자동 실행되는 DNS/파편화 우회 프로그램도 잠시 끄고 재시도해 보세요. 그래도 안 되면 `ima2 serve`를 시작하는 터미널에 프록시를 설정하세요. Node.js 22.21 이상과 24 이상은 `NODE_USE_ENV_PROXY=1`이 함께 있어야 `HTTPS_PROXY`를 읽습니다. 그보다 오래된 Node.js는 둘 다 무시하니 TUN 모드를 쓰세요.
 
 ```bash
-export HTTP_PROXY=http://127.0.0.1:7890
 export HTTPS_PROXY=http://127.0.0.1:7890
+export NODE_USE_ENV_PROXY=1
+ima2 serve
 ```
 
-호스트와 포트는 사용하는 프록시 클라이언트 값에 맞춰 바꾸세요. 로컬 OAuth 프록시가 접근 가능한 상태에서도 `ima2-gen`이 계속 실패하면, 새 이슈를 열 때 실행 명령, OS, 프록시 설정, 터미널 오류를 함께 남겨 주세요.
+호스트와 포트는 사용하는 프록시 클라이언트 값에 맞춰 바꾸세요. 그래도 `ima2-gen`이 계속 실패하면, 새 이슈를 열 때 실행 명령, OS, 프록시 설정, 터미널 오류를 함께 남겨 주세요.
 
 ### 회사 컴퓨터에서는 무엇을 확인해야 하나요?
 

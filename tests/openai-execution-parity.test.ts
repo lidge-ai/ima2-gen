@@ -99,19 +99,20 @@ export async function runHeldSequenceCallbacks(harness: RouteHarness, first: str
 
 if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution parity", { concurrency: false }, () => {
   let harness: RouteHarness;
-  let red: string, green: string, blue: string, alphaRed: string, mask: string;
+  let red: string, green: string, blue: string, mask: string;
   before(async () => {
     harness = await openRouteHarness();
     [red, green, blue] = await Promise.all(["#ff0000", "#00ff00", "#0000ff"].map(async (background) => {
       try { return (await sharp({ create: { width: 8, height: 8, channels: 3, background } }).png().toBuffer()).toString("base64"); }
       catch (error) { throw error; }
     }));
-    alphaRed = (await sharp(Buffer.from(red, "base64")).ensureAlpha(0.5).png().toBuffer()).toString("base64");
     mask = (await sharp(Buffer.from(green, "base64")).ensureAlpha(0.5).png().toBuffer()).toString("base64");
   });
   after(async () => { await harness?.close(); });
 
-  for (const provider of ["api", "oauth"] as const) for (const surface of ["classic", "node", "edit", "multimode"] as const) {
+  // GPT OAuth no longer uses the Responses image tool: it plans with GPT-6 and renders through the
+  // Images API, pinned in tests/oauth-image-lane-contract.test.ts. These cases keep the API-key lane.
+  for (const provider of ["api"] as const) for (const surface of ["classic", "node", "edit", "multimode"] as const) {
     it(`O04-1/4 real ${provider} ${surface} route wire and persisted metadata`, async () => {
       const model = provider === "api" ? "gpt-5.4" : "gpt-5.6-luna";
       await harness.run(surface, { upstream: (call) => { wire(call, provider); return success(red); } }, async (f) => {
@@ -141,33 +142,6 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
       });
     });
   }
-
-  it("O04-2 OAuth fallback four calls preserve refs then explicitly drop refs/developer and metadata", async () => {
-    let attempt = 0;
-    await harness.run("classic", { upstream: (call) => {
-      wire(call, "oauth");
-      return ++attempt === 4 ? success(alphaRed) : responsesSse([completed]);
-    } }, async (f) => {
-      const response = await f.post({ ...BASE, provider: "oauth", model: "gpt-5.4", references: [green], webSearchEnabled: true, backgroundPreset: "transparent" });
-      assert.equal(response.status, 200);
-      const result = await response.json(); await f.waitSettled(); assert.equal(f.calls.length, 4);
-      for (const [index, call] of f.calls.entries()) {
-        const body = wire(call, "oauth");
-        assert.equal(body.stream, true); assert.deepEqual(body.reasoning, { effort: "high" });
-        assert.deepEqual(body.tools.map((tool: { type: string }) => tool.type), index === 0 ? ["web_search", "image_generation"] : ["image_generation"]);
-        assert.deepEqual(body.tools.at(-1), { type: "image_generation", quality: "high", size: "1536x1024", moderation: "low", background: "auto", output_format: "png" });
-        assert.equal(body.input.length, index === 3 ? 1 : 2);
-        if (index < 3) assert.deepEqual(body.input[1].content[0], { type: "input_image", image_url: `data:image/png;base64,${green}` });
-        else { assert.equal(body.input[0].role, "user"); assert.equal(typeof body.input[0].content, "string"); }
-      }
-      assert.notEqual(JSON.parse(f.calls[0]!.body).input[0].content, JSON.parse(f.calls[1]!.body).input[0].content);
-      assert.equal(JSON.parse(f.calls[1]!.body).input[0].content, JSON.parse(f.calls[2]!.body).input[0].content);
-      for (const [key, value] of Object.entries({ retryKind: "prompt_only_json_image_tool", initialEventCount: 1,
-        initialEventTypes: { "response.completed": 1 }, hadReferences: true, referencesDroppedOnRetry: true,
-        developerPromptDroppedOnRetry: true, webSearchDroppedOnRetry: true, webSearchCalls: 3 })) assert.deepEqual(result[key], value, key);
-      assert.equal((await meta(f, result.filename)).refsCount, 1);
-    });
-  });
 
   it("O04-3 API empty one call forbids fallback", async () => { await runApiNoFallbackCase(harness); });
   for (const status of [503, 400, 403]) it(`O04-3 classic status ${status} retains retry classification`, async () => {
@@ -212,7 +186,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
     await runHeldSequenceCallbacks(harness, red, blue);
   });
 
-  for (const provider of ["api", "oauth"] as const) it(`O04-6 ${provider} node partial wire precedes final persistence`, async () => {
+  for (const provider of ["api"] as const) it(`O04-6 ${provider} node partial wire precedes final persistence`, async () => {
     await harness.run("node", { upstream: (call) => {
       const body = wire(call, provider); assert.equal(body.tools[0].partial_images, 2);
       return responsesSse([{ type: "response.image_generation_call.partial_image", partial_image: blue, index: 7 }, finalFrame(red), completed]);
@@ -224,7 +198,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
       assert.equal(f.calls.length, 1); assert.equal((await readdir(f.generatedDir)).filter((name) => name.endsWith(".json")).length, 1);
     });
   });
-  for (const provider of ["api", "oauth"] as const) it(`O04-6 ${provider} sequence A,A,B persists each index once`, async () => {
+  for (const provider of ["api"] as const) it(`O04-6 ${provider} sequence A,A,B persists each index once`, async () => {
     await harness.run("multimode", { upstream: (call) => {
       wire(call, provider); return responsesSse([finalFrame(red), finalFrame(red), finalFrame(blue), completed]);
     } }, async (f) => {

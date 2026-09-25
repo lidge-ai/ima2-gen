@@ -22,8 +22,10 @@
  * Evidence: devlog/_plan/260821_gpt_image2_transparent_background/{000,001}.
  *
  * Direct API surfaces (Atlas Cloud gpt-image-2) accept the forced value per
- * OpenAI's 2026-08-21 preview announcement, so `supportsForcedTransparent`
- * lets those callers opt into the strict parameter.
+ * OpenAI's 2026-08-21 preview announcement, and so does GPT OAuth since it
+ * renders through the Codex Images API (lib/oauthImages.ts, verified
+ * 2026-09-25), so `supportsForcedTransparent` lets those callers opt into the
+ * strict parameter. The hosted-tool path (API key lane) still uses `auto`.
  */
 import type { BackgroundPreset } from "./backgroundPresets.js";
 

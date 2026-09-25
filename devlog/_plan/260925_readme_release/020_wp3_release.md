@@ -21,3 +21,10 @@ npm `ima2-gen@latest` = 3.21.0 with gitHead at the release commit and provenance
 
 - release.yml re-dispatch cuts 3.21.1; never re-run the whole cut after the tag exists.
 - Screenshot gate applies only to PRs touching ui/, public/ or images under assets/; the dev→main PR carries README images, so its description embeds a screenshot too.
+
+## Live state at wp3 P (2026-09-25 13:4x KST)
+
+- origin/main = `233631affabc0f1fe46dda082f90acec4d1e3dde` (merge commit of #289, dev → main). main contains dev (`6e92b638`) and preview (`e78bbbaa`); remote `v3.21.0` absent.
+- User instruction: merge #289 without waiting for its checks and track CI on dev. #289 was merged with `--merge --admin --match-head-commit 6e92b638` while its PR fast gate and dev CI were still running. A squash merge was declined because `release-cut.mjs preflight` requires main to contain dev.
+- Incomplete-check record: dev CI run 36094301433 at `6e92b638` — Windows node 22.23.0 leg failed with a native access violation (exit 3221225477 / 0xC0000005) in `tests/transparent-background-route.test.ts`; Windows node 24, Ubuntu, macOS legs passed; frontend e2e still running. Same test passed at `01b53406`. Treated as a native flake; rerun of the failed job is tracked. release.yml runs its own exact-SHA CI on the candidate, which is the release gate.
+- Dispatch: `gh workflow run release.yml --ref main -f bump=minor -f dry_run=false -f expected_sha=233631affabc0f1fe46dda082f90acec4d1e3dde`.

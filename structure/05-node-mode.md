@@ -26,7 +26,7 @@ sequenceDiagram
     participant UI as NodeCanvas
     participant Store as useAppStore
     participant API as routes/nodes.ts
-    participant OAuth as openai-oauth
+    participant OAuth as GPT OAuth (lib/codexBackend)
     participant Files as generated
     participant DB as SQLite session
 

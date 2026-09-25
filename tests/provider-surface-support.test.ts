@@ -18,8 +18,10 @@ const responses: MatrixRow = {
   node: [true, true, false, true, "static"],
   video: absent,
 };
+// GPT OAuth renders through the Images API: edits and mask guidance, but no partial frames.
+const oauthImages: MatrixRow = { ...responses, multimode: [true, true, false, false, "static"], node: [true, true, false, false, "static"] };
 const expected: Record<CoreProviderId, MatrixRow> = {
-  oauth: responses, api: responses,
+  oauth: oauthImages, api: responses,
   grok: { ...standard, video: image },
   "grok-api": { ...standard, video: image },
   agy: standard, "gemini-api": standard, atlascloud: standard, minimax: standard,
@@ -72,7 +74,7 @@ test("generation-only models survive supported-model derivation without edit sen
     referenceLimits: {}, elementTaxonomy: null, limits: { timeoutMs: 1 }, errorPrefix: null,
   };
   assert.deepEqual([...deriveSupportedImageModelsFrom([fixture], "text-only")], ["text-model"]);
-  assert.deepEqual([...deriveUnsupportedImageModelsFrom(REGISTRY)], ["gpt-5.3-codex-spark"]);
+  assert.deepEqual([...deriveUnsupportedImageModelsFrom(REGISTRY)], []);
   assert.equal(deriveSupportedImageModelsFrom(REGISTRY, "nai").size, 4);
 });
 

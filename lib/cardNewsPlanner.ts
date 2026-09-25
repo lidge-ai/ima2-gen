@@ -208,6 +208,7 @@ export async function createCardNewsDraft(ctxOrInput: RouteRuntimeContext | Card
     const messages = buildCardNewsPlannerMessages({ ...input, roleTemplate, imageTemplate });
     const raw = await requestCardNewsPlannerJson({ messages }, {
       oauthUrl: (ctx as RouteRuntimeContext & { oauthUrl?: string | undefined }).oauthUrl,
+      oauthTransport: (ctx as RouteRuntimeContext & { oauthTransport?: "native" | "proxy" | undefined }).oauthTransport,
       model: planner.model,
       timeoutMs: planner.timeoutMs,
     });

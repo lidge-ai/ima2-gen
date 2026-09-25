@@ -58,7 +58,7 @@ function showImageProbeHelp() {
     --quality <quality>    Default: low
     --moderation <value>   Default: low
     --prompt <text>        Override built-in cat prompt
-    --oauth-url <url>      Override GPT OAuth proxy URL
+    --oauth-url <url>      Send GPT OAuth checks to this endpoint
     --timeout-ms <ms>      Per-probe timeout
 `);
 }
@@ -90,7 +90,7 @@ async function imageProbe(args: string[]) {
     provider: valueAfter(args, "--provider") || fileConfig.provider || "oauth",
     apiKey: typeof fileConfig.apiKey === "string" ? fileConfig.apiKey : undefined,
     oauthUrl: valueAfter(args, "--oauth-url") || undefined,
-    model: valueAfter(args, "--model") || runtimeConfig.imageModels?.default || "gpt-5.6-luna",
+    model: valueAfter(args, "--model") || runtimeConfig.imageModels?.default || "gpt-6-luna",
     size: valueAfter(args, "--size") || "1024x1024",
     quality: valueAfter(args, "--quality") || "low",
     moderation: valueAfter(args, "--moderation") || "low",
