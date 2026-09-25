@@ -1,4 +1,3 @@
-import type { ImageModel } from "../types";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -337,16 +336,28 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
     );
   }
 
+  // Settings lists every option across lanes, so a model value alone cannot say
+  // which lane's row was picked (nano-banana-2 exists on agy and gemini-api).
+  // The item value carries the hint so each row selects what its label advertises.
+  const optionItemValue = (option: (typeof modelOptions)[number]) =>
+    option.providerHint ? `${option.providerHint}:${option.value}` : option.value;
+
   return (
     <div className="image-model-select image-model-select--settings">
       <Select
         id={id}
-        value={imageModel}
-        onChange={(value) => setImageModel(value as ImageModel)}
+        value={optionItemValue(current)}
+        onChange={(value) => {
+          const option = modelOptions.find((candidate) => optionItemValue(candidate) === value);
+          if (!option) return;
+          if (option.providerHint) setProvider(option.providerHint);
+          setImageModel(option.value);
+        }}
         items={[
           ...modelOptions.map((option) => ({
-            value: option.value,
+            value: optionItemValue(option),
             label: t(option.fullLabelKey),
+            ...(option.providerHint ? { sub: option.providerHint } : {}),
           })),
           ...UNSUPPORTED_IMAGE_MODELS.map((option) => ({
             value: option.value,
