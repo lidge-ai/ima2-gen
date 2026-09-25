@@ -642,7 +642,7 @@ describe("package install policy contract", () => {
     assert.ok(fast.steps.some((s: any) => s.run === "npm test"));
     const uploads = frontend.steps.filter((s: any) => s.uses?.startsWith("actions/upload-artifact@"));
     assert.ok(uploads.some((s: any) => s.with.path.includes("wp12-*.png")));
-    assert.ok(uploads.some((s: any) => s.with.path.includes("wp0*-*.png")));
+    assert.ok(uploads.some((s: any) => s.with.path.includes("wp08c-*.png")));
     assert.equal(gate.name, "PR fast gate");
     assert.deepEqual(gate.needs, ["changes", "fast", "frontend"]);
     assert.equal(gate.if, "always()");
