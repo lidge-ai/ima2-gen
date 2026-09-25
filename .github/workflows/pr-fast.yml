@@ -96,6 +96,8 @@ jobs:
         run: npm run typecheck
       - name: Typecheck tests
         run: npm run typecheck:tests
+      - name: Lint
+        run: npm run lint
       - name: Test inventory
         run: npm run test:inventory
       - name: Build server

@@ -57,7 +57,7 @@ export function readPngTextChunks(buffer: Buffer): Map<string, string> {
           } else {
             // keyword \0 compressionFlag compressionMethod langTag \0 translatedKeyword \0 text
             const flag = body[nul + 1];
-            let cursor = nul + 3;
+            const cursor = nul + 3;
             const langEnd = body.indexOf(0, cursor);
             if (langEnd < 0) { offset = dataEnd + 4; continue; }
             const transEnd = body.indexOf(0, langEnd + 1);

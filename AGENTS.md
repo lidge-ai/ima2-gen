@@ -118,6 +118,7 @@ references/) and the agent reads them natively. Avoid piping large bundled outpu
 ```bash
 npm run typecheck          # tsc --noEmit (server + lib)
 npm run typecheck:tests    # tsc --noEmit (test files)
+npm run lint               # ESLint + typescript-eslint (type-aware) over server/lib/routes/bin/scripts/ui/src/desktop
 npm test                   # scripts/run-tests.mjs canonical node:test runner
 npm run test:inventory     # verify test file registry
 cd ui && npm run build     # Vite production build
