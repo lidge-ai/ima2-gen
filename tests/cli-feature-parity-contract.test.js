@@ -131,7 +131,7 @@ describe("CLI feature parity contract", () => {
 
     assert.match(docs, /--provider <auto\|oauth\|api\|grok\|grok-api\|agy\|gemini-api\|atlascloud\|minimax\|nai>/);
     assert.match(docs, /api` forces the API-key Responses path/);
-    assert.match(docs, /oauth` forces the local OAuth proxy path/);
+    assert.match(docs, /oauth` forces GPT OAuth: the server calls ChatGPT directly/);
     assert.match(docs, /auto` preserves route default behavior/);
     assert.match(docs, /multimode[\s\S]+--ref <file>/i);
     assert.match(docs, /multimode[\s\S]+--mode <auto\|direct>/i);
