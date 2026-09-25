@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { contextMenuTemplate } from "../desktop/lib/context-menu.mjs";
+import { canOpenExternally, contextMenuTemplate, installContextMenus } from "../desktop/lib/context-menu.mjs";
 
 const ids = (items) => items.map((item) => item.id ?? item.role ?? item.type);
 const editFlags = (over = {}) => ({
@@ -10,14 +10,14 @@ const editFlags = (over = {}) => ({
 });
 
 describe("desktop context menu", () => {
-  it("gives editable fields the standard edit roles gated on editFlags", () => {
+  it("gives editable fields edit commands gated on editFlags", () => {
     const items = contextMenuTemplate({ isEditable: true, editFlags: editFlags({ canUndo: false, canCut: false }) });
     assert.deepEqual(ids(items).slice(0, 9), [
       "undo", "redo", "separator", "cut", "copy", "paste", "pasteAndMatchStyle", "selectAll", "separator",
     ]);
-    assert.equal(items.find((i) => i.role === "undo").enabled, false);
-    assert.equal(items.find((i) => i.role === "cut").enabled, false);
-    assert.equal(items.find((i) => i.role === "copy").enabled, true);
+    assert.equal(items.find((i) => i.id === "undo").enabled, false);
+    assert.equal(items.find((i) => i.id === "cut").enabled, false);
+    assert.equal(items.find((i) => i.id === "copy").enabled, true);
   });
 
   it("offers image actions plus Inspect Element on a generated image", () => {
@@ -41,6 +41,14 @@ describe("desktop context menu", () => {
     ]);
   });
 
+  it("keeps Copy Link but drops Open Link for non-http(s) targets", () => {
+    const items = contextMenuTemplate({
+      isEditable: false, mediaType: "none", srcURL: "",
+      linkURL: "devtools://devtools/bundled/inspector.html", selectionText: "", x: 0, y: 0,
+    });
+    assert.deepEqual(ids(items), ["copy-link", "separator", "inspect"]);
+  });
+
   it("offers Copy for plain selected text", () => {
     const items = contextMenuTemplate({
       isEditable: false, mediaType: "none", srcURL: "", linkURL: "",
@@ -55,5 +63,55 @@ describe("desktop context menu", () => {
       selectionText: "", x: 0, y: 0,
     });
     assert.deepEqual(ids(items), ["selectAll", "separator", "inspect"]);
+  });
+});
+
+describe("canOpenExternally", () => {
+  it("allows only http and https", () => {
+    for (const url of ["http://a.b", "https://a.b/x?y=1"]) {
+      assert.equal(canOpenExternally(url), true, url);
+    }
+    for (const url of ["javascript:alert(1)", "file:///etc/passwd", "devtools://d", "mailto:a@b.c", "slack://open", "not a url"]) {
+      assert.equal(canOpenExternally(url), false, url);
+    }
+  });
+});
+
+describe("installContextMenus", () => {
+  const fakeApp = () => {
+    const handlers = new Map();
+    return { handlers, on: (event, fn) => handlers.set(event, fn) };
+  };
+  const fakeContents = (type, session) => {
+    const handlers = new Map();
+    return { handlers, getType: () => type, session, on: (e, fn) => handlers.set(e, fn) };
+  };
+  const deps = {
+    Menu: { buildFromTemplate: () => ({ popup() {} }) },
+    clipboard: { writeText() {} },
+    dialog: {},
+    shell: {},
+  };
+
+  it("skips DevTools webContents so they keep their own menu", () => {
+    const app = fakeApp();
+    installContextMenus({ app, ...deps });
+    const devtools = fakeContents("devtools", { on() { throw new Error("no session hook"); } });
+    app.handlers.get("web-contents-created")(null, devtools);
+    assert.equal(devtools.handlers.has("context-menu"), false);
+  });
+
+  it("attaches context-menu and hooks will-download once per session", () => {
+    const app = fakeApp();
+    installContextMenus({ app, ...deps });
+    const sessionEvents = [];
+    const session = { on: (e, fn) => sessionEvents.push([e, fn]) };
+    const a = fakeContents("browserView", session);
+    const b = fakeContents("browserView", session);
+    app.handlers.get("web-contents-created")(null, a);
+    app.handlers.get("web-contents-created")(null, b);
+    assert.equal(a.handlers.has("context-menu"), true);
+    assert.equal(b.handlers.has("context-menu"), true);
+    assert.deepEqual(sessionEvents.map(([e]) => e), ["will-download"]);
   });
 });

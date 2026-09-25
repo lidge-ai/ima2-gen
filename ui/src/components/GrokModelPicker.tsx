@@ -17,7 +17,6 @@ export function GrokModelPicker() {
         items={GROK_IMAGE_MODEL_OPTIONS.map((option) => ({
           value: option.value,
           label: t(option.fullLabelKey),
-          sub: option.shortLabel,
         }))}
         value={imageModel}
         onChange={setImageModel}

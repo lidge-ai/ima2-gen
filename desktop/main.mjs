@@ -98,7 +98,7 @@ async function boot() {
   tray.create();
   tray.update({ settings: settingsStore.get() });
   installApplicationMenu(actions);
-  installContextMenus({ app, Menu, clipboard, shell });
+  installContextMenus({ app, Menu, clipboard, dialog, shell });
   registerIpc({ settingsStore, supervisor, actions, info: { rootDir, logFile: supervisor.logFile } });
 
   supervisor.on("status", (status) => {
