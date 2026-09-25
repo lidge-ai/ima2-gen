@@ -286,7 +286,7 @@ test("connected MCP lanes add only read-only dynamic models", async () => {
     for (const id of ["runway", "higgsfield"] as const) assert.equal("surfaces" in body.lanes[id], false);
     assert.deepEqual(body.lanes.higgsfield.models.image.map((model) => model.id), ["soul_2"]);
     assert.deepEqual(body.lanes.higgsfield.models.video.map((model) => model.id), ["kling_3"]);
-    assert.deepEqual(body.lanes.higgsfield.models.image[0].capabilities.inputRoles, ["image"]);
+    assert.deepEqual(body.lanes.higgsfield.models.image[0].capabilities.inputRoles, ["text", "image_references"]);
     assert.ok(manager.calls.length >= 2);
     for (const call of manager.calls) assert.equal(call.name, "models_explore");
   });
