@@ -56,17 +56,51 @@ export function resolvePopupNavigation(url, serverUrl) {
 }
 
 /**
+ * Server redirects and subframe navigations never pass through will-navigate,
+ * so they get a narrower gate: in-page web schemes stay allowed (iframes use
+ * about:/data:/blob:), and anything else — the custom schemes that would hand
+ * a URL to a local app handler — is blocked.
+ */
+const IN_PAGE_SCHEMES = new Set(["http:", "https:", "about:", "data:", "blob:"]);
+
+export function resolveSubNavigation(url) {
+  try {
+    return IN_PAGE_SCHEMES.has(new URL(url).protocol) ? "allow" : "deny";
+  } catch {
+    return "deny";
+  }
+}
+
+/**
+ * Electron grants the openExternal permission by default, so a web page in a
+ * popup could still reach an OS scheme handler. Keep every other permission's
+ * default (granted) and only let web URLs leave through openExternal.
+ */
+export function resolvePermission(permission, details) {
+  if (permission === "openExternal") return isExternalWebUrl(details?.externalURL ?? "");
+  return true;
+}
+
+/**
  * Give every webContents created in the app the popup navigation policy:
- * will-navigate gated by resolvePopupNavigation and a setWindowOpenHandler
- * sharing resolveWindowOpen. The main content view still installs its own
- * handlers afterwards (setWindowOpenHandler replaces, and its will-navigate
- * listener stacks — either may preventDefault), so this only adds coverage
- * where no policy existed: window.open children, the settings window, and any
- * future view.
+ * will-navigate gated by resolvePopupNavigation, will-redirect and
+ * will-frame-navigate gated by resolveSubNavigation, a setWindowOpenHandler
+ * sharing resolveWindowOpen, and an openExternal permission gate on its
+ * session. The main content view still installs its own handlers afterwards
+ * (setWindowOpenHandler replaces, and its will-navigate listener stacks —
+ * either may preventDefault).
  */
 export function installPopupPolicy({ app, shell, getServerUrl }) {
+  const gatedSessions = new WeakSet();
   app.on("web-contents-created", (_event, contents) => {
     if (contents.getType() === "devtools") return; // keep DevTools' own behavior
+    const session = contents.session;
+    if (session && !gatedSessions.has(session)) {
+      gatedSessions.add(session);
+      session.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(resolvePermission(permission, details));
+      });
+    }
     contents.setWindowOpenHandler(({ url }) => {
       const outcome = resolveWindowOpen(url, getServerUrl());
       if (outcome === "allow") return { action: "allow" };
@@ -75,6 +109,12 @@ export function installPopupPolicy({ app, shell, getServerUrl }) {
     });
     contents.on("will-navigate", (event, url) => {
       if (resolvePopupNavigation(url, getServerUrl()) === "deny") event.preventDefault();
+    });
+    contents.on("will-redirect", (event, url) => {
+      if (resolveSubNavigation(event.url ?? url) === "deny") event.preventDefault();
+    });
+    contents.on("will-frame-navigate", (event) => {
+      if (!event.isMainFrame && resolveSubNavigation(event.url) === "deny") event.preventDefault();
     });
   });
 }

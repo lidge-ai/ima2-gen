@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { installPopupPolicy, isExternalWebUrl, isLocalServerUrl, resolvePopupNavigation, resolveWindowOpen } from "../desktop/lib/window-open.mjs";
+import { installPopupPolicy, isExternalWebUrl, isLocalServerUrl, resolvePermission, resolvePopupNavigation, resolveSubNavigation, resolveWindowOpen } from "../desktop/lib/window-open.mjs";
 
 const SERVER = "http://127.0.0.1:3333";
 
@@ -118,5 +118,63 @@ describe("installPopupPolicy", () => {
     assert.deepEqual(opened, ["https://example.com"]);
     assert.deepEqual(handler({ url: "javascript:alert(1)" }), { action: "deny" });
     assert.deepEqual(opened, ["https://example.com"]);
+  });
+});
+
+describe("resolveSubNavigation", () => {
+  it("keeps in-page web schemes and blocks OS handler schemes", () => {
+    for (const url of ["https://a.b", "http://a.b", "about:blank", "about:srcdoc", "data:text/html,x", "blob:http://127.0.0.1:3333/uuid"]) {
+      assert.equal(resolveSubNavigation(url), "allow", url);
+    }
+    for (const url of ["ms-msdt:/id", "slack://open", "file:///etc/passwd", "mailto:a@b.c", "not a url"]) {
+      assert.equal(resolveSubNavigation(url), "deny", url);
+    }
+  });
+});
+
+describe("resolvePermission", () => {
+  it("lets only web URLs through openExternal and keeps other permissions", () => {
+    assert.equal(resolvePermission("openExternal", { externalURL: "https://a.b" }), true);
+    assert.equal(resolvePermission("openExternal", { externalURL: "ms-msdt:/id" }), false);
+    assert.equal(resolvePermission("openExternal", {}), false);
+    assert.equal(resolvePermission("clipboard-sanitized-write", {}), true);
+  });
+});
+
+describe("installPopupPolicy redirect, frame and permission gates", () => {
+  it("blocks custom-scheme redirects and subframe navigations, gates each session once", () => {
+    const handlers = new Map();
+    const app = { on: (event, fn) => handlers.set(event, fn) };
+    installPopupPolicy({ app, shell: { openExternal() {} }, getServerUrl: () => SERVER });
+    let permissionHandler = null;
+    let installs = 0;
+    const session = { setPermissionRequestHandler: (fn) => { installs += 1; permissionHandler = fn; } };
+    const make = () => {
+      const listeners = new Map();
+      return { listeners, session, getType: () => "window", setWindowOpenHandler() {}, on: (e, fn) => listeners.set(e, fn) };
+    };
+    const a = make();
+    const b = make();
+    handlers.get("web-contents-created")(null, a);
+    handlers.get("web-contents-created")(null, b);
+    assert.equal(installs, 1);
+
+    let prevented = false;
+    const ev = (extra = {}) => ({ ...extra, preventDefault: () => { prevented = true; } });
+    a.listeners.get("will-redirect")(ev(), "ms-msdt:/id");
+    assert.equal(prevented, true);
+    prevented = false;
+    a.listeners.get("will-redirect")(ev(), "https://accounts.google.com/callback");
+    assert.equal(prevented, false);
+    a.listeners.get("will-frame-navigate")(ev({ isMainFrame: false, url: "slack://open" }));
+    assert.equal(prevented, true);
+    prevented = false;
+    a.listeners.get("will-frame-navigate")(ev({ isMainFrame: false, url: "about:srcdoc" }));
+    assert.equal(prevented, false);
+
+    const decisions = [];
+    permissionHandler(null, "openExternal", (ok) => decisions.push(ok), { externalURL: "ms-msdt:/id" });
+    permissionHandler(null, "openExternal", (ok) => decisions.push(ok), { externalURL: "https://a.b" });
+    assert.deepEqual(decisions, [false, true]);
   });
 });
