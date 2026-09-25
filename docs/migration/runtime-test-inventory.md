@@ -343,6 +343,7 @@ Total: 516 (runtime: 234, contract: 282)
 - `tests/current-image-actions-readiness-contract.test.js`
 - `tests/desktop-app-lifecycle.test.ts`
 - `tests/desktop-context-menu.test.ts`
+- `tests/desktop-edit-menu.test.ts`
 - `tests/desktop-mac-verification.test.ts`
 - `tests/desktop-release-assets.test.ts`
 - `tests/desktop-release-contract.test.ts`

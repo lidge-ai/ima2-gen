@@ -1,4 +1,5 @@
 import { Menu, app, webContents } from "electron";
+import { editMenu } from "./edit-menu.mjs";
 
 const isMac = process.platform === "darwin";
 
@@ -75,7 +76,7 @@ export function installApplicationMenu(actions) {
   const template = [
     ...(isMac ? [appMenu(actions)] : []),
     serverMenu(actions),
-    { role: "editMenu" },
+    editMenu({ isMac, focused }),
     viewMenu(),
     { role: "windowMenu" },
     {
