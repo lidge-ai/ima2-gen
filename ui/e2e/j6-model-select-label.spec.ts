@@ -14,10 +14,10 @@ test("J6-S1 a comfy workflow left in storage does not blank the GPT model label"
     await expect(page.locator(PROVIDER_TRIGGER)).toContainText("GPT");
     const model = page.locator(MODEL_TRIGGER + " .ctl-select__value");
     await expect(model).toBeVisible();
-    await expect(model).toHaveText("5.6l");
+    await expect(model).toHaveText("6l");
     expect(capture.requests).toEqual([]);
     await selectionScreenshot(page, info, "j6-s1-gpt-label");
-    await selectionViewports(page, info, "replan027-j6-s1-gpt-label", { provider: "GPT", model: "5.6l" });
+    await selectionViewports(page, info, "replan027-j6-s1-gpt-label", { provider: "GPT", model: "6l" });
   });
 });
 
@@ -29,7 +29,7 @@ test("J6-S2 leaving the comfy lane clears its selections and converges the model
     await openCreate(page, origin);
     await selectOption(page, PROVIDER_TRIGGER, "GPT");
     await expect(page.locator(PROVIDER_TRIGGER)).toContainText("GPT");
-    await expect(page.locator(MODEL_TRIGGER + " .ctl-select__value")).toHaveText("5.6l");
+    await expect(page.locator(MODEL_TRIGGER + " .ctl-select__value")).toHaveText("6l");
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("ima2.generationDefaults") ?? "{}"));
     expect(stored.comfyVideoWorkflow).toBeNull();
     expect(stored.comfyWorkflow).toBeNull();
