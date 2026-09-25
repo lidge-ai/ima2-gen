@@ -40,7 +40,7 @@ function isTranslatable(value: string): boolean {
  *
  * `ui/src/i18n` reaches `devMode.ts`, which reads Vite's `import.meta.env` — undefined
  * under plain Node, so importing it here crashes the whole test file. These three sit in
- * the import chain of tests/element-mention-ui-contract.test.js. Their few English
+ * the import chain of tests/element-mention-ui-contract.test.ts. Their few English
  * strings are ARIA names on decorative chips; localizing them needs the strings lifted
  * out of the pure module first, which is a separate change.
  */

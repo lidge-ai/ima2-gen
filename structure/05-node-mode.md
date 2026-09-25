@@ -136,7 +136,7 @@ Root node generation requests use `postNodeGenerateStream()` and ask the server 
 
 Each node request writes `requestId` into the node sidecar and `/api/history`. Recovery uses `pendingRequestId ?? recoveryRequestId` first, then falls back to `(sessionId, clientNodeId, createdAt)`. This avoids accidentally attaching an older retry result after reload or HMR. Active inflight jobs are persisted in SQLite so a server restart or UI reload can still expose enough metadata for the UI to reconcile instead of relying only on process memory.
 
-Concurrent generate calls on the same `clientNodeId` are deduped by an in-flight lock (commit 73f228e + `tests/node-generation-lock-contract.test.js`): the second caller does not double-fire upstream — it observes the same in-flight job and reuses the result on completion. This protects against double-clicks on the node action bar and accidental keyboard-repeat triggers from producing duplicate sidecar/history rows.
+Concurrent generate calls on the same `clientNodeId` are deduped by an in-flight lock (commit 73f228e + `tests/node-generation-lock-contract.test.ts`): the second caller does not double-fire upstream — it observes the same in-flight job and reuses the result on completion. This protects against double-clicks on the node action bar and accidental keyboard-repeat triggers from producing duplicate sidecar/history rows.
 
 Pending and reconciling cards use a transform-only rotating border glow. Reduced-motion users keep the static glow without rotation. The node action bar wraps onto a second line when a card is too narrow to fit all action buttons (commit ef1e60f) so primary actions stay reachable on mobile/zoomed-out canvases.
 
@@ -240,11 +240,11 @@ Node sidecar metadata and `/api/history` rows expose `refsCount`, a numeric coun
 - [ ] If `ImageNodeData` shape changes, check session save, restore, and API types.
 - [ ] If `/api/node/generate` response changes, update `ui/src/lib/nodeApi.ts`, the `api.ts` re-export if needed, and this doc.
 - [ ] If graph save policy changes, check `If-Match` version behavior and tests.
-- [x] Node selection and batch generation implemented 260426; reference `ui/src/lib/nodeSelection.ts`, `ui/src/lib/nodeBatch.ts`, and `tests/node-batch-contract.test.js`.
-- [x] Edge disconnect implemented 260426; reference `NodeCanvas`, `useAppStore.disconnectEdges`, and `tests/node-edge-disconnect-contract.test.js`.
-- [x] Four-direction node connection handles implemented 260427; reference `ImageNode`, `NodeCanvas`, `useAppStore.connectNodes`, and `tests/node-ui-contract.test.js`.
-- [x] Single-node regeneration and variation implemented 260426; reference `ImageNode`, custom-size continuation routing, and `tests/node-regen-actions-contract.test.js`.
-- [x] Node-local references on child/edit nodes implemented 260426; reference child/edit reference handling and `tests/node-child-refs-contract.test.js`.
+- [x] Node selection and batch generation implemented 260426; reference `ui/src/lib/nodeSelection.ts`, `ui/src/lib/nodeBatch.ts`, and `tests/node-batch-contract.test.ts`.
+- [x] Edge disconnect implemented 260426; reference `NodeCanvas`, `useAppStore.disconnectEdges`, and `tests/node-edge-disconnect-contract.test.ts`.
+- [x] Four-direction node connection handles implemented 260427; reference `ImageNode`, `NodeCanvas`, `useAppStore.connectNodes`, and `tests/node-ui-contract.test.ts`.
+- [x] Single-node regeneration and variation implemented 260426; reference `ImageNode`, custom-size continuation routing, and `tests/node-regen-actions-contract.test.ts`.
+- [x] Node-local references on child/edit nodes implemented 260426; reference child/edit reference handling and `tests/node-child-refs-contract.test.ts`.
 - [ ] If asset delete/restore changes, review `asset-missing` state and history docs.
 - [x] Node mode is part of the npm-published UI by default; update build/package rules in `[[06-infra-operations]]` if this gate changes.
 
@@ -264,7 +264,7 @@ Node sidecar metadata and `/api/history` rows expose `refsCount`, a numeric coun
 - 2026-04-27: Documented four-direction React Flow handles, handle-id session persistence, and the reconnect fix after edge disconnect.
 - 2026-04-28: Refreshed cross-references after the 1.1.5 prompt library, image metadata, and dev-only card-news additions; node-mode contracts in this document remain unchanged.
 - 2026-04-30: Updated wording around the TypeScript migration close (#24); node-mode contracts in this document remain unchanged.
-- 2026-05-06: Documented `/api/node/generate` concurrent-call dedupe (commit 73f228e + `tests/node-generation-lock-contract.test.js`) and node action-bar wrap on narrow cards (commit ef1e60f). Other node-mode contracts remain unchanged.
+- 2026-05-06: Documented `/api/node/generate` concurrent-call dedupe (commit 73f228e + `tests/node-generation-lock-contract.test.ts`) and node action-bar wrap on narrow cards (commit ef1e60f). Other node-mode contracts remain unchanged.
 
 Previous document: `[[04-frontend-architecture]]`
 

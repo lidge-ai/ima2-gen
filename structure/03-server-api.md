@@ -235,7 +235,7 @@ mask edit is rejected before upstream with `GROK_MASK_UNSUPPORTED`.
 
 Multimode is SSE-only. The route now saves and sends each final image as it arrives instead of buffering the full sequence before sending any `image` event. If the provider times out after at least one image was saved, the route sends a `done` event with `status: "partial"` and HTTP status metadata in the payload. If no image was saved before timeout, the route sends an error. JSON/non-stream fallback images from the adapter are saved only for indexes not already emitted by the final-image callback.
 
-Masked edits are sent as mask/selection guidance; callers should not treat them as pixel-perfect inpainting. The OAuth path additionally honours a feature flag, `config.oauth.maskedEditEnabled` (env: `IMA2_OAUTH_MASKED_EDIT_ENABLED`, default off) — when a mask is present and the flag is disabled, `lib/oauthProxy/generators.ts` rejects the request before calling upstream so masked edits stay opt-in until #31 ships in full. `tests/oauth-masked-edit-contract.test.js` covers the flag.
+Masked edits are sent as mask/selection guidance; callers should not treat them as pixel-perfect inpainting. The OAuth path additionally honours a feature flag, `config.oauth.maskedEditEnabled` (env: `IMA2_OAUTH_MASKED_EDIT_ENABLED`, default off) — when a mask is present and the flag is disabled, `lib/oauthProxy/generators.ts` rejects the request before calling upstream so masked edits stay opt-in until #31 ships in full. `tests/oauth-masked-edit-contract.test.ts` covers the flag.
 
 Prompt assembly for the OAuth path injects a short safety intent policy (`SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts`) into the `lib/oauthProxy/prompts.ts` builder for generate/edit/multimode. The same constant is reused by the API-key Responses adapter so both providers send the same intent guardrails.
 
@@ -758,7 +758,7 @@ Node retry diagnostics include safe context such as `operation`, `clientNodeId`,
 - 2026-05-30: Documented the Agent Mode API (`/api/agent/*` — sessions, turns, durable queue, compact, manifest, tools; backed by `lib/agentStore.ts`, `lib/agentQueueStore.ts`, `lib/agentQueueWorker.ts`, `lib/agentRuntime.ts`) and the Prompt Builder endpoint (`POST /api/prompt-builder/chat`). Re-grounded the API map against current code at ima2-gen 1.1.14.
 - 2026-06-01: Updated the API map for Grok video runtime: generation/edit/extension/frame/analyze, active prompt guidance, `continueFromVideo`, and `videoContinuity` sidecar/SSE contracts.
 - 2026-06-27: Documented keys/quota/auth-switch/agy/generation-request-log endpoints and provider matrix at ima2-gen 2.0.4; added `POST /api/history/backfill-thumbnails`.
-- 2026-06-28: WP6 — expanded `docs/API.md` with Prompt Library, Prompt Import, and Card News route tables; `tests/api-docs-contract.test.js` enforces full `routes/*.ts` `/api/*` coverage.
+- 2026-06-28: WP6 — expanded `docs/API.md` with Prompt Library, Prompt Import, and Card News route tables; `tests/api-docs-contract.test.ts` enforces full `routes/*.ts` `/api/*` coverage.
 - 2026-07-13: Phase 050 — documented the SQLite-backed Assets Library catalog, nine `/api/assets*` endpoints, kind enum, cursor pagination, folder integrity errors, and file-preserving catalog deletion.
 
 Previous document: `[[02-command-reference]]`
