@@ -186,13 +186,13 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
 
     const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
     const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
-    assert.equal(oauthPackage.version, "2.0.0-ima2.1");
-    assert.match(oauthPackage.ima2Patch, /serialized refresh/);
+    assert.equal(oauthPackage.version, "1.0.2-ima2.2");
+    assert.match(oauthPackage.ima2Patch, /originator\/version headers/);
     const oauthRuntime = readdirSync(join(oauthRoot, "dist"))
       .filter((name) => name.endsWith(".js"))
       .map((name) => readFileSync(join(oauthRoot, "dist", name), "utf8"))
       .join("\n");
-    for (const marker of ["createIma2Session", "@openai-oauth/local/auth-file", "compare-before-write"]) {
+    for (const marker of ["codex_cli_rs", "IMA2_CODEX_CLIENT_VERSION", "0.144.0"]) {
       assert.ok(oauthRuntime.includes(marker), `installed OAuth runtime should include ${marker}`);
     }
     if (process.env.IMA2_PACKAGE_TARBALL && process.env.GITHUB_SHA) {

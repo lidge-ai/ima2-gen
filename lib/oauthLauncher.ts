@@ -3,7 +3,6 @@ import { parseLocalhostPortFromUrl, parseOAuthReadyUrl } from "./runtimePorts.js
 import { detectCodexAuth } from "./codexDetect.js";
 import { resolvePackageBin } from "./packageCli.js";
 import { type ChildProcess, spawn } from "node:child_process";
-import { join } from "node:path";
 
 export function startOAuthProxy(options: any = {}) {
   const oauthPort = options.oauthPort ?? config.oauth.proxyPort;
@@ -54,13 +53,7 @@ export function startOAuthProxy(options: any = {}) {
       stdio: ["ignore", "pipe", "pipe"],
       shell: false,
       windowsHide: true,
-      env: {
-        ...process.env,
-        // openai-oauth 2 enforces one instance per user through a runtime.json lock and exits
-        // "already running" when it finds one. Give ima2's child its own lock directory per
-        // config dir and port so a proxy the user runs separately never blocks ima2's.
-        OPENAI_OAUTH_INTERNAL_RUNTIME_DIR: join(config.storage.configDir, "openai-oauth", String(oauthPort)),
-      },
+      env: { ...process.env },
     }) as ChildProcess;
     currentChild = child;
 
