@@ -24,9 +24,10 @@ import {
 } from "../../oauthProxy.js";
 import { normalizeOAuthParams, normalizeImageToolModel } from "../../oauthNormalize.js";
 import { postResponses } from "../../responsesTransport.js";
+import { runOAuthImageJob, type OAuthPlanImage } from "../../oauthImages.js";
 import type { ReferenceRef, GenerateOptions } from "./openaiTypes.js";
 
-function normalizeRef(ref: ReferenceRef) {
+function refImage(ref: ReferenceRef): OAuthPlanImage {
   const b64 = typeof ref === "string" ? ref : ref?.b64;
   const detectedMime = typeof ref === "object" && ref?.detectedMime
     ? ref.detectedMime
@@ -37,7 +38,17 @@ function normalizeRef(ref: ReferenceRef) {
     : ["image/png", "image/jpeg", "image/webp"].includes(declaredMime as string)
       ? declaredMime
       : "image/png";
+  return { b64: b64 as string, mime: mime as string };
+}
+
+function normalizeRef(ref: ReferenceRef) {
+  const { b64, mime } = refImage(ref);
   return { type: "input_image", image_url: `data:${mime};base64,${b64}` };
+}
+
+/** GPT OAuth runs on openai-oauth 2: a GPT-6 planner plus the Images API (lib/oauthImages.ts). */
+function isOAuthLane(provider: string | undefined) {
+  return provider !== "api";
 }
 
 export async function generateViaResponses(provider: string | undefined, prompt: string | undefined, quality: string | undefined, size: string | undefined, moderation: string = "low", references: ReferenceRef[] = [], requestId: string | null = null, mode: string = "auto", ctxRaw: RouteRuntimeContext = {}, options: GenerateOptions = {}) {
@@ -60,6 +71,39 @@ export async function generateViaResponses(provider: string | undefined, prompt:
   const toolChoice = imageToolChoice(options.forceImageToolChoice ?? ctx.config?.oauth?.forceImageToolChoice !== false);
   const toolChoiceKind = imageToolChoiceKind(toolChoice);
   const referenceInputs = references.map(normalizeRef);
+  if (isOAuthLane(provider)) {
+    const result = await runOAuthImageJob({
+      ctx,
+      scope: "oauth",
+      requestId,
+      signal: options.signal,
+      model,
+      mode,
+      reasoningEffort: options.reasoningEffort || "low",
+      webSearchEnabled,
+      developerPrompt: webSearchEnabled ? GENERATE_DEVELOPER_PROMPT : GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
+      userText: buildUserTextPrompt(prompt, mode, { webSearchEnabled, size }),
+      directPrompt: prompt ?? "",
+      images: references.map(refImage),
+      maxImages: 1,
+      quality,
+      size,
+      background: options.background,
+      onFinalImage: options.onFinalImage,
+    });
+    const image = result.images[0];
+    if (!image?.b64) {
+      throw emptyResponseError("No image data received from the OAuth image lane", result, {
+        provider, model, quality, size, moderation, webSearchEnabled,
+        refsCount: referenceInputs.length,
+        inputImageCount: referenceInputs.length,
+        promptChars: typeof prompt === "string" ? prompt.length : 0,
+        toolTypes: ["function"],
+        toolChoiceKind: "auto",
+      });
+    }
+    return { b64: image.b64, usage: result.usage, webSearchCalls: result.webSearchCalls, revisedPrompt: image.revisedPrompt, text: result.text };
+  }
   const userContent = referenceInputs.length
     ? [...referenceInputs, { type: "input_text", text: buildUserTextPrompt(prompt, mode, { webSearchEnabled, size }) }]
     : buildUserTextPrompt(prompt, mode, { webSearchEnabled, size });
@@ -154,6 +198,26 @@ export async function generateMultimodeViaResponses(provider: string | undefined
   const userContent = referenceInputs.length
     ? [...referenceInputs, { type: "input_text", text: userText }]
     : userText;
+  if (isOAuthLane(provider)) {
+    return await runOAuthImageJob({
+      ctx,
+      scope: "oauth-multimode",
+      requestId,
+      signal: options.signal,
+      model,
+      mode,
+      reasoningEffort: options.reasoningEffort || "low",
+      webSearchEnabled,
+      developerPrompt: webSearchEnabled ? MULTIMODE_DEVELOPER_PROMPT : MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT,
+      userText,
+      directPrompt: prompt ?? "",
+      images: references.map(refImage),
+      maxImages,
+      quality,
+      size,
+      onFinalImage: options.onFinalImage,
+    });
+  }
   return await postResponses({
     ctx,
     provider,
@@ -211,6 +275,45 @@ export async function editViaResponses(provider: string | undefined, prompt: str
     ...maskContent,
     { type: "input_text", text: buildEditTextPrompt(prompt, mode, { webSearchEnabled, size }) },
   ];
+  if (isOAuthLane(provider)) {
+    const hasMask = maskContent.length > 0;
+    const result = await runOAuthImageJob({
+      ctx,
+      scope: "oauth-edit",
+      requestId,
+      signal: options.signal,
+      model,
+      mode,
+      reasoningEffort: options.reasoningEffort || "low",
+      webSearchEnabled,
+      developerPrompt: webSearchEnabled ? EDIT_DEVELOPER_PROMPT : EDIT_NO_SEARCH_DEVELOPER_PROMPT,
+      userText: buildEditTextPrompt(prompt, mode, { webSearchEnabled, size })
+        + (hasMask ? "\n\nThe last attached image is an edit mask guide marking where the edit should apply; it is not a visible element of the result." : ""),
+      directPrompt: prompt ?? "",
+      // Edit source first, then references, then the mask guide; the edits endpoint takes five.
+      images: [
+        { b64: imageForRequest.b64, mime: "image/jpeg" },
+        ...referenceImages.slice(0, hasMask ? 3 : 4).map(({ b64 }) => ({ b64, mime: "image/jpeg" })),
+        ...(hasMask ? [{ b64: options.mask as string, mime: "image/png" }] : []),
+      ],
+      maxImages: 1,
+      quality,
+      size,
+      background: options.background,
+    });
+    const image = result.images[0];
+    if (!image?.b64) {
+      throw emptyResponseError("No image data received from the OAuth image lane edit", result, {
+        provider, model, quality, size, moderation, webSearchEnabled,
+        refsCount: referenceImages.length,
+        inputImageCount: 1 + referenceImages.length + (hasMask ? 1 : 0),
+        promptChars: typeof prompt === "string" ? prompt.length : 0,
+        toolTypes: ["function"],
+        toolChoiceKind: "auto",
+      });
+    }
+    return { b64: image.b64, usage: result.usage, revisedPrompt: image.revisedPrompt, webSearchCalls: result.webSearchCalls };
+  }
   const result = await postResponses({
     ctx,
     provider,

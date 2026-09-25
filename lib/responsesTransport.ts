@@ -11,6 +11,7 @@ import {
   type ParsedResponsesResult,
 } from "./responsesParse.js";
 import { waitForOAuthReady } from "./oauthProxy.js";
+import { oauthFetch } from "./codexBackend/index.js";
 
 interface MakeErrorOptions {
   status?: number | undefined;
@@ -83,17 +84,6 @@ function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, s
   return "OpenAI rejected the image request.";
 }
 
-function safeBaseUrl(value: string) {
-  try {
-    const parsed = new URL(value);
-    parsed.username = "";
-    parsed.password = "";
-    return parsed.toString().replace(/\/$/, "");
-  } catch {
-    return value.replace(/\/$/, "");
-  }
-}
-
 function apiAuthorizationHeader(apiKey: string | undefined) {
   const key = typeof apiKey === "string" ? apiKey.trim() : "";
   if (!key) {
@@ -131,11 +121,15 @@ async function getEndpoint(ctx: RouteRuntimeContext, provider: string | undefine
     };
   }
   await waitForOAuthReady(ctx);
-  const port = ctx?.config?.oauth?.proxyPort || 10531;
+  // GPT OAuth: path only; oauthFetch picks the in-process Codex client or the configured proxy.
   return {
-    url: `${safeBaseUrl(ctx?.oauthUrl || `http://127.0.0.1:${port}`)}/v1/responses`,
+    url: null,
     headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
   };
+}
+
+function requestResponses(ctx: RouteRuntimeContext, url: string | null, init: RequestInit): Promise<Response> {
+  return url ? fetch(url, init) : oauthFetch(ctx, "/v1/responses", init);
 }
 
 export interface PostResponsesArgs {
@@ -183,7 +177,7 @@ export async function postResponses({
     ? combineAbortSignals([controller.signal, signal])
     : controller.signal;
   try {
-    const res = await fetch(url, {
+    const res = await requestResponses(ctx, url, {
       method: "POST",
       headers: headers as Record<string, string>,
       signal: fetchSignal,
@@ -228,6 +222,103 @@ export async function postResponses({
     }
     if (isKnownResponsesError(err.raw)) throw err.raw;
     throw makeError("Responses request failed before receiving a response", {
+      status: 502,
+      code: "NETWORK_FAILED",
+      errorName: err.name,
+      upstreamMessageRedacted: true,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export interface PostOAuthImagesArgs {
+  ctx: RouteRuntimeContext;
+  scope: string;
+  kind: "generations" | "edits";
+  /** JSON body for /v1/images/generations. */
+  json?: Record<string, unknown> | undefined;
+  /** Multipart body for /v1/images/edits. */
+  form?: FormData | undefined;
+  requestId?: string | null | undefined;
+  signal?: AbortSignal | null | undefined;
+}
+
+export interface OAuthImagesResult {
+  images: Array<{ b64: string }>;
+  usage: Record<string, number> | null;
+  background: string | null;
+  outputFormat: string | null;
+}
+
+/**
+ * Render through the bundled openai-oauth proxy's Images API (gpt-image-2 on the ChatGPT
+ * backend). Shares postResponses' endpoint readiness, timeout, cancellation and upstream
+ * error classification so OAuth failures surface with the same codes as before.
+ */
+export async function postOAuthImages({
+  ctx,
+  scope,
+  kind,
+  json,
+  form,
+  requestId,
+  signal = null,
+}: PostOAuthImagesArgs): Promise<OAuthImagesResult> {
+  await waitForOAuthReady(ctx);
+  const timeoutMs = ctx?.config?.oauth?.generationTimeoutMs || 400 * 1000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const fetchSignal = signal ? combineAbortSignals([controller.signal, signal]) : controller.signal;
+  try {
+    const res = await oauthFetch(ctx, `/v1/images/${kind}`, {
+      method: "POST",
+      ...(json ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(json) } : { body: form ?? null }),
+      signal: fetchSignal,
+    });
+    logEvent(scope, "images_response", { requestId, kind, status: res.status });
+    const text = await res.text();
+    if (!res.ok) {
+      const upstream = parseOpenAIErrorBody(text);
+      if (res.status >= 400 && res.status < 500 && upstream?.message) {
+        throw makeError(safeUpstreamClientMessage(upstream, res.status), {
+          status: res.status,
+          code: normalizedCode(upstream),
+          upstreamBodyChars: text.length,
+          upstreamCode: upstream.code,
+          upstreamType: upstream.type,
+          upstreamParam: upstream.param,
+          upstreamMessageRedacted: true,
+        });
+      }
+      throw makeError(`OAuth proxy returned ${res.status}`, { status: res.status, upstreamBodyChars: text.length });
+    }
+    let parsed: { data?: Array<{ b64_json?: unknown }>; usage?: Record<string, number>; background?: unknown; output_format?: unknown };
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw makeError("OAuth proxy returned a non-JSON image response", { status: 502, upstreamBodyChars: text.length });
+    }
+    const images = (Array.isArray(parsed.data) ? parsed.data : [])
+      .map((item) => (typeof item?.b64_json === "string" && item.b64_json ? { b64: item.b64_json } : null))
+      .filter((item): item is { b64: string } => item !== null);
+    logEvent(scope, "images_end", { requestId, kind, imageCount: images.length });
+    return {
+      images,
+      usage: parsed.usage && typeof parsed.usage === "object" ? parsed.usage : null,
+      background: typeof parsed.background === "string" ? parsed.background : null,
+      outputFormat: typeof parsed.output_format === "string" ? parsed.output_format : null,
+    };
+  } catch (e) {
+    const err = errInfo(e);
+    if (err.name === "AbortError") {
+      if (signal?.aborted) {
+        throw makeError("Generation canceled", { status: 499, code: "GENERATION_CANCELED", cause: err.raw });
+      }
+      throw makeError("OAuth image generation timed out", { status: 504, code: "RESPONSES_IMAGE_TIMEOUT", cause: err.raw });
+    }
+    if (isKnownResponsesError(err.raw)) throw err.raw;
+    throw makeError("OAuth image request failed before receiving a response", {
       status: 502,
       code: "NETWORK_FAILED",
       errorName: err.name,
