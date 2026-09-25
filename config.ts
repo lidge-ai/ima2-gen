@@ -255,6 +255,11 @@ export const config = {
     proxyPort: pickInt(firstDefined(env.IMA2_OAUTH_PROXY_PORT, env.OAUTH_PORT), fileCfg.oauth?.proxyPort, 10531),
     // IMA2_NO_OAUTH_PROXY=1 disables auto-start; default is auto-start enabled.
     autoStart: !pickBool(env.IMA2_NO_OAUTH_PROXY, fileCfg.oauth?.disableAutoStart, false),
+    // GPT OAuth calls the Codex backend directly (lib/codexBackend). The base URL and client
+    // version are overridable for tests and for pinning a Codex build; the version otherwise
+    // follows the latest published @openai/codex, which gates the model roster.
+    codexBaseUrl: pickStr(env.IMA2_CODEX_BASE_URL, fileCfg.oauth?.codexBaseUrl, "https://chatgpt.com/backend-api/codex"),
+    codexClientVersion: pickStr(env.IMA2_CODEX_CLIENT_VERSION, fileCfg.oauth?.codexClientVersion, ""),
     statusTimeoutMs: pickInt(env.IMA2_OAUTH_STATUS_TIMEOUT_MS, fileCfg.oauth?.statusTimeoutMs, 3000),
     generationTimeoutMs: pickInt(
       env.IMA2_OAUTH_GENERATION_TIMEOUT_MS,

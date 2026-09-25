@@ -1,6 +1,6 @@
 import { errInfo } from "../errInfo.js";
 import { logEvent, logWarn } from "../logger.js";
-import { fetchOAuth } from "../oauthProxy/runtime.js";
+import { fetchOAuth, fetchOAuthPath } from "../oauthProxy/runtime.js";
 import {
   requireRuntimeContext,
   type RouteRuntimeContext,
@@ -98,6 +98,9 @@ function sendUpstream(
     signal,
     body: JSON.stringify(prepared.payload.body),
   };
+  if (prepared.target.useOAuthFetch && prepared.target.oauth) {
+    return fetchOAuthPath(prepared.target.oauth.ctx, prepared.target.oauth.path, init, { scope: "prompt-builder" });
+  }
   return prepared.target.useOAuthFetch
     ? fetchOAuth(prepared.target.url, init, { scope: "prompt-builder" })
     : fetch(prepared.target.url, init);
