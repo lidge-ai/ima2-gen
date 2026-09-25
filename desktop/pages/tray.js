@@ -39,20 +39,32 @@ function renderJobs(jobs) {
   $("jobs-empty").hidden = jobs.length > 0;
 }
 
-function renderRecent(recent) {
+function recentTile(item) {
+  if (item.isVideo) {
+    const label = document.createElement("span");
+    label.className = "tray__video";
+    label.textContent = "▶ Video";
+    return label;
+  }
+  const img = document.createElement("img");
+  img.src = item.thumb;
+  img.alt = item.filename;
+  img.loading = "lazy";
+  return img;
+}
+
+function renderRecent(recent, error) {
   const grid = $("recent");
-  grid.replaceChildren(...recent.filter((r) => r.thumb && !r.isVideo).map((item) => {
+  grid.replaceChildren(...recent.filter((r) => r.thumb || r.isVideo).map((item) => {
     const btn = document.createElement("button");
     btn.title = item.filename;
-    const img = document.createElement("img");
-    img.src = item.thumb;
-    img.alt = item.filename;
-    img.loading = "lazy";
-    btn.append(img);
+    btn.append(recentTile(item));
     btn.addEventListener("click", () => { void bridge.openApp(); void bridge.hideTrayPopup(); });
     return btn;
   }));
-  $("recent-empty").hidden = grid.children.length > 0;
+  const empty = $("recent-empty");
+  empty.textContent = error ? `Couldn't load recent items: ${error}` : "Nothing generated yet";
+  empty.hidden = grid.children.length > 0 && !error;
 }
 
 async function refresh() {
@@ -60,7 +72,7 @@ async function refresh() {
     const snap = await bridge.getTraySnapshot();
     renderStatus(snap.status);
     renderJobs(snap.jobs);
-    renderRecent(snap.recent);
+    renderRecent(snap.recent, snap.error);
   } catch (error) {
     console.warn("tray snapshot failed", error);
   }
@@ -82,4 +94,4 @@ $("settings").addEventListener("click", act(bridge.openSettings));
 $("quit").addEventListener("click", () => void bridge.quit());
 bridge.onStatus(renderStatus);
 bridge.onTrayVisibility(setVisible);
-void refresh();
+setVisible(true);
