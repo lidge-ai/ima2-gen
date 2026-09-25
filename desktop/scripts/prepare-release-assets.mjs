@@ -124,22 +124,43 @@ function verifyProofHashes(proof, installers, bytesByName) {
   }
 }
 
-function validateMetadata(metadata, installers, bytesByName, version, label) {
+function validateMetadataEntries(metadata, bytesByName, version, label) {
   if (metadata.version !== version) fail(label + ' version ' + metadata.version + ' does not match ' + version);
-  const actual = metadata.files.map((entry) => entry.url).sort();
-  if (JSON.stringify(actual) !== JSON.stringify([...installers].sort())) {
-    fail(label + ' files must contain exactly ' + installers.join(', '));
-  }
   for (const entry of metadata.files) {
     const bytes = bytesByName.get(entry.url);
     if (bytes === undefined) fail(label + ' names ' + entry.url + ' but it was not downloaded');
     if (entry.size !== bytes.length) fail(label + ' size mismatch for ' + entry.url);
     if (entry.sha512 !== digest(bytes, 'sha512', 'base64')) fail(label + ' SHA-512 mismatch for ' + entry.url);
   }
-  if (!installers.includes(metadata.path)) fail(label + ' path must name a published installer');
+  if (!bytesByName.has(metadata.path)) fail(label + ' path ' + metadata.path + ' was not downloaded');
   if (metadata.sha512 !== digest(bytesByName.get(metadata.path), 'sha512', 'base64')) {
     fail(label + ' top-level SHA-512 mismatch for ' + metadata.path);
   }
+}
+
+/** `files:` must list exactly `installers` and `path:` must name one of them. */
+function validateMetadata(metadata, installers, bytesByName, version, label) {
+  const actual = metadata.files.map((entry) => entry.url).sort();
+  if (JSON.stringify(actual) !== JSON.stringify([...installers].sort())) {
+    fail(label + ' files must contain exactly ' + installers.join(', '));
+  }
+  validateMetadataEntries(metadata, bytesByName, version, label);
+  if (!installers.includes(metadata.path)) fail(label + ' path must name a published installer');
+}
+
+/**
+ * Linux channel files list every artifact the leg wrote update info for —
+ * electron-builder 26 records the deb next to the AppImage — so files: is a
+ * subset check with the AppImage required. `path:`/`sha512:` must point at the
+ * AppImage: that is the artifact the updater actually downloads.
+ */
+function validateLinuxMetadata(metadata, installers, appImage, bytesByName, version, label) {
+  for (const entry of metadata.files) {
+    if (!installers.includes(entry.url)) fail(label + ' files names unexpected ' + entry.url);
+  }
+  if (!metadata.files.some((entry) => entry.url === appImage)) fail(label + ' files must list ' + appImage);
+  validateMetadataEntries(metadata, bytesByName, version, label);
+  if (metadata.path !== appImage) fail(label + ' path must be ' + appImage);
 }
 
 /**
@@ -256,8 +277,7 @@ export function prepareReleaseAssets({ distDir, version, tag, sha }) {
     load(dir, deb);
     const bytes = readRegularFile(join(dir, channel));
     const metadata = parseUpdateMetadata(bytes.toString('utf8'), 'linux-' + arch + '/' + channel);
-    validateMetadata(metadata, [appImage], bytesByName, version, 'linux-' + arch + '/' + channel);
-    if (!/\.AppImage$/.test(metadata.path)) fail(channel + ' path must name the published AppImage');
+    validateLinuxMetadata(metadata, [appImage, deb], appImage, bytesByName, version, 'linux-' + arch + '/' + channel);
     writeFileSync(join(directory, channel), bytes);
     bytesByName.set(channel, bytes);
     artifactNames.push(channel);

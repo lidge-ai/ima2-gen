@@ -98,7 +98,11 @@ function fixture(
     mkdirSync(dir);
     bytes.set(leg.appImage, put(dir, leg.appImage));
     bytes.set(leg.deb, put(dir, leg.deb));
-    bytes.set(leg.channel, Buffer.from(updateMetadata(VERSION, [{ url: leg.appImage, bytes: bytes.get(leg.appImage)! }], "blockMapSize: 42")));
+
+    bytes.set(leg.channel, Buffer.from(updateMetadata(VERSION, [
+      { url: leg.appImage, bytes: bytes.get(leg.appImage)! },
+      { url: leg.deb, bytes: bytes.get(leg.deb)! },
+    ], "blockMapSize: 42")));
     writeFileSync(join(dir, leg.channel), bytes.get(leg.channel)!);
   }
 
@@ -166,9 +170,9 @@ describe("desktop release asset preparation", () => {
     try {
       run(run1.directory);
       const merged = readFileSync(join(run1.directory, "latest.yml"), "utf8");
-      assert.match(merged, new RegExp("url: ima2-" + VERSION.replace(/\./g, "\\.") + "-win-x64\\.exe"));
-      assert.match(merged, new RegExp("url: ima2-" + VERSION.replace(/\./g, "\\.") + "-win-arm64\\.exe"));
-      assert.match(merged, new RegExp("path: ima2-.*-win-x64\\.exe"));
+      assert.ok(merged.includes("url: ima2-" + VERSION + "-win-x64.exe"));
+      assert.ok(merged.includes("url: ima2-" + VERSION + "-win-arm64.exe"));
+      assert.ok(merged.includes("path: ima2-" + VERSION + "-win-x64.exe"));
       // Leg metadata stays internal; only the merged file publishes.
       const checksums = readFileSync(join(run1.directory, "SHA256SUMS.txt"), "utf8");
       assert.equal((checksums.match(/latest\.yml/g) ?? []).length, 1);
@@ -283,6 +287,17 @@ describe("desktop release asset preparation", () => {
       assert.throws(() => run(tamperedAppImage.directory), /latest-linux-arm64\.yml version/);
     } finally {
       tamperedAppImage.cleanup();
+    }
+
+    const noAppImage = fixture();
+    try {
+      // A channel file that records only the deb is not updatable metadata.
+      const path = join(noAppImage.directory, "linux-x64/latest-linux.yml");
+      writeFileSync(path, readFileSync(path, "utf8")
+        .replace(/  - url: [^\n]+AppImage\n(?:    [A-Za-z0-9]+: [^\n]+\n)+/, ""));
+      assert.throws(() => run(noAppImage.directory), /must list/);
+    } finally {
+      noAppImage.cleanup();
     }
 
     const missingDeb = fixture();

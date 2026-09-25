@@ -119,7 +119,7 @@ describe("multiplatform desktop release contract", () => {
       assert.ok(upload.includes(name), "draft must upload " + name);
     }
     for (const name of ["latest-mac.yml", "latest.yml", "latest-linux.yml", "latest-linux-arm64.yml", "SHA256SUMS.txt"]) {
-      assert.match(upload, new RegExp("desktop/dist/" + name.replace(/\./g, "\\.")));
+      assert.ok(upload.includes("desktop/dist/" + name), "draft must upload " + name);
     }
     // A wildcard would quietly publish whatever else landed in dist.
     assert.doesNotMatch(upload, /desktop\/dist\/\*/);
