@@ -1,7 +1,7 @@
 # Issue #24 — TypeScript Migration (done)
 
 **Status:** done / shipped on main. GitHub #24 is closed.
-**GitHub:** https://github.com/lidge-jun/ima2-gen/issues/24
+**GitHub:** https://github.com/lidge-ai/ima2-gen/issues/24
 **Primary PRD (closed):** `devlog/_fin/260429_typescript-migration/` (phases 0–7).
 
 ## STATUS 2026-05-08 — Closed

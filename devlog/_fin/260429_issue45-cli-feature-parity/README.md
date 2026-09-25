@@ -1,7 +1,7 @@
 # Issue #45 — CLI Feature Parity
 
 **Status:** planned (oracle-audited 2026-04-29, NEEDS_FIX → revised)
-**GitHub:** https://github.com/lidge-jun/ima2-gen/issues/45
+**GitHub:** https://github.com/lidge-ai/ima2-gen/issues/45
 **Priority:** P3
 **Audit:** see `ORACLE-AUDIT.md` in this folder
 

@@ -74,7 +74,7 @@ afterPack: build/sign-extra-binaries.mjs
 electronUpdaterCompatibility: ">=2.16"
 publish:
   provider: github
-  owner: lidge-jun
+  owner: lidge-ai
   repo: ima2-gen
   releaseType: draft
   tagNamePrefix: desktop-v

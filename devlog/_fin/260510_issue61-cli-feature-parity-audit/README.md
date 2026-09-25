@@ -2,7 +2,7 @@
 title: "Issue #61 — CLI Feature Parity Audit"
 status: planned / P phase
 created: 2026-05-10
-github: https://github.com/lidge-jun/ima2-gen/issues/61
+github: https://github.com/lidge-ai/ima2-gen/issues/61
 tags: [cli, parity, web-search, structure]
 ---
 
@@ -14,7 +14,7 @@ Jun raised that the `ima2` CLI may have fallen behind the browser UI and server 
 
 GitHub issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/61
+- https://github.com/lidge-ai/ima2-gen/issues/61
 
 ## What Was Checked
 

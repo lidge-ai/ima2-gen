@@ -76,8 +76,8 @@ self-audit를 근거로 남긴다.
 ## Permission finding
 
 ```text
-repos/lidge-jun/ima2-gen permissions (parkjs101): admin=false, push=true, triage=true
-repos/lidge-jun/ima2-gen/actions/permissions: 403
+repos/lidge-ai/ima2-gen permissions (parkjs101): admin=false, push=true, triage=true
+repos/lidge-ai/ima2-gen/actions/permissions: 403
 ```
 
 운영 계정에 admin이 없어 Environment와 tag ruleset을 이번 단계에서 생성하지 못했다. 소유자
@@ -91,8 +91,8 @@ repos/lidge-jun/ima2-gen/actions/permissions: 403
 2026-09-22 read-only GitHub API:
 
 ```text
-GET /repos/lidge-jun/ima2-gen/environments/desktop-production -> 404 Not Found
-GET /repos/lidge-jun/ima2-gen/rulesets -> active branch ruleset 1, tag ruleset 0
+GET /repos/lidge-ai/ima2-gen/environments/desktop-production -> 404 Not Found
+GET /repos/lidge-ai/ima2-gen/rulesets -> active branch ruleset 1, tag ruleset 0
 ```
 
 따라서 실제 release 전 필수 후속 설정은 다음 두 가지다.

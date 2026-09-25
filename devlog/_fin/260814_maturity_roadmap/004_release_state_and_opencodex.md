@@ -104,7 +104,7 @@ Node24/npm12 성공 구간은 **4:52 – 8:16, 중앙값 6:03**이다. 실패한
 ## 3. 브랜치 보호: 없음
 
 ```
-gh api repos/lidge-jun/ima2-gen/branches/main/protection
+gh api repos/lidge-ai/ima2-gen/branches/main/protection
 → gh: Branch not protected (HTTP 404)
 ```
 

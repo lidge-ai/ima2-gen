@@ -2,7 +2,7 @@
 title: "Issue #63 — Restore Viewer Focus After Delete"
 status: completed / moved to _fin
 created: 2026-05-15
-github: https://github.com/lidge-jun/ima2-gen/issues/63
+github: https://github.com/lidge-ai/ima2-gen/issues/63
 tags: [gallery, viewer, keyboard, accessibility, ux]
 ---
 
@@ -29,7 +29,7 @@ need to click empty viewer space before `ArrowLeft`, `ArrowRight`, `Home`, or
 
 Canonical issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/63
+- https://github.com/lidge-ai/ima2-gen/issues/63
 
 ## User Report
 

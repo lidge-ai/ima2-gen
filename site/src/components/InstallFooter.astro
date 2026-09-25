@@ -3,14 +3,14 @@ import CodeCopy from './CodeCopy.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
-const repoUrl = 'https://github.com/lidge-jun/ima2-gen';
+const repoUrl = 'https://github.com/lidge-ai/ima2-gen';
 const npmUrl = 'https://www.npmjs.com/package/ima2-gen';
-const koReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.ko.md';
-const jaReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.ja.md';
-const zhReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh-CN.md';
-const zhTwReadme = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/README.zh-TW.md';
+const koReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.ko.md';
+const jaReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.ja.md';
+const zhReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.zh-CN.md';
+const zhTwReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.zh-TW.md';
 // Desktop builds are published as separate desktop-v* releases next to the npm releases.
-const desktopUrl = 'https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true';
+const desktopUrl = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true';
 ---
 
 <section class="std install-section" id="install">
@@ -37,9 +37,9 @@ const desktopUrl = 'https://github.com/lidge-jun/ima2-gen/releases?q=desktop&exp
         <div class="oneclick">
           <p class="oneclick-title">{lang === 'ko' ? '원클릭 설치 (npm 필요 없음)' : 'One-Click Install (no npm required)'}</p>
           <div class="oneclick-cmds">
-            <div class="oneclick-row"><span class="oneclick-os">macOS</span><code>curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash</code></div>
-            <div class="oneclick-row"><span class="oneclick-os">Windows</span><code>irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex</code></div>
-            <div class="oneclick-row"><span class="oneclick-os">Linux / WSL</span><code>curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash</code></div>
+            <div class="oneclick-row"><span class="oneclick-os">macOS</span><code>curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash</code></div>
+            <div class="oneclick-row"><span class="oneclick-os">Windows</span><code>irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex</code></div>
+            <div class="oneclick-row"><span class="oneclick-os">Linux / WSL</span><code>curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash</code></div>
           </div>
         </div>
         <div class="badges"><span class="badge prism-text">{t(lang, 'install.badge.npm')}</span><span class="badge">{t(lang, 'install.badge.node')}</span><span class="badge">{t(lang, 'install.badge.mit')}</span></div>

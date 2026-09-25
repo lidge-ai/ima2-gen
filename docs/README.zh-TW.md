@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=npm&label=npm" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/dm/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&label=downloads" alt="npm downloads"></a>
   <img src="https://img.shields.io/node/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=node.js&label=node" alt="Node.js version">
-  <a href="https://github.com/lidge-jun/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-jun/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-ai/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-3f3f46?style=flat-square&labelColor=18181b" alt="MIT license"></a>
 </p>
 
@@ -19,7 +19,7 @@ ima2 serve
 ```
 
 <p align="center">
-  <a href="https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="下載 Mac 應用程式 (.dmg)"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="下載 Mac 應用程式 (.dmg)"></a>
   <a href="#one-line-installers"><img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-one--line%20installer-18181b?style=for-the-badge&logo=gnubash&logoColor=white" alt="Windows 與 Linux 一行安裝"></a>
 </p>
 
@@ -75,7 +75,7 @@ ima2 serve
 </table>
 
 <p align="center">
-  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <b>正體中文</b> · <a href="https://lidge-jun.github.io/ima2-gen/"><b>網站</b></a> · <a href="https://lidge-jun.github.io/ima2-gen/docs"><b>文件 →</b></a>
+  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <b>正體中文</b> · <a href="https://lidge-ai.github.io/ima2-gen/"><b>網站</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/docs"><b>文件 →</b></a>
 </p>
 
 `ima2-gen` 是本機優先的視覺生成執行環境與工作室，讓人和程式設計代理在多個供應商之間執行可重現的影像與影片工作流程。它在你的電腦上執行一個小型伺服器，把所有作品存放在 `~/.ima2/generated`，只和你連線的供應商通訊：OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI，以及已註冊的 ComfyUI 工作流程。Runway 與 Higgsfield 是獨立的 MCP 整合。提示詞與參考圖只會送往你為每個工作選擇的供應商。
@@ -86,11 +86,11 @@ ima2 serve
 
 桌面應用程式以 Mac 視窗和選單列圖示執行同一個本機伺服器與工作室。它以 Developer ID 簽署並通過 Apple 公證，內建執行環境，不需要另外安裝 Node.js。
 
-1. 從最新的 [ima2 Desktop 版本](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true) 下載 `ima2-<version>-mac-arm64.dmg`。
+1. 從最新的 [ima2 Desktop 版本](https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true) 下載 `ima2-<version>-mac-arm64.dmg`。
 2. 打開 DMG，把 **ima2** 拖進 **應用程式** 資料夾。
 3. 啟動 ima2，在歡迎畫面選擇一個供應商。
 
-檢查碼、更新與設定請見 [Mac 應用程式指南](https://lidge-jun.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用 npm 或一行安裝。
+檢查碼、更新與設定請見 [Mac 應用程式指南](https://lidge-ai.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用 npm 或一行安裝。
 
 ### npm
 
@@ -125,19 +125,19 @@ ima2 video "a cat playing piano" --duration 5 --resolution 720p
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
 ```
 
 <details>
@@ -450,13 +450,13 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 
 ## 文件
 
-- [開發者文件網站](https://lidge-jun.github.io/ima2-gen/docs) — 概覽、快速開始、架構、模式、供應商、CLI、設定與伺服器 API
+- [開發者文件網站](https://lidge-ai.github.io/ima2-gen/docs) — 概覽、快速開始、架構、模式、供應商、CLI、設定與伺服器 API
 - [CLI 參考](CLI.zh-TW.md) · [API 參考](API.zh-TW.md) · [Prompt Studio 手冊](PROMPT_STUDIO.zh-TW.md) · [FAQ](FAQ.zh-TW.md) · [找回舊影像](RECOVER_OLD_IMAGES.zh-TW.md)
 
 ## 開發
 
 ```bash
-git clone https://github.com/lidge-jun/ima2-gen.git
+git clone https://github.com/lidge-ai/ima2-gen.git
 cd ima2-gen
 npm install
 npm run dev

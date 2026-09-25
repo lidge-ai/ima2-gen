@@ -11,7 +11,7 @@ Do **not** open a public issue for a security report.
 
 Use GitHub Security Advisories on this repository:
 
-https://github.com/lidge-jun/ima2-gen/security/advisories/new
+https://github.com/lidge-ai/ima2-gen/security/advisories/new
 
 If that form is not enabled yet, email the maintainer listed in
 [README.md](README.md) and say so. Do not attach cookies, OAuth tokens,

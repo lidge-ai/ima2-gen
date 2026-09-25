@@ -5,14 +5,14 @@ created: 2026-05-15
 project_root: /Users/jun/Developer/new/700_projects/ima2-gen
 tags: [pabcd, cli, skill, ux, packaging, gallery, multimode, node-mode]
 issues:
-  - https://github.com/lidge-jun/ima2-gen/issues/64
-  - https://github.com/lidge-jun/ima2-gen/issues/65
-  - https://github.com/lidge-jun/ima2-gen/issues/66
-  - https://github.com/lidge-jun/ima2-gen/issues/67
-  - https://github.com/lidge-jun/ima2-gen/issues/68
-  - https://github.com/lidge-jun/ima2-gen/issues/69
-  - https://github.com/lidge-jun/ima2-gen/issues/70
-  - https://github.com/lidge-jun/ima2-gen/issues/59
+  - https://github.com/lidge-ai/ima2-gen/issues/64
+  - https://github.com/lidge-ai/ima2-gen/issues/65
+  - https://github.com/lidge-ai/ima2-gen/issues/66
+  - https://github.com/lidge-ai/ima2-gen/issues/67
+  - https://github.com/lidge-ai/ima2-gen/issues/68
+  - https://github.com/lidge-ai/ima2-gen/issues/69
+  - https://github.com/lidge-ai/ima2-gen/issues/70
+  - https://github.com/lidge-ai/ima2-gen/issues/59
 ---
 
 # Issues 64-70 + 59 Hardening Closeout
