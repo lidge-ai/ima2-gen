@@ -1,8 +1,9 @@
 import { readFile, writeFile } from "fs/promises";
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
-import { resolveServer, request } from "../lib/client.js";
+import { resolveServer, request, type JsonRecord } from "../lib/client.js";
 import { readStdin } from "../lib/files.js";
 import { out, die, color, json, exitCodeForError, table } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 
 const HELP = `
   ima2 prompt <subcommand> [options]
@@ -66,8 +67,12 @@ const COMMON_FLAGS = {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
+
+interface ImportCandidatesResponse { candidates?: unknown[] }
+
+interface ImportCommitResponse { imported?: number }
 
 function handle(e: unknown): never {
   const err = e as { message?: string; code?: string };
@@ -117,7 +122,7 @@ async function lsSub(argv: string[]) {
   if (args.search) qs.set("search", String(args.search));
   if (args.favorites) qs.set("favoritesOnly", "1");
   const path = qs.toString() ? `/api/prompts?${qs.toString()}` : "/api/prompts";
-  const resp: any = await request(server.base, path).catch(handle);
+  const resp = await request<{ prompts?: JsonRecord[]; items?: JsonRecord[] }>(server.base, path).catch(handle);
   const prompts = resp.prompts || resp.items || [];
   if (args.json) { json({ prompts }); return; }
   if (prompts.length === 0) { out(color.dim("(no prompts)")); return; }
@@ -146,22 +151,22 @@ async function createSub(argv: string[]) {
   const args = parseArgs(argv, { flags: COMMON_FLAGS });
   const text = await resolveText(args.text);
   if (!text) die(2, "--text <value|@file|-> required");
-  const body: any = { text };
+  const body: JsonRecord = { text };
   if (args.name) body.name = args.name;
   if (args.folder) body.folderId = args.folder;
   if (args.tag && Array.isArray(args.tag) && args.tag.length) body.tags = args.tag;
   if (args.mode) body.mode = args.mode;
   const server = await getServer(args);
-  const resp = await request(server.base, "/api/prompts", { method: "POST", body }).catch(handle);
+  const resp = await request<{ id?: string; prompt?: { id?: string } }>(server.base, "/api/prompts", { method: "POST", body }).catch(handle);
   if (args.json) { json(resp); return; }
-  out(color.green("✓ ") + ((resp as any).id || (resp as any).prompt?.id || "(no id)"));
+  out(color.green("✓ ") + (resp.id || resp.prompt?.id || "(no id)"));
 }
 
 async function editSub(argv: string[]) {
   const args = parseArgs(argv, { flags: COMMON_FLAGS });
   const id = args.positional[0];
   if (!id) die(2, "prompt id required");
-  const body: any = {};
+  const body: JsonRecord = {};
   if (args.name !== undefined) body.name = args.name;
   if (args.text !== undefined) body.text = await resolveText(args.text);
   if (args.folder !== undefined) body.folderId = args.folder;
@@ -196,7 +201,7 @@ async function favoriteSub(argv: string[]) {
   const id = args.positional[0];
   if (!id) die(2, "prompt id required");
   const server = await getServer(args);
-  const resp: any = await request(server.base, `/api/prompts/${encodeURIComponent(id)}/favorite`, {
+  const resp = await request<{ isFavorite?: boolean } | null>(server.base, `/api/prompts/${encodeURIComponent(id)}/favorite`, {
     method: "POST",
   }).catch(handle);
   if (args.json) { json(resp); return; }
@@ -231,7 +236,7 @@ async function folderSub(argv: string[]) {
 async function folderLs(argv: string[]) {
   const args = parseArgs(argv, { flags: COMMON_FLAGS });
   const server = await getServer(args);
-  const resp: any = await request(server.base, "/api/prompts/folders").catch(handle);
+  const resp = await request<{ folders?: JsonRecord[]; items?: JsonRecord[] }>(server.base, "/api/prompts/folders").catch(handle);
   const folders = resp.folders || resp.items || [];
   if (args.json) { json({ folders }); return; }
   if (folders.length === 0) { out(color.dim("(no folders)")); return; }
@@ -246,11 +251,11 @@ async function folderCreate(argv: string[]) {
   const name = args.positional.join(" ").trim();
   if (!name) die(2, "folder name required");
   const server = await getServer(args);
-  const resp = await request(server.base, "/api/prompts/folders", {
+  const resp = await request<{ id?: string; folder?: { id?: string } }>(server.base, "/api/prompts/folders", {
     method: "POST", body: { name },
   }).catch(handle);
   if (args.json) { json(resp); return; }
-  out(color.green("✓ ") + ((resp as any).id || (resp as any).folder?.id || "(no id)"));
+  out(color.green("✓ ") + (resp.id || resp.folder?.id || "(no id)"));
 }
 
 async function folderRename(argv: string[]) {
@@ -334,7 +339,7 @@ async function importCurated(argv: string[]) {
   if (!args.source) die(2, "--source <id> required (run `prompt import sources`)");
   const server = await getServer(args);
   const limit = args.limit ? parseInt(String(args.limit)) : undefined;
-  const search: any = await request(server.base, "/api/prompts/import/curated-search", {
+  const search = await request<ImportCandidatesResponse>(server.base, "/api/prompts/import/curated-search", {
     method: "POST",
     body: {
       q: args.q || args.query || "",
@@ -346,7 +351,7 @@ async function importCurated(argv: string[]) {
   if (candidates.length === 0) { out(color.dim("(no candidates)")); return; }
   out(`${candidates.length} candidates`);
   if (args["dry-run"]) { json({ candidates }); return; }
-  const commit: any = await request(server.base, "/api/prompts/import/commit", {
+  const commit = await request<ImportCommitResponse>(server.base, "/api/prompts/import/commit", {
     method: "POST",
     body: { candidates, ...(args.folder ? { folderId: args.folder } : {}) },
   }).catch(handle);
@@ -362,7 +367,7 @@ async function importDiscovery(argv: string[]) {
   if (!seeds.length) die(2, "--seed <repo>... required (at least 1)");
   const server = await getServer(args);
   const limit = args.limit ? parseInt(String(args.limit)) : undefined;
-  const search: any = await request(server.base, "/api/prompts/import/discovery-search", {
+  const search = await request<ImportCandidatesResponse>(server.base, "/api/prompts/import/discovery-search", {
     method: "POST",
     body: { q, seeds, ...(limit ? { limit } : {}) },
     timeoutMs: 120_000,
@@ -371,7 +376,7 @@ async function importDiscovery(argv: string[]) {
   if (candidates.length === 0) { out(color.dim("(no candidates)")); return; }
   out(`${candidates.length} candidates`);
   if (args["dry-run"]) { json({ candidates }); return; }
-  const commit: any = await request(server.base, "/api/prompts/import/commit", {
+  const commit = await request<ImportCommitResponse>(server.base, "/api/prompts/import/commit", {
     method: "POST",
     body: { candidates, ...(args.folder ? { folderId: args.folder } : {}) },
   }).catch(handle);
@@ -386,11 +391,11 @@ async function importFolder(argv: string[]) {
   const server = await getServer(args);
   // Folder import body shapes are opaque (handled by buildFolderFiles/buildFolderPreview helpers).
   // Conservative attempt: send { source: { input: <path> } } and { paths } chains; surface server errors verbatim.
-  const filesResp: any = await request(server.base, "/api/prompts/import/folder-files", {
+  const filesResp = await request<{ files?: { path?: string }[] }>(server.base, "/api/prompts/import/folder-files", {
     method: "POST",
     body: { source: { input: path }, input: path },
   }).catch(handle);
-  const previewResp: any = await request(server.base, "/api/prompts/import/folder-preview", {
+  const previewResp = await request<ImportCandidatesResponse>(server.base, "/api/prompts/import/folder-preview", {
     method: "POST",
     body: {
       source: { input: path }, input: path,
@@ -410,7 +415,7 @@ async function importFolder(argv: string[]) {
   }
   out(`${candidates.length} candidates`);
   if (args["dry-run"]) { json({ candidates }); return; }
-  const commit: any = await request(server.base, "/api/prompts/import/commit", {
+  const commit = await request<ImportCommitResponse>(server.base, "/api/prompts/import/commit", {
     method: "POST",
     body: { candidates, ...(args.folder ? { folderId: args.folder } : {}) },
   }).catch(handle);
@@ -470,7 +475,7 @@ async function buildSub(argv: string[]) {
   return mod.default(argv);
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   ls: lsSub,
   show: showSub,
   create: createSub,

@@ -53,7 +53,7 @@ const GH_STUB = [
   '    if [ "$(cat "$S/exists")" != "1" ]; then echo "release not found" >&2; exit 1; fi',
   '    case "$field" in',
   '      isDraft) cat "$S/isDraft" ;;',
-  '      url) echo "https://github.com/lidge-jun/ima2-gen/releases/tag/$tag" ;;',
+  '      url) echo "https://github.com/lidge-ai/ima2-gen/releases/tag/$tag" ;;',
   '      body) cat "$S/body.md" ;;',
   '      assets) ls "$S/assets" ;;',
   "    esac",
@@ -122,7 +122,7 @@ function stepScript(job: string, name: string): string {
  */
 const EXPRESSIONS: Record<string, string> = {
   "${{ github.token }}": "fixture-token",
-  "${{ github.repository }}": "lidge-jun/ima2-gen",
+  "${{ github.repository }}": "lidge-ai/ima2-gen",
   "${{ github.ref_name }}": TAG,
 };
 

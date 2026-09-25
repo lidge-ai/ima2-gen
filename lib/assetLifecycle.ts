@@ -1,3 +1,4 @@
+import { thrownFields, type CodedError } from "./errInfo.js";
 import { getDb } from "./db.js";
 import { mkdir, rename, unlink, lstat, realpath } from "fs/promises";
 import { basename, dirname, join, resolve, sep } from "path";
@@ -7,13 +8,13 @@ import { config } from "../config.js";
 export function resolveInGenerated(rootDir: string, relPath: string): string {
   void rootDir;
   if (typeof relPath !== "string" || relPath.length === 0) {
-    const err: any = new Error("filename required");
+    const err: CodedError = new Error("filename required");
     err.status = 400;
     err.code = "INVALID_FILENAME";
     throw err;
   }
   if (relPath.includes("\0")) {
-    const err: any = new Error("invalid filename");
+    const err: CodedError = new Error("invalid filename");
     err.status = 400;
     err.code = "INVALID_FILENAME";
     throw err;
@@ -22,7 +23,7 @@ export function resolveInGenerated(rootDir: string, relPath: string): string {
   const target = resolve(baseDir, relPath);
   const prefix = baseDir.endsWith(sep) ? baseDir : baseDir + sep;
   if (target === baseDir || !target.startsWith(prefix)) {
-    const err: any = new Error("filename escapes generated/");
+    const err: CodedError = new Error("filename escapes generated/");
     err.status = 400;
     err.code = "INVALID_FILENAME";
     throw err;
@@ -39,7 +40,7 @@ async function regularFileWithin(path: string, root: string): Promise<string> {
   const baseDir = await realpath(resolve(root));
   const stat = await lstat(path);
   if (stat.isSymbolicLink()) {
-    const err: any = new Error("symbolic links are not valid assets");
+    const err: CodedError = new Error("symbolic links are not valid assets");
     err.status = 400;
     err.code = "INVALID_FILENAME";
     throw err;
@@ -50,7 +51,7 @@ async function regularFileWithin(path: string, root: string): Promise<string> {
   const canonical = await realpath(path);
   const prefix = baseDir.endsWith(sep) ? baseDir : baseDir + sep;
   if (canonical === baseDir || !canonical.startsWith(prefix)) {
-    const err: any = new Error("filename escapes generated/");
+    const err: CodedError = new Error("filename escapes generated/");
     err.status = 400;
     err.code = "INVALID_FILENAME";
     throw err;
@@ -99,9 +100,10 @@ export async function trashAsset(rootDir: string, filename: string) {
   const src = resolveInGenerated(rootDir, filename);
   try {
     await assertRegularGeneratedPath(src);
-  } catch (cause: any) {
-    if (cause?.code !== "ENOENT") throw cause;
-    const err: any = new Error("Asset not found");
+  } catch (cause: unknown) {
+    const causeFields = thrownFields(cause);
+    if (causeFields.code !== "ENOENT") throw cause;
+    const err: CodedError = new Error("Asset not found");
     err.status = 404;
     err.code = "ASSET_NOT_FOUND";
     throw err;
@@ -112,8 +114,9 @@ export async function trashAsset(rootDir: string, filename: string) {
   try {
     await assertRegularGeneratedPath(sidecar);
     paths.push(sidecar);
-  } catch (err: any) {
-    if (err?.code !== "ENOENT") throw err;
+  } catch (err: unknown) {
+    const errFields = thrownFields(err);
+    if (errFields.code !== "ENOENT") throw err;
   }
 
   let trashMethod: "system" | "internal" = "system";
@@ -145,9 +148,10 @@ export async function deleteAssetPermanent(rootDir: string, filename: string) {
   const src = resolveInGenerated(rootDir, filename);
   try {
     await assertRegularGeneratedPath(src);
-  } catch (cause: any) {
-    if (cause?.code !== "ENOENT") throw cause;
-    const err: any = new Error("Asset not found");
+  } catch (cause: unknown) {
+    const causeFields = thrownFields(cause);
+    if (causeFields.code !== "ENOENT") throw cause;
+    const err: CodedError = new Error("Asset not found");
     err.status = 404;
     err.code = "ASSET_NOT_FOUND";
     throw err;
@@ -157,8 +161,9 @@ export async function deleteAssetPermanent(rootDir: string, filename: string) {
   try {
     await assertRegularGeneratedPath(sidecar);
     await unlink(sidecar);
-  } catch (err: any) {
-    if (err?.code !== "ENOENT") throw err;
+  } catch (err: unknown) {
+    const errFields = thrownFields(err);
+    if (errFields.code !== "ENOENT") throw err;
   }
   const summary = markNodesAssetMissing(filename);
   return {
@@ -174,7 +179,7 @@ export async function restoreAsset(rootDir: string, trashId: string, originalFil
   const src = resolve(trashDir, trashId);
   const prefix = trashDir.endsWith(sep) ? trashDir : trashDir + sep;
   if (src === trashDir || !src.startsWith(prefix)) {
-    const err: any = new Error("invalid trashId");
+    const err: CodedError = new Error("invalid trashId");
     err.status = 400;
     err.code = "INVALID_FILENAME";
     throw err;

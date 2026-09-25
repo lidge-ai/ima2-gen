@@ -66,7 +66,7 @@ function sanitizeLogString(value: string): string {
   const oneLine = value
     .replace(/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi, "data:image/[redacted]")
     .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'<>]+/gi, "[redacted-url]")
-    .replace(/(^|[\s("'<>=,\[{])\/\/[^\s"'<>]+/g, "$1[redacted-url]")
+    .replace(/(^|[\s("'<>=,[{])\/\/[^\s"'<>]+/g, "$1[redacted-url]")
     .replace(/Bearer\s+[^\s"'<>]+/gi, "Bearer [redacted]")
     .replace(/([?&][^=\s?&#"'<>]+)=([^&\s"'<>]*)/g, "$1=[redacted]")
     .replace(/\s+/g, " ")

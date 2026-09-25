@@ -3,13 +3,13 @@
  *
  * Ported from OpenCodex `src/oauth/chatgpt.ts` (constants, JWT identity helpers) and its
  * store discipline (atomic 0600 writes, 0700 directory). ima2 keeps its own session file so
- * the openai-oauth proxy and the Codex CLI never rotate the same refresh token: a shared
+ * ima2's GPT OAuth client and the Codex CLI never rotate the same refresh token: a shared
  * ~/.codex/auth.json made whichever process refreshed second lose the session
  * (refresh_token_reused), which surfaced as "logged in, but GPT OAuth still says log in".
  *
  * The file keeps the Codex auth.json shape (`tokens.{id_token,access_token,refresh_token,
- * account_id}` + `last_refresh`) because openai-oauth reads it through `--oauth-file` and
- * writes refreshed tokens back into it.
+ * account_id}` + `last_refresh`) because lib/codexBackend/session.ts reads it on every request
+ * and writes refreshed tokens back into it.
  *
  * MUST stay a leaf module: only node:fs, node:crypto, node:os, node:path.
  */

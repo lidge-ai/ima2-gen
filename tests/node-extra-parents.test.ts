@@ -5,6 +5,7 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { executionTestProcess } from "./_executionTestProcess.ts";
 import { openRouteHarness, responsesSse } from "./_executionRouteHarness.ts";
+import { imagesJson } from "./_oauthNativeFixture.ts";
 
 type Harness = Awaited<ReturnType<typeof openRouteHarness>>;
 type Fixture = Parameters<Parameters<Harness["run"]>[2]>[0];
@@ -27,6 +28,20 @@ function successFrame(image: string) {
     { type: "response.output_item.done", item: { type: "image_generation_call", result: image } },
     { type: "response.completed", response: { usage: { total_tokens: 1 } } },
   ]);
+}
+
+/** The ordered input images of one upstream call: Responses input_image parts, or Images API edit files. */
+async function inputImages(call: Call): Promise<string[]> {
+  if (call.url.endsWith("/v1/images/edits")) {
+    const body = (call.raw ? Buffer.from(call.raw) : call.body) as unknown as BodyInit;
+    const form = await new Request(call.url, { method: "POST", headers: call.headers, body }).formData();
+    return Promise.all(form.getAll("image").map(async (file) =>
+      `data:${(file as File).type};base64,${Buffer.from(await (file as File).arrayBuffer()).toString("base64")}`));
+  }
+  const wire = JSON.parse(call.body);
+  return wire.input[1].content
+    .filter((part: { type: string }) => part.type === "input_image")
+    .map((part: { image_url: string }) => part.image_url);
 }
 
 async function seedNode(fixture: Fixture, nodeId: string, b64: string) {
@@ -75,16 +90,16 @@ if (executionTestProcess(import.meta.url)) describe("node extra parents", { conc
   for (const provider of ["api", "oauth"] as const) {
     test(`${provider} sends base, deduplicated extra parent, then user reference bytes`, async () => {
       await harness.run("node", { upstream: async (call: Call) => {
+        // GPT OAuth in direct mode renders straight through the Images API edits endpoint.
         assert.equal(call.url, provider === "api"
           ? "https://api.openai.com/v1/responses"
-          : "http://oauth-fixture.invalid/v1/responses");
-        const wire = JSON.parse(call.body);
-        const images = wire.input[1].content.filter((part: { type: string }) => part.type === "input_image");
+          : "http://oauth-fixture.invalid/v1/images/edits");
+        const images = await inputImages(call);
         assert.equal(images.length, 3);
-        await assertColor(images[0].image_url, [0, 0, 255]);
-        await assertColor(images[1].image_url, [255, 0, 0]);
-        await assertColor(images[2].image_url, [0, 255, 0]);
-        return successFrame(output);
+        await assertColor(images[0]!, [0, 0, 255]);
+        await assertColor(images[1]!, [255, 0, 0]);
+        await assertColor(images[2]!, [0, 255, 0]);
+        return provider === "api" ? successFrame(output) : imagesJson(output);
       } }, async (fixture) => {
         await seedNode(fixture, "n_base", base);
         await seedNode(fixture, "n_extra", extra);

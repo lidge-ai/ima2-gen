@@ -12,8 +12,10 @@ import { tmpdir } from "node:os";
 import { config } from "../config.js";
 import { registerGenerateRoutes } from "../routes/generate.ts";
 
-type ToolPayload = { type: string; background?: string; output_format?: string };
-type UpstreamBody = { tools?: ToolPayload[] } | null;
+// GPT OAuth plans on /v1/responses and renders on /v1/images/generations; the render call is
+// where background reaches gpt-image-2, so that is the payload under test.
+type RenderPayload = { model?: string; background?: string; output_format?: string };
+type UpstreamBody = RenderPayload | null;
 type ErrorBody = { code?: string; error?: string };
 
 async function listen(server: Server): Promise<string> {
@@ -22,7 +24,7 @@ async function listen(server: Server): Promise<string> {
   return `http://127.0.0.1:${address.port}`;
 }
 
-/** Captures the upstream tool payload so we can assert what was actually sent. */
+/** Answers the planner, captures the render payload, then fails the render on purpose. */
 async function withHarness(
   run: (ctx: { appUrl: string; captured: () => UpstreamBody }) => Promise<void>,
 ): Promise<void> {
@@ -31,6 +33,13 @@ async function withHarness(
     let raw = "";
     req.on("data", (chunk) => { raw += chunk; });
     req.on("end", () => {
+      if (req.url === "/v1/responses") {
+        const call = { type: "function_call", call_id: "call_1", name: "image_gen", arguments: JSON.stringify({ prompt: "a red apple cutout" }) };
+        res.writeHead(200, { "Content-Type": "text/event-stream" });
+        res.end([{ type: "response.output_item.done", item: call }, { type: "response.completed", response: {} }]
+          .map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""));
+        return;
+      }
       try { capturedBody = JSON.parse(raw) as UpstreamBody; } catch { capturedBody = null; }
       // Fail the generation deliberately: only the request shape is under test.
       res.writeHead(400, { "Content-Type": "application/json" });
@@ -68,28 +77,25 @@ function post(appUrl: string, body: Record<string, unknown>): Promise<Response> 
   });
 }
 
-function imageTool(body: UpstreamBody): ToolPayload {
-  const tool = (body?.tools ?? []).find((t) => t.type === "image_generation");
-  assert.ok(tool, "no image_generation tool in the upstream payload");
-  return tool as ToolPayload;
+function renderPayload(body: UpstreamBody): RenderPayload {
+  assert.equal(body?.model, "gpt-image-2", "no gpt-image-2 render call reached upstream");
+  return body as RenderPayload;
 }
 
-test("transparent request sends background:auto on the OAuth lane", async () => {
+test("transparent request asks gpt-image-2 for a transparent background on the OAuth lane", async () => {
   await withHarness(async ({ appUrl, captured }) => {
     await post(appUrl, { provider: "oauth", backgroundPreset: "transparent" });
-    const tool = imageTool(captured());
-    // Forcing "transparent" 400s on gpt-image-2-codex; "auto" is what works.
-    assert.equal(tool.background, "auto");
-    assert.equal(tool.output_format, "png");
+    // Measured 2026-09-25: the ChatGPT Images endpoint returns a real alpha PNG for this.
+    assert.equal(renderPayload(captured()).background, "transparent");
   });
 });
 
-test("opaque presets leave the tool payload untouched", async () => {
+test("opaque presets leave the render payload untouched", async () => {
   await withHarness(async ({ appUrl, captured }) => {
     await post(appUrl, { provider: "oauth", backgroundPreset: "chroma-green" });
-    const tool = imageTool(captured());
-    assert.ok(!("background" in tool), "background must not appear for matte presets");
-    assert.ok(!("output_format" in tool), "output_format must not appear for matte presets");
+    const render = renderPayload(captured());
+    assert.ok(!("background" in render), "background must not appear for matte presets");
+    assert.ok(!("output_format" in render), "output_format must not appear for matte presets");
   });
 });
 
@@ -106,8 +112,9 @@ test("the canonical format field cannot smuggle jpeg past the alpha guard", asyn
 
 test("webp is accepted as an alpha-capable format", async () => {
   await withHarness(async ({ appUrl, captured }) => {
-    await post(appUrl, { provider: "oauth", backgroundPreset: "transparent", format: "webp" });
-    assert.equal(imageTool(captured()).output_format, "webp");
+    const res = await post(appUrl, { provider: "oauth", backgroundPreset: "transparent", format: "webp" });
+    assert.notEqual(((await res.json()) as ErrorBody).code, "TRANSPARENT_FORMAT_CONFLICT");
+    assert.equal(renderPayload(captured()).background, "transparent");
   });
 });
 

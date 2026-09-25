@@ -5,6 +5,7 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { executionTestProcess } from "./_executionTestProcess.ts";
 import { openRouteHarness, responsesSse, type RouteHarness } from "./_executionRouteHarness.ts";
+import { imagesJson, plannerSse } from "./_oauthNativeFixture.ts";
 
 const BASE = { prompt: "Image tool selection fixture", model: "gpt-5.4", quality: "high",
   size: "1024x1024", webSearchEnabled: false, sizeNudge: false };
@@ -24,6 +25,17 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
     { type: "response.output_item.done", item: { type: "image_generation_call", result: source } },
     { type: "response.completed", response: {} },
   ]);
+  // GPT OAuth plans with GPT-6 on /v1/responses and renders with gpt-image-2 on /v1/images/*.
+  const oauthSuccess = (call: { url: string }) => (
+    call.url.endsWith("/v1/responses") ? plannerSse(["fixture plan"]) : imagesJson(source)
+  );
+  const renderFields = async (call: { url: string; headers: Headers; body: string }) => {
+    if (call.url.endsWith("/v1/images/generations")) return JSON.parse(call.body) as Record<string, unknown>;
+    const form = await new Request(call.url, { method: "POST", headers: call.headers, body: call.body }).formData();
+    const fields: Record<string, unknown> = {};
+    form.forEach((value, key) => { if (key !== "image") fields[key] = value; });
+    return fields;
+  };
 
   for (const surface of SURFACES) for (const [index, imageToolModel] of MODELS.entries()) {
     it(`${surface} serializes ${imageToolModel} without replacing the reasoning model`, async () => {
@@ -79,9 +91,9 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
     });
   }
 
-  for (const provider of ["api", "oauth"]) for (const quality of ["low", "medium", "high", "xhigh", "max"]) {
+  for (const provider of ["api", "oauth"] as const) for (const quality of ["low", "medium", "high", "xhigh", "max"]) {
     it(`${provider} default tool preserves legacy quality scope: ${quality}`, async () => {
-      await harness.run("classic", { upstream: success }, async (f) => {
+      await harness.run("classic", { upstream: provider === "oauth" ? oauthSuccess : success }, async (f) => {
         const response = await f.post({ ...BASE, provider, quality,
           ...(provider === "oauth" ? { imageToolModel: MODELS[0] } : {}) });
         assert.equal(response.status, 200);
@@ -90,6 +102,14 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
         const expected = quality === "xhigh" || quality === "max" ? "medium" : quality;
         assert.equal(result.quality, expected);
         assert.equal(result.imageToolModel, undefined);
+        if (provider === "oauth") {
+          // The stale API tool model never reaches GPT OAuth; the legacy id plans on its GPT-6 tier.
+          assert.equal(JSON.parse(f.calls[0]!.body).model, "gpt-6-luna");
+          const render = await renderFields(f.calls[1]!);
+          assert.equal(render.model, "gpt-image-2");
+          assert.equal(render.quality, expected);
+          return;
+        }
         const body = JSON.parse(f.calls[0]!.body);
         assert.equal(body.model, "gpt-5.4");
         assert.deepEqual(body.tools, [{ type: "image_generation", quality: expected,
@@ -99,18 +119,26 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
   }
 
   it("direct adapters omit tool model and absent quality on legacy API/OAuth calls", async () => {
-    await harness.run("classic", { upstream: success }, async (f) => {
+    const isApi = (call: { url: string }) => new URL(call.url).host === "api.openai.com";
+    await harness.run("classic", { upstream: (call) => (isApi(call) ? success() : oauthSuccess(call)) }, async (f) => {
       const { generateViaResponses, editViaResponses } = await import("../lib/responsesImageAdapter.ts");
       for (const provider of ["api", "oauth"]) {
         const options = { model: "gpt-5.4", webSearchEnabled: false };
         await generateViaResponses(provider, "fixture", undefined, "1024x1024", "low", [], null, "auto", f.ctx, options);
         await editViaResponses(provider, "fixture", source, undefined, "1024x1024", "low", "auto", f.ctx, null, options);
       }
-      assert.equal(f.calls.length, 4);
-      for (const call of f.calls) {
+      const api = f.calls.filter(isApi);
+      assert.equal(api.length, 2);
+      for (const call of api) {
         const body = JSON.parse(call.body);
         assert.equal(body.model, "gpt-5.4");
         assert.deepEqual(body.tools, [{ type: "image_generation", size: "1024x1024", moderation: "low" }]);
+      }
+      const renders = f.calls.filter((call) => /\/v1\/images\//.test(call.url));
+      assert.equal(renders.length, 2);
+      for (const call of renders) {
+        assert.deepEqual(await renderFields(call), { model: "gpt-image-2", prompt: "fixture plan", size: "1024x1024", moderation: "low",
+          ...(call.url.endsWith("/generations") ? { n: 1 } : {}) });
       }
     });
   });

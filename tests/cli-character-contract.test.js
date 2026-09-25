@@ -44,8 +44,8 @@ function makeFake({ assets = [], onMcpGenerate } = {}) {
     }
     if (req.url === "/api/models") {
       res.end(JSON.stringify({ ok: true, lanes: {
-        oauth: { status: "ready", defaults: { image: "gpt-5.6-luna" },
-          models: { image: [{ id: "gpt-5.6-luna" }], video: [] } },
+        oauth: { status: "ready", defaults: { image: "gpt-6-luna" },
+          models: { image: [{ id: "gpt-6-luna" }], video: [] } },
         grok: { status: "ready", defaults: { video: "grok-imagine-video" },
           models: { image: [], video: [{ id: "grok-imagine-video" }] } },
         runway: { status: "ready", defaults: { image: "gen-4" }, models: {

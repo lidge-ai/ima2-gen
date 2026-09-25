@@ -1,5 +1,5 @@
 import { parseArgs } from "../lib/args.js";
-import { resolveServer, request } from "../lib/client.js";
+import { resolveServer, request, type HistoryListResponse } from "../lib/client.js";
 import { out, die, color, json, table, exitCodeForError } from "../lib/output.js";
 
 import { errInfo } from "../../lib/errInfo.js";
@@ -32,8 +32,8 @@ export default async function lsCmd(argv: string[]) {
   if (args.favorites) qs.set("favoritesOnly", "1");
   qs.set("limit", String(limit));
   const path = `/api/history?${qs.toString()}`;
-  let resp;
-  try { resp = await request(server.base, path); }
+  let resp: HistoryListResponse;
+  try { resp = await request<HistoryListResponse>(server.base, path); }
   catch (e) {
     const err = errInfo(e); die(exitCodeForError(e), err.message); }
 

@@ -23,14 +23,14 @@ let pkg: { version: string; name: string; engines?: { node?: unknown } } = { ver
 try {
   const metadata = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
   if (metadata && typeof metadata.version === "string" && typeof metadata.name === "string") pkg = metadata;
-} catch {}
+} catch { /* best-effort: package.json metadata is optional; keep the placeholder version */ }
 
 function loadConfig() {
   if (existsSync(CONFIG_FILE)) {
     return JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
   }
   if (existsSync(LEGACY_CONFIG_FILE)) {
-    try { return JSON.parse(readFileSync(LEGACY_CONFIG_FILE, "utf-8")); } catch {}
+    try { return JSON.parse(readFileSync(LEGACY_CONFIG_FILE, "utf-8")); } catch { /* best-effort: unreadable legacy config falls through to defaults */ }
   }
   return {};
 }
@@ -58,7 +58,7 @@ function showImageProbeHelp() {
     --quality <quality>    Default: low
     --moderation <value>   Default: low
     --prompt <text>        Override built-in cat prompt
-    --oauth-url <url>      Override GPT OAuth proxy URL
+    --oauth-url <url>      Send GPT OAuth checks to this endpoint
     --timeout-ms <ms>      Per-probe timeout
 `);
 }
@@ -90,7 +90,7 @@ async function imageProbe(args: string[]) {
     provider: valueAfter(args, "--provider") || fileConfig.provider || "oauth",
     apiKey: typeof fileConfig.apiKey === "string" ? fileConfig.apiKey : undefined,
     oauthUrl: valueAfter(args, "--oauth-url") || undefined,
-    model: valueAfter(args, "--model") || runtimeConfig.imageModels?.default || "gpt-5.6-luna",
+    model: valueAfter(args, "--model") || runtimeConfig.imageModels?.default || "gpt-6-luna",
     size: valueAfter(args, "--size") || "1024x1024",
     quality: valueAfter(args, "--quality") || "low",
     moderation: valueAfter(args, "--moderation") || "low",

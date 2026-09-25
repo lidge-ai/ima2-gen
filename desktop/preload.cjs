@@ -18,6 +18,16 @@ if (window.location.protocol === "file:") {
     openLogs: () => ipcRenderer.invoke("desktop:open-logs"),
     openConfigDir: () => ipcRenderer.invoke("desktop:open-config-dir"),
     closeWindow: () => ipcRenderer.invoke("desktop:close-self"),
+    trayAcrylic: process.argv.includes("--ima2-tray-acrylic=on"),
+    getTraySnapshot: () => ipcRenderer.invoke("desktop:tray:snapshot"),
+    hideTrayPopup: () => ipcRenderer.invoke("desktop:tray:hide"),
+    openInBrowser: () => ipcRenderer.invoke("desktop:open-in-browser"),
+    quit: () => ipcRenderer.invoke("desktop:quit"),
+    onTrayVisibility: (cb) => {
+      const handler = (_e, visible) => cb(visible);
+      ipcRenderer.on("desktop:tray:visibility", handler);
+      return () => ipcRenderer.removeListener("desktop:tray:visibility", handler);
+    },
     onStatus: (cb) => {
       const handler = (_e, status) => cb(status);
       ipcRenderer.on("desktop:status", handler);

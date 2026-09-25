@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=npm&label=npm" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/dm/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&label=downloads" alt="npm downloads"></a>
   <img src="https://img.shields.io/node/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=node.js&label=node" alt="Node.js version">
-  <a href="https://github.com/lidge-jun/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-jun/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-ai/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-3f3f46?style=flat-square&labelColor=18181b" alt="MIT license"></a>
 </p>
 
@@ -19,7 +19,7 @@ ima2 serve
 ```
 
 <p align="center">
-  <a href="https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="下載 Mac 應用程式 (.dmg)"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="下載 Mac 應用程式 (.dmg)"></a>
   <a href="#one-line-installers"><img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-one--line%20installer-18181b?style=for-the-badge&logo=gnubash&logoColor=white" alt="Windows 與 Linux 一行安裝"></a>
 </p>
 
@@ -75,7 +75,7 @@ ima2 serve
 </table>
 
 <p align="center">
-  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <b>正體中文</b> · <a href="https://lidge-jun.github.io/ima2-gen/"><b>網站</b></a> · <a href="https://lidge-jun.github.io/ima2-gen/docs"><b>文件 →</b></a>
+  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <b>正體中文</b> · <a href="https://lidge-ai.github.io/ima2-gen/"><b>網站</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/docs"><b>文件 →</b></a>
 </p>
 
 `ima2-gen` 是本機優先的視覺生成執行環境與工作室，讓人和程式設計代理在多個供應商之間執行可重現的影像與影片工作流程。它在你的電腦上執行一個小型伺服器，把所有作品存放在 `~/.ima2/generated`，只和你連線的供應商通訊：OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI，以及已註冊的 ComfyUI 工作流程。Runway 與 Higgsfield 是獨立的 MCP 整合。提示詞與參考圖只會送往你為每個工作選擇的供應商。
@@ -86,11 +86,11 @@ ima2 serve
 
 桌面應用程式以 Mac 視窗和選單列圖示執行同一個本機伺服器與工作室。它以 Developer ID 簽署並通過 Apple 公證，內建執行環境，不需要另外安裝 Node.js。
 
-1. 從最新的 [ima2 Desktop 版本](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true) 下載 `ima2-<version>-mac-arm64.dmg`。
+1. 從最新的 [ima2 Desktop 版本](https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true) 下載 `ima2-<version>-mac-arm64.dmg`。
 2. 打開 DMG，把 **ima2** 拖進 **應用程式** 資料夾。
 3. 啟動 ima2，在歡迎畫面選擇一個供應商。
 
-檢查碼、更新與設定請見 [Mac 應用程式指南](https://lidge-jun.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用 npm 或一行安裝。
+檢查碼、更新與設定請見 [Mac 應用程式指南](https://lidge-ai.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用 npm 或一行安裝。
 
 ### npm
 
@@ -108,7 +108,7 @@ ima2 serve
 
 ```bash
 ima2 models
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 defaults set video grok/grok-imagine-video-1.5
 ima2 gen "a clean product photo of a red guitar pedal"
 ima2 video "a cat playing piano" --duration 5 --resolution 720p
@@ -125,19 +125,19 @@ ima2 video "a cat playing piano" --duration 5 --resolution 720p
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
 ```
 
 <details>
@@ -185,7 +185,7 @@ Ctrl+C 會乾淨地結束：關閉資料庫、停止子程序並釋放檔案鎖�
 - **點陣轉向量**：透過 `ima2 vectorize`、AssetGen/Assets 或 Canvas 匯出，把扁平點陣圖描成真正的 SVG 路徑。
 - **NovelAI 雙提示詞**：選擇 NovelAI 後，創作、首頁與行動版輸入面板會並排顯示 **Positive prompt** 與 **Undesired content**。 輸入區域窄於 719px 時兩欄會上下堆疊。
 - **提示詞庫**：匯入本機提示詞包、GitHub 資料夾與精選的 GPT-image 提示，並在本機建立索引搜尋。
-- **Prompt Builder**：以文字後端琢磨意圖。可在 Settings > Providers 維持 Auto，或固定後端與模型，**via &lt;backend&gt;** 徽章會顯示實際回應的後端。 選擇 GPT 後端時，預設模型是 `gpt-5.6-luna`。
+- **Prompt Builder**：以文字後端琢磨意圖。可在 Settings > Providers 維持 Auto，或固定後端與模型，**via &lt;backend&gt;** 徽章會顯示實際回應的後端。 選擇 GPT 後端時，預設模型是 `gpt-6-luna`。
 - **本機圖庫**：所有影像與影片都留在本機，附有依工作階段區分的歷史紀錄、生成時間與 reasoning effort 中繼資料。 預設只顯示目前的工作階段，All Images 切換可以展開全部歷史，所選的預設範圍在工作階段之間維持不變。
 - **淺色與深色主題**：以 token 為基礎、符合 AA 對比度的配色，可在淺色、深色與跟隨系統之間無閃爍切換。
 - **行動版外殼**與**工作可觀測性**：小螢幕上的應用程式列、輸入面板與精簡的設定切換，以及附安全日誌和請求 ID 的進行中、最近工作清單。
@@ -216,7 +216,7 @@ ima2 skill install --tmp        # 安裝到暫存資料夾（備案）
 
 | 通道 | 驗證 | 影像 | 影片 | 說明 |
 |---|---|:-:|:-:|---|
-| `oauth` | 透過本機 Codex OAuth 代理登入 ChatGPT | ✓ | | 預設通道，`gpt-5.6-luna` |
+| `oauth` | ChatGPT 登入，由 ima2 直接呼叫 ChatGPT | ✓ | | 預設通道；GPT-6 規劃，`gpt-image-2` 出圖，`gpt-6-luna` |
 | `api` | `OPENAI_API_KEY` | ✓ | | Responses API `image_generation` 工具，支援遮罩、多模式、節點 |
 | `grok` | xAI OAuth（`ima2 grok login`） | ✓ | ✓ | 呼叫 Images API 前先做網頁搜尋與規劃 |
 | `grok-api` | `XAI_API_KEY` | ✓ | ✓ | 直接呼叫 xAI Images API |
@@ -228,12 +228,12 @@ ima2 skill install --tmp        # 安裝到暫存資料夾（備案）
 | `minimax` | MiniMax API 金鑰 | ✓ | | `image-01`、`image-01-live` |
 | `runway`、`higgsfield` | MCP 連線 | ✓ | ✓ | 獨立的 MCP 整合 |
 
-GPT 通道的預設影像模型是 **`gpt-5.6-luna`**。`gpt-6-astra` 是最新的 GPT 影像模型，可以手動選擇；`gpt-5.6-terra` 與 `gpt-5.6-sol` 在帳號開放時才會出現；`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini` 作為相容選項保留。應用程式也提供品質（`low`、`medium`、`high`）與審核等級（`auto`、`low`）控制。
+GPT OAuth 通道使用三個 GPT-6 模型：預設 **`gpt-6-luna`**，另有 `gpt-6-sol`，以及推理時間最長、速度最慢的 `gpt-6-astra`。所選模型負責規劃畫面，`gpt-image-2` 負責出圖。`gpt-5.6-luna` 等舊的 OAuth 模型 ID 在已儲存的設定與腳本中仍可使用，會對應到相應的 GPT-6 模型。API key 通道保留自己的清單：`gpt-5.6-luna`（預設）、`gpt-6-astra`、`gpt-5.6-terra`、`gpt-5.6-sol`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`。應用程式也提供品質（`low`、`medium`、`high`）與審核等級（`auto`、`low`）控制。
 
 <details>
 <summary><b>供應商詳情（English）</b></summary>
 
-- `provider: "oauth"` uses the local Codex OAuth proxy.
+- `provider: "oauth"` signs in with your ChatGPT session and calls ChatGPT's Codex backend from the ima2 server process, with no separate proxy. A GPT-6 model plans the prompt and `gpt-image-2` renders it; Direct mode skips the planner. Transparent backgrounds and image edits run on the same lane.
 - `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool.
 - `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`, running mandatory xAI Web Search plus a planner pass (default: `grok-4.3`, configurable in settings or via `--planner-model`) before the xAI Images API call. `grok-4.5` and `grok-4.6` are also selectable. Log in once with `ima2 grok login` or the Settings **Switch Account** button; the session refreshes itself two minutes before expiry.
 - `provider: "grok-api"` calls the xAI Images API directly with `XAI_API_KEY` (no OAuth session involved).
@@ -243,7 +243,7 @@ GPT 通道的預設影像模型是 **`gpt-5.6-luna`**。`gpt-6-astra` 是最新�
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
 - Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
 
-If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth and API-key generation default to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
+If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth defaults to `gpt-6-luna` and API-key generation to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
 
 One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
 
@@ -299,7 +299,7 @@ The server advertises its actual port at `~/.ima2/server.json`. If `3333` is bus
 
 ```bash
 ima2 models --kind image
-ima2 gen "poster" --model oauth/gpt-5.6-luna --reasoning-effort high
+ima2 gen "poster" --model oauth/gpt-6-luna --reasoning-effort high
 ima2 gen "1girl, blue hair" --model nai/nai-diffusion-5-full --nai-negative-prompt "lowres, watermark"
 ima2 vectorize logo.png -o logo.svg --json
 ima2 prompt build --message "Make this prompt production-ready" --backend auto --model auto
@@ -326,16 +326,17 @@ Full reference: [docs/CLI.md](CLI.md).
 |---|---:|---|
 | `IMA2_PORT` / `PORT` | `3333` | Web server port |
 | `IMA2_HOST` | `127.0.0.1` | Web server bind host |
-| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | OAuth proxy port |
+| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | Port of the external GPT OAuth endpoint used with `IMA2_NO_OAUTH_PROXY=1` |
 | `IMA2_SERVER` | — | CLI target override |
 | `IMA2_CONFIG_DIR` | `~/.ima2` | Config and SQLite location |
 | `IMA2_ADVERTISE_FILE` | `~/.ima2/server.json` | Runtime discovery file |
 | `IMA2_GENERATED_DIR` | `~/.ima2/generated` | Generated image directory |
-| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Server fallback image model |
+| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
-| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to disable the auto-started OAuth proxy |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
+| `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
 | `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | Recent terminal job retention for debug views |
 | `OPENAI_API_KEY` | — | API key for the `provider: "api"` Responses API image path and auxiliary API-key features |
@@ -393,7 +394,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b>在代理/VPN 網路中反覆出現 <code>fetch failed</code></b></summary>
 
-確認本機 OAuth 代理可以連線。需要代理的網路請開啟代理用戶端的 TUN/TURN 類模式，再重試 `openai-oauth --port 10531`。仍然失敗時，在執行 `ima2 serve` 或 `openai-oauth` 的同一個終端機設定 `HTTP_PROXY` 與 `HTTPS_PROXY`。在 Windows 上，也請檢查開機自動啟動的網路攔截工具，包括 SecretDNS 這類 DNS/封包分割繞過工具，即使瀏覽器看起來正常，它們也可能破壞 OAuth 或影像串流回應。
+GPT OAuth 請求由 `ima2 serve` 行程直接送往 `chatgpt.com`。需要代理的網路請開啟代理用戶端的 TUN/TURN 類模式。若無法這麼做，請在啟動伺服器的終端機同時設定 `HTTPS_PROXY` 與 `NODE_USE_ENV_PROXY=1`；Node.js 22.21+ 與 24+ 只有在設定第二個變數時才會讀取 `HTTPS_PROXY`；更早的 Node.js 兩者都會忽略，請改用 TUN 模式。在 Windows 上，也請檢查開機自動啟動的網路攔截工具，包括 SecretDNS 這類 DNS/封包分割繞過工具，即使瀏覽器看起來正常，它們也可能破壞 OAuth 或影像回應。
 
 </details>
 
@@ -407,7 +408,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b>回傳 <code>EMPTY_RESPONSE</code> 或沒有影像資料</b></summary>
 
-執行 `ima2 doctor image-probe --json > ima2-image-probe.json`，並把去識別化後的 JSON 附在 Issue 中。若是 GPT OAuth 問題，請在 `ima2 serve` 執行時一併記錄 `ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json` 與 `ima2 gen "고양이" --model oauth/gpt-5.6-luna --json` 的結果。請勿分享 ChatGPT Cookie、OAuth token 檔案、API 金鑰、原始上游回應、提示詞歷史或生成的 base64。
+執行 `ima2 doctor image-probe --json > ima2-image-probe.json`，並把去識別化後的 JSON 附在 Issue 中。若是 GPT OAuth 問題，請在 `ima2 serve` 執行時一併記錄 `ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json` 與 `ima2 gen "고양이" --model oauth/gpt-6-luna --json` 的結果。請勿分享 ChatGPT Cookie、OAuth token 檔案、API 金鑰、原始上游回應、提示詞歷史或生成的 base64。
 
 </details>
 
@@ -426,9 +427,9 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 </details>
 
 <details>
-<summary><b>只有 <code>gpt-5.5</code> 失敗，其他模型正常</b></summary>
+<summary><b>GPT OAuth 通道找不到或拒絕 GPT-6 模型</b></summary>
 
-請先更新 Codex CLI 再重試。若仍失敗，可能是你的帳號或後端路徑尚未開放 `gpt-5.5` 的影像功能或額度，請改用穩定的 `gpt-5.4`。
+GPT OAuth 通道使用你的 ChatGPT 方案開放的 GPT-6 模型。請更新 ima2-gen，以 `ima2 gpt login` 重新登入，再用 `ima2 models --kind image` 檢查。若只有某個模型持續失敗，請切換到預設的 `gpt-6-luna`。
 
 </details>
 
@@ -439,24 +440,17 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 
 </details>
 
-<details>
-<summary><b>Windows 上連接埠 <code>10531</code> 已被佔用</b></summary>
-
-`AnySign4PC.exe` 等 Windows 安全工具可能佔用預設的 OAuth 代理連接埠。目前的版本會追蹤實際使用的備用連接埠。若需要手動指定，請用 `IMA2_OAUTH_PROXY_PORT=11531 ima2 serve` 啟動，並檢查 `ima2 doctor`。
-
-</details>
-
 更多解答請見 [FAQ](FAQ.zh-TW.md)。
 
 ## 文件
 
-- [開發者文件網站](https://lidge-jun.github.io/ima2-gen/docs) — 概覽、快速開始、架構、模式、供應商、CLI、設定與伺服器 API
+- [開發者文件網站](https://lidge-ai.github.io/ima2-gen/docs) — 概覽、快速開始、架構、模式、供應商、CLI、設定與伺服器 API
 - [CLI 參考](CLI.zh-TW.md) · [API 參考](API.zh-TW.md) · [Prompt Studio 手冊](PROMPT_STUDIO.zh-TW.md) · [FAQ](FAQ.zh-TW.md) · [找回舊影像](RECOVER_OLD_IMAGES.zh-TW.md)
 
 ## 開發
 
 ```bash
-git clone https://github.com/lidge-jun/ima2-gen.git
+git clone https://github.com/lidge-ai/ima2-gen.git
 cd ima2-gen
 npm install
 npm run dev

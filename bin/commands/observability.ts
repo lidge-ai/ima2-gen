@@ -1,6 +1,7 @@
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
-import { resolveServer, request } from "../lib/client.js";
+import { resolveServer, request, type InflightListResponse } from "../lib/client.js";
 import { out, die, color, json, table, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 
 const HELP = `
   ima2 <domain> <subcommand> [options]
@@ -12,7 +13,7 @@ const HELP = `
   Billing / Providers / GPT OAuth:
     billing [--json]                         API usage / quota
     providers [--json]                       Configured providers
-    oauth status [--json]                    GPT OAuth proxy state
+    oauth status [--json]                    GPT OAuth state
 
   Inflight jobs:
     inflight ls [--kind classic|node|multimode] [--session <id>] [--terminal] [--json]
@@ -34,7 +35,7 @@ const FLAGS = {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
 async function storageStatusSub(argv: string[]) {
@@ -89,8 +90,8 @@ async function inflightLsSub(argv: string[]) {
   if (args.session) qs.set("sessionId", String(args.session));
   if (args.terminal) qs.set("includeTerminal", "1");
   const path = `/api/inflight${qs.toString() ? `?${qs}` : ""}`;
-  const resp = await request(server.base, path)
-    .catch((e: unknown) => { const err = e as { message?: string }; die(exitCodeForError(e), err.message); });
+  const resp = await request<InflightListResponse>(server.base, path)
+    .catch((e: unknown): never => { const err = e as { message?: string }; die(exitCodeForError(e), err.message); });
   const jobs = resp.jobs || resp.items || [];
   const terminalJobs = resp.terminalJobs || [];
   if (args.json) {

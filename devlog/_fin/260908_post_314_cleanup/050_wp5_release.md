@@ -21,15 +21,15 @@ procedure source; this doc lists only the deltas and exact commands.
 2. Release: `gh workflow run release.yml --ref main -f bump=minor -f dry_run=false -f expected_sha=M`.
    bump=minor because wp3 adds a user-visible lane (NAI quota) and a new error code.
    Poll `gh run list --workflow release.yml`; the `tag` job waits on environment
-   `npm-stable`. Approve with `gh api -X POST repos/lidge-jun/ima2-gen/actions/runs/<id>/pending_deployments -f environment_ids[]=<id> -f state=approved -f comment="post-3.14.0 cleanup release, authorized 2026-09-08"`
-   (environment id via `gh api repos/lidge-jun/ima2-gen/environments`). publish.yml's
+   `npm-stable`. Approve with `gh api -X POST repos/lidge-ai/ima2-gen/actions/runs/<id>/pending_deployments -f environment_ids[]=<id> -f state=approved -f comment="post-3.14.0 cleanup release, authorized 2026-09-08"`
+   (environment id via `gh api repos/lidge-ai/ima2-gen/environments`). publish.yml's
    stable job is gated the same way; approve it too. If the account cannot approve
    (403) -> NEEDS_HUMAN.
 3. Verify: `git fetch --tags`; `gh release view v<V>`; `npm view ima2-gen@latest version gitHead`;
    `npm view ima2-gen@preview version gitHead`; all == release SHA R; main/dev/preview == R;
    `node scripts/release-contract.mjs finalize-check <V> R` exit 0.
 4. Pages: `gh workflow run pages.yml --ref main -f release_sha=R -f release_version=<V>`; wait;
-   fetch https://lidge-jun.github.io/ima2-gen/install-mac.sh (+linux, windows.ps1) with
+   fetch https://lidge-ai.github.io/ima2-gen/install-mac.sh (+linux, windows.ps1) with
    `curl -sS -H 'Cache-Control: no-cache'` and `shasum -a 256` vs `git show R:site/public/<file>`.
    Known: the 2026-09-06 tag-ref dispatch failed while main-ref succeeded; use --ref main.
 5. Published artifact: `TMP=$(mktemp -d); npm pack ima2-gen@<V> --pack-destination $TMP`;
@@ -60,7 +60,7 @@ PR to dev (codex/p314-wp5-changelog) before the promotion PR.
 
 
 ## wp5 audit fold (round 1, gpt-6-astra, GO-WITH-FIXES blockers=2)
-1. Approvals: read `repos/lidge-jun/ima2-gen/actions/runs/<run>/pending_deployments`, require exactly
+1. Approvals: read `repos/lidge-ai/ima2-gen/actions/runs/<run>/pending_deployments`, require exactly
    one entry with `environment.name == "npm-stable"` and `current_user_can_approve == true`, then
    POST with `-F "environment_ids[]=<id>"` (integer array), `-f state=approved`, `-f comment=...`.
    Two approvals: release.yml `tag` job (release.yml:174/187) and publish.yml `publish-stable`

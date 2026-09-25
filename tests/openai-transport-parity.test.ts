@@ -194,33 +194,8 @@ if (executionTestProcess(import.meta.url)) describe("WP04 real Responses transpo
     });
   });
 
-  for (const surface of ["node", "edit"] as const) it(`O04-3 OAuth ${surface} empty has no inner fallback and retains diagnostics`, async () => {
-    await direct(harness, (call) => { exactEndpoint(call, "oauth"); return responsesSse([{ type: "response.output_text.done", text: "No image" }, done]); }, async (f) => {
-      const request = requestFor(surface, f.controller.signal, source); request.provider = "oauth";
-      await assert.rejects(f.track(execute(f, request)), (error: Error & Record<string, unknown>) => {
-        assert.equal(error.status, 422); assert.equal(error.code, "IMAGE_TOOL_NOT_CALLED"); assert.equal(error.eventCount, 2);
-        assert.deepEqual(error.eventTypes, { "response.output_text.done": 1, "response.completed": 1 }); return true;
-      });
-      assert.equal(f.calls.length, 1);
-    });
-  });
-  it("O04-4 fallback keeps background/output format and no callbacks despite SSE parsing", async () => {
-    let attempts = 0;
-    await direct(harness, (call) => { exactEndpoint(call, "oauth"); return ++attempts === 1 ? responsesSse([done])
-      : responsesSse([final(source), final(source), final("second-distinct-image"), done]); }, async (f) => {
-      const { generateViaResponses } = await import("../lib/providers/adapters/openaiOperations.ts");
-      const callbacks: unknown[] = [];
-      const work = f.track(generateViaResponses("oauth", "fallback prompt", "high", "1536x1024", "low", [source], null, "direct", f.ctx,
-        { ...OPTIONS, signal: f.controller.signal, allowPromptOnlyOAuthFallback: true, background: "auto", outputFormat: "webp",
-          onFinalImage: (image) => { callbacks.push(image); }, onPartialImage: (image) => { callbacks.push(image); } }));
-      const result = await work; assert.equal(result.b64, source); assert.deepEqual(callbacks, []);
-      assert.ok("retryKind" in result); assert.equal(result.retryKind, "references_with_developer"); assert.equal(f.calls.length, 2);
-      for (const call of f.calls) {
-        const body = JSON.parse(call.body); assert.equal(body.stream, true);
-        assert.deepEqual(body.tools, [{ type: "image_generation", quality: "high", size: "1536x1024", moderation: "low", background: "auto", output_format: "webp" }]);
-      }
-    });
-  });
+  // GPT OAuth no longer runs the Responses image tool, so its empty-stream and prompt-only fallback
+  // paths are gone; the plan-retry contract lives in tests/oauth-image-lane-contract.test.ts.
 
   for (const json of [false, true]) it(`O04-6 ${json ? "JSON retains duplicates without callbacks" : "SSE dedupes and invokes callbacks"}`, async () => {
     await direct(harness, (call) => {

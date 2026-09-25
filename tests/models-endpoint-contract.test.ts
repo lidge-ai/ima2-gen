@@ -37,8 +37,8 @@ const STATIC_IMAGE_SURFACES = {
 const OAUTH_SURFACES = {
   generate: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
   edit: { supported: true, references: true, mask: true, streaming: false, catalogAccess: "static" },
-  multimode: { supported: true, references: true, mask: false, streaming: true, catalogAccess: "static" },
-  node: { supported: true, references: true, mask: false, streaming: true, catalogAccess: "static" },
+  multimode: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+  node: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
   video: { supported: false, references: false, mask: false, streaming: false, catalogAccess: "static" },
 };
 const NAI_SURFACES = {
@@ -140,10 +140,11 @@ async function withApp(
     grokAuthHomeDir: grokHomeFor(options.grokAuth ?? "none"),
     config: {
       imageModels: {
-        default: "gpt-5.6-luna",
-        valid: new Set(["gpt-5.6-luna", "gpt-5.6-sol"]),
+        default: "gpt-6-luna",
+        valid: new Set(["gpt-6-luna", "gpt-6-sol"]),
       },
-      apiProvider: { defaultImageModel: "gpt-5.6-sol" },
+      // The API-key lane keeps its own list, disjoint from GPT OAuth's GPT-6 ids.
+      apiProvider: { defaultImageModel: "gpt-5.6-sol", validImageModels: new Set(["gpt-5.6-luna", "gpt-5.6-sol"]) },
       grokProvider: {
         defaultImageModel: "grok-imagine-image-quality",
         defaultVideoModel: "grok-imagine-video-1.5",
@@ -198,7 +199,7 @@ test("GET /api/models returns every canonical lane with deterministic statuses a
     assert.equal(body.lanes.higgsfield.status, "disconnected");
     assert.match(body.lanes.higgsfield.reason ?? "", /MCP connection disconnected/);
 
-    assert.equal(body.lanes.oauth.defaults.image, "gpt-5.6-luna");
+    assert.equal(body.lanes.oauth.defaults.image, "gpt-6-luna");
     assert.equal(body.lanes.api.defaults.image, "gpt-5.6-sol");
     assert.deepEqual(body.lanes.grok.defaults, {
       image: "grok-imagine-image-quality",
@@ -207,7 +208,9 @@ test("GET /api/models returns every canonical lane with deterministic statuses a
     assert.equal(body.lanes.runway.defaults.image, "nano-banana-pro");
     assert.equal(body.lanes.runway.defaults.video, "seedance-2");
 
-    assert.deepEqual(body.lanes.oauth.models.image.map((model) => model.id), ["gpt-5.6-luna", "gpt-5.6-sol"]);
+    assert.deepEqual(body.lanes.oauth.models.image.map((model) => model.id), ["gpt-6-luna", "gpt-6-sol"]);
+    // The API lane must list its own models (its default included), never the OAuth-only GPT-6 ids.
+    assert.deepEqual(body.lanes.api.models.image.map((model) => model.id), ["gpt-5.6-luna", "gpt-5.6-sol"]);
     assert.deepEqual(body.lanes.grok.models.video.map((model) => model.id), [
       "grok-imagine-video", "grok-imagine-video-1.5",
     ]);
@@ -407,7 +410,13 @@ test("OAuth/API and all NovelAI rows expose fixed surface facts regardless of cr
       assert.equal(body.lanes.api.status, ready ? "ready" : "key-missing");
       assert.equal(body.lanes.nai.status, ready ? "ready" : "key-missing");
       for (const id of ["oauth", "api"] as const) {
-        assert.deepEqual(body.lanes[id].surfaces, OAUTH_SURFACES);
+        // The API-key lane streams partial frames through the Responses image tool; GPT OAuth
+        // renders through the Images API, which has none.
+        assert.deepEqual(body.lanes[id].surfaces, id === "api" ? {
+          ...OAUTH_SURFACES,
+          multimode: { ...OAUTH_SURFACES.multimode, streaming: true },
+          node: { ...OAUTH_SURFACES.node, streaming: true },
+        } : OAUTH_SURFACES);
         assert.deepEqual(body.lanes[id].models.image.map((model) => model.capabilities.inputRoles), [
           ["text", "image_references"], ["text", "image_references"],
         ]);

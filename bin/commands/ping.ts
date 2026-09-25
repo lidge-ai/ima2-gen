@@ -17,7 +17,7 @@ export default async function pingCmd(argv: string[]) {
 
   try {
     const { base, health } = await resolveServer({ serverFlag: args.server });
-    const h: any = health;
+    const h = health;
     if (args.json) {
       json({ ok: true, base, ...h });
     } else {

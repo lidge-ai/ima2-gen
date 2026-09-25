@@ -29,7 +29,8 @@
     "setup": "node bin/ima2.js setup",
     "prepack": "npm run ui:build && npm run build:server && npm run build:cli",
     "prepublishOnly": "node scripts/release-contract.mjs assert-publish-context && npm run verify:release",
-    "lint:pkg": "node -e \"const p=require('./package.json'); const req=['name','version','bin']; for(const k of req){if(!p[k])throw new Error('missing '+k)} const mustInclude=['bin/**/*.js','lib/**/*.js','routes/**/*.js','skills/','integrations/comfyui/ima2_gen_bridge/__init__.py','integrations/comfyui/ima2_gen_bridge/nodes.py','integrations/comfyui/ima2_gen_bridge/README.md','assets/card-news/templates/','assets/mcp-snapshots/','vendor/','server.js','LICENSE']; for(const f of mustInclude){if(!p.files.includes(f))throw new Error('files[] must include '+f)}\"",
+    "lint": "eslint",
+    "lint:pkg": "node -e \"const p=require('./package.json'); const req=['name','version','bin']; for(const k of req){if(!p[k])throw new Error('missing '+k)} const mustInclude=['bin/**/*.js','lib/**/*.js','routes/**/*.js','skills/','integrations/comfyui/ima2_gen_bridge/__init__.py','integrations/comfyui/ima2_gen_bridge/nodes.py','integrations/comfyui/ima2_gen_bridge/README.md','assets/card-news/templates/','assets/mcp-snapshots/','server.js','LICENSE']; for(const f of mustInclude){if(!p.files.includes(f))throw new Error('files[] must include '+f)}\"",
     "docs:refresh-line-counts": "node scripts/refresh-structure-line-counts.mjs",
     "docs:runtime": "node --import tsx scripts/generate-runtime-install-contract.mjs",
     "docs:runtime:check": "node --import tsx scripts/generate-runtime-install-contract.mjs --check",
@@ -61,10 +62,10 @@
     "gemini"
   ],
   "license": "MIT",
-  "homepage": "https://lidge-jun.github.io/ima2-gen/",
+  "homepage": "https://lidge-ai.github.io/ima2-gen/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lidge-jun/ima2-gen.git"
+    "url": "git+https://github.com/lidge-ai/ima2-gen.git"
   },
   "files": [
     "bin/**/*.js",
@@ -76,7 +77,6 @@
     "integrations/comfyui/ima2_gen_bridge/README.md",
     "ui/dist/",
     "docs/",
-    "vendor/",
     "assets/card-news/templates/",
     "assets/mcp-snapshots/",
     ".env.example",
@@ -99,7 +99,6 @@
     "express": "^5.1.0",
     "google-auth-library": "^11.0.1",
     "openai": "^7.4.0",
-    "openai-oauth": "file:vendor/openai-oauth-1.0.2-ima2.2.tgz",
     "sharp": "^0.35.3",
     "trash": "^10.1.1",
     "ulid": "^3.0.2",
@@ -109,7 +108,6 @@
     "fast-uri": "3.1.7"
   },
   "bundleDependencies": [
-    "openai-oauth",
     "zod"
   ],
   "allowScripts": {
@@ -118,12 +116,17 @@
     "fsevents": true
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@types/better-sqlite3": "^9.6.0",
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.1",
+    "eslint": "10.10.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.12.0",
     "node-gyp": "13.0.2",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
+    "typescript-eslint": "8.70.0",
     "yaml": "2.9.1"
   }
 }

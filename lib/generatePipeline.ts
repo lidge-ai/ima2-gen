@@ -189,12 +189,12 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       const activeProvider = providerOptions.provider;
       // Resolved AFTER provider resolution on purpose: the raw request `provider`
       // defaults to "auto", so only `activeProvider` names the lane that will
-      // actually run. Atlas Cloud talks to the gpt-image-2 API directly and
-      // accepts a forced transparent background; the OAuth proxy rejects it
-      // (see lib/imageBackgroundParam.ts).
+      // actually run. Atlas Cloud and GPT OAuth (the Codex Images API since the
+      // native client, lib/oauthImages.ts) render with gpt-image-2 and accept a
+      // forced transparent background; verified 2026-09-25 with a real alpha PNG.
       const backgroundParams = resolveImageBackgroundParams({
         preset: backgroundPreset,
-        supportsForcedTransparent: activeProvider === "atlascloud",
+        supportsForcedTransparent: activeProvider === "atlascloud" || activeProvider === "oauth",
         requestedFormat: typeof format === "string" ? format : undefined,
       });
       // Grok/Gemini/Agy/MiniMax have no background parameter and their branches
@@ -210,7 +210,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         ? req.body.elementIds.filter((id: unknown) => typeof id === "string" && id)
         : [];
       let elementNotesFragment = "";
-      let elementResolvedRefs: string[] = [];
+      const elementResolvedRefs: string[] = [];
       let appliedElementIds: string[] = [];
       let elementDroppedRefs: Array<{ path: string; reason: string; elementId?: string }> = [];
       let elementRefReadFailures: Array<{ path: string; elementId?: string }> = [];
@@ -457,7 +457,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       const images: Array<{
         image: string;
         filename: string;
-        revisedPrompt: any;
+        revisedPrompt: string | null;
         providerUrl?: string | undefined;
         createdAt: number;
       }> = [];
@@ -578,7 +578,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
             ...(elementRefReadFailures.length > 0 ? { refReadFailures: elementRefReadFailures } : {}),
           };
           const rawBuffer = Buffer.from(r.value.b64, "base64");
-          const embedded: any = await embedImageMetadataBestEffort(rawBuffer, resultFormat, meta, {
+          const embedded = await embedImageMetadataBestEffort(rawBuffer, resultFormat, meta, {
             version: ctx.packageVersion,
           });
           if (!embedded.embedded) {

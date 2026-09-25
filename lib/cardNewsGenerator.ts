@@ -1,14 +1,15 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ulid } from "ulid";
-import { generateViaOAuth } from "./oauthProxy.js";
+import { generateViaResponses } from "./providers/adapters/openaiOperations.js";
 import type { OAuthReferenceRef } from "./oauthProxy/references.js";
+import type { GenerateOptions } from "./providers/adapters/openaiTypes.js";
 import { readTemplateBaseB64 } from "./cardNewsTemplateStore.js";
 import { writeCardNewsManifest, writeCardSidecar } from "./cardNewsManifestStore.js";
 import { invalidateHistoryIndex } from "./historyIndex.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "./runtimeContext.js";
 
-import { errInfo } from "./errInfo.js";
+import { errInfo, type CodedError } from "./errInfo.js";
 import { assertSafeSetId, resolveCardNewsSetDir } from "./cardNewsPath.js";
 
 const MAX_CARDS = 30;
@@ -135,7 +136,7 @@ interface GenerateCardSetOptions {
     requestId?: string | null,
     mode?: string,
     ctx?: RouteRuntimeContext,
-    options?: any,
+    options?: GenerateOptions,
   ) => Promise<{ b64: string; revisedPrompt?: string | null; usage?: unknown; webSearchCalls?: number }>;
   onCardStart?: (card: CardStart) => void | Promise<void>;
   onCardDone?: (sidecar: CardSidecar) => void | Promise<void>;
@@ -192,7 +193,7 @@ export async function generateCardNewsSet(ctxIn: RouteRuntimeContext, input: Gen
   const concurrency = validateInput(input, cards);
   const cardsToGenerate = cards.filter((card) => !card.locked);
   if (cardsToGenerate.length === 0) {
-    const err: any = new Error("cards are required");
+    const err: CodedError = new Error("cards are required");
     err.status = 400;
     err.code = "CARD_NEWS_CARDS_REQUIRED";
     throw err;
@@ -207,7 +208,9 @@ export async function generateCardNewsSet(ctxIn: RouteRuntimeContext, input: Gen
   const size = input.size || template.size || "2048x2048";
   const moderation = input.moderation || "low";
   const model = input.model || ctx.config.imageModels.default;
-  const generateFn = options.generateFn || generateViaOAuth;
+  // GPT OAuth lane (lib/oauthImages.ts): the template image rides along as the edit source.
+  const generateFn = options.generateFn || ((...args: Parameters<typeof generateViaResponses> extends [unknown, ...infer Rest] ? Rest : never) =>
+    generateViaResponses("oauth", ...args));
 
   const generatedCards = await mapLimit(cardsToGenerate, concurrency, async (card: CardInput, index: number) => {
     const cardOrder = Number(card.cardOrder || card.order || index + 1);

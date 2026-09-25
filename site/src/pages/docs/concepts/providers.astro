@@ -21,7 +21,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
 
   <h2>Provider paths</h2>
   <ul>
-    <li><code>provider: "oauth"</code> — uses the local Codex OAuth proxy. The default path; no API key needed.</li>
+    <li><code>provider: "oauth"</code> — calls ChatGPT's Codex backend from the server with your ChatGPT session. A GPT-6 model plans the prompt and <code>gpt-image-2</code> renders it. The default path; no API key needed.</li>
     <li><code>provider: "api"</code> — calls the OpenAI Responses API with the hosted <code>image_generation</code> tool. Requires <code>OPENAI_API_KEY</code>.</li>
     <li><code>provider: "grok"</code> — calls <code>api.x.ai</code> directly with the xAI OAuth session in <code>~/.progrok/auth.json</code>, runs mandatory xAI Web Search and a planner pass (default <code>grok-4.3</code>, configurable in settings or via <code>--planner-model</code>), then calls xAI Images API. Grok 4.5 and 4.6 are selectable.</li>
     <li><code>provider: "grok-api"</code> — same xAI pipeline as <code>grok</code> but uses a direct <code>XAI_API_KEY</code> instead of the OAuth session.</li>
@@ -40,7 +40,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
     <thead><tr><th>Value</th><th>Behavior</th></tr></thead>
     <tbody>
       <tr><td><code>auto</code></td><td>Routing mode where accepted; not a provider lane.</td></tr>
-      <tr><td><code>oauth</code></td><td>Force the local OAuth proxy path.</td></tr>
+      <tr><td><code>oauth</code></td><td>Force the GPT OAuth path.</td></tr>
       <tr><td><code>api</code></td><td>Force the API-key Responses path; requires a configured key.</td></tr>
       <tr><td><code>grok</code></td><td>Force the xAI OAuth path to <code>api.x.ai</code>; run <code>ima2 grok login</code> once to authorize.</td></tr>
       <tr><td><code>grok-api</code></td><td>Same xAI pipeline but authenticates with a direct <code>XAI_API_KEY</code>.</td></tr>
@@ -64,18 +64,17 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
 
   <h2>Models</h2>
   <p>
-    The GPT image lane defaults to <code>gpt-5.6-luna</code>. Prompt Builder has a separate backend
+    The GPT OAuth lane defaults to <code>gpt-6-luna</code>; the API-key lane keeps <code>gpt-5.6-luna</code>. Prompt Builder has a separate backend
     preference; when its backend resolves to GPT, Luna is the default GPT Builder model.
   </p>
   <table>
     <thead><tr><th>Model</th><th>Use</th></tr></thead>
     <tbody>
-      <tr><td><code>gpt-5.6-luna</code></td><td>Current GPT image default and default GPT Builder model when the Builder uses a GPT backend.</td></tr>
-      <tr><td><code>gpt-6-astra</code></td><td>Newest GPT image model. Selectable on the OAuth and API lanes; it is not the default.</td></tr>
-      <tr><td><code>gpt-5.6-terra</code> / <code>gpt-5.6-sol</code></td><td>Current GPT-5.6 alternatives when available.</td></tr>
-      <tr><td><code>gpt-5.4-mini</code></td><td>Compatibility model.</td></tr>
-      <tr><td><code>gpt-5.4</code></td><td>Recommended balanced choice.</td></tr>
-      <tr><td><code>gpt-5.5</code></td><td>Strongest quality when your Codex CLI/OAuth backend supports it. May use more quota or need an updated Codex CLI.</td></tr>
+      <tr><td><code>gpt-6-luna</code></td><td>GPT OAuth default and default GPT Builder model when the Builder uses GPT OAuth.</td></tr>
+      <tr><td><code>gpt-6-sol</code></td><td>The other everyday GPT-6 model on GPT OAuth.</td></tr>
+      <tr><td><code>gpt-6-astra</code></td><td>Reasons longest and is the slowest. Selectable on the OAuth and API lanes.</td></tr>
+      <tr><td><code>gpt-5.6-luna</code> / <code>gpt-5.6-terra</code> / <code>gpt-5.6-sol</code></td><td>API-key lane models (<code>gpt-5.6-luna</code> is its default). On GPT OAuth these ids map to <code>gpt-6-sol</code> (sol) or <code>gpt-6-luna</code>.</td></tr>
+      <tr><td><code>gpt-5.5</code> / <code>gpt-5.4</code> / <code>gpt-5.4-mini</code></td><td>API-key lane compatibility models; on GPT OAuth they run as <code>gpt-6-luna</code>.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>Compatible fast Grok image model.</td></tr>
       <tr><td><code>grok-imagine-image-quality</code></td><td>Highest-quality Grok image model ("Grok+" / Best in the UI).</td></tr>
       <tr><td><code>grok-imagine-image-2.0</code></td><td>Default Grok image model for new sessions.</td></tr>

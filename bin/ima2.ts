@@ -19,7 +19,7 @@ let pkg = { version: "?", name: "ima2-gen" };
 try {
   const metadata = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
   if (metadata && typeof metadata.version === "string" && typeof metadata.name === "string") pkg = metadata;
-} catch {}
+} catch { /* best-effort: package.json metadata is optional; keep the placeholder version */ }
 
 // Installation diagnosis must run before any account/config initialization.
 if (process.argv[2] === "doctor" && process.argv.slice(3).includes("--installation")) {
@@ -68,7 +68,7 @@ function loadConfig() {
   }
   // One-time read from legacy location so users who set up on <1.0.4 don't lose auth.
   if (existsSync(LEGACY_CONFIG_FILE)) {
-    try { return JSON.parse(readFileSync(LEGACY_CONFIG_FILE, "utf-8")); } catch {}
+    try { return JSON.parse(readFileSync(LEGACY_CONFIG_FILE, "utf-8")); } catch { /* best-effort: unreadable legacy config falls through to defaults */ }
   }
   return {};
 }
@@ -472,7 +472,7 @@ if ((args.includes("-h") || args.includes("--help")) && !helpOwningCommands.incl
 
 switch (command) {
   case "serve":
-    serve(args.slice(1));
+    void serve(args.slice(1));
     break;
   case "stop": {
     const { stop } = await import("./commands/stop.js");

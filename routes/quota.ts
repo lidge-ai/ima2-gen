@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { fetchNaiSubscription } from "../lib/naiSubscription.js";
 import { readChatgptAccess } from "../lib/chatgptAuth.js";
+import { logWarn } from "../lib/logger.js";
 
 export interface QuotaWindow {
   label: string;
@@ -23,7 +24,7 @@ export interface QuotaResult {
   nai?: { active: boolean; isNegative: boolean; anlasFixed: number; anlasPurchased: number; meter: "charge" | "missing" };
 }
 
-/** Same file the GPT OAuth proxy reads (ima2 store first, then Codex CLI files). */
+/** Same file GPT OAuth reads (ima2 store first, then Codex CLI files). */
 function readCodexTokens(): { access_token: string; account_id: string } | null {
   const access = readChatgptAccess();
   return access ? { access_token: access.accessToken, account_id: access.accountId } : null;
@@ -112,7 +113,7 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
         userId: typeof value.user_id === "string" ? value.user_id : null,
       });
     }
-  } catch {}
+  } catch { /* best-effort: auth.json is optional; fall back to the next source */ }
   try {
     // Same file lib/xaiAuth.ts owns; spelled out so quota keeps its narrow node:fs surface.
     const auth = JSON.parse(readFileSync(join(homeDir, ".progrok", "auth.json"), "utf8")) as { accessToken?: string };
@@ -126,7 +127,7 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
         userId: null,
       });
     }
-  } catch {}
+  } catch { /* best-effort: Grok auth.json is optional; fall back to the next source */ }
   const seen = new Set<string>();
   return candidates.filter((candidate) => {
     if (seen.has(candidate.token)) return false;
@@ -146,7 +147,7 @@ function readGrokClientVersion(homeDir = homedir(), grokBinary = "grok"): string
     try {
       const data = JSON.parse(readFileSync(join(homeDir, ".grok", file), "utf8")) as Record<string, unknown>;
       if (typeof data[field] === "string" && data[field].trim()) return data[field].trim();
-    } catch {}
+    } catch { /* best-effort: version files are optional; fall back to the CLI probe */ }
   }
   try {
     const output = execFileSync(grokBinary, ["version"], {
@@ -211,7 +212,8 @@ async function fetchGrokWeeklyCredits(candidate: GrokTokenCandidate, clientVersi
     });
     if (!response.ok) return null;
     return parseGrokCreditsResponse(await response.json());
-  } catch {
+  } catch (err) {
+    logWarn("quota", "grok_weekly_credits_failed", { errorName: err instanceof Error ? err.name : typeof err });
     return null;
   }
 }
@@ -262,7 +264,7 @@ export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok")
         }],
         billing: { usedUsd: used / 100, limitUsd: limit / 100 },
       };
-    } catch {}
+    } catch (err) { logWarn("quota", "grok_billing_failed", { errorName: err instanceof Error ? err.name : typeof err }); }
   }
   return { provider: "grok", authenticated: true, windows: [] };
 }
@@ -301,7 +303,7 @@ export function registerQuotaRoutes(app: Express, ctx: RouteRuntimeContext) {
         fetchNaiQuota(ctx),
       ]);
       res.json({ codex, grok, nai });
-    } catch (e: any) {
+    } catch {
       res.status(500).json({ error: "Failed to fetch quota" });
     }
   });

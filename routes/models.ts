@@ -112,7 +112,7 @@ function lane(
 
 function oauthLane(ctx: RuntimeContext, image: McpModelEntry[]): ModelLaneDto {
   const ready = ctx.oauthReadyState === "ready";
-  const reason = ready ? undefined : `oauth proxy ${ctx.oauthReadyState ?? "not ready"}`;
+  const reason = ready ? undefined : `GPT OAuth ${ctx.oauthReadyState ?? "not ready"}`;
   return lane(
     { status: ready ? "ready" : "disconnected", ...(reason ? { reason } : {}) },
     { image: ctx.config.imageModels.default },
@@ -308,7 +308,7 @@ async function buildCoreLanes(ctx: RuntimeContext, agyInstalled: boolean, deps: 
   const gptModels = entries("oauth", ctx.config.imageModels.valid);
   const lanes: Record<CoreProviderId, ModelLaneDto> = {
     oauth: oauthLane(ctx, gptModels),
-    api: apiLane(ctx, entries("api", ctx.config.imageModels.valid)),
+    api: apiLane(ctx, entries("api", ctx.config.apiProvider.validImageModels)),
     grok: grokLane(ctx),
     "grok-api": grokApiLane(ctx),
     agy: agyLane(agyInstalled),

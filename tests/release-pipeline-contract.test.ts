@@ -128,13 +128,13 @@ describe("release artifact and provenance contract", () => {
       predicate: {
         buildDefinition: {
           buildType: "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
-          externalParameters: { workflow: { repository: "https://github.com/lidge-jun/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/tags/v2.0.14" } },
+          externalParameters: { workflow: { repository: "https://github.com/lidge-ai/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/tags/v2.0.14" } },
           internalParameters: { github: { event_name: "push" } },
           resolvedDependencies: [{ digest: { gitCommit: SHA } }],
         },
         runDetails: {
           builder: { id: "https://github.com/actions/runner/github-hosted" },
-          metadata: { invocationId: "https://github.com/lidge-jun/ima2-gen/actions/runs/1/attempts/1" },
+          metadata: { invocationId: "https://github.com/lidge-ai/ima2-gen/actions/runs/1/attempts/1" },
         },
       },
     };
@@ -142,7 +142,7 @@ describe("release artifact and provenance contract", () => {
       ref: "refs/tags/v2.0.14", sha: SHA, sha512: "digest", version: "2.0.14", runId: "1", runAttempt: "1",
     });
     assert.deepEqual(identity, {
-      runId: "1", runAttempt: "1", runUrl: "https://github.com/lidge-jun/ima2-gen/actions/runs/1",
+      runId: "1", runAttempt: "1", runUrl: "https://github.com/lidge-ai/ima2-gen/actions/runs/1",
     });
     assert.throws(() => validateProvenance(statement, {
       ref: "refs/tags/v2.0.14", sha: SHA, sha512: "digest", version: "2.0.14", runId: "1", runAttempt: "2",
@@ -169,13 +169,13 @@ describe("release artifact and provenance contract", () => {
       predicate: {
         buildDefinition: {
           buildType: "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
-          externalParameters: { workflow: { repository: "https://github.com/lidge-jun/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/heads/main" } },
+          externalParameters: { workflow: { repository: "https://github.com/lidge-ai/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/heads/main" } },
           internalParameters: { github: { event_name: "workflow_dispatch" } },
           resolvedDependencies: [{ digest: { gitCommit: SHA } }],
         },
         runDetails: {
           builder: { id: "https://github.com/actions/runner/github-hosted" },
-          metadata: { invocationId: "https://github.com/lidge-jun/ima2-gen/actions/runs/1/attempts/1" },
+          metadata: { invocationId: "https://github.com/lidge-ai/ima2-gen/actions/runs/1/attempts/1" },
         },
       },
     };
@@ -626,7 +626,9 @@ describe("package install policy contract", () => {
   it("PR frontend has a fresh runner and the preserved gate requires both jobs", () => {
     const workflow = parse(readFileSync(join(repoRoot(), ".github/workflows/pr-fast.yml"), "utf8"));
     const { fast, frontend, gate } = workflow.jobs;
-    assert.equal(frontend.needs, undefined, "backend and UI must run independently");
+    assert.equal(frontend.needs, "changes", "backend and UI must run independently");
+    assert.equal(fast.needs, "changes");
+    for (const job of [fast, frontend]) assert.equal(job.if, "needs.changes.outputs.code == 'true'");
     assert.equal(frontend["runs-on"], "ubuntu-latest");
     assert.equal(frontend.steps[0].with.ref, "${{ github.sha }}");
     assert.equal(frontend.steps[0].with["persist-credentials"], false);
@@ -642,22 +644,26 @@ describe("package install policy contract", () => {
     assert.ok(uploads.some((s: any) => s.with.path.includes("wp12-*.png")));
     assert.ok(uploads.some((s: any) => s.with.path.includes("wp08c-*.png")));
     assert.equal(gate.name, "PR fast gate");
-    assert.deepEqual(gate.needs, ["fast", "frontend"]);
+    assert.deepEqual(gate.needs, ["changes", "fast", "frontend"]);
     assert.equal(gate.if, "always()");
     assert.equal(gate.steps.length, 1);
     const step = gate.steps[0];
     assert.equal(step.if, undefined);
     assert.ok(!step["continue-on-error"]);
-    assert.deepEqual(step.env, { BACKEND_RESULT: "${{ needs.fast.result }}", FRONTEND_RESULT: "${{ needs.frontend.result }}" });
+    assert.deepEqual(step.env, { CODE: "${{ needs.changes.outputs.code }}", BACKEND_RESULT: "${{ needs.fast.result }}", FRONTEND_RESULT: "${{ needs.frontend.result }}" });
     const predicate = /^node -e '([^']+)'$/.exec(step.run)?.[1];
     assert.ok(predicate, "execute the actual aggregate predicate without a platform shell");
-    for (const backend of ["success", "failure", "cancelled", "skipped"]) {
-      for (const ui of ["success", "failure", "cancelled", "skipped"]) {
-        const result = spawnSync(process.execPath, ["-e", predicate], {
-          env: { BACKEND_RESULT: backend, FRONTEND_RESULT: ui }, timeout: 5000,
-        });
-        assert.equal(result.error, undefined);
-        assert.equal(result.status === 0, backend === "success" && ui === "success", `${backend}/${ui}`);
+    for (const code of ["true", "false", ""]) {
+      for (const backend of ["success", "failure", "cancelled", "skipped"]) {
+        for (const ui of ["success", "failure", "cancelled", "skipped"]) {
+          const result = spawnSync(process.execPath, ["-e", predicate], {
+            env: { CODE: code, BACKEND_RESULT: backend, FRONTEND_RESULT: ui }, timeout: 5000,
+          });
+          assert.equal(result.error, undefined);
+          const expected = code === "true" ? backend === "success" && ui === "success"
+            : code === "false" && backend === "skipped" && ui === "skipped";
+          assert.equal(result.status === 0, expected, `${code}/${backend}/${ui}`);
+        }
       }
     }
   });

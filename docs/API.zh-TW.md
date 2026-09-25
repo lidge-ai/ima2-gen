@@ -12,7 +12,7 @@ http://localhost:3333
 
 圖像生成支持OAuth, API-鑰匙，Grok， 和Gemini (`agy`和`gemini-api`) 提供者。
 
-- `provider: "oauth"`使用本地的Codex OAuth代理人。
+- `provider: "oauth"` 由伺服器直接呼叫 ChatGPT 的 Codex 後端：GPT-6 模型規劃提示詞，`gpt-image-2` 出圖。
 - `provider: "api"`使用OpenAI回應API與託管的`image_generation`工具。
 - `provider: "grok"`使用儲存在`~/.progrok/auth.json`的xAI OAuth工作階段直接呼叫`https://api.x.ai`，不再有本機代理程式。經典、節點和代理生成強制運行xAI網頁搜尋透過`/v1/responses`，然後運行`grok-4.5`計劃員與強製本地人通話`generate_image`函數，那麼ima2執行xAI `/v1/images/generations`. `grok-4.3`仍然可以作為顯式相容性覆蓋使用。如果附加了參考影像、節點父映像或代理目前影像，則最後一步將切換到xAI `/v1/images/edits`因此圖像到圖像的上下文被保留。
 - `provider: "agy"`產生Antigravity CLI (`agy -p`）透過Google生成圖像Gemini's `default_api:generate_image`工具。型號是`nano-banana-2`。輸出固定為1024×1024JPEG。最多 3 個參考影像 (i2i)。沒有網路搜尋、品質、尺寸或遮罩控制。多模式返回單一影像。不支援影片（`AGY_VIDEO_UNSUPPORTED`).
@@ -32,7 +32,7 @@ Grok影片生成用途`POST /api/video/generate` (SSE）。看影片
 |---|---|---|
 | `GET` | `/api/health` |伺服器健康狀況、版本、路徑、提供者策略；包含`grok: { auth: "oauth" \| "none" }`，同樣寫入`~/.ima2/server.json`|
 | `GET` | `/api/providers` |提供者可用性和運行時端口|
-| `GET` | `/api/oauth/status` | OAuth代理狀態和可見模型|
+| `GET` | `/api/oauth/status` | GPT OAuth 狀態和可見模型|
 | `GET` | `/api/grok/status` | xAI OAuth工作階段狀態和可見xAI影像模型。回傳`ready`、`no_image_model`、`error`或`offline`；沒有工作階段時原因是`login_required`|
 | `GET` | `/api/billing` |計費/狀態探測，包括API配置時的密鑰來源|
 | `GET` | `/api/quota` |供應商配額：回報`{ codex, grok }`。有資格的Grok建造xAIOIDC/外部身份驗證返回`weekly`百分比/重置視窗`GET /v1/billing?format=credits`。如果不可用，舊端點可能會返回`monthly`視窗加`billing: { usedUsd, limitUsd }`. |
@@ -213,7 +213,7 @@ CLI和遺留客戶省略`async`並保持原始行為：每個請求SSE在同一�
 什麼時候`storyboard`是`true`，伺服器預先新增情節提要關鍵影格指令，以便影像
 幾代人保持多鏡頭影片製作的角色和場景連續性。
 
-當前應用程式預設值：`gpt-5.6-luna`. `gpt-5.5`和其他支持的GPT image當呼叫者明確選擇模型時，模型仍然可用。
+GPT OAuth 預設值：`gpt-6-luna`（另有 `gpt-6-sol`、`gpt-6-astra`；舊的 OAuth 模型 ID 會對應到相應的 GPT-6 模型）。API key 預設值：`gpt-5.6-luna`，呼叫端明確選擇時仍可使用 `gpt-5.5` 等其他 API 模型。
 
 什麼時候`provider`是`"grok"`，支援的型號有`grok-imagine-image`和
 `grok-imagine-image-quality`。伺服器使用`grok-4.5`作為搜尋/規劃者
@@ -712,7 +712,7 @@ X-Ima2-Tab-Id
 | 方法 | 路徑 | 結果 |
 |---|---|---|
 | `GET` | `/api/github/star` | `{ state: "starred" \| "not-starred" \| "unauthenticated" \| null, prompted, repo, url }`，未安裝或未登入 `gh` 時為 `unauthenticated`；已提示後為 `null`（不再呼叫 gh） |
-| `POST` | `/api/github/star` | 透過 `gh api -X PUT /user/starred/lidge-jun/ima2-gen` 加星並標記已提示；`409 GH_UNAUTHENTICATED`、`502 GH_FAILED` |
+| `POST` | `/api/github/star` | 透過 `gh api -X PUT /user/starred/lidge-ai/ima2-gen` 加星並標記已提示；`409 GH_UNAUTHENTICATED`、`502 GH_FAILED` |
 | `POST` | `/api/github/star/dismiss` | 不加星，只標記已提示 |
 
 
@@ -731,7 +731,7 @@ X-Ima2-Tab-Id
 | `AUTH_CHATGPT_EXPIRED` | Codex/ChatGPT OAuth會話已過期|
 | `AUTH_API_KEY_INVALID` | API金鑰無效、已撤銷、超出配額或組織錯誤|
 | `NETWORK_FAILED` |網路、代理、VPN 或防火牆故障|
-| `OAUTH_UNAVAILABLE` |當地的OAuth代理不可用|
+| `OAUTH_UNAVAILABLE` |GPT OAuth 不可用|
 | `OPEN_GENERATED_DIR_FAILED` |伺服器無法開啟生成的圖像資料夾|
 | `GRAPH_VERSION_REQUIRED` |缺圖表`If-Match`標頭|
 | `GRAPH_VERSION_CONFLICT` |過時的圖表版本|

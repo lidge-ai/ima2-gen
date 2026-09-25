@@ -243,14 +243,14 @@ LAN HTTP is intended for trusted networks and does not encrypt tokens or cookies
 
 - Initial npm publish of `ima2-gen` — local OAuth image generation studio with Classic mode, Node mode, Canvas Mode, and CLI.
 
-[Unreleased]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.13...HEAD
-[2.0.4]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.1...v2.0.4
-[2.0.1]: https://github.com/lidge-jun/ima2-gen/compare/v2.0.0...v2.0.1
-[2.0.0]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.23...v2.0.0
-[1.1.23]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.22...v1.1.23
-[1.1.22]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.21...v1.1.22
-[1.1.21]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.20...v1.1.21
-[1.1.15]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.14...v1.1.15
-[1.1.10]: https://github.com/lidge-jun/ima2-gen/compare/v1.1.9...v1.1.10
-[1.1.0]: https://github.com/lidge-jun/ima2-gen/compare/v1.0.11...v1.1.0
-[1.0.3]: https://github.com/lidge-jun/ima2-gen/releases/tag/v1.0.3
+[Unreleased]: https://github.com/lidge-ai/ima2-gen/compare/v2.0.13...HEAD
+[2.0.4]: https://github.com/lidge-ai/ima2-gen/compare/v2.0.1...v2.0.4
+[2.0.1]: https://github.com/lidge-ai/ima2-gen/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/lidge-ai/ima2-gen/compare/v1.1.23...v2.0.0
+[1.1.23]: https://github.com/lidge-ai/ima2-gen/compare/v1.1.22...v1.1.23
+[1.1.22]: https://github.com/lidge-ai/ima2-gen/compare/v1.1.21...v1.1.22
+[1.1.21]: https://github.com/lidge-ai/ima2-gen/compare/v1.1.20...v1.1.21
+[1.1.15]: https://github.com/lidge-ai/ima2-gen/compare/v1.1.14...v1.1.15
+[1.1.10]: https://github.com/lidge-ai/ima2-gen/compare/v1.1.9...v1.1.10
+[1.1.0]: https://github.com/lidge-ai/ima2-gen/compare/v1.0.11...v1.1.0
+[1.0.3]: https://github.com/lidge-ai/ima2-gen/releases/tag/v1.0.3

@@ -96,7 +96,7 @@ export function createRootNodeFromHistoryItemImpl(
       model: item.model ?? null,
       size: item.size ?? null,
       elapsed: item.elapsed ?? undefined,
-      video: (item as any).video ?? null,
+      video: item.video ?? null,
     },
   };
   set({
@@ -307,7 +307,7 @@ export function duplicateBranchRootImpl(
 
   if (source.data.imageUrl) {
     const sourceUrl = source.data.imageUrl;
-    (async () => {
+    void (async () => {
       try {
         const dataUrl = await compressReferenceSource(sourceUrl, "node-reference.png");
         set({

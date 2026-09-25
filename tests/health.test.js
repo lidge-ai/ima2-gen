@@ -33,8 +33,10 @@ describe("Server: /api/health + advertisement", () => {
   let childStderr = "";
   let oauthServer;
   let lastOAuthPayload = null;
+  let lastRenderPayload = null;
 
   before(async () => {
+    // GPT OAuth plans on /v1/responses (an image_gen function call), then renders on /v1/images/*.
     oauthServer = createServer((req, res) => {
       if (req.method === "POST" && req.url === "/v1/responses") {
         let body = "";
@@ -43,11 +45,22 @@ describe("Server: /api/health + advertisement", () => {
         });
         req.on("end", () => {
           lastOAuthPayload = JSON.parse(body);
+          const call = { type: "function_call", call_id: "call_1", name: "image_gen", arguments: JSON.stringify({ prompt: "planned" }) };
+          res.writeHead(200, { "Content-Type": "text/event-stream" });
+          res.end([{ type: "response.output_item.done", item: call }, { type: "response.completed", response: { usage: { total_tokens: 1 } } }]
+            .map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""));
+        });
+        return;
+      }
+      if (req.method === "POST" && req.url === "/v1/images/generations") {
+        let body = "";
+        req.on("data", (chunk) => {
+          body += chunk;
+        });
+        req.on("end", () => {
+          lastRenderPayload = JSON.parse(body);
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({
-            output: [{ type: "image_generation_call", result: "aGVsbG8=" }],
-            usage: { total_tokens: 1 },
-          }));
+          res.end(JSON.stringify({ data: [{ b64_json: "aGVsbG8=" }], usage: { total_tokens: 1 } }));
         });
         return;
       }
@@ -171,8 +184,9 @@ describe("Server: /api/health + advertisement", () => {
     assert.strictEqual(r.status, 400);
   });
 
-  it("/api/generate forwards moderation to the image tool", async () => {
+  it("/api/generate forwards moderation to the image renderer", async () => {
     lastOAuthPayload = null;
+    lastRenderPayload = null;
     const r = await fetch(`http://localhost:${PORT}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -188,10 +202,12 @@ describe("Server: /api/health + advertisement", () => {
     assert.strictEqual(body.moderation, "auto");
     assert.strictEqual(body.quality, "medium");
     assert.deepStrictEqual(body.warnings, []);
-    assert.ok(lastOAuthPayload, "proxy request should be captured");
-    assert.strictEqual(lastOAuthPayload.tools[1].type, "image_generation");
-    assert.strictEqual(lastOAuthPayload.tools[1].quality, "medium");
-    assert.strictEqual(lastOAuthPayload.tools[1].moderation, "auto");
+    assert.ok(lastOAuthPayload, "planner request should be captured");
+    assert.ok(lastOAuthPayload.tools.some((tool) => tool.type === "function" && tool.name === "image_gen"));
+    assert.ok(lastRenderPayload, "render request should be captured");
+    assert.strictEqual(lastRenderPayload.model, "gpt-image-2");
+    assert.strictEqual(lastRenderPayload.quality, "medium");
+    assert.strictEqual(lastRenderPayload.moderation, "auto");
   });
 
   it("/api/inflight keeps terminal jobs opt-in and active jobs clean", async () => {

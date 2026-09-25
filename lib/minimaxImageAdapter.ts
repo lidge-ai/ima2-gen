@@ -1,3 +1,4 @@
+import { thrownFields } from "./errInfo.js";
 // lib/minimaxImageAdapter.ts — MiniMax image-generation adapter.
 //
 // Calls the MiniMax /v1/image_generation endpoint directly with a Bearer API
@@ -147,7 +148,15 @@ async function downloadMinimaxImage(
   return { b64, mime: validateMinimaxImageBytes(b64, res.headers.get("content-type")) };
 }
 
-async function readJson(res: Response): Promise<any> {
+/** MiniMax image generation response body. */
+interface MinimaxJson {
+  base_resp?: { status_code?: unknown; status_msg?: string };
+  data?: { image_urls?: unknown; image_base64?: unknown };
+  metadata?: { success_count?: unknown; failed_count?: unknown };
+  raw?: string;
+}
+
+async function readJson(res: Response): Promise<MinimaxJson> {
   const text = await res.text();
   if (!text) return {};
   try {
@@ -333,18 +342,19 @@ export async function generateViaMinimax(
       providerUrl,
       effectiveModel: model,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     // AbortSignal.timeout() rejects with a TimeoutError, not an AbortError.
-    if (e.name === "TimeoutError") {
+    if (eFields.name === "TimeoutError") {
       throw minimaxError("MiniMax image generation timed out", 504, "GENERATION_TIMEOUT");
     }
-    if (e.name === "AbortError") {
+    if (eFields.name === "AbortError") {
       if (options.signal?.aborted) {
         throw minimaxError("Generation canceled", 499, "GENERATION_CANCELED");
       }
       throw minimaxError("MiniMax image generation timed out", 504, "GENERATION_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw minimaxError(`MiniMax request failed: ${e.message}`, 502, "MINIMAX_NETWORK_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw minimaxError(`MiniMax request failed: ${eFields.message}`, 502, "MINIMAX_NETWORK_FAILED");
   }
 }

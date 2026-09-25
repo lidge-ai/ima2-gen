@@ -29,5 +29,9 @@ export function registerIpc({ settingsStore, supervisor, actions, info }) {
   handle("desktop:open-generated", () => actions.openGenerated());
   handle("desktop:open-logs", () => actions.openLogs());
   handle("desktop:open-config-dir", () => shell.openPath(actions.configDir()));
+  handle("desktop:tray:snapshot", () => actions.traySnapshot());
+  handle("desktop:tray:hide", () => actions.hideTrayPopup());
+  handle("desktop:open-in-browser", () => actions.openInBrowser());
+  handle("desktop:quit", () => actions.quit());
   handle("desktop:close-self", (e) => BrowserWindow.fromWebContents(e.sender)?.close());
 }

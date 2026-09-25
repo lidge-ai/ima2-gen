@@ -16,7 +16,7 @@ describe("comfy UI model routing", () => {
     const fn = source.slice(source.indexOf("export function getImageModelOptionsForProvider"));
     const body = fn.slice(0, fn.indexOf("\n}"));
     const comfyAt = body.indexOf('provider === "comfy"');
-    const fallbackAt = body.indexOf("return OPENAI_IMAGE_MODEL_OPTIONS");
+    const fallbackAt = body.indexOf("return OAUTH_IMAGE_MODEL_OPTIONS");
     assert.ok(comfyAt > 0, "comfy must have its own branch");
     assert.ok(comfyAt < fallbackAt, "the comfy branch must precede the OpenAI fallback");
     assert.match(body.slice(comfyAt, fallbackAt), /return \[\]/, "comfy returns an empty static list");

@@ -4,20 +4,20 @@ status: completed / moved to _fin
 created: 2026-05-15
 tags: [ux, cli, packaging, install, hardening, agent-ux]
 sources:
-  - https://github.com/lidge-jun/ima2-gen/issues/27
-  - https://github.com/lidge-jun/ima2-gen/issues/28
-  - https://github.com/lidge-jun/ima2-gen/issues/31
-  - https://github.com/lidge-jun/ima2-gen/issues/59
-  - https://github.com/lidge-jun/ima2-gen/issues/60
-  - https://github.com/lidge-jun/ima2-gen/issues/62
-  - https://github.com/lidge-jun/ima2-gen/issues/63
-  - https://github.com/lidge-jun/ima2-gen/issues/64
-  - https://github.com/lidge-jun/ima2-gen/issues/65
-  - https://github.com/lidge-jun/ima2-gen/issues/66
-  - https://github.com/lidge-jun/ima2-gen/issues/67
-  - https://github.com/lidge-jun/ima2-gen/issues/68
-  - https://github.com/lidge-jun/ima2-gen/issues/69
-  - https://github.com/lidge-jun/ima2-gen/issues/70
+  - https://github.com/lidge-ai/ima2-gen/issues/27
+  - https://github.com/lidge-ai/ima2-gen/issues/28
+  - https://github.com/lidge-ai/ima2-gen/issues/31
+  - https://github.com/lidge-ai/ima2-gen/issues/59
+  - https://github.com/lidge-ai/ima2-gen/issues/60
+  - https://github.com/lidge-ai/ima2-gen/issues/62
+  - https://github.com/lidge-ai/ima2-gen/issues/63
+  - https://github.com/lidge-ai/ima2-gen/issues/64
+  - https://github.com/lidge-ai/ima2-gen/issues/65
+  - https://github.com/lidge-ai/ima2-gen/issues/66
+  - https://github.com/lidge-ai/ima2-gen/issues/67
+  - https://github.com/lidge-ai/ima2-gen/issues/68
+  - https://github.com/lidge-ai/ima2-gen/issues/69
+  - https://github.com/lidge-ai/ima2-gen/issues/70
 ---
 
 # UX, CLI, And Install Hardening Audit Closeout
@@ -69,7 +69,7 @@ Repository:
 
 ```text
 /Users/jun/Developer/new/700_projects/ima2-gen
-https://github.com/lidge-jun/ima2-gen
+https://github.com/lidge-ai/ima2-gen
 ```
 
 Open issues at investigation time:

@@ -1,4 +1,5 @@
 import { config } from "../../config.js";
+import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
 import { parseArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import type { LaneInfo } from "../lib/modelResolver.js";
@@ -50,6 +51,19 @@ const FLAGS = {
   help: { short: "h", type: "boolean" },
 };
 
+interface LaneDefaults {
+  model?: unknown;
+  reasoningEffort?: unknown;
+  size?: unknown;
+  webSearchEnabled?: unknown;
+}
+
+interface DefaultsPayload {
+  source: string;
+  server: string | null;
+  defaults?: { oauth?: LaneDefaults; api?: LaneDefaults; cli?: { image?: string; video?: string } };
+}
+
 function localDefaults() {
   const effective = buildEffectiveConfig();
   return {
@@ -76,7 +90,8 @@ async function readDefaults(args: ReturnType<typeof parseArgs>) {
   if (args.local) return localDefaults();
   try {
     const server = await resolveServer({ serverFlag: args.server });
-    const capabilities = await request(server.base, "/api/capabilities", { timeoutMs: 5000 });
+    const capabilities = await request<{ defaults?: { oauth?: LaneDefaults; api?: LaneDefaults } }>(
+      server.base, "/api/capabilities", { timeoutMs: 5000 });
     return {
       ok: true,
       source: "server",
@@ -90,7 +105,7 @@ async function readDefaults(args: ReturnType<typeof parseArgs>) {
   }
 }
 
-function printDefaults(payload: any): void {
+function printDefaults(payload: DefaultsPayload): void {
   out(`ima2 defaults (${payload.source})`);
   out(`server: ${payload.server || "none"}`);
   out("");
@@ -107,9 +122,24 @@ function printDefaults(payload: any): void {
 }
 
 function validateModel(value: string): void {
-  if (!config.imageModels.valid.has(value)) {
-    die(2, `model must be one of: ${Array.from(config.imageModels.valid).join(", ")}`);
+  if (!config.imageModels.valid.has(migrateOAuthImageModel(value)) && !config.apiProvider.validImageModels.has(value)) {
+    const choices = [...new Set([...config.imageModels.valid, ...config.apiProvider.validImageModels])];
+    die(2, `model must be one of: ${choices.join(", ")}`);
   }
+}
+
+/**
+ * GPT OAuth keeps only GPT-6 and the API-key lane its own list, so one `defaults set model` value
+ * lands on each lane only in a form that lane serves: the OAuth default takes the GPT-6 tier of a
+ * legacy id, and the API default changes only when the id is an API model.
+ */
+function laneValue(key: string, value: string): string | undefined {
+  if (key === "imageModels.default") {
+    const oauth = migrateOAuthImageModel(value);
+    return config.imageModels.valid.has(oauth) ? oauth : undefined;
+  }
+  if (key === "apiProvider.defaultImageModel") return config.apiProvider.validImageModels.has(value) ? value : undefined;
+  return value;
 }
 
 function validateReasoning(value: string): void {
@@ -128,10 +158,16 @@ function warnOverrides(keys: readonly string[]): void {
 
 function setDefaults(keys: readonly string[], value: string): void {
   const fileCfg = loadFileCfg();
-  for (const key of keys) setNestedKey(fileCfg, key, value);
+  const written: string[] = [];
+  for (const key of keys) {
+    const next = laneValue(key, value);
+    if (next === undefined) continue;
+    setNestedKey(fileCfg, key, next);
+    written.push(next === value ? key : `${key} (as ${next})`);
+  }
   saveFileCfg(fileCfg);
   warnOverrides(keys);
-  out(color.green("✓ ") + `wrote ${keys.join(", ")}=${JSON.stringify(value)} to ${displayPath(CONFIG_FILE)}`);
+  out(color.green("✓ ") + `wrote ${written.join(", ")}=${JSON.stringify(value)} to ${displayPath(CONFIG_FILE)}`);
   out(color.dim(restartNotice()));
 }
 
@@ -159,7 +195,7 @@ function parseCliTarget(value: string, isJson: boolean): { lane: string; model: 
 async function fetchModelCatalog(args: ReturnType<typeof parseArgs>): Promise<Record<string, LaneInfo>> {
   try {
     const server = await resolveServer({ serverFlag: args.server });
-    const catalog = await request(server.base, "/api/models", { timeoutMs: 5000 });
+    const catalog = await request<{ lanes?: Record<string, LaneInfo> }>(server.base, "/api/models", { timeoutMs: 5000 });
     return catalog.lanes ?? {};
   } catch (error) {
     fail({

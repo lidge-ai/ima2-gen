@@ -1,5 +1,5 @@
 import { fetchApi } from "../lib/api-core";
-import type { GenerateItem } from "../types";
+import type { GenerateItem, GenerateItemVideo } from "../types";
 import type { SessionFull, SessionGraphEdge } from "../lib/api";
 import {
   getHistory,
@@ -166,6 +166,7 @@ export async function recoverGraphNodesFromHistory(
     nodeId?: string | null;
     clientNodeId?: string | null;
     requestId?: string | null;
+    video?: GenerateItemVideo | null;
   }> = [];
   try {
     const res = await getHistory({ sessionId: sid, limit: HISTORY_LIMIT });
@@ -204,7 +205,7 @@ export async function recoverGraphNodesFromHistory(
         size: recovered.size ?? n.data.size ?? null,
         elapsed: recovered.elapsed ?? n.data.elapsed,
         reasoningEffort: (recovered.reasoningEffort as ImageNodeData["reasoningEffort"]) ?? n.data.reasoningEffort,
-        video: (recovered as any).video ?? n.data.video ?? null,
+        video: recovered.video ?? n.data.video ?? null,
         pendingRequestId: null,
         recoveryRequestId: null,
         pendingPhase: null,
@@ -377,7 +378,7 @@ export function flushGraphSaveBeacon(get: () => AppState): void {
       body,
       keepalive: true,
     }).catch(() => { /* Keep the draft; unload has no response UI. */ });
-  } catch {}
+  } catch { /* best-effort: unload has no response UI; the local draft is kept */ }
 }
 
 type AddHistoryOptions = {

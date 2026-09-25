@@ -8,6 +8,9 @@ import { resolveIconPaths } from "./lib/icons.mjs";
 import { ServerSupervisor } from "./lib/server.mjs";
 import { WindowManager } from "./lib/windows.mjs";
 import { TrayController } from "./lib/tray.mjs";
+import { TrayPopup } from "./lib/tray-popup.mjs";
+import { collectTraySnapshot } from "./lib/tray-data.mjs";
+import { createLoginItem } from "./lib/login-item.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
 import { wireAppLifecycle } from "./lib/app-lifecycle.mjs";
@@ -30,12 +33,11 @@ if (!app.requestSingleInstanceLock()) {
 async function boot() {
   await app.whenReady();
 
-  const { appIcon: appIconPng, trayIcon } = await resolveIconPaths({
+  const { appIcon, trayIcon, trayUpdateIcon } = await resolveIconPaths({
     buildDir,
     fallbackDir: join(app.getPath("userData"), "icons"),
     log: (line) => console.warn(line),
   });
-  const appIcon = process.platform === "win32" ? join(buildDir, "icon.ico") : appIconPng;
 
   const settingsStore = createSettingsStore(app.getPath("userData"));
   const supervisor = new ServerSupervisor({
@@ -47,14 +49,27 @@ async function boot() {
     iconPath: appIcon,
     getServerUrl: () => supervisor.url,
     getSettings: () => settingsStore.get(),
-    onVisibilityChange: () => applyDockVisibility(settingsStore.get(), windows),
+    onVisibilityChange: () => {
+      if (!windows.main && !windows.settings && !settingsStore.get().keepRunningOnClose) popup.release();
+      applyDockVisibility(settingsStore.get(), windows);
+    },
+    onHiddenToTray: () => notifyHiddenToTray(),
   });
+  let trayHintShown = false;
+  const notifyHiddenToTray = () => {
+    if (trayHintShown) return;
+    trayHintShown = true;
+    tray.notifyStillRunning();
+  };
+  const loginItem = createLoginItem({ app });
+  const popup = new TrayPopup();
   const lifecycle = wireAppLifecycle({ supervisor, windows, settingsStore, applyDockVisibility, app });
   const updater = await createUpdaterController({
     app,
     dialog,
     prepareForInstall: () => lifecycle.prepareForUpdateInstall(),
     autoDownload: settingsStore.get().autoUpdate,
+    onUpdateReady: () => tray.setUpdatePending(true),
   });
 
   const configDir = () => settingsStore.get().configDir || process.env.IMA2_CONFIG_DIR || join(homedir(), ".ima2");
@@ -70,9 +85,15 @@ async function boot() {
     updaterActive: updater.active,
     configDir,
     quit: () => app.quit(),
+    toggleTrayPopup: (bounds) => popup.toggle(bounds),
+    showTrayPopup: (bounds) => popup.show(bounds),
+    hideTrayPopup: () => popup.hide(),
+    traySnapshot: () => collectTraySnapshot({ status: supervisor.snapshot() }),
+    setOpenAtLogin: (enabled) => settingsStore.update({ openAtLogin: enabled === true }),
   };
 
-  const tray = new TrayController({ iconPath: trayIcon, actions });
+  const tray = new TrayController({ iconPath: trayIcon, updateIconPath: trayUpdateIcon, actions });
+  app.on("before-quit", () => popup.destroy());
   tray.create();
   tray.update({ settings: settingsStore.get() });
   installApplicationMenu(actions);
@@ -81,11 +102,12 @@ async function boot() {
   supervisor.on("status", (status) => {
     tray.update({ status });
     windows.broadcast("desktop:status", status);
+    popup.win?.webContents.send("desktop:status", status);
     windows.syncMainContent();
   });
-  settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows, updater }));
+  settingsStore.onChange((next, changed) => onSettingsChanged({ next, changed, supervisor, tray, windows, updater, loginItem }));
 
-  if (settingsStore.get().openAtLogin) applyLoginItem(settingsStore.get());
+  if (settingsStore.get().openAtLogin) applyLoginItem(loginItem, settingsStore.get());
   applyDockVisibility(settingsStore.get(), windows);
 
   if (!existsSync(join(rootDir, "server.js"))) {
@@ -97,21 +119,23 @@ async function boot() {
   if (settingsStore.get().autoUpdate) void updater.checkForUpdates();
 }
 
-function onSettingsChanged({ next, changed, supervisor, tray, windows, updater }) {
+function onSettingsChanged({ next, changed, supervisor, tray, windows, updater, loginItem }) {
   tray.update({ settings: next });
   if (changed.includes("autoUpdate")) updater.setAutoDownload(next.autoUpdate);
   windows.broadcast("desktop:status", supervisor.snapshot());
-  if (changed.includes("openAtLogin") || (next.openAtLogin && changed.includes("startHidden"))) applyLoginItem(next);
+  if (changed.includes("openAtLogin") || changed.includes("startHidden")) applyLoginItem(loginItem, next);
   if (changed.includes("menubarOnly")) applyDockVisibility(next, windows);
   const needsRestart = ["port", "devLogging", "nodeBinary", "configDir"];
   if (changed.some((k) => needsRestart.includes(k))) void supervisor.restart(next);
 }
 
-function applyLoginItem(settings) {
+function applyLoginItem(loginItem, settings) {
   if (!app.isPackaged) return;
-  const current = app.getLoginItemSettings();
-  if (current.openAtLogin === settings.openAtLogin && current.openAsHidden === settings.startHidden) return;
-  app.setLoginItemSettings({ openAtLogin: settings.openAtLogin, openAsHidden: settings.startHidden });
+  try {
+    loginItem.set(settings.openAtLogin, { hidden: settings.startHidden === true });
+  } catch (error) {
+    console.warn(`[desktop] login item update failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 function applyDockVisibility(settings, windows) {

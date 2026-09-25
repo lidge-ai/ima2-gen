@@ -1,3 +1,5 @@
+import type { GenerateOptions } from "../providers/adapters/openaiTypes.js";
+import type { UpstreamErr } from "../generationErrors.js";
 import { setJobPhase } from "../inflight.js";
 import { logEvent } from "../logger.js";
 import { safeReferenceDiagnostics } from "../refs.js";
@@ -20,7 +22,7 @@ import {
   summarizeEventTypes,
   waitForOAuthReady,
 } from "./runtime.js";
-import { readImageStream } from "./streams.js";
+import { readImageStream, type OAuthResponsesJson } from "./streams.js";
 
 export async function generateViaOAuth(
   prompt: string,
@@ -31,7 +33,7 @@ export async function generateViaOAuth(
   requestId: string | null = null,
   mode: string = "auto",
   ctx: RouteRuntimeContext = {},
-  options: any = {},
+  options: GenerateOptions = {},
 ) {
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
@@ -111,7 +113,7 @@ export async function generateViaOAuth(
     const contentType = res.headers.get("content-type") || "";
     if (!contentType.includes("text/event-stream")) {
       logEvent("oauth", "json_response", { requestId });
-      const json: any = await res.json();
+      const json = await res.json() as OAuthResponsesJson;
       for (const item of json.output || []) {
         if (item.type === "image_generation_call" && item.result) {
           logEvent("oauth", "image", { requestId, imageChars: item.result.length });
@@ -163,7 +165,7 @@ export async function generateViaOAuth(
       }, { requestId, scope: "oauth" });
 
       if (retryRes.ok) {
-        const json: any = await retryRes.json();
+        const json = await retryRes.json() as OAuthResponsesJson;
         for (const item of json.output || []) {
           if (item.type === "image_generation_call" && item.result) {
             logEvent("oauth", "retry_image", {
@@ -197,7 +199,7 @@ export async function generateViaOAuth(
         });
       }
 
-      const emptyErr: any = new Error("No image data received from OAuth proxy (parsed " + eventCount + " events)");
+      const emptyErr: Error & UpstreamErr = new Error("No image data received from OAuth proxy (parsed " + eventCount + " events)");
       emptyErr.eventCount = eventCount;
       emptyErr.eventTypes = eventTypes;
       emptyErr.size = size;

@@ -10,7 +10,7 @@ Use it from the browser, the Mac app, the CLI, or hand it to your coding agent.<
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=npm&label=npm" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/dm/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&label=downloads" alt="npm downloads"></a>
   <img src="https://img.shields.io/node/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=node.js&label=node" alt="Node.js version">
-  <a href="https://github.com/lidge-jun/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-jun/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-ai/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3f3f46?style=flat-square&labelColor=18181b" alt="MIT license"></a>
 </p>
 
@@ -20,7 +20,7 @@ ima2 serve
 ```
 
 <p align="center">
-  <a href="https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Download the Mac app (.dmg)"></a>
+  <a href="https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Download the Mac app (.dmg)"></a>
   <a href="#one-line-installers"><img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-one--line%20installer-18181b?style=for-the-badge&logo=gnubash&logoColor=white" alt="One-line installers for Windows and Linux"></a>
 </p>
 
@@ -76,7 +76,7 @@ See which lanes are ready, type a prompt, and pick up recent work without diggin
 </table>
 
 <p align="center">
-  <b>English</b> · <a href="docs/README.ko.md">한국어</a> · <a href="docs/README.ja.md">日本語</a> · <a href="docs/README.zh-CN.md">简体中文</a> · <a href="docs/README.zh-TW.md">正體中文</a> · <a href="https://lidge-jun.github.io/ima2-gen/"><b>Website</b></a> · <a href="https://lidge-jun.github.io/ima2-gen/docs"><b>Docs →</b></a>
+  <b>English</b> · <a href="docs/README.ko.md">한국어</a> · <a href="docs/README.ja.md">日本語</a> · <a href="docs/README.zh-CN.md">简体中文</a> · <a href="docs/README.zh-TW.md">正體中文</a> · <a href="https://lidge-ai.github.io/ima2-gen/"><b>Website</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/docs"><b>Docs →</b></a>
 </p>
 
 `ima2-gen` is a local-first visual generation runtime and studio for people and coding agents, with reproducible image and video workflows across multiple providers. It runs a small server on your machine, keeps every image in `~/.ima2/generated`, and talks to the providers you connect: OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI and registered ComfyUI workflows. Runway and Higgsfield stay separate MCP-backed integrations. Prompts and references go only to the provider you pick for each job.
@@ -87,11 +87,11 @@ See which lanes are ready, type a prompt, and pick up recent work without diggin
 
 The desktop app runs the same local server and studio in a Mac window with a menu bar icon. It is signed with a Developer ID and notarized by Apple, and it brings its own runtime, so you do not need Node.js.
 
-1. Download `ima2-<version>-mac-arm64.dmg` from the newest [ima2 Desktop release](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true).
+1. Download `ima2-<version>-mac-arm64.dmg` from the newest [ima2 Desktop release](https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true).
 2. Open the DMG and drag **ima2** into **Applications**.
 3. Launch ima2 and pick a provider on the welcome screen.
 
-The [Mac App guide](https://lidge-jun.github.io/ima2-gen/docs/desktop) covers checksums, updates and settings. On an Intel Mac, Windows or Linux, use npm or a one-line installer.
+The [Mac App guide](https://lidge-ai.github.io/ima2-gen/docs/desktop) covers checksums, updates and settings. On an Intel Mac, Windows or Linux, use npm or a one-line installer.
 
 ### npm
 
@@ -109,7 +109,7 @@ Pick explicit image and video defaults once, then generate:
 
 ```bash
 ima2 models
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 defaults set video grok/grok-imagine-video-1.5
 ima2 gen "a clean product photo of a red guitar pedal"
 ima2 video "a cat playing piano" --duration 5 --resolution 720p
@@ -126,19 +126,19 @@ Each script checks the package-derived Node.js floor, installs Node LTS if neede
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
 ```
 
 <details>
@@ -186,7 +186,7 @@ Using npx instead? See [docs/NPX_QUICKSTART.md](docs/NPX_QUICKSTART.md) for the 
 - **Raster to vector**: trace flat raster art into real SVG paths with `ima2 vectorize`, from AssetGen/Assets, or from Canvas Export.
 - **NovelAI dual prompt**: with NovelAI selected, Create, Home and the mobile compose sheet show **Positive prompt** and **Undesired content** as peer panes; they stack below a 719px composer container.
 - **Prompt library**: import local prompt packs, GitHub folders and curated GPT-image hints; imports are indexed locally for search.
-- **Prompt Builder**: refine intent through a text backend. Settings > Providers keeps routing on Auto or pins a backend and model, and the **via &lt;backend&gt;** badge shows which one answered. When the GPT backend is selected, its default model is `gpt-5.6-luna`.
+- **Prompt Builder**: refine intent through a text backend. Settings > Providers keeps routing on Auto or pins a backend and model, and the **via &lt;backend&gt;** badge shows which one answered. When the GPT backend is selected, its default model is `gpt-6-luna`.
 - **Local gallery**: every image and video stays on your machine with session-aware history, generation time and reasoning effort in its metadata. The gallery opens on the current session, an All Images toggle reveals the full history, and the default scope is sticky across sessions.
 - **Light and dark themes**: token-based palettes with AA contrast, switchable between light, dark and system without a flash on load.
 - **Mobile shell** and **observable jobs**: a compact app bar, compose sheet and settings toggle on small screens, and active/recent jobs with safe logs and request IDs.
@@ -217,7 +217,7 @@ ima2 skill install --tmp        # install to a temp dir (fallback)
 
 | Lane | Auth | Images | Video | Notes |
 |---|---|:-:|:-:|---|
-| `oauth` | ChatGPT login through the local Codex OAuth proxy | ✓ | | Default lane; `gpt-5.6-luna` |
+| `oauth` | ChatGPT login; ima2 calls ChatGPT directly | ✓ | | Default lane; GPT-6 plans, `gpt-image-2` renders; `gpt-6-luna` |
 | `api` | `OPENAI_API_KEY` | ✓ | | Responses API `image_generation` tool; masks, multimode, nodes |
 | `grok` | xAI OAuth (`ima2 grok login`) | ✓ | ✓ | Web search + planner pass before the Images API |
 | `grok-api` | `XAI_API_KEY` | ✓ | ✓ | Direct xAI Images API |
@@ -229,12 +229,12 @@ ima2 skill install --tmp        # install to a temp dir (fallback)
 | `minimax` | MiniMax API key | ✓ | | `image-01`, `image-01-live` |
 | `runway`, `higgsfield` | MCP connection | ✓ | ✓ | Separate MCP-backed integrations |
 
-Image generation defaults to **`gpt-5.6-luna`** on the GPT lane. `gpt-6-astra` is the newest GPT image model and is selectable; `gpt-5.6-terra` and `gpt-5.6-sol` appear when your account exposes them; `gpt-5.5`, `gpt-5.4` and `gpt-5.4-mini` stay as compatibility choices. The app also exposes quality (`low`, `medium`, `high`) and moderation (`auto`, `low`) controls.
+The GPT OAuth lane offers three GPT-6 models: **`gpt-6-luna`** (default), `gpt-6-sol`, and `gpt-6-astra`, which reasons longest and is the slowest. The chosen model plans the image and `gpt-image-2` draws it. Older OAuth ids such as `gpt-5.6-luna` keep working in saved settings and scripts and map to their GPT-6 tier. The API-key lane keeps its own list: `gpt-5.6-luna` (default), `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4` and `gpt-5.4-mini`. The app also exposes quality (`low`, `medium`, `high`) and moderation (`auto`, `low`) controls.
 
 <details>
 <summary><b>Provider details</b></summary>
 
-- `provider: "oauth"` uses the local Codex OAuth proxy.
+- `provider: "oauth"` signs in with your ChatGPT session and calls ChatGPT's Codex backend from the ima2 server process, with no separate proxy. A GPT-6 model plans the prompt and `gpt-image-2` renders it; Direct mode skips the planner. Transparent backgrounds and image edits run on the same lane.
 - `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool.
 - `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`, running mandatory xAI Web Search plus a planner pass (default: `grok-4.3`, configurable in settings or via `--planner-model`) before the xAI Images API call. `grok-4.5` and `grok-4.6` are also selectable. Log in once with `ima2 grok login` or the Settings **Switch Account** button; the session refreshes itself two minutes before expiry.
 - `provider: "grok-api"` calls the xAI Images API directly with `XAI_API_KEY` (no OAuth session involved).
@@ -244,7 +244,7 @@ Image generation defaults to **`gpt-5.6-luna`** on the GPT lane. `gpt-6-astra` i
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
 - Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
 
-If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth and API-key generation default to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
+If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth defaults to `gpt-6-luna` and API-key generation to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
 
 One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
 
@@ -300,7 +300,7 @@ The server advertises its actual port at `~/.ima2/server.json`. If `3333` is bus
 
 ```bash
 ima2 models --kind image
-ima2 gen "poster" --model oauth/gpt-5.6-luna --reasoning-effort high
+ima2 gen "poster" --model oauth/gpt-6-luna --reasoning-effort high
 ima2 gen "1girl, blue hair" --model nai/nai-diffusion-5-full --nai-negative-prompt "lowres, watermark"
 ima2 vectorize logo.png -o logo.svg --json
 ima2 prompt build --message "Make this prompt production-ready" --backend auto --model auto
@@ -327,16 +327,17 @@ Config priority is `environment variables > ~/.ima2/config.json > built-in defau
 |---|---:|---|
 | `IMA2_PORT` / `PORT` | `3333` | Web server port |
 | `IMA2_HOST` | `127.0.0.1` | Web server bind host |
-| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | OAuth proxy port |
+| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | Port of the external GPT OAuth endpoint used with `IMA2_NO_OAUTH_PROXY=1` |
 | `IMA2_SERVER` | — | CLI target override |
 | `IMA2_CONFIG_DIR` | `~/.ima2` | Config and SQLite location |
 | `IMA2_ADVERTISE_FILE` | `~/.ima2/server.json` | Runtime discovery file |
 | `IMA2_GENERATED_DIR` | `~/.ima2/generated` | Generated image directory |
-| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Server fallback image model |
+| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
-| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to disable the auto-started OAuth proxy |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
+| `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
 | `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | Recent terminal job retention for debug views |
 | `OPENAI_API_KEY` | — | API key for the `provider: "api"` Responses API image path and auxiliary API-key features |
@@ -394,7 +395,7 @@ Re-run `ima2 setup` (option 1), confirm `ima2 status`, then restart `ima2 serve`
 <details>
 <summary><b><code>fetch failed</code> repeats on a proxy/VPN network</b></summary>
 
-Check that the local OAuth proxy is reachable. On networks that require a proxy, enable your proxy client's TUN/TURN-style mode, then retry `openai-oauth --port 10531`. If it still fails, set `HTTP_PROXY` and `HTTPS_PROXY` in the same terminal that runs `ima2 serve` or `openai-oauth`. On Windows, also check for auto-start network interception tools, including DNS/fragmentation bypass tools such as SecretDNS, because they can break OAuth or streaming image responses even when the browser appears connected.
+GPT OAuth requests leave from the `ima2 serve` process and go straight to `chatgpt.com`. On networks that require a proxy, enable your proxy client's TUN/TURN-style mode. If that is not possible, set both `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1` in the terminal that starts the server; Node.js 22.21+ and 24+ read `HTTPS_PROXY` only with the second variable; older Node.js ignores both, so use TUN mode there. On Windows, also check for auto-start network interception tools, including DNS/fragmentation bypass tools such as SecretDNS, because they can break OAuth or image responses even when the browser appears connected.
 
 </details>
 
@@ -408,7 +409,7 @@ Set `OPENAI_API_KEY` or configure an API key before using `provider: "api"`. The
 <details>
 <summary><b>Image generation returns <code>EMPTY_RESPONSE</code> or no image data</b></summary>
 
-Run `ima2 doctor image-probe --json > ima2-image-probe.json` and attach the safe JSON when opening an issue. For GPT OAuth cases, also capture `ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json` and `ima2 gen "고양이" --model oauth/gpt-5.6-luna --json` while `ima2 serve` is running. Do not share ChatGPT cookies, OAuth token files, API keys, raw upstream responses, prompt history, or generated base64. See the [FAQ support bundle](docs/FAQ.md#what-should-i-share-when-gpt-oauth-image-generation-returns-no-image).
+Run `ima2 doctor image-probe --json > ima2-image-probe.json` and attach the safe JSON when opening an issue. For GPT OAuth cases, also capture `ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json` and `ima2 gen "고양이" --model oauth/gpt-6-luna --json` while `ima2 serve` is running. Do not share ChatGPT cookies, OAuth token files, API keys, raw upstream responses, prompt history, or generated base64. See the [FAQ support bundle](docs/FAQ.md#what-should-i-share-when-gpt-oauth-image-generation-returns-no-image).
 
 </details>
 
@@ -427,9 +428,9 @@ Recent versions moved generated images from the installed package folder to `~/.
 </details>
 
 <details>
-<summary><b><code>gpt-5.5</code> fails but other models work</b></summary>
+<summary><b>A GPT-6 model is missing or rejected on the GPT OAuth lane</b></summary>
 
-Update Codex CLI first, then retry. If it still fails, your account or backend route may not expose the same image capability or quota for `gpt-5.5` yet; use `gpt-5.4` as the stable fallback.
+The GPT OAuth lane uses the GPT-6 models your ChatGPT plan exposes. Update ima2-gen, sign in again with `ima2 gpt login`, then check `ima2 models --kind image`. If one model keeps failing, switch to `gpt-6-luna`, the default.
 
 </details>
 
@@ -440,18 +441,11 @@ If the requested server port is busy, `ima2-gen` falls back to the next availabl
 
 </details>
 
-<details>
-<summary><b>Port <code>10531</code> is already used on Windows</b></summary>
-
-Some Windows security tools, including `AnySign4PC.exe`, may occupy the default OAuth proxy port. Current builds track the actual fallback OAuth port. If you still need a manual override, start with `IMA2_OAUTH_PROXY_PORT=11531 ima2 serve` and check `ima2 doctor`.
-
-</details>
-
 More answers live in the [FAQ](docs/FAQ.md).
 
 ## Documentation
 
-- [Developer documentation site](https://lidge-jun.github.io/ima2-gen/docs) — overview, quickstart, architecture, modes, providers, CLI, config and server API
+- [Developer documentation site](https://lidge-ai.github.io/ima2-gen/docs) — overview, quickstart, architecture, modes, providers, CLI, config and server API
 - [CLI reference](docs/CLI.md) · [API reference](docs/API.md) · [Prompt Studio](docs/PROMPT_STUDIO.md) · [FAQ](docs/FAQ.md) · [Recover old images](docs/RECOVER_OLD_IMAGES.md)
 
 The API reference covers `POST /api/assets/derived` with `kind=vector-svg`, NovelAI's `negativePrompt` field, `POST /api/prompt-builder/chat`, and `GET`/`PUT /api/prompt-builder/config`.
@@ -459,7 +453,7 @@ The API reference covers `POST /api/assets/derived` with `kind=vector-svg`, Nove
 ## Development
 
 ```bash
-git clone https://github.com/lidge-jun/ima2-gen.git
+git clone https://github.com/lidge-ai/ima2-gen.git
 cd ima2-gen
 npm install
 npm run dev

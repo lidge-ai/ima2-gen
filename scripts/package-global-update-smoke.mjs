@@ -140,14 +140,6 @@ function logDone(label, started) {
   console.log(`[smoke] ${label} done ${Date.now() - started}ms`);
 }
 
-function run(command, args, options = {}) {
-  const label = options.label || `${command} ${args.join(" ")}`;
-  const started = logStart(label);
-  const result = assertSuccess(spawnSync(command, args, commandOptions(options)), label);
-  logDone(label, started);
-  return result;
-}
-
 function runNpm(args, options = {}) {
   const label = options.label || `npm ${args.join(" ")}`;
   const started = logStart(label);

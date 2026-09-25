@@ -6,51 +6,26 @@ import { tmpdir } from "node:os";
 import express from "express";
 import { registerNodeRoutes } from "../routes/nodes.ts";
 
-const PARTIAL_B64 = Buffer.from("partial").toString("base64");
 const FINAL_B64 = Buffer.from("final").toString("base64");
 
-function writeOauthSse(res, { includePartial = true } = {}) {
+// GPT OAuth plans on /v1/responses (an image_gen function call) and renders on /v1/images/*.
+function writePlannerSse(res, prompts: string[]) {
   res.writeHead(200, {
     "Content-Type": "text/event-stream; charset=utf-8",
     "Cache-Control": "no-cache",
   });
-  if (includePartial) {
+  for (const [index, prompt] of prompts.entries()) {
     res.write(
       `data: ${JSON.stringify({
-        type: "response.image_generation_call.partial_image",
-        partial_image: PARTIAL_B64,
-        index: 0,
+        type: "response.output_item.done",
+        item: { type: "function_call", call_id: `call_${index}`, name: "image_gen", arguments: JSON.stringify({ prompt }) },
       })}\n\n`,
     );
   }
   res.write(
     `data: ${JSON.stringify({
-      type: "response.output_item.done",
-      item: {
-        type: "image_generation_call",
-        result: FINAL_B64,
-        revised_prompt: "revised",
-      },
-    })}\n\n`,
-  );
-  res.write(
-    `data: ${JSON.stringify({
       type: "response.completed",
       response: { usage: { total_tokens: 7 } },
-    })}\n\n`,
-  );
-  res.end();
-}
-
-function writeEmptyOauthSse(res) {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream; charset=utf-8",
-    "Cache-Control": "no-cache",
-  });
-  res.write(
-    `data: ${JSON.stringify({
-      type: "response.completed",
-      response: { usage: { total_tokens: 1 } },
     })}\n\n`,
   );
   res.end();
@@ -62,6 +37,7 @@ describe("Node route SSE streaming", () => {
   let appServer;
   let baseUrl;
   let oauthBodies = [];
+  let renderCalls = 0;
 
   before(async () => {
     rootDir = await mkdtemp(join(tmpdir(), "ima2-node-stream-"));
@@ -72,11 +48,11 @@ describe("Node route SSE streaming", () => {
     oauthApp.post("/v1/responses", (req, res) => {
       oauthBodies.push(req.body);
       const text = JSON.stringify(req.body?.input ?? "");
-      if (text.includes("empty ref node")) {
-        writeEmptyOauthSse(res);
-        return;
-      }
-      writeOauthSse(res, { includePartial: !!req.body?.tools?.[1]?.partial_images });
+      writePlannerSse(res, text.includes("empty ref node") ? [] : ["revised"]);
+    });
+    oauthApp.post(["/v1/images/generations", "/v1/images/edits"], (_req, res) => {
+      renderCalls++;
+      res.json({ data: [{ b64_json: FINAL_B64 }], usage: { total_tokens: 3 } });
     });
     await new Promise((resolve) => {
       oauthServer = oauthApp.listen(0, "127.0.0.1", resolve);
@@ -110,8 +86,9 @@ describe("Node route SSE streaming", () => {
     await rm(rootDir, { recursive: true, force: true });
   });
 
-  it("streams partial and final node events for root generation", async () => {
+  it("streams phase and final node events for root generation, without partial frames", async () => {
     oauthBodies = [];
+    renderCalls = 0;
     const res = await fetch(`${baseUrl}/api/node/generate`, {
       method: "POST",
       headers: {
@@ -135,11 +112,12 @@ describe("Node route SSE streaming", () => {
     assert.equal(res.status, 200);
     assert.match(res.headers.get("content-type") || "", /text\/event-stream/);
     assert.match(text, /event: phase/);
-    assert.match(text, /event: partial/);
     assert.match(text, /event: done/);
-    assert.ok(text.indexOf("event: partial") < text.indexOf("event: done"));
-    assert.equal(oauthBodies[0].tools[1].partial_images, 2);
+    // The Images API has no partial frames, so GPT OAuth streams only real results.
+    assert.doesNotMatch(text, /event: partial/);
+    assert.equal(oauthBodies.length, 1);
     assert.equal(oauthBodies[0].stream, true);
+    assert.equal(renderCalls, 1);
   });
 
   it("keeps the JSON fallback path final-only", async () => {
@@ -165,11 +143,12 @@ describe("Node route SSE streaming", () => {
     assert.equal(body.requestId, "req_json");
     assert.match(body.image, /^data:image\/png;base64,/);
     assert.equal(body.revisedPrompt, "revised");
-    assert.equal(oauthBodies[0].tools[1].partial_images, undefined);
+    assert.deepEqual(oauthBodies[0].tools.map((tool) => tool.name ?? tool.type), ["web_search", "image_gen"]);
   });
 
-  it("does not retry image-input node requests after an empty image response", async () => {
+  it("retries an empty plan once and never renders for image-input node requests", async () => {
     oauthBodies = [];
+    renderCalls = 0;
     const ref = Buffer.from("ref").toString("base64");
     const res = await fetch(`${baseUrl}/api/node/generate`, {
       method: "POST",
@@ -190,7 +169,8 @@ describe("Node route SSE streaming", () => {
 
     const body = await res.json();
     assert.equal(res.status, 422);
+    assert.equal(oauthBodies.length, 2);
+    assert.equal(renderCalls, 0);
     assert.equal(body.error.code, "EMPTY_RESPONSE");
-    assert.equal(oauthBodies.length, 1);
   });
 });

@@ -32,7 +32,13 @@ interface SseImageData {
   };
 }
 
-export function extractPartialImage(data: SseImageData | null | undefined) {
+export interface PartialImage {
+  b64: string;
+  index: number | null | undefined;
+  eventType: string;
+}
+
+export function extractPartialImage(data: SseImageData | null | undefined): PartialImage | null {
   if (!data || typeof data?.type !== "string" || !data.type.includes("partial")) return null;
   const item = data.item || {};
   const b64 =
@@ -50,7 +56,7 @@ export function extractPartialImage(data: SseImageData | null | undefined) {
   return { b64, index, eventType: data.type };
 }
 
-export async function readImageStream(res: Response, { requestId = null, scope = "oauth", onPartialImage = null as ((p: any) => void) | null }: { requestId?: string | null; scope?: string; onPartialImage?: ((p: any) => void) | null } = {}) {
+export async function readImageStream(res: Response, { requestId = null, scope = "oauth", onPartialImage = null as ((p: PartialImage) => void) | null | undefined }: { requestId?: string | null; scope?: string; onPartialImage?: ((p: PartialImage) => void) | null | undefined } = {}) {
   const eventTypes: Record<string, number> = {};
   let parseSkipCount = 0;
   if (!res.body) throw makeOAuthError("OAuth response missing body", { code: "OAUTH_NO_BODY" });
@@ -137,7 +143,7 @@ export async function readImageStream(res: Response, { requestId = null, scope =
 
 export async function readMultimodeImageStream(
   res: Response,
-  { requestId = null, maxImages = 1, scope = "oauth-multimode", onPartialImage = null as ((p: any) => void) | null }: { requestId?: string | null; maxImages?: number; scope?: string; onPartialImage?: ((p: any) => void) | null } = {},
+  { requestId = null, maxImages = 1, scope = "oauth-multimode", onPartialImage = null as ((p: PartialImage) => void) | null | undefined }: { requestId?: string | null; maxImages?: number; scope?: string; onPartialImage?: ((p: PartialImage) => void) | null | undefined } = {},
 ) {
   const eventTypes: Record<string, number> = {};
   let parseSkipCount = 0;
@@ -229,4 +235,10 @@ export async function readMultimodeImageStream(
   }
 
   return { images, usage, webSearchCalls, eventCount, eventTypes, extraIgnored };
+}
+
+/** Non-streaming Responses API body returned when the proxy answers with plain JSON. */
+export interface OAuthResponsesJson {
+  output?: Array<{ type?: string; result?: string; revised_prompt?: unknown }>;
+  usage?: Record<string, number> | null;
 }

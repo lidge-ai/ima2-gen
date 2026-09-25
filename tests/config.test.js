@@ -82,17 +82,17 @@ test("config exposes default shape", () => {
   assert.equal(c.inflight.ttlMs, 5400000);
   assert.equal(c.inflight.terminalTtlMs, 300000);
   assert.deepEqual(c.oauth.validModeration.sort(), ["auto", "low"]);
-  assert.equal(c.imageModels.default, "gpt-5.6-luna");
+  assert.equal(c.imageModels.default, "gpt-6-luna");
   assert.equal(c.apiProvider.defaultImageModel, "gpt-5.6-luna");
   assert.equal(c.styleSheet.model, "gpt-5.6-luna");
   assert.equal(c.grokProvider.plannerModel, "grok-4.3");
   assert.equal(c.grokProvider.defaultImageModel, "grok-imagine-image-2.0");
   assert.equal(c.grokProvider.defaultVideoModel, "grok-imagine-video-1.5");
-  assert.deepEqual(c.imageModels.valid.sort(), ["gpt-5.4", "gpt-5.4-mini", "gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra"]);
-  assert.deepEqual(c.imageModels.unsupported, ["gpt-5.3-codex-spark"]);
+  assert.deepEqual(c.imageModels.valid.sort(), ["gpt-6-astra", "gpt-6-luna", "gpt-6-sol"]);
+  assert.deepEqual(c.imageModels.unsupported, []);
   assert.equal(c.features.cardNews, false);
   assert.equal(c.cardNewsPlanner.enabled, true);
-  assert.equal(c.cardNewsPlanner.model, "gpt-5.6-luna");
+  assert.equal(c.cardNewsPlanner.model, "gpt-6-luna");
   assert.equal(c.cardNewsPlanner.timeoutMs, 60000);
   assert.equal(c.cardNewsPlanner.deterministicFallback, false);
   assert.equal(c.comfy.defaultUrl, "http://127.0.0.1:8188");
@@ -123,6 +123,12 @@ test("env overrides win", () => {
   assert.equal(c.grokProvider.plannerModel, "grok-4.3");
   assert.equal(c.styleSheet.model, "gpt-5.4-mini");
   assert.equal(c.cardNewsPlanner.model, "gpt-5.5");
+});
+
+test("a saved pre-GPT-6 OAuth default maps onto its GPT-6 tier", () => {
+  assert.equal(loadConfig({ IMA2_IMAGE_MODEL_DEFAULT: "gpt-5.6-sol" }).imageModels.default, "gpt-6-sol");
+  assert.equal(loadConfig({ IMA2_IMAGE_MODEL_DEFAULT: "gpt-5.6-luna" }).imageModels.default, "gpt-6-luna");
+  assert.equal(loadConfig({ IMA2_IMAGE_MODEL_DEFAULT: "gpt-6-astra" }).imageModels.default, "gpt-6-astra");
 });
 
 test("comfy bridge config env overrides and invalid numeric fallbacks", () => {

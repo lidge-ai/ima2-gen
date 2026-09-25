@@ -18,7 +18,7 @@ import { MAX_VIDEO_DURATION, MIN_VIDEO_DURATION, normalizeGrokVideoModel, normal
 import { persistVideoArtifact } from "../lib/videoArtifactPersistence.js";
 import { normalizeVideoLineage } from "../lib/videoLineage.js";
 import { getMotionFragment, MOTION_PRESETS } from "../lib/videoMotionPresets.js";
-import { errInfo } from "../lib/errInfo.js";
+import { errInfo, thrownFields } from "../lib/errInfo.js";
 import { codedVideoError as codedError, emitPhase, envDeadline, requestSignal, requirePrompt, retryableData } from "../lib/videoExtendedHelpers.js";
 import { DEFAULT_GROK_PLANNER_MODEL } from "../config.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
@@ -79,16 +79,17 @@ function routeError(message: string, status = 400): Error & { status: number } {
   return Object.assign(new Error(message), { status });
 }
 
-function sendError(res: Response, err: any): void {
-  if (err?.name === "TimeoutError") {
+function sendError(res: Response, error: unknown): void {
+  const err = thrownFields(error);
+  if (err.name === "TimeoutError") {
     res.status(504).json({ error: "Video operation timed out", code: "VIDEO_TIMEOUT" });
     return;
   }
-  if (err?.name === "AbortError") {
+  if (err.name === "AbortError") {
     if (!res.headersSent) res.status(499).json({ error: "Request canceled", code: "REQUEST_CANCELED" });
     return;
   }
-  res.status(typeof err?.status === "number" ? err.status : 500).json({ error: err?.message || String(err), ...(typeof err?.code === "string" ? { code: err.code } : {}), ...errorEnvelopeFields(err) });
+  res.status(typeof err.status === "number" ? err.status : 500).json({ error: err.message || String(error), ...(typeof err.code === "string" ? { code: err.code } : {}), ...errorEnvelopeFields(error) });
 }
 
 async function safeGeneratedFile(ctx: RuntimeContext, file: string, options: { requireMp4?: boolean } = {}): Promise<string> {
@@ -180,7 +181,7 @@ function extractOutputText(data: Record<string, unknown>): string {
   const output = Array.isArray(data.output) ? data.output : [];
   const texts: string[] = [];
   for (const item of output) {
-    const content = (item as any)?.content;
+    const content = item && typeof item === "object" ? (item as { content?: unknown }).content : undefined;
     if (!Array.isArray(content)) continue;
     for (const part of content) {
       if (part?.type === "output_text" && typeof part.text === "string") texts.push(part.text);
@@ -242,7 +243,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
 
       logEvent("video", "edit:done", { requestId: request_id });
       res.json({ requestId: request_id, url: saved.url, filename: saved.filename, sourceUrl: saved.sourceUrl, duration: result.duration, model: validModel });
-    } catch (err: any) {
+    } catch (err: unknown) {
       logError("video", "edit:error", err);
       sendError(res, err);
     }
@@ -374,7 +375,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
       if (!result.videoUrl) return res.status(502).json({ error: "No video URL in response" });
       const saved = await saveVideoResult(ctx, { requestId: request_id, prompt, model: validModel, operation: "extend", source: videoUrl, duration: result.duration ?? null, videoUrl: result.videoUrl, usage: result.usage, signal });
       res.json({ requestId: request_id, url: saved.url, filename: saved.filename, sourceUrl: saved.sourceUrl, duration: result.duration, model: validModel });
-    } catch (err: any) {
+    } catch (err: unknown) {
       logError("video", "extend:error", err);
       sendError(res, err);
     }
@@ -404,7 +405,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
       await assertLocalMp4(tmpIn);
       await extractVideoFrame(tmpIn, tmpOut, position);
       res.type("png").send(await readFile(tmpOut));
-    } catch (err: any) {
+    } catch (err: unknown) {
       logError("video", "frame:upload-error", err);
       sendError(res, err);
     } finally {
@@ -426,12 +427,12 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
         await extractVideoFrame(inputPath, tmpOut, position);
         const frame = await readFile(tmpOut);
         res.type("png").send(frame);
-      } catch (err: any) {
+      } catch {
         return res.status(500).json({ error: "ffmpeg failed" });
       } finally {
         await unlink(tmpOut).catch(() => {});
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logError("video", "frame:error", err);
       sendError(res, err);
     }
@@ -478,7 +479,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
         await unlink(firstFrame).catch(() => {});
         await unlink(lastFrame).catch(() => {});
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logError("video", "analyze:error", err);
       sendError(res, err);
     }
