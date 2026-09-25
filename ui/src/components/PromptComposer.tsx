@@ -181,7 +181,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
         const frame = await extractLastFrame(src);
         if (frame) addReferenceDataUrl(frame);
       } else {
-        await useImageAsReference(refItem as Parameters<typeof useImageAsReference>[0]);
+        await useImageAsReference(refItem as Parameters<typeof useImageAsReference>[0]); // eslint-disable-line react-hooks/rules-of-hooks -- store action named use*, not a hook
       }
       insertAttachmentTags(knownTokenIds, caret);
     } catch { /* non-fatal for drag-drop */ }

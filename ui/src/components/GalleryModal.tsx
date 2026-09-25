@@ -128,7 +128,7 @@ export function GalleryModal() {
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const status = await getStorageStatus();
         if (!cancelled) setStorageStatus(status);
@@ -162,7 +162,7 @@ export function GalleryModal() {
     setSessionGroupsLoading(true);
     setSessionGroupsError(false);
     setSessionGroupsTruncated(false);
-    (async () => {
+    void (async () => {
       try {
         const page = await getHistoryGrouped({
           limit: 500,

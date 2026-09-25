@@ -210,7 +210,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         ? req.body.elementIds.filter((id: unknown) => typeof id === "string" && id)
         : [];
       let elementNotesFragment = "";
-      let elementResolvedRefs: string[] = [];
+      const elementResolvedRefs: string[] = [];
       let appliedElementIds: string[] = [];
       let elementDroppedRefs: Array<{ path: string; reason: string; elementId?: string }> = [];
       let elementRefReadFailures: Array<{ path: string; elementId?: string }> = [];

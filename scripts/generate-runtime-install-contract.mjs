@@ -23,12 +23,12 @@ function mdTable(contract) {
 
 export async function readRuntimeInstallContract(root) {
   const packageRoot = resolve(root);
-  let manifest, engine, nodeVersion;
+  let manifest;
   try { manifest = JSON.parse(text(packageRoot, "package.json")); } catch { throw new Error("PACKAGE_METADATA_INVALID"); }
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) throw new Error("PACKAGE_METADATA_INVALID");
-  engine = manifest.engines?.node;
+  const engine = manifest.engines?.node;
   if (typeof engine !== "string" || !engine) throw new Error("ENGINE_REQUIREMENT_INVALID");
-  nodeVersion = text(packageRoot, ".node-version").trim().replace(/^v/, "");
+  const nodeVersion = text(packageRoot, ".node-version").trim().replace(/^v/, "");
   if (!/^\d+\.\d+\.\d+$/.test(nodeVersion)) throw new Error("RELEASE_NODE_INVALID");
   if (typeof manifest.packageManager !== "string" || !/^npm@[0-9]+\.[0-9]+\.[0-9]+$/.test(manifest.packageManager)) throw new Error("PACKAGE_MANAGER_INVALID");
   const cli = manifest.bin?.ima2;

@@ -239,7 +239,7 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
               className="settings-action-btn"
               style={{ flex: 1, fontSize: "11px" }}
               onClick={() => {
-                navigator.clipboard?.writeText(state.verificationUrl!).then(() => {
+                void navigator.clipboard?.writeText(state.verificationUrl!).then(() => {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 });

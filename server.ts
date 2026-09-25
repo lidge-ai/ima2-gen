@@ -543,7 +543,7 @@ export async function startServer(overrides: StartServerOverrides = {}) {
 
   // Background thumbnail backfill for updated users (recursive — covers video
   // series subdirectories like continuous_*/clip_NN.mp4, not just top level).
-  (async () => {
+  void (async () => {
     try {
       const { backfillThumbnails } = await import("./lib/thumbBackfill.js");
       const r = await backfillThumbnails(ctx.config.storage.generatedDir);
