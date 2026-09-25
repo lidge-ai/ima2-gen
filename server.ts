@@ -15,9 +15,7 @@ import { dirname, join } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { onShutdown } from "./bin/lib/platform.js";
 import { ensureDefaultSession } from "./lib/sessionStore.js";
-import { startOAuthProxy } from "./lib/oauthLauncher.js";
 import { resetCodexCaches } from "./lib/codexBackend/index.js";
-import { detectCodexAuth } from "./lib/codexDetect.js";
 import { migrateGeneratedStorage } from "./lib/storageMigration.js";
 import { purgeStaleJobs } from "./lib/inflight.js";
 import { configureLogger, logError } from "./lib/logger.js";
@@ -476,67 +474,19 @@ export async function startServer(overrides: StartServerOverrides = {}) {
   }
   purgeStaleJobs();
   const app = buildApp(ctx);
-  const launchOAuthProxy = () => startOAuthProxy({
-    oauthPort: ctx.oauthPort,
-    restartDelayMs: ctx.config.oauth.restartDelayMs,
-    onReady: ({ url, port }: { url: string; port: number }) => {
-      ctx.markOAuthReady({ url, port });
-      advertise(ctx);
-    },
-    onExit: () => ctx.markOAuthFailed(),
-  });
-  const nativeOAuth = ctx.oauthTransport === "native";
-  let oauthChild: StartServerOverrides["oauthChild"] =
-    overrides.oauthChild !== undefined
-      ? overrides.oauthChild
-      : !ctx.config.oauth.autoStart || nativeOAuth
-        ? null
-        : launchOAuthProxy();
-  if (nativeOAuth) {
-    // Native GPT OAuth re-reads the session file on every request, so a login needs no
-    // restart: forget the cached model roster so a different account shows up at once.
+  // GPT OAuth calls the Codex backend in process and re-reads the session file on every
+  // request, so a login needs no restart: forgetting the cached model roster is enough for a
+  // different account to show up at once. An injected child (tests) or an external endpoint
+  // (IMA2_NO_OAUTH_PROXY) owns its own lifecycle.
+  const oauthChild: StartServerOverrides["oauthChild"] = overrides.oauthChild ?? null;
+  if (ctx.oauthTransport === "native") {
     ctx.restartOAuthProxy = () => {
       resetCodexCaches();
       return { restarted: true };
     };
     ctx.syncOAuthProxySession = () => false;
-  } else if (overrides.oauthChild === undefined && ctx.config.oauth.autoStart) {
-    // A login (web or CLI) writes a new session file; the running proxy only read the old one
-    // (or none, and exited), so the new session was invisible until a server restart.
-    let restarting: Promise<void> | null = null;
-    ctx.restartOAuthProxy = () => {
-      ctx.markOAuthStarting();
-      if (!restarting) {
-        const previous = oauthChild;
-        restarting = (async () => {
-          try {
-            await previous?.stopAndWait?.();
-          } catch (error) {
-            console.error(`[gpt-oauth] restart aborted: ${(error as Error).message}`);
-            ctx.markOAuthFailed();
-            return;
-          }
-          oauthChild = launchOAuthProxy();
-        })().finally(() => { restarting = null; });
-      }
-      return { restarted: true };
-    };
-    // A CLI login (or logout) can change which session file the proxy should read without
-    // being able to reach this server (e.g. a LAN-bound server the CLI cannot authenticate to).
-    // Status polls and generation admission call this to catch up on their own.
-    ctx.syncOAuthProxySession = () => {
-      if (restarting) return false;
-      const wanted = detectCodexAuth({ probe: false }).proxyAuthFile;
-      const launched = (oauthChild as { authFile?: string | null } | null)?.authFile ?? null;
-      if (wanted === launched) return false;
-      console.log(`[gpt-oauth] session file changed (${launched ?? "none"} -> ${wanted ?? "none"}); restarting proxy`);
-      ctx.restartOAuthProxy?.();
-      return true;
-    };
   }
-  if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart || nativeOAuth) {
-    ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
-  }
+  ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
 
   let server: import("node:net").Server;
   let reapTimer: NodeJS.Timeout;
@@ -574,7 +524,7 @@ export async function startServer(overrides: StartServerOverrides = {}) {
     console.warn(`[mcp.restore] code=${String((error as Error)?.message ?? error).split(":")[0]}`);
   });
   console.log(`Image Gen running at ${ctx.serverUrl}`);
-  console.log(`Provider policy: GPT OAuth, API-key Responses, and Grok (xAI OAuth or API key) providers. GPT OAuth proxy port ${ctx.oauthPort}.`);
+  console.log(`Provider policy: GPT OAuth, API-key Responses, and Grok (xAI OAuth or API key) providers. GPT OAuth ${ctx.oauthTransport === "native" ? "calls ChatGPT directly" : `uses ${ctx.oauthUrl}`}.`);
   advertise(ctx);
   try {
     const s = ensureDefaultSession();

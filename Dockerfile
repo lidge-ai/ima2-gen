@@ -8,10 +8,8 @@
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
-# Install deps first for layer caching. vendor/ holds file: tarball dependencies
-# (openai-oauth) referenced by package.json, so it must precede npm ci.
+# Install deps first for layer caching.
 COPY package.json package-lock.json ./
-COPY vendor ./vendor
 RUN npm ci --no-audit --no-fund
 
 COPY ui/package.json ui/package-lock.json ./ui/

@@ -7,7 +7,7 @@
  *   - a near-expiry token and an upstream 401 share ONE serialized refresh;
  *   - compare-before-write: a login that replaced the file during a refresh wins;
  *   - the write-back is atomic, keeps unknown keys, and stays mode 0600.
- * This is the contract the bundled openai-oauth proxy carried as the ima2 patch.
+ * This is the contract the former openai-oauth proxy carried as the ima2 patch.
  */
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -164,4 +164,3 @@ export function createCodexSessionStore(options: { configDir?: string; refresher
 
   return { get, refresh };
 }
-

@@ -1,7 +1,6 @@
 /**
  * Transport to chatgpt.com/backend-api/codex: client version, model catalog, auth headers
- * and the one-shot 401 recovery. Everything the bundled openai-oauth proxy used to do for
- * ima2, in process.
+ * and the one-shot 401 recovery: what the openai-oauth proxy used to do for ima2, in process.
  */
 import { config } from "../../config.js";
 import { createCodexSessionStore, type CodexSession, type CodexSessionStore } from "./session.js";
