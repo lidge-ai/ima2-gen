@@ -55,6 +55,13 @@ type BootRuntimeContext = RuntimeContext & {
 type ApiKeyLoadResult = { apiKey: string | null; apiKeySource: ApiKeySource };
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
+const warnedConfigPaths = new Set<string>();
+
+function warnConfigReadFailed(cfgPath: string, err: unknown) {
+  if (warnedConfigPaths.has(cfgPath)) return;
+  warnedConfigPaths.add(cfgPath);
+  logWarn("config", "config_read_failed", { path: cfgPath, errorName: err instanceof Error ? err.name : typeof err });
+}
 
 async function loadApiKey(): Promise<ApiKeyLoadResult> {
   if (process.env.OPENAI_API_KEY) {
@@ -69,7 +76,7 @@ async function loadApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { apiKey?: string };
       if (cfg.apiKey) return { apiKey: cfg.apiKey, apiKeySource: "config" };
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "apiKey", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -87,7 +94,7 @@ async function loadXaiApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { xaiApiKey?: string };
       if (cfg.xaiApiKey) return { apiKey: cfg.xaiApiKey, apiKeySource: "config" };
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "xaiApiKey", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -105,7 +112,7 @@ async function loadGeminiApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { geminiApiKey?: string };
       if (cfg.geminiApiKey) return { apiKey: cfg.geminiApiKey, apiKeySource: "config" };
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "geminiApiKey", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -123,7 +130,7 @@ async function loadAtlasCloudApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { atlasCloudApiKey?: string };
       if (cfg.atlasCloudApiKey) return { apiKey: cfg.atlasCloudApiKey, apiKeySource: "config" };
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "atlasCloudApiKey", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -141,7 +148,7 @@ async function loadMinimaxApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { minimaxApiKey?: string };
       if (cfg.minimaxApiKey) return { apiKey: cfg.minimaxApiKey, apiKeySource: "config" };
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "minimaxApiKey", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -159,7 +166,7 @@ async function loadNaiApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { naiApiKey?: string };
       if (cfg.naiApiKey) return { apiKey: cfg.naiApiKey, apiKeySource: "config" };
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "naiApiKey", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -188,7 +195,7 @@ async function loadVertexKey(): Promise<VertexKeyLoadResult> {
         const parsed = JSON.parse(cfg.vertexServiceAccountJson);
         return { json: cfg.vertexServiceAccountJson, projectId: parsed.project_id || null, source: "config" };
       }
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "vertexServiceAccountJson", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { json: null, projectId: null, source: "none" };
 }
@@ -203,7 +210,7 @@ async function loadGeminiAuthMode(): Promise<string | undefined> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { geminiAuthMode?: string };
       if (cfg.geminiAuthMode === "vertex" || cfg.geminiAuthMode === "apikey") return cfg.geminiAuthMode;
-    } catch (err) { logWarn("config", "config_read_failed", { path: cfgPath, field: "geminiAuthMode", errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return undefined;
 }

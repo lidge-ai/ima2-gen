@@ -6,7 +6,7 @@ import { join } from "node:path";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { fetchNaiSubscription } from "../lib/naiSubscription.js";
 import { readChatgptAccess } from "../lib/chatgptAuth.js";
-import { logDebug } from "../lib/logger.js";
+import { logWarn } from "../lib/logger.js";
 
 export interface QuotaWindow {
   label: string;
@@ -127,7 +127,7 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
         userId: null,
       });
     }
-  } catch { /* best-effort: ChatGPT access is optional; fall back to the next source */ }
+  } catch { /* best-effort: Grok auth.json is optional; fall back to the next source */ }
   const seen = new Set<string>();
   return candidates.filter((candidate) => {
     if (seen.has(candidate.token)) return false;
@@ -212,7 +212,8 @@ async function fetchGrokWeeklyCredits(candidate: GrokTokenCandidate, clientVersi
     });
     if (!response.ok) return null;
     return parseGrokCreditsResponse(await response.json());
-  } catch {
+  } catch (err) {
+    logWarn("quota", "grok_weekly_credits_failed", { errorName: err instanceof Error ? err.name : typeof err });
     return null;
   }
 }
@@ -263,7 +264,7 @@ export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok")
         }],
         billing: { usedUsd: used / 100, limitUsd: limit / 100 },
       };
-    } catch (err) { logDebug("quota", "grok_billing_failed", { errorName: err instanceof Error ? err.name : typeof err }); }
+    } catch (err) { logWarn("quota", "grok_billing_failed", { errorName: err instanceof Error ? err.name : typeof err }); }
   }
   return { provider: "grok", authenticated: true, windows: [] };
 }

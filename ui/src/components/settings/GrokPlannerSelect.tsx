@@ -16,7 +16,7 @@ export function GrokPlannerSelect() {
     fetchApi("/api/config/grok-planner")
       .then((r) => r.json() as Promise<PlannerConfig>)
       .then(setConfig)
-      .catch(() => {});
+      .catch(() => { /* best-effort: without planner config the row stays hidden */ });
   }, []);
 
   const onChange = async (model: string) => {
