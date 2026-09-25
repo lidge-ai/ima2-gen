@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' file: http://127.0.0.1:* http://localhost:*; media-src http://127.0.0.1:* http://localhost:*; script-src 'self'" />
+  <title>ima2</title>
+  <link rel="stylesheet" href="desktop.css" />
+  <link rel="stylesheet" href="tray.css" />
+</head>
+<body class="tray">
+  <header class="tray__head">
+    <img class="tray__mark" src="brand-mark.png" alt="" />
+    <div class="tray__title">
+      <strong>ima2</strong>
+      <span id="status" class="tray__status" data-state="stopped" role="status" aria-live="polite">Server stopped</span>
+    </div>
+    <button id="settings" class="tray__icon" title="Settings" aria-label="Settings">⚙</button>
+  </header>
+  <section class="tray__section">
+    <h2>Generating <span id="job-count" class="tray__count">0</span></h2>
+    <ul id="jobs" class="tray__jobs"></ul>
+    <p id="jobs-empty" class="tray__empty">No active generations</p>
+  </section>
+  <section class="tray__section tray__section--grow">
+    <h2>Recent</h2>
+    <div id="recent" class="tray__grid"></div>
+    <p id="recent-empty" class="tray__empty">Nothing generated yet</p>
+  </section>
+  <footer class="tray__foot">
+    <button id="open" class="primary">Open ima2</button>
+    <button id="browser">Browser</button>
+    <button id="folder">Folder</button>
+    <button id="quit" class="tray__quit">Quit</button>
+  </footer>
+  <script src="tray.js"></script>
+</body>
+</html>

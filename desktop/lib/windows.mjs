@@ -18,11 +18,12 @@ function isLocalServerUrl(target, serverUrl) {
 }
 
 export class WindowManager {
-  constructor({ getServerUrl, getSettings, iconPath, onVisibilityChange }) {
+  constructor({ getServerUrl, getSettings, iconPath, onVisibilityChange, onHiddenToTray }) {
     this.getServerUrl = getServerUrl;
     this.getSettings = getSettings;
     this.iconPath = iconPath;
     this.onVisibilityChange = onVisibilityChange ?? (() => {});
+    this.onHiddenToTray = onHiddenToTray ?? (() => {});
     this.main = null;
     this.mainContent = null;
     this.titlebar = null;
@@ -69,6 +70,7 @@ export class WindowManager {
       if (this.quitting || !this.getSettings().keepRunningOnClose) return;
       e.preventDefault();
       win.hide();
+      this.onHiddenToTray();
     });
     win.on("closed", () => {
       this.main = null;
