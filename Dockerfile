@@ -27,7 +27,6 @@ ENV NODE_ENV=production \
 
 # Runtime dependency install (prod only). Keep parity with package.json files[].
 COPY package.json package-lock.json ./
-COPY vendor ./vendor
 RUN npm ci --omit=dev --no-audit --no-fund
 
 # Built artifacts + runtime assets — keep in sync with package.json "files".
