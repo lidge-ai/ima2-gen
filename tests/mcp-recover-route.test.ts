@@ -28,14 +28,17 @@ const fakeManagerConnected = {
   },
 };
 
-function makeApp(manager: unknown) {
+function makeApp(manager: unknown, media: { fileName?: string; contentType?: string; url?: string } = {}) {
   const app = express();
   app.use(express.json());
-  const tempOut = join(dir, "recover-result.mp4");
+  const fileName = media.fileName ?? "recover-result.mp4";
+  const contentType = media.contentType ?? "video/mp4";
+  const url = media.url ?? "https://cdn.example.com/out.mp4";
+  const tempOut = join(dir, fileName);
   const deps = {
     download: async () => {
-      writeFileSync(tempOut, Buffer.from("mp4"));
-      return { tempPath: tempOut, contentType: "video/mp4", bytes: 3, sanitizedUrl: "https://cdn.example.com/out.mp4", cleanup: async () => {} };
+      writeFileSync(tempOut, Buffer.from(contentType));
+      return { tempPath: tempOut, contentType, bytes: 3, sanitizedUrl: url, cleanup: async () => {} };
     },
   };
   registerMcpRecoverRoutes(app as never, {
@@ -96,6 +99,49 @@ test("recover: 202 happy path commits the file", async () => {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const files = readdirSync(join(dir, "generated")).filter((f) => f.endsWith("_mcp.mp4"));
     assert.equal(files.length, 1, "committed mp4 present");
+  });
+});
+
+test("recover: same caller requestId dedupes while the job is in flight", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const manager = {
+    status: () => ({ provider: "runway", state: "connected" }),
+    callTool: async () => gate.then(() => ({ content: [{ type: "text", text: "Task t RUNNING" }] })),
+  };
+  await withServer(makeApp(manager), async (base) => {
+    const body = JSON.stringify({ requestId: "mcpr_ui_retry_1" });
+    const first = await fetch(`${base}/api/mcp/tasks/${TASK}/recover`, {
+      method: "POST", headers: { "content-type": "application/json" }, body,
+    });
+    assert.equal(first.status, 202);
+    const retry = await fetch(`${base}/api/mcp/tasks/${TASK}/recover`, {
+      method: "POST", headers: { "content-type": "application/json" }, body,
+    });
+    assert.equal(retry.status, 409);
+    assert.equal((await retry.json()).error.code, "REQUEST_ID_IN_USE");
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  });
+});
+
+test("recover: image recover commits a webp download under its own extension", async () => {
+  const manager = {
+    status: () => ({ provider: "runway", state: "connected" }),
+    callTool: async () => ({
+      content: [{ type: "text", text: "Task t succeeded.\nhttps://cdn.example.com/out.webp" }],
+      structuredContent: { url: "https://cdn.example.com/out.webp" },
+    }),
+  };
+  await withServer(makeApp(manager, { fileName: "recover-result.webp", contentType: "image/webp", url: "https://cdn.example.com/out.webp" }), async (base) => {
+    const res = await fetch(`${base}/api/mcp/tasks/${TASK}/recover`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "image" }),
+    });
+    assert.equal(res.status, 202);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const files = readdirSync(join(dir, "generated")).filter((f) => f.endsWith("_mcp.webp"));
+    assert.equal(files.length, 1, "committed webp present");
   });
 });
 

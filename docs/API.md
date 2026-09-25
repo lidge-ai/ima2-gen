@@ -1266,13 +1266,16 @@ Async: `202 { requestId, provider }`; lifecycle events on `/api/events`.
 Results commit with `workflow: "video.multishot"` and `mcpParameters`.
 
 Re-download a remote-succeeded MCP task into the generated library. Body:
-`{ provider?: "runway", kind?: "video"|"image" }`. Use after a generation's
+`{ provider?: "runway", kind?: "video"|"image", requestId? }`. Use after a generation's
 download/commit step failed transiently — provider assets stay fetchable for
 ~24-48h. Re-polls `get_task`, requires `SUCCEEDED` with an output URL
 (`error` SSE event with `MCP_TASK_NOT_SUCCEEDED` otherwise), then runs the same
 download (with retry + IPv4 fallback) → single-persistence commit path as a
 normal generation. Async: `202 { requestId, taskId }`; `done` carries
 `recovered: true`.
+`requestId` dedupes only while the job is still running — a retry with the
+same id returns `409 REQUEST_ID_IN_USE`, and once the job settles a new
+recover may reuse it (same scope as `/api/mcp/generate`).
 Catalog-only providers (e.g. Higgsfield on a free plan) return
 `409 MCP_EXECUTION_LOCKED`, same as `/api/mcp/generate`.
 
