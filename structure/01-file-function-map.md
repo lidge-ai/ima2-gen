@@ -298,7 +298,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/xaiDeviceLogin.ts` | 209 | Stateless xAI device-code login used by the CLI when no server is running |
 | `lib/xaiAuth.ts` | 464 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
 | `lib/grokUpstreamRetry.ts` | 165 | Pre-response retry guard for idempotent Grok fetches: socket resets, transient 5xx, Retry-After backoff |
-| `lib/grokSizeMapper.ts` | 86 | Grok model image-size mapping and validation |
+| `lib/grokSizeMapper.ts` | 88 | Grok model image-size mapping and validation |
 | `lib/grokVideoCanvas.ts` | 41 | Grok video canvas/source preparation helpers |
 | `lib/grokVideoDownload.ts` | 167 | Bounded incremental video download, validation and reader cleanup; callers own persistence |
 | `lib/videoExtendI2vOperation.ts` | 105 | Actual whole last-frame background operation Promise, preserving phase/persistence/terminal order |
