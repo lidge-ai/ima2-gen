@@ -1,0 +1,71 @@
+/* Loading screen shown in the main window until the local server answers. */
+.boot {
+  height: 100%;
+  padding: 0 24px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.boot__mark { width: 104px; height: auto; filter: drop-shadow(0 16px 28px rgba(0, 0, 0, .55)); }
+.boot__word { margin: 22px 0 0; font-size: 26px; font-weight: 650; letter-spacing: -.02em; }
+.boot__tag { margin: 4px 0 0; color: var(--muted); }
+.boot__steps {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  width: min(420px, 100%);
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+.boot__steps li {
+  display: grid;
+  grid-template-columns: 18px auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--border);
+}
+.boot__steps .t { font-weight: 600; }
+.boot__steps .d {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.boot__steps li[data-state="wait"] .t { color: var(--muted); }
+.ic { width: 14px; height: 14px; border-radius: 50%; box-sizing: border-box; }
+li[data-state="wait"] .ic { border: 1.5px dashed var(--border); }
+li[data-state="active"] .ic { border: 2px solid var(--border); border-top-color: var(--text); }
+li[data-state="done"] .ic { border: 1.5px solid var(--text); position: relative; }
+li[data-state="done"] .ic::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1.5px;
+  width: 3px;
+  height: 6px;
+  border: solid var(--text);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+li[data-state="error"] .ic { background: var(--danger); }
+li[data-state="error"] .d { color: var(--danger); }
+.boot .error-box { margin-top: 20px; }
+.boot .actions { margin-top: 16px; justify-content: center; }
+.boot__foot {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  li[data-state="active"] .ic { animation: boot-spin .9s linear infinite; }
+}
+@keyframes boot-spin { to { transform: rotate(360deg); } }

@@ -5,6 +5,7 @@
     "costUnavailable": "예상 비용 미제공"
   },
   "lan": {
+    "brand": "ima2",
     "title": "스튜디오에 연결",
     "body": "스튜디오에 설정된 LAN 토큰을 입력하세요. 토큰은 브라우저 저장소에 저장하지 않습니다.",
     "token": "LAN 토큰",
@@ -46,6 +47,7 @@
     "cardDeck": "카드 덱"
   },
   "appBar": {
+    "brand": "ima2",
     "modeImage": "이미지",
     "settings": "설정",
     "controls": "생성 옵션",
@@ -344,11 +346,54 @@
       "insertedPrompts": "삽입된 프롬프트"
     }
   },
+  "starPrompt": {
+    "title": "이미지가 완성됐어요",
+    "thanks": "스타 고마워요",
+    "body": "ima2는 무료 오픈소스예요. GitHub 스타가 쌓여야 다른 사람들이 찾아올 수 있어요.",
+    "star": "GitHub 스타 누르기",
+    "starring": "스타 누르는 중…",
+    "open": "GitHub에서 열기",
+    "notNow": "나중에",
+    "count": "스타 {count}개",
+    "failed": "여기서는 스타를 누르지 못했어요. GitHub에서 직접 눌러도 돼요.",
+    "noteGh": "내 GitHub CLI 로그인으로 누릅니다. ima2는 GitHub 토큰을 저장하지 않아요.",
+    "noteSignIn": "여기서 바로 누르려면 GitHub CLI에 로그인하세요 (gh auth login)."
+  },
   "onboarding": {
-    "title": "안녕하세요, 처음이신가요?",
-    "body": "여기서 로그인하세요. ChatGPT, Grok, Gemini를 연결할 수 있어요.",
-    "login": "네",
-    "skip": "알아서 진행하겠습니다"
+    "title": "ima2에 오신 걸 환영해요",
+    "lead": "이미지와 영상을 만드는 로컬 스튜디오예요. 세 단계면 바로 만들 수 있어요.",
+    "stepsLabel": "시작하기",
+    "steps": {
+      "signIn": {
+        "title": "제공자 로그인",
+        "hint": "이미 쓰는 요금제를 그대로 써요"
+      },
+      "firstImage": {
+        "title": "첫 이미지 만들기",
+        "hint": "프롬프트를 쓰고 생성을 누르세요"
+      },
+      "star": {
+        "title": "GitHub 스타",
+        "hint": "선택"
+      }
+    },
+    "recommended": "추천",
+    "choices": {
+      "chatgpt": {
+        "title": "ChatGPT",
+        "body": "브라우저 로그인으로 ChatGPT 요금제를 그대로 써요. API 키가 필요 없어요."
+      },
+      "grok": {
+        "title": "Grok",
+        "body": "xAI 계정으로 로그인해요. Grok Imagine 이미지와 영상을 쓸 수 있어요."
+      },
+      "apiKey": {
+        "title": "API 키",
+        "body": "OpenAI, Gemini 같은 제공자 키를 넣어요. 요금은 해당 제공자가 청구해요."
+      }
+    },
+    "privacy": "프롬프트는 고른 제공자에게만 보내고, 이미지는 로컬 갤러리에 저장돼요.",
+    "skip": "나중에 할게요"
   },
   "readiness": {
     "title": "생성 준비 상태",

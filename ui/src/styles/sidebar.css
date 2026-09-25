@@ -118,13 +118,9 @@
 }
 
 .logo-mark {
-  width: 12px;
-  height: 18px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-pill);
-  flex: 0 0 auto;
-  position: relative;
-  opacity: 0.9;
+  width: 15px;
+  height: 16px;
+  color: var(--text);
 }
 
 .theme-toggle {
@@ -380,19 +376,6 @@
   color: var(--accent-ink);
   border-color: var(--accent-bright);
   background: var(--accent-bright);
-}
-
-.logo-mark::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 4px;
-  height: 4px;
-  border-radius: var(--r-pill);
-  background: var(--accent-bright);
-  transform: translate(-50%, -50%);
-  opacity: 0.72;
 }
 
 .settings-button {

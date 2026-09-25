@@ -48,7 +48,7 @@ async function init() {
   api.onStatus(renderStatus);
   const info = await api.getInfo();
   $("check-updates").disabled = info.updaterActive === false;
-  $("info").textContent = `ima2-desktop ${info.appVersion} · Electron ${info.electron} · Node ${info.node} · ${info.platform}/${info.arch}`;
+  $("info").textContent = `ima2 ${info.appVersion} · Electron ${info.electron} · Node ${info.node} · ${info.platform}/${info.arch}`;
 }
 
 void init();

@@ -23,7 +23,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
   <ul>
     <li><code>provider: "oauth"</code> — uses the local Codex OAuth proxy. The default path; no API key needed.</li>
     <li><code>provider: "api"</code> — calls the OpenAI Responses API with the hosted <code>image_generation</code> tool. Requires <code>OPENAI_API_KEY</code>.</li>
-    <li><code>provider: "grok"</code> — calls <code>api.x.ai</code> directly with the xAI OAuth session in <code>~/.progrok/auth.json</code>, runs mandatory xAI Web Search and a planner pass (default <code>grok-4.5</code>, configurable in settings or via <code>--planner-model</code>), then calls xAI Images API. Grok 4.3 remains an explicit compatibility override.</li>
+    <li><code>provider: "grok"</code> — calls <code>api.x.ai</code> directly with the xAI OAuth session in <code>~/.progrok/auth.json</code>, runs mandatory xAI Web Search and a planner pass (default <code>grok-4.3</code>, configurable in settings or via <code>--planner-model</code>), then calls xAI Images API. Grok 4.5 and 4.6 are selectable.</li>
     <li><code>provider: "grok-api"</code> — same xAI pipeline as <code>grok</code> but uses a direct <code>XAI_API_KEY</code> instead of the OAuth session.</li>
     <li><code>provider: "gemini-api"</code> — calls the Google Gemini image API directly. Supports two models (<code>nano-banana-2</code> and <code>nano-banana-pro</code>), aspect ratio and resolution controls, and two auth modes: a <code>GEMINI_API_KEY</code> or a Vertex AI service-account JSON (<code>VERTEX_SERVICE_ACCOUNT_JSON</code>). When both are configured, Vertex AI takes priority unless overridden by the last-saved auth mode. Cost varies by model and resolution (see Gemini API section below).</li>
     <li><code>provider: "agy"</code> — spawns the Antigravity CLI (<code>agy -p</code>) to generate via Google Gemini (<code>nano-banana-2</code>). Fixed 1024×1024 JPEG output, max 3 refs. Free (no token cost).</li>
@@ -77,7 +77,8 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
       <tr><td><code>gpt-5.4</code></td><td>Recommended balanced choice.</td></tr>
       <tr><td><code>gpt-5.5</code></td><td>Strongest quality when your Codex CLI/OAuth backend supports it. May use more quota or need an updated Codex CLI.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>Compatible fast Grok image model.</td></tr>
-      <tr><td><code>grok-imagine-image-quality</code></td><td>Default Grok image model ("Grok+" / Best in the UI).</td></tr>
+      <tr><td><code>grok-imagine-image-quality</code></td><td>Highest-quality Grok image model ("Grok+" / Best in the UI).</td></tr>
+      <tr><td><code>grok-imagine-image-2.0</code></td><td>Default Grok image model for new sessions.</td></tr>
       <tr><td><code>grok-imagine-video</code></td><td>Base model for Ref2V, edit, and extension compatibility paths.</td></tr>
       <tr><td><code>grok-imagine-video-1.5</code></td><td>Default Grok video model for prompt-only T2V and single-image/frame I2V, including 1080p when supported.</td></tr>
       <tr><td><code>nano-banana-2</code></td><td>Gemini Flash image model (maps to <code>gemini-3.1-flash-image</code>). Used by both <code>gemini-api</code> and <code>agy</code> providers.</td></tr>
@@ -139,7 +140,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
   <h2>Grok pipeline</h2>
   <p>
     Grok Classic, Node, and Agent requests run a three-step pipeline: mandatory xAI Web Search,
-    planner pass (default <code>grok-4.5</code>, overridable via
+    planner pass (default <code>grok-4.3</code>, overridable via
     <code>IMA2_GROK_PLANNER_MODEL</code>, settings UI, or <code>--planner-model</code> on video
     commands) with an English final image prompt, then xAI image creation. Grok 4.3 remains available as a compatibility override.
     Text-only requests use <code>/v1/images/generations</code>; requests with reference images,

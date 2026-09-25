@@ -355,9 +355,12 @@
     .mobile-app-bar {
       gap: 8px;
     }
-    .mobile-app-bar .logo-mark,
     .mobile-app-bar__mode {
       display: none;
+    }
+    .mobile-app-bar .logo-mark {
+      width: 12px;
+      height: 13px;
     }
     .mobile-app-bar__title {
       max-width: 74px;

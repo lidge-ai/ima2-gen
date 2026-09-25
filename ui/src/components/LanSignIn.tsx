@@ -5,6 +5,7 @@ import zhHans from "../i18n/zh-Hans.json";
 import zhHant from "../i18n/zh-Hant.json";
 import { loadLocale } from "../i18n/locale";
 import { createLanSession, endLanSession, getLanSessionState } from "../lib/lanSession";
+import { BrandMark } from "./BrandMark";
 import "../styles/lan-sign-in.css";
 
 const dictionaries = { en, ko, "zh-Hans": zhHans, "zh-Hant": zhHant };
@@ -64,7 +65,7 @@ export function LanSignIn({ error: initialError, onConnected, onRetry }: {
   return (
     <main className="lan-sign-in" aria-labelledby="lan-sign-in-title">
       <form className="lan-sign-in__panel" onSubmit={(event) => void submit(event)} aria-busy={busy}>
-        <p className="lan-sign-in__brand">ima2-gen</p>
+        <p className="lan-sign-in__brand"><BrandMark className="lan-sign-in__mark" />{copy.brand}</p>
         <h1 id="lan-sign-in-title">{copy.title}</h1>
         <p id="lan-sign-in-help">{copy.body}</p>
         <label htmlFor="lan-token">{copy.token}</label>

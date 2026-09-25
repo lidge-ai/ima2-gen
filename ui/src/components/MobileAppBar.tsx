@@ -1,6 +1,7 @@
 import { useRef, type RefObject } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { GenProviderModelSelect } from "./GenProviderModelSelect";
+import { BrandMark } from "./BrandMark";
 import { useI18n } from "../i18n";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "../lib/devMode";
@@ -38,9 +39,9 @@ export function MobileAppBar() {
   return (
     <header className="mobile-app-bar" role="banner">
       <div className="mobile-app-bar__brand">
-        <div className="logo-mark" aria-hidden="true" />
+        <BrandMark className="logo-mark" />
         <div className="mobile-app-bar__brand-copy">
-          <span className="mobile-app-bar__title">ima2-gen</span>
+          <span className="mobile-app-bar__title">{t("appBar.brand")}</span>
           <span className="mobile-app-bar__mode">{t("appBar.modeImage")}</span>
         </div>
       </div>

@@ -42,11 +42,13 @@ const cliMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md';
       <tr><td><code>IMA2_API_REASONING_EFFORT</code></td><td><code>low</code></td><td>API 경로의 기본 reasoning effort.</td></tr>
       <tr><td><code>IMA2_API_IMAGE_SIZE</code></td><td><code>1024x1024</code></td><td>API 경로의 기본 크기.</td></tr>
       <tr><td><code>IMA2_API_ALLOW_WEB_SEARCH</code></td><td><code>true</code></td><td>API 경로의 웹 검색 토글.</td></tr>
-      <tr><td><code>IMA2_GROK_PLANNER_MODEL</code></td><td><code>grok-4.5</code></td><td>Grok 플래너 모델. Grok 4.3은 호환 선택지로 유지합니다.</td></tr>
-      <tr><td><code>IMA2_GROK_PLANNER_TIMEOUT_MS</code></td><td><code>60000</code></td><td>각 Grok search/planner 단계 timeout.</td></tr>
-      <tr><td><code>IMA2_GROK_IMAGE_MODEL_DEFAULT</code></td><td><code>grok-imagine-image-quality</code></td><td>Grok 이미지 호출 기본 xAI image 모델.</td></tr>
+      <tr><td><code>IMA2_GROK_PLANNER_MODEL</code></td><td><code>grok-4.3</code></td><td>Grok 플래너 모델. Grok 4.5·4.6도 고를 수 있습니다.</td></tr>
+      <tr><td><code>IMA2_GROK_PLANNER_TIMEOUT_MS</code></td><td><code>900000</code></td><td>각 Grok search/planner 단계 timeout.</td></tr>
+      <tr><td><code>IMA2_GROK_SEARCH_TIMEOUT_MS</code></td><td><code>300000</code></td><td>필수 xAI 웹 검색 단계 timeout.</td></tr>
+      <tr><td><code>IMA2_GROK_VIDEO_PLAN_TOTAL_TIMEOUT_MS</code></td><td><code>1500000</code></td><td>비디오 검색 + 플래너 단계 전체 상한.</td></tr>
+      <tr><td><code>IMA2_GROK_IMAGE_MODEL_DEFAULT</code></td><td><code>grok-imagine-image-2.0</code></td><td>Grok 이미지 호출 기본 xAI image 모델.</td></tr>
       <tr><td><code>IMA2_GROK_VIDEO_MODEL_DEFAULT</code></td><td><code>grok-imagine-video-1.5</code></td><td>Grok 생성 경로의 기본 xAI 비디오 모델.</td></tr>
-      <tr><td><code>IMA2_GROK_GENERATION_TIMEOUT_MS</code></td><td><code>120000</code></td><td>최종 Grok 이미지 생성/edit 호출 timeout.</td></tr>
+      <tr><td><code>IMA2_GROK_GENERATION_TIMEOUT_MS</code></td><td><code>300000</code></td><td>최종 Grok 이미지 생성/edit 호출 timeout.</td></tr>
       <tr><td><code>IMA2_GROK_STATUS_TIMEOUT_MS</code></td><td><code>3000</code></td><td><code>/api/grok/status</code> 모델 probe timeout.</td></tr>
       <tr><td><code>IMA2_OAUTH_MASKED_EDIT_ENABLED</code></td><td><code>false</code></td><td>OAuth 경로의 masked-edit 옵트인 플래그 (#31, 기반 작업만).</td></tr>
     </tbody>

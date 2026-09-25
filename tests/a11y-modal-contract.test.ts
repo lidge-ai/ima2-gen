@@ -16,6 +16,7 @@ const DIALOG_SURFACES = [
   "ui/src/components/ProviderReadinessPopup.tsx",
   "ui/src/components/MetadataRestoreDialog.tsx",
   "ui/src/components/ApiDisabledModal.tsx",
+  "ui/src/components/StarPrompt.tsx",
 ];
 
 test("dialog surfaces declare modal semantics", () => {

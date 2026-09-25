@@ -31,6 +31,7 @@ describe("browser attention badge contract", () => {
     assert.match(badge, /setAppBadge/);
     assert.match(badge, /clearAppBadge/);
     assert.match(badge, /renderBadgeFavicon/);
+    assert.match(badge, /new Path2D\(BRAND_MARK_PATH\)/, "the badge draws the brand mark synchronously");
 
     assert.match(store, /unseenGeneratedCount:\s*0/);
     assert.match(store, /unseenGeneratedCount:\s*state\.unseenGeneratedCount \+ 1/);

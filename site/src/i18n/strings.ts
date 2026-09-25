@@ -9,7 +9,7 @@ const en: Dict = {
     'Generate images and videos locally with Classic, Node, Canvas, Grok Video, and GPT OAuth/API providers. No API key required.',
   'meta.og.title': 'ima2-gen — Generate, branch, animate',
   'meta.og.desc':
-    'A local AI studio with image generation, Grok Video, Node-graph branching, and Canvas Mode. Two lines to install.',
+    'A local AI studio with image generation, Grok Video, Node-graph branching, and Canvas Mode. Install with npm or the Mac app.',
 
   // Header
   'header.brand.aria': 'ima2-gen home',
@@ -92,7 +92,7 @@ const en: Dict = {
   'latest.video.label': 'Video',
   'latest.video.h': 'Text, image, or references to video.',
   'latest.video.body':
-    'Generate short videos from text, a single image, or up to 7 references. Storyboard mode keeps character and scene continuity across clips; First/Mid/Last buttons copy keyframes from results.',
+    'Generate short videos from text, a single image, or up to 14 references. Storyboard mode keeps character and scene continuity across clips; First/Mid/Last buttons copy keyframes from results.',
   'latest.video.alt':
     'ima2-gen video generation with progress percentage and in-flight queue.',
 
@@ -126,12 +126,12 @@ const en: Dict = {
     'ima2-gen Settings workspace showing GPT OAuth active and an API key configured but disabled.',
 
   // Install
-  'install.tag': '06 · Get going',
+  'install.tag': '05 · Get going',
   'install.h.before': 'One command. ',
   'install.h.em': 'Then iterate.',
   'install.lede': 'Install globally. Sign in with ChatGPT or Grok. Start creating.',
   'install.badge.npm': 'npm install',
-  'install.badge.node': 'Node ≥20',
+  'install.badge.node': 'Node ≥22',
   'install.badge.mit': 'MIT',
   'install.links.aria': 'Project links',
   'install.link.repo': 'GitHub repository',
@@ -139,6 +139,14 @@ const en: Dict = {
   'install.link.ko': '한국어 README',
   'install.link.ja': '日本語 README',
   'install.link.zh': '简体中文 README',
+  'install.link.zhTw': '正體中文 README',
+  'install.desktop.title': 'Mac app (Apple Silicon)',
+  'install.desktop.note': 'Signed and notarized by Apple',
+  'install.desktop.step1': 'Download ima2-<version>-mac-arm64.dmg from the latest desktop release.',
+  'install.desktop.step2': 'Open the DMG and drag ima2 into Applications.',
+  'install.desktop.step3': 'Launch ima2 and sign in to a provider from the welcome screen.',
+  'install.desktop.cta': 'Download for Mac',
+  'install.desktop.other': 'On an Intel Mac, Windows or Linux? Use the install script or npm below.',
 
   // FAQ — short list shown on landing
   'faq.tag': 'FAQ',
@@ -178,7 +186,7 @@ const en: Dict = {
 
   'faq.usage.q1': 'How many images can I generate at once?',
   'faq.usage.a1':
-    'Up to eight in parallel from a single Classic run. Node mode runs each child node as its own request, so you can fan out as many branches as your quota allows.',
+    'A Classic run makes several candidates at once (quick picks 1, 2 or 4), and the server runs up to 24 jobs in parallel by default (IMA2_MAX_PARALLEL). Node mode runs each child node as its own request, so you can fan out as many branches as your quota allows.',
   'faq.usage.q2': 'Can I attach reference images?',
   'faq.usage.a2':
     'Up to five references per prompt. Drag, drop, or paste them into the composer. Large files are compressed before upload, so you do not have to pre-process them.',
@@ -219,7 +227,7 @@ const ko: Dict = {
     '무료 ChatGPT + SuperGrok으로 이미지와 영상을 만드는 로컬 AI 스튜디오. API 키 없이 시작.',
   'meta.og.title': 'ima2-gen — 만들고, 분기하고, 움직이게',
   'meta.og.desc':
-    '이미지 생성, Grok Video, Node 분기, Canvas 정리를 갖춘 로컬 AI 스튜디오. 두 줄이면 설치 끝.',
+    '이미지 생성, Grok Video, Node 분기, Canvas 정리를 갖춘 로컬 AI 스튜디오. npm이나 Mac 앱으로 설치하세요.',
 
   // Header
   'header.brand.aria': 'ima2-gen 홈',
@@ -302,7 +310,7 @@ const ko: Dict = {
   'latest.video.label': 'Video',
   'latest.video.h': '텍스트, 이미지, 레퍼런스에서 영상으로.',
   'latest.video.body':
-    '텍스트, 단일 이미지, 또는 최대 7장의 레퍼런스에서 짧은 영상을 만듭니다. 스토리보드 모드는 클립 간 인물·장면 연속성을 유지하고, First/Mid/Last 버튼으로 결과에서 키프레임을 복사합니다.',
+    '텍스트, 단일 이미지, 또는 최대 14장의 레퍼런스에서 짧은 영상을 만듭니다. 스토리보드 모드는 클립 간 인물·장면 연속성을 유지하고, First/Mid/Last 버튼으로 결과에서 키프레임을 복사합니다.',
   'latest.video.alt':
     'ima2-gen 비디오 생성 — 진행률 표시와 대기열.',
 
@@ -338,12 +346,12 @@ const ko: Dict = {
     'ima2-gen 설정 화면 — GPT OAuth 활성, API key는 설정되어 있지만 비활성.',
 
   // Install
-  'install.tag': '06 · 시작하기',
+  'install.tag': '05 · 시작하기',
   'install.h.before': '두 줄이면 끝. ',
   'install.h.em': '바로 만들기.',
   'install.lede': 'npm install -g ima2-gen → ima2 serve. 끝입니다.',
   'install.badge.npm': 'npm install',
-  'install.badge.node': 'Node ≥20',
+  'install.badge.node': 'Node ≥22',
   'install.badge.mit': 'MIT',
   'install.links.aria': '프로젝트 링크',
   'install.link.repo': 'GitHub 저장소',
@@ -351,6 +359,14 @@ const ko: Dict = {
   'install.link.ko': '한국어 README',
   'install.link.ja': '日本語 README',
   'install.link.zh': '简体中文 README',
+  'install.link.zhTw': '正體中文 README',
+  'install.desktop.title': 'Mac 앱 (Apple Silicon)',
+  'install.desktop.note': 'Apple 서명·공증 완료',
+  'install.desktop.step1': '최신 데스크톱 릴리스에서 ima2-<버전>-mac-arm64.dmg를 받으세요.',
+  'install.desktop.step2': 'DMG를 열고 ima2를 응용 프로그램 폴더로 끌어다 놓으세요.',
+  'install.desktop.step3': 'ima2를 실행하고 환영 화면에서 제공자에 로그인하세요.',
+  'install.desktop.cta': 'Mac용 다운로드',
+  'install.desktop.other': 'Intel Mac, Windows, Linux라면 아래 설치 스크립트나 npm을 쓰세요.',
 
   // FAQ — 랜딩 짧은 목록
   'faq.tag': 'FAQ',
@@ -390,7 +406,7 @@ const ko: Dict = {
 
   'faq.usage.q1': '한 번에 몇 장까지 만들 수 있나요?',
   'faq.usage.a1':
-    'Classic은 한 번에 최대 8장까지 병렬로 만들 수 있습니다. Node에서는 자식 노드마다 별도 요청이 가니, 할당량이 허용하는 만큼 가지를 펼칠 수 있습니다.',
+    'Classic은 한 번에 여러 장을 만들 수 있고(빠른 선택 1·2·4장), 서버는 기본적으로 작업을 최대 24개까지 동시에 돌립니다(IMA2_MAX_PARALLEL). Node에서는 자식 노드마다 별도 요청이 가니, 할당량이 허용하는 만큼 가지를 펼칠 수 있습니다.',
   'faq.usage.q2': '레퍼런스 이미지를 붙일 수 있나요?',
   'faq.usage.a2':
     '프롬프트당 다섯 장까지 붙일 수 있습니다. 컴포저에 끌어 놓거나 붙여 넣으면 끝. 큰 파일은 자동으로 압축돼서 업로드되므로 미리 손볼 필요는 없습니다.',

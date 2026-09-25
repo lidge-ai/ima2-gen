@@ -902,6 +902,17 @@ Registered only when `config.features.cardNews` is true (`routes/cardNews.ts`). 
 | `POST` | `/api/cardnews/cards/:cardId/regenerate` | Regenerate one card |
 | `POST` | `/api/cardnews/export` | Export completed set assets |
 
+## GitHub Star
+
+The studio's one-time star prompt stars the repository with the user's own `gh` login; ima2 never stores a GitHub token. These routes answer only to this computer (loopback peers); LAN clients get `403 LOCAL_ONLY`. The prompt state file is shared with the CLI prompt (`<configDir>/state/star-prompt.json`).
+
+| Method | Path | Result |
+|---|---|---|
+| `GET` | `/api/github/star` | `{ state: "starred" \| "not-starred" \| "unauthenticated" \| null, prompted, repo, url }` — `unauthenticated` when `gh` is missing or logged out; `null` once `prompted` (gh is no longer asked) |
+| `POST` | `/api/github/star` | Stars via `gh api -X PUT /user/starred/lidge-jun/ima2-gen` and marks prompted; `409 GH_UNAUTHENTICATED`, `502 GH_FAILED` |
+| `POST` | `/api/github/star/dismiss` | Marks prompted without starring |
+
+
 ## Common Error Codes
 
 | Code | Meaning |
