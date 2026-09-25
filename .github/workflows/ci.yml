@@ -40,7 +40,7 @@ jobs:
       - name: Detect CI-relevant changes
         id: filter
         if: github.event_name == 'push'
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           # On a branch push the action diffs the pushed range (before..head).
           # Without `base` it would compare against the default branch, so every
