@@ -149,7 +149,7 @@ export function isImmutablePin(ref) {
  *
  * `requireUses` defaults to true so a call naming one workflow cannot pass on an
  * empty file. Pass false when sweeping the whole tree, where a run-only workflow
- * such as ci-timing-report.yml legitimately declares no actions; assert the
+ * legitimately declares no actions; assert the
  * tree-wide ref total instead.
  */
 export function assertAllActionsPinned(text, label = "workflow", { requireUses = true } = {}) {

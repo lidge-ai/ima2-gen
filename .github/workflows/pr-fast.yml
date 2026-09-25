@@ -11,8 +11,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+    steps:
+      - name: Detect code changes
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          # Docs/devlog-only PRs skip the backend and frontend jobs; the
+          # aggregate gate still reports so branch protection stays satisfied.
+          predicate-quantifier: every
+          filters: |
+            code:
+              - '**'
+              - '!devlog/**'
+              - '!**/*.md'
+              - '!**/*.png'
+              - '!**/*.jpg'
+              - '!**/*.webp'
+              - '!LICENSE'
+      - name: Resolve scope
+        id: scope
+        env:
+          CODE: ${{ steps.filter.outputs.code }}
+        run: |
+          case "$CODE" in
+            true|false) printf 'code=%s\n' "$CODE" >> "$GITHUB_OUTPUT" ;;
+            *) printf '::error::code scope was %q\n' "$CODE"; exit 1 ;;
+          esac
+
   fast:
     name: PR backend checks
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # Root suite stays complete; UI uses a separate untouched hosted runner.
     timeout-minutes: 30
@@ -82,6 +120,8 @@ jobs:
 
   frontend:
     name: PR frontend checks
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -123,68 +163,19 @@ jobs:
           WP08_BUILD_COMMAND: npm --prefix ui run build:fixture
           WP08_BUILD_OUTCOME: ${{ steps.wp08_ui_build.outcome }}
         run: npm --prefix ui run test:e2e
-      - name: Upload WP09 isolation and journey evidence
+      - name: Upload e2e evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: wp09-journeys-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: pr-e2e-evidence-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           include-hidden-files: true
           path: |
-            ui/test-results/**/wp09-*.png
-            ui/test-results/**/wp09-*.json
+            ui/test-results/**/wp0*-*.png
+            ui/test-results/**/wp0*-*.json
             ui/test-results/**/wp12-*.png
             ui/test-results/**/wp12-*.json
             ui/dist/.ima2-ui-build-receipt.json
           if-no-files-found: error
-          retention-days: 14
-      - name: Upload composer evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: wp08-composer-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ui/test-results/**/wp08-*.png
-            ui/test-results/**/wp08-*.json
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Upload WP08c evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: wp08c-provider-display-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ui/test-results/**/wp08c-*.png
-            ui/test-results/**/wp08c-*.json
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload provider surface visual evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: wp01-provider-surface-visual
-          path: ui/test-results/**/wp01-*.png
-          if-no-files-found: ignore
-          retention-days: 14
-      - name: Upload selection evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: wp02-selection-evidence
-          path: |
-            ui/test-results/**/wp02-*.png
-            ui/test-results/**/wp02-*.json
-          if-no-files-found: ignore
-          retention-days: 14
-      - name: Upload execution error evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: wp03-error-evidence
-          path: |
-            ui/test-results/**/wp03-*.png
-            ui/test-results/**/wp03-*.json
-          if-no-files-found: ignore
           retention-days: 14
       - name: Upload e2e failure artifacts
         if: failure()
@@ -198,12 +189,13 @@ jobs:
   gate:
     name: PR fast gate
     runs-on: ubuntu-latest
-    needs: [fast, frontend]
+    needs: [changes, fast, frontend]
     if: always()
     timeout-minutes: 2
     steps:
       - name: Require both independent checks
         env:
+          CODE: ${{ needs.changes.outputs.code }}
           BACKEND_RESULT: ${{ needs.fast.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
-        run: node -e 'if (process.env.BACKEND_RESULT !== "success" || process.env.FRONTEND_RESULT !== "success") process.exit(1)'
+        run: node -e 'const e=process.env; const skipped=e.CODE==="false" && e.BACKEND_RESULT==="skipped" && e.FRONTEND_RESULT==="skipped"; const passed=e.CODE==="true" && e.BACKEND_RESULT==="success" && e.FRONTEND_RESULT==="success"; if (!skipped && !passed) process.exit(1)'

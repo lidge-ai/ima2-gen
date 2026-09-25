@@ -16,7 +16,8 @@ the release-relevant subset. Do not treat the full local chain as required.
 ## CI
 
 Pull requests run one minimal contract: the `PR fast gate` check
-(`pr-fast.yml`, Ubuntu only — backend suite plus frontend e2e). Keep it
+(`pr-fast.yml`, Ubuntu only — backend suite plus frontend e2e; a `changes`
+filter skips both for docs/devlog-only PRs). Keep it
 fast; do not add Windows or macOS legs to it.
 
 Cross-platform validation is post-merge. Pushes to `dev` (and `main` /
