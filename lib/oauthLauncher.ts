@@ -131,7 +131,7 @@ export function startOAuthProxy(options: OAuthProxyLaunchOptions = {}) {
     stop(signal: NodeJS.Signals = "SIGTERM") {
       stopping = true;
       if (restartTimer) clearTimeout(restartTimer);
-      try { currentChild?.kill(signal); } catch {}
+      try { currentChild?.kill(signal); } catch { /* best-effort: child may already have exited */ }
     },
     /**
      * Stop and wait until the child has exited so its port is free. SIGTERM first; after
@@ -149,7 +149,7 @@ export function startOAuthProxy(options: OAuthProxyLaunchOptions = {}) {
       ]);
       return within(timeoutMs).then(async (done) => {
         if (done) return;
-        try { child.kill("SIGKILL"); } catch {}
+        try { child.kill("SIGKILL"); } catch { /* best-effort: child may already have exited; exit is verified below */ }
         if (!(await within(2000))) throw new Error("GPT OAuth proxy did not exit after SIGKILL");
       });
     },

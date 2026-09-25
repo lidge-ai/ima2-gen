@@ -27,7 +27,7 @@ function CardNewsMobileNotice() {
   const dismiss = () => {
     try {
       localStorage.setItem(CARD_NEWS_MOBILE_NOTICE_KEY, "1");
-    } catch {}
+    } catch { /* best-effort: storage may be unavailable; dismissal still applies for this view */ }
     setDismissed(true);
   };
 

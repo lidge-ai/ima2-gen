@@ -378,7 +378,7 @@ export function flushGraphSaveBeacon(get: () => AppState): void {
       body,
       keepalive: true,
     }).catch(() => { /* Keep the draft; unload has no response UI. */ });
-  } catch {}
+  } catch { /* best-effort: unload has no response UI; the local draft is kept */ }
 }
 
 type AddHistoryOptions = {

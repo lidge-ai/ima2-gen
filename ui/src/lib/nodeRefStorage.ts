@@ -16,7 +16,7 @@ function readAll(): StoredRefs {
 function writeAll(data: StoredRefs): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 export function loadNodeRefs(sessionId: string | null, clientId: string): string[] {

@@ -147,7 +147,7 @@ routes/
 | `bin/commands/video.ts` | 421 | Video CLI surface: generate, edit, extend, frame, analyze, `--character` (MCP lanes), and branch-local `continue` |
 | `bin/commands/ping.ts` | 32 | Server health probe client |
 | `bin/lib/client.ts` | 333 | Server discovery, HTTP request wrapper (connection: close, cleared timeouts), response normalization |
-| `bin/lib/platform.ts` | 132 | Browser-open and binary-resolution helpers |
+| `bin/lib/platform.ts` | 133 | Browser-open and binary-resolution helpers |
 | `bin/lib/args.ts` | 104 | Dependency-free argv parser |
 | `bin/lib/files.ts` | 40 | Data URI file conversion and output naming |
 | `bin/lib/output.ts` | 123 | Terminal output, JSON, exit-code mapping, natural-exit (no process.exit — Windows safe) |

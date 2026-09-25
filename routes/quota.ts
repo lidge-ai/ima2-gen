@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { fetchNaiSubscription } from "../lib/naiSubscription.js";
 import { readChatgptAccess } from "../lib/chatgptAuth.js";
+import { logDebug } from "../lib/logger.js";
 
 export interface QuotaWindow {
   label: string;
@@ -112,7 +113,7 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
         userId: typeof value.user_id === "string" ? value.user_id : null,
       });
     }
-  } catch {}
+  } catch { /* best-effort: auth.json is optional; fall back to the next source */ }
   try {
     // Same file lib/xaiAuth.ts owns; spelled out so quota keeps its narrow node:fs surface.
     const auth = JSON.parse(readFileSync(join(homeDir, ".progrok", "auth.json"), "utf8")) as { accessToken?: string };
@@ -126,7 +127,7 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
         userId: null,
       });
     }
-  } catch {}
+  } catch { /* best-effort: ChatGPT access is optional; fall back to the next source */ }
   const seen = new Set<string>();
   return candidates.filter((candidate) => {
     if (seen.has(candidate.token)) return false;
@@ -146,7 +147,7 @@ function readGrokClientVersion(homeDir = homedir(), grokBinary = "grok"): string
     try {
       const data = JSON.parse(readFileSync(join(homeDir, ".grok", file), "utf8")) as Record<string, unknown>;
       if (typeof data[field] === "string" && data[field].trim()) return data[field].trim();
-    } catch {}
+    } catch { /* best-effort: version files are optional; fall back to the CLI probe */ }
   }
   try {
     const output = execFileSync(grokBinary, ["version"], {
@@ -262,7 +263,7 @@ export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok")
         }],
         billing: { usedUsd: used / 100, limitUsd: limit / 100 },
       };
-    } catch {}
+    } catch (err) { logDebug("quota", "grok_billing_failed", { errorName: err instanceof Error ? err.name : typeof err }); }
   }
   return { provider: "grok", authenticated: true, windows: [] };
 }

@@ -5,6 +5,7 @@ import { spawn, execFileSync, execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { errInfo } from "../../lib/errInfo.js";
+import { logWarn } from "../../lib/logger.js";
 export const isWin = process.platform === "win32";
 export const isMac = process.platform === "darwin";
 export const isLinux = !isWin && !isMac;
@@ -103,7 +104,7 @@ export function onShutdown(handler: (signal: NodeJS.Signals) => void | Promise<v
         shutdownStarted = true;
         const forceExit = setTimeout(() => process.exit(0), SHUTDOWN_GRACE_MS);
         forceExit.unref?.();
-        try { await handler(sig); } catch {}
+        try { await handler(sig); } catch (err) { logWarn("shutdown", "handler_failed", { signal: sig, error: err }); }
         process.exit(0);
       });
     } catch {

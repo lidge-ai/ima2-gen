@@ -23,14 +23,14 @@ let pkg: { version: string; name: string; engines?: { node?: unknown } } = { ver
 try {
   const metadata = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
   if (metadata && typeof metadata.version === "string" && typeof metadata.name === "string") pkg = metadata;
-} catch {}
+} catch { /* best-effort: package.json metadata is optional; keep the placeholder version */ }
 
 function loadConfig() {
   if (existsSync(CONFIG_FILE)) {
     return JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
   }
   if (existsSync(LEGACY_CONFIG_FILE)) {
-    try { return JSON.parse(readFileSync(LEGACY_CONFIG_FILE, "utf-8")); } catch {}
+    try { return JSON.parse(readFileSync(LEGACY_CONFIG_FILE, "utf-8")); } catch { /* best-effort: unreadable legacy config falls through to defaults */ }
   }
   return {};
 }

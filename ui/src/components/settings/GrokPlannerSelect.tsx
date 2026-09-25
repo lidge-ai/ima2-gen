@@ -27,7 +27,7 @@ export function GrokPlannerSelect() {
         body: JSON.stringify({ model }),
       });
       setConfig((prev) => prev ? { ...prev, model } : null);
-    } catch {}
+    } catch (err) { console.warn("[settings] grok planner update failed:", err); }
   };
 
   if (!config) return null;

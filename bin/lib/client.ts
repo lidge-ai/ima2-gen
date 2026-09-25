@@ -260,7 +260,7 @@ export async function request<T = unknown>(base: string, path: string, {
     clearTimeout(timer);
   }
   let json: unknown = null;
-  try { json = JSON.parse(text!); } catch {}
+  try { json = JSON.parse(text!); } catch { /* best-effort: non-JSON bodies are handled below via the raw text */ }
   if (!res.ok) {
     const top = json && typeof json === "object" ? json as { error?: unknown; code?: unknown } : undefined;
     const message = errorField(json, "message") || top?.error || `HTTP ${res.status}`;

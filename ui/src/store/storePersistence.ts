@@ -125,7 +125,7 @@ export function loadUIMode(): UIMode {
     if (raw === "asset-gen") return raw;
     if (raw === "home") return raw;
     if (raw === "classic") return raw;
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; use the default */ }
   return "classic";
 }
 
@@ -133,7 +133,7 @@ export function loadHistoryStripLayout(): HistoryStripLayout {
   try {
     const raw = localStorage.getItem(HISTORY_STRIP_LAYOUT_STORAGE_KEY);
     if (raw === "rail" || raw === "horizontal" || raw === "sidebar") return raw;
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; use the default */ }
   return "rail";
 }
 
@@ -141,7 +141,7 @@ export function loadGalleryScope(key: string): GalleryScope {
   try {
     const raw = localStorage.getItem(key);
     if (raw === "current-session" || raw === "all") return raw;
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; use the default */ }
   return "current-session";
 }
 
@@ -175,28 +175,28 @@ export function loadImageModel(): ImageModel {
   try {
     const raw = localStorage.getItem(IMAGE_MODEL_STORAGE_KEY);
     if (isImageModel(raw)) return raw;
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; use the default */ }
   return DEFAULT_IMAGE_MODEL;
 }
 
 export function saveImageModel(model: ImageModel): void {
   try {
     localStorage.setItem(IMAGE_MODEL_STORAGE_KEY, model);
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 export function loadReasoningEffort(): ReasoningEffort {
   try {
     const raw = localStorage.getItem(REASONING_EFFORT_STORAGE_KEY);
     if (isReasoningEffort(raw)) return raw;
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; use the default */ }
   return DEFAULT_REASONING_EFFORT;
 }
 
 export function saveReasoningEffort(effort: ReasoningEffort): void {
   try {
     localStorage.setItem(REASONING_EFFORT_STORAGE_KEY, effort);
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 /**
@@ -226,14 +226,14 @@ export function loadWebSearchEnabled(): boolean {
     const raw = localStorage.getItem(WEB_SEARCH_STORAGE_KEY);
     if (raw === "false") return false;
     if (raw === "true") return true;
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; use the default */ }
   return DEFAULT_WEB_SEARCH_ENABLED;
 }
 
 export function saveWebSearchEnabled(enabled: boolean): void {
   try {
     localStorage.setItem(WEB_SEARCH_STORAGE_KEY, String(enabled));
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 export type { VideoDefaults } from "./storeTypes";
@@ -262,7 +262,7 @@ export function saveVideoDefaults(patch: Partial<VideoDefaults>): void {
   try {
     const current = loadVideoDefaults();
     localStorage.setItem(VIDEO_DEFAULTS_STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 export function loadSelectedFilename(): string | null {
@@ -278,7 +278,7 @@ export function saveSelectedFilename(filename: string | null): void {
   try {
     if (filename) localStorage.setItem(SELECTED_FILENAME_STORAGE_KEY, filename);
     else localStorage.removeItem(SELECTED_FILENAME_STORAGE_KEY);
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 export function loadActiveSessionId(): string | null {
@@ -294,7 +294,7 @@ export function saveActiveSessionId(id: string | null): void {
   try {
     if (id) localStorage.setItem(ACTIVE_SESSION_ID_STORAGE_KEY, id);
     else localStorage.removeItem(ACTIVE_SESSION_ID_STORAGE_KEY);
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }
 
 export function formatSize(w: number, h: number): string {
@@ -448,5 +448,5 @@ export function saveGenerationDefaultsPatch(patch: GenerationDefaults): void {
       GENERATION_DEFAULTS_STORAGE_KEY,
       JSON.stringify({ ...current, ...patch }),
     );
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable or over quota */ }
 }

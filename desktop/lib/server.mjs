@@ -203,7 +203,7 @@ export class ServerSupervisor extends EventEmitter {
     }
     const graceful = await requestAdminStop(child.pid, this.configDir, (line) => this.#log(line));
     await new Promise((resolve) => {
-      const force = setTimeout(() => { try { child.kill("SIGKILL"); } catch {} }, STOP_GRACE_MS);
+      const force = setTimeout(() => { try { child.kill("SIGKILL"); } catch { /* best-effort: child may already have exited */ } }, STOP_GRACE_MS);
       child.once("exit", () => { clearTimeout(force); resolve(); });
       if (child.exitCode !== null) return resolve();
       if (!graceful) { try { child.kill("SIGTERM"); } catch { resolve(); } }
