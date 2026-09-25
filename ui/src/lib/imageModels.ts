@@ -41,6 +41,7 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   { value: "grok-imagine-image", shortLabel: "grok", fullLabelKey: "settings.imageModel.grokImagine" },
   { value: "nano-banana-2", shortLabel: "nb2 agy", fullLabelKey: "settings.imageModel.nanoBanana2", providerHint: "agy" },
   { value: "nano-banana-2", shortLabel: "nb2 api", fullLabelKey: "settings.imageModel.nanoBanana2Api", providerHint: "gemini-api" },
+  { value: "nano-banana-pro", shortLabel: "nbp agy", fullLabelKey: "settings.imageModel.nanoBananaPro", providerHint: "agy" },
   { value: "nano-banana-pro", shortLabel: "nbp api", fullLabelKey: "settings.imageModel.nanoBananaPro", providerHint: "gemini-api" },
   { value: "openai/gpt-image-2/text-to-image", shortLabel: "atlas", fullLabelKey: "settings.imageModel.atlasCloudGptImage2", providerHint: "atlascloud" },
   { value: "openai/gpt-image-2/edit", shortLabel: "atlas edit", fullLabelKey: "settings.imageModel.atlasCloudGptImage2Edit", providerHint: "atlascloud" },

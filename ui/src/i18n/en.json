@@ -1427,7 +1427,7 @@
     },
     "imageModel": {
       "title": "Image model",
-      "body": "Choose the image model used for future generations. Selecting a Grok model switches the provider to Grok.",
+      "body": "Choose the image model used for future generations. Picking a model from another provider (Grok, OpenAI API, Gemini, and more) switches to it.",
       "gpt54Mini": "GPT-5.4 Mini",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
