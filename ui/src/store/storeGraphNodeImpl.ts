@@ -307,7 +307,7 @@ export function duplicateBranchRootImpl(
 
   if (source.data.imageUrl) {
     const sourceUrl = source.data.imageUrl;
-    (async () => {
+    void (async () => {
       try {
         const dataUrl = await compressReferenceSource(sourceUrl, "node-reference.png");
         set({

@@ -29,7 +29,7 @@ function readCredentials(req: Request, name: string, maxBytes: number) {
   const header = singleHeader(req, "x-ima2-token", "LAN_TOKEN_REQUIRED");
   const params = new URLSearchParams((req.originalUrl || req.url).split("?").slice(1).join("?"));
   const queries = params.getAll("token");
-  const invalidQuery = [...params.keys()].some(key => /^token[\[.]/.test(key));
+  const invalidQuery = [...params.keys()].some(key => /^token[[.]/.test(key));
   if (queries.length > 1 || invalidQuery) throw localAccessError("LAN_TOKEN_REQUIRED", 401);
   const query = queries[0];
   const cookies = name ? req.headers.cookie?.split(";").map(part => part.trim()) ?? [] : [];
@@ -109,7 +109,7 @@ class LocalLanAccess {
     try { if (this.lan && protectedRequestPath(req).media) privateMediaHeaders(res); }
     catch {
       const prefix = (req.originalUrl || req.url).replace(/%([\da-f]{2})/ig, (_match, hex: string) => String.fromCharCode(parseInt(hex, 16)));
-      if (this.lan && /^\/generated(?:[\/\\]|$)/i.test(prefix)) privateMediaHeaders(res);
+      if (this.lan && /^\/generated(?:[/\\]|$)/i.test(prefix)) privateMediaHeaders(res);
     }
     next();
   };

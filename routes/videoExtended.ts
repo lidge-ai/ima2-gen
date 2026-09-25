@@ -427,7 +427,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
         await extractVideoFrame(inputPath, tmpOut, position);
         const frame = await readFile(tmpOut);
         res.type("png").send(frame);
-      } catch (err: unknown) {
+      } catch {
         return res.status(500).json({ error: "ffmpeg failed" });
       } finally {
         await unlink(tmpOut).catch(() => {});
