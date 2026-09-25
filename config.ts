@@ -353,7 +353,7 @@ export const config = {
   },
   styleSheet: {
     maxPrefix: pickInt(env.IMA2_STYLE_SHEET_MAX_PREFIX, fileCfg.styleSheet?.maxPrefix, 4000),
-    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-6-luna"),
+    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-5.6-luna"), // runs on the API-key client (lib/styleSheet.ts)
   },
   imageModels: {
     default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna"),

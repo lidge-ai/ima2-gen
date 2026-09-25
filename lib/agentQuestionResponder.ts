@@ -2,6 +2,7 @@ import { errInfo } from "./errInfo.js";
 import { logEvent } from "./logger.js";
 import { waitForOAuthReady } from "./oauthProxy/runtime.js";
 import { oauthFetch } from "./codexBackend/index.js";
+import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "./runtimeContext.js";
 
 const AGENT_QUESTION_DEVELOPER_PROMPT = [
@@ -77,7 +78,7 @@ export async function requestAgentQuestionAnswer(
         headers: endpoint.headers,
         signal,
         body: JSON.stringify({
-          model: options.model || ctx.config.imageModels?.default || "gpt-6-luna",
+          model: migrateOAuthImageModel(options.model || ctx.config.imageModels?.default || "gpt-6-luna"),
           input: [
             { role: "developer", content: AGENT_QUESTION_DEVELOPER_PROMPT },
             { role: "user", content: question },

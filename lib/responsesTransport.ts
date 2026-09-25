@@ -62,6 +62,8 @@ function parseOpenAIErrorBody(text: string): UpstreamError | null {
 }
 
 function normalizedCode(upstream: UpstreamError | null | undefined) {
+  // The in-process GPT OAuth client reports a missing or unrefreshable ChatGPT session this way.
+  if (upstream?.code === "OAUTH_SESSION_REQUIRED") return "AUTH_CHATGPT_EXPIRED";
   const byCode = classifyUpstreamErrorCode(upstream?.code);
   if (byCode !== "UNKNOWN") return byCode;
   const byType = classifyUpstreamErrorCode(upstream?.type);
@@ -72,6 +74,7 @@ function normalizedCode(upstream: UpstreamError | null | undefined) {
 
 function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, status: number) {
   const code = normalizedCode(upstream);
+  if (code === "AUTH_CHATGPT_EXPIRED") return "ChatGPT sign-in is missing or expired. Run `ima2 gpt login`.";
   if (code === "AUTH_API_KEY_INVALID") return "API key is invalid or unavailable.";
   if (code === "MODERATION_REFUSED") return "OpenAI refused the image request for safety reasons.";
   if (code === "INVALID_REQUEST") {

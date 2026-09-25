@@ -162,6 +162,17 @@ describe("native GPT OAuth transport", () => {
       const res = await transport.oauthFetch(native, "/v1/images/generations", { method: "POST", body: "{}" });
       assert.equal(res.status, 401);
       assert.equal(((await res.json()) as { error: { code: string } }).error.code, "OAUTH_SESSION_REQUIRED");
+      // Generation surfaces it as the existing ChatGPT sign-in code, with a login hint.
+      const { postOAuthImages } = await import("../lib/responsesTransport.ts");
+      await assert.rejects(
+        postOAuthImages({ ctx: { ...native, oauthReadyState: "ready" } as never, scope: "test", kind: "generations", json: { prompt: "p" } }),
+        (error: Error & { code?: string; status?: number }) => {
+          assert.equal(error.code, "AUTH_CHATGPT_EXPIRED");
+          assert.equal(error.status, 401);
+          assert.match(error.message, /ima2 gpt login/);
+          return true;
+        },
+      );
     } finally {
       rmSync(empty, { recursive: true, force: true });
     }

@@ -615,7 +615,7 @@ Graph edges are the source of truth for node parentage. On save, the server filt
 
 Graph saves may include observability headers: `X-Ima2-Graph-Save-Id`, `X-Ima2-Graph-Save-Reason`, and `X-Ima2-Tab-Id`. The server logs these values for `graph_save` and `graph_conflict` events but must not treat them as authorization or correctness inputs.
 
-Style sheet endpoints persist a per-session reference style summary in SQLite. `/style-sheet/extract` calls the OAuth Responses API with `IMA2_STYLE_MODEL` (default `gpt-6-luna`) to derive a short text style sheet from a single history image; the route enforces that the source image belongs to the same session. `enabled` is a separate toggle that determines whether the style sheet is injected into the next prompt; the actual injection uses up to `IMA2_STYLE_SHEET_MAX_PREFIX` characters and is performed at the route layer.
+Style sheet endpoints persist a per-session reference style summary in SQLite. `/style-sheet/extract` calls the OpenAI API-key client with `IMA2_STYLE_MODEL` (default `gpt-5.6-luna`) to derive a short text style sheet from a single history image; the route enforces that the source image belongs to the same session. `enabled` is a separate toggle that determines whether the style sheet is injected into the next prompt; the actual injection uses up to `IMA2_STYLE_SHEET_MAX_PREFIX` characters and is performed at the route layer.
 
 ## Image Metadata API
 

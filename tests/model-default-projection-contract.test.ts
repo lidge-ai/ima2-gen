@@ -24,7 +24,7 @@ describe("current model defaults: runtime contract", () => {
     assert.equal(config.grokProvider.plannerModel, DEFAULT_GROK_PLANNER_MODEL);
     assert.equal(config.imageModels.default, "gpt-6-luna");
     assert.equal(config.apiProvider.defaultImageModel, "gpt-5.6-luna");
-    assert.equal(config.styleSheet.model, "gpt-6-luna");
+    assert.equal(config.styleSheet.model, "gpt-5.6-luna", "style sheets run on the API-key client");
     assert.equal(config.cardNewsPlanner.model, "gpt-6-luna");
   });
 

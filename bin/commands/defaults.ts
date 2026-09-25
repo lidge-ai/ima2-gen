@@ -1,4 +1,6 @@
 import { config } from "../../config.js";
+import { deriveSupportedImageModels } from "../../lib/providers/derive.js";
+import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
 import { parseArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import type { LaneInfo } from "../lib/modelResolver.js";
@@ -18,6 +20,7 @@ import {
 import { color, die, exitCodeForError, fail, json, out } from "../lib/output.js";
 
 const MODEL_KEYS = ["imageModels.default", "apiProvider.defaultImageModel"] as const;
+const API_IMAGE_MODELS = deriveSupportedImageModels("api");
 const REASONING_KEYS = ["imageModels.reasoningEffort", "apiProvider.defaultReasoningEffort"] as const;
 type CliKind = "image" | "video";
 
@@ -107,9 +110,24 @@ function printDefaults(payload: any): void {
 }
 
 function validateModel(value: string): void {
-  if (!config.imageModels.valid.has(value)) {
-    die(2, `model must be one of: ${Array.from(config.imageModels.valid).join(", ")}`);
+  if (!config.imageModels.valid.has(migrateOAuthImageModel(value)) && !API_IMAGE_MODELS.has(value)) {
+    const choices = [...new Set([...config.imageModels.valid, ...API_IMAGE_MODELS])];
+    die(2, `model must be one of: ${choices.join(", ")}`);
   }
+}
+
+/**
+ * GPT OAuth keeps only GPT-6 and the API-key lane its own list, so one `defaults set model` value
+ * lands on each lane only in a form that lane serves: the OAuth default takes the GPT-6 tier of a
+ * legacy id, and the API default changes only when the id is an API model.
+ */
+function laneValue(key: string, value: string): string | undefined {
+  if (key === "imageModels.default") {
+    const oauth = migrateOAuthImageModel(value);
+    return config.imageModels.valid.has(oauth) ? oauth : undefined;
+  }
+  if (key === "apiProvider.defaultImageModel") return API_IMAGE_MODELS.has(value) ? value : undefined;
+  return value;
 }
 
 function validateReasoning(value: string): void {
@@ -128,10 +146,16 @@ function warnOverrides(keys: readonly string[]): void {
 
 function setDefaults(keys: readonly string[], value: string): void {
   const fileCfg = loadFileCfg();
-  for (const key of keys) setNestedKey(fileCfg, key, value);
+  const written: string[] = [];
+  for (const key of keys) {
+    const next = laneValue(key, value);
+    if (next === undefined) continue;
+    setNestedKey(fileCfg, key, next);
+    written.push(next === value ? key : `${key} (as ${next})`);
+  }
   saveFileCfg(fileCfg);
   warnOverrides(keys);
-  out(color.green("✓ ") + `wrote ${keys.join(", ")}=${JSON.stringify(value)} to ${displayPath(CONFIG_FILE)}`);
+  out(color.green("✓ ") + `wrote ${written.join(", ")}=${JSON.stringify(value)} to ${displayPath(CONFIG_FILE)}`);
   out(color.dim(restartNotice()));
 }
 

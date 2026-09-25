@@ -137,4 +137,18 @@ if (executionTestProcess(import.meta.url)) describe("GPT OAuth image lane contra
       assert.deepEqual(await readdir(f.generatedDir), []);
     });
   });
+
+  it("direct multimode with several images still plans one prompt per stage", async () => {
+    await harness.run("multimode", { upstream: async (call) => (
+      endpointOf(call) === "/v1/responses" ? plannerSse(["stage one", "stage two"]) : imagesJson(red)
+    ) }, async (f) => {
+      const response = await f.post({ ...BASE, mode: "direct", model: "gpt-6-luna", async: true, maxImages: 2 });
+      assert.equal(response.status, 202);
+      await f.waitTerminal();
+      await f.waitSettled();
+      assert.deepEqual(f.calls.map(endpointOf), ["/v1/responses", "/v1/images/generations", "/v1/images/generations"]);
+      const prompts = await Promise.all(f.calls.slice(1).map(async (call) => (await fields(call)).json.prompt));
+      assert.deepEqual(prompts.sort(), ["stage one", "stage two"]);
+    });
+  });
 });

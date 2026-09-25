@@ -2,6 +2,7 @@ import { config } from "../config.js";
 import { CARD_NEWS_PLANNER_SCHEMA } from "./cardNewsPlannerSchema.js";
 import { logEvent } from "./logger.js";
 import { oauthFetch } from "./codexBackend/index.js";
+import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
 
 type PlannerError = Error & {
   code?: string | undefined;
@@ -138,7 +139,8 @@ async function requestChatJson({ oauthUrl, oauthTransport, model, messages, time
 export async function requestCardNewsPlannerJson(input: PlannerInput, options: PlannerCallOptions = {}) {
   const oauthUrl = options.oauthUrl || `http://127.0.0.1:${config.oauth.proxyPort}`;
   const oauthTransport = options.oauthTransport;
-  const model = options.model || config.cardNewsPlanner.model;
+  // A saved pre-GPT-6 planner id runs on its GPT-6 tier, like every other GPT OAuth caller.
+  const model = migrateOAuthImageModel(options.model || config.cardNewsPlanner.model);
   const timeoutMs = options.timeoutMs || config.cardNewsPlanner.timeoutMs;
   const reasoningEffort = options.reasoningEffort || config.imageModels?.reasoningEffort || "medium";
   let text = "";

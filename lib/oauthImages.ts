@@ -231,7 +231,10 @@ async function plan(job: OAuthImageJob) {
 }
 
 export async function runOAuthImageJob(job: OAuthImageJob): Promise<OAuthImageJobResult> {
-  const direct = job.mode === "direct";
+  // Direct mode renders the user's prompt verbatim, but a multi-image request still needs one
+  // prompt per stage, so it goes through the planner (its user text already carries the
+  // sequence instructions and the Direct fidelity rule).
+  const direct = job.mode === "direct" && job.maxImages <= 1;
   const planned = direct
     ? { result: null, prompts: Array.from({ length: Math.max(1, job.maxImages) }, () => job.directPrompt) }
     : await plan(job);

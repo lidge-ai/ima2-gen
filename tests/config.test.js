@@ -84,7 +84,7 @@ test("config exposes default shape", () => {
   assert.deepEqual(c.oauth.validModeration.sort(), ["auto", "low"]);
   assert.equal(c.imageModels.default, "gpt-6-luna");
   assert.equal(c.apiProvider.defaultImageModel, "gpt-5.6-luna");
-  assert.equal(c.styleSheet.model, "gpt-6-luna");
+  assert.equal(c.styleSheet.model, "gpt-5.6-luna");
   assert.equal(c.grokProvider.plannerModel, "grok-4.3");
   assert.equal(c.grokProvider.defaultImageModel, "grok-imagine-image-2.0");
   assert.equal(c.grokProvider.defaultVideoModel, "grok-imagine-video-1.5");

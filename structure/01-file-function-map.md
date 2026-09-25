@@ -136,7 +136,7 @@ routes/
 | `bin/commands/doctor.ts` | 313 | CLI diagnostics: storage, OAuth, providers, image probe |
 | `bin/commands/gpt.ts` | 211 | ChatGPT (GPT OAuth) login/status/logout; `ima2 login` delegates here |
 | `bin/commands/grok.ts` | 252 | Grok OAuth login and status helpers |
-| `bin/commands/defaults.ts` | 270 | CLI default provider/model/size/reasoning-effort get/set |
+| `bin/commands/defaults.ts` | 294 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 143 | CLI wrapper for `GET /api/capabilities` |
 | `bin/commands/skill.ts` | 402 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
 | `bin/commands/backfillThumbs.ts` | 35 | Gallery thumbnail backfill command |
@@ -217,7 +217,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/types.ts` | 10 | Shared GPT OAuth prompt/runtime types (re-exported from `index`) |
 | `lib/promptSafetyPolicy.ts` | 3 | `SAFETY_INTENT_POLICY` constant: 3-line intent policy injected by oauthProxy/prompts and the API-key Responses adapter |
 | `lib/responsesImageAdapter.ts` | 6 | Compatibility re-exports of the three OpenAI operations; existing agent/sprite imports remain valid |
-| `lib/responsesTransport.ts` | 331 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
+| `lib/responsesTransport.ts` | 334 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
 | `lib/providers/adapters/openaiTypes.ts` | 30 | Original positional-operation reference/options types, unchanged optional fields |
 | `lib/providers/adapters/openaiOperations.ts` | 366 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
 | `lib/providers/adapters/openaiExecution.ts` | 142 | Typed four-surface OpenAI owner, classic retry and native callback/result mapping |
@@ -259,7 +259,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/cardNewsManifestStore.ts` | 149 | Per-set manifest and sidecar persistence under `~/.ima2/generated/cardnews/` |
 | `lib/cardNewsJobStore.ts` | 153 | In-memory card-news job/card status, retry/finish helpers |
 | `lib/cardNewsPlanner.ts` | 238 | Deterministic and planner-driven card-news draft creation |
-| `lib/cardNewsPlannerClient.ts` | 160 | OAuth-Responses JSON planner request wrapper |
+| `lib/cardNewsPlannerClient.ts` | 162 | OAuth-Responses JSON planner request wrapper |
 | `lib/cardNewsPlannerPrompt.ts` | 63 | Card-news planner prompt builder |
 | `lib/cardNewsPlannerSchema.ts` | 322 | Card-news planner JSON schema, validation, and repair |
 | `lib/cardNewsGenerator.ts` | 309 | Card-by-card image assembly orchestrator |
@@ -312,7 +312,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/nodeTemplateFile.ts` | 320 | Portable template file format: allowlist graph rebuild, strict import parsing, fixed error codes, download and duplicate names |
 | `lib/presetCompiler.ts` | 67 | Named preset prompt compilation helpers |
-| `lib/responsesDoctor.ts` | 496 | Responses API diagnostics and provider health checks |
+| `lib/responsesDoctor.ts` | 498 | Responses API diagnostics and provider health checks |
 | `lib/responsesErrors.ts` | 94 | Responses API error normalization helpers |
 | `lib/responsesFallback.ts` | 173 | Responses API fallback routing helpers |
 | `lib/responsesParse.ts` | 469 | Responses API output parsing and normalization |
@@ -356,7 +356,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentPlannerModel.ts` | 205 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 356 | Generation plan assembly |
 | `lib/agentImageVideoGen.ts` | 477 | Image/video generation caller for agent turns |
-| `lib/agentQuestionResponder.ts` | 278 | `/question` responder |
+| `lib/agentQuestionResponder.ts` | 279 | `/question` responder |
 | `lib/promptBuilder/constants.ts` | 34 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
 | `lib/promptBuilder/router.ts` | 140 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |
 | `lib/promptBuilder/client.ts` | 207 | Request normalization, backend/model resolution, safe fallback logging, one-shot upstream request, and resolved-backend response metadata |
