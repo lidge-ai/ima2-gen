@@ -441,11 +441,11 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
       });
     }
     const listedValues = new Set(modelGroups.flatMap((group) => group.items.map((item) => item.value)));
-    if (coreModelValue && !listedValues.has(coreModelValue)) {
+    if (modelValue && !listedValues.has(modelValue)) {
       modelGroups.unshift({
         items: [{
-          value: coreModelValue,
-          label: coreModelValue.includes(":") ? coreModelValue.split(":").slice(1).join(":") : coreModelValue,
+          value: modelValue,
+          label: modelValue.includes(":") ? modelValue.split(":").slice(1).join(":") : modelValue,
           title: t("mcp.unavailable"),
           ...(provider === "comfy" ? { disabled: true } : {}),
         }],
