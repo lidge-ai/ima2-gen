@@ -23,8 +23,8 @@ Primary public post:
 Fork repository:
 
 - Repo: `https://github.com/damagethundercat/ima2-gen`
-- GitHub metadata checked via `gh repo view`: fork of `lidge-jun/ima2-gen`, default branch `main`, updated `2026-05-15T01:08:21Z`.
-- GitHub compare checked via `gh api repos/lidge-jun/ima2-gen/compare/main...damagethundercat:main`: fork is `ahead_by: 17`, `behind_by: 6`, status `diverged`.
+- GitHub metadata checked via `gh repo view`: fork of `lidge-ai/ima2-gen`, default branch `main`, updated `2026-05-15T01:08:21Z`.
+- GitHub compare checked via `gh api repos/lidge-ai/ima2-gen/compare/main...damagethundercat:main`: fork is `ahead_by: 17`, `behind_by: 6`, status `diverged`.
 - Local inspection clone: `/tmp/ima2-gen-damagethundercat`.
 
 ## High-Level Decision

@@ -3,7 +3,7 @@ title: "Issue #27 — Canvas Annotation SVG / Vector Export"
 status: open / implementation-ready hardened
 created: 2026-04-30
 updated: 2026-05-16
-github: https://github.com/lidge-jun/ima2-gen/issues/27
+github: https://github.com/lidge-ai/ima2-gen/issues/27
 tags: [canvas, svg, vector, annotations, export]
 ---
 
@@ -16,7 +16,7 @@ should vectorize the annotation layer, not trace the generated raster image.
 
 Canonical issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/27
+- https://github.com/lidge-ai/ima2-gen/issues/27
 
 ## 2026-05-16 Implementation Lock
 

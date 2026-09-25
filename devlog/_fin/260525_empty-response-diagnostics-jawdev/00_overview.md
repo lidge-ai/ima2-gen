@@ -8,7 +8,7 @@ depends_on:
 
 # Empty Response Diagnostics Jawdev Plan
 
-Public phase report anchor: https://github.com/lidge-jun/ima2-gen/issues/76
+Public phase report anchor: https://github.com/lidge-ai/ima2-gen/issues/76
 
 ## Why This Exists
 

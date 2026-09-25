@@ -31,7 +31,7 @@ findings. The original contributor's authorship stays visible.
 | Current dev | `203fa69d0cad38c9f1d18dfc9b546e48524a14c0` |
 | Contributor head | `e3a731cbd2ba4600e8cf06951126486860ff5fa2` |
 | Common ancestor | `5f33e44a7886580330ee03ea58a71a4d842014e5` |
-| Source | https://github.com/lidge-jun/ima2-gen/pull/256 |
+| Source | https://github.com/lidge-ai/ima2-gen/pull/256 |
 
 The source delta contains 53 commits and 83 files. Read source by immutable SHA;
 do not overwrite complete files from the fork where dev already changed them.

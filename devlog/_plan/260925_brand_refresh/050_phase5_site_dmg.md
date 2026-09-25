@@ -6,7 +6,7 @@
 |---|---|---|
 | site/public/brand-mark.svg | NEW | copy of assets/brand/mark.svg |
 | site/src/components/Header.astro | MODIFY | brand link = masked mark (18px) + existing "ima2" chrome text |
-| site/src/components/InstallFooter.astro | MODIFY | new "Desktop app for Mac" block before the npm codes: download link `https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true`; steps: download `ima2-<version>-mac-arm64.dmg`, drag ima2 to Applications, open it (signed and notarized by Apple); note "Apple Silicon Macs only. On Intel Macs, Windows or Linux, use the install script or npm." |
+| site/src/components/InstallFooter.astro | MODIFY | new "Desktop app for Mac" block before the npm codes: download link `https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true`; steps: download `ima2-<version>-mac-arm64.dmg`, drag ima2 to Applications, open it (signed and notarized by Apple); note "Apple Silicon Macs only. On Intel Macs, Windows or Linux, use the install script or npm." |
 | site/src/i18n/strings.ts | MODIFY | `install.desktop.*` en + ko; `install.badge.node` → "Node ≥22" in both languages (package.json engines is >=22) |
 | site/src/pages/docs/quickstart.astro (+ ko) | MODIFY if it lists install paths | add the desktop option (re-verified at this phase's P) |
 

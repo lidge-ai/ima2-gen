@@ -128,13 +128,13 @@ describe("release artifact and provenance contract", () => {
       predicate: {
         buildDefinition: {
           buildType: "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
-          externalParameters: { workflow: { repository: "https://github.com/lidge-jun/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/tags/v2.0.14" } },
+          externalParameters: { workflow: { repository: "https://github.com/lidge-ai/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/tags/v2.0.14" } },
           internalParameters: { github: { event_name: "push" } },
           resolvedDependencies: [{ digest: { gitCommit: SHA } }],
         },
         runDetails: {
           builder: { id: "https://github.com/actions/runner/github-hosted" },
-          metadata: { invocationId: "https://github.com/lidge-jun/ima2-gen/actions/runs/1/attempts/1" },
+          metadata: { invocationId: "https://github.com/lidge-ai/ima2-gen/actions/runs/1/attempts/1" },
         },
       },
     };
@@ -142,7 +142,7 @@ describe("release artifact and provenance contract", () => {
       ref: "refs/tags/v2.0.14", sha: SHA, sha512: "digest", version: "2.0.14", runId: "1", runAttempt: "1",
     });
     assert.deepEqual(identity, {
-      runId: "1", runAttempt: "1", runUrl: "https://github.com/lidge-jun/ima2-gen/actions/runs/1",
+      runId: "1", runAttempt: "1", runUrl: "https://github.com/lidge-ai/ima2-gen/actions/runs/1",
     });
     assert.throws(() => validateProvenance(statement, {
       ref: "refs/tags/v2.0.14", sha: SHA, sha512: "digest", version: "2.0.14", runId: "1", runAttempt: "2",
@@ -169,13 +169,13 @@ describe("release artifact and provenance contract", () => {
       predicate: {
         buildDefinition: {
           buildType: "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
-          externalParameters: { workflow: { repository: "https://github.com/lidge-jun/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/heads/main" } },
+          externalParameters: { workflow: { repository: "https://github.com/lidge-ai/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/heads/main" } },
           internalParameters: { github: { event_name: "workflow_dispatch" } },
           resolvedDependencies: [{ digest: { gitCommit: SHA } }],
         },
         runDetails: {
           builder: { id: "https://github.com/actions/runner/github-hosted" },
-          metadata: { invocationId: "https://github.com/lidge-jun/ima2-gen/actions/runs/1/attempts/1" },
+          metadata: { invocationId: "https://github.com/lidge-ai/ima2-gen/actions/runs/1/attempts/1" },
         },
       },
     };

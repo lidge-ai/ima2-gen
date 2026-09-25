@@ -30,7 +30,7 @@ tags: [ima2-gen, release, runbook, v3170, desktop]
    force 없음: non-fast-forward면 거부되고 멈춘다.
 5. 태그 push가 publish.yml(push tag)을 띄운다. `prepare`가 ref와 preview proof를 확인하면
    `npm-stable` 승인 대기에서 pending deployment를 승인한다. 승인은 admin bypass가 아니라
-   `gh api -X POST repos/lidge-jun/ima2-gen/actions/runs/<id>/pending_deployments -F 'environment_ids[]=<int>' -f state=approved -f comment=...`.
+   `gh api -X POST repos/lidge-ai/ima2-gen/actions/runs/<id>/pending_deployments -F 'environment_ids[]=<int>' -f state=approved -f comment=...`.
 6. `publish-stable`이 게시 뒤 검증 창(120s)에서 또 E404로 떨어질 수 있다(D5). 그 경우
    레지스트리에서 latest=3.17.0, gitHead=SHA를 직접 확인 → `gh run rerun <id> --failed` →
    npm-stable 재승인 → rerun의 guard-publish가 기존 버전을 증명하고 게시를 건너뛴 뒤

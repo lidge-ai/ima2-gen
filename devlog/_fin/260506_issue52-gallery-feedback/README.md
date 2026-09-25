@@ -1,6 +1,6 @@
 # Issue #52 - Windows Gallery Feedback Split Plan
 
-**GitHub**: https://github.com/lidge-jun/ima2-gen/issues/52
+**GitHub**: https://github.com/lidge-ai/ima2-gen/issues/52
 **Status**: done / archived to `_fin`
 **Date**: 2026-05-06
 **External review**: ChatGPT Pro via `agbrowse web-ai`, repo-link-only prompt
@@ -354,7 +354,7 @@ Out of scope for #52 because it is architecture/performance work.
 
 Tracked as part of:
 
-- https://github.com/lidge-jun/ima2-gen/issues/53
+- https://github.com/lidge-ai/ima2-gen/issues/53
 
 ### Follow-up 2 - Gallery browsing: date-collapsible and virtualized large gallery
 
@@ -369,7 +369,7 @@ and pagination first.
 
 Tracked as part of:
 
-- https://github.com/lidge-jun/ima2-gen/issues/53
+- https://github.com/lidge-ai/ima2-gen/issues/53
 
 ### Follow-up 3 - True generation cancellation: backend AbortController propagation
 
@@ -392,7 +392,7 @@ from #52. Do not add a visible Cancel button in the #52 patch.
 
 Tracked as:
 
-- https://github.com/lidge-jun/ima2-gen/issues/54
+- https://github.com/lidge-ai/ima2-gen/issues/54
 
 ### Follow-up 4 - In-flight cancellation UI
 
@@ -405,7 +405,7 @@ Depends on Follow-up 3.
 
 Tracked as part of:
 
-- https://github.com/lidge-jun/ima2-gen/issues/54
+- https://github.com/lidge-ai/ima2-gen/issues/54
 
 ### Follow-up 5 - Session/grouped gallery pagination
 
@@ -419,7 +419,7 @@ state makes the patch too broad.
 
 Tracked as part of:
 
-- https://github.com/lidge-jun/ima2-gen/issues/53
+- https://github.com/lidge-ai/ima2-gen/issues/53
 
 ## Pro Gate Fixes Applied 2026-05-06
 

@@ -1,7 +1,7 @@
 # Issue #57 — History strip duplicate tiles after multi-image generation
 
 Status: done / shipped on main
-GitHub: https://github.com/lidge-jun/ima2-gen/issues/57
+GitHub: https://github.com/lidge-ai/ima2-gen/issues/57
 Date: 2026-05-07
 
 ## Companion plans
