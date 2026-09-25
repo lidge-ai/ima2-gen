@@ -130,15 +130,22 @@ export function usesNativeOAuth(ctx: OAuthTransportContext | null | undefined): 
   return ctx?.oauthTransport === "native";
 }
 
+/** Drop trailing slashes with a linear scan (no regex backtracking on untrusted input). */
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end--;
+  return value.slice(0, end);
+}
+
 /** An external endpoint URL without embedded credentials or a trailing slash. */
 export function safeOAuthBaseUrl(value: string): string {
   try {
     const parsed = new URL(value);
     parsed.username = "";
     parsed.password = "";
-    return parsed.toString().replace(/\/+$/, "");
+    return trimTrailingSlashes(parsed.toString());
   } catch {
-    return value.replace(/\/+$/, "");
+    return trimTrailingSlashes(value);
   }
 }
 
