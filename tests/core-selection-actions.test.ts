@@ -466,6 +466,7 @@ test("image model options keep one lane-tagged value per row and stay in the gen
     // so a first-match find on a merged list resolves the wrong lane's label.
     for (const provider of ["agy", "gemini-api", "atlascloud", "minimax", "nai", "api", "oauth"] as const) {
       const rows = runtime.getImageModelOptionsForProvider(provider);
+      assert.ok(rows.length > 0, `${provider} option list is empty`);
       assert.equal(
         new Set(rows.map((option) => option.value)).size,
         rows.length,
@@ -476,6 +477,13 @@ test("image model options keep one lane-tagged value per row and stay in the gen
           assert.equal(option.providerHint, provider, `${provider} list carries a ${option.providerHint} row`);
         }
       }
+    }
+    // The exact labels the WP02 storage-event spec asserts on the trigger:
+    // a stored nano-banana-pro resolves to the stored lane's row.
+    for (const [provider, shortLabel] of [["gemini-api", "nbp api"], ["agy", "nbp agy"]] as const) {
+      const row = runtime.getImageModelOptionsForProvider(provider)
+        .find((option) => option.value === "nano-banana-pro");
+      assert.equal(row?.shortLabel, shortLabel);
     }
   });
 });
