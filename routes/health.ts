@@ -6,6 +6,7 @@ import { loadGrokCredentials } from "../lib/xaiAuth.js";
 import { gptAuthStatus, grokAuthStatus } from "../lib/authStatus.js";
 import { resolveChatgptSession } from "../lib/chatgptAuth.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
+import { oauthFetch } from "../lib/codexBackend/index.js";
 
 // Upstream auth refusals surfaced through the proxy's /v1/models error body. Kept narrow:
 // generic 5xx/network text must never read as "re-login needed" — status 401 covers
@@ -21,9 +22,12 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
       url: ctx.serverUrl || `http://localhost:${ctx.serverActualPort || ctx.config.server.port}`,
     },
     oauth: {
+      // "native": GPT OAuth talks to the Codex backend in process; the port fields then only
+      // describe the legacy proxy setting and nothing listens on them.
+      mode: ctx.oauthTransport === "native" ? "native" : "proxy",
       configuredPort: Number(ctx.oauthPort),
       actualPort: Number(ctx.oauthActualPort || ctx.oauthPort),
-      url: ctx.oauthUrl,
+      url: ctx.oauthTransport === "native" ? ctx.config.oauth.codexBaseUrl : ctx.oauthUrl,
       status: ctx.oauthReadyState,
     },
     // Grok has no local endpoint any more: requests go to https://api.x.ai, so
@@ -75,7 +79,7 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
     // The proxy exits at boot when there is no session file; that is a login problem, not an outage.
     if (ctx.oauthReadyState === "failed") return reply(missingSession ? "auth_required" : "offline");
     try {
-      const r = await fetch(`${ctx.oauthUrl}/v1/models`, {
+      const r = await oauthFetch(ctx, "/v1/models", {
         signal: AbortSignal.timeout(ctx.config.oauth.statusTimeoutMs),
       });
       if (r.ok) {

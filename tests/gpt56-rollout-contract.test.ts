@@ -16,9 +16,11 @@ function readSource(path: string) {
 }
 
 describe("gpt-5.6 rollout: validators", () => {
-  it("accepts every GPT-5.6 slug (fires the accept branch)", () => {
+  // GPT OAuth keeps only GPT-6 now; the API-key lane still serves every 5.6 slug.
+  it("accepts every GPT-5.6 slug on the API-key lane and migrates it on GPT OAuth", () => {
     for (const model of GPT56_MODELS) {
-      assert.deepEqual(normalizeImageModel({}, model), { model });
+      assert.deepEqual(normalizeImageModel({}, model, "api"), { model });
+      assert.match(normalizeImageModel({}, model).model ?? "", /^gpt-6-(sol|luna)$/);
     }
   });
 
@@ -26,7 +28,10 @@ describe("gpt-5.6 rollout: validators", () => {
     const result = normalizeImageModel({}, "gpt-5.6-nova");
     assert.equal(result.code, "INVALID_IMAGE_MODEL");
     assert.equal(result.status, 400);
-    assert.match(result.error ?? "", /gpt-5\.6-sol, gpt-5\.6-terra, gpt-5\.6-luna/);
+    assert.match(result.error ?? "", /gpt-6-luna, gpt-6-sol, gpt-6-astra/);
+    const api = normalizeImageModel({}, "gpt-5.6-nova", "api");
+    assert.equal(api.code, "INVALID_IMAGE_MODEL");
+    assert.match(api.error ?? "", /gpt-5\.6-sol, gpt-5\.6-terra, gpt-5\.6-luna/);
   });
 
   it("accepts max reasoning effort (previously rejected)", () => {
@@ -40,17 +45,16 @@ describe("gpt-5.6 rollout: validators", () => {
     assert.match(result.error ?? "", /max/);
   });
 
-  it("uses luna as the product default", () => {
-    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-5.6-luna" });
-    assert.equal(config.imageModels.default, "gpt-5.6-luna");
+  it("uses luna as the product default on both GPT lanes", () => {
+    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
+    assert.equal(config.imageModels.default, "gpt-6-luna");
+    assert.deepEqual(normalizeImageModel({}, undefined, "api"), { model: "gpt-5.6-luna" });
   });
 });
 
 describe("gpt-5.6 rollout: runtime config", () => {
-  it("config advertises the 5.6 slugs and max effort", () => {
-    for (const model of GPT56_MODELS) {
-      assert.ok(config.imageModels.valid.has(model), `config valid set missing ${model}`);
-    }
+  it("config advertises the GPT-6 trio on OAuth and max effort", () => {
+    assert.deepEqual([...config.imageModels.valid], ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"]);
     assert.ok(config.imageModels.validReasoningEfforts.has("max"));
   });
 });
@@ -86,11 +90,11 @@ describe("gpt-6 astra: additive registration", () => {
   });
 
   it("leaves every default exactly where it was", () => {
-    assert.equal(config.imageModels.default, "gpt-5.6-luna");
+    assert.equal(config.imageModels.default, "gpt-6-luna");
     assert.equal(config.apiProvider.defaultImageModel, "gpt-5.6-luna");
     assert.equal(config.imageModels.reasoningEffort, "medium");
     assert.equal(config.apiProvider.defaultReasoningEffort, "low");
-    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-5.6-luna" });
+    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
     assert.equal(readSource("ui/src/lib/reasoning.ts").match(/DEFAULT_REASONING_EFFORT: ReasoningEffort = "(\w+)"/)?.[1], "none");
   });
 

@@ -81,7 +81,7 @@
 提供者覆盖语义：
 
 - `api`迫使API-key 响应路径并需要配置API钥匙。
-- `oauth`迫使当地OAuth代理路径。
+- `oauth` 强制使用 GPT OAuth：服务器直接调用 ChatGPT，GPT-6 规划、`gpt-image-2` 出图。
 - `grok`使用`~/.progrok/auth.json`中的xAI OAuth会话直接调用`https://api.x.ai`。经典一代首次运行强制xAI通过响应进行网络搜索API，然后询问`grok-4.5`打电话ima2是当地的`generate_image`工具，那么ima2执行xAI `/v1/images/generations`. `grok-4.3`仍然可以作为显式兼容性覆盖使用。如果`--ref`附加图像，最后一步使用xAI `/v1/images/edits`相反，图像到图像/参考上下文被保留。型号：`grok-imagine-image`, `grok-imagine-image-quality`。大小映射到xAI `aspect_ratio`和`resolution`;这UI网络搜索切换是OpenAI-仅提供者因为Grok搜索始终在此路径中进行。
 - `agy`产生Antigravity CLI通过Google生成Gemini (`nano-banana-2`）。固定1024×1024JPEG输出，最多 3 个参考值没有网络搜索、质量、尺寸或遮罩控制。如果`agy`不在服务器进程 PATH 上，ima2还检查常见的用户本地安装，例如`~/.local/bin/agy`;放`IMA2_AGY_BIN=/absolute/path/to/agy`强制使用特定的二进制文件。
 - `gemini-api`调用 Google 生成语言API直接地。型号：`nano-banana-2` (Gemini3.1 Flash 图像）和`nano-banana-pro` (Gemini3 专业图像）。使用`--model nano-banana-2`或者`--model nano-banana-pro`来选择。支持`--size`对于直接的宽高比和分辨率 (512px–4K)API小路;Vertex AI忽略方面/大小。需要`GEMINI_API_KEY`或一个Vertex AI服务帐户（`VERTEX_SERVICE_ACCOUNT_JSON`）。切换自`agy`或者`gemini-api`提供商自动选择相应的Gemini模型;切换离开重置为GPT默认。
@@ -110,7 +110,7 @@ Grok尺寸映射如下xAI的形象API， 不是OpenAI's `size`场地。ima2
 
 ```bash
 ima2 models --kind image
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 gen "a poster of a samurai cat" --model api/gpt-5.4 --reasoning-effort high
 ima2 grok login
 ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
@@ -261,8 +261,8 @@ ima2 doctor image-probe --matrix --json > ima2-image-probe.json
 ```bash
 ima2 doctor
 ima2 doctor image-probe --json > ima2-image-probe.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json > ima2-cat-no-search.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --json > ima2-cat-current.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json > ima2-cat-no-search.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --json > ima2-cat-current.json
 ```
 
 请勿分享ChatGPT曲奇饼，OAuth令牌文件，API键、提示历史记录、原始
@@ -351,7 +351,7 @@ Windows DNS/碎片绕过工具（例如 SecretDNS）正在使用。
 | `ima2 storage open` |在操作系统文件管理器（POST）中打开生成的目录|
 | `ima2 billing` | API使用探针通过`/api/billing` (OpenAI/API- 配置后的密钥积分）。Grok和NovelAI配额仅在网页UI中通过`GET /api/quota`：当前的每周百分比/重置Grok建造xAIauth，每月遗留`usedUsd`/`limitUsd`倒退。|
 | `ima2 providers` |配置的提供商|
-| `ima2 oauth status` | OAuth代理状态|
+| `ima2 oauth status` | GPT OAuth 状态|
 | `ima2 grok status` |保存的xAI OAuth会话状态，加`--probe`可查看图像模型可见性|
 | `ima2 ping` |健康检查正在运行的服务器|
 

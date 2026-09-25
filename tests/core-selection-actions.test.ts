@@ -160,16 +160,18 @@ test("image clicks preserve compatible auth lanes and leave incompatible lanes",
   await isolated(async (storage) => {
     const runtime = await loadRuntime();
     const cases = [
-      ["grok-api", "gpt-5.6-sol", "oauth"], ["api", "gpt-5.6-sol", "api"],
-      ["gemini-api", "nano-banana-2", "gemini-api"], ["grok-api", "nai-diffusion-5-curated", "nai"],
+      ["grok-api", "gpt-5.6-sol", "oauth", "gpt-6-sol"], ["api", "gpt-5.6-sol", "api", "gpt-5.6-sol"],
+      ["gemini-api", "nano-banana-2", "gemini-api", "nano-banana-2"],
+      ["grok-api", "nai-diffusion-5-curated", "nai", "nai-diffusion-5-curated"],
     ] as const;
-    for (const [provider, model, expected] of cases) {
+    // GPT OAuth keeps only GPT-6: a legacy id lands on its GPT-6 tier; the API-key lane keeps it.
+    for (const [provider, model, expected, stored] of cases) {
       const f = fixture(runtime, { provider });
       runtime.setImageModelImpl(model, f.set, f.get);
       assert.equal(f.get().provider, expected);
-      assert.equal(f.get().imageModel, model);
+      assert.equal(f.get().imageModel, stored);
       assert.equal(storage.json(GENERATION).provider, expected);
-      assert.equal(storage.getItem(IMAGE), model);
+      assert.equal(storage.getItem(IMAGE), stored);
     }
   });
 });
@@ -185,7 +187,7 @@ test("NovelAI provider fallback and model action preserve count/multimode prefer
     assert.equal(f.get().provider, "nai");
     assert.equal(f.get().imageModel, "nai-diffusion-5-curated");
     runtime.setProviderImpl("oauth", f.set, f.get);
-    assert.equal(f.get().imageModel, "gpt-5.6-luna");
+    assert.equal(f.get().imageModel, "gpt-6-luna");
     assert.deepEqual([f.get().count, f.get().multimode], [4, true]);
     assert.deepEqual([storage.json(GENERATION).count, storage.json(GENERATION).multimode], [4, true]);
   });
@@ -213,7 +215,7 @@ test("legacy Comfy workflow hydrates without rewrite; first visit never auto-sel
     storage.values.set(IMAGE, "wf-missing-from-catalog");
     const runtime = await loadRuntime();
     assert.deepEqual(selection(runtime.useAppStore.getState()), {
-      provider: "comfy", imageModel: "gpt-5.6-luna", videoModelSelected: false,
+      provider: "comfy", imageModel: "gpt-6-luna", videoModelSelected: false,
       comfyWorkflow: "wf-missing-from-catalog", comfyVideoWorkflow: null,
     });
     assert.deepEqual(storage.writes, []);
@@ -230,7 +232,7 @@ test("Comfy image/video actions persist through real store reload, same-lane res
     const f = fixture(runtime);
     runtime.setComfyWorkflowImpl("wf-selected-image", f.set, f.get);
     runtime.setComfyVideoWorkflowImpl("wf-selected-video", f.set, f.get);
-    const expected = { provider: "comfy", imageModel: "gpt-5.6-luna", videoModelSelected: false,
+    const expected = { provider: "comfy", imageModel: "gpt-6-luna", videoModelSelected: false,
       comfyWorkflow: "wf-selected-image", comfyVideoWorkflow: "wf-selected-video" };
     assert.deepEqual(selection(f.get()), expected);
     assert.equal(storage.json(GENERATION).comfyVideoWorkflow, "wf-selected-video");

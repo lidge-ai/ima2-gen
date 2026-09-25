@@ -1,6 +1,8 @@
 import { errInfo } from "./errInfo.js";
 import { logEvent } from "./logger.js";
 import { waitForOAuthReady } from "./oauthProxy/runtime.js";
+import { oauthFetch } from "./codexBackend/index.js";
+import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "./runtimeContext.js";
 
 const AGENT_QUESTION_DEVELOPER_PROMPT = [
@@ -25,7 +27,8 @@ type AgentQuestionResult = {
 };
 
 type QuestionEndpoint = {
-  url: string;
+  /** null for GPT OAuth: the request goes through oauthFetch. */
+  url: string | null;
   headers: Record<string, string>;
 };
 
@@ -70,12 +73,12 @@ export async function requestAgentQuestionAnswer(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const signal = options.signal ? combineSignals([controller.signal, options.signal]) : controller.signal;
     try {
-      const res = await fetch(endpoint.url, {
+      const init: RequestInit = {
         method: "POST",
         headers: endpoint.headers,
         signal,
         body: JSON.stringify({
-          model: options.model || ctx.config.imageModels?.default || "gpt-5.6-luna",
+          model: migrateOAuthImageModel(options.model || ctx.config.imageModels?.default || "gpt-6-luna"),
           input: [
             { role: "developer", content: AGENT_QUESTION_DEVELOPER_PROMPT },
             { role: "user", content: question },
@@ -83,7 +86,8 @@ export async function requestAgentQuestionAnswer(
           reasoning: { effort: options.reasoningEffort || "low" },
           stream: true,
         }),
-      });
+      };
+      const res = endpoint.url ? await fetch(endpoint.url, init) : await oauthFetch(ctx, "/v1/responses", init);
       logEvent("agent_question", "response", {
         requestId: options.requestId,
         provider: options.provider,
@@ -124,7 +128,7 @@ async function resolveQuestionEndpoint(
     }
     await waitForOAuthReady(ctx);
     return {
-      url: `${ctx.oauthUrl}/v1/responses`,
+      url: null, // GPT OAuth: oauthFetch routes to the native Codex client or the proxy
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
     };
   } catch (error) {

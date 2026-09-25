@@ -93,7 +93,7 @@ const HELP = `
 ${NAI_CLI_HELP}
 
   Examples:
-    ima2 defaults set image oauth/gpt-5.6-luna
+    ima2 defaults set image oauth/gpt-6-luna
     ima2 gen "a shiba in space"
     ima2 gen "poster" --model oauth/luna --mode direct
     ima2 gen "fox logo mark" --bg transparent -o logo.png

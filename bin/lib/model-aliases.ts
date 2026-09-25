@@ -1,9 +1,7 @@
 export const IMAGE_MODEL_ALIASES = {
-  luna: "gpt-5.6-luna",
+  luna: "gpt-6-luna",
+  sol: "gpt-6-sol",
   astra: "gpt-6-astra",
-  sol: "gpt-5.6-sol",
-  terra: "gpt-5.6-terra",
-  spark: "gpt-5.3-codex-spark",
 } as const;
 
 export function canonicalizeImageModel(value: unknown): string | undefined {

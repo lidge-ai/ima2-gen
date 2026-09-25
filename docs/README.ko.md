@@ -108,7 +108,7 @@ ima2 serve
 
 ```bash
 ima2 models
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 defaults set video grok/grok-imagine-video-1.5
 ima2 gen "a clean product photo of a red guitar pedal"
 ima2 video "a cat playing piano" --duration 5 --resolution 720p
@@ -185,7 +185,7 @@ npx로 쓰려면 [npx 빠른 시작](NPX_QUICKSTART.md)을 보세요.
 - **래스터→벡터**: `ima2 vectorize`, AssetGen/Assets, 캔버스 내보내기에서 평면 래스터 그림을 실제 SVG 경로로 바꿉니다.
 - **NovelAI 이중 프롬프트**: NovelAI를 고르면 만들기, 홈, 모바일 작성 시트에 **Positive prompt**와 **Undesired content**가 나란히 나옵니다. 작성 영역이 719px보다 좁으면 두 칸이 위아래로 쌓입니다.
 - **프롬프트 라이브러리**: 로컬 프롬프트 팩, GitHub 폴더, 엄선한 GPT-image 힌트를 가져오고 로컬에서 검색합니다.
-- **Prompt Builder**: 텍스트 백엔드로 의도를 다듬습니다. Settings > Providers에서 Auto로 두거나 백엔드와 모델을 고정할 수 있고, **via &lt;backend&gt;** 배지가 실제로 답한 백엔드를 보여 줍니다. GPT 백엔드를 고르면 기본 모델은 `gpt-5.6-luna`입니다.
+- **Prompt Builder**: 텍스트 백엔드로 의도를 다듬습니다. Settings > Providers에서 Auto로 두거나 백엔드와 모델을 고정할 수 있고, **via &lt;backend&gt;** 배지가 실제로 답한 백엔드를 보여 줍니다. GPT 백엔드를 고르면 기본 모델은 `gpt-6-luna`입니다.
 - **로컬 갤러리**: 모든 이미지와 영상이 내 컴퓨터에 남고, 세션별 히스토리와 생성 시간, reasoning effort가 메타데이터에 기록됩니다. 기본으로 현재 세션만 보여 주고 All Images 토글로 전체 기록을 열 수 있으며, 고른 기본 범위는 세션이 바뀌어도 유지됩니다.
 - **라이트·다크 테마**: AA 대비를 지키는 토큰 기반 팔레트이고, 라이트·다크·시스템을 깜빡임 없이 전환합니다.
 - **모바일 셸**과 **작업 관찰**: 작은 화면용 앱 바, 작성 시트, 간단한 설정 토글, 안전한 로그와 요청 ID가 붙은 진행 중·최근 작업 목록.
@@ -216,7 +216,7 @@ ima2 skill install --tmp        # 임시 폴더에 설치 (대안)
 
 | 레인 | 인증 | 이미지 | 영상 | 메모 |
 |---|---|:-:|:-:|---|
-| `oauth` | 로컬 Codex OAuth 프록시로 ChatGPT 로그인 | ✓ | | 기본 레인, `gpt-5.6-luna` |
+| `oauth` | ChatGPT 로그인, ima2가 ChatGPT를 직접 호출 | ✓ | | 기본 레인. GPT-6가 기획하고 `gpt-image-2`가 그림, `gpt-6-luna` |
 | `api` | `OPENAI_API_KEY` | ✓ | | Responses API `image_generation` 도구, 마스크·멀티모드·노드 |
 | `grok` | xAI OAuth (`ima2 grok login`) | ✓ | ✓ | Images API 호출 전에 웹 검색과 플래너 단계 |
 | `grok-api` | `XAI_API_KEY` | ✓ | ✓ | xAI Images API 직접 호출 |
@@ -228,12 +228,12 @@ ima2 skill install --tmp        # 임시 폴더에 설치 (대안)
 | `minimax` | MiniMax API 키 | ✓ | | `image-01`, `image-01-live` |
 | `runway`, `higgsfield` | MCP 연결 | ✓ | ✓ | 별도 MCP 연동 |
 
-GPT 레인의 기본 이미지 모델은 **`gpt-5.6-luna`**입니다. `gpt-6-astra`는 가장 최신 GPT 이미지 모델로 고를 수 있고, `gpt-5.6-terra`와 `gpt-5.6-sol`은 계정에 열려 있으면 보입니다. `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`는 호환용으로 남아 있습니다. 앱에서 품질(`low`, `medium`, `high`)과 모더레이션(`auto`, `low`)도 고를 수 있습니다.
+GPT OAuth 레인은 GPT-6 모델 세 개를 씁니다. 기본값은 **`gpt-6-luna`**이고, `gpt-6-sol`과 가장 오래 추론하는 대신 가장 느린 `gpt-6-astra`를 고를 수 있습니다. 고른 모델이 이미지를 기획하고 `gpt-image-2`가 그립니다. `gpt-5.6-luna` 같은 예전 OAuth 모델 ID는 저장된 설정과 스크립트에서 그대로 동작하고, 대응하는 GPT-6 모델로 바뀝니다. API 키 레인은 자체 목록을 유지합니다: `gpt-5.6-luna`(기본), `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`. 앱에서 품질(`low`, `medium`, `high`)과 모더레이션(`auto`, `low`)도 고를 수 있습니다.
 
 <details>
 <summary><b>프로바이더 상세 (English)</b></summary>
 
-- `provider: "oauth"` uses the local Codex OAuth proxy.
+- `provider: "oauth"` signs in with your ChatGPT session and calls ChatGPT's Codex backend from the ima2 server process, with no separate proxy. A GPT-6 model plans the prompt and `gpt-image-2` renders it; Direct mode skips the planner. Transparent backgrounds and image edits run on the same lane.
 - `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool.
 - `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`, running mandatory xAI Web Search plus a planner pass (default: `grok-4.3`, configurable in settings or via `--planner-model`) before the xAI Images API call. `grok-4.5` and `grok-4.6` are also selectable. Log in once with `ima2 grok login` or the Settings **Switch Account** button; the session refreshes itself two minutes before expiry.
 - `provider: "grok-api"` calls the xAI Images API directly with `XAI_API_KEY` (no OAuth session involved).
@@ -243,7 +243,7 @@ GPT 레인의 기본 이미지 모델은 **`gpt-5.6-luna`**입니다. `gpt-6-ast
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
 - Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
 
-If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth and API-key generation default to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
+If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth defaults to `gpt-6-luna` and API-key generation to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
 
 One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
 
@@ -299,7 +299,7 @@ The server advertises its actual port at `~/.ima2/server.json`. If `3333` is bus
 
 ```bash
 ima2 models --kind image
-ima2 gen "poster" --model oauth/gpt-5.6-luna --reasoning-effort high
+ima2 gen "poster" --model oauth/gpt-6-luna --reasoning-effort high
 ima2 gen "1girl, blue hair" --model nai/nai-diffusion-5-full --nai-negative-prompt "lowres, watermark"
 ima2 vectorize logo.png -o logo.svg --json
 ima2 prompt build --message "Make this prompt production-ready" --backend auto --model auto
@@ -326,16 +326,17 @@ Full reference: [CLI.md](CLI.md).
 |---|---:|---|
 | `IMA2_PORT` / `PORT` | `3333` | Web server port |
 | `IMA2_HOST` | `127.0.0.1` | Web server bind host |
-| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | OAuth proxy port |
+| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | Port of the external GPT OAuth endpoint used with `IMA2_NO_OAUTH_PROXY=1` |
 | `IMA2_SERVER` | — | CLI target override |
 | `IMA2_CONFIG_DIR` | `~/.ima2` | Config and SQLite location |
 | `IMA2_ADVERTISE_FILE` | `~/.ima2/server.json` | Runtime discovery file |
 | `IMA2_GENERATED_DIR` | `~/.ima2/generated` | Generated image directory |
-| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Server fallback image model |
+| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
-| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to disable the auto-started OAuth proxy |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
+| `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
 | `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | Recent terminal job retention for debug views |
 | `OPENAI_API_KEY` | — | API key for the `provider: "api"` Responses API image path and auxiliary API-key features |
@@ -393,7 +394,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b>프록시/VPN 환경에서 <code>fetch failed</code>가 반복돼요</b></summary>
 
-로컬 OAuth 프록시에 접근할 수 있는지 확인하세요. 프록시가 필요한 네트워크라면 프록시 클라이언트의 TUN/TURN 계열 모드를 켜고 `openai-oauth --port 10531`을 다시 시도하세요. 그래도 안 되면 `ima2 serve`나 `openai-oauth`를 실행하는 같은 터미널에 `HTTP_PROXY`, `HTTPS_PROXY`를 설정하세요. Windows에서는 SecretDNS 같은 DNS·패킷 분할 우회 도구를 포함해 자동 실행되는 네트워크 가로채기 도구도 확인하세요. 브라우저가 연결돼 보여도 OAuth나 이미지 스트리밍을 깨뜨릴 수 있습니다.
+GPT OAuth 요청은 `ima2 serve` 프로세스에서 `chatgpt.com`으로 바로 나갑니다. 프록시가 필요한 네트워크라면 프록시 클라이언트의 TUN/TURN 계열 모드를 켜세요. 그게 어렵다면 서버를 시작하는 터미널에 `HTTPS_PROXY`와 `NODE_USE_ENV_PROXY=1`을 함께 설정하세요. Node.js 22.21 이상과 24 이상은 두 번째 변수가 있어야 `HTTPS_PROXY`를 읽고, 그보다 오래된 Node.js는 둘 다 무시하니 TUN 모드를 쓰세요. Windows에서는 SecretDNS 같은 DNS·패킷 분할 우회 도구를 포함해 자동 실행되는 네트워크 가로채기 도구도 확인하세요. 브라우저가 연결돼 보여도 OAuth나 이미지 응답을 깨뜨릴 수 있습니다.
 
 </details>
 
@@ -407,7 +408,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b><code>EMPTY_RESPONSE</code>가 나오거나 이미지 데이터가 없어요</b></summary>
 
-`ima2 doctor image-probe --json > ima2-image-probe.json`을 실행해 안전하게 정리된 JSON을 이슈에 첨부하세요. GPT OAuth 문제라면 `ima2 serve`가 켜진 상태에서 `ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json`과 `ima2 gen "고양이" --model oauth/gpt-5.6-luna --json` 결과도 함께 남겨 주세요. ChatGPT 쿠키, OAuth token 파일, API 키, 가공하지 않은 업스트림 응답, 프롬프트 히스토리, 생성된 base64는 공유하지 마세요. 자세한 내용은 [FAQ 지원 번들](FAQ.ko.md)에 있습니다.
+`ima2 doctor image-probe --json > ima2-image-probe.json`을 실행해 안전하게 정리된 JSON을 이슈에 첨부하세요. GPT OAuth 문제라면 `ima2 serve`가 켜진 상태에서 `ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json`과 `ima2 gen "고양이" --model oauth/gpt-6-luna --json` 결과도 함께 남겨 주세요. ChatGPT 쿠키, OAuth token 파일, API 키, 가공하지 않은 업스트림 응답, 프롬프트 히스토리, 생성된 base64는 공유하지 마세요. 자세한 내용은 [FAQ 지원 번들](FAQ.ko.md)에 있습니다.
 
 </details>
 
@@ -426,9 +427,9 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 </details>
 
 <details>
-<summary><b><code>gpt-5.5</code>만 실패하고 다른 모델은 돼요</b></summary>
+<summary><b>GPT OAuth 레인에서 GPT-6 모델이 안 보이거나 거절돼요</b></summary>
 
-먼저 Codex CLI를 업데이트하고 다시 시도하세요. 그래도 실패하면 계정이나 백엔드 경로에 `gpt-5.5` 이미지 기능이나 한도가 아직 열리지 않은 것일 수 있으니 `gpt-5.4`를 안정적인 대안으로 쓰세요.
+GPT OAuth 레인은 ChatGPT 요금제에 열린 GPT-6 모델을 씁니다. ima2-gen을 업데이트하고 `ima2 gpt login`으로 다시 로그인한 뒤 `ima2 models --kind image`로 확인하세요. 특정 모델만 계속 실패하면 기본값인 `gpt-6-luna`로 바꿔 보세요.
 
 </details>
 
@@ -436,13 +437,6 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <summary><b>앱이 다른 포트로 열렸어요</b></summary>
 
 요청한 포트가 쓰이고 있으면 다음 빈 포트로 뜨고 `~/.ima2/server.json`에 기록합니다. 포트가 뜻밖에 `3457`이라면 셸이 다른 로컬 도구에서 `PORT=3457`을 물려받았을 수 있습니다. `unset PORT`를 실행하거나 `IMA2_PORT=3333 ima2 serve`로 시작하세요.
-
-</details>
-
-<details>
-<summary><b>Windows에서 <code>10531</code> 포트가 이미 쓰이고 있어요</b></summary>
-
-`AnySign4PC.exe` 같은 Windows 보안 도구가 기본 OAuth 프록시 포트를 점유할 수 있습니다. 최신 버전은 실제 대체 OAuth 포트를 추적합니다. 직접 바꿔야 한다면 `IMA2_OAUTH_PROXY_PORT=11531 ima2 serve`로 시작하고 `ima2 doctor`를 확인하세요.
 
 </details>
 

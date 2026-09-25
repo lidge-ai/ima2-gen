@@ -79,8 +79,8 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 619 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 523 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `server.ts` | 585 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
+| `config.ts` | 530 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 95 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 116 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
@@ -93,7 +93,7 @@ routes/
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
 | `routes/history.ts` | 235 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
-| `routes/health.ts` | 147 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
+| `routes/health.ts` | 151 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
 | `routes/mcpConnections.ts` | 164 | MCP provider list/status/connect/callback/refresh/disconnect/model routes; truthful state-to-HTTP mapping and secret-free responses |
 | `routes/storage.ts` | 48 | Gallery storage status and generated-folder open action |
 | `routes/metadata.ts` | 81 | `/api/metadata/read` for embedded XMP image metadata extraction |
@@ -129,14 +129,14 @@ routes/
 | `bin/commands/metadata.ts` | 51 | CLI image metadata read client |
 | `bin/commands/comfy.ts` | 330 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
 | `bin/commands/models.ts` | 101 | Human/JSON model catalog with lane/kind/id/label/lane status/model lock status/capabilities |
-| `bin/lib/modelResolver.ts` | 189 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
+| `bin/lib/modelResolver.ts` | 197 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
 | `bin/commands/cardnews.ts` | 251 | CLI dev-gated card-news client |
 | `bin/commands/config.ts` | 194 | CLI config get/set client |
 | `bin/commands/observability.ts` | 178 | Shared CLI handler for `storage`, `billing`, `providers`, `oauth`, and `inflight` aliases (`ima2.ts` routes those commands here) |
 | `bin/commands/doctor.ts` | 313 | CLI diagnostics: storage, OAuth, providers, image probe |
 | `bin/commands/gpt.ts` | 211 | ChatGPT (GPT OAuth) login/status/logout; `ima2 login` delegates here |
 | `bin/commands/grok.ts` | 252 | Grok OAuth login and status helpers |
-| `bin/commands/defaults.ts` | 284 | CLI default provider/model/size/reasoning-effort get/set |
+| `bin/commands/defaults.ts` | 306 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 145 | CLI wrapper for `GET /api/capabilities` |
 | `bin/commands/skill.ts` | 402 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
 | `bin/commands/backfillThumbs.ts` | 35 | Gallery thumbnail backfill command |
@@ -196,7 +196,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
 | `lib/mcp/shutdown.ts` | 24 | Post-listen restore activation plus concurrent HTTP/MCP shutdown coordination and grace bound |
 | `lib/mcp/snapshotPipeline.ts` | 113 | Generation/epoch-safe live tool snapshot ingest and stale-result suppression |
-| `lib/oauthLauncher.ts` | 162 | OAuth proxy child process startup and actual ready-port capture |
+| `lib/codexBackend/index.ts` | 151 | GPT OAuth transport: in-process Codex backend routes (`/v1/responses`, chat, images, models) or an external endpoint |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
 | `lib/oauthProxy/generators.ts` | 231 | OAuth Responses single-image generation and stable generator exports |
@@ -212,23 +212,23 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/streams.ts` | 245 | SSE/event-stream helpers and safe stream diagnostics |
 | `lib/oauthProxy/prompts.ts` | 158 | Prompt assembly with injected `SAFETY_INTENT_POLICY` from `lib/promptSafetyPolicy.ts` |
 | `lib/oauthProxy/references.ts` | 46 | Reference image preparation and validation for the OAuth path |
-| `lib/oauthProxy/runtime.ts` | 119 | OAuth runtime context and request execution |
+| `lib/oauthProxy/runtime.ts` | 141 | OAuth runtime context and request execution |
 | `lib/oauthProxy/errors.ts` | 129 | OAuth-specific error codes and normalization |
-| `lib/oauthProxy/types.ts` | 10 | Shared OAuth proxy types (re-exported from `index`) |
+| `lib/oauthProxy/types.ts` | 10 | Shared GPT OAuth prompt/runtime types (re-exported from `index`) |
 | `lib/promptSafetyPolicy.ts` | 3 | `SAFETY_INTENT_POLICY` constant: 3-line intent policy injected by oauthProxy/prompts and the API-key Responses adapter |
 | `lib/responsesImageAdapter.ts` | 6 | Compatibility re-exports of the three OpenAI operations; existing agent/sprite imports remain valid |
-| `lib/responsesTransport.ts` | 240 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
+| `lib/responsesTransport.ts` | 334 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
 | `lib/providers/adapters/openaiTypes.ts` | 30 | Original positional-operation reference/options types, unchanged optional fields |
-| `lib/providers/adapters/openaiOperations.ts` | 251 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
+| `lib/providers/adapters/openaiOperations.ts` | 366 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
 | `lib/providers/adapters/openaiExecution.ts` | 142 | Typed four-surface OpenAI owner, classic retry and native callback/result mapping |
 | `lib/providerOptions.ts` | 179 | Per-provider option assembly; rejects catalog-only Comfy video workflows on the classic image path |
-| `lib/runtimeContext.ts` | 227 | Per-request runtime context plumbing for routes and lib helpers |
+| `lib/runtimeContext.ts` | 232 | Per-request runtime context plumbing for routes and lib helpers |
 | `lib/errInfo.ts` | 73 | Error info shape and helpers shared across routes/lib |
 | `lib/oauthNormalize.ts` | 51 | Upstream OAuth response field normalization |
 | `lib/openDirectory.ts` | 60 | Cross-platform open of the generated directory (used by `/api/storage/open-generated-dir`) |
 | `lib/refs.ts` | 175 | Reference image validation, count/size limits |
 | `lib/referenceImageCompress.ts` | 85 | Sharp-based reference image compression below the configured byte cap |
-| `lib/imageModels.ts` | 415 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
+| `lib/imageModels.ts` | 434 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
 | `lib/imageMetadata.ts` | 131 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
 | `lib/imageMetadataStore.ts` | 84 | Sharp-based embed/read of XMP metadata into PNG/JPEG/WebP |
 | `lib/canvasVersionStore.ts` | 360 | Canvas version snapshot storage, list, restore, and pruning |
@@ -237,7 +237,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/naiOptions.ts` | 145 | NovelAI request-option normalizer shared by every request-driven dispatch, plus negative-prompt history provenance |
 | `lib/naiZip.ts` | 153 | Minimal ZIP reader for NovelAI responses: stored/deflate entries, ZIP64 and encryption refusal, 50MB entry cap |
 | `lib/providers/adapters/nai.ts` | 142 | NovelAI provider-registry adapter binding: capability declaration and `normalizeError` mapping |
-| `lib/providers/registry.ts` | 289 | Provider lane manifests: the single declaration every generated catalog, capability list, and CLI enum derives from |
+| `lib/providers/registry.ts` | 285 | Provider lane manifests: the single declaration every generated catalog, capability list, and CLI enum derives from |
 | `lib/providers/types.ts` | 95 | Manifest/credential types, explicit model generation support, and provider surface records |
 | `lib/providers/derive.ts` | 97 | Registry-bound provider IDs, catalogs, reference limits and surface support |
 | `lib/providers/surfaceSupport.ts` | 31 | Pure application-surface projection, independent of readiness; static versus runtime catalogs |
@@ -258,11 +258,11 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/cardNewsRoleTemplateStore.ts` | 48 | Built-in role-template list (`mid-5`, etc.) |
 | `lib/cardNewsManifestStore.ts` | 150 | Per-set manifest and sidecar persistence under `~/.ima2/generated/cardnews/` |
 | `lib/cardNewsJobStore.ts` | 153 | In-memory card-news job/card status, retry/finish helpers |
-| `lib/cardNewsPlanner.ts` | 237 | Deterministic and planner-driven card-news draft creation |
-| `lib/cardNewsPlannerClient.ts` | 156 | OAuth-Responses JSON planner request wrapper |
+| `lib/cardNewsPlanner.ts` | 238 | Deterministic and planner-driven card-news draft creation |
+| `lib/cardNewsPlannerClient.ts` | 162 | OAuth-Responses JSON planner request wrapper |
 | `lib/cardNewsPlannerPrompt.ts` | 87 | Card-news planner prompt builder |
 | `lib/cardNewsPlannerSchema.ts` | 322 | Card-news planner JSON schema, validation, and repair |
-| `lib/cardNewsGenerator.ts` | 308 | Card-by-card image assembly orchestrator |
+| `lib/cardNewsGenerator.ts` | 310 | Card-by-card image assembly orchestrator |
 | `lib/cardNewsPath.ts` | 30 | Generated card-news set path construction and validation helpers |
 | `lib/agyCli.ts` | 44 | Antigravity CLI discovery and process execution helpers |
 | `lib/agyImageAdapter.ts` | 3 | Compatibility reexports for Agy operation/result and recent artifact lookup |
@@ -312,10 +312,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/nodeTemplateFile.ts` | 320 | Portable template file format: allowlist graph rebuild, strict import parsing, fixed error codes, download and duplicate names |
 | `lib/presetCompiler.ts` | 67 | Named preset prompt compilation helpers |
-| `lib/responsesDoctor.ts` | 457 | Responses API diagnostics and provider health checks |
+| `lib/responsesDoctor.ts` | 498 | Responses API diagnostics and provider health checks |
 | `lib/responsesErrors.ts` | 94 | Responses API error normalization helpers |
 | `lib/responsesFallback.ts` | 174 | Responses API fallback routing helpers |
-| `lib/responsesParse.ts` | 444 | Responses API output parsing and normalization |
+| `lib/responsesParse.ts` | 469 | Responses API output parsing and normalization |
 | `lib/diagnosticLabel.ts` | 53 | Dependency-free `safeDiagnosticLabel`: accepts short upstream code/type/param labels, redacts long values, sentences and credential shapes |
 | `lib/responsesTools.ts` | 41 | Responses API tool-call definitions and helpers |
 | `lib/routeHelpers.ts` | 57 | Shared Express route request/response helpers |
@@ -347,19 +347,19 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentTypes.ts` | 185 | Shared Agent Mode types |
 | `lib/agentStore.ts` | 456 | SQLite session/turn persistence |
 | `lib/agentStoreRows.ts` | 137 | Row mapping helpers for agent store |
-| `lib/agentSettings.ts` | 77 | Per-session generation settings |
+| `lib/agentSettings.ts` | 96 | Per-session generation settings |
 | `lib/agentRuntime.ts` | 440 | Turn execution, tool dispatch, generation delegation |
 | `lib/agentQueueStore.ts` | 367 | Durable async queue persistence |
 | `lib/agentQueueWorker.ts` | 226 | Background queue worker |
 | `lib/agentCommandParser.ts` | 77 | Slash-command parsing |
 | `lib/agentToolManifest.ts` | 31 | Tool metadata for `/api/agent/tools` |
-| `lib/agentPlannerModel.ts` | 203 | Planner model selection |
+| `lib/agentPlannerModel.ts` | 205 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 356 | Generation plan assembly |
 | `lib/agentImageVideoGen.ts` | 477 | Image/video generation caller for agent turns |
-| `lib/agentQuestionResponder.ts` | 275 | `/question` responder |
-| `lib/promptBuilder/constants.ts` | 32 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
-| `lib/promptBuilder/router.ts` | 136 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |
-| `lib/promptBuilder/client.ts` | 201 | Request normalization, backend/model resolution, safe fallback logging, one-shot upstream request, and resolved-backend response metadata |
+| `lib/agentQuestionResponder.ts` | 279 | `/question` responder |
+| `lib/promptBuilder/constants.ts` | 34 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
+| `lib/promptBuilder/router.ts` | 140 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |
+| `lib/promptBuilder/client.ts` | 207 | Request normalization, backend/model resolution, safe fallback logging, one-shot upstream request, and resolved-backend response metadata |
 
 ## UI File Map
 
@@ -392,8 +392,8 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 310 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 31 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 265 | UI-side image model labels and `resolveCoreModelValue` lane gating |
-| Core selection policy | `ui/src/lib/coreSelection.ts` | 142 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
+| Image models | `ui/src/lib/imageModels.ts` | 276 | UI-side image model labels and `resolveCoreModelValue` lane gating |
+| Core selection policy | `ui/src/lib/coreSelection.ts` | 155 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
 | Core selection persistence | `ui/src/store/coreSelectionPersistence.ts` | 59 | Legacy active snapshot and bounded versioned lane-memory storage boundary |
 | Core selection actions | `ui/src/store/storeCoreSelectionImpl.ts` | 84 | One selection patch for provider/image/video/workflow choices, including explicit slot clearing |
 | Core generation mode | `ui/src/lib/coreGenerationMode.ts` | 30 | Shared derived image/multimode/video decision for dispatch and composer chrome; no preference writes |

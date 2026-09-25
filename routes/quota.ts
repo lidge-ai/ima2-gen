@@ -23,7 +23,7 @@ export interface QuotaResult {
   nai?: { active: boolean; isNegative: boolean; anlasFixed: number; anlasPurchased: number; meter: "charge" | "missing" };
 }
 
-/** Same file the GPT OAuth proxy reads (ima2 store first, then Codex CLI files). */
+/** Same file GPT OAuth reads (ima2 store first, then Codex CLI files). */
 function readCodexTokens(): { access_token: string; account_id: string } | null {
   const access = readChatgptAccess();
   return access ? { access_token: access.accessToken, account_id: access.accountId } : null;

@@ -31,6 +31,11 @@ export interface RuntimeContext {
   oauthReadyState: OAuthReadyState;
   oauthUrl: string;
   /**
+   * "native": GPT OAuth calls go straight to chatgpt.com/backend-api/codex (lib/codexBackend).
+   * "proxy" (default when unset): HTTP to `oauthUrl`, for an external proxy and for tests.
+   */
+  oauthTransport?: "native" | "proxy" | undefined;
+  /**
    * Respawn the GPT OAuth proxy so it reads the current session file. Set by server.ts once
    * the proxy launcher exists; undefined in tests and when the proxy is not auto-started.
    */

@@ -32,7 +32,6 @@ files:
   - routes/**/*.js
   - ui/dist/**
   - skills/**
-  - vendor/**
   - assets/card-news/templates/**
   - assets/mcp-snapshots/**
   - assets/logo.png

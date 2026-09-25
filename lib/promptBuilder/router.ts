@@ -21,6 +21,8 @@ export type PromptBuilderTransportTarget = {
   url: string;
   headers: Record<string, string>;
   useOAuthFetch: boolean;
+  /** GPT OAuth only: the /v1 path and context oauthFetch routes (native client or proxy). */
+  oauth?: { ctx: RuntimeContext; path: string };
 };
 
 function unavailableBackendError(backend: ResolvedPromptBuilderBackend): Error {
@@ -109,10 +111,12 @@ export async function resolvePromptBuilderTransport(
   try {
     if (backend === "oauth") {
       await waitForOAuthReady(ctx);
+      const path = endpoint === "responses" ? "/v1/responses" : "/v1/chat/completions";
       return {
-        url: `${ctx.oauthUrl}${endpoint === "responses" ? "/v1/responses" : "/v1/chat/completions"}`,
+        url: `${ctx.oauthUrl}${path}`,
         headers: { "Content-Type": "application/json" },
         useOAuthFetch: true,
+        oauth: { ctx, path },
       };
     }
     if (backend === "api") {

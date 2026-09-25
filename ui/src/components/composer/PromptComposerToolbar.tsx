@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { continueFromItem } from "../../lib/continueFromItem";
+import { DEFAULT_IMAGE_MODEL } from "../../lib/imageModels";
 import { useI18n } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
 import { SavePromptPopover } from "../SavePromptPopover";
@@ -56,7 +57,7 @@ export function PromptComposerToolbar({ canAddMore, onAttach }: PromptComposerTo
           className={`composer__tool${videoModelSelected ? " composer__tool--on" : ""}`}
           onClick={() => {
             if (videoModelSelected) {
-              setImageModel("gpt-5.6-luna");
+              setImageModel(DEFAULT_IMAGE_MODEL);
             } else {
               selectVideoModel("grok-imagine-video-1.5");
             }
