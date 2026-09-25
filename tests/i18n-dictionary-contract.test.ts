@@ -51,6 +51,11 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
     "sizeConfirm.reasonRatio", "sizeConfirm.reasonPixels", "sizeConfirm.reasonMinPixels",
     "sizeConfirm.reasonMin", "sizeConfirm.reasonMax", "sizeConfirm.reasonSnap",
   ]],
+  // GROK_IMAGE_MODEL_OPTIONS fullLabelKey literals in ui/src/lib/imageModels.ts.
+  ["ui/src/components/GrokModelPicker.tsx :: option.fullLabelKey", [
+    "settings.imageModel.grokImagine20", "settings.imageModel.grokImagineQuality",
+    "settings.imageModel.grokImagine",
+  ]],
   // CHAINING_ACTIONS labelKey literals in ui/src/lib/resultChaining.ts.
   ["ui/src/components/GalleryImageTile.tsx :: action.labelKey", [
     "chain.animate", "chain.edit", "chain.useAsRef", "chain.rebake",
