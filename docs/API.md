@@ -1273,6 +1273,9 @@ download/commit step failed transiently — provider assets stay fetchable for
 download (with retry + IPv4 fallback) → single-persistence commit path as a
 normal generation. Async: `202 { requestId, taskId }`; `done` carries
 `recovered: true`.
+`requestId` dedupes only while the job is still running — a retry with the
+same id returns `409 REQUEST_ID_IN_USE`, and once the job settles a new
+recover may reuse it (same scope as `/api/mcp/generate`).
 Catalog-only providers (e.g. Higgsfield on a free plan) return
 `409 MCP_EXECUTION_LOCKED`, same as `/api/mcp/generate`.
 

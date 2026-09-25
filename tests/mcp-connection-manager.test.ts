@@ -297,6 +297,30 @@ test("an abandoned pending auth is swept on status reads after the TTL", async (
   assert.ok(h.transports[0].closeCalls >= 1);
 });
 
+test("a superseded pending cannot disconnect the attached session at its TTL", async (t) => {
+  let now = 100;
+  const h = makeHarness(t, {
+    now: () => now,
+    pendingAuthTtlMs: 10,
+    connects: [
+      async (transport) => {
+        transport.authProvider.redirectToAuthorization(new URL("https://provider.example/authorize"));
+        throw new UnauthorizedError("Unauthorized");
+      },
+      async () => undefined,
+    ],
+  });
+  const first = await h.manager.connect("runway");
+  assert.equal(first.state, "auth_required");
+  // A retry in the same generation connects: the leftover pending is dropped
+  // at connect success, so its later expiry cannot touch the attached session.
+  const second = await h.manager.connect("runway");
+  assert.equal(second.state, "connected");
+  assert.equal((h.manager as unknown as { pendingAuth: Map<string, unknown> }).pendingAuth.size, 0);
+  now = 500;
+  assert.equal(h.manager.status("runway").state, "connected");
+});
+
 test("reset cancels old work but preserves credentials", async (t) => {
   const gate = deferred();
   const h = makeHarness(t, { connects: [() => gate.promise] });

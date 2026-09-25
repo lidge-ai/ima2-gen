@@ -85,7 +85,22 @@ export class McpConnectionManager {
       this.pendingAuth.delete(state);
       removeCandidate(this.candidates, pending.provider, pending.transport);
       void pending.transport.close().catch(() => undefined);
-      if (this.isCurrent(pending.provider, pending.generation)) this.markDisconnected(pending.provider);
+      // Only a still-auth_required session belongs to the expired attempt — a
+      // successful reconnect may already have attached a connected session.
+      const session = this.sessions.get(pending.provider);
+      if (session?.state === "auth_required" && this.isCurrent(pending.provider, pending.generation)) {
+        this.markDisconnected(pending.provider);
+      }
+    }
+  }
+  /** A successful connect supersedes the provider's pending OAuth attempts;
+   *  dropping them keeps their expiry from touching the attached session. */
+  private dropProviderPendings(provider: string): void {
+    for (const [state, pending] of this.pendingAuth) {
+      if (pending.provider !== provider) continue;
+      this.pendingAuth.delete(state);
+      removeCandidate(this.candidates, provider, pending.transport);
+      void pending.transport.close().catch(() => undefined);
     }
   }
   private isCurrent(provider: string, generation: number): boolean {
@@ -161,6 +176,7 @@ export class McpConnectionManager {
       await connectClient(client, transport, requestOptions);
       if (!this.isCurrent(provider, generation)) return this.closeStale(provider, transport);
       removeCandidate(this.candidates, provider, transport);
+      this.dropProviderPendings(provider);
       Object.assign(session, {
         state: "connected",
         client,
