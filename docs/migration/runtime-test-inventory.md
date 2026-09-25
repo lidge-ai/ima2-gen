@@ -315,6 +315,7 @@ Total: 516 (runtime: 234, contract: 282)
 - `tests/cli-destructive-safety-contract.test.js`
 - `tests/cli-doctor-status-contract.test.js`
 - `tests/cli-feature-parity-contract.test.js`
+- `tests/cli-grok-login.test.ts`
 - `tests/cli-help-safety-contract.test.js`
 - `tests/cli-output-recovery-contract.test.js`
 - `tests/cli-prompt-builder-contract.test.js`

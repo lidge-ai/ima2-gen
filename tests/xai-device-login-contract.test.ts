@@ -145,6 +145,53 @@ describe("lib/xaiDeviceLogin runXaiDeviceLogin", () => {
     assert.throws(() => readFileSync(grokAuthFilePath(homeDir), "utf8"));
   });
 
+  it("keeps polling through transient transport and 5xx failures", async () => {
+    const codes: XaiDeviceCodeInfo[] = [];
+    let polls = 0;
+    const fetchImpl = stubFetch(async (url) => {
+      if (url === DISCOVERY_URL) return jsonResponse(200, discoveryBody());
+      if (url === DEVICE_URL) {
+        return jsonResponse(200, {
+          device_code: "device-123", user_code: "ABCD-EFGH",
+          verification_uri: "https://x.ai/device", expires_in: 600, interval: 1,
+        });
+      }
+      if (url === TOKEN_URL) {
+        polls += 1;
+        if (polls === 1) throw new Error("socket hang up");
+        if (polls === 2) return jsonResponse(503, {});
+        return jsonResponse(200, { access_token: "access-new", refresh_token: "r", expires_in: 3600 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const creds = await runXaiDeviceLogin({
+      onUserCode: (info) => codes.push(info),
+      homeDir, fetchImpl, sleep: async (ms) => { sleeps.push(ms); },
+    });
+    assert.equal(creds.accessToken, "access-new");
+    assert.equal(polls, 3);
+    assert.equal(sleeps.length, 3, "each retryable poll is followed by a normal interval wait");
+  });
+
+  it("gives up after three consecutive transient poll failures", async () => {
+    const fetchImpl = stubDeviceFlow([jsonResponse(503, {}), jsonResponse(503, {}), jsonResponse(503, {})]);
+    await assert.rejects(
+      runXaiDeviceLogin({ onUserCode: () => {}, homeDir, fetchImpl, sleep: async (ms) => { sleeps.push(ms); } }),
+      /token endpoint kept failing.*503/,
+    );
+    assert.throws(() => readFileSync(grokAuthFilePath(homeDir), "utf8"));
+  });
+
+  it("still fails fast on a terminal OAuth error between transient ones", async () => {
+    const fetchImpl = stubDeviceFlow([jsonResponse(503, {}), jsonResponse(400, { error: "access_denied" })]);
+    await assert.rejects(
+      runXaiDeviceLogin({ onUserCode: () => {}, homeDir, fetchImpl, sleep: async (ms) => { sleeps.push(ms); } }),
+      /access_denied/,
+    );
+    assert.equal(calls.filter((url) => url === TOKEN_URL).length, 2, "a denial is not retried");
+  });
+
   it("rejects a terminal OAuth error without writing a session", async () => {
     const fetchImpl = stubDeviceFlow([jsonResponse(400, { error: "access_denied" })]);
     await assert.rejects(

@@ -7,7 +7,7 @@
  * flow in-process when no server answers.
  */
 import { parseArgs } from "../lib/args.js";
-import { findRunningServer, request } from "../lib/client.js";
+import { findRunningServer, request, type CliRequestError } from "../lib/client.js";
 import { color, die, json, out } from "../lib/output.js";
 import {
   clearGrokCredentials,
@@ -146,7 +146,13 @@ async function loginViaServer(base: string): Promise<void> {
   const deadline = Date.now() + start.expiresIn * 1000;
   while (Date.now() < deadline) {
     await sleep(POLL_INTERVAL_MS);
-    const poll = await request(base, `/api/auth/switch/${encodeURIComponent(start.sessionId)}`) as SwitchPoll;
+    // A 404 means the session is gone (server restarted or reaped it): report it as the
+    // expired login it is, not as a bare HTTP status the user cannot act on.
+    const poll = await request(base, `/api/auth/switch/${encodeURIComponent(start.sessionId)}`)
+      .catch((error: unknown) => {
+        if ((error as CliRequestError).status === 404) return { status: "expired" } satisfies SwitchPoll;
+        throw error;
+      }) as SwitchPoll;
     if (poll.status === "complete") return;
     if (poll.status === "error") throw new Error(poll.error || "xAI device login failed");
     if (poll.status === "expired") throw new Error("xAI device login expired before it was approved");
