@@ -2,20 +2,12 @@ import { BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mountTitlebarLayout } from "./titlebar.mjs";
+import { isExternalWebUrl, isLocalServerUrl, resolveWindowOpen } from "./window-open.mjs";
 
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const PRELOAD = join(desktopDir, "preload.cjs");
 const LOADING_PAGE = join(desktopDir, "pages", "loading.html");
 const SETTINGS_PAGE = join(desktopDir, "pages", "settings.html");
-
-function isLocalServerUrl(target, serverUrl) {
-  if (!serverUrl) return false;
-  try {
-    return new URL(target).origin === new URL(serverUrl).origin;
-  } catch {
-    return false;
-  }
-}
 
 export class WindowManager {
   constructor({ getServerUrl, getSettings, iconPath, onVisibilityChange, onHiddenToTray }) {
@@ -81,14 +73,15 @@ export class WindowManager {
     win.on("hide", () => this.onVisibilityChange());
     win.on("show", () => this.onVisibilityChange());
     content.webContents.setWindowOpenHandler(({ url }) => {
-      if (isLocalServerUrl(url, this.getServerUrl())) return { action: "allow" };
-      void shell.openExternal(url);
+      const outcome = resolveWindowOpen(url, this.getServerUrl());
+      if (outcome === "allow") return { action: "allow" };
+      if (outcome === "external") void shell.openExternal(url);
       return { action: "deny" };
     });
     content.webContents.on("will-navigate", (e, url) => {
       if (isLocalServerUrl(url, this.getServerUrl()) || url.startsWith("file:")) return;
       e.preventDefault();
-      void shell.openExternal(url);
+      if (isExternalWebUrl(url)) void shell.openExternal(url);
     });
     // A server that is up but fails the page load would otherwise leave Chromium's error
     // page with no way back; show the loading screen (and its restart/log actions) instead.
