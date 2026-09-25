@@ -63,6 +63,18 @@ describe("current model defaults: runtime contract", () => {
       getImageModelOptionsForProvider("api").map((option) => option.value),
       ["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
     );
+    // Gemini lanes share model ids; each lane lists only its own rows, so a
+    // value-keyed picker never shows the agy label under the API lane.
+    for (const lane of ["agy", "gemini-api"] as const) {
+      const rows = getImageModelOptionsForProvider(lane);
+      assert.ok(rows.length > 0, lane);
+      assert.equal(new Set(rows.map((option) => option.value)).size, rows.length, lane);
+      assert.ok(rows.every((option) => option.providerHint === lane), lane);
+    }
+    assert.deepEqual(
+      getImageModelOptionsForProvider("gemini-api").map((option) => option.shortLabel),
+      ["nb2 api", "nbp api"],
+    );
     // The two GPT pickers are maintained by hand in different files, so pin the
     // OAuth order here too: without this they can silently drift apart, which is
     // how a model ends up selectable in one surface and missing from the other.
