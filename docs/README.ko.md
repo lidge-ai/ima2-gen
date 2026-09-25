@@ -334,7 +334,7 @@ Full reference: [CLI.md](CLI.md).
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
 | `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
@@ -394,7 +394,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b>프록시/VPN 환경에서 <code>fetch failed</code>가 반복돼요</b></summary>
 
-GPT OAuth 요청은 `ima2 serve` 프로세스에서 `chatgpt.com`으로 바로 나갑니다. 프록시가 필요한 네트워크라면 프록시 클라이언트의 TUN/TURN 계열 모드를 켜세요. 그게 어렵다면 서버를 시작하는 터미널에 `HTTPS_PROXY`와 `NODE_USE_ENV_PROXY=1`을 함께 설정하세요. 두 번째 변수가 없으면 Node.js는 `HTTPS_PROXY`를 무시합니다. Windows에서는 SecretDNS 같은 DNS·패킷 분할 우회 도구를 포함해 자동 실행되는 네트워크 가로채기 도구도 확인하세요. 브라우저가 연결돼 보여도 OAuth나 이미지 응답을 깨뜨릴 수 있습니다.
+GPT OAuth 요청은 `ima2 serve` 프로세스에서 `chatgpt.com`으로 바로 나갑니다. 프록시가 필요한 네트워크라면 프록시 클라이언트의 TUN/TURN 계열 모드를 켜세요. 그게 어렵다면 서버를 시작하는 터미널에 `HTTPS_PROXY`와 `NODE_USE_ENV_PROXY=1`을 함께 설정하세요. Node.js 22.21 이상과 24 이상은 두 번째 변수가 있어야 `HTTPS_PROXY`를 읽고, 그보다 오래된 Node.js는 둘 다 무시하니 TUN 모드를 쓰세요. Windows에서는 SecretDNS 같은 DNS·패킷 분할 우회 도구를 포함해 자동 실행되는 네트워크 가로채기 도구도 확인하세요. 브라우저가 연결돼 보여도 OAuth나 이미지 응답을 깨뜨릴 수 있습니다.
 
 </details>
 

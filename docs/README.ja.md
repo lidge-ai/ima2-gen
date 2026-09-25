@@ -334,7 +334,7 @@ Full reference: [CLI.md](CLI.md).
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
 | `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
@@ -394,7 +394,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b>プロキシ/VPN 環境で <code>fetch failed</code> が繰り返される</b></summary>
 
-GPT OAuth のリクエストは `ima2 serve` のプロセスから `chatgpt.com` へ直接送られます。プロキシが必要なネットワークでは、プロキシクライアントの TUN/TURN 系モードを有効にしてください。それが難しい場合は、サーバーを起動するターミナルで `HTTPS_PROXY` と `NODE_USE_ENV_PROXY=1` を両方設定します。2 つ目の変数がないと Node.js は `HTTPS_PROXY` を無視します。Windows では SecretDNS のような DNS・パケット分割回避ツールを含む、自動起動のネットワーク傍受ツールも確認してください。ブラウザがつながって見えても、OAuth や画像の応答が壊れることがあります。
+GPT OAuth のリクエストは `ima2 serve` のプロセスから `chatgpt.com` へ直接送られます。プロキシが必要なネットワークでは、プロキシクライアントの TUN/TURN 系モードを有効にしてください。それが難しい場合は、サーバーを起動するターミナルで `HTTPS_PROXY` と `NODE_USE_ENV_PROXY=1` を両方設定します。Node.js 22.21 以降と 24 以降は 2 つ目の変数があるときだけ `HTTPS_PROXY` を読みます。それより古い Node.js はどちらも無視するので、TUN モードを使ってください。Windows では SecretDNS のような DNS・パケット分割回避ツールを含む、自動起動のネットワーク傍受ツールも確認してください。ブラウザがつながって見えても、OAuth や画像の応答が壊れることがあります。
 
 </details>
 

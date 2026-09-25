@@ -110,7 +110,7 @@ export async function collectCompletedResponse(body: ReadableStream<Uint8Array>)
   return result;
 }
 
-const EDIT_SCALARS = ["model", "prompt", "background", "quality", "size", "n"] as const;
+const EDIT_SCALARS = ["model", "prompt", "background", "quality", "size", "moderation", "output_format", "n"] as const;
 
 /** The Codex images edit endpoint takes JSON with data-URL images; accept the OpenAI multipart shape too. */
 export async function editsFormToJson(form: FormData): Promise<Json> {

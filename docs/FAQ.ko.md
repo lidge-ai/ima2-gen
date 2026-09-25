@@ -301,7 +301,7 @@ generated base64는 공유하지 마세요.
 
 GPT OAuth 요청은 `ima2 serve` 프로세스에서 `chatgpt.com`으로 바로 나갑니다. 그래서 그 프로세스의 네트워크 경로가 중요합니다.
 
-프록시가 필요한 네트워크라면 터미널 프로세스도 프록시를 타도록 프록시 클라이언트의 TUN/TURN류 모드를 켜세요. Windows에서는 SecretDNS처럼 부팅 때 자동 실행되는 DNS/파편화 우회 프로그램도 잠시 끄고 재시도해 보세요. 그래도 안 되면 `ima2 serve`를 시작하는 터미널에 프록시를 설정하세요. Node.js는 `NODE_USE_ENV_PROXY=1`이 함께 있어야 `HTTPS_PROXY`를 읽습니다.
+프록시가 필요한 네트워크라면 터미널 프로세스도 프록시를 타도록 프록시 클라이언트의 TUN/TURN류 모드를 켜세요. Windows에서는 SecretDNS처럼 부팅 때 자동 실행되는 DNS/파편화 우회 프로그램도 잠시 끄고 재시도해 보세요. 그래도 안 되면 `ima2 serve`를 시작하는 터미널에 프록시를 설정하세요. Node.js 22.21 이상과 24 이상은 `NODE_USE_ENV_PROXY=1`이 함께 있어야 `HTTPS_PROXY`를 읽습니다. 그보다 오래된 Node.js는 둘 다 무시하니 TUN 모드를 쓰세요.
 
 ```bash
 export HTTPS_PROXY=http://127.0.0.1:7890

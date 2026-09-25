@@ -334,7 +334,7 @@ Full reference: [docs/CLI.md](CLI.md).
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
 | `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
@@ -394,7 +394,7 @@ Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when
 <details>
 <summary><b>在代理/VPN 網路中反覆出現 <code>fetch failed</code></b></summary>
 
-GPT OAuth 請求由 `ima2 serve` 行程直接送往 `chatgpt.com`。需要代理的網路請開啟代理用戶端的 TUN/TURN 類模式。若無法這麼做，請在啟動伺服器的終端機同時設定 `HTTPS_PROXY` 與 `NODE_USE_ENV_PROXY=1`；少了第二個變數，Node.js 會忽略 `HTTPS_PROXY`。在 Windows 上，也請檢查開機自動啟動的網路攔截工具，包括 SecretDNS 這類 DNS/封包分割繞過工具，即使瀏覽器看起來正常，它們也可能破壞 OAuth 或影像回應。
+GPT OAuth 請求由 `ima2 serve` 行程直接送往 `chatgpt.com`。需要代理的網路請開啟代理用戶端的 TUN/TURN 類模式。若無法這麼做，請在啟動伺服器的終端機同時設定 `HTTPS_PROXY` 與 `NODE_USE_ENV_PROXY=1`；Node.js 22.21+ 與 24+ 只有在設定第二個變數時才會讀取 `HTTPS_PROXY`；更早的 Node.js 兩者都會忽略，請改用 TUN 模式。在 Windows 上，也請檢查開機自動啟動的網路攔截工具，包括 SecretDNS 這類 DNS/封包分割繞過工具，即使瀏覽器看起來正常，它們也可能破壞 OAuth 或影像回應。
 
 </details>
 

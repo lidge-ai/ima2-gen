@@ -324,7 +324,7 @@ ima2 gen "고양이" --model oauth/gpt-6-luna --json > ima2-cat-current.json
 
 GPT OAuth 请求由 `ima2 serve` 进程直接发往 `chatgpt.com`，所以关键是这个进程的网络路径。
 
-如果你的网络需要代理，请开启代理客户端的 TUN/TURN 类模式，让终端进程也能走代理。在 Windows 上，还可以暂时关闭开机自启的 DNS 或分片绕过工具（例如 SecretDNS）后重试。如果仍然不行，请在启动 `ima2 serve` 的终端里设置代理。只有同时设置 `NODE_USE_ENV_PROXY=1`，Node.js 才会读取 `HTTPS_PROXY`：
+如果你的网络需要代理，请开启代理客户端的 TUN/TURN 类模式，让终端进程也能走代理。在 Windows 上，还可以暂时关闭开机自启的 DNS 或分片绕过工具（例如 SecretDNS）后重试。如果仍然不行，请在启动 `ima2 serve` 的终端里设置代理。Node.js 22.21+ 和 24+ 只有同时设置 `NODE_USE_ENV_PROXY=1` 才会读取 `HTTPS_PROXY`（更早的版本两者都会忽略，请改用 TUN 模式）：
 
 ```bash
 export HTTPS_PROXY=http://127.0.0.1:7890

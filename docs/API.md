@@ -160,7 +160,7 @@ inventing a runtime `lanes` availability result.
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/api/auth/switch` | Start an OAuth login. Body: `{ "provider": "grok" \| "codex", "flow"?: "browser" \| "device" }`. `codex` defaults to the browser flow (callback on `localhost:1455`, so the browser must be on the server machine); `device` works from any machine. Grok always uses the device code. Returns `{ sessionId, flow, userCode, verificationUrl, expiresIn }`; `userCode` is empty for the browser flow. A completed `codex` login restarts the GPT GPT OAuth. |
+| `POST` | `/api/auth/switch` | Start an OAuth login. Body: `{ "provider": "grok" \| "codex", "flow"?: "browser" \| "device" }`. `codex` defaults to the browser flow (callback on `localhost:1455`, so the browser must be on the server machine); `device` works from any machine. Grok always uses the device code. Returns `{ sessionId, flow, userCode, verificationUrl, expiresIn }`; `userCode` is empty for the browser flow. A completed `codex` login makes GPT OAuth pick up the new session. |
 | `GET` | `/api/auth/switch/:sessionId` | Poll switch-account session status. Returns `{ status }` where status is `pending`, `complete`, `error`, or `expired`. |
 | `DELETE` | `/api/auth/switch/:sessionId` | Cancel a pending login and release its callback port. |
 | `POST` | `/api/oauth/restart` | Make GPT OAuth pick up the current session file (it re-reads the file on every request; this clears the cached model roster) (used by `ima2 login` / `ima2 gpt login` / `ima2 gpt logout`). Returns `{ restarted, reason? }`. |

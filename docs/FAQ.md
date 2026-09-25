@@ -337,7 +337,7 @@ How to read the result:
 
 GPT OAuth requests leave from the `ima2 serve` process and go straight to `chatgpt.com`, so the network path of that process is what matters.
 
-If your network requires a proxy, enable your proxy client's TUN/TURN-style mode so terminal processes can use it. On Windows, also temporarily disable auto-start DNS or fragmentation bypass tools such as SecretDNS and retry. If that is not enough, set the proxy in the terminal that starts `ima2 serve`. Node.js reads `HTTPS_PROXY` only when `NODE_USE_ENV_PROXY=1` is also set:
+If your network requires a proxy, enable your proxy client's TUN/TURN-style mode so terminal processes can use it. On Windows, also temporarily disable auto-start DNS or fragmentation bypass tools such as SecretDNS and retry. If that is not enough, set the proxy in the terminal that starts `ima2 serve`. Node.js 22.21+ and 24+ read `HTTPS_PROXY` only when `NODE_USE_ENV_PROXY=1` is also set (older Node.js ignores both; use TUN mode there):
 
 ```bash
 export HTTPS_PROXY=http://127.0.0.1:7890

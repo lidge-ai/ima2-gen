@@ -335,7 +335,7 @@ Config priority is `environment variables > ~/.ima2/config.json > built-in defau
 | `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Server fallback image model |
 | `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
 | `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
-| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `IMA2_NO_OAUTH_PROXY` | — | Set `1` to send GPT OAuth calls to an OpenAI-compatible endpoint on `127.0.0.1:IMA2_OAUTH_PROXY_PORT` instead of ChatGPT directly |
 | `IMA2_CODEX_CLIENT_VERSION` | latest `@openai/codex` | Codex client version sent to ChatGPT; the automatic value is never lower than `0.157.0` |
 | `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
@@ -395,7 +395,7 @@ Re-run `ima2 setup` (option 1), confirm `ima2 status`, then restart `ima2 serve`
 <details>
 <summary><b><code>fetch failed</code> repeats on a proxy/VPN network</b></summary>
 
-GPT OAuth requests leave from the `ima2 serve` process and go straight to `chatgpt.com`. On networks that require a proxy, enable your proxy client's TUN/TURN-style mode. If that is not possible, set both `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1` in the terminal that starts the server; Node.js ignores `HTTPS_PROXY` without the second variable. On Windows, also check for auto-start network interception tools, including DNS/fragmentation bypass tools such as SecretDNS, because they can break OAuth or image responses even when the browser appears connected.
+GPT OAuth requests leave from the `ima2 serve` process and go straight to `chatgpt.com`. On networks that require a proxy, enable your proxy client's TUN/TURN-style mode. If that is not possible, set both `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1` in the terminal that starts the server; Node.js 22.21+ and 24+ read `HTTPS_PROXY` only with the second variable; older Node.js ignores both, so use TUN mode there. On Windows, also check for auto-start network interception tools, including DNS/fragmentation bypass tools such as SecretDNS, because they can break OAuth or image responses even when the browser appears connected.
 
 </details>
 
