@@ -1,7 +1,7 @@
 ---
 created: 2026-05-16
 status: planning
-issue: https://github.com/lidge-jun/ima2-gen/issues/71
+issue: https://github.com/lidge-ai/ima2-gen/issues/71
 tags: [ima2-gen, issue71, prompt-context, prompt-studio, classic, quality-elements, jawdev]
 ---
 
@@ -15,7 +15,7 @@ Classic도 Agent Mode처럼 app-server가 재현 가능한 workspace/prompt stat
 
 ## GitHub Issue
 
-- Issue: [#71 Prompt Studio: server-backed Classic prompt context and quality injection](https://github.com/lidge-jun/ima2-gen/issues/71)
+- Issue: [#71 Prompt Studio: server-backed Classic prompt context and quality injection](https://github.com/lidge-ai/ima2-gen/issues/71)
 - Priority: p1
 - Scope: Classic prompt context MVP, current prompt injection, quality element injection, CLI compose contract
 

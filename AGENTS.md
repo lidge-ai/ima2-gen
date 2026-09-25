@@ -24,7 +24,7 @@ Local image generation studio — CLI + 웹 UI
 - Runtime: Node.js ES Module; package engine is shown in the generated table above
 - Server: Express 5
 - API Client: OpenAI SDK range is rendered in the runtime-install contract above
-- OAuth: openai-oauth (ChatGPT 세션 프록시)
+- GPT OAuth: in-process Codex backend client (`lib/codexBackend`); GPT-6 plans, gpt-image-2 renders
 - Grok: xAI OAuth (device code) 또는 API key, api.x.ai 직접 호출
 - Gemini: Google Generative Language API / Vertex AI
 - Frontend: React + Vite (`ui/src`, built to `ui/dist`)
@@ -109,7 +109,7 @@ references/) and the agent reads them natively. Avoid piping large bundled outpu
   integration branch. Drag the image into the description editor, or, when
   uploading from the CLI as an agent with push access, commit it to the orphan
   `pr-assets` branch (one directory per PR or date slug) and link by commit SHA:
-  `https://raw.githubusercontent.com/lidge-jun/ima2-gen/<sha>/<pr-or-date-slug>/<name>.png`.
+  `https://raw.githubusercontent.com/lidge-ai/ima2-gen/<sha>/<pr-or-date-slug>/<name>.png`.
 - A maintainer waives the gate with the `ui-screenshot-waived` label (must be
   applied by someone with write/admin permission) or a comment stating the
   change does not touch the UI.

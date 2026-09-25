@@ -110,7 +110,8 @@ describe("ima2 CLI", () => {
     assert.strictEqual(code, 1, "failed probes should exit 1");
     assert.doesNotMatch(stdout, /user:pass/, "JSON output must not echo URL credentials");
     const parsed = JSON.parse(stdout);
-    assert.equal(parsed.summary.failed, 3);
+    // GPT OAuth runs one plan-then-render lane probe.
+    assert.equal(parsed.summary.failed, 1);
     assert.ok(parsed.probes.every((probe) => !String(probe.error?.message || "").includes("user:pass")));
   });
 

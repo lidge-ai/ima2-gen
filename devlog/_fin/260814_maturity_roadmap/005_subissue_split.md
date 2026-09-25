@@ -19,7 +19,7 @@ tags: [ima2-gen, devlog, roadmap, issues]
 | 추적된 `*.tsbuildinfo` | 0건 — `010` 문서의 "이미 제거됨"과 일치 |
 | `devlog/_fin/260714_git-index-fix/artifacts/`의 tarball 2개 | 추적 상태 유지 — `010` 삭제 대상과 일치 |
 | `devlog/` 크기 | 220M — 문서의 ~228MB와 측정 시점 차이 범위 내 |
-| #122 기존 sub-issue | 0건 (`GET /repos/lidge-jun/ima2-gen/issues/122/sub_issues` 빈 목록) |
+| #122 기존 sub-issue | 0건 (`GET /repos/lidge-ai/ima2-gen/issues/122/sub_issues` 빈 목록) |
 
 ## 분할 계획
 
@@ -57,7 +57,7 @@ API가 거부하면 본문 명시로 대체한다.
 
 - `c-i1`: `gh issue list`에 위 10개 이슈가 존재하고 각 본문이 #122와 decade
   문서 경로를 가리킨다.
-- `c-i2`: `GET /repos/lidge-jun/ima2-gen/issues/122/sub_issues`가 10개를
+- `c-i2`: `GET /repos/lidge-ai/ima2-gen/issues/122/sub_issues`가 10개를
   반환한다.
 - `c-i3`: blocked-by 관계가 API 또는 본문으로 위 표와 일치한다.
 

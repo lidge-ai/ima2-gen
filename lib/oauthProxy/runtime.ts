@@ -2,6 +2,7 @@ import { config } from "../../config.js";
 import { logEvent } from "../logger.js";
 import { isAbortError, makeOAuthError } from "./errors.js";
 import type { RouteRuntimeContext } from "../runtimeContext.js";
+import { oauthFetch } from "../codexBackend/index.js";
 
 import { errInfo } from "../errInfo.js";
 const FALLBACK_REASONING_EFFORT = "none";
@@ -97,6 +98,27 @@ export async function fetchOAuth(url: string, init: RequestInit, { requestId, sc
     if (isAbortError(err.raw)) throw err.raw;
     logEvent(scope || "oauth", "proxy_unavailable", { requestId, message: err.message });
     throw makeOAuthError("OAuth proxy is unavailable", {
+      code: "OAUTH_UNAVAILABLE",
+      status: 503,
+      cause: err.raw,
+    });
+  }
+}
+
+/** Same failure mapping as fetchOAuth, routed through oauthFetch (native Codex client or proxy). */
+export async function fetchOAuthPath(
+  ctx: Parameters<typeof oauthFetch>[0],
+  path: string,
+  init: RequestInit,
+  { requestId, scope }: { requestId?: string | null; scope?: string } = {},
+) {
+  try {
+    return await oauthFetch(ctx, path, init);
+  } catch (e) {
+    const err = errInfo(e);
+    if (isAbortError(err.raw)) throw err.raw;
+    logEvent(scope || "oauth", "proxy_unavailable", { requestId, message: err.message });
+    throw makeOAuthError("GPT OAuth is unavailable", {
       code: "OAUTH_UNAVAILABLE",
       status: 503,
       cause: err.raw,

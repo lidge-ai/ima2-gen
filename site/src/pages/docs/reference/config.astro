@@ -3,7 +3,7 @@ import DocsLayout from '../../../layouts/DocsLayout.astro';
 import { docsPath } from '../../../i18n/docs';
 
 const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
-const cliMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md';
+const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
 ---
 
 <DocsLayout
@@ -25,16 +25,16 @@ const cliMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md';
     <tbody>
       <tr><td><code>IMA2_PORT</code> / <code>PORT</code></td><td><code>3333</code></td><td>Web server port.</td></tr>
       <tr><td><code>IMA2_HOST</code></td><td><code>127.0.0.1</code></td><td>Web server bind host.</td></tr>
-      <tr><td><code>IMA2_OAUTH_PROXY_PORT</code> / <code>OAUTH_PORT</code></td><td><code>10531</code></td><td>OAuth proxy port.</td></tr>
+      <tr><td><code>IMA2_OAUTH_PROXY_PORT</code> / <code>OAUTH_PORT</code></td><td><code>10531</code></td><td>Port of the external GPT OAuth endpoint used with <code>IMA2_NO_OAUTH_PROXY=1</code>.</td></tr>
       <tr><td><code>IMA2_SERVER</code></td><td>—</td><td>CLI target override.</td></tr>
       <tr><td><code>IMA2_CONFIG_DIR</code></td><td><code>~/.ima2</code></td><td>Config and SQLite location.</td></tr>
       <tr><td><code>IMA2_ADVERTISE_FILE</code></td><td><code>~/.ima2/server.json</code></td><td>Runtime discovery file.</td></tr>
       <tr><td><code>IMA2_GENERATED_DIR</code></td><td><code>~/.ima2/generated</code></td><td>Generated image directory.</td></tr>
-      <tr><td><code>IMA2_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-5.6-luna</code></td><td>Server fallback image model.</td></tr>
+      <tr><td><code>IMA2_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-6-luna</code></td><td>Server fallback image model.</td></tr>
       <tr><td><code>IMA2_PROMPT_BUILDER_BACKEND</code></td><td><code>auto</code></td><td>Prompt Builder text backend; Auto selects the first ready supported backend.</td></tr>
       <tr><td><code>IMA2_PROMPT_BUILDER_MODEL</code></td><td><code>auto</code> with Auto backend</td><td>Backend-scoped Builder model. Changing backend resets this to that backend's default.</td></tr>
       <tr><td><code>IMA2_REASONING_EFFORT</code></td><td><code>medium</code></td><td>Default reasoning effort for the default (OAuth) path; one of none, low, medium, high, xhigh.</td></tr>
-      <tr><td><code>IMA2_NO_OAUTH_PROXY</code></td><td>—</td><td>Set <code>1</code> to disable the auto-started OAuth proxy.</td></tr>
+      <tr><td><code>IMA2_NO_OAUTH_PROXY</code></td><td>—</td><td>Set <code>1</code> to send GPT OAuth calls to an OpenAI-compatible endpoint on <code>127.0.0.1:IMA2_OAUTH_PROXY_PORT</code> instead of ChatGPT directly.</td></tr>
       <tr><td><code>IMA2_LOG_LEVEL</code></td><td><code>info</code></td><td>serve defaults to info, dev to debug; accepts debug, info, warn, error, silent.</td></tr>
       <tr><td><code>IMA2_INFLIGHT_TERMINAL_TTL_MS</code></td><td><code>300000</code></td><td>Recent terminal job retention for debug views.</td></tr>
       <tr><td><code>OPENAI_API_KEY</code></td><td>—</td><td>API key for the API-provider Responses path and auxiliary features.</td></tr>

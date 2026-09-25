@@ -57,22 +57,22 @@ export const DOCS_NAV: DocsNavSection[] = [
     ko: '리소스',
     links: [
       {
-        external: 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/API.md',
+        external: 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/API.md',
         en: 'Full API Contract',
         ko: '전체 API 계약',
       },
       {
-        external: 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md',
+        external: 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md',
         en: 'Full CLI Contract',
         ko: '전체 CLI 계약',
       },
       {
-        external: 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/PROMPT_STUDIO.md',
+        external: 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/PROMPT_STUDIO.md',
         en: 'Prompt Studio Manual',
         ko: 'Prompt Studio 매뉴얼',
       },
       { site: 'faq', en: 'FAQ', ko: 'FAQ' },
-      { external: 'https://github.com/lidge-jun/ima2-gen/releases', en: 'Releases', ko: '릴리스' },
+      { external: 'https://github.com/lidge-ai/ima2-gen/releases', en: 'Releases', ko: '릴리스' },
     ],
   },
 ];

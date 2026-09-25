@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-28
 **Status:** Plan — owner approved; entering /pabcd A next
-**Closes:** [Issue #33](https://github.com/lidge-jun/ima2-gen/issues/33) (primary)
+**Closes:** [Issue #33](https://github.com/lidge-ai/ima2-gen/issues/33) (primary)
 **Investigation:** [INVESTIGATION.md](./INVESTIGATION.md)
 **Oracle session:** `mobile-ui-overhaul-scope` (gpt-5-pro, 2026-04-28 17:44 KST, 8m34s)
 

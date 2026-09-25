@@ -49,7 +49,7 @@ List ready image lanes, choose a persistent CLI target, then generate:
 
 ```bash
 ima2 models --kind image
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 gen "a clean product photo of a red guitar pedal"
 ```
 
@@ -743,7 +743,7 @@ unreachable server returns `SERVER_UNREACHABLE` and exits 3.
 
 Persist the server-side model defaults shared by GPT OAuth and API provider paths:
 
-The built-in OAuth image default is `gpt-5.6-luna`; Grok image and video code
+The built-in GPT OAuth image default is `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier); Grok image and video code
 defaults are `grok-imagine-image-quality` and `grok-imagine-video` respectively.
 For video, set `grok-imagine-video-1.5` as your default and leave the base model
 for edit and extension, which are the only things 1.5 cannot do.
@@ -755,7 +755,7 @@ ima2 defaults set model gpt-5.5
 Persist the fail-closed CLI image and video targets separately:
 
 ```bash
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 defaults set video grok/grok-imagine-video
 ima2 defaults reset image
 ima2 defaults reset video

@@ -92,7 +92,7 @@ for (const cat of Object.values(categories)) {
 }
 
 lines.push(
-  `**Full Changelog**: https://github.com/lidge-jun/ima2-gen/compare/${prevTag}...${range.split("..")[1] || "HEAD"}`,
+  `**Full Changelog**: https://github.com/lidge-ai/ima2-gen/compare/${prevTag}...${range.split("..")[1] || "HEAD"}`,
 );
 
 console.log(lines.join("\n"));

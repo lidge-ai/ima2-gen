@@ -54,7 +54,7 @@ graph LR
     WEB["ui/dist<br/>served app"] --> API
     SRC["ui/src<br/>React source"] --> WEB
     API --> ROUTES["routes/*<br/>API modules"]
-    API --> OAUTH["openai-oauth<br/>OpenAI OAuth proxy"]
+    API --> OAUTH["lib/codexBackend<br/>GPT OAuth → ChatGPT"]
     API --> NAI["image.novelai.net<br/>NovelAI image API"]
     API --> XAI["api.x.ai<br/>xAI OAuth bearer / API key"]
     API --> GEN["~/.ima2/generated<br/>images and sidecars"]
@@ -62,7 +62,7 @@ graph LR
     API --> LIB["lib/*<br/>asset node inflight db"]
 ```
 
-The runtime path is intentionally direct. CLI commands and the browser call `/api/*` endpoints registered by `server.js` and implemented in `routes/*`. The server sends image requests through the local OAuth proxy, saves image files under the configured generated directory, usually `~/.ima2/generated`, and persists graph sessions through SQLite. Node mode wraps the same image-generation capability in a graph workflow.
+The runtime path is intentionally direct. CLI commands and the browser call `/api/*` endpoints registered by `server.js` and implemented in `routes/*`. The server sends GPT OAuth image requests to ChatGPT through its in-process client (`lib/codexBackend`), saves image files under the configured generated directory, usually `~/.ima2/generated`, and persists graph sessions through SQLite. Node mode wraps the same image-generation capability in a graph workflow.
 
 ## Reading Order
 
@@ -87,7 +87,7 @@ The runtime path is intentionally direct. CLI commands and the browser call `/ap
 | `03-server-api.md` | `/api/*` endpoints and request/response contracts | `server.ts`, route modules, store helpers, or API tests change. |
 | `04-frontend-architecture.md` | React UI, components, store, i18n | `ui/src/*`, `ui/package.json`, or CSS changes. |
 | `05-node-mode.md` | Graph UI, node API, sessions, pending states | `NodeCanvas`, `ImageNode`, `/api/node/*`, or session logic changes. |
-| `06-infra-operations.md` | Auth, OAuth proxy, config, build/test/release | `package.json`, scripts, env, CI, or runtime storage changes. |
+| `06-infra-operations.md` | Auth, GPT OAuth client, config, build/test/release | `package.json`, scripts, env, CI, or runtime storage changes. |
 | `07-devlog-map.md` | `_plan`, `_fin`, `_spikes`, roadmap interpretation | Devlog folders move or the active roadmap changes. |
 
 ## Cross References

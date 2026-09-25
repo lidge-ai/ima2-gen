@@ -3,7 +3,7 @@ title: "Issue #31 — Provider-Backed Masked Edit"
 status: open / implementation-ready hardened
 created: 2026-04-30
 updated: 2026-05-16
-github: https://github.com/lidge-jun/ima2-gen/issues/31
+github: https://github.com/lidge-ai/ima2-gen/issues/31
 tags: [canvas, edit, mask, inpaint, provider]
 ---
 
@@ -16,7 +16,7 @@ feature. Do not fake masked edit through prompt-only full-image edits.
 
 Canonical issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/31
+- https://github.com/lidge-ai/ima2-gen/issues/31
 
 ## 2026-05-16 Implementation Lock
 

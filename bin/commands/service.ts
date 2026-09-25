@@ -141,7 +141,7 @@ function reportProviderLiveness(entry: AdvertiseEntry | null): void {
   const oauth = (entry as { oauth?: { status?: string } }).oauth;
   const grok = (entry as { grok?: { auth?: string } }).grok;
   if (oauth?.status && oauth.status !== "ready" && oauth.status !== "disabled") {
-    console.log(`  Warning: GPT OAuth proxy status is "${oauth.status}" — check 'ima2 service logs'.`);
+    console.log(`  Warning: GPT OAuth status is "${oauth.status}" — check 'ima2 service logs'.`);
   }
   // The service runs under its own HOME, so it can read a different
   // ~/.progrok/auth.json than the terminal the user logged in from.

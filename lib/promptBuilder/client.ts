@@ -1,6 +1,6 @@
 import { errInfo } from "../errInfo.js";
 import { logEvent, logWarn } from "../logger.js";
-import { fetchOAuth } from "../oauthProxy/runtime.js";
+import { fetchOAuth, fetchOAuthPath } from "../oauthProxy/runtime.js";
 import {
   requireRuntimeContext,
   type RouteRuntimeContext,
@@ -13,6 +13,7 @@ import {
 import { promptBuilderError } from "./errors.js";
 import {
   lanesForModel,
+  promptBuilderLaneModel,
   normalizeMessages,
   normalizePromptBuilderBackend,
   normalizeRequestModel,
@@ -70,7 +71,9 @@ async function prepareRequest(
     : PROMPT_BUILDER_AUTO_ORDER;
   const selection = selectPromptBuilderBackend(requestedBackend, lanes, allowedLanes);
   const model = requestedBackend === "auto"
-    ? (requestedModel === "auto" ? DEFAULT_PROMPT_BUILDER_MODELS[selection.backend] : requestedModel)
+    ? (requestedModel === "auto"
+      ? DEFAULT_PROMPT_BUILDER_MODELS[selection.backend]
+      : promptBuilderLaneModel(selection.backend, requestedModel))
     : requestedModel;
   const messages = normalizeMessages(input.messages);
   if (selection.fallbackFrom) logFallback(selection);
@@ -98,6 +101,9 @@ function sendUpstream(
     signal,
     body: JSON.stringify(prepared.payload.body),
   };
+  if (prepared.target.useOAuthFetch && prepared.target.oauth) {
+    return fetchOAuthPath(prepared.target.oauth.ctx, prepared.target.oauth.path, init, { scope: "prompt-builder" });
+  }
   return prepared.target.useOAuthFetch
     ? fetchOAuth(prepared.target.url, init, { scope: "prompt-builder" })
     : fetch(prepared.target.url, init);

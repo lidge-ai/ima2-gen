@@ -42,7 +42,7 @@ GitHub metadata:
 ```text
 nameWithOwner: damagethundercat/ima2-gen
 isFork: true
-parent: lidge-jun/ima2-gen
+parent: lidge-ai/ima2-gen
 defaultBranch: main
 updatedAt: 2026-05-15T01:08:21Z
 ```

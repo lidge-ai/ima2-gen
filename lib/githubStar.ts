@@ -13,7 +13,7 @@ import { delimiter, dirname, join, posix, win32 } from "node:path";
 import { homedir } from "node:os";
 import { config } from "../config.js";
 
-export const STAR_REPO = "lidge-jun/ima2-gen";
+export const STAR_REPO = "lidge-ai/ima2-gen";
 export const STAR_REPO_URL = `https://github.com/${STAR_REPO}`;
 /** Pinned so a GHES login cannot answer (or be starred) for a same-named repository. */
 export const GH_HOSTNAME = "github.com";

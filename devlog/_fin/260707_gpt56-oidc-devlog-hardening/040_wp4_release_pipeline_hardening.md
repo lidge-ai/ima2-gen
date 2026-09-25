@@ -131,7 +131,7 @@ packages. Sources:
   - wait for the matching workflow run and verify npm version, dist-tag,
     `gitHead`, integrity, and provenance before returning success;
   - decode the SLSA DSSE payload and require repository
-    `lidge-jun/ima2-gen`, path `.github/workflows/publish.yml`, event `push`,
+    `lidge-ai/ima2-gen`, path `.github/workflows/publish.yml`, event `push`,
     exact source ref, exact resolved Git commit, GitHub-hosted builder, run URL,
     and subject SHA-512 equal to the release manifest;
   - expose completion-only verification used by `release.sh finalize`: require

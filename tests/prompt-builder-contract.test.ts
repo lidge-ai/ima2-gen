@@ -147,11 +147,15 @@ describe("prompt builder backend selection", () => {
 
 describe("prompt builder model validation", () => {
   it("offers Astra on the GPT lanes while both defaults stay on Luna", () => {
+    const defaults = { oauth: "gpt-6-luna", api: "gpt-5.6-luna" } as const;
     for (const backend of ["oauth", "api"] as const) {
       assert.ok(PROMPT_BUILDER_MODELS[backend].includes("gpt-6-astra"));
       assert.equal(normalizePromptBuilderModel(backend, "gpt-6-astra"), "gpt-6-astra");
-      assert.equal(DEFAULT_PROMPT_BUILDER_MODELS[backend], "gpt-5.6-luna");
+      assert.equal(DEFAULT_PROMPT_BUILDER_MODELS[backend], defaults[backend]);
     }
+    // A saved pre-GPT-6 OAuth pick keeps working on its GPT-6 tier.
+    assert.equal(normalizePromptBuilderModel("oauth", "gpt-5.6-luna"), "gpt-6-luna");
+    assert.equal(normalizePromptBuilderModel("oauth", "gpt-5.6-sol"), "gpt-6-sol");
   });
 
   it("accepts every persisted catalog pair and rejects cross-backend pairs", () => {

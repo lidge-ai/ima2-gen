@@ -5,25 +5,35 @@ import { normalizeImageModel } from "../lib/imageModels.ts";
 import { registerNodeRoutes } from "../routes/nodes.ts";
 
 describe("image model normalization", () => {
-  it("defaults to gpt-5.6-luna without route config", () => {
-    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-5.6-luna" });
+  it("defaults to gpt-6-luna without route config", () => {
+    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
   });
 
-  it("accepts supported image models", () => {
-    assert.deepEqual(normalizeImageModel({}, "gpt-5.5"), { model: "gpt-5.5" });
-    assert.deepEqual(normalizeImageModel({}, "gpt-5.4"), { model: "gpt-5.4" });
-    assert.deepEqual(normalizeImageModel({}, "gpt-5.4-mini"), { model: "gpt-5.4-mini" });
+  it("accepts the GPT-6 trio on GPT OAuth", () => {
+    for (const model of ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"]) {
+      assert.deepEqual(normalizeImageModel({}, model), { model });
+    }
   });
 
-  it("accepts GPT-5.6 rollout models", () => {
-    assert.deepEqual(normalizeImageModel({}, "gpt-5.6-sol"), { model: "gpt-5.6-sol" });
-    assert.deepEqual(normalizeImageModel({}, "gpt-5.6-terra"), { model: "gpt-5.6-terra" });
-    assert.deepEqual(normalizeImageModel({}, "gpt-5.6-luna"), { model: "gpt-5.6-luna" });
+  it("maps legacy GPT OAuth ids to their GPT-6 tier and leaves the API-key lane alone", () => {
+    const legacy = {
+      "gpt-5.6-sol": "gpt-6-sol",
+      "gpt-5.6-luna": "gpt-6-luna",
+      "gpt-5.6-terra": "gpt-6-luna",
+      "gpt-5.5": "gpt-6-luna",
+      "gpt-5.4": "gpt-6-luna",
+      "gpt-5.4-mini": "gpt-6-luna",
+    };
+    for (const [from, to] of Object.entries(legacy)) {
+      assert.deepEqual(normalizeImageModel({}, from), { model: to }, `oauth ${from}`);
+      assert.deepEqual(normalizeImageModel({}, from, "api"), { model: from }, `api ${from}`);
+    }
   });
 
-  it("accepts gpt-6-astra without moving the default off Luna", () => {
+  it("accepts gpt-6-astra without moving the default off gpt-6-luna", () => {
     assert.deepEqual(normalizeImageModel({}, "gpt-6-astra"), { model: "gpt-6-astra" });
-    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-5.6-luna" });
+    assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
+    assert.deepEqual(normalizeImageModel({}, undefined, "api"), { model: "gpt-5.6-luna" });
   });
 
   // Short aliases are a CLI concern: bin/lib/model-aliases.ts resolves them
@@ -35,9 +45,9 @@ describe("image model normalization", () => {
     }
   });
 
-  it("rejects known unsupported OAuth models", () => {
+  it("rejects the retired Spark model as an unknown id", () => {
     const result = normalizeImageModel({}, "gpt-5.3-codex-spark");
-    assert.equal(result.code, "IMAGE_MODEL_UNSUPPORTED");
+    assert.equal(result.code, "INVALID_IMAGE_MODEL");
     assert.equal(result.status, 400);
   });
 
@@ -88,7 +98,7 @@ describe("node route image model validation", () => {
 
     const body = await res.json();
     assert.equal(res.status, 400);
-    assert.equal(body.error.code, "IMAGE_MODEL_UNSUPPORTED");
+    assert.equal(body.error.code, "INVALID_IMAGE_MODEL");
   });
 
   it("rejects unknown models before OAuth", async () => {

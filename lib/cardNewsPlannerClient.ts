@@ -1,6 +1,8 @@
 import { config } from "../config.js";
 import { CARD_NEWS_PLANNER_SCHEMA } from "./cardNewsPlannerSchema.js";
 import { logEvent } from "./logger.js";
+import { oauthFetch } from "./codexBackend/index.js";
+import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
 
 type PlannerError = Error & {
   code?: string | undefined;
@@ -16,6 +18,7 @@ interface PlannerMessage {
 
 interface PlannerRequestOptions {
   oauthUrl: string;
+  oauthTransport?: "native" | "proxy" | undefined;
   model: string;
   messages: PlannerMessage[];
   timeoutMs: number;
@@ -29,6 +32,7 @@ interface PlannerInput {
 
 interface PlannerCallOptions {
   oauthUrl?: string | undefined;
+  oauthTransport?: "native" | "proxy" | undefined;
   model?: string | undefined;
   timeoutMs?: number | undefined;
   reasoningEffort?: string | undefined;
@@ -60,7 +64,7 @@ function extractText(json: unknown): string {
   return "";
 }
 
-async function requestJson({ oauthUrl, model, messages, timeoutMs, structured, reasoningEffort }: PlannerRequestOptions): Promise<string> {
+async function requestJson({ oauthUrl, oauthTransport, model, messages, timeoutMs, structured, reasoningEffort }: PlannerRequestOptions): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -82,7 +86,7 @@ async function requestJson({ oauthUrl, model, messages, timeoutMs, structured, r
           }
         : { text: { format: { type: "json_object" } } }),
     };
-    const res = await fetch(`${oauthUrl}/v1/responses`, {
+    const res = await oauthFetch({ oauthUrl, oauthTransport }, "/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
@@ -103,11 +107,11 @@ async function requestJson({ oauthUrl, model, messages, timeoutMs, structured, r
   }
 }
 
-async function requestChatJson({ oauthUrl, model, messages, timeoutMs }: Omit<PlannerRequestOptions, "structured" | "reasoningEffort">): Promise<string> {
+async function requestChatJson({ oauthUrl, oauthTransport, model, messages, timeoutMs }: Omit<PlannerRequestOptions, "structured" | "reasoningEffort">): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${oauthUrl}/v1/chat/completions`, {
+    const res = await oauthFetch({ oauthUrl, oauthTransport }, "/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
@@ -134,18 +138,20 @@ async function requestChatJson({ oauthUrl, model, messages, timeoutMs }: Omit<Pl
 
 export async function requestCardNewsPlannerJson(input: PlannerInput, options: PlannerCallOptions = {}) {
   const oauthUrl = options.oauthUrl || `http://127.0.0.1:${config.oauth.proxyPort}`;
-  const model = options.model || config.cardNewsPlanner.model;
+  const oauthTransport = options.oauthTransport;
+  // A saved pre-GPT-6 planner id runs on its GPT-6 tier, like every other GPT OAuth caller.
+  const model = migrateOAuthImageModel(options.model || config.cardNewsPlanner.model);
   const timeoutMs = options.timeoutMs || config.cardNewsPlanner.timeoutMs;
   const reasoningEffort = options.reasoningEffort || config.imageModels?.reasoningEffort || "medium";
   let text = "";
   let mode = "structured-output";
   try {
-    text = await requestJson({ oauthUrl, model, messages: input.messages, timeoutMs, structured: true, reasoningEffort });
+    text = await requestJson({ oauthUrl, oauthTransport, model, messages: input.messages, timeoutMs, structured: true, reasoningEffort });
   } catch (err) {
     const code = (err as { code?: unknown | undefined })?.code;
     if (code !== "PLANNER_UPSTREAM_FAILED") throw err;
     mode = "json-mode";
-    text = await requestChatJson({ oauthUrl, model, messages: input.messages, timeoutMs });
+    text = await requestChatJson({ oauthUrl, oauthTransport, model, messages: input.messages, timeoutMs });
   }
   try {
     return { output: JSON.parse(text), mode, model };

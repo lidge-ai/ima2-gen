@@ -2,7 +2,7 @@
 created: 2026-05-26
 status: active / phase implementation
 tags: [ima2-gen, issue-75, prompt-studio, multimode, gallery, jawdev]
-github_issue: https://github.com/lidge-jun/ima2-gen/issues/75
+github_issue: https://github.com/lidge-ai/ima2-gen/issues/75
 ---
 
 # Issue 75 Prompt Studio Regressions

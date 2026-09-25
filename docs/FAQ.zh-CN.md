@@ -14,12 +14,11 @@
 | GPT OAuth登录失败|重新运行`ima2 setup`（选项 1），然后重新启动`ima2 serve`. |
 | API关键提供商说`API_KEY_REQUIRED` |配置一个API键，或切换回GPT OAuth提供者。|
 |旧画廊图像看起来不见了|跑步`ima2 doctor`，然后看到[恢复旧生成的图像](RECOVER_OLD_IMAGES.md). |
-| `gpt-5.5`失败|更新Codex CLI首先，然后尝试`gpt-5.4`作为稳定的后备。|
+| GPT OAuth 上某个 GPT-6 模型失败 | 用 `ima2 gpt login` 重新登录，检查 `ima2 models --kind image`，再改用 `gpt-6-luna`。 |
 |参考资料上传失败|使用JPEG/PNG，降低分辨率，并保留对 5 个或更少图像的引用。|
 |提示Studio控件不清楚|阅读[提示工作室手册](PROMPT_STUDIO.md)用于多模式、直接、推理和画廊行为。|
 |图像生成返回`EMPTY_RESPONSE`或没有图像数据|跑步`ima2 doctor image-probe --json`，然后收集下面的安全支持包。|
-|Windows 报告OAuth/端口周围的代理失败`10531` |跑步`ima2 doctor`;如果需要从`IMA2_OAUTH_PROXY_PORT=11531 ima2 serve`. |
-| `fetch failed`在代理/VPN 网络上重复|启用代理 TUN/TURN 式模式，或设置`HTTP_PROXY` / `HTTPS_PROXY`在同一个终端。|
+| `fetch failed` 在代理/VPN 网络上反复出现 | 开启代理客户端的 TUN/TURN 类模式，或设置 `HTTPS_PROXY` 和 `NODE_USE_ENV_PROXY=1` 后启动 `ima2 serve`。 |
 
 ## 安装和更新
 
@@ -119,20 +118,19 @@ ima2 serve
 
 ## 型号及配额
 
-### 我应该使用哪种型号？
+### 我应该使用哪个模型？
 
-该应用程序开始于`gpt-5.6-luna`;仅当您需要显式兼容性或特定于帐户的覆盖时才选择其他模型。
+GPT OAuth 默认使用 `gpt-6-luna`。该通道提供三个 GPT-6 模型：你选择的模型负责规划画面，`gpt-image-2` 负责出图。
 
-- `gpt-5.6-luna`：当前应用程序默认值。
-- `gpt-6-astra`：最新的 GPT 图像模型；可选，但不是默认值。
-- `gpt-5.6-sol` / `gpt-5.6-terra`： 当前的GPT-5.6替代方案；
-可用性取决于您的OAuth帐户访问，因此上游可能会拒绝它们
-直到您收到推送通知。
-- `gpt-5.5` / `gpt-5.4` / `gpt-5.4-mini`：支持的兼容性选择。
+- `gpt-6-luna`：默认模型。
+- `gpt-6-sol`：另一个日常使用的 GPT-6 模型。
+- `gpt-6-astra`：推理时间最长、速度最慢；推理强度 `none` 会按 `low` 执行。
 
-### 为什么会`gpt-5.5`当其他模型工作时却失败？
+旧的 OAuth 模型 ID（`gpt-5.6-sol`、`gpt-5.6-luna`、`gpt-5.6-terra`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`）在已保存的设置和脚本中仍然可用。`gpt-5.6-sol` 会以 `gpt-6-sol` 运行，其余以 `gpt-6-luna` 运行。API key 通道（`provider: "api"`）保留自己的列表，默认是 `gpt-5.6-luna`。
 
-`gpt-5.5`可能需要更新的Codex CLI、后端功能或帐户/配额可用性。更新Codex CLI第一的。如果仍然失败，请使用`gpt-5.4`作为稳定的后备。
+### 为什么只有某个 GPT-6 模型失败？
+
+GPT OAuth 通道使用你的 ChatGPT 方案开放的 GPT-6 模型。请更新 ima2-gen，用 `ima2 gpt login` 重新登录，再用 `ima2 models --kind image` 检查。如果某个模型持续失败，请改用 `gpt-6-luna`。
 
 ### Plus 或 Pro 可以生成多少张图像？
 
@@ -230,31 +228,25 @@ ima2 doctor
 
 ## 网络和OAuth错误
 
-### 为什么后端或OAuth代理移动到另一个端口？
+### 为什么后端换到了另一个端口？
 
-`ima2-gen`是一个本地应用程序。如果首选后端端口`3333`或者OAuth代理端口`10531`已在使用中，运行时可以回退到下一个可用端口并将实际 URL 记录在：
+`ima2-gen` 是本地应用。如果首选后端端口 `3333` 已被占用，运行时会改用下一个可用端口，并把实际 URL 记录在：
 
 ```text
 ~/.ima2/server.json
 ```
 
-使用：
+运行下面的命令查看配置的和实际的后端 URL：
 
 ```bash
 ima2 doctor
 ```
 
-查看配置的和实际的后端/OAuth网址。
+GPT OAuth 不占用本地端口，服务器会直接调用 ChatGPT。
 
-### Windows：如果`AnySign4PC.exe`拥有港口`10531`?
+### 前后端分开开发时，如何指向实际的后端？
 
-某些Windows安全软件可以占用默认值OAuth代理端口。当前版本跟踪实际的后备端口，但您也可以强制使用更安静的范围：
-
-```bash
-IMA2_OAUTH_PROXY_PORT=11531 ima2 serve
-```
-
-对于拆分前端开发，点Vite在实际后端：
+把 `ima2 doctor` 报告的后端 URL 传给 Vite：
 
 ```bash
 VITE_IMA2_API_TARGET=http://localhost:3334 npm run ui:dev
@@ -264,7 +256,7 @@ VITE_IMA2_API_TARGET=http://localhost:3334 npm run ui:dev
 
 通常是以下之一：
 
-- 当地的OAuth代理尚未准备好，
+- GPT OAuth 无法连接到 `chatgpt.com`，
 - 服务器已重新启动，
 - VPN/代理/防火墙阻止了请求，
 - 一个自动启动的Windows网络拦截工具，包括DNS/碎片
@@ -298,8 +290,8 @@ ima2 doctor image-probe --json > ima2-image-probe.json
 生成结果：
 
 ```bash
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json > ima2-cat-no-search.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --json > ima2-cat-current.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json > ima2-cat-no-search.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --json > ima2-cat-current.json
 ```
 
 探头JSON旨在安全地附加到公共问题上。据报道
@@ -328,24 +320,19 @@ ima2 gen "고양이" --model oauth/gpt-5.6-luna --json > ima2-cat-current.json
 - 搜索关闭生成有效，但正常生成失败：可能是网络搜索/工具选择交互。
 - 已读取字节但未解析任何事件：可能SSE分隔符或`data:`解析。
 
-### 如果什么`fetch failed`在代理或 VPN 后面不断发生？
+### 在代理或 VPN 后面反复出现 `fetch failed` 怎么办？
 
-这通常意味着本地OAuth代理无法通过您的网络路径到达上游服务。`openai-oauth`作为本地主机代理运行，通常在端口上`10531`.
+GPT OAuth 请求由 `ima2 serve` 进程直接发往 `chatgpt.com`，所以关键是这个进程的网络路径。
 
-尝试：
-
-```bash
-openai-oauth --port 10531
-```
-
-如果您的网络需要代理，请启用代理客户端的 TUN/TURN 样式模式，以便终端进程可以使用它。在 Windows 上，还可以暂时禁用自动启动 DNS 或碎片绕过工具（例如 SecretDNS）并重试。如果这还不够，请在运行的同一终端中设置代理变量`openai-oauth`或者`ima2 serve`:
+如果你的网络需要代理，请开启代理客户端的 TUN/TURN 类模式，让终端进程也能走代理。在 Windows 上，还可以暂时关闭开机自启的 DNS 或分片绕过工具（例如 SecretDNS）后重试。如果仍然不行，请在启动 `ima2 serve` 的终端里设置代理。Node.js 22.21+ 和 24+ 只有同时设置 `NODE_USE_ENV_PROXY=1` 才会读取 `HTTPS_PROXY`（更早的版本两者都会忽略，请改用 TUN 模式）：
 
 ```bash
-export HTTP_PROXY=http://127.0.0.1:7890
 export HTTPS_PROXY=http://127.0.0.1:7890
+export NODE_USE_ENV_PROXY=1
+ima2 serve
 ```
 
-使用代理客户端的主机和端口。如果`ima2-gen`本地后仍然失败OAuth代理可访问，在打开新问题之前收集确切的命令、操作系统、代理设置和终端错误。
+请使用你的代理客户端的主机和端口。如果 `ima2-gen` 仍然失败，请在提交新 issue 前收集确切的命令、操作系统、代理设置和终端错误。
 
 ### 我应该在公司计算机上检查什么？
 

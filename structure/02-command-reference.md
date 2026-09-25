@@ -14,7 +14,7 @@ The `ima2` CLI lets users configure the server, generate images, edit images, in
 
 This matters because `ima2-gen` is both a browser app and an automation tool. Users can run `npx ima2-gen serve` for an instant local app, while scripts can call `ima2 gen` or `ima2 edit` against the same server. If the CLI contract drifts, README examples, tests, server discovery, and API response handling drift with it.
 
-Before using client commands, make sure a server is running. `ima2 serve` starts the server and OAuth proxy, then advertises the actual bound URL in `~/.ima2/server.json`. Client commands such as `ima2 gen`, `ima2 edit`, `ima2 ls`, `ima2 ps`, and `ima2 ping` use that advertisement file or an override to find the server, including fallback ports when the default is busy.
+Before using client commands, make sure a server is running. `ima2 serve` starts the server (GPT OAuth runs inside it), then advertises the actual bound URL in `~/.ima2/server.json`. Client commands such as `ima2 gen`, `ima2 edit`, `ima2 ls`, `ima2 ps`, and `ima2 ping` use that advertisement file or an override to find the server, including fallback ports when the default is busy.
 
 Not every server surface has a CLI wrapper. **Agent Mode** (`/api/agent/*`) is a server + web-UI feature with no `ima2` subcommand. The prompt-builder assistant (`POST /api/prompt-builder/chat`) is available through `ima2 prompt build`. For agent-facing discovery, `ima2 capabilities --json` reports supported models, valid quality/reasoning/moderation/provider/mode values, writable config keys, limits, and the package/server version, and `ima2 skill` prints the packaged agent skill.
 
@@ -34,7 +34,7 @@ sequenceDiagram
     participant CLI as ima2 CLI
     participant Adv as ~/.ima2/server.json
     participant Server as Express server
-    participant OAuth as openai-oauth
+    participant OAuth as GPT OAuth (lib/codexBackend)
 
     User->>CLI: ima2 serve
     CLI->>Server: tsx server.ts (dev) / node server.js (publish)
@@ -140,7 +140,7 @@ with `MODEL_NOT_FOUND` while an all-offline lane fails with
 | `--stdin` | false | Read extra prompt text from stdin |
 | `--timeout <sec>` | `180` | HTTP request timeout |
 | `--server <url>` | auto-discovered | Override server discovery |
-| `--model <id>` | `gpt-5.6-luna` | Image model: `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `grok-imagine-image`, `grok-imagine-image-quality`, or server-rejected `gpt-5.3-codex-spark` |
+| `--model <id>` | `gpt-6-luna` | Image model: GPT OAuth `gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra` (legacy ids map to their GPT-6 tier); API-key lane `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`; `grok-imagine-image`, `grok-imagine-image-quality`, or server-rejected `gpt-5.3-codex-spark` |
 | `--provider <oauth|api|grok|grok-api|agy|gemini-api|atlascloud|minimax|nai|comfy|runway|higgsfield>` | server default | Per-request provider override; `api`/`grok-api`/`gemini-api`/`atlascloud`/`minimax`/`nai` require configured keys; `grok` uses the xAI OAuth session (device code); `agy` shells out to local `agy` CLI; `nai` is text-to-image only. The enum is derived from `lib/providers/registry.ts`, so it is never hand-maintained in code. |
 | `--mode <auto|direct>` | `auto` | Prompt handling mode |
 | `--moderation <auto|low>` | `low` | OAuth moderation level |
@@ -150,7 +150,7 @@ with `MODEL_NOT_FOUND` while an all-offline lane fails with
 
 Web-search note: `--web-search` and `--no-web-search` set the request-level `webSearchEnabled` field. For `provider: "api"`, the request still respects the global API-provider gate (`IMA2_API_ALLOW_WEB_SEARCH` / `apiProvider.allowWebSearch`); a globally disabled API web-search setting cannot be re-enabled by one CLI call.
 
-Provider override semantics: `api` forces the API-key Responses path, `oauth` forces the local OAuth proxy path, `grok` forces the xAI path with the stored OAuth session, `nai` forces the NovelAI image API (text-to-image only — `--ref` is refused with `NAI_REF_UNSUPPORTED` rather than dropped), and `auto` preserves route default behavior on the legacy `edit`/`multimode`/`node` surface. `ima2 gen` removed `auto` and exits 2 with `PROVIDER_AUTO_REMOVED`. Grok Classic and Node route through mandatory xAI Web Search, `grok-4.5` planning, and xAI Images API; requests with references use xAI `/v1/images/edits` to preserve image-to-image context.
+Provider override semantics: `api` forces the API-key Responses path, `oauth` forces GPT OAuth (in-process client; GPT-6 plans, `gpt-image-2` renders), `grok` forces the xAI path with the stored OAuth session, `nai` forces the NovelAI image API (text-to-image only — `--ref` is refused with `NAI_REF_UNSUPPORTED` rather than dropped), and `auto` preserves route default behavior on the legacy `edit`/`multimode`/`node` surface. `ima2 gen` removed `auto` and exits 2 with `PROVIDER_AUTO_REMOVED`. Grok Classic and Node route through mandatory xAI Web Search, `grok-4.5` planning, and xAI Images API; requests with references use xAI `/v1/images/edits` to preserve image-to-image context.
 
 NovelAI native options are shared by `gen`, `multimode`, and `node generate`:
 
@@ -198,7 +198,7 @@ with one image/frame source. Ref2V/multi-ref, edit, and extension remain base-mo
 | `--json` | false | Print machine-readable JSON |
 | `--timeout <sec>` | `180` | HTTP request timeout |
 | `--server <url>` | auto-discovered | Target server URL |
-| `--model <id>` | `gpt-5.6-luna` | Image model: `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `grok-imagine-image`, `grok-imagine-image-quality`, or server-rejected `gpt-5.3-codex-spark` |
+| `--model <id>` | `gpt-6-luna` | Image model: GPT OAuth `gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra` (legacy ids map to their GPT-6 tier); API-key lane `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`; `grok-imagine-image`, `grok-imagine-image-quality`, or server-rejected `gpt-5.3-codex-spark` |
 | `--provider <oauth|api|grok|grok-api|agy|gemini-api|atlascloud|minimax|nai|comfy|runway|higgsfield>` | server default | Per-request provider override; `api`/`grok-api`/`gemini-api`/`atlascloud`/`minimax`/`nai` require configured keys; `grok` uses the xAI OAuth session (device code); `agy` shells out to local `agy` CLI; `nai` is text-to-image only. The enum is derived from `lib/providers/registry.ts`, so it is never hand-maintained in code. |
 | `--mode <auto|direct>` | `auto` | Prompt handling mode |
 | `--moderation <auto|low>` | `low` | OAuth moderation level |
