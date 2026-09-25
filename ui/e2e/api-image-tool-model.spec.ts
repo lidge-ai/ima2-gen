@@ -64,7 +64,7 @@ test("API image tool selection persists, submits separately and resets on defaul
       await page.reload();
       const oauth = await submit(page, capture, origin);
       expect(oauth.provider).toBe("oauth");
-      expect(oauth.model).toBe("gpt-5.6-luna");
+      expect(oauth.model).toBe("gpt-6-luna");
       expect(oauth).not.toHaveProperty("imageToolModel");
       expect(oauth.quality).toBe("medium");
       await selectOption(page, PROVIDER_TRIGGER, "GPT API");

@@ -14,7 +14,7 @@ const COPY = {
 const VARIANTS = {
   "grok-api-key-missing": { provider: "grok-api", model: "grok-imagine-image-2.0", status: 401,
     code: "GROK_API_KEY_MISSING", error: GROK_MESSAGE, copy: COPY.en },
-  "oauth-unavailable": { provider: "oauth", model: "gpt-5.6-luna", status: 503,
+  "oauth-unavailable": { provider: "oauth", model: "gpt-6-luna", status: 503,
     code: "OAUTH_UNAVAILABLE", error: "OAuth proxy unavailable", copy: {
       title: "GPT OAuth unavailable",
       body: "GPT OAuth is starting or cannot reach its endpoint. Reload first; if it persists, run `ima2 gpt status` and `ima2 doctor`.", cta: "Reload" } },
