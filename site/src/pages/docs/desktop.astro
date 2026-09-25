@@ -4,51 +4,77 @@ import { docsPath } from '../../i18n/docs';
 
 const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
 const releases = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true';
+const downloadSection = `${import.meta.env.BASE_URL}#install`;
 ---
 
 <DocsLayout
   lang="en"
   active="desktop"
-  title="Mac App"
-  description="Install the ima2 desktop app on an Apple Silicon Mac: download the signed DMG, drag it to Applications, and sign in to a provider."
+  title="Desktop App"
+  description="Install the ima2 desktop app on macOS (Apple Silicon), Windows or Linux: download the installer for your platform and sign in to a provider."
 >
   <p class="docs-eyebrow">Getting Started</p>
-  <h1>Mac App</h1>
+  <h1>Desktop App</h1>
   <p class="lead">
-    The desktop app runs the same local server and studio as the npm package, in a Mac window with a
-    menu bar icon. It is built for Apple Silicon and is signed and notarized by Apple.
+    The desktop app runs the same local server and studio as the npm package, in its own window with a
+    menu bar or tray icon. It ships for macOS on Apple Silicon (signed and notarized by Apple), Windows
+    and Linux. Every installer is attached to the newest <strong>ima2 Desktop</strong> release on the
+    <a href={releases} target="_blank" rel="noopener">desktop releases</a> page, and the site's
+    <a href={downloadSection}>download section</a> picks the right one for your machine.
   </p>
 
-  <h2>Install</h2>
+  <h2>macOS</h2>
   <ol>
-    <li>Open the <a href={releases} target="_blank" rel="noopener">desktop releases</a> and download <code>ima2-&lt;version&gt;-mac-arm64.dmg</code> from the newest <strong>ima2 Desktop</strong> release.</li>
+    <li>Download <code>ima2-&lt;version&gt;-mac-arm64.dmg</code>.</li>
     <li>Open the DMG and drag <strong>ima2</strong> into <strong>Applications</strong>.</li>
     <li>Launch ima2. The window shows the local server starting, then opens the studio.</li>
-    <li>Pick a provider on the welcome screen. ChatGPT is the simplest: a browser sign-in, no API key.</li>
   </ol>
+
+  <div class="docs-callout docs-callout-info">
+    <strong>Windows and Linux.</strong> These installers ship starting with the first desktop release
+    that includes them. If the latest release only lists a DMG, they are not out yet; the
+    <a href={downloadSection}>download section</a> shows them as <em>Coming soon</em> until then.
+  </div>
+
+  <h2>Windows</h2>
+  <ol>
+    <li>Download <code>ima2-&lt;version&gt;-win-x64.exe</code> (or <code>-win-arm64.exe</code> on ARM devices).</li>
+    <li>Run the installer. You can pick the install folder; administrator rights are not needed.</li>
+    <li>If SmartScreen shows <strong>Windows protected your PC</strong>, choose <strong>More info → Run anyway</strong> for an installer downloaded from the release page.</li>
+  </ol>
+
+  <h2>Linux</h2>
+  <ol>
+    <li>AppImage: download <code>ima2-&lt;version&gt;-linux-x86_64.AppImage</code> (or <code>-linux-arm64.AppImage</code>), then run <code>chmod +x ima2-*.AppImage</code> and start it.</li>
+    <li>Debian / Ubuntu: download <code>ima2-&lt;version&gt;-linux-amd64.deb</code> (or <code>-linux-arm64.deb</code>) and run <code>sudo apt install ./ima2-*.deb</code>.</li>
+  </ol>
+
+  <p>On first launch, pick a provider on the welcome screen. ChatGPT is the simplest: a browser sign-in, no API key.</p>
   <div class="docs-callout docs-callout-info">
     <strong>Checksums.</strong> Each release attaches <code>SHA256SUMS.txt</code>. Compare it with
-    <code>shasum -a 256 ima2-&lt;version&gt;-mac-arm64.dmg</code>.
+    <code>shasum -a 256 &lt;file&gt;</code> on macOS/Linux or <code>Get-FileHash &lt;file&gt;</code> in PowerShell.
   </div>
 
   <h2>Requirements</h2>
   <ul>
-    <li>macOS on Apple Silicon. On an Intel Mac, Windows or Linux, use the <a href={d('quickstart')}>install script or npm</a>.</li>
+    <li>macOS on Apple Silicon, Windows 10/11 (x64 or ARM64), or a 64-bit Linux desktop (x64 or ARM64).</li>
+    <li>On an Intel Mac, use the <a href={d('quickstart')}>install script or npm</a>.</li>
     <li>No separate Node.js install: the app runs the server on its bundled runtime.</li>
   </ul>
 
   <h2>Updates</h2>
   <p>
     The app checks for new desktop releases and asks before restarting to install one. You can also
-    run <strong>Check for Updates…</strong> from the app menu or the menu bar icon, or turn automatic
-    downloads off in Settings.
+    run <strong>Check for Updates…</strong> from the app menu or the menu bar / tray icon, or turn
+    automatic downloads off in Settings. On Linux, in-app updates apply to the AppImage; a
+    <code>.deb</code> install is updated by installing the newer <code>.deb</code>.
   </p>
 
   <h2>Settings</h2>
   <p>
-    Settings (<code>⌘,</code>) cover the server port, opening at login, starting hidden, menu-bar-only
-    mode, keeping the server running when the window closes, verbose server logging and the config
-    directory.
+    Settings (<code>⌘,</code> on macOS, <code>Ctrl+,</code> on Windows and Linux) cover the server port,
+    opening at login, starting hidden, menu-bar-only mode, keeping the server running when the window
+    closes, verbose server logging and the config directory.
   </p>
 
   <h2>Shared with the CLI</h2>

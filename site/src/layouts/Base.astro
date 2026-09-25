@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { t, type Lang } from '../i18n/strings';
+import ReleaseBanner from '../components/ReleaseBanner.astro';
 
 interface Props {
   lang?: Lang;
@@ -100,6 +101,7 @@ const faviconHref = `${base}/favicon.svg`;
     </script>
   </head>
   <body>
+    <ReleaseBanner lang={lang} />
     <slot />
     <script is:inline>
       (function () {

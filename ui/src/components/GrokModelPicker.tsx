@@ -1,12 +1,8 @@
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import type { ImageModel } from "../types";
-import { Segmented } from "./controls";
-
-const GROK_MODELS: Array<{ value: ImageModel; label: string; sub: string }> = [
-  { value: "grok-imagine-image", label: "Grok", sub: "Fast" },
-  { value: "grok-imagine-image-quality", label: "Grok+", sub: "Best" },
-];
+import { GROK_IMAGE_MODEL_OPTIONS } from "../lib/imageModels";
+import { Select } from "./controls/Select";
 
 export function GrokModelPicker() {
   const { t } = useI18n();
@@ -14,11 +10,18 @@ export function GrokModelPicker() {
   const setImageModel = useAppStore((s) => s.setImageModel);
 
   return (
-    <Segmented<ImageModel>
-      title={t("quality.grokModelTitle")}
-      items={GROK_MODELS}
-      value={imageModel}
-      onChange={setImageModel}
-    />
+    <div className="option-group">
+      <div className="section-title">{t("quality.grokModelTitle")}</div>
+      <Select<ImageModel>
+        ariaLabel={t("quality.grokModelTitle")}
+        items={GROK_IMAGE_MODEL_OPTIONS.map((option) => ({
+          value: option.value,
+          label: t(option.fullLabelKey),
+        }))}
+        value={imageModel}
+        onChange={setImageModel}
+        portal
+      />
+    </div>
   );
 }
