@@ -85,6 +85,9 @@ export function ProviderStatusSelect({ mcpProviders }: { mcpProviders: McpProvid
     }
     if (record.status.state === "connecting") return t("mcp.connecting");
     if (record.status.state === "auth_required") return t("provider.statusAuthRequired");
+    if (record.status.state === "offline" || record.status.state === "error") {
+      return t(`mcp.status.${record.status.state}`);
+    }
     return t("provider.statusDisconnected");
   };
 
@@ -169,9 +172,13 @@ export function ProviderStatusSelect({ mcpProviders }: { mcpProviders: McpProvid
     // MCP entry invariant matches the sidebar selector: enabled && connected
     // (060 audit A3). Higgsfield stays browseable; generation lock is separate.
     if (!record || !record.enabled || record.status.state !== "connected") {
+      // Mirror the row sub-label for states other than disconnected so the
+      // dialog doesn't claim "disconnected" while the list shows 오류/오프라인.
       setBlocked({
         label: displayProviderId(id),
-        reason: !record || !record.enabled ? t("mcp.disabledProvider") : t("mcp.disconnectedSelection"),
+        reason: !record || !record.enabled ? t("mcp.disabledProvider")
+          : record.status.state === "disconnected" ? t("mcp.disconnectedSelection")
+          : mcpStatusText(record),
       });
       return;
     }
