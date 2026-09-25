@@ -125,6 +125,12 @@ test("env overrides win", () => {
   assert.equal(c.cardNewsPlanner.model, "gpt-5.5");
 });
 
+test("a saved pre-GPT-6 OAuth default maps onto its GPT-6 tier", () => {
+  assert.equal(loadConfig({ IMA2_IMAGE_MODEL_DEFAULT: "gpt-5.6-sol" }).imageModels.default, "gpt-6-sol");
+  assert.equal(loadConfig({ IMA2_IMAGE_MODEL_DEFAULT: "gpt-5.6-luna" }).imageModels.default, "gpt-6-luna");
+  assert.equal(loadConfig({ IMA2_IMAGE_MODEL_DEFAULT: "gpt-6-astra" }).imageModels.default, "gpt-6-astra");
+});
+
 test("comfy bridge config env overrides and invalid numeric fallbacks", () => {
   const explicit = loadConfig({
     IMA2_COMFY_URL: "http://localhost:9999",

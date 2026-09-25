@@ -308,7 +308,7 @@ async function buildCoreLanes(ctx: RuntimeContext, agyInstalled: boolean, deps: 
   const gptModels = entries("oauth", ctx.config.imageModels.valid);
   const lanes: Record<CoreProviderId, ModelLaneDto> = {
     oauth: oauthLane(ctx, gptModels),
-    api: apiLane(ctx, entries("api", ctx.config.imageModels.valid)),
+    api: apiLane(ctx, entries("api", ctx.config.apiProvider.validImageModels)),
     grok: grokLane(ctx),
     "grok-api": grokApiLane(ctx),
     agy: agyLane(agyInstalled),

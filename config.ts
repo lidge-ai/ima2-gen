@@ -17,6 +17,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { parsePublicOrigins } from "./lib/localAccessPolicy.js";
 export { SSE_STREAM_POLICY } from "./lib/eventsPolicy.js";
 import { deriveSupportedImageModels, deriveUnsupportedImageModels } from "./lib/providers/derive.js";
+import { migrateOAuthImageModel } from "./lib/oauthLegacyModels.js";
 import {
   DEFAULT_PROMPT_BUILDER_MODELS,
   PROMPT_BUILDER_BACKENDS,
@@ -356,7 +357,8 @@ export const config = {
     model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-5.6-luna"), // runs on the API-key client (lib/styleSheet.ts)
   },
   imageModels: {
-    default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna"),
+    // A saved pre-GPT-6 default maps onto its GPT-6 tier so every reader sees an id the lane lists.
+    default: migrateOAuthImageModel(pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna")),
     valid: deriveSupportedImageModels("oauth"),
     unsupported: deriveUnsupportedImageModels(),
     reasoningEffort: pickStr(
