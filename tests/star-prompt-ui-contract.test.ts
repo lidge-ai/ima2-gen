@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { isSessionImage, shouldOpenStarPrompt, type StarPromptInput } from "../ui/src/lib/githubStar.ts";
 
 const base: StarPromptInput = {
-  status: { state: "not-starred", prompted: false, repo: "lidge-jun/ima2-gen", url: "https://github.com/lidge-jun/ima2-gen" },
+  status: { state: "not-starred", prompted: false, repo: "lidge-ai/ima2-gen", url: "https://github.com/lidge-ai/ima2-gen" },
   head: { createdAt: 2_000, mediaType: "image" },
   mountedAt: 1_000,
   settingsOpen: false,

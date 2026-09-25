@@ -1,6 +1,6 @@
 # TypeScript Migration Follow-Up — Strict + Tests + Runtime Artifacts
 
-**Issue:** [#24 — TypeScript migration: investigate phased conversion path](https://github.com/lidge-jun/ima2-gen/issues/24)
+**Issue:** [#24 — TypeScript migration: investigate phased conversion path](https://github.com/lidge-ai/ima2-gen/issues/24)
 **Status of #24:** Closed on 2026-05-08 after re-checking current `main`: root and UI TypeScript configs are strict, and CI enforces typecheck/build gates. This folder is archived historical planning context.
 **Out of scope:** UI/React TS work (UI is already 100% TS), framework swap, bundler rewrite.
 

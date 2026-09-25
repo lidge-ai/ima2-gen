@@ -1,6 +1,6 @@
 # Issue #47 - In-flight Reload Reconcile
 
-**GitHub**: https://github.com/lidge-jun/ima2-gen/issues/47
+**GitHub**: https://github.com/lidge-ai/ima2-gen/issues/47
 **Status**: completed / moved to _fin
 **Date**: 2026-04-29
 

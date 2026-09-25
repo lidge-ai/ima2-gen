@@ -8,7 +8,7 @@ Date: 2026-09-05. Class: C4 delivery. Research only; no implementation changes.
   and command cwd are the work root above. Do not operate on the administrative
   path as though it were a second checkout.
 - Source baseline: ecde2bc79cddc50ff0da38091c1ce0590383090c.
-- origin: https://github.com/lidge-jun/ima2-gen.git. fml09 remote is out of scope.
+- origin: https://github.com/lidge-ai/ima2-gen.git. fml09 remote is out of scope.
 - origin/dev: f499fc7d73c08f19be76fd5b111d163bfaf3c226.
 - origin/main and origin/preview: d2afe6b2aa7d006e2cd9765aa632714f96435db2.
 - dev-only predecessors: b7d597a2 and f499fc7d, both release evidence docs.
@@ -18,7 +18,7 @@ Date: 2026-09-05. Class: C4 delivery. Research only; no implementation changes.
   user work; stashes are preserved, never popped/cleared by this delivery.
 
 ## Current platform checks
-gh repo view: lidge-jun/ima2-gen, default branch main, viewer ADMIN.
+gh repo view: lidge-ai/ima2-gen, default branch main, viewer ADMIN.
 Repository settings: merge/rebase/squash all available; delete_branch_on_merge=false.
 Rulesets query returned no entries. main/dev protection queries returned explicit
 404 Branch not protected. These are observations, NOT permission to bypass future

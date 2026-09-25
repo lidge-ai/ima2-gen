@@ -2,7 +2,7 @@
 title: "Issue #62 — CLI Skill And Capability Discovery"
 status: completed / moved to _fin
 created: 2026-05-13
-github: https://github.com/lidge-jun/ima2-gen/issues/62
+github: https://github.com/lidge-ai/ima2-gen/issues/62
 tags: [cli, skill, agent-ux, capabilities, defaults]
 ---
 
@@ -31,7 +31,7 @@ write the underlying config keys.
 
 Canonical issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/62
+- https://github.com/lidge-ai/ima2-gen/issues/62
 
 This plan captures the first clarification pass. It is intentionally not yet an
 implementation patch.

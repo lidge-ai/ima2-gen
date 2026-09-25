@@ -1,6 +1,6 @@
 import type { CodedError } from "./errInfo.js";
 export const IMA2_METADATA_SCHEMA = "ima2.generation.v1";
-export const IMA2_XMP_NAMESPACE = "https://github.com/lidge-jun/ima2-gen/ns/1.0/";
+export const IMA2_XMP_NAMESPACE = "https://github.com/lidge-ai/ima2-gen/ns/1.0/";
 export const IMA2_XMP_PROPERTY = "GenerationMetadata";
 export const MAX_EMBEDDED_METADATA_CHARS = 64 * 1024;
 
