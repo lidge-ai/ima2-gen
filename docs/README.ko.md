@@ -1,4 +1,475 @@
-# ima2-gen
+<p align="center">
+  <img src="../assets/brand/banner.png" alt="ima2 — 사람과 코딩 에이전트를 위한 로컬 이미지·영상 스튜디오" width="100%">
+</p>
+
+<h3 align="center">이미지와 영상을 내 컴퓨터에서 만들고, 가지 치고, 다듬으세요.</h3>
+<p align="center">GPT, Grok, Gemini, NovelAI, ComfyUI를 한 곳에서 쓰는 로컬 스튜디오입니다.<br>브라우저, Mac 앱, CLI에서 쓰거나 코딩 에이전트에게 맡길 수 있습니다.</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=npm&label=npm" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/ima2-gen"><img src="https://img.shields.io/npm/dm/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&label=downloads" alt="npm downloads"></a>
+  <img src="https://img.shields.io/node/v/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=node.js&label=node" alt="Node.js version">
+  <a href="https://github.com/lidge-jun/ima2-gen/stargazers"><img src="https://img.shields.io/github/stars/lidge-jun/ima2-gen?style=flat-square&labelColor=18181b&color=3f3f46&logo=github&label=stars" alt="GitHub stars"></a>
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-3f3f46?style=flat-square&labelColor=18181b" alt="MIT license"></a>
+</p>
+
+```bash
+npm install -g ima2-gen
+ima2 serve
+```
+
+<p align="center">
+  <a href="https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true"><img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20.dmg-18181b?style=for-the-badge&logo=apple&logoColor=white" alt="Mac 앱 다운로드 (.dmg)"></a>
+  <a href="#one-line-installers"><img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-one--line%20installer-18181b?style=for-the-badge&logo=gnubash&logoColor=white" alt="Windows와 Linux용 한 줄 설치"></a>
+</p>
+
+<table>
+<tr>
+<td width="42%" valign="middle">
+
+### 만들기
+
+프롬프트를 쓰고 레퍼런스를 붙인 뒤 레인과 모델을 고르면 됩니다. 결과마다 프롬프트, 걸린 시간, 설정이 남아서 그대로 복사하거나 이어서 만들거나 영상으로 움직일 수 있습니다.
+
+</td>
+<td width="58%">
+  <img src="../assets/screenshots/readme-create.webp" alt="다크 모드 만들기 화면. 왼쪽에 프롬프트 작성창, 가운데 크롬 조각 결과, 오른쪽에 GPT OAuth 설정" width="100%">
+</td>
+</tr>
+<tr>
+<td width="42%" valign="middle">
+
+### 노드 그래프로 가지 치기
+
+마음에 드는 이미지 하나를 두고 여러 방향으로 동시에 밀어 보세요. 가지마다 부모를 기억하니 원본이 덮어써지지 않습니다.
+
+</td>
+<td width="58%">
+  <img src="../assets/screenshots/readme-node.webp" alt="크롬 조각 원본 하나가 금, 대리석, 숲 버전 세 가지로 갈라지는 노드 그래프" width="100%">
+</td>
+</tr>
+<tr>
+<td width="42%" valign="middle">
+
+### 캔버스 모드로 다듬기
+
+주석, 지우개, 배경 제거를 하고 진짜 알파 채널로 내보냅니다. GPT 투명화 버튼은 서버가 실제 투명도를 확인한 뒤에만 투명하다고 알려 줍니다.
+
+</td>
+<td width="58%">
+  <img src="../assets/screenshots/readme-canvas.webp" alt="체크무늬 위에 투명 배경 카메라가 놓인 캔버스 모드와 도구 막대" width="100%">
+</td>
+</tr>
+<tr>
+<td width="42%" valign="middle">
+
+### 홈에서 시작
+
+준비된 레인을 확인하고, 프롬프트를 바로 입력하고, 최근 작업을 폴더를 뒤지지 않고 이어 갑니다.
+
+</td>
+<td width="58%">
+  <img src="../assets/screenshots/readme-home.webp" alt="레인 준비 상태, 프롬프트 입력창, 최근 작업 그리드가 보이는 홈 화면" width="100%">
+</td>
+</tr>
+</table>
+
+<p align="center">
+  <a href="../README.md">English</a> · <b>한국어</b> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="https://lidge-jun.github.io/ima2-gen/ko/"><b>웹사이트</b></a> · <a href="https://lidge-jun.github.io/ima2-gen/ko/docs"><b>문서 →</b></a>
+</p>
+
+`ima2-gen`은 사람과 코딩 에이전트가 여러 프로바이더에서 재현 가능한 이미지·영상 워크플로를 돌리는 로컬 우선 비주얼 생성 런타임이자 스튜디오입니다. 내 컴퓨터에서 작은 서버를 띄우고, 모든 결과물을 `~/.ima2/generated`에 보관하며, 연결한 프로바이더와만 통신합니다. 지원하는 곳은 OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI, 등록된 ComfyUI 워크플로이고, Runway와 Higgsfield는 별도 MCP 연동입니다. 프롬프트와 레퍼런스는 작업마다 고른 프로바이더에게만 전달됩니다.
+
+## 빠른 시작
+
+### Mac 앱 (Apple Silicon)
+
+데스크톱 앱은 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행합니다. Developer ID로 서명되고 Apple 공증을 받았으며, 런타임을 자체 포함해서 Node.js를 따로 설치하지 않아도 됩니다.
+
+1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<version>-mac-arm64.dmg`를 받습니다.
+2. DMG를 열고 **ima2**를 **응용 프로그램** 폴더로 끌어다 놓습니다.
+3. ima2를 실행하고 환영 화면에서 프로바이더를 고릅니다.
+
+체크섬, 업데이트, 설정은 [Mac 앱 가이드](https://lidge-jun.github.io/ima2-gen/ko/docs/desktop)에 있습니다. Intel Mac, Windows, Linux에서는 npm이나 한 줄 설치를 쓰세요.
+
+### npm
+
+```bash
+npm install -g ima2-gen
+ima2 setup
+ima2 serve
+```
+
+그다음 `http://localhost:3333`을 여세요. `3333` 포트가 이미 쓰이고 있으면 다음 빈 포트로 뜨고 실제 주소를 `~/.ima2/server.json`에 적어 두므로, `ima2 open`은 항상 올바른 주소를 엽니다.
+
+### CLI로 첫 이미지 만들기
+
+이미지와 영상 기본값을 한 번 정해 두고 생성합니다.
+
+```bash
+ima2 models
+ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set video grok/grok-imagine-video-1.5
+ima2 gen "a clean product photo of a red guitar pedal"
+ima2 video "a cat playing piano" --duration 5 --resolution 720p
+```
+
+`ima2 gen`과 생성 모드 `ima2 video`는 CLI 대상이 정해지기 전까지 `NO_DEFAULT_MODEL`로 멈춥니다. 호출에 `--model <lane>/<model>`이나 `--provider <lane>`을 직접 주면 예외입니다. 업그레이드 뒤에 프로바이더나 과금 레인이 몰래 바뀌는 일은 없습니다.
+
+<a id="one-line-installers"></a>
+
+### 한 줄 설치 (npm 없이)
+
+각 스크립트는 패키지에서 정한 Node.js 최소 버전을 확인하고, 필요하면 Node LTS를 설치한 뒤 ima2-gen을 한 번 설치하고, 오프라인 설치 검사를 거쳐 `ima2 serve`를 실행합니다. 관계없는 프로세스를 끄거나 전역 잠금을 지우지 않습니다.
+
+**macOS**
+
+```bash
+curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
+```
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+```
+
+**Linux / WSL**
+
+```bash
+curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
+```
+
+<details>
+<summary><b>Docker</b></summary>
+
+```bash
+docker build -t ima2-gen .
+docker run -d -p 3333:3333 -e IMA2_LAN_TOKEN=change-me -v ima2-data:/data ima2-gen
+```
+
+compose 사용법, 필요한 환경 변수, 제약은 [DOCKER 문서](DOCKER.md)에 있습니다.
+
+</details>
+
+<details>
+<summary><b>설정, 업데이트, npx</b></summary>
+
+`ima2 setup`에서 인증 방식 네 가지 중 하나를 고릅니다.
+
+1. **GPT OAuth** — ChatGPT 계정으로 로그인 (이미지)
+2. **Grok OAuth** — xAI/Grok 계정으로 로그인 (이미지와 영상)
+3. **Both** — GPT OAuth와 Grok OAuth 둘 다
+4. **Web setup** — 웹 UI에서 전부 설정
+
+영상 생성에는 Grok OAuth(2번이나 3번)가 필요합니다. GPT OAuth를 이미 쓰고 있다면 `ima2 grok login`으로 영상을 추가하세요. 기본값은 수동 붙여넣기 방식입니다.
+
+업데이트하려면 Ctrl+C로 서버를 멈추고(다른 터미널에서는 `ima2 stop`) 다음을 실행합니다.
+
+```bash
+npm install -g ima2-gen@latest
+```
+
+Ctrl+C는 데이터베이스를 닫고, 자식 프로세스를 멈추고, 파일 잠금을 풀면서 깔끔하게 종료합니다. 설치가 실패하면 npm 권한 메시지를 확인하거나 해당 `ima2` 프로세스를 직접 멈추세요. 설치 프로그램이 프로세스를 대신 정리하지는 않습니다.
+
+npx로 쓰려면 [npx 빠른 시작](NPX_QUICKSTART.md)을 보세요.
+
+</details>
+
+## 할 수 있는 일
+
+- **만들기**: 생성, 편집, 현재 이미지 재사용, 레퍼런스 붙여넣기, 히스토리에서 이어 가기. 멀티모드를 켜면 프롬프트 하나로 후보 여러 장을 한꺼번에 띄우고 칸마다 채워지는 모습을 볼 수 있습니다. 모든 컨트롤, 멀티모드 레시피, Direct 모드, reasoning effort는 [Prompt Studio 사용 설명서](PROMPT_STUDIO.ko.md)에 정리돼 있습니다. 레퍼런스는 이미지에 최대 5장, 영상에 최대 14장까지 붙일 수 있고, 큰 이미지는 업로드 전에 압축됩니다.
+- **노드 그래프**: 좋은 이미지를 여러 방향으로 가지 칩니다. 루트 노드는 로컬 레퍼런스를 받고, 자식 노드는 부모 이미지를 원본으로 씁니다. 끝난 작업은 요청 ID로 노드에 다시 연결되므로 새로고침이나 그래프 버전 충돌이 나도 결과가 돌아옵니다.
+- **캔버스 모드**: 확대, 이동, 호버 강조가 있는 주석, 지우개, 그룹, 실행 취소, 스티키 메모, 배경 정리, 알파 유지 또는 매트 색상 내보내기를 지원합니다. 자체 포함 캔버스 문서는 **SVG (embedded raster)**, 실제 벡터 경로는 **Trace to SVG (vector)**를 고르세요. **GPT transparency** 버튼은 OAuth i2i 레인으로 배경을 지우고, 디코딩한 바이트 기준으로 `alphaVerified`를 알려 줍니다. 저장한 캔버스 버전은 갤러리와 히스토리 줄에는 나오지 않지만, 캔버스 모드에서 다시 열거나 다음 레퍼런스로 붙일 수 있습니다.
+- **영상**: Grok 영상 모델로 텍스트→영상, 이미지→영상, 레퍼런스→영상을 만들고 진행률과 First/Mid/Last 프레임 복사 버튼을 제공합니다. **Storyboard mode**는 연속 프레임에서 인물과 장면을 일관되게 유지합니다. 진행 상황은 SSE로 planning → submitted → 진행률 → done 순서로 표시됩니다. 스토리보드에서는 이미지 키프레임을 영상 제작용으로 구성하고, 영상 클립이 인물·환경 고정 규칙을 이어받습니다.
+- **래스터→벡터**: `ima2 vectorize`, AssetGen/Assets, 캔버스 내보내기에서 평면 래스터 그림을 실제 SVG 경로로 바꿉니다.
+- **NovelAI 이중 프롬프트**: NovelAI를 고르면 만들기, 홈, 모바일 작성 시트에 **Positive prompt**와 **Undesired content**가 나란히 나옵니다. 작성 영역이 719px보다 좁으면 두 칸이 위아래로 쌓입니다.
+- **프롬프트 라이브러리**: 로컬 프롬프트 팩, GitHub 폴더, 엄선한 GPT-image 힌트를 가져오고 로컬에서 검색합니다.
+- **Prompt Builder**: 텍스트 백엔드로 의도를 다듬습니다. Settings > Providers에서 Auto로 두거나 백엔드와 모델을 고정할 수 있고, **via &lt;backend&gt;** 배지가 실제로 답한 백엔드를 보여 줍니다. GPT 백엔드를 고르면 기본 모델은 `gpt-5.6-luna`입니다.
+- **로컬 갤러리**: 모든 이미지와 영상이 내 컴퓨터에 남고, 세션별 히스토리와 생성 시간, reasoning effort가 메타데이터에 기록됩니다. 기본으로 현재 세션만 보여 주고 All Images 토글로 전체 기록을 열 수 있으며, 고른 기본 범위는 세션이 바뀌어도 유지됩니다.
+- **라이트·다크 테마**: AA 대비를 지키는 토큰 기반 팔레트이고, 라이트·다크·시스템을 깜빡임 없이 전환합니다.
+- **모바일 셸**과 **작업 관찰**: 작은 화면용 앱 바, 작성 시트, 간단한 설정 토글, 안전한 로그와 요청 ID가 붙은 진행 중·최근 작업 목록.
+
+Card News는 개발용 실험 기능이라 배포된 런타임에서는 숨겨져 있습니다.
+
+### 에이전트 스킬
+
+ima2-gen에는 코딩 에이전트가 불러 쓰는 Markdown 스킬 세 개가 들어 있습니다. 이미지·영상 생성, 프런트엔드 에셋, 디자인 방향 잡기를 단계별로 안내합니다.
+
+| 스킬 | 명령 | 다루는 내용 |
+|------|------|------|
+| **Core** | `ima2 skill` | CLI 레퍼런스, 프롬프트 작성법, 프로바이더 라우팅, 한국어 텍스트, 영상 워크플로 |
+| **Frontend** | `ima2 skill front` | 에셋 파이프라인(병렬 생성, 후보 선택, 프로바이더 라우팅), 웹용 모션·영상, 반응형, 접근성, anti-slop, 참고 파일 30개 이상 |
+| **UI/UX Design** | `ima2 skill uiux` | 이미지 중심 디자인 방향 탐색, UX 상태, design-ism, 제품 성격, DESIGN.md 워크플로, 참고 파일 21개 |
+
+```bash
+ima2 skill ls                   # 스킬 목록
+ima2 skill front path          # 파일 경로 출력 (에이전트용)
+ima2 skill front --json        # JSON 래퍼 (에이전트용)
+ima2 skill front refs           # 참고 모듈 목록
+ima2 skill front ref motion     # 참고 모듈 하나 불러오기
+ima2 skill install --dir <path> # 에이전트 스킬 폴더에 설치
+ima2 skill install --tmp        # 임시 폴더에 설치 (대안)
+```
+
+## 프로바이더와 모델
+
+| 레인 | 인증 | 이미지 | 영상 | 메모 |
+|---|---|:-:|:-:|---|
+| `oauth` | 로컬 Codex OAuth 프록시로 ChatGPT 로그인 | ✓ | | 기본 레인, `gpt-5.6-luna` |
+| `api` | `OPENAI_API_KEY` | ✓ | | Responses API `image_generation` 도구, 마스크·멀티모드·노드 |
+| `grok` | xAI OAuth (`ima2 grok login`) | ✓ | ✓ | Images API 호출 전에 웹 검색과 플래너 단계 |
+| `grok-api` | `XAI_API_KEY` | ✓ | ✓ | xAI Images API 직접 호출 |
+| `gemini-api` | `GEMINI_API_KEY` 또는 Vertex 서비스 계정 | ✓ | | `nano-banana-2`, `nano-banana-pro`, 512px~4K |
+| `agy` | Antigravity CLI | ✓ | | `agy -p`로 Gemini `nano-banana-2` / `nano-banana-pro` |
+| `nai` | NovelAI API 토큰 | ✓ | | NAI Diffusion 모델 네 가지, 텍스트→이미지 |
+| `comfy` | 로컬 ComfyUI | ✓ | ✓ | 등록한 이미지·영상 워크플로 |
+| `atlascloud` | AtlasCloud API 키 | ✓ | | `openai/gpt-image-2` 생성과 편집 |
+| `minimax` | MiniMax API 키 | ✓ | | `image-01`, `image-01-live` |
+| `runway`, `higgsfield` | MCP 연결 | ✓ | ✓ | 별도 MCP 연동 |
+
+GPT 레인의 기본 이미지 모델은 **`gpt-5.6-luna`**입니다. `gpt-6-astra`는 가장 최신 GPT 이미지 모델로 고를 수 있고, `gpt-5.6-terra`와 `gpt-5.6-sol`은 계정에 열려 있으면 보입니다. `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`는 호환용으로 남아 있습니다. 앱에서 품질(`low`, `medium`, `high`)과 모더레이션(`auto`, `low`)도 고를 수 있습니다.
+
+<details>
+<summary><b>프로바이더 상세 (English)</b></summary>
+
+- `provider: "oauth"` uses the local Codex OAuth proxy.
+- `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool.
+- `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`, running mandatory xAI Web Search plus a planner pass (default: `grok-4.3`, configurable in settings or via `--planner-model`) before the xAI Images API call. `grok-4.5` and `grok-4.6` are also selectable. Log in once with `ima2 grok login` or the Settings **Switch Account** button; the session refreshes itself two minutes before expiry.
+- `provider: "grok-api"` calls the xAI Images API directly with `XAI_API_KEY` (no OAuth session involved).
+- `provider: "nai"` calls the NovelAI image API with a persistent API token (saved in Settings > API Keys or `NOVELAI_API_KEY`; no fixed token prefix is required). Four models: `nai-diffusion-5-full`, `nai-diffusion-5-curated`, `nai-diffusion-4-5-full`, `nai-diffusion-4-5-curated`. Responses arrive as a ZIP archive that ima2 decodes to PNG. Text-to-image only — reference images, edits, and masks are refused rather than silently dropped. Browser and CLI surfaces expose negative prompt, sampler/schedule, steps/guidance/CFG rescale, seed, presets, Auto SMEA, Decrisper, Variety+, and V5 alpha.
+- `provider: "agy"` spawns the Antigravity CLI (`agy -p`) to generate images via Google Gemini's `default_api:generate_image` tool (models: `nano-banana-2` and `nano-banana-pro`). Output is fixed at 1024×1024 JPEG, max 3 reference images. No web search, quality, or size controls.
+- `provider: "gemini-api"` calls the Google Generative Language API directly. Supports two models: `nano-banana-2` (Gemini 3.1 Flash Image) and `nano-banana-pro` (Gemini 3 Pro Image). Auth is via `GEMINI_API_KEY` env var, web UI key management, or a Vertex AI service account JSON (`VERTEX_SERVICE_ACCOUNT_JSON`). When both an API key and Vertex credentials are configured, Vertex takes priority. Supports variable aspect ratios (1:1 through 21:9) and four resolution tiers (512px, 1K, 2K, 4K); these controls are only honored on the direct API path — the Vertex AI endpoint ignores aspect/size because it does not accept the `response_format` field. Per-model cost differs: `nano-banana-2` (Flash): 512=$0.001, 1K=$0.003, 2K=$0.004, 4K=$0.006; `nano-banana-pro`: 1K=$0.007, 2K=$0.007, 4K=$0.013. No web search or mask controls.
+- API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
+- Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
+
+If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth and API-key generation default to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
+
+One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
+
+Grok image generation exposes a Fast/Best model picker (`grok-imagine-image` / `grok-imagine-image-quality`; new sessions start on `grok-imagine-image-2.0`) and a size picker (aspect ratio + 1k/2k resolution). The Settings page prefers the Grok Build weekly credits percentage and reset time from `GET /v1/billing?format=credits`; if that source is unavailable, it falls back to the legacy monthly billing window and `$used/$limit`. A **Switch Account** button starts a device-code OAuth flow (`POST /api/auth/switch`) for re-authenticating without leaving the app.
+
+Grok video generation defaults to canonical `grok-imagine-video-1.5`; `grok-imagine-video` remains available for base-model-only Ref2V, V2V edit, and extension paths, and the legacy `grok-imagine-video-1.5-preview` string is accepted as an alias. Three modes are auto-detected from reference count: text-to-video (0 refs), image-to-video (1 ref), and reference-to-video (2-14 refs; up to 15s on grok-imagine-video-1.5, 10s on grok-imagine-video). 1080p is available for `grok-imagine-video-1.5` prompt-only text-to-video and single image/frame image-to-video; prompt-only 1.5 uses the internal white-canvas I2V shim before the upstream request. Video controls include duration (1-15s), resolution (480p, 720p, 1080p when supported), and aspect ratio (1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto).
+
+</details>
+
+## CLI
+
+<details>
+<summary><b>서버 명령 (English)</b></summary>
+
+| Command | Description |
+|---|---|
+| `ima2 serve [--dev]` | Start the local web server; `--dev` enables verbose server diagnostics |
+| `ima2 stop [--force]` | Stop the running server safely — graceful admin-API stop first, then SIGTERM/SIGKILL; verifies the advertised pid against `/api/health` so a recycled pid is never killed |
+| `ima2 service <sub>` | Background service: `install`/`uninstall`/`start`/`stop`/`restart`/`status`/`logs`/`repair` — launchd on macOS, systemd user unit on Linux, auto-start on login with crash restart |
+| `ima2 setup` | Reconfigure saved auth |
+| `ima2 status` | Show config and OAuth status |
+| `ima2 doctor` | Diagnose Node, package, config, and auth |
+| `ima2 doctor image-probe [--json]` | Run sanitized image probes for no-image diagnostics |
+| `ima2 open` | Open the web UI |
+| `ima2 reset` | Remove saved config |
+
+</details>
+
+<details>
+<summary><b>클라이언트 명령 (English)</b></summary>
+
+These require a running `ima2 serve`. The CLI covers every server route. The most common ones are below — the [full CLI reference](CLI.md) lists everything (generation, history, sessions, prompt library, annotations, Card News, observability, config).
+
+| Command | Description |
+|---|---|
+| `ima2 models [--kind image\|video] [--lane <lane>] [--json]` | List live lanes, status, model IDs, and capabilities |
+| `ima2 defaults set image\|video <lane>/<model>` | Persist the fail-closed CLI target for image or video generation |
+| `ima2 defaults reset image\|video` | Remove a persisted CLI generation target |
+| `ima2 gen <prompt> [--model <lane>/<model>]` | Generate from the CLI; requires an explicit target or saved image default |
+| `ima2 edit <file> --prompt <text>` | Edit an existing image |
+| `ima2 vectorize <input.png> [-o output.svg]` | Trace PNG/JPEG/WebP into a real SVG locally; no server or provider required |
+| `ima2 prompt build --message <text> [--backend <backend>] [--model <model>]` | Refine prompt intent through the configured or explicitly selected Prompt Builder backend; requires the local server |
+| `ima2 multimode <prompt>` | Multi-image SSE generation |
+| `ima2 video <prompt> [--model <lane>/<model>]` | Generate video through a Grok or MCP lane; requires an explicit target or saved video default |
+| `ima2 ls [--session <id>] [--favorites]` | List recent history |
+| `ima2 show <name> [--metadata]` | Reveal a generated asset |
+| `ima2 prompt ls -q <search>` | Search the prompt library |
+| `ima2 inflight ls [--terminal]` | List active and recent jobs (alias of `ps`) |
+| `ima2 config set <key> <value>` | Write to `~/.ima2/config.json` |
+| `ima2 ping` | Health-check the running server |
+
+The server advertises its actual port at `~/.ima2/server.json`. If `3333` is busy, the backend falls back to `3334+` and CLI commands follow the advertised URL. Override discovery with `--server <url>` or `IMA2_SERVER=http://localhost:3333`.
+
+```bash
+ima2 models --kind image
+ima2 gen "poster" --model oauth/gpt-5.6-luna --reasoning-effort high
+ima2 gen "1girl, blue hair" --model nai/nai-diffusion-5-full --nai-negative-prompt "lowres, watermark"
+ima2 vectorize logo.png -o logo.svg --json
+ima2 prompt build --message "Make this prompt production-ready" --backend auto --model auto
+ima2 edit input.png --prompt "make it rainy" --web-search
+ima2 multimode "two cats playing" -n 2
+ima2 video "a cat playing piano" --model grok/grok-imagine-video-1.5 --duration 5 --resolution 720p
+ima2 video "animate this" --model grok/grok-imagine-video-1.5 --ref photo.png --aspect-ratio 16:9
+ima2 inflight ls --terminal
+ima2 config set imageModels.reasoningEffort high
+```
+
+Full reference: [CLI.md](CLI.md).
+
+</details>
+
+## 설정
+
+설정 우선순위는 `환경 변수 > ~/.ima2/config.json > 기본값`입니다. Prompt Builder 설정은 `promptBuilder.backend`(`auto`, `oauth`, `grok`, `api`, `grok-api`)와 `promptBuilder.model`로 저장됩니다. Auto에서는 GPT OAuth, Grok, OpenAI API, Grok API 순서로 시도해 처음 준비된 레인을 씁니다. 직접 고른 백엔드는 고정되고, 쓸 수 없으면 타입이 있는 오류를 돌려줍니다.
+
+<details>
+<summary><b>환경 변수 (English)</b></summary>
+
+| Variable | Default | Description |
+|---|---:|---|
+| `IMA2_PORT` / `PORT` | `3333` | Web server port |
+| `IMA2_HOST` | `127.0.0.1` | Web server bind host |
+| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | OAuth proxy port |
+| `IMA2_SERVER` | — | CLI target override |
+| `IMA2_CONFIG_DIR` | `~/.ima2` | Config and SQLite location |
+| `IMA2_ADVERTISE_FILE` | `~/.ima2/server.json` | Runtime discovery file |
+| `IMA2_GENERATED_DIR` | `~/.ima2/generated` | Generated image directory |
+| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Server fallback image model |
+| `IMA2_PROMPT_BUILDER_BACKEND` | `auto` | Prompt Builder text backend (`auto`, `oauth`, `grok`, `api`, or `grok-api`); Settings persists the same value as `promptBuilder.backend` |
+| `IMA2_PROMPT_BUILDER_MODEL` | `auto` with Auto backend | Backend-scoped Builder model; Settings persists the same value as `promptBuilder.model` |
+| `IMA2_REASONING_EFFORT` | `medium` | Default reasoning effort for the default (GPT OAuth) path; one of `none`, `low`, `medium`, `high`, `xhigh` |
+| `IMA2_NO_OAUTH_PROXY` | — | Set `1` to disable the auto-started OAuth proxy |
+| `IMA2_LOG_LEVEL` | `info` | Normal serve defaults to `info`; dev mode defaults to `debug`; supports `debug`, `info`, `warn`, `error`, or `silent` |
+| `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | Recent terminal job retention for debug views |
+| `OPENAI_API_KEY` | — | API key for the `provider: "api"` Responses API image path and auxiliary API-key features |
+| `XAI_API_KEY` | — | API key for `provider: "grok-api"` direct xAI Images API path |
+| `NOVELAI_API_KEY` | — | NovelAI persistent API token for `provider: "nai"` |
+| `IMA2_NAI_IMAGE_MODEL_DEFAULT` | `nai-diffusion-5-full` | Default NovelAI image model |
+| `IMA2_NAI_DEFAULT_AUTO_SMEA` | `false` | Default NovelAI Auto SMEA state |
+| `IMA2_NAI_DEFAULT_DECRISPER` | `false` | Default NovelAI Decrisper (`dynamic_thresholding`) state |
+| `IMA2_API_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Default image model for `provider: "api"` |
+| `IMA2_API_REASONING_EFFORT` | `low` | Default reasoning effort for `provider: "api"` |
+| `IMA2_API_IMAGE_SIZE` | `1024x1024` | Default size for `provider: "api"` |
+| `IMA2_API_ALLOW_WEB_SEARCH` | `true` | Toggle web search for `provider: "api"` |
+| `IMA2_GROK_PLANNER_MODEL` | `grok-4.3` | Grok search/planner model; `grok-4.5`, `grok-4.6` and GPT planners are selectable (settings UI or `--planner-model`) |
+| `IMA2_GROK_PLANNER_TIMEOUT_MS` | `900000` | Timeout for the Grok planner call |
+| `IMA2_GROK_SEARCH_TIMEOUT_MS` | `300000` | Timeout for the Grok web-search brief (degrades instead of failing) |
+| `IMA2_GROK_VIDEO_PLAN_TOTAL_TIMEOUT_MS` | `1500000` | Ceiling on the whole video planning phase (clamped above search + planner) |
+| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-2.0` | Default final Grok image model |
+| `IMA2_GROK_VIDEO_MODEL_DEFAULT` | `grok-imagine-video-1.5` | Default Grok video model |
+| `IMA2_GROK_GENERATION_TIMEOUT_MS` | `300000` | Timeout for the final Grok Images API call |
+| `IMA2_OAUTH_MASKED_EDIT_ENABLED` | `false` | Opt-in feature flag for masked-edit requests on the OAuth path (#31, groundwork only) |
+| `GEMINI_API_KEY` | — | API key for `provider: "gemini-api"` direct Generative Language API path |
+| `VERTEX_SERVICE_ACCOUNT_JSON` | — | Google service account JSON for Vertex AI auth with `provider: "gemini-api"`; takes priority over `GEMINI_API_KEY` when both are set |
+| `IMA2_AGY_BIN` | `agy` on PATH | Explicit path to the Antigravity CLI binary for `provider: "agy"` |
+| `IMA2_MAX_PARALLEL` | `24` | Server-wide parallel generation cap |
+
+`IMA2_GROK_PROXY_HOST`, `IMA2_GROK_PROXY_PORT`, `IMA2_NO_GROK_PROXY`, and `IMA2_GROK_RESTART_*` were removed in 3.16 together with the local Grok proxy; they are no longer read, and setting them is harmless.
+
+</details>
+
+<details>
+<summary><b>로그 모드 (English)</b></summary>
+
+`ima2 serve` keeps terminal output intentionally quiet: startup URLs, warnings, and errors stay visible, while request/node/OAuth structured logs are hidden by default.
+
+Use `ima2 serve --dev`, `npm run dev`, or `IMA2_LOG_LEVEL=debug ima2 serve` when you need request IDs, node generation phases, OAuth stream diagnostics, or inflight state transitions. Explicit `IMA2_LOG_LEVEL` and `~/.ima2/config.json` values still override the built-in defaults.
+
+</details>
+
+## 문제 해결
+
+<details>
+<summary><b><code>ima2 ping</code>이 서버에 연결하지 못해요</b></summary>
+
+`ima2 serve`를 먼저 실행하고 `~/.ima2/server.json`을 확인하세요. `ima2 ping --server http://localhost:3333`으로 직접 지정할 수도 있습니다.
+
+</details>
+
+<details>
+<summary><b>GPT OAuth 로그인이 안 돼요</b></summary>
+
+`ima2 setup`을 다시 실행해(1번) `ima2 status`를 확인한 뒤 `ima2 serve`를 다시 시작하세요.
+
+</details>
+
+<details>
+<summary><b>프록시/VPN 환경에서 <code>fetch failed</code>가 반복돼요</b></summary>
+
+로컬 OAuth 프록시에 접근할 수 있는지 확인하세요. 프록시가 필요한 네트워크라면 프록시 클라이언트의 TUN/TURN 계열 모드를 켜고 `openai-oauth --port 10531`을 다시 시도하세요. 그래도 안 되면 `ima2 serve`나 `openai-oauth`를 실행하는 같은 터미널에 `HTTP_PROXY`, `HTTPS_PROXY`를 설정하세요. Windows에서는 SecretDNS 같은 DNS·패킷 분할 우회 도구를 포함해 자동 실행되는 네트워크 가로채기 도구도 확인하세요. 브라우저가 연결돼 보여도 OAuth나 이미지 스트리밍을 깨뜨릴 수 있습니다.
+
+</details>
+
+<details>
+<summary><b><code>API_KEY_REQUIRED</code>로 실패해요</b></summary>
+
+`provider: "api"`를 쓰려면 `OPENAI_API_KEY`를 설정하거나 API 키를 등록하세요. 기본 GPT OAuth 경로는 API 키 없이 동작합니다.
+
+</details>
+
+<details>
+<summary><b><code>EMPTY_RESPONSE</code>가 나오거나 이미지 데이터가 없어요</b></summary>
+
+`ima2 doctor image-probe --json > ima2-image-probe.json`을 실행해 안전하게 정리된 JSON을 이슈에 첨부하세요. GPT OAuth 문제라면 `ima2 serve`가 켜진 상태에서 `ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json`과 `ima2 gen "고양이" --model oauth/gpt-5.6-luna --json` 결과도 함께 남겨 주세요. ChatGPT 쿠키, OAuth token 파일, API 키, 가공하지 않은 업스트림 응답, 프롬프트 히스토리, 생성된 base64는 공유하지 마세요. 자세한 내용은 [FAQ 지원 번들](FAQ.ko.md)에 있습니다.
+
+</details>
+
+<details>
+<summary><b>큰 레퍼런스 이미지가 실패해요</b></summary>
+
+큰 JPEG/PNG는 업로드 전에 자동으로 압축됩니다. 그래도 실패하면 해상도를 낮춘 JPEG나 PNG로 바꿔 다시 시도하세요. 브라우저 경로에서는 HEIC/HEIF를 지원하지 않습니다.
+
+</details>
+
+<details>
+<summary><b>업데이트 뒤 예전 갤러리 이미지가 안 보여요</b></summary>
+
+최근 버전은 생성 이미지를 설치 패키지 폴더에서 `~/.ima2/generated`로 옮겼습니다. `ima2 doctor`를 실행하고 [예전 이미지 복구](RECOVER_OLD_IMAGES.md)를 보세요.
+
+</details>
+
+<details>
+<summary><b><code>gpt-5.5</code>만 실패하고 다른 모델은 돼요</b></summary>
+
+먼저 Codex CLI를 업데이트하고 다시 시도하세요. 그래도 실패하면 계정이나 백엔드 경로에 `gpt-5.5` 이미지 기능이나 한도가 아직 열리지 않은 것일 수 있으니 `gpt-5.4`를 안정적인 대안으로 쓰세요.
+
+</details>
+
+<details>
+<summary><b>앱이 다른 포트로 열렸어요</b></summary>
+
+요청한 포트가 쓰이고 있으면 다음 빈 포트로 뜨고 `~/.ima2/server.json`에 기록합니다. 포트가 뜻밖에 `3457`이라면 셸이 다른 로컬 도구에서 `PORT=3457`을 물려받았을 수 있습니다. `unset PORT`를 실행하거나 `IMA2_PORT=3333 ima2 serve`로 시작하세요.
+
+</details>
+
+<details>
+<summary><b>Windows에서 <code>10531</code> 포트가 이미 쓰이고 있어요</b></summary>
+
+`AnySign4PC.exe` 같은 Windows 보안 도구가 기본 OAuth 프록시 포트를 점유할 수 있습니다. 최신 버전은 실제 대체 OAuth 포트를 추적합니다. 직접 바꿔야 한다면 `IMA2_OAUTH_PROXY_PORT=11531 ima2 serve`로 시작하고 `ima2 doctor`를 확인하세요.
+
+</details>
+
+더 많은 답은 [FAQ](FAQ.ko.md)에 있습니다.
+
+## 문서
+
+- [개발자 문서 사이트](https://lidge-jun.github.io/ima2-gen/ko/docs) — 개요, 빠른 시작, 아키텍처, 모드, 프로바이더, CLI, 설정, 서버 API
+- [CLI 레퍼런스](CLI.md) · [API 레퍼런스](API.md) · [Prompt Studio 사용 설명서](PROMPT_STUDIO.ko.md) · [FAQ](FAQ.ko.md) · [예전 이미지 복구](RECOVER_OLD_IMAGES.md)
+
+## 개발
+
+```bash
+git clone https://github.com/lidge-jun/ima2-gen.git
+cd ima2-gen
+npm install
+npm run dev
+npm run typecheck
+npm test
+npm run build
+```
+
+`npm run dev`는 UI를 빌드하고 TypeScript 서버를 `--watch`와 상세 진단 로그로 실행합니다. `npm run typecheck`, `npm run build:server`, `npm run build:cli`로 TypeScript 빌드 경로를 확인합니다. 노드 모드와 캔버스 모드는 기본 패키지 UI에 포함돼 있습니다.
+
+웹 UI는 모든 진행 상황을 `GET /api/events` Server-Sent Events 연결 하나로 받습니다. 멀티모드, 노드, 영상 요청은 비동기 POST(`202 { requestId }`)로 보내고 공용 이벤트 버스로 묶어 전달하므로, 동시 작업이 브라우저의 연결 6개 제한에 걸리지 않습니다. `async: true`를 보내지 않는 CLI 클라이언트는 요청별 SSE 스트림을 그대로 받습니다.
+
+### 요구 사항
 
 <!-- runtime-install:generated:start -->
 | Contract | Value |
@@ -11,350 +482,47 @@
 | Express | `^5.1.0` |
 <!-- runtime-install:generated:end -->
 
-설치 프로그램은 패키지 메타데이터에서 Node.js 최소 버전을 읽고 서버 시작 전에 오프라인 설치 검사를 수행합니다.
+설치 프로그램은 패키지 메타데이터에서 Node.js 최소 버전을 읽고, 서버를 시작하기 전에 오프라인 설치 검사를 수행합니다.
 
-<p align="center">
-  <img src="../assets/logo.png" alt="ima2" width="160">
-</p>
+<details>
+<summary><b>데스크톱 앱 빌드 (Electron, English)</b></summary>
 
-<p align="center">
-  <strong>사람과 코딩 에이전트를 위한 로컬 이미지·영상 스튜디오.</strong>
-</p>
-
-[![npm version](https://img.shields.io/npm/v/ima2-gen)](https://www.npmjs.com/package/ima2-gen)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
-
-> **Live site**: [lidge-jun.github.io/ima2-gen](https://lidge-jun.github.io/ima2-gen/) · [한국어 페이지](https://lidge-jun.github.io/ima2-gen/ko/)
->
-> **개발자 문서**: [문서 사이트](https://lidge-jun.github.io/ima2-gen/ko/docs) · [English](https://lidge-jun.github.io/ima2-gen/docs)
->
-> **다른 언어로 읽기**: [English](../README.md) · [日本語](README.ja.md) · [正體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
-
-`ima2-gen`은 사람과 코딩 에이전트가 여러 프로바이더에서 재현 가능한 이미지·영상 워크플로를 실행하는 로컬 우선 비주얼 생성 런타임이자 스튜디오입니다.
-
-전역 설치 후 OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI, ComfyUI 워크플로로 구성된 core lane 10개에서 이미지와 영상을 생성합니다. Runway와 Higgsfield는 별도 MCP integration입니다.
-
-![프롬프트 작성창, 생성 이미지, 모델 표시, 결과 메타데이터가 보이는 ima2-gen 클래식 생성 화면](../assets/screenshots/classic-generate-light.png)
-
-## 빠른 시작
-
-### Mac 앱 (Apple Silicon)
-
-Apple Silicon Mac에서는 데스크톱 앱이 가장 빠른 방법입니다. 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행하고, Apple 서명과 공증을 거쳤습니다.
-
-1. 최신 [ima2 Desktop 릴리스](https://github.com/lidge-jun/ima2-gen/releases?q=desktop&expanded=true)에서 `ima2-<version>-mac-arm64.dmg`를 받습니다.
-2. DMG를 열고 **ima2**를 **응용 프로그램** 폴더로 옮깁니다.
-3. ima2를 실행하고 환영 화면에서 제공자를 고릅니다.
-
-앱에 런타임이 들어 있어 Node.js를 따로 설치하지 않아도 됩니다. 체크섬, 업데이트, 설정은 [Mac 앱 가이드](https://lidge-jun.github.io/ima2-gen/ko/docs/desktop)를 보세요. Intel Mac, Windows, Linux에서는 아래 npm이나 원클릭 설치를 쓰세요.
-
-### npm
+`desktop/` wraps the same local server and UI in a menubar/tray app for macOS, Windows, and Linux. It supervises `server.js` as a child process (attaching to an already-running server on the configured port instead of starting a second one) and adds a native settings window: port, open at login, start hidden, menubar-only (macOS), keep-server-on-close, log level, config directory.
 
 ```bash
-npm install -g ima2-gen
-ima2 setup
-ima2 serve
+cd desktop
+npm install
+npm run prepare:app     # builds server + CLI + UI at the repo root
+npm start               # run unpackaged
+npm run dist:mac        # dmg + zip (Apple Silicon / arm64)
+npm run dist:win        # nsis + zip
+npm run dist:linux      # AppImage + deb
 ```
 
-npm 12에서는 의존성 설치 스크립트를 기본 차단하므로 다음 명령을 사용하세요.
+Only the macOS app is distributed today, for Apple Silicon. `.github/workflows/desktop.yml` runs in three ways: a push to `dev` builds an unsigned macOS validation build, a manual dispatch builds signed and notarized installers without publishing anything, and a `desktop-v*` tag push builds, verifies, and publishes the desktop release. Trusted macOS builds require `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`; missing or invalid authentication fails the build instead of producing an unsigned success.
+
+For a signed macOS verification build without publishing, run:
 
 ```bash
-npm install -g ima2-gen --allow-scripts=ima2-gen,better-sqlite3,sharp
+gh workflow run desktop.yml --ref <reviewed-branch> -f platform=mac
 ```
 
-그다음 `http://localhost:3333`을 엽니다.
+The workflow verifies Developer ID, team, architecture (arm64), hardened runtime, secure timestamp, nested signatures, Gatekeeper and stapled notarization tickets. It checks the apps recovered from the final ZIP and DMG against the original signed content, then exports `ima2-macos-signature-proof` reports and installer SHA-256 hashes. Failed verification blocks installer upload. Only a `desktop-v*` tag push creates and publishes a release.
 
-CLI에서 영상 생성:
+Signing credential imports run on disposable GitHub-hosted macOS. The builder cleans successfully imported keychains; if import/setup fails before its cleanup registration, runner destruction is the final cleanup boundary. Local recovery should reuse an existing login-keychain identity in the same unlocked session, rather than importing credential packages into a persistent machine. This does not require changing automatic locking or key access rules.
 
-```bash
-ima2 video "고양이가 피아노 치는 장면" --duration 5 --resolution 720p
-ima2 video "이 장면을 애니메이션으로" --ref photo.png --duration 10
-```
+Windows Authenticode remains separate and uses `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD`; Windows builds without them are unsigned.
 
-`3333`이 이미 사용 중이면 다음 사용 가능한 포트로 열리고 실제 URL은 `~/.ima2/server.json`에 기록됩니다. 포트를 추측하지 말고 터미널에 출력된 URL이나 `ima2 open`을 사용하세요.
+</details>
 
-> **npx로 실행하고 싶다면?** [NPX_QUICKSTART.md](NPX_QUICKSTART.md)를 참고하세요.
+## 기여자
 
-### 원클릭 설치 (npm 없어도 됩니다)
-
-Node.js나 npm이 없어도 플랫폼별 설치 스크립트로 한 번에 설치할 수 있습니다.
-
-**macOS:**
-```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-mac.sh | bash
-```
-
-**Windows (PowerShell):**
-```powershell
-irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
-```
-
-**Linux / WSL:**
-```bash
-curl -fsSL https://lidge-jun.github.io/ima2-gen/install-linux.sh | bash
-```
-
-각 스크립트는 지원하는 Node 버전을 확인하고, 필요하면 nvm/fnm/brew/winget으로 Node LTS를 설치합니다. npm 설치는 한 번만 시도하며, `ima2 doctor --installation --json`을 통과해야 서버를 시작합니다. 다른 프로세스를 종료하거나 전역 잠금 파일을 지우지는 않습니다.
-
-### 업데이트
-
-Ctrl+C로 서버를 종료한 뒤:
-
-```bash
-npm install -g ima2-gen@latest
-```
-
-npm 12라면 업데이트 명령에도 `--allow-scripts=ima2-gen,better-sqlite3,sharp`를 붙이세요. 원클릭 설치 스크립트는 npm 버전을 감지해 자동으로 처리합니다.
-
-Ctrl+C로 DB, 소켓, 자식 프로세스를 정리할 수 있습니다. Windows에서 `EBUSY`가 나면 실행 중인 해당 ima2 서버를 직접 종료한 뒤 다시 설치하세요. 설치기는 프로세스를 임의로 종료하거나 관리자 권한으로 재시도하지 않습니다.
-
-## 최근 주요 변경
-
-- **검증형 OIDC 배포**: release commit을 `preview`에서 먼저 검증한 뒤 같은 SHA를 tag/`latest`로 배포하고, npm provenance 확인 후 GitHub Release를 만듭니다.
-- **npm 12 설치 안정화**: native/build 스크립트 승인 목록과 설치 후 `ima2 doctor` 검증을 추가했습니다.
-- **결과 메타데이터 인스펙터** (#108), **생성 요청 로그** (#95, dev UI)
-- **OAuth size directive**: LANDSCAPE/PORTRAIT/SQUARE orientation 강조
-- **추가 공급자**: `grok-api`, `agy`, `gemini-api` (Vertex 우선)
-
-### 설정
-
-`ima2 setup`으로 인증 방식을 선택합니다:
-
-1. **GPT OAuth** — ChatGPT 계정으로 로그인 (무료, 이미지만)
-2. **Grok OAuth** — xAI/Grok 계정으로 로그인 (이미지 + 영상)
-3. **Both** — GPT + Grok 둘 다 (전체 기능)
-4. **Web setup** — 웹 UI에서 전체 설정
-
-영상 생성은 Grok OAuth(2번 또는 3번)가 필요합니다. GPT OAuth만 설정한 뒤 영상을 추가하려면 `ima2 grok login`을 별도로 실행하세요.
-
-## 무엇을 할 수 있나요?
-
-- **Classic mode**: 빠르게 이미지를 만들고, 수정하고, 현재 결과를 다시 레퍼런스로 사용합니다.
-- **Node mode**: 마음에 드는 이미지를 여러 방향으로 분기해 실험합니다.
-- **Multimode batches**: 하나의 프롬프트에서 여러 후보 슬롯을 동시에 만들고, 가장 좋은 결과에서 이어갑니다.
-- **Canvas Mode**: 확대/이동, 주석, 지우개, 배경 정리, 투명 체크보드 미리보기, alpha/matte export를 지원합니다.
-- **Video 생성**: 텍스트, 이미지, 또는 여러 레퍼런스에서 짧은 영상을 만듭니다. SSE로 기획→제출→진행률→완료를 실시간 표시합니다. 생성된 영상에서 First/Mid/Last 프레임 복사 버튼으로 키프레임을 추출할 수 있습니다.
-- **Storyboard mode**: 컴포저에서 스토리보드 모드를 켜면 연속 프레임의 인물·장면 연속성을 유지합니다. 이미지와 영상 생성 모두 지원합니다.
-- **Local gallery**: 생성물을 내 컴퓨터에 저장하고 세션별 히스토리로 봅니다. 기본적으로 현재 세션만 보이며 All Images 토글로 전체 히스토리를 볼 수 있습니다. 각 이미지의 생성 시간·reasoning effort가 메타데이터에 기록됩니다.
-- **Reference images**: 레퍼런스를 드래그, 붙여넣기, 파일 선택으로 추가합니다. 이미지 최대 5장, 영상 최대 14장. 큰 이미지는 업로드 전에 자동 압축됩니다.
-- **Prompt library imports**: 로컬 prompt pack, GitHub folder, curated GPT-image hint를 내장 prompt library로 가져옵니다.
-- **Mobile shell**: 작은 화면에서는 app bar, compose sheet, compact settings toggle로 조작합니다.
-- **Observable jobs**: 진행 중인 작업과 최근 완료된 작업을 request ID로 추적합니다.
-
-### SSE 멀티플렉싱
-
-웹 UI는 단일 `GET /api/events` Server-Sent Events 연결로 모든 생성 진행 상황을 수신합니다. Multimode, node, video 요청은 비동기 POST(`202 { requestId }`)로 제출되고, 이벤트 버스를 통해 진행 이벤트가 멀티플렉싱됩니다. 기존 브라우저 6-연결 제한으로 인한 동시 생성 시 갤러리 hang 문제가 해결됩니다. `async: true`를 보내지 않는 CLI 클라이언트는 기존 per-request SSE 스트림을 그대로 사용할 수 있습니다.
-
-## 이미지 생성 공급자
-
-이미지 생성은 로컬 Codex/ChatGPT OAuth, OpenAI API key, Grok 공급자를 지원합니다.
-
-- `provider: "oauth"`는 로컬 Codex OAuth 프록시를 사용합니다.
-- `provider: "api"`는 OpenAI Responses API의 `image_generation` 도구를 사용합니다.
-- `provider: "grok"`는 `~/.progrok/auth.json`에 저장된 xAI OAuth 세션으로 `https://api.x.ai`를 직접 호출합니다. xAI Web Search와 플래너(기본: `grok-4.3`, 설정 또는 `--planner-model`로 변경 가능)를 거친 뒤 xAI Images API로 이어집니다. `grok-4.5`, `grok-4.6`도 고를 수 있습니다. 처음 한 번 `ima2 grok login` 또는 설정 화면의 **Switch Account**로 로그인하면, 이후에는 만료 2분 전에 토큰이 자동으로 갱신됩니다.
-- `provider: "grok-api"`는 `XAI_API_KEY`로 xAI Images API를 직접 호출합니다 (OAuth 세션을 쓰지 않습니다).
-- `provider: "agy"`는 로컬 Antigravity CLI(`agy -p`)로 Gemini `nano-banana-2` 이미지를 생성합니다 (`IMA2_AGY_BIN`).
-- `provider: "gemini-api"`는 Google Generative Language API 또는 Vertex AI를 사용합니다 (`GEMINI_API_KEY` / `VERTEX_SERVICE_ACCOUNT_JSON`; 둘 다 있으면 Vertex 우선).
-
-Grok은 Classic, Node, Agent 흐름을 지원합니다. Classic 레퍼런스, Node 부모 이미지, Agent 현재 이미지가 있으면 최종 Grok 호출은 xAI image edit 경로로 전환되어 image-to-image 맥락을 유지합니다. 기본 이미지 모델은 `grok-imagine-image-2.0`입니다.
-
-Grok video 기본값은 정식 `grok-imagine-video-1.5`입니다. `grok-imagine-video`는 Ref2V, V2V edit, extension 호환 경로에서 계속 쓰며, 기존 `grok-imagine-video-1.5-preview` 문자열도 호환 alias로 받습니다. 레퍼런스 수에 따라 T2V(0), I2V(1), Ref2V(2-14, grok-imagine-video-1.5는 15초 / grok-imagine-video는 10초)가 자동 선택되며, 1080p는 `grok-imagine-video-1.5` 프롬프트 전용 T2V와 단일 이미지/프레임 I2V에서 활성화됩니다. 프롬프트 전용 1.5 T2V는 upstream 요청 전에 내부 흰 캔버스 I2V shim을 사용합니다. duration(1-15s), resolution(480p/720p/지원 시 1080p), aspect ratio 컨트롤을 제공합니다.
-
-설정 화면의 QuotaCard에 Grok billing `$used/$limit` 바와 **Switch Account** 버튼(`POST /api/auth/switch`)이 표시됩니다.
-
-![GPT OAuth 활성화와 API 키 비활성 상태를 보여주는 설정 화면](../assets/screenshots/settings-oauth-generation.png)
-
-## 모델 안내
-
-이미지 생성과 Prompt Builder의 앱 기본값은 **`gpt-5.6-luna`**입니다. 이전 모델은 호환 선택지로 남아 있습니다.
-
-- `gpt-5.6-luna` — 현재 이미지·Prompt Builder 기본값.
-- `gpt-6-astra` — 가장 최신 GPT 이미지 모델. 선택 가능하지만 기본값은 아닙니다.
-- `gpt-5.6-terra` / `gpt-5.6-sol` — 계정에서 지원할 때 고를 수 있는 GPT-5.6 대안.
-- `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini` — 호환 선택지.
-
-품질은 `low`, `medium`, `high`, 모더레이션은 `auto`, `low`를 지원합니다.
-
-## 주요 흐름
-
-### Classic mode
-
-한 장을 빠르게 뽑고 다듬고 싶을 때 사용합니다.
-
-1. 프롬프트를 씁니다.
-2. 필요하면 레퍼런스를 붙입니다.
-3. 모델, 품질, 크기, 포맷, 모더레이션을 고릅니다.
-4. 한 장을 만들거나, multimode를 켜서 같은 프롬프트에서 여러 후보 슬롯을 만듭니다.
-5. 생성 후 복사, 다운로드, 이어서 작업, Canvas Mode 정리를 선택합니다.
-
-Prompt Studio의 각 컨트롤, 멀티모드 작성법, 1:1 Direct, 추론 강도, 갤러리
-즐겨찾기 동작은 [Prompt Studio 사용 설명서](PROMPT_STUDIO.ko.md)에 정리되어
-있습니다.
-
-![하나의 프롬프트에서 네 후보 슬롯이 생성 중이고 sidebar에 active job history가 보이는 multimode sequence 화면](../assets/screenshots/multimode-sequence.png)
-
-### Node mode
-
-아이디어를 가지치기하면서 비교하고 싶을 때 사용합니다.
-
-![연결된 생성 카드와 노드별 메타데이터가 보이는 노드 모드 화면](../assets/screenshots/node-graph-branching.png)
-
-각 노드는 자기 프롬프트와 결과를 가집니다. 루트 노드는 로컬 레퍼런스를 붙일 수 있고, 자식 노드는 부모 이미지를 소스로 사용합니다. 완료된 작업은 request ID로 다시 매칭되므로 새로고침이나 그래프 버전 충돌 뒤에도 결과를 복구할 수 있습니다.
-
-### Canvas Mode
-
-이미지가 거의 맞지만 부분 정리가 필요할 때 Canvas Mode를 사용합니다.
-
-- 확대된 이미지에서 viewport 이동과 선택 도구가 분리되어 실수로 annotation을 바꾸지 않고 화면을 이동할 수 있습니다.
-- annotation, eraser, multiselect, group, undo/redo, sticky note를 사용할 수 있습니다.
-- 배경 정리용 시드(seed)를 지정하여 마스크를 미리 본 뒤 canvas version으로 저장할 수 있습니다.
-- 투명 이미지에는 checkerboard preview를 보여주고, export는 alpha 유지 또는 matte 색상 합성 중 선택할 수 있습니다.
-- 저장된 canvas version은 Gallery/HistoryStrip에는 보이지 않지만, Canvas Mode에서는 재사용하거나 다음 reference로 붙일 수 있습니다.
-
-![Zoom controls, annotation, sticky note, canvas toolbar가 보이는 Canvas Mode 화면](../assets/screenshots/canvas-mode-cleanup.png)
-
-### Prompt library와 Import
-
-Prompt library는 로컬 파일, GitHub folder, curated source, GPT-image hint pack에서 가져올 수 있습니다. 가져온 prompt는 로컬 index에 저장되어 매 세션 다시 import하지 않아도 검색과 ranking에 사용할 수 있습니다.
-
-![프롬프트를 라이브러리로 불러오기 전에 GitHub 폴더, 추천 소스, 검색된 후보를 검토하는 프롬프트 불러오기 다이얼로그](../assets/screenshots/prompt-import-dialog.png)
-
-### Experimental Card News Mode
-
-Card News는 아직 개발 전용 실험 기능입니다. 기본 공개 런타임에서는 명시적으로 개발용으로 켜지 않는 한 숨겨져 있으며, 아직 안정적인 공개 기능으로 보면 안 됩니다.
-
-### Settings
-
-Settings 워크스페이스는 계정, 모델, 테마, 언어 설정을 생성 패널에서 독립시켜 관리합니다.
-
-![계정 영역과 생성 모델 설정이 보이는 설정 워크스페이스](../assets/screenshots/settings-workspace.png)
-
-## CLI 명령어
-
-### 서버
-
-| 명령어 | 설명 |
-|---|---|
-| `ima2 serve [--dev]` | 로컬 웹 서버 시작. `--dev`는 서버 진단 로그를 자세히 표시 |
-| `ima2 setup` | 인증 설정 다시 구성 |
-| `ima2 status` | config와 OAuth 상태 확인 |
-| `ima2 doctor` | Node, 패키지, config, auth 진단 |
-| `ima2 doctor image-probe [--json]` | 이미지 없이 진단용 sanitized probe 실행 |
-| `ima2 open` | 웹 UI 열기 |
-| `ima2 reset` | 저장된 config 삭제 |
-
-### 클라이언트
-
-아래 명령어는 `ima2 serve`가 실행 중이어야 합니다. CLI는 모든 서버 라우트를 감쌉니다. 자주 쓰는 명령어만 추렸고, 전체 목록은 [CLI 레퍼런스(영문)](CLI.md)에 있습니다 (생성, 히스토리, 세션, 프롬프트 라이브러리, 어노테이션, Card News, observability, config 모두 포함).
-
-| 명령어 | 설명 |
-|---|---|
-| `ima2 gen <prompt>` | CLI에서 이미지 생성 |
-| `ima2 edit <file> --prompt <text>` | 기존 이미지 수정 |
-| `ima2 multimode <prompt>` | 멀티 이미지 SSE 생성 |
-| `ima2 video <prompt>` | Grok 영상 생성 (SSE 진행률) |
-| `ima2 ls [--session <id>] [--favorites]` | 로컬 히스토리 보기 |
-| `ima2 show <name> [--metadata]` | 생성 파일 열기 |
-| `ima2 prompt ls -q <검색어>` | 프롬프트 라이브러리 검색 |
-| `ima2 inflight ls [--terminal]` | 진행 중 / 최근 완료 작업 (`ps` 별칭) |
-| `ima2 config set <key> <value>` | `~/.ima2/config.json`에 값 쓰기 |
-| `ima2 ping` | 서버 헬스 체크 |
-
-서버 포트는 `~/.ima2/server.json`에 기록됩니다. `3333`이 사용 중이면 `3334+`로 fallback할 수 있으니 터미널에 출력된 URL이나 `ima2 open`을 우선 사용하세요. `--server <url>` 또는 `IMA2_SERVER=http://localhost:3333`로 직접 지정할 수도 있습니다.
-
-전체 명령 목록과 플래그: [docs/CLI.md](CLI.md).
-
-## 설정
-
-우선순위:
-
-```text
-environment variables > ~/.ima2/config.json > built-in defaults
-```
-
-| 변수 | 기본값 | 설명 |
-|---|---:|---|
-| `IMA2_PORT` / `PORT` | `3333` | 웹 서버 포트 |
-| `IMA2_HOST` | `127.0.0.1` | 웹 서버 bind host |
-| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | `10531` | OAuth 프록시 포트 |
-| `IMA2_SERVER` | — | CLI 대상 서버 직접 지정 |
-| `IMA2_CONFIG_DIR` | `~/.ima2` | config와 SQLite 저장 위치 |
-| `IMA2_ADVERTISE_FILE` | `~/.ima2/server.json` | 실행 중 서버 discovery 파일 |
-| `IMA2_GENERATED_DIR` | `~/.ima2/generated` | 생성 이미지 저장 위치 |
-| `IMA2_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | 서버 fallback 이미지 모델 |
-| `IMA2_NO_OAUTH_PROXY` | — | `1`이면 OAuth 프록시 자동 시작 비활성화 |
-| `IMA2_GROK_PLANNER_MODEL` | `grok-4.3` | Grok 플래너 모델 (설정 UI 또는 `--planner-model` CLI 플래그로도 변경 가능) |
-| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | `grok-imagine-image-2.0` | 기본 Grok 이미지 모델 |
-| `IMA2_GROK_VIDEO_MODEL_DEFAULT` | `grok-imagine-video-1.5` | 기본 Grok 비디오 모델 |
-| `IMA2_LOG_LEVEL` | `info` | 일반 `serve`는 `info`, dev 모드는 `debug`. `debug`, `info`, `warn`, `error`, `silent` 지원 |
-| `IMA2_INFLIGHT_TERMINAL_TTL_MS` | `300000` | 디버그용 최근 작업 보존 시간 (5분) |
-| `OPENAI_API_KEY` | — | `provider: "api"` Responses 이미지 경로와 보조 기능용 API 키 |
-| `XAI_API_KEY` | — | `provider: "grok-api"` 직접 xAI Images API 경로 |
-| `GEMINI_API_KEY` | — | `provider: "gemini-api"` Generative Language API |
-| `VERTEX_SERVICE_ACCOUNT_JSON` | — | Vertex AI 서비스 계정 JSON (API 키보다 우선) |
-| `IMA2_AGY_BIN` | PATH의 `agy` | `provider: "agy"` 바이너리 경로 |
-| `IMA2_MAX_PARALLEL` | `24` | 서버 전역 병렬 생성 상한 |
-
-`IMA2_GROK_PROXY_HOST`, `IMA2_GROK_PROXY_PORT`, `IMA2_NO_GROK_PROXY`, `IMA2_GROK_RESTART_*`는 로컬 Grok 프록시와 함께 3.16에서 제거되어 더 이상 읽지 않습니다. 값을 남겨 두어도 아무 일도 일어나지 않습니다.
-
-### 로그 모드
-
-`ima2 serve`는 일반 사용자 기준으로 터미널 출력을 조용하게 유지합니다. 시작 URL, 경고, 오류는 보이지만 요청/노드/OAuth structured log는 기본적으로 숨깁니다.
-
-요청 ID, 노드 생성 단계, OAuth stream 진단, inflight 상태 전환을 봐야 하면 `ima2 serve --dev`, `npm run dev`, 또는 `IMA2_LOG_LEVEL=debug ima2 serve`를 사용하세요. 명시한 `IMA2_LOG_LEVEL`과 `~/.ima2/config.json` 값은 기본값보다 우선합니다.
-
-## API 문서
-
-엔드포인트 목록은 [API Reference](API.md)로 분리했습니다.
-
-자주 묻는 질문은 [FAQ](FAQ.ko.md)에 정리했습니다. Prompt Studio 기능은
-[Prompt Studio 사용 설명서](PROMPT_STUDIO.ko.md)를 확인하세요. 업데이트 후
-예전 이미지가 안 보이면 [예전 이미지 복구 안내](RECOVER_OLD_IMAGES.md)를
-먼저 확인하세요.
-
-## 문제 해결
-
-**`ima2 ping`이 서버에 연결하지 못한다고 나와요**
-`ima2 serve`를 먼저 실행하고 `~/.ima2/server.json`을 확인하세요. `ima2 ping --server http://localhost:3333`도 사용할 수 있습니다.
-
-**GPT OAuth 로그인이 안 돼요**
-`ima2 setup`을 다시 실행하고(옵션 1), `ima2 status`를 확인한 뒤 `ima2 serve`를 다시 시작하세요.
-
-**프록시/VPN 환경에서 `fetch failed`가 반복돼요**
-로컬 OAuth 프록시가 접근 가능한지 확인하세요. 프록시가 필요한 네트워크라면 프록시 클라이언트의 TUN/TURN류 모드를 켠 뒤 `openai-oauth --port 10531`을 다시 시도하세요. 그래도 실패하면 `ima2 serve` 또는 `openai-oauth`를 실행하는 같은 터미널에 `HTTP_PROXY`와 `HTTPS_PROXY`를 설정하세요.
-
-**이미지 생성이 `API_KEY_REQUIRED`로 실패해요**
-`provider: "api"` 요청에 사용할 API 키가 설정되어 있지 않다는 뜻입니다. API 키를 설정하거나 GPT OAuth 공급자로 전환하세요.
-
-**큰 레퍼런스 이미지가 실패해요**
-JPEG/PNG는 업로드 전에 자동 압축됩니다. 그래도 실패하면 해상도를 낮춘 JPEG/PNG로 바꿔 다시 시도하세요. HEIC/HEIF는 브라우저 경로에서 지원하지 않습니다.
-
-**업데이트 후 예전 갤러리 이미지가 안 보여요**
-최근 버전에서 생성 이미지 위치가 설치 폴더에서 `~/.ima2/generated`로 이동했습니다. `ima2 doctor`를 실행하고 [예전 이미지 복구 안내](RECOVER_OLD_IMAGES.md)를 확인하세요.
-
-**`gpt-5.5`만 실패해요**
-먼저 Codex CLI를 최신으로 업데이트한 뒤 다시 시도해보세요. 그래도 실패하면 현재 계정이나 백엔드 경로에서 `gpt-5.5` 이미지 capability 또는 할당량이 아직 다르게 적용되는 상황일 수 있으니, 안정적인 대안으로 `gpt-5.4`를 사용하세요.
-
-**포트가 갑자기 `3457`로 떠요**
-다른 로컬 도구에서 `PORT=3457`이 상속됐을 수 있습니다. `unset PORT`를 실행하거나 `IMA2_PORT=3333 ima2 serve`로 시작하세요.
-
-더 자세한 답변은 [FAQ](FAQ.ko.md)를 확인하세요.
-
-## 개발
-
-```bash
-git clone https://github.com/lidge-jun/ima2-gen.git
-cd ima2-gen
-npm ci
-npm --prefix ui ci
-npm run dev
-npm run typecheck
-npm test
-npm run build
-```
-
-`npm run dev`는 UI를 빌드한 뒤 TypeScript 서버 entry를 `--watch`로 실행하고, 서버 진단 로그를 자세히 표시합니다. `npm run typecheck`, `npm run build:server`, `npm run build:cli`로 TypeScript migration과 package emit 경로를 확인할 수 있습니다.
+- [@lidge-jun](https://github.com/lidge-jun) — maintainer
+- [@ree9622](https://github.com/ree9622) — moderation controls, Windows fixes, structured logging
+- [@Charley-Peng](https://github.com/Charley-Peng) — API cache fix (#74)
+- [@philiptaron](https://github.com/philiptaron) — Nix flake (#81)
+- [@aorying](https://github.com/aorying) — upstream validation error surfacing (informed TS migration direction)
+- [@PARKJONGMlN](https://github.com/PARKJONGMlN) — batch comparison matrix design (#80)
 
 ## 라이선스
 
