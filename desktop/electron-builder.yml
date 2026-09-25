@@ -114,14 +114,23 @@ dmg:
 
 win:
   icon: build/icon.ico
+  # One NSIS installer per architecture; the release publishes x64 and arm64
+  # installers and a merged latest.yml that lets electron-updater pick its own
+  # arch. No zip: every shipped Windows package is an NSIS install, which is
+  # what the in-app updater assumes.
+  #
+  # No arch list: a configured `arch:` overrides the --x64/--arm64 flag, which
+  # is how each CI matrix leg pins the architecture of the runner it is on.
   target:
-    - target: nsis
-      arch: [x64, arm64]
-    - target: zip
-      arch: [x64]
-  # Authenticode signing: set WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD in CI.
+    - nsis
+  # Authenticode signing: set WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD in CI. When
+  # they are absent the build ships unsigned and the release notes say so.
 
 nsis:
+  # A multi-arch build must still produce ima2-<v>-win-<arch>.exe per arch;
+  # a combined "all architectures" installer would not match the release
+  # asset contract the download page expects.
+  buildUniversalInstaller: false
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
@@ -133,8 +142,7 @@ linux:
   category: Graphics
   synopsis: Local-first visual generation studio
   maintainer: lidge-jun
+  # No arch list, same reason as win: each CI leg passes --x64 or --arm64.
   target:
-    - target: AppImage
-      arch: [x64, arm64]
-    - target: deb
-      arch: [x64, arm64]
+    - AppImage
+    - deb
