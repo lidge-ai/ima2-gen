@@ -1,4 +1,4 @@
-import { app, dialog, shell } from "electron";
+import { app, clipboard, dialog, Menu, shell } from "electron";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -12,6 +12,7 @@ import { TrayPopup } from "./lib/tray-popup.mjs";
 import { collectTraySnapshot } from "./lib/tray-data.mjs";
 import { createLoginItem } from "./lib/login-item.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
+import { installContextMenus } from "./lib/context-menu.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
 import { wireAppLifecycle } from "./lib/app-lifecycle.mjs";
 import { createUpdaterController } from "./lib/updater.mjs";
@@ -97,6 +98,7 @@ async function boot() {
   tray.create();
   tray.update({ settings: settingsStore.get() });
   installApplicationMenu(actions);
+  installContextMenus({ app, Menu, clipboard, shell });
   registerIpc({ settingsStore, supervisor, actions, info: { rootDir, logFile: supervisor.logFile } });
 
   supervisor.on("status", (status) => {
