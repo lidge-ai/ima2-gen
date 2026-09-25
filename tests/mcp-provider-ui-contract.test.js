@@ -35,7 +35,7 @@ describe("MCP provider UI contract", () => {
     assert.match(api, /filename: data\.filename/);
     assert.match(api, /mediaType: data\.mediaType/);
     assert.match(settings, /onDone: \(\) => \{\s*get\(\)\.hydrateHistory\(\);\s*settleGeneration\(\)/);
-    assert.match(settings, /`mcp_ui_\$\{Date\.now\(\)\}`/);
+    assert.match(settings, /`mcp_ui_\$\{crypto\.randomUUID\(\)\}`/);
     assert.doesNotMatch(settings, /res\.image|addGeneratedHistoryItem/);
   });
 

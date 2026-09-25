@@ -269,10 +269,6 @@ export async function startMcpGeneration(
   const requestId = input.requestId ?? `mcp_ui_${crypto.randomUUID()}`;
   const stopWatching = watchMcpJob(requestId, callbacks);
   try {
-    // Await SSE transport open BEFORE submitting (same guard as videoExtendStream):
-    // on a fresh connection a terminal job event emitted before the server-side
-    // subscription is installed would be lost, hanging the job until timeout.
-    await whenConnected();
     const providers = await listMcpProviders();
     const selected = providers.find((provider) => provider.id === input.provider);
     if (!selected || selected.status.state !== "connected") {
@@ -280,6 +276,11 @@ export async function startMcpGeneration(
       error.code = selected ? "MCP_NOT_CONNECTED" : "MCP_PROVIDER_UNKNOWN";
       throw error;
     }
+    // Await SSE transport open immediately before submitting (same guard as
+    // videoExtendStream): on a fresh connection a terminal job event emitted
+    // before the server-side subscription is installed would be lost, hanging
+    // the job until MCP_STREAM_TIMEOUT.
+    await whenConnected();
     await jsonFetch<{ ok: boolean; requestId: string }>("/api/mcp/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
