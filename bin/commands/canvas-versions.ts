@@ -2,6 +2,7 @@ import { readFile } from "fs/promises";
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 
 const HELP = `
   ima2 canvas-versions <subcommand> [options]
@@ -24,7 +25,7 @@ const FLAGS = {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
 function buildHeaders(args: ParsedArgs) {
@@ -66,7 +67,7 @@ async function updateSub(argv: string[]) {
   out(color.green("✓ updated"));
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   save: saveSub,
   update: updateSub,
 };

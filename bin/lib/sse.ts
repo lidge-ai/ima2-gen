@@ -6,7 +6,12 @@ import { fetchServerUrl } from "./client.js";
 let CLI_VERSION = "0.0.0";
 export function setCliVersion(v: string) { CLI_VERSION = v; }
 
-export type SseEvent = { event: string; data: any; id?: string };
+export type SseEvent = { event: string; data: unknown; id?: string };
+
+/** Field view of an SSE payload; non-object payloads expose no fields. */
+export function sseFields(data: unknown): Record<string, unknown> {
+  return data && typeof data === "object" ? data as Record<string, unknown> : {};
+}
 
 export interface SseInit {
   method?: string | undefined;

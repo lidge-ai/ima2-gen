@@ -1,8 +1,9 @@
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
-import { streamSse } from "../lib/sse.js";
+import { streamSse, sseFields } from "../lib/sse.js";
 import { fileToDataUri, dataUriToFile, defaultOutName } from "../lib/files.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 import { canonicalizeImageModel } from "../lib/model-aliases.js";
 import { config } from "../../config.js";
 import { deriveProviderIds } from "../../lib/providers/derive.js";
@@ -57,7 +58,7 @@ const SHOW_FLAGS = {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
 async function generateSub(argv: string[]) {
@@ -80,7 +81,7 @@ async function generateSub(argv: string[]) {
   }
   const references = await Promise.all(refs.map((p: string) => fileToDataUri(p)));
   const server = await getServer(args);
-  const body: any = {
+  const body: Record<string, unknown> = {
     prompt,
     quality: args.quality,
     size: args.size,
@@ -100,11 +101,11 @@ async function generateSub(argv: string[]) {
   else if (args["web-search"]) body.webSearchEnabled = true;
 
   if (args["no-stream"]) {
-    const resp: any = await request(server.base, "/api/node/generate", {
+    const resp = await request<{ node?: { id?: string } } | null>(server.base, "/api/node/generate", {
       method: "POST",
       body,
       timeoutMs: (parseInt(String(args.timeout)) || 600) * 1000,
-    }).catch((e: unknown) => { const err = e as { message?: string; code?: string }; die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`); });
+    }).catch((e: unknown): never => { const err = e as { message?: string; code?: string }; die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`); });
     if (args.json) { json(resp); return; }
     out(color.green("✓ node ") + (resp?.node?.id || "(no id)"));
     return;
@@ -115,41 +116,43 @@ async function generateSub(argv: string[]) {
   process.once("SIGINT", onSig); process.once("SIGTERM", onSig);
 
   const url = `${server.base}/api/node/generate`;
-  const images: any[] = [];
-  let doneInfo: any = null;
+  const images: Record<string, unknown>[] = [];
+  let doneInfo: Record<string, unknown> | null = null;
   try {
     for await (const ev of streamSse(url, { body, signal: ac.signal })) {
+      const data = sseFields(ev.data);
       switch (ev.event) {
         case "phase":
-          if (!args.json) out(color.dim(`[phase] ${ev.data.phase || ev.data}`));
+          if (!args.json) out(color.dim(`[phase] ${data.phase || ev.data}`));
           break;
         case "partial":
-          if (!args.json) out(color.dim(`[partial #${ev.data.index ?? "?"}]`));
+          if (!args.json) out(color.dim(`[partial #${data.index ?? "?"}]`));
           break;
         case "image":
-          images.push(ev.data);
+          images.push(data);
           if (!args.json) out(color.green(`✓ image ${images.length}`));
           break;
         case "done":
-          doneInfo = ev.data;
+          doneInfo = data;
           break;
         case "error":
-          die(1, `node generate error: ${ev.data.error || ev.data}${ev.data.code ? ` (${ev.data.code})` : ""}`);
+          die(1, `node generate error: ${data.error || ev.data}${data.code ? ` (${data.code})` : ""}`);
       }
     }
-  } catch (e: any) {
-    if (e.name === "AbortError") return;
-    die(exitCodeForError(e), `${e.message}${e.code ? ` (${e.code})` : ""}`);
+  } catch (e: unknown) {
+    const err = errInfo(e);
+    if (err.name === "AbortError") return;
+    die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
   }
 
   const savedPaths: string[] = [];
   for (let i = 0; i < images.length; i++) {
-    const im = images[i];
-    if (!im.image) continue;
+    const image = images[i]?.image;
+    if (!image) continue;
     const target: string = args.out && i === 0
       ? String(args.out)
       : `${config.storage.generatedDir}/${defaultOutName(i, images.length)}`;
-    await dataUriToFile(im.image, target);
+    await dataUriToFile(String(image), target);
     savedPaths.push(target);
   }
   if (args.json) {
@@ -168,7 +171,7 @@ async function showSub(argv: string[]) {
   json(resp);
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   generate: generateSub,
   show: showSub,
 };

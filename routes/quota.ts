@@ -301,7 +301,7 @@ export function registerQuotaRoutes(app: Express, ctx: RouteRuntimeContext) {
         fetchNaiQuota(ctx),
       ]);
       res.json({ codex, grok, nai });
-    } catch (e: any) {
+    } catch (e: unknown) {
       res.status(500).json({ error: "Failed to fetch quota" });
     }
   });

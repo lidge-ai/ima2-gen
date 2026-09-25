@@ -1,3 +1,4 @@
+import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import { useCallback, type RefObject } from "react";
 import {
   createCanvasVersion,
@@ -39,7 +40,7 @@ interface UseCanvasModeSessionArgs {
   lastMergedDataUrlRef: RefObject<string | null>;
   lastCleanDataUrlRef: RefObject<string | null>;
   canvasVersionItem: GenerateItem | null;
-  annotations: any;
+  annotations: ReturnType<typeof useCanvasAnnotations>;
   exportBackground: string;
   exportMatteColor: string;
   quality: Quality;

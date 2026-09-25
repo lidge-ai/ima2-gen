@@ -6,7 +6,7 @@ export type HistoryItem = {
   providerUrl?: string | null;
   thumb?: string | null;
   mediaType?: "image" | "video" | string;
-  video?: Record<string, unknown> | null;
+  video?: import("../types").GenerateItemVideo | null;
   videoSeries?: { topic?: string; chainIndex?: number } | null;
   videoContinuity?: import("../types").VideoContinuityLineage | null;
   videoLineage?: import("../types").VideoLineage | null;

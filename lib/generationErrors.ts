@@ -1,7 +1,7 @@
-import { classifyUpstreamError, classifyUpstreamErrorCode, classifyModerationStage } from "./errorClassify.js";
+import { classifyUpstreamError, classifyUpstreamErrorCode, classifyModerationStage, type ModerationStage } from "./errorClassify.js";
 import { providerErrorClass, statusForErrorCode } from "./errors/providerMap.js";
 export { statusForErrorCode } from "./errors/providerMap.js";
-import { safeDiagnosticLabel } from "./responsesParse.js";
+import { safeDiagnosticLabel, type ResponseDiagnostics } from "./responsesParse.js";
 import { RESPONSE_DIAGNOSTIC_CODES } from "./responsesErrors.js";
 
 const PASSTHROUGH_CODES = new Set([
@@ -40,7 +40,7 @@ export interface UpstreamErr {
   eventCount?: number;
   eventTypes?: unknown;
   webSearchCalls?: number;
-  responseDiagnostics?: unknown;
+  responseDiagnostics?: ResponseDiagnostics;
   webSearchEnabled?: boolean;
   toolTypes?: unknown;
   toolChoiceKind?: string;
@@ -137,7 +137,28 @@ export function isNonRetryableGenerationError(err: UpstreamErr | null | undefine
   return code === "INVALID_REQUEST" || code === "OAUTH_IMAGE_TIMEOUT" || (Number.isFinite(status) && status >= 400 && status < 500);
 }
 
-function copyEmptyResponseMetadata(target: any, source: UpstreamErr | null | undefined) {
+/** Normalized generation error: the upstream diagnostics carried on a thrown Error. */
+export interface GenerationFailure extends Error, Omit<UpstreamErr, "message" | "name" | "stack" | "cause" | "upstreamCode" | "upstreamType" | "upstreamParam"> {
+  upstreamCode?: string | null;
+  upstreamType?: string | null;
+  upstreamParam?: string | null;
+  moderationStage?: ModerationStage;
+  rawCode?: string;
+  errorClass?: string;
+  [key: string]: unknown;
+}
+
+function generationFailure(message: string): GenerationFailure {
+  const fields: Record<string, unknown> = {};
+  return Object.assign(new Error(message), fields);
+}
+
+interface NormalizeGenerationFailureOptions {
+  proxyMessage?: string;
+  safetyMessage?: string;
+}
+
+function copyEmptyResponseMetadata(target: GenerationFailure, source: UpstreamErr | null | undefined) {
   if (!source) return;
   if (typeof source.eventCount === "number") target.eventCount = source.eventCount;
   if (source.eventTypes) target.eventTypes = source.eventTypes;
@@ -176,10 +197,10 @@ function decorateProviderFailure<T extends Error>(target: T, source: UpstreamErr
   return target;
 }
 
-export function normalizeGenerationFailure(lastErr: UpstreamErr | null | undefined, options: any = {}) {
+export function normalizeGenerationFailure(lastErr: UpstreamErr | null | undefined, options: NormalizeGenerationFailureOptions = {}) {
   const code = errorCodeFrom(lastErr);
   if (PASSTHROUGH_CODES.has(code)) {
-    const err: any = new Error(lastErr?.message || options.proxyMessage || "GPT OAuth proxy/network failure");
+    const err = generationFailure(lastErr?.message || options.proxyMessage || "GPT OAuth proxy/network failure");
     err.code = code;
     err.status = lastErr?.status || statusForErrorCode(code);
     err.cause = lastErr;
@@ -192,7 +213,7 @@ export function normalizeGenerationFailure(lastErr: UpstreamErr | null | undefin
   }
   if (SAFETY_CODES.has(code)) {
     const stage = classifyModerationStage(lastErr?.message);
-    const err: any = new Error(options.safetyMessage || lastErr?.message || "Content generation refused after retries");
+    const err = generationFailure(options.safetyMessage || lastErr?.message || "Content generation refused after retries");
     err.code = "SAFETY_REFUSAL";
     err.status = 422;
     err.moderationStage = stage;
@@ -200,7 +221,7 @@ export function normalizeGenerationFailure(lastErr: UpstreamErr | null | undefin
     return decorateProviderFailure(err, lastErr);
   }
   if (RESPONSE_DIAGNOSTIC_CODES.has(code)) {
-    const err: any = new Error(lastErr?.message || "Image generation did not return image data");
+    const err = generationFailure(lastErr?.message || "Image generation did not return image data");
     err.code = code;
     err.status = lastErr?.status || statusForErrorCode(code, 422);
     err.cause = lastErr;
@@ -221,7 +242,7 @@ export function normalizeGenerationFailure(lastErr: UpstreamErr | null | undefin
     const msg = meta.length
       ? `No image data returned. This may be an unsupported ${meta.join(", ")} combination. Try a different size or model.`
       : "No image data returned from the image backend. Try a different size, quality, or prompt.";
-    const err: any = new Error(msg);
+    const err = generationFailure(msg);
     err.code = "EMPTY_RESPONSE";
     err.status = 422;
     err.cause = lastErr;
@@ -236,7 +257,7 @@ export function normalizeGenerationFailure(lastErr: UpstreamErr | null | undefin
     return decorateProviderFailure(err, lastErr);
   }
   // Unrecognized errors → UNKNOWN (do not pretend they are safety refusals)
-  const err: any = new Error(lastErr?.message || options.proxyMessage || "Image generation failed");
+  const err = generationFailure(lastErr?.message || options.proxyMessage || "Image generation failed");
   err.code = "UNKNOWN";
   err.status = lastErr?.status || 500;
   err.cause = lastErr;

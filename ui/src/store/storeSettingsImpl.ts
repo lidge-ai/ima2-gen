@@ -380,12 +380,12 @@ export function setCustomSizeImpl(w: number, h: number, set: StoreSet, get: Stor
 }
 
 export function setGrokAspectRatioImpl(grokAspectRatio: string, set: StoreSet): void {
-  saveGenerationDefaultsPatch({ grokAspectRatio } as any);
+  saveGenerationDefaultsPatch({ grokAspectRatio });
   set({ grokAspectRatio });
 }
 
 export function setGrokResolutionImpl(grokResolution: "1k" | "2k", set: StoreSet): void {
-  saveGenerationDefaultsPatch({ grokResolution } as any);
+  saveGenerationDefaultsPatch({ grokResolution });
   set({ grokResolution });
 }
 

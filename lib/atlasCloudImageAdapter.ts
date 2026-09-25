@@ -42,7 +42,24 @@ function atlasCloudError(message: string, status: number, code: string): Error {
   return err;
 }
 
-async function readJson(res: Response): Promise<any> {
+/** Atlas Cloud prediction fields; the API nests them under `data` on some endpoints. */
+interface AtlasPredictionFields {
+  id?: unknown;
+  request_id?: unknown;
+  status?: unknown;
+  error?: unknown;
+  message?: unknown;
+  outputs?: unknown;
+  output?: unknown;
+  result?: unknown;
+}
+
+interface AtlasJson extends AtlasPredictionFields {
+  data?: AtlasPredictionFields;
+  raw?: string;
+}
+
+async function readJson(res: Response): Promise<AtlasJson> {
   const text = await res.text();
   if (!text) return {};
   try {
@@ -102,7 +119,7 @@ async function uploadReference(apiKey: string, ref: AtlasReference, index: numbe
   return url;
 }
 
-function predictionIdFrom(json: any): string | null {
+function predictionIdFrom(json: AtlasJson): string | null {
   return firstString(json?.data?.id)
     || firstString(json?.data?.request_id)
     || firstString(json?.id)
@@ -141,7 +158,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-async function fetchPrediction(apiKey: string, id: string, signal?: AbortSignal): Promise<any> {
+async function fetchPrediction(apiKey: string, id: string, signal?: AbortSignal): Promise<AtlasJson> {
   const headers = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
   const primary = await fetch(`${ATLAS_BASE_URL}/model/result/${encodeURIComponent(id)}`, { headers, ...(signal ? { signal } : {}) });
   if (primary.status !== 404) return readJson(primary);

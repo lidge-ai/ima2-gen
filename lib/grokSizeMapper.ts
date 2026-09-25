@@ -67,7 +67,7 @@ export function mapSizeToGrokImageParams(size: string | null | undefined): GrokI
     const res = parts[parts.length - 1];
     const aspect = parts.slice(1, -1).join(":");
     return {
-      aspect_ratio: SUPPORTED_ASPECTS.includes(aspect as any) ? aspect : "auto",
+      aspect_ratio: SUPPORTED_ASPECTS.some((supported) => supported === aspect) ? aspect : "auto",
       resolution: res === "2k" ? "2k" : "1k",
     };
   }

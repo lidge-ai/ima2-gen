@@ -302,7 +302,12 @@ export function reapTerminalJobs(now = Date.now()) {
   }
 }
 
-export function listJobs(filters: any = {}) {
+export interface JobFilters {
+  kind?: string | undefined;
+  sessionId?: string | undefined;
+}
+
+export function listJobs(filters: JobFilters = {}) {
   purgeStaleJobs();
   const { kind, sessionId } = filters;
   const clauses: string[] = [];
@@ -322,7 +327,7 @@ export function listJobs(filters: any = {}) {
     .map((row) => rowToJob(row as InflightRow));
 }
 
-export function listTerminalJobs(filters: any = {}) {
+export function listTerminalJobs(filters: JobFilters = {}) {
   ensureTerminalJobsRestored();
   reapTerminalJobs();
   const { kind, sessionId } = filters;

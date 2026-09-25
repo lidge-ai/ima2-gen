@@ -3,6 +3,7 @@ import { extname, basename } from "path";
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 import { getCliBrowserId } from "../lib/browser-id.js";
 
 const HELP = `
@@ -31,10 +32,10 @@ const COMMON_FLAGS = {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
-function handle(e: unknown) {
+function handle(e: unknown): never {
   const err = e as { message?: string; code?: string };
   die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
 }
@@ -71,7 +72,7 @@ async function rmSub(argv: string[]) {
   const path = args.permanent
     ? `/api/history/${encodeURIComponent(filename)}/permanent`
     : `/api/history/${encodeURIComponent(filename)}`;
-  const resp = await request(server.base, path, { method: "DELETE" }).catch(handle);
+  const resp = await request<{ trashId?: string } | null>(server.base, path, { method: "DELETE" }).catch(handle);
   if (args.json) { json(resp); return; }
   out(color.green(args.permanent ? "✓ permanently deleted" : "✓ moved to trash"));
   if (resp?.trashId) out(color.dim(`  trashId: ${resp.trashId}`));
@@ -98,7 +99,7 @@ async function favoriteSub(argv: string[]) {
   if (!filename) die(2, "filename required");
   const server = await getServer(args);
   const browserId = getCliBrowserId();
-  const resp: any = await request(server.base, "/api/history/favorite", {
+  const resp = await request<{ isFavorite?: boolean }>(server.base, "/api/history/favorite", {
     method: "POST",
     body: { filename },
     headers: { "X-Ima2-Browser-Id": browserId },
@@ -117,7 +118,7 @@ async function importSub(argv: string[]) {
     ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
     ext === ".webp" ? "image/webp" : "image/png";
   const server = await getServer(args);
-  const resp: any = await request(server.base, "/api/history/import-local", {
+  const resp = await request<{ item?: { filename?: string } } | null>(server.base, "/api/history/import-local", {
     method: "POST",
     body: buf,
     raw: true,
@@ -130,7 +131,7 @@ async function importSub(argv: string[]) {
   out(color.green("✓ imported as ") + (resp?.item?.filename || "(unknown)"));
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   rm: rmSub,
   restore: restoreSub,
   favorite: favoriteSub,

@@ -69,9 +69,19 @@ export function detectVideoMimeFromB64(b64: string | null | undefined) {
   return null;
 }
 
-export function safeReferenceDiagnostics(refDetails: any[] = []) {
+export interface ReferenceDetail {
+  index?: number;
+  declaredMime?: string | null;
+  detectedMime?: string | null;
+  b64Chars?: number;
+  approxBytes?: number | null;
+  source?: string;
+  warnings?: string[];
+}
+
+export function safeReferenceDiagnostics(refDetails: ReferenceDetail[] = []) {
   if (!Array.isArray(refDetails)) return [];
-  return refDetails.map((ref: any) => ({
+  return refDetails.map((ref) => ({
     index: ref.index,
     declaredMime: ref.declaredMime || null,
     detectedMime: ref.detectedMime || null,

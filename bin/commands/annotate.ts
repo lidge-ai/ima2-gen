@@ -3,6 +3,7 @@ import { parseArgs, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { readStdin } from "../lib/files.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 import { getCliBrowserId } from "../lib/browser-id.js";
 
 const HELP = `
@@ -24,10 +25,10 @@ const FLAGS = {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
-async function resolveBody(value: unknown): Promise<any> {
+async function resolveBody(value: unknown): Promise<unknown> {
   if (!value) return null;
   if (typeof value !== "string") return null;
   let text: string;
@@ -104,7 +105,7 @@ async function rmSub(argv: string[]) {
   out(color.green("✓ deleted"));
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   get: getSub,
   set: setSub,
   rm: rmSub,

@@ -1,3 +1,4 @@
+import { thrownFields } from "./errInfo.js";
 /**
  * Grok video polling: one status read, and the loop that waits for a render to finish.
  *
@@ -22,6 +23,7 @@ import {
   withTimeoutSignal,
   type GrokVideoOptions,
   type GrokVideoPollResult,
+  type XaiVideoPollJson,
 } from "./grokVideoShared.js";
 
 /** Poll failures that say nothing about the job itself and may be waited out. */
@@ -55,16 +57,17 @@ export async function pollVideoOnce(
       const text = await res.text().catch(() => "");
       throw grokError(`Grok video poll failed: ${text || `HTTP ${res.status}`}`, res.status >= 500 ? 502 : res.status, "GROK_VIDEO_POLL_FAILED");
     }
-    const pollData = await res.json();
+    const pollData = await res.json() as XaiVideoPollJson;
     return normalizeVideoPoll(pollData);
-  } catch (e: any) { // justified: fetch/JSON rejections are untyped; the shape is narrowed below
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     clearTimeout(timer);
-    if (e.name === "AbortError") {
+    if (eFields.name === "AbortError") {
       if (signal?.aborted) throw grokError("Generation canceled", 499, "GENERATION_CANCELED");
       throw grokError("Grok video poll timed out", 504, "GROK_VIDEO_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw grokError(`Grok video poll request failed: ${e.message}`, 502, "GROK_VIDEO_POLL_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw grokError(`Grok video poll request failed: ${eFields.message}`, 502, "GROK_VIDEO_POLL_FAILED");
   }
 }
 
@@ -91,14 +94,15 @@ export async function pollVideoUntilDone(
     try {
       poll = await pollVideoOnce(ctx, requestId, options.signal, options.credential);
       consecutiveErrors = 0;
-    } catch (e: any) { // justified: grokError attaches code/status at runtime
+    } catch (e: unknown) {
+      const eFields = thrownFields(e);
       // The upstream job outlives a transient poll failure, so a blip must not discard a
       // fifteen-minute render. Cancellation and a genuinely dead job still end the wait,
       // and the outer deadline still caps the total.
-      if (e?.code === "GENERATION_CANCELED" || !isRecoverablePollError(e)) throw e;
+      if (eFields.code === "GENERATION_CANCELED" || !isRecoverablePollError(e)) throw e;
       consecutiveErrors += 1;
       if (consecutiveErrors > cfg.pollMaxConsecutiveErrors) throw e;
-      console.warn(`[grok] video poll failed (${consecutiveErrors}/${cfg.pollMaxConsecutiveErrors}) — ${e.message}`);
+      console.warn(`[grok] video poll failed (${consecutiveErrors}/${cfg.pollMaxConsecutiveErrors}) — ${eFields.message}`);
       options.onEvent?.({ phase: "progress", progress: lastProgress >= 0 ? lastProgress : undefined, stalled: true });
       await sleep(cfg.pollIntervalMs, options.signal);
       continue;

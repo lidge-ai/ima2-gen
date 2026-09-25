@@ -1,3 +1,4 @@
+import { thrownFields, type CodedError } from "../../errInfo.js";
 import { logEvent } from "../../logger.js";
 import type { RuntimeContext } from "../../runtimeContext.js";
 import { detectImageMimeFromB64 } from "../../refs.js";
@@ -77,7 +78,7 @@ function parseGeminiImageParams(size?: string): { aspectRatio: string; imageSize
 }
 
 function geminiApiError(message: string, status: number, code: string): Error {
-  const err: any = new Error(message);
+  const err: CodedError = new Error(message);
   err.status = status;
   err.code = code;
   return err;
@@ -123,7 +124,7 @@ export async function generateViaGeminiApi(
 ): Promise<GeminiApiGenerateResult> {
   const apiKey = ctx.geminiApiKey;
   const vertexReady = ctx.hasVertexKey && isVertexInitialized();
-  const authMode = (ctx as any).geminiAuthMode as string | undefined;
+  const authMode = ctx.geminiAuthMode;
   const useVertex = authMode === "vertex" ? vertexReady : (!apiKey && vertexReady);
   if (!apiKey && !useVertex) {
     throw geminiApiError("Gemini API key or Vertex AI credentials not configured", 401, "GEMINI_API_KEY_MISSING");
@@ -199,7 +200,7 @@ export async function generateViaGeminiApi(
       throw geminiApiError(`Gemini API error (${res.status}): ${text.slice(0, 200)}`, 502, "GEMINI_API_UPSTREAM_ERROR");
     }
 
-    const json = await res.json() as any;
+    const json = await res.json() as GeminiGenerateJson;
 
     // Extract image from candidates[0].content.parts[]
     const parts = json?.candidates?.[0]?.content?.parts || [];
@@ -251,14 +252,24 @@ export async function generateViaGeminiApi(
       webSearchCalls: 0,
       mime,
     };
-  } catch (e: any) {
-    if (e.name === "AbortError") {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
+    if (eFields.name === "AbortError") {
       if (options.signal?.aborted) {
         throw geminiApiError("Generation canceled", 499, "GENERATION_CANCELED");
       }
       throw geminiApiError("Gemini API generation timed out", 504, "GENERATION_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw geminiApiError(`Gemini API request failed: ${e.message}`, 502, "GEMINI_API_NETWORK_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw geminiApiError(`Gemini API request failed: ${eFields.message}`, 502, "GEMINI_API_NETWORK_FAILED");
   }
+}
+
+/** generateContent response fields read by the image adapter. */
+interface GeminiGenerateJson {
+  candidates?: Array<{
+    content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string }; text?: string }> };
+    finishReason?: string;
+  }>;
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
 }

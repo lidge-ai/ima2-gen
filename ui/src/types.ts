@@ -76,12 +76,20 @@ export type SizePreset =
   | "auto"
   | "custom";
 
+export type GenerateItemVideo = {
+  duration?: number;
+  resolution?: string;
+  aspectRatio?: string;
+  topic?: string;
+  [key: string]: unknown;
+};
+
 export type GenerateItem = {
   image: string;
   url?: string;
   providerUrl?: string | null;
   mediaType?: "image" | "video" | string;
-  video?: Record<string, unknown> | null;
+  video?: GenerateItemVideo | null;
   videoSeries?: { topic?: string; chainIndex?: number } | null;
   videoContinuity?: VideoContinuityLineage | null;
   videoLineage?: VideoLineage | null;

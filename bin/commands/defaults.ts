@@ -50,6 +50,19 @@ const FLAGS = {
   help: { short: "h", type: "boolean" },
 };
 
+interface LaneDefaults {
+  model?: unknown;
+  reasoningEffort?: unknown;
+  size?: unknown;
+  webSearchEnabled?: unknown;
+}
+
+interface DefaultsPayload {
+  source: string;
+  server: string | null;
+  defaults?: { oauth?: LaneDefaults; api?: LaneDefaults; cli?: { image?: string; video?: string } };
+}
+
 function localDefaults() {
   const effective = buildEffectiveConfig();
   return {
@@ -76,7 +89,8 @@ async function readDefaults(args: ReturnType<typeof parseArgs>) {
   if (args.local) return localDefaults();
   try {
     const server = await resolveServer({ serverFlag: args.server });
-    const capabilities = await request(server.base, "/api/capabilities", { timeoutMs: 5000 });
+    const capabilities = await request<{ defaults?: { oauth?: LaneDefaults; api?: LaneDefaults } }>(
+      server.base, "/api/capabilities", { timeoutMs: 5000 });
     return {
       ok: true,
       source: "server",
@@ -90,7 +104,7 @@ async function readDefaults(args: ReturnType<typeof parseArgs>) {
   }
 }
 
-function printDefaults(payload: any): void {
+function printDefaults(payload: DefaultsPayload): void {
   out(`ima2 defaults (${payload.source})`);
   out(`server: ${payload.server || "none"}`);
   out("");
@@ -159,7 +173,7 @@ function parseCliTarget(value: string, isJson: boolean): { lane: string; model: 
 async function fetchModelCatalog(args: ReturnType<typeof parseArgs>): Promise<Record<string, LaneInfo>> {
   try {
     const server = await resolveServer({ serverFlag: args.server });
-    const catalog = await request(server.base, "/api/models", { timeoutMs: 5000 });
+    const catalog = await request<{ lanes?: Record<string, LaneInfo> }>(server.base, "/api/models", { timeoutMs: 5000 });
     return catalog.lanes ?? {};
   } catch (error) {
     fail({

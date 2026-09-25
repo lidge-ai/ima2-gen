@@ -15,7 +15,7 @@ import { characterElementIdForMcp } from "./characterResolve.js";
 import { resolveTarget, type ModelCatalog, type ModelEntry, type ResolveResult } from "./modelResolver.js";
 import { color, die, err, exitCodeForError, fail, json, out } from "./output.js";
 import { createCliRequestId } from "./recover-output.js";
-import { streamSse } from "./sse.js";
+import { streamSse, sseFields } from "./sse.js";
 
 const VALID_RESOLUTIONS = new Set(["480p", "720p", "1080p"]);
 const VALID_ASPECT_RATIOS = new Set(["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "auto"]);
@@ -171,22 +171,23 @@ async function consumeCoreSse(url: string, body: Record<string, unknown>, args: 
   let done: Record<string, unknown> | null = null; let lastProgress = -1;
   try {
     for await (const event of streamSse(url, { body, signal: controller.signal, headers: { "X-Request-Id": requestId } })) {
+      const data = sseFields(event.data);
       if (event.event === "planning" && !args.json) {
         out(color.dim("[planning] preparing video generation..."));
       } else if (event.event === "submitted" && !args.json) {
-        out(color.dim(`[submitted] xai request: ${event.data.xaiVideoRequestId || "..."}`));
+        out(color.dim(`[submitted] xai request: ${data.xaiVideoRequestId || "..."}`));
       } else if (event.event === "progress") {
-        const progress = typeof event.data.progress === "number" ? Math.round(event.data.progress * 100) : null;
+        const progress = typeof data.progress === "number" ? Math.round(data.progress * 100) : null;
         if (progress !== null && progress !== lastProgress && !args.json) {
           process.stdout.write(`\r  ${renderBar(progress)} ${progress}%`);
           lastProgress = progress;
         }
       } else if (event.event === "done") {
         if (!args.json && lastProgress >= 0) process.stdout.write("\n");
-        done = event.data;
+        done = data;
       } else if (event.event === "error") {
         if (!args.json && lastProgress >= 0) process.stdout.write("\n");
-        die(1, `video error: ${event.data.error || event.data}${event.data.guidance ? `\n${event.data.guidance}` : ""}${event.data.code ? ` (${event.data.code})` : ""}`);
+        die(1, `video error: ${data.error || event.data}${data.guidance ? `\n${data.guidance}` : ""}${data.code ? ` (${data.code})` : ""}`);
       }
     }
   } catch (error) {

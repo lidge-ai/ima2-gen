@@ -12,7 +12,7 @@ export async function buildStorageDoctorLines(ctx: RouteRuntimeContext) {
     `    Legacy folders found: ${status.legacySourcesFound}`,
   ];
 
-  for (const source of status.legacySources.slice(0, 5) as Array<{ path: any; fileCount: number }>) {
+  for (const source of status.legacySources.slice(0, 5)) {
     lines.push(`      - ${source.path} (${source.fileCount} files)`);
   }
   if (status.legacySources.length > 5) {

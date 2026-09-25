@@ -6,7 +6,7 @@ import { grokFetchWithRetry } from "./grokUpstreamRetry.js";
 const MAX_VIDEO_DOWNLOAD_BYTES = 100 * 1024 * 1024;
 
 function downloadTimeoutMs(ctx: RouteRuntimeContext): number {
-  const g = (ctx.config as any).grokProvider || {};
+  const g = ctx.config?.grokProvider || {};
   return g.videoDownloadTimeoutMs || 300_000;
 }
 

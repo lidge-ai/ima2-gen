@@ -213,7 +213,7 @@ export async function uploadBufferToComfy(
   );
 }
 
-async function postToComfy(origin: string, image: GeneratedImage, timeoutMs: number, fetchImpl: typeof fetch = fetch): Promise<string> {
+async function postToComfy(origin: string, image: GeneratedImage, timeoutMs: number, fetchImpl: ComfyUploadFetch = fetch): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -246,7 +246,9 @@ async function postToComfy(origin: string, image: GeneratedImage, timeoutMs: num
 }
 
 interface ExportInput { filename: unknown; }
-interface ExportOptions { comfyUrl?: string; fetchImpl?: (input: any, init?: any) => Promise<any>; }
+/** The subset of fetch the upload relies on, so callers can inject a stub. */
+type ComfyUploadFetch = (input: string, init: RequestInit) => Promise<Pick<Response, "ok" | "status" | "json">>;
+interface ExportOptions { comfyUrl?: string; fetchImpl?: ComfyUploadFetch; }
 
 export async function exportImageToComfy(ctx: ComfyCtx, input: ExportInput, options: ExportOptions = {}) {
   const origin = normalizeComfyOrigin(options.comfyUrl ?? ctx.config.comfy.defaultUrl);
