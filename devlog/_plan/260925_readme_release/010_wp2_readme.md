@@ -59,3 +59,20 @@ Every string asserted by tests must survive; B greps these before and after: pro
 - GFM render: render README.md through GitHub's markdown API (`gh api markdown -f mode=gfm`) into an HTML page with GitHub CSS, screenshot top 2 viewports light and dark, read back.
 - DeepSeek diff review at C.
 - PR to dev with screenshot evidence uploaded to `pr-assets`; PR fast gate green; merge with `--match-head-commit`; dev CI green at merged head.
+
+## P amendments (decided while prototyping, disclosed before audit)
+
+Prototyping ran ahead of the A gate inside P; nothing was committed before the audit below.
+
+- Screenshots ship as WebP (2160 px wide, quality 86): readme-create 129 KB, readme-home 113 KB, readme-node 118 KB, readme-canvas 230 KB. PNG at the same size was 1.2-3 MB each.
+- Screens actually captured: Create (replaces "Classic"), Home, Node graph, Canvas Mode. The Providers settings capture was dropped; the showcase has four rows.
+- Demo content: 10 GPT OAuth images (chrome sculpture, concrete interior, ceramic cup, alpine lake, fictional portrait, Korean type poster, isometric greenhouse, unbranded rangefinder cutout, rainy alley, sneaker) plus 3 real i2i branches of the sculpture (gold, marble, forest) made against the demo server. The first camera came back with a real brand logo and was regenerated with an explicit no-logo prompt.
+- Node graph content was saved through `PUT /api/sessions/:id/graph` with the three real i2i results as children (`source-right` → `target-left` handles).
+- Scripts kept in this unit: `scripts/capture-readme.mjs` (screens), `scripts/banner.html` + `scripts/render-banner.mjs` (banner, transparent rounded corners), `scripts/render-readme.mjs` (GFM render through `gh api markdown` with GitHub CSS, light and dark).
+- Translations: header, showcase, quick start, features, provider table, configuration intro, troubleshooting, docs list and development prose are freshly translated from the new English README. The CLI tables, environment table, logging modes, provider details and desktop build notes are shared verbatim in English inside collapsed sections labelled "(English)", so the four languages can never drift from the English facts. Language-specific doc links follow the files that exist (ko: FAQ, Prompt Studio; zh-CN/zh-TW: API, CLI, Docker, FAQ, npx, Prompt Studio, recover old images; ja: English docs).
+- Provider table facts come from `ima2 models` on the demo server: AtlasCloud and MiniMax are image-only; `agy` serves `nano-banana-2` and `nano-banana-pro`.
+
+## Findings outside scope (reported, not fixed here)
+
+- `ima2 gen --no-save` still saved the image into `~/.ima2/generated` on the server and ignored `-o`, printing a data URL instead. The eleven stray files were moved out of the user's gallery into `/tmp/ima2-readme-demo`.
+- `ima2 gen --server <other>` writes a CLI copy into `~/.ima2/generated/ima2-<timestamp>.png`; two jobs finishing in the same second got the same name and one overwrote the other.
