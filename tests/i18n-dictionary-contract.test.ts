@@ -92,6 +92,11 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
     "settings.reasoning.none", "settings.reasoning.low", "settings.reasoning.medium",
     "settings.reasoning.high", "settings.reasoning.xhigh", "settings.reasoning.max",
   ]],
+  // laneLabelKeys literals in the same file — lane tags on hinted settings rows.
+  ["ui/src/components/ImageModelSelect.tsx :: laneKey", [
+    "settings.account.apiTitle", "settings.account.agyTitle", "provider.geminiApiCompatTitle",
+    "settings.apiKeys.atlascloud.label", "settings.apiKeys.minimax.label", "settings.account.naiTitle",
+  ]],
   // RAIL_ITEMS labelKey literals in NavRail.tsx.
   ["ui/src/components/NavRail.tsx :: item.labelKey", [
     "nav.home", "nav.create", "nav.node", "nav.agent", "nav.assets", "nav.assetGen", "nav.settings",

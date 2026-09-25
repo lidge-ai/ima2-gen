@@ -1427,7 +1427,7 @@
     },
     "imageModel": {
       "title": "影像模型",
-      "body": "選擇供後代使用的影像模型。選擇 Grok 模型會將提供者切換到 Grok。",
+      "body": "選擇供後代使用的影像模型。選擇其他提供者（Grok、OpenAI API、Gemini 等）的模型會切換到該提供者。",
       "gpt54Mini": "GPT-5.4 迷你",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
