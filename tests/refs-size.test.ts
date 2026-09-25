@@ -1,4 +1,4 @@
-// tests/refs-size.test.js — 0.09.7 validator returns { error, code } for all 6 paths.
+// tests/refs-size.test.ts — 0.09.7 validator returns { error, code } for all 6 paths.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";

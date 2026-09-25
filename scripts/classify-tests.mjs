@@ -4,8 +4,9 @@
 //
 // Flags:
 //   --check             Fail if the on-disk inventory is stale.
-//   --fail-js-runtime   Fail if any runtime-importing test is still .test.js
-//                       (used after Phase 2 to lock the conversion in).
+//   --fail-js-runtime   Fail if any test is still .test.js / .test.mjs
+//                       (every test is TypeScript after the full conversion;
+//                       the flag name is kept for script compatibility).
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -66,10 +67,12 @@ if (check) {
 }
 
 if (failJsRuntime) {
-  const jsRuntime = runtime.filter((path) => path.endsWith(".test.js"));
-  if (jsRuntime.length > 0) {
-    console.error("Runtime-importing tests must be .test.ts:");
-    for (const path of jsRuntime) console.error(`- ${path}`);
+  const jsTests = files
+    .filter((file) => /\.test\.[cm]?js$/.test(file))
+    .map((file) => join(testDir, file));
+  if (jsTests.length > 0) {
+    console.error("All tests must be .test.ts (no .test.js / .test.mjs):");
+    for (const path of jsTests) console.error(`- ${path}`);
     process.exit(1);
   }
 }

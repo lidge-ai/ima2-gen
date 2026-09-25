@@ -4,7 +4,7 @@
 // - getMcpModelCatalog (fetch-only; the EventSource-backed generation
 //   orchestration is intentionally NOT executed here — see audit R3-2).
 // Store-impl wiring (provider-switch kind preservation etc.) is covered by
-// source contracts in tests/mcp-provider-ui-contract.test.js because
+// source contracts in tests/mcp-provider-ui-contract.test.ts because
 // ui/src/store modules require Vite's import.meta.env at import time.
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";

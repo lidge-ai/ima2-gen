@@ -130,8 +130,8 @@ describe("MCP settings state contracts (F10-F13)", () => {
   });
 
   it("keeps the existing MCP provider and duration contract suites in the gate", () => {
-    const providerContract = readSource("tests/mcp-provider-ui-contract.test.js");
-    const durationContract = readSource("tests/duration-slider-contract.test.js");
+    const providerContract = readSource("tests/mcp-provider-ui-contract.test.ts");
+    const durationContract = readSource("tests/duration-slider-contract.test.ts");
 
     assert.match(providerContract, /describe\("MCP provider UI contract"/);
     assert.match(durationContract, /describe\("dynamic duration slider contract"/);
