@@ -26,10 +26,12 @@ function jwt(payload: Record<string, unknown>): string {
 }
 
 const AUTH_CLAIM = { "https://api.openai.com/auth": { chatgpt_account_id: "acct-1" } };
+const FEDRAMP_CLAIM = { "https://api.openai.com/auth": { chatgpt_account_id: "acct-1", chatgpt_account_is_fedramp: true } };
 const EXPIRED = jwt({ exp: 1_000_000_000, name: "expired", ...AUTH_CLAIM });
 const STALE = jwt({ exp: 2_000_000_000, name: "stale", ...AUTH_CLAIM });
 const FRESH = jwt({ exp: 2_000_000_000, name: "fresh", ...AUTH_CLAIM });
 const ID_TOKEN = jwt({ email: "a@b.c", ...AUTH_CLAIM });
+const ID_TOKEN_FEDRAMP = jwt({ email: "a@b.c", ...FEDRAMP_CLAIM });
 
 const USAGE_BODY = {
   email: "a@b.c",
@@ -45,22 +47,27 @@ let authFile: string;
 let server: Server;
 let base: string;
 let realFetch: typeof fetch;
-let seenBearer: string[];
+type SeenCall = { bearer: string; accountId: string | null; fedramp: string | null };
+let seenCalls: SeenCall[];
 let refreshCalls: number;
+let tokenFails: boolean;
+let tokenIdToken: string;
 const savedEnv: Record<string, string | undefined> = {};
 
-function writeSession(accessToken: string, refreshToken?: string) {
+function writeSession(accessToken: string, refreshToken?: string, idToken: string = ID_TOKEN) {
   writeFileSync(authFile, JSON.stringify({
     auth_mode: "chatgpt",
     tokens: {
       access_token: accessToken,
       ...(refreshToken ? { refresh_token: refreshToken } : {}),
       account_id: "acct-1",
-      id_token: ID_TOKEN,
+      id_token: idToken,
     },
     last_refresh: new Date().toISOString(),
   }));
 }
+
+const bearers = () => seenCalls.map((call) => call.bearer);
 
 type QuotaBody = {
   codex: {
@@ -86,8 +93,10 @@ describe("/api/quota codex lane follows the session store", () => {
     process.env.HOME = root;
     process.env.USERPROFILE = root;
     process.env.CODEX_HOME = join(root, ".codex");
-    seenBearer = [];
+    seenCalls = [];
     refreshCalls = 0;
+    tokenFails = false;
+    tokenIdToken = ID_TOKEN;
     realFetch = globalThis.fetch;
     setCodexSessionStoreForTests(createCodexSessionStore({ configDir: root }));
     const app = express();
@@ -100,15 +109,21 @@ describe("/api/quota codex lane follows the session store", () => {
       const url = String(input);
       if (url.startsWith(base)) return realFetch(input, init);
       if (url.endsWith("/wham/usage")) {
-        const bearer = String((init?.headers as Headers | undefined)?.get?.("authorization") ?? "");
-        seenBearer.push(bearer);
-        return bearer === `Bearer ${FRESH}`
+        const headers = init?.headers as Headers | undefined;
+        seenCalls.push({
+          bearer: String(headers?.get?.("authorization") ?? ""),
+          accountId: headers?.get?.("chatgpt-account-id") ?? null,
+          fedramp: headers?.get?.("x-openai-fedramp") ?? null,
+        });
+        return seenCalls.at(-1)!.bearer === `Bearer ${FRESH}`
           ? Response.json(USAGE_BODY)
           : new Response("{}", { status: 401 });
       }
       if (url.endsWith("/oauth/token")) {
         refreshCalls++;
-        return Response.json({ access_token: FRESH, refresh_token: "rt-new", id_token: ID_TOKEN });
+        return tokenFails
+          ? new Response("{}", { status: 500 })
+          : Response.json({ access_token: FRESH, refresh_token: "rt-new", id_token: tokenIdToken });
       }
       return new Response("unexpected", { status: 500 });
     }) as typeof fetch;
@@ -131,7 +146,8 @@ describe("/api/quota codex lane follows the session store", () => {
     assert.equal(body.codex.authenticated, undefined);
     assert.equal(body.codex.windows.length, 2);
     assert.equal(body.codex.account?.email, "a@b.c");
-    assert.deepEqual(seenBearer, [`Bearer ${FRESH}`], "wham/usage only ever sees the refreshed token");
+    assert.deepEqual(bearers(), [`Bearer ${FRESH}`], "wham/usage only ever sees the refreshed token");
+    assert.deepEqual(seenCalls.map((c) => c.accountId), ["acct-1"]);
     assert.equal(refreshCalls, 1);
     const stored = JSON.parse(readFileSync(authFile, "utf8"));
     assert.equal(stored.tokens.access_token, FRESH);
@@ -142,7 +158,27 @@ describe("/api/quota codex lane follows the session store", () => {
     writeSession(STALE, "rt-old");
     const body = await quota();
     assert.equal(body.codex.windows.length, 2);
-    assert.deepEqual(seenBearer, [`Bearer ${STALE}`, `Bearer ${FRESH}`]);
+    assert.deepEqual(bearers(), [`Bearer ${STALE}`, `Bearer ${FRESH}`]);
+    assert.equal(refreshCalls, 1);
+  });
+
+  it("a fedramp session carries the fedramp header on the retried call too", async () => {
+    writeSession(STALE, "rt-old", ID_TOKEN_FEDRAMP);
+    tokenIdToken = ID_TOKEN_FEDRAMP;
+    const body = await quota();
+    assert.equal(body.codex.windows.length, 2);
+    assert.deepEqual(bearers(), [`Bearer ${STALE}`, `Bearer ${FRESH}`]);
+    assert.deepEqual(seenCalls.map((c) => c.fedramp), ["true", "true"]);
+    assert.deepEqual(seenCalls.map((c) => c.accountId), ["acct-1", "acct-1"]);
+  });
+
+  it("a session the store cannot refresh reports a quota error, not logged-out", async () => {
+    writeSession(EXPIRED, "rt-old");
+    tokenFails = true;
+    const body = await quota();
+    assert.equal(body.codex.error, true);
+    assert.equal(body.codex.authenticated, undefined);
+    assert.deepEqual(bearers(), [], "the usage call is skipped while the refresh is unresolved");
     assert.equal(refreshCalls, 1);
   });
 
@@ -150,13 +186,13 @@ describe("/api/quota codex lane follows the session store", () => {
     writeSession(EXPIRED);
     const body = await quota();
     assert.equal(body.codex.authenticated, false);
-    assert.deepEqual(seenBearer, [`Bearer ${EXPIRED}`]);
+    assert.deepEqual(bearers(), [`Bearer ${EXPIRED}`]);
     assert.equal(refreshCalls, 0);
   });
 
   it("no session reports not-logged-in without touching the upstream", async () => {
     const body = await quota();
     assert.equal(body.codex.authenticated, false);
-    assert.deepEqual(seenBearer, []);
+    assert.deepEqual(bearers(), []);
   });
 });

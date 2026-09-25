@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { fetchNaiSubscription } from "../lib/naiSubscription.js";
+import { readChatgptAccess } from "../lib/chatgptAuth.js";
 import { authHeaders, codexSessionStore } from "../lib/codexBackend/client.js";
 import type { CodexSession } from "../lib/codexBackend/session.js";
 import { logWarn } from "../lib/logger.js";
@@ -26,13 +27,28 @@ export interface QuotaResult {
 }
 
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
+const CODEX_SESSION_TIMEOUT_MS = 8_000;
+
+type CodexSessionRead = { session: CodexSession } | "none" | "error";
+
+/** A hung token endpoint must not stall the whole quota response. */
+function withSessionTimeout<T>(work: Promise<T>): Promise<T> {
+  return Promise.race([
+    work,
+    new Promise<never>((_resolve, reject) => {
+      setTimeout(() => reject(new Error("codex session read timed out")), CODEX_SESSION_TIMEOUT_MS).unref();
+    }),
+  ]);
+}
 
 /** Same session the GPT OAuth lane uses: the file is re-read and a near-expired token refreshes. */
-async function readCodexSession(): Promise<CodexSession | null> {
+async function readCodexSession(): Promise<CodexSessionRead> {
   try {
-    return await codexSessionStore().get();
+    return { session: await withSessionTimeout(codexSessionStore().get()) };
   } catch {
-    return null;
+    // A session file exists but the store could not serve it (a refresh or read
+    // failure): that is a quota error, not a logged-out account.
+    return readChatgptAccess() ? "error" : "none";
   }
 }
 
@@ -49,7 +65,7 @@ async function fetchCodexUsage(session: CodexSession): Promise<QuotaResult> {
     if (resp.status === 401) {
       // The one-shot recovery codexUpstream uses: an invalidated token refreshes once and retries.
       try {
-        const fresh = await codexSessionStore().refresh(session.accessToken);
+        const fresh = await withSessionTimeout(codexSessionStore().refresh(session.accessToken));
         if (fresh.accessToken !== session.accessToken) {
           await resp.body?.cancel().catch(() => undefined);
           resp = await codexUsageRequest(fresh);
@@ -313,9 +329,16 @@ export async function fetchNaiQuota(ctx: RouteRuntimeContext): Promise<QuotaResu
 export function registerQuotaRoutes(app: Express, ctx: RouteRuntimeContext) {
   app.get("/api/quota", async (_req, res) => {
     try {
-      const session = await readCodexSession();
+      const read = await readCodexSession();
+      const codexResult = typeof read === "object"
+        ? fetchCodexUsage(read.session)
+        : Promise.resolve<QuotaResult>({
+          provider: "codex",
+          ...(read === "error" ? { error: true } : { authenticated: false }),
+          windows: [],
+        });
       const [codex, grok, nai] = await Promise.all([
-        session ? fetchCodexUsage(session) : Promise.resolve({ provider: "codex", authenticated: false, windows: [] } as QuotaResult),
+        codexResult,
         fetchGrokBilling(),
         fetchNaiQuota(ctx),
       ]);
