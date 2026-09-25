@@ -29,8 +29,14 @@ describe("Grok size mapper", () => {
   });
 
   it("maps custom dimensions to the closest supported xAI aspect", () => {
-    assert.deepEqual(mapSizeToGrokImageParams("2400x1024"), { aspect_ratio: "20:9", resolution: "2k" });
+    assert.deepEqual(mapSizeToGrokImageParams("2400x1024"), { aspect_ratio: "21:9", resolution: "2k" });
+    assert.deepEqual(mapSizeToGrokImageParams("2560x1024"), { aspect_ratio: "5:2", resolution: "2k" });
     assert.deepEqual(mapSizeToGrokImageParams("900x1800"), { aspect_ratio: "1:2", resolution: "1k" });
     assert.deepEqual(mapSizeToGrokImageParams("1950x900"), { aspect_ratio: "19.5:9", resolution: "1k" });
+  });
+
+  it("passes through every valid xAI aspect in the picker's native format", () => {
+    assert.deepEqual(mapSizeToGrokImageParams("grok:21:9:2k"), { aspect_ratio: "21:9", resolution: "2k" });
+    assert.deepEqual(mapSizeToGrokImageParams("grok:5:2:1k"), { aspect_ratio: "5:2", resolution: "1k" });
   });
 });
