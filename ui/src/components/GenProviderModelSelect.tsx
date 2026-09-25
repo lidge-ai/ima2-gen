@@ -64,6 +64,10 @@ const MCP_OWNED_LANES = new Set(["runway", "higgsfield"]);
 const MCP_PREFIX = "mcp:";
 const CORE_PREFIX = "core:";
 const EFFORT_PREFIX = "effort:";
+// Provider-hinted rows share one model id across lanes (nbp agy / nbp api):
+// without the lane in the item value, Select's first-match lookup resolves the
+// wrong row's label and picking either row does the same thing.
+const LANE_PREFIX = "lane:";
 // Re-exported from the resolver module so the option rows below and the
 // selected-value computation can never drift onto two different encodings.
 const VIDEO_PREFIX = VIDEO_VALUE_PREFIX;
@@ -210,9 +214,14 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     comfyWorkflow,
     comfyVideoWorkflow,
   });
+  // The trigger must carry the lane too (see LANE_PREFIX): coreModelValue is
+  // the bare model id on image lanes, which would match the first hinted row
+  // regardless of the current lane.
   const modelValue = mcpProvider
     ? (mcpModel ? encodeMcpModelValue(mcpMediaKind, mcpModel) : "")
-    : coreModelValue;
+    : coreModelValue === imageModel && coreModels.some((option) => option.value === imageModel && "providerHint" in option && option.providerHint === provider)
+      ? `${LANE_PREFIX}${provider}:${imageModel}`
+      : coreModelValue;
   const isGptFamily = !mcpProvider && (provider === "oauth" || provider === "api") && !videoModel;
   const mcpModelKnown = Boolean(
     mcpModel && (
@@ -283,6 +292,18 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     }
     if (value.startsWith(VIDEO_PREFIX)) {
       selectVideoModel(value.slice(VIDEO_PREFIX.length));
+      return;
+    }
+    if (value.startsWith(LANE_PREFIX)) {
+      const sep = value.indexOf(":", LANE_PREFIX.length);
+      if (sep > LANE_PREFIX.length) {
+        const lane = value.slice(LANE_PREFIX.length, sep);
+        if (!KNOWN_PROVIDER_LABELS.has(lane)) return;
+        // Same routing as the settings dropdown: switch lane first so the
+        // provider change cannot coerce the model to a lane default.
+        setProvider(lane as Provider);
+        setImageModel(value.slice(sep + 1) as Parameters<typeof setImageModel>[0]);
+      }
       return;
     }
     setImageModel(value as Parameters<typeof setImageModel>[0]);
@@ -381,7 +402,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
           ...(entry.disabled ? { disabled: true } : {}),
         }))
         : coreModels.map((option) => ({
-          value: option.value,
+          value: "providerHint" in option && option.providerHint ? `${LANE_PREFIX}${option.providerHint}:${option.value}` : option.value,
           label: option.shortLabel,
         })),
     });
