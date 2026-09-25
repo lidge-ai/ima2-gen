@@ -132,7 +132,13 @@ export function isNaiImageModel(value: unknown): boolean {
 
 export function getImageModelOptionsForProvider(provider: Provider) {
   if (provider === "grok" || provider === "grok-api") return GROK_IMAGE_MODEL_OPTIONS;
-  if (provider === "agy" || provider === "gemini-api") return GEMINI_IMAGE_MODEL_OPTIONS;
+  // The two Gemini lanes share catalog values, so the family list carries one
+  // row per lane ("nbp agy" vs "nbp api"). Returning it whole would list each
+  // value twice and label the stored model with whichever row sorts first —
+  // each lane gets only the rows declaring its own providerHint.
+  if (provider === "agy" || provider === "gemini-api") {
+    return GEMINI_IMAGE_MODEL_OPTIONS.filter((option) => option.providerHint === provider);
+  }
   if (provider === "atlascloud") return ATLASCLOUD_IMAGE_MODEL_OPTIONS;
   if (provider === "minimax") return MINIMAX_IMAGE_MODEL_OPTIONS;
   if (provider === "nai") return NAI_IMAGE_MODEL_OPTIONS;
