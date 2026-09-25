@@ -7,7 +7,7 @@ import { parse } from "yaml";
 import { readMacExpectations } from "../desktop/scripts/verify-mac-signature.mjs";
 
 // Scope note: the signing gate itself is owned by desktop-signing-policy.test.ts.
-// This file pins what makes the release Apple Silicon only and updatable.
+// This file pins the multiplatform release asset contract the download site relies on.
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function read(path: string): any {
@@ -24,16 +24,32 @@ function stepByName(steps: any[], name: string): any {
   return step;
 }
 
-describe("Apple Silicon desktop release contract", () => {
-  it("ships arm64 macOS only while keeping other platforms configured but dormant", () => {
+describe("multiplatform desktop release contract", () => {
+  it("ships one installer per shipped architecture", () => {
     const config = read("desktop/electron-builder.yml");
 
     assert.deepEqual(config.mac.target, [
       { target: "dmg", arch: ["arm64"] },
       { target: "zip", arch: ["arm64"] },
     ]);
-    assert.ok(config.win, "Windows packaging config stays available for a later widening");
-    assert.ok(config.linux, "Linux packaging config stays available for a later widening");
+    // The release contract names per-arch NSIS installers and no Windows zip,
+    // so every shipped Windows package is an updatable install.
+    assert.deepEqual(config.win.target, ["nsis"]);
+    assert.equal(config.nsis.buildUniversalInstaller, false,
+      "a combined all-arch installer would not match the per-arch asset contract");
+    assert.deepEqual(config.linux.target, ["AppImage", "deb"]);
+    // A configured `arch:` list overrides the --x64/--arm64 flag a matrix leg
+    // passes, so win/linux targets must leave it unset. macOS keeps an explicit
+    // arch because it always ships arm64 regardless of the runner.
+    for (const platform of ["win", "linux"]) {
+      for (const target of config[platform].target) {
+        assert.equal(typeof target === "string" ? undefined : target.arch, undefined);
+      }
+    }
+    // electron-builder's ${os}/${arch} expansion is what produces the contract
+    // names: win-x64/win-arm64.exe, linux-x86_64/linux-arm64.AppImage and
+    // linux-amd64/linux-arm64.deb.
+    assert.equal(config.artifactName, "${productName}-${version}-${os}-${arch}.${ext}");
   });
 
   it("derives the verified architectures from the builder config, not a second list", () => {
@@ -78,21 +94,35 @@ describe("Apple Silicon desktop release contract", () => {
     assert.match(validation.run, /exit 1/);
   });
 
-  it("publishes exactly the Apple Silicon asset set and keeps the proof internal", () => {
+  it("publishes exactly the multiplatform asset set and keeps the proof internal", () => {
     const workflow = read(".github/workflows/desktop.yml");
     const draft = workflow.jobs.draft_release;
 
     const downloads = draft.steps.filter((step: any) => step.uses?.startsWith("actions/download-artifact@"));
-    assert.deepEqual(downloads.map((step: any) => step.with.name), ["ima2-desktop-mac", "ima2-macos-signature-proof"]);
+    assert.deepEqual(downloads.map((step: any) => step.with.name), [
+      "ima2-desktop-mac-arm64",
+      "ima2-desktop-win-x64",
+      "ima2-desktop-win-arm64",
+      "ima2-desktop-linux-x64",
+      "ima2-desktop-linux-arm64",
+      "ima2-macos-signature-proof",
+    ]);
 
     const upload = stepByName(draft.steps, "Create or update draft release").run;
     for (const suffix of [".dmg", ".zip", ".dmg.blockmap", ".zip.blockmap"]) {
       assert.ok(upload.includes("mac-arm64" + suffix), "draft must upload " + suffix);
     }
-    assert.match(upload, /desktop\/dist\/latest-mac\.yml/);
-    assert.match(upload, /desktop\/dist\/SHA256SUMS\.txt/);
+    for (const name of ["win-x64.exe", "win-arm64.exe", "win-x64.exe.blockmap", "win-arm64.exe.blockmap"]) {
+      assert.ok(upload.includes(name), "draft must upload " + name);
+    }
+    for (const name of ["linux-x86_64.AppImage", "linux-arm64.AppImage", "linux-amd64.deb", "linux-arm64.deb"]) {
+      assert.ok(upload.includes(name), "draft must upload " + name);
+    }
+    for (const name of ["latest-mac.yml", "latest.yml", "latest-linux.yml", "latest-linux-arm64.yml", "SHA256SUMS.txt"]) {
+      assert.match(upload, new RegExp("desktop/dist/" + name.replace(/\./g, "\\.")));
+    }
     // A wildcard would quietly publish whatever else landed in dist.
     assert.doesNotMatch(upload, /desktop\/dist\/\*/);
-    assert.doesNotMatch(upload, /report\.json|signature-proof|\.exe|\.AppImage|\.deb/);
+    assert.doesNotMatch(upload, /report\.json|signature-proof/);
   });
 });

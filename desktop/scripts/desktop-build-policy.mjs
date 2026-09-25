@@ -2,10 +2,16 @@ import { appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// One leg per shipped architecture: native modules (better-sqlite3, sharp,
+// @neplex/vectorizer) rebuild on the runner that produces the installer, so
+// each arch maps to a GitHub-hosted runner with that CPU. Cross-arch builds
+// from an x64 runner would ship x64 binaries in arm64 packages.
 const TARGETS = [
-  { os: 'macos-latest', label: 'macOS (Apple Silicon)', target: 'mac' },
-  { os: 'windows-latest', label: 'Windows (x64 + arm64)', target: 'win' },
-  { os: 'ubuntu-latest', label: 'Linux (x64 + arm64)', target: 'linux' },
+  { os: 'macos-latest', label: 'macOS (Apple Silicon)', target: 'mac', arch: 'arm64' },
+  { os: 'windows-latest', label: 'Windows (x64)', target: 'win', arch: 'x64' },
+  { os: 'windows-11-arm', label: 'Windows (arm64)', target: 'win', arch: 'arm64' },
+  { os: 'ubuntu-latest', label: 'Linux (x64)', target: 'linux', arch: 'x64' },
+  { os: 'ubuntu-24.04-arm', label: 'Linux (arm64)', target: 'linux', arch: 'arm64' },
 ];
 export const MAC_SIGNING_INPUTS = [
   'CSC_LINK', 'CSC_KEY_PASSWORD', 'APPLE_ID',
@@ -13,18 +19,21 @@ export const MAC_SIGNING_INPUTS = [
 ];
 
 /**
- * Distribution is Apple Silicon macOS only for now, so scheduled events build
- * mac alone. The Windows and Linux entries stay selectable through manual
- * dispatch, which is what keeps re-widening distribution a config decision
- * rather than a rebuild of this policy.
+ * A desktop-v* tag is the release path, so it builds every shipped
+ * architecture. A dev-branch push still gets only the cheap unsigned macOS
+ * preview: win/linux packaging evidence comes from dispatch and tag builds,
+ * not from repeating five legs on every merge. Manual dispatch defaults to
+ * all platforms but stays selectable per OS.
  *
- * @param {{ eventName: string, platform?: string, publish?: boolean | string }} input
+ * @param {{ eventName: string, platform?: string, publish?: boolean | string, ref?: string }} input
  */
-export function resolveDesktopBuildPolicy({ eventName, platform = 'mac', publish = false }) {
+export function resolveDesktopBuildPolicy({ eventName, platform = 'all', publish = false, ref = '' }) {
   if (!['pull_request', 'push', 'workflow_dispatch'].includes(eventName)) {
     throw new Error('Unsupported desktop build event');
   }
-  const selected = eventName === 'workflow_dispatch' ? (platform || 'mac') : 'mac';
+  const selected = eventName === 'workflow_dispatch'
+    ? (platform || 'all')
+    : (ref.startsWith('refs/tags/') ? 'all' : 'mac');
   if (!['all', 'mac', 'win', 'linux'].includes(selected)) {
     throw new Error('Desktop platform must be all, mac, win, or linux');
   }
@@ -59,6 +68,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         eventName: process.env.DESKTOP_EVENT,
         platform: process.env.DESKTOP_PLATFORM || 'all',
         publish: process.env.DESKTOP_PUBLISH || 'false',
+        ref: process.env.DESKTOP_REF || '',
       });
       if (!process.env.GITHUB_OUTPUT) throw new Error('GITHUB_OUTPUT is required');
       appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify(matrix)}\n`, 'utf8');

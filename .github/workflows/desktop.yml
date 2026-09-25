@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: Desktop platforms to build; only macOS is distributed today
+        description: Desktop platforms to build; tags always build all three
         type: choice
         options: [mac, win, linux, all]
-        default: mac
+        default: all
   push:
     tags:
       - 'desktop-v*'
@@ -61,7 +61,8 @@ jobs:
       - id: policy
         env:
           DESKTOP_EVENT: ${{ github.event_name }}
-          DESKTOP_PLATFORM: ${{ inputs.platform || 'mac' }}
+          DESKTOP_PLATFORM: ${{ inputs.platform || 'all' }}
+          DESKTOP_REF: ${{ github.ref }}
         run: node desktop/scripts/desktop-build-policy.mjs --matrix
 
   build:
@@ -150,16 +151,30 @@ jobs:
           retention-days: 14
           path: desktop/dist/signature-proof/
 
+      # Each leg builds a single architecture on a matching runner: the native
+      # modules (better-sqlite3, sharp, @neplex/vectorizer) are rebuilt for the
+      # Electron ABI of this arch, which an x64 runner cannot produce for arm64.
       - name: Build (Windows)
         if: matrix.target == 'win'
         env:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: npm --prefix desktop run dist:win
+        # pwsh so Get-AuthenticodeSignature can prove what actually shipped:
+        # "signed" requires the cert env AND a valid signature on the exe, so a
+        # silently skipped Authenticode step cannot be labeled signed.
+        shell: pwsh
+        run: |
+          npm --prefix desktop run dist:win -- --${{ matrix.arch }}
+          $exe = Get-ChildItem desktop/dist/*.exe | Select-Object -First 1
+          if ($null -eq $exe) { throw "dist produced no .exe" }
+          $status = (Get-AuthenticodeSignature $exe.FullName).Status
+          if ($env:WIN_CSC_LINK -and $status -ne 'Valid') { throw "WIN_CSC_LINK is set but the installer is not Authenticode signed ($status)" }
+          $state = if ($status -eq 'Valid') { 'signed' } else { 'unsigned' }
+          Set-Content -Path desktop/dist/signing-windows.txt -Value $state -NoNewline
 
       - name: Build (Linux)
         if: matrix.target == 'linux'
-        run: npm --prefix desktop run dist:linux
+        run: npm --prefix desktop run dist:linux -- --${{ matrix.arch }}
 
       - name: Smoke-check artifacts
         shell: bash
@@ -167,7 +182,7 @@ jobs:
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ima2-desktop-${{ matrix.target }}
+          name: ima2-desktop-${{ matrix.target }}-${{ matrix.arch }}
           if-no-files-found: error
           retention-days: 14
           path: |
@@ -178,6 +193,7 @@ jobs:
             desktop/dist/*.deb
             desktop/dist/*.blockmap
             desktop/dist/latest*.yml
+            desktop/dist/signing-windows.txt
 
   draft_release:
     name: Create verified draft release
@@ -203,10 +219,29 @@ jobs:
           fi
           echo "DESKTOP_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "DESKTOP_TAG=$EXPECTED_TAG" >> "$GITHUB_ENV"
+      # Every leg's output lands under desktop/dist/<platform>-<arch> except
+      # macOS, which stays flat so prepare-release-assets keeps the same
+      # layout for the proof-bound installers.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ima2-desktop-mac
+          name: ima2-desktop-mac-arm64
           path: desktop/dist
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ima2-desktop-win-x64
+          path: desktop/dist/win-x64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ima2-desktop-win-arm64
+          path: desktop/dist/win-arm64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ima2-desktop-linux-x64
+          path: desktop/dist/linux-x64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ima2-desktop-linux-arm64
+          path: desktop/dist/linux-arm64
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ima2-macos-signature-proof
@@ -248,7 +283,18 @@ jobs:
             "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.zip" \
             "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.dmg.blockmap" \
             "desktop/dist/ima2-${DESKTOP_VERSION}-mac-arm64.zip.blockmap" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-win-x64.exe" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-win-x64.exe.blockmap" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-win-arm64.exe" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-win-arm64.exe.blockmap" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-linux-x86_64.AppImage" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-linux-arm64.AppImage" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-linux-amd64.deb" \
+            "desktop/dist/ima2-${DESKTOP_VERSION}-linux-arm64.deb" \
             desktop/dist/latest-mac.yml \
+            desktop/dist/latest.yml \
+            desktop/dist/latest-linux.yml \
+            desktop/dist/latest-linux-arm64.yml \
             desktop/dist/SHA256SUMS.txt \
             --clobber
           gh release view "$DESKTOP_TAG" --json body --jq '.body' > release-body.md
@@ -298,11 +344,22 @@ jobs:
             "ima2-${DESKTOP_VERSION}-mac-arm64.zip" \
             "ima2-${DESKTOP_VERSION}-mac-arm64.dmg.blockmap" \
             "ima2-${DESKTOP_VERSION}-mac-arm64.zip.blockmap" \
+            "ima2-${DESKTOP_VERSION}-win-x64.exe" \
+            "ima2-${DESKTOP_VERSION}-win-arm64.exe" \
+            "ima2-${DESKTOP_VERSION}-win-x64.exe.blockmap" \
+            "ima2-${DESKTOP_VERSION}-win-arm64.exe.blockmap" \
+            "ima2-${DESKTOP_VERSION}-linux-x86_64.AppImage" \
+            "ima2-${DESKTOP_VERSION}-linux-arm64.AppImage" \
+            "ima2-${DESKTOP_VERSION}-linux-amd64.deb" \
+            "ima2-${DESKTOP_VERSION}-linux-arm64.deb" \
             "latest-mac.yml" \
+            "latest.yml" \
+            "latest-linux.yml" \
+            "latest-linux-arm64.yml" \
             "SHA256SUMS.txt" | sort)
           ACTUAL_ASSETS=$(gh release view "$DESKTOP_TAG" --json assets --jq '.assets[].name' | sort)
           if [ "$ACTUAL_ASSETS" != "$EXPECTED_ASSETS" ]; then
-            echo "Draft release asset set does not match the Apple Silicon allowlist." >&2
+            echo "Draft release asset set does not match the desktop release allowlist." >&2
             diff -u <(printf '%s\n' "$EXPECTED_ASSETS") <(printf '%s\n' "$ACTUAL_ASSETS") || true
             exit 1
           fi

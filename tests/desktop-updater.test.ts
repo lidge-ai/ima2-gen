@@ -45,6 +45,7 @@ function fixture({ responses = [] as number[] } = {}) {
     dialog,
     platform: "darwin",
     arch: "arm64",
+    env: {},
     logger,
     loadUpdater: async () => ({ autoUpdater }),
     prepareForInstall: async () => { order.push("prepare"); return true; },
@@ -58,11 +59,13 @@ async function settle() {
 }
 
 describe("desktop updater", () => {
-  it("never loads or checks outside packaged Apple Silicon macOS", async () => {
+  it("never loads or checks on unpackaged apps or unsupported platforms", async () => {
     for (const guard of [
       { app: { isPackaged: false } },
-      { platform: "linux" },
-      { arch: "x64" },
+      { platform: "linux", env: {} },            // non-AppImage installs (deb, unpackaged) cannot self-update
+      { platform: "linux", env: { APPIMAGE: "" } },
+      { platform: "darwin", arch: "x64" },       // only Apple Silicon macOS is shipped
+      { platform: "freebsd" },
     ]) {
       let loads = 0;
       const { create } = fixture();
@@ -73,6 +76,22 @@ describe("desktop updater", () => {
       assert.equal(controller.active, false);
       assert.equal(await controller.checkForUpdates({ manual: true }), false);
       assert.equal(loads, 0);
+    }
+  });
+
+  it("activates on every shipped platform: macOS arm64, Windows, Linux AppImage", async () => {
+    for (const guard of [
+      {},                                        // darwin arm64
+      { platform: "win32", arch: "x64" },
+      { platform: "win32", arch: "arm64" },
+      { platform: "linux", arch: "x64", env: { APPIMAGE: "/opt/ima2/ima2.AppImage" } },
+      { platform: "linux", arch: "arm64", env: { APPIMAGE: "/opt/ima2/ima2.AppImage" } },
+    ]) {
+      const { autoUpdater, create } = fixture();
+      const controller = await create(guard);
+      assert.equal(controller.active, true, JSON.stringify(guard));
+      assert.equal(autoUpdater.autoDownload, true);
+      assert.equal(await controller.checkForUpdates(), true);
     }
   });
 
