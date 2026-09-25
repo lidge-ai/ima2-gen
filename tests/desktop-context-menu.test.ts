@@ -11,7 +11,7 @@ const editFlags = (over = {}) => ({
 
 describe("desktop context menu", () => {
   it("gives editable fields edit commands gated on editFlags", () => {
-    const items = contextMenuTemplate({ isEditable: true, editFlags: editFlags({ canUndo: false, canCut: false }) });
+    const items = contextMenuTemplate({ isEditable: true, editFlags: editFlags({ canUndo: false, canCut: false }) }, { inspect: true });
     assert.deepEqual(ids(items).slice(0, 9), [
       "undo", "redo", "separator", "cut", "copy", "paste", "pasteAndMatchStyle", "selectAll", "separator",
     ]);
@@ -25,7 +25,7 @@ describe("desktop context menu", () => {
       isEditable: false, mediaType: "image",
       srcURL: "http://127.0.0.1:8787/generated/a.png", x: 10, y: 20,
       selectionText: "", linkURL: "",
-    });
+    }, { inspect: true });
     assert.deepEqual(ids(items), ["copy-image", "save-image", "copy-image-address", "separator", "inspect"]);
   });
 
@@ -34,7 +34,7 @@ describe("desktop context menu", () => {
       isEditable: false, mediaType: "image",
       srcURL: "http://127.0.0.1:8787/generated/a.png", x: 0, y: 0,
       linkURL: "https://example.com", selectionText: "",
-    });
+    }, { inspect: true });
     assert.deepEqual(ids(items), [
       "copy-image", "save-image", "copy-image-address",
       "open-link", "copy-link", "separator", "inspect",
@@ -45,7 +45,7 @@ describe("desktop context menu", () => {
     const items = contextMenuTemplate({
       isEditable: false, mediaType: "none", srcURL: "",
       linkURL: "devtools://devtools/bundled/inspector.html", selectionText: "", x: 0, y: 0,
-    });
+    }, { inspect: true });
     assert.deepEqual(ids(items), ["copy-link", "separator", "inspect"]);
   });
 
@@ -53,7 +53,7 @@ describe("desktop context menu", () => {
     const items = contextMenuTemplate({
       isEditable: false, mediaType: "none", srcURL: "", linkURL: "",
       selectionText: "hello", x: 0, y: 0,
-    });
+    }, { inspect: true });
     assert.deepEqual(ids(items), ["copy", "separator", "inspect"]);
   });
 
@@ -61,8 +61,43 @@ describe("desktop context menu", () => {
     const items = contextMenuTemplate({
       isEditable: false, mediaType: "none", srcURL: "", linkURL: "",
       selectionText: "", x: 0, y: 0,
-    });
+    }, { inspect: true });
     assert.deepEqual(ids(items), ["selectAll", "separator", "inspect"]);
+  });
+});
+
+describe("desktop context menu in a packaged build", () => {
+  it("leaves Inspect Element out unless asked for", () => {
+    const items = contextMenuTemplate({
+      isEditable: false, mediaType: "none", srcURL: "", linkURL: "",
+      selectionText: "hello", x: 0, y: 0,
+    });
+    assert.deepEqual(ids(items), ["copy"]);
+  });
+
+  it("names a data: image image.png instead of its base64 payload", async () => {
+    const saved = [];
+    const handlers = new Map();
+    const app = { isPackaged: true, on: (e, fn) => handlers.set(e, fn) };
+    let popupTemplate = null;
+    installContextMenus({
+      app,
+      Menu: { buildFromTemplate: (t) => { popupTemplate = t; return { popup() {} }; } },
+      clipboard: { writeText() {} },
+      dialog: { showSaveDialog: async (opts) => { saved.push(opts.defaultPath); return { canceled: true }; } },
+      shell: {},
+    });
+    const listeners = new Map();
+    const contents = { getType: () => "window", session: null, on: (e, fn) => listeners.set(e, fn) };
+    handlers.get("web-contents-created")(null, contents);
+    listeners.get("context-menu")(null, {
+      isEditable: false, mediaType: "image", srcURL: "data:image/png;base64,iVBORw0KGgo=",
+      linkURL: "", selectionText: "", x: 0, y: 0,
+    });
+    assert.equal(popupTemplate.some((i) => i.id === "inspect"), false);
+    popupTemplate.find((i) => i.id === "save-image").click();
+    await new Promise((r) => setImmediate(r));
+    assert.deepEqual(saved, ["image.png"]);
   });
 });
 

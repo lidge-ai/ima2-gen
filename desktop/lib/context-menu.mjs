@@ -33,7 +33,10 @@ export function canOpenExternally(url) {
 
 function basenameFromUrl(url) {
   try {
-    const name = new URL(url).pathname.split("/").pop();
+    const { protocol, pathname } = new URL(url);
+    // data:/blob: "paths" are the payload or a UUID, not a filename.
+    if (protocol === "data:" || protocol === "blob:") return "image.png";
+    const name = pathname.split("/").pop();
     return name || undefined;
   } catch {
     return undefined;
@@ -45,7 +48,7 @@ function basenameFromUrl(url) {
  * Every actionable item carries an `id` dispatched by `activate` against the
  * same webContents that raised the event.
  */
-export function contextMenuTemplate(params) {
+export function contextMenuTemplate(params, { inspect = false } = {}) {
   const items = [];
   if (params.isEditable) {
     const flags = params.editFlags ?? {};
@@ -71,7 +74,7 @@ export function contextMenuTemplate(params) {
     if (params.selectionText) items.push({ id: "copy", label: "Copy" });
     if (items.length === 0) items.push({ id: "selectAll", label: "Select All" });
   }
-  items.push({ type: "separator" }, { id: "inspect", label: "Inspect Element" });
+  if (inspect) items.push({ type: "separator" }, { id: "inspect", label: "Inspect Element" });
   return items;
 }
 
@@ -117,7 +120,7 @@ export function installContextMenus({ app, Menu, clipboard, dialog, shell }) {
     }
     contents.on("context-menu", (_event, params) => {
       const deps = { clipboard, dialog, shell, pendingSavePaths };
-      const template = contextMenuTemplate(params).map((item) => (
+      const template = contextMenuTemplate(params, { inspect: !app.isPackaged }).map((item) => (
         item.id
           ? { ...item, click: () => { void activate(contents, params, deps, item.id); } }
           : item
