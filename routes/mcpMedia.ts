@@ -75,7 +75,7 @@ export async function localMediaPath(
   return resolved;
 }
 
-function imageMime(filePath: string): string {
+export function imageMime(filePath: string): string {
   const ext = extname(filePath).toLowerCase();
   return ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
 }
@@ -304,7 +304,7 @@ function actionForOperation(operation: MediaOperation): RunwayMediaAction {
   return "edit-video";
 }
 
-function extensionFor(kind: "image" | "video", contentType: string, url: string): string {
+export function extensionFor(kind: "image" | "video", contentType: string, url: string): string {
   const fromUrl = url.match(/\.(png|jpe?g|webp|mp4|mov|webm)(?:\?|$)/i)?.[1]?.toLowerCase();
   if (fromUrl) return fromUrl === "jpeg" ? "jpg" : fromUrl;
   if (contentType.includes("png")) return "png";

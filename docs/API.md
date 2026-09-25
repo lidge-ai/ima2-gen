@@ -1266,7 +1266,7 @@ Async: `202 { requestId, provider }`; lifecycle events on `/api/events`.
 Results commit with `workflow: "video.multishot"` and `mcpParameters`.
 
 Re-download a remote-succeeded MCP task into the generated library. Body:
-`{ provider?: "runway", kind?: "video"|"image" }`. Use after a generation's
+`{ provider?: "runway", kind?: "video"|"image", requestId? }`. Use after a generation's
 download/commit step failed transiently — provider assets stay fetchable for
 ~24-48h. Re-polls `get_task`, requires `SUCCEEDED` with an output URL
 (`error` SSE event with `MCP_TASK_NOT_SUCCEEDED` otherwise), then runs the same

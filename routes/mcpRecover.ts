@@ -15,6 +15,7 @@ import { higgsfieldAdapter } from "../lib/mcp/adapters/higgsfield.js";
 import type { MediaProviderAdapter } from "../lib/mcp/providerAdapter.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
+import { extensionFor } from "./mcpMedia.js";
 
 const ADAPTERS: Record<string, MediaProviderAdapter> = {
   runway: runwayAdapter,
@@ -59,7 +60,7 @@ async function runRecoverJob(input: {
     await commitMediaResult({
       ctx, deps, requestId, kind,
       tempPath: download.tempPath, cleanup: download.cleanup,
-      ext: download.contentType.includes("png") ? "png" : kind === "video" ? "mp4" : "jpg",
+      ext: extensionFor(kind, download.contentType, outputUrl),
       meta: {
         requestId, mediaType: kind, provider: adapter.provider,
         providerTransport: "mcp-streamable-http",
@@ -104,7 +105,10 @@ export function registerMcpRecoverRoutes(app: Express, ctxRaw: RouteRuntimeConte
       return res.status(409).json({ error: { code: "MCP_NOT_CONNECTED", message: `connect ${adapter.provider} first` } });
     }
 
-    const requestId = `mcpr_${Date.now()}_${randomBytes(4).toString("hex")}`;
+    // Same caller-requestId contract as /api/mcp/generate: a retried recover with
+    // the same requestId dedupes via startJob instead of committing the asset twice.
+    const requestId = typeof req.body?.requestId === "string" && req.body.requestId
+      ? req.body.requestId : `mcpr_${Date.now()}_${randomBytes(4).toString("hex")}`;
     const started = startJob({ requestId, kind: "mcp-recover", prompt: `recover ${provider} task ${taskId}`, meta: { provider, taskId } });
     if (started && isStartJobFailure(started)) {
       return res.status(started.code === "TOO_MANY_JOBS" ? 429 : 409).json({ error: { code: started.code, message: "cannot start job" } });

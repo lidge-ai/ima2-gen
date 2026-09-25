@@ -99,6 +99,29 @@ test("recover: 202 happy path commits the file", async () => {
   });
 });
 
+test("recover: same caller requestId dedupes while the job is in flight", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const manager = {
+    status: () => ({ provider: "runway", state: "connected" }),
+    callTool: async () => gate.then(() => ({ content: [{ type: "text", text: "Task t RUNNING" }] })),
+  };
+  await withServer(makeApp(manager), async (base) => {
+    const body = JSON.stringify({ requestId: "mcpr_ui_retry_1" });
+    const first = await fetch(`${base}/api/mcp/tasks/${TASK}/recover`, {
+      method: "POST", headers: { "content-type": "application/json" }, body,
+    });
+    assert.equal(first.status, 202);
+    const retry = await fetch(`${base}/api/mcp/tasks/${TASK}/recover`, {
+      method: "POST", headers: { "content-type": "application/json" }, body,
+    });
+    assert.equal(retry.status, 409);
+    assert.equal((await retry.json()).error.code, "REQUEST_ID_IN_USE");
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  });
+});
+
 test("recover: not-succeeded task commits nothing", async () => {
   const manager = {
     status: () => ({ provider: "runway", state: "connected" }),

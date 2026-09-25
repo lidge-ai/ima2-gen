@@ -69,10 +69,24 @@ export class McpConnectionManager {
     return session;
   }
   status(provider: string): McpConnectionStatus {
+    this.sweepExpiredPendingAuth();
     const descriptor = this.knownProvider(provider);
     if (!descriptor.enabled) return publicStatus(provider);
     const session = this.sessions.get(provider);
     return publicStatus(provider, session);
+  }
+  /** Reap abandoned OAuth attempts: without a callback the pending entry, its
+   *  candidate transport, and a stale auth_required session would otherwise
+   *  linger for the process lifetime. Same teardown as rejectInvalidCallback. */
+  private sweepExpiredPendingAuth(): void {
+    const now = this.now();
+    for (const [state, pending] of this.pendingAuth) {
+      if (pending.expiresAt >= now) continue;
+      this.pendingAuth.delete(state);
+      removeCandidate(this.candidates, pending.provider, pending.transport);
+      void pending.transport.close().catch(() => undefined);
+      if (this.isCurrent(pending.provider, pending.generation)) this.markDisconnected(pending.provider);
+    }
   }
   private isCurrent(provider: string, generation: number): boolean {
     return this.generation(provider) === generation && !this.disconnectIntents.has(provider);
