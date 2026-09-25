@@ -95,8 +95,8 @@ function buildGenerateCall(request: MediaJobRequest): ToolCallPlan {
   // medias[].value must be a provider media_id (local uploads go through
   // media_upload + media_confirm; https inputs through media_import_url).
   // medias[].role must be a provider-declared role name — start_image /
-  // end_image / image (no higgsfield model declares a video-input role yet;
-  // `video` follows the role-as-type convention the audio role uses).
+  // end_image / image. Every media slot in models_explore is type:"image";
+  // no higgsfield model declares a video-input role.
   const medias: Array<{ value: string; role: string }> = [];
   if (request.startFrameUrl) {
     medias.push({ value: request.startFrameUrl, role: "start_image" });
@@ -109,7 +109,9 @@ function buildGenerateCall(request: MediaJobRequest): ToolCallPlan {
     medias.push({ value: ref.url, role: "image" });
   }
   if (request.referenceVideoUrl) {
-    medias.push({ value: request.referenceVideoUrl, role: "video" });
+    // Undeclared roles would either be dropped silently or fail the whole job
+    // provider-side; forward a video role once models_explore declares one.
+    throw new Error(`MCP_INPUT_ROLE_UNSUPPORTED:${model}:video_references`);
   }
   if (medias.length > 0) params.medias = medias;
 

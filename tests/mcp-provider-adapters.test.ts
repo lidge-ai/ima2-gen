@@ -183,12 +183,11 @@ test("higgsfield adapter is executable: billing tools denylisted, generate/poll 
   assert.equal(poll.args.jobId, "abc-123");
 });
 
-test("higgsfield medias use provider-declared roles (start_image/end_image/image/video)", () => {
+test("higgsfield medias use provider-declared roles (start_image/end_image/image)", () => {
   const plan = higgsfieldAdapter.buildGenerateCall({
     kind: "video", prompt: "pan", model: "cinematic_studio_3_0",
     startFrameUrl: "media-start", endFrameUrl: "media-end",
     referenceImages: [{ url: "media-ref", tag: "Jipy" }],
-    referenceVideoUrl: "media-video",
   });
   const params = plan.args.params as Record<string, unknown>; // justified: ToolCallPlan.args is Record<string, unknown>
   // Tags are a Runway @alias concept; higgsfield medias carry only {value, role}.
@@ -196,8 +195,15 @@ test("higgsfield medias use provider-declared roles (start_image/end_image/image
     { value: "media-start", role: "start_image" },
     { value: "media-end", role: "end_image" },
     { value: "media-ref", role: "image" },
-    { value: "media-video", role: "video" },
   ]);
+});
+
+test("higgsfield rejects reference video until a model declares the role", () => {
+  // Every media slot in the fixture catalog is type:"image"; emitting an
+  // undeclared "video" role would fail the job provider-side or drop the input.
+  assert.throws(() => higgsfieldAdapter.buildGenerateCall({
+    kind: "video", prompt: "x", model: "cinematic_studio_3_0", referenceVideoUrl: "media-video",
+  }), /MCP_INPUT_ROLE_UNSUPPORTED:cinematic_studio_3_0:video_references/);
 });
 
 test("higgsfield requires a start frame whenever an end frame is present", () => {

@@ -564,6 +564,11 @@ async function runMcpMediaJob(input: {
     }
     let referenceVideoUrl: string | undefined;
     if (input.localReferenceVideoPath) {
+      // higgsfield declares no video-input role — surface the contract error
+      // before a media_upload the adapter will reject anyway.
+      if (adapter.provider === "higgsfield") {
+        throw new Error("MCP_INPUT_ROLE_UNSUPPORTED:higgsfield:video_references");
+      }
       publishUploading();
       const mimeType = extname(input.localReferenceVideoPath).toLowerCase() === ".mov" ? "video/quicktime" : "video/mp4";
       referenceVideoUrl = await upload(manager, input.localReferenceVideoPath, {
