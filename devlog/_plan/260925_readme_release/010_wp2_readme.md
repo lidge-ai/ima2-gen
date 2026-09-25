@@ -59,4 +59,3 @@ Every string asserted by tests must survive; B greps these before and after: pro
 - GFM render: render README.md through GitHub's markdown API (`gh api markdown -f mode=gfm`) into an HTML page with GitHub CSS, screenshot top 2 viewports light and dark, read back.
 - DeepSeek diff review at C.
 - PR to dev with screenshot evidence uploaded to `pr-assets`; PR fast gate green; merge with `--match-head-commit`; dev CI green at merged head.
-
