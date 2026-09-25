@@ -2,6 +2,7 @@ import { parseArgs } from "../lib/args.js";
 import { resolveServer, request, resolveHistoryReference } from "../lib/client.js";
 import { fileToDataUri } from "../lib/files.js";
 import { out, die, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 import { config } from "../../config.js";
 import { join } from "node:path";
 
@@ -27,13 +28,14 @@ export default async function metadataCmd(argv: string[]) {
   if (!file) die(2, "image file required");
   let server;
   try { server = await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
   let resolvedFile: string;
   try {
     const filename = await resolveHistoryReference(server.base, file);
     resolvedFile = file === "@last" ? join(config.storage.generatedDir, filename) : filename;
-  } catch (e: any) {
-    die(e?.code === "HISTORY_EMPTY" ? 5 : exitCodeForError(e), e?.message || String(e));
+  } catch (e: unknown) {
+    const err = e as { code?: unknown; message?: string } | null | undefined;
+    die(err?.code === "HISTORY_EMPTY" ? 5 : exitCodeForError(e), err?.message || String(e));
   }
   const dataUrl = await fileToDataUri(resolvedFile);
   const resp = await request(server.base, "/api/metadata/read", {

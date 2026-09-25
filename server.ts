@@ -35,7 +35,7 @@ import { closeDb } from "./lib/db.js";
 import { stopAgentQueueWorker } from "./lib/agentQueueWorker.js";
 import { reapCardNewsJobs } from "./lib/cardNewsJobStore.js";
 import { reapTerminalJobs } from "./lib/inflight.js";
-import { errInfo } from "./lib/errInfo.js";
+import { errInfo, thrownFields } from "./lib/errInfo.js";
 import { TEMPLATE_FILE_MAX_BYTES } from "./lib/nodeTemplateFile.js";
 import { templateImportBodyErrors } from "./routes/nodeTemplates.js";
 import { loadGrokCredentials } from "./lib/xaiAuth.js";
@@ -283,7 +283,7 @@ export function buildApp(ctx: RuntimeContext) {
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const info = errInfo(error);
     const candidateStatus = Number(info.status);
-    const operational = Boolean((error as any)?.isOperational)
+    const operational = Boolean(thrownFields(error).isOperational)
       || (Number.isInteger(candidateStatus) && candidateStatus >= 400 && candidateStatus < 500);
     const status = operational ? candidateStatus : 500;
     if (!operational) logError("server", "unhandled:error", error);

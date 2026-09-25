@@ -40,7 +40,7 @@ import {
   validateVideoDurationForRequest,
   type VideoMode,
 } from "../lib/imageModels.js";
-import { errInfo } from "../lib/errInfo.js";
+import { errInfo, numberField, stringField, thrownFields } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
 import { generateVideoThumbnail } from "../lib/videoThumb.js";
 import { publish } from "../lib/eventBus.js";
@@ -121,8 +121,9 @@ async function trimStoryboardLeadIn(buffer: Buffer, requestId: string): Promise<
     const trimmed = await readFile(tmpOut);
     logEvent("video", "storyboard:trimmed", { requestId, originalBytes: buffer.length, trimmedBytes: trimmed.length, trimSeconds: STORYBOARD_TRIM_SECONDS });
     return trimmed;
-  } catch (trimError: any) {
-    logEvent("video", "storyboard:trim-exec-error", { requestId, error: trimError.message, stderr: trimError.stderr?.slice?.(0, 500) });
+  } catch (trimError: unknown) {
+    const trimErrorFields = thrownFields(trimError);
+    logEvent("video", "storyboard:trim-exec-error", { requestId, error: trimErrorFields.message, stderr: typeof trimErrorFields.stderr === "string" ? trimErrorFields.stderr.slice(0, 500) : undefined });
     throw trimError;
   } finally {
     await unlink(tmpIn).catch(() => {});
@@ -266,8 +267,9 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           continueFromVideoFilename = safeGeneratedVideoFilename(req.body.continueFromVideo);
           const parentMeta = await readVideoSidecar(ctx.config.storage.generatedDir, continueFromVideoFilename);
           parentLineage = lineageFromVideoMetadata(continueFromVideoFilename, parentMeta);
-        } catch (e: any) {
-          return fail(e?.status || 400, "GROK_VIDEO_INVALID_MODE", e?.message || "invalid continuation video");
+        } catch (e: unknown) {
+          const eFields = thrownFields(e);
+          return fail(numberField(eFields.status) || 400, "GROK_VIDEO_INVALID_MODE", stringField(eFields.message) || "invalid continuation video");
         }
       } else {
         parentLineage = normalizeVideoContinuityLineage(req.body?.continuityLineage);
@@ -280,8 +282,9 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
             image: await extractGeneratedVideoFrameB64(ctx.config.storage.generatedDir, continueFromVideoFilename),
             source: "continuity",
           });
-        } catch (e: any) {
-          return fail(e?.status || 500, "GROK_VIDEO_FRAME_FAILED", e?.message || "failed to extract continuation frame");
+        } catch (e: unknown) {
+          const eFields = thrownFields(e);
+          return fail(numberField(eFields.status) || 500, "GROK_VIDEO_FRAME_FAILED", stringField(eFields.message) || "failed to extract continuation frame");
         }
       }
       refInputs.push(
@@ -355,8 +358,9 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           source: r.source,
         })));
         resolved = all.filter((r): r is { b64: string; filename: string | null; source: ExistingReferenceInput["source"] } => Boolean(r.b64));
-      } catch (e: any) {
-        return fail(e?.status || 400, e?.code || "GROK_VIDEO_INVALID_MODE", e?.message || "invalid reference image");
+      } catch (e: unknown) {
+        const eFields = thrownFields(e);
+        return fail(numberField(eFields.status) || 400, stringField(eFields.code) || "GROK_VIDEO_INVALID_MODE", stringField(eFields.message) || "invalid reference image");
       }
       if (resolved.length > MAX_REF2V_REFERENCES) return fail(400, "GROK_VIDEO_REF_TOO_MANY", `at most ${MAX_REF2V_REFERENCES} reference images`);
       const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http") ? req.body.providerUrl : null;
@@ -634,8 +638,9 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       if (storyboardActive) {
         try {
           finalBuffer = await trimStoryboardLeadIn(result.videoBuffer, requestId);
-        } catch (trimErr: any) {
-          logEvent("video", "storyboard:trim-failed", { requestId, error: trimErr.message });
+        } catch (trimErr: unknown) {
+          const trimErrFields = thrownFields(trimErr);
+          logEvent("video", "storyboard:trim-failed", { requestId, error: trimErrFields.message });
         }
       }
       await saveGeneratedVideoArtifact(ctx, filename, finalBuffer, meta);

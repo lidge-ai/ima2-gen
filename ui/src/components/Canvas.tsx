@@ -310,9 +310,9 @@ export function Canvas() {
             {(isVideoItem(currentImage)
               ? [
                   currentImage.elapsed != null ? `${currentImage.elapsed}s` : null,
-                  (currentImage as any).video?.duration ? `${(currentImage as any).video.duration}s clip` : null,
-                  (currentImage as any).video?.resolution ?? null,
-                  (currentImage as any).video?.aspectRatio ?? null,
+                  currentImage.video?.duration ? `${currentImage.video.duration}s clip` : null,
+                  currentImage.video?.resolution ?? null,
+                  currentImage.video?.aspectRatio ?? null,
                   continuitySummary(currentImage.videoContinuity),
                   displayModel,
                 ]

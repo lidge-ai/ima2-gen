@@ -96,7 +96,7 @@ export function createRootNodeFromHistoryItemImpl(
       model: item.model ?? null,
       size: item.size ?? null,
       elapsed: item.elapsed ?? undefined,
-      video: (item as any).video ?? null,
+      video: item.video ?? null,
     },
   };
   set({

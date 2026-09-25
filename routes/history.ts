@@ -107,8 +107,9 @@ export function registerHistoryRoutes(app: Express, ctxRaw: RouteRuntimeContext)
       });
 
       if (groupBy === "session") {
-        const groups = new Map<string, { sessionId: any; items: any[]; lastUsedAt: any }>();
-        const loose: any[] = [];
+        type HistoryRow = (typeof page)[number];
+        const groups = new Map<string, { sessionId: string; items: HistoryRow[]; lastUsedAt: HistoryRow["createdAt"] }>();
+        const loose: HistoryRow[] = [];
         for (const row of page) {
           if (row.sessionId) {
             let group = groups.get(row.sessionId);

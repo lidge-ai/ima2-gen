@@ -72,7 +72,21 @@ export function agentDeferralLines(): string[] {
   ];
 }
 
-export async function maybePromptGithubStar(deps: any = {}) {
+export interface StarPromptDeps {
+  stdinIsTTY?: boolean;
+  stdoutIsTTY?: boolean;
+  env?: NodeJS.ProcessEnv;
+  hasBeenPromptedFn?: () => Promise<boolean> | boolean;
+  isGhInstalledFn?: () => boolean;
+  isAgentDrivenFn?: () => boolean;
+  markPromptedFn?: () => Promise<void> | void;
+  askYesNoFn?: () => Promise<boolean> | boolean;
+  starRepoFn?: () => { ok: boolean; error?: string };
+  logFn?: (line: string) => void;
+  warnFn?: (line: string) => void;
+}
+
+export async function maybePromptGithubStar(deps: StarPromptDeps = {}) {
   const stdinIsTTY = deps.stdinIsTTY ?? process.stdin.isTTY;
   const stdoutIsTTY = deps.stdoutIsTTY ?? process.stdout.isTTY;
   if (!stdinIsTTY || !stdoutIsTTY) return;

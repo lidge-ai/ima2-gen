@@ -1,3 +1,4 @@
+import type { CodedError } from "./errInfo.js";
 import { mkdir, writeFile, readFile, lstat, realpath } from "fs/promises";
 import { basename, dirname, resolve, parse, sep } from "path";
 import { randomBytes } from "crypto";
@@ -62,13 +63,13 @@ const PNG_SIGNATURE = "89504e470d0a1a0a";
 
 function assertPngBuffer(buffer: unknown): asserts buffer is Buffer {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
-    const err: any = new Error("PNG body is required");
+    const err: CodedError = new Error("PNG body is required");
     err.status = 400;
     err.code = "EMPTY_CANVAS_VERSION";
     throw err;
   }
   if (buffer.subarray(0, 8).toString("hex") !== PNG_SIGNATURE) {
-    const err: any = new Error("Canvas version body must be a PNG image");
+    const err: CodedError = new Error("Canvas version body must be a PNG image");
     err.status = 400;
     err.code = "CANVAS_VERSION_NOT_PNG";
     throw err;
@@ -83,7 +84,7 @@ function assertSafeFilename(filename: string) {
     filename.includes("..") ||
     !/^canvas-[a-zA-Z0-9._-]+\.png$/.test(filename)
   ) {
-    const err: any = new Error("Invalid canvas version filename");
+    const err: CodedError = new Error("Invalid canvas version filename");
     err.status = 400;
     err.code = "INVALID_CANVAS_VERSION_FILENAME";
     throw err;
@@ -105,7 +106,7 @@ function ensureInsideGeneratedDir(generatedDir: string, filename: string) {
   const root = resolve(generatedDir);
   const prefix = root.endsWith(sep) ? root : root + sep;
   if (full === root || !full.startsWith(prefix)) {
-    const err: any = new Error("Canvas version path escapes generated directory");
+    const err: CodedError = new Error("Canvas version path escapes generated directory");
     err.status = 400;
     err.code = "CANVAS_VERSION_PATH_ESCAPE";
     throw err;
@@ -200,7 +201,7 @@ function toGenerateItem(filename: string, meta: CanvasMeta) {
 function assertAnnotationSnapshot(value: unknown): asserts value is CanvasAnnotationSnapshot {
   const snapshot = value as CanvasAnnotationSnapshot | null;
   if (!snapshot || !Array.isArray(snapshot.paths) || !Array.isArray(snapshot.boxes) || !Array.isArray(snapshot.memos)) {
-    const err: any = new Error("Invalid canvas annotation snapshot");
+    const err: CodedError = new Error("Invalid canvas annotation snapshot");
     err.status = 400;
     err.code = "INVALID_CANVAS_ANNOTATION_SNAPSHOT";
     throw err;
@@ -211,7 +212,7 @@ export async function createCanvasVersion(ctx: RuntimeContext, input: CanvasInpu
   assertPngBuffer(input.buffer);
   const sourceFilename = basename(String(input.sourceFilename || ""));
   if (!sourceFilename) {
-    const err: any = new Error("sourceFilename is required");
+    const err: CodedError = new Error("sourceFilename is required");
     err.status = 400;
     err.code = "CANVAS_SOURCE_REQUIRED";
     throw err;
@@ -245,7 +246,7 @@ export async function updateCanvasVersion(ctx: RuntimeContext, filename: string,
   assertPngBuffer(input.buffer);
   await checkedCanvasPath(ctx.config.storage.generatedDir, filename).catch((cause: NodeJS.ErrnoException) => {
     if (cause.code !== "ENOENT") throw cause;
-    const err: any = new Error("Canvas version not found");
+    const err: CodedError = new Error("Canvas version not found");
     err.status = 404;
     err.code = "CANVAS_VERSION_NOT_FOUND";
     throw err;
@@ -293,7 +294,7 @@ export async function recordCanvasAnnotationBake(
   assertAnnotationSnapshot(snapshot);
   const previousMeta = await readGeneratedMetadata(ctx, filename);
   if (!previousMeta) {
-    const err: any = new Error("Canvas version not found");
+    const err: CodedError = new Error("Canvas version not found");
     err.status = 404;
     err.code = "CANVAS_VERSION_NOT_FOUND";
     throw err;
@@ -326,7 +327,7 @@ export async function revertCanvasAnnotations(ctx: RuntimeContext, filename: str
   const previousMeta = await readGeneratedMetadata(ctx, filename);
   const sourceFilename = previousMeta?.canvasSourceFilename;
   if (!previousMeta?.annotationsBaked || !sourceFilename) {
-    const err: any = new Error("Canvas version has no baked annotations");
+    const err: CodedError = new Error("Canvas version has no baked annotations");
     err.status = 409;
     err.code = "CANVAS_ANNOTATIONS_NOT_BAKED";
     throw err;

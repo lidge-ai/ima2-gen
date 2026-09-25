@@ -1,7 +1,8 @@
 import { writeFile, access, readFile } from "fs/promises";
-import { parseArgs } from "../lib/args.js";
+import { parseArgs, type FlagValue, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 
 const HELP = `
   ima2 comfy <subcommand> [options]
@@ -48,6 +49,30 @@ const WORKFLOW_FLAGS = {
   replace: { type: "boolean" },
 };
 
+interface ComfyCandidate {
+  field: string;
+  node: string;
+  input?: string;
+  unambiguous?: boolean;
+  classType?: string;
+  title?: string;
+}
+
+interface ComfyInspectResponse {
+  nodes: unknown[];
+  candidates?: ComfyCandidate[];
+  mediaKind?: string;
+  needsConfirmation?: boolean;
+}
+
+interface ComfyWorkflowSummary {
+  id: string;
+  label?: string;
+  mediaKind?: string;
+  origin?: string;
+  health?: { ok?: boolean; reason?: string };
+}
+
 const PNG_SIGNATURE_HEX = "89504e470d0a1a0a";
 
 /**
@@ -77,8 +102,9 @@ async function readWorkflowFile(path: string): Promise<{ pngBase64: string } | {
 }
 
 /** "6.text" -> { node: "6", input: "text" }; "9" -> { node: "9" }. */
-function parseBinding(value: string | undefined, field: string): { node: string; input: string } | undefined {
-  if (!value) return undefined;
+function parseBinding(flag: FlagValue, field: string): { node: string; input: string } | undefined {
+  if (!flag) return undefined;
+  const value = String(flag);
   const dot = value.indexOf(".");
   if (dot < 1 || dot === value.length - 1) {
     die(2, `--${field} must look like <node>.<input>, e.g. --${field} 6.text`);
@@ -92,8 +118,8 @@ async function exportSub(argv: string[]) {
   if (!filename) die(2, "filename required");
   let server;
   try { server = await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
-  const resp: any = await request(server.base, "/api/comfy/export-image", {
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
+  const resp = await request(server.base, "/api/comfy/export-image", {
     method: "POST",
     body: { filename },
   }).catch((e: unknown) => { const err = e as { message?: string; code?: string }; die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`); });
@@ -109,23 +135,23 @@ async function exportSub(argv: string[]) {
   out(color.green("✓ ") + target);
 }
 
-async function serverBase(serverFlag: string | undefined): Promise<string> {
+async function serverBase(serverFlag: unknown): Promise<string> {
   try {
     return (await resolveServer({ serverFlag })).base;
-  } catch (e: any) {
-    die(exitCodeForError(e), e.message);
+  } catch (e: unknown) {
+    die(exitCodeForError(e), errInfo(e).message);
     throw e;
   }
 }
 
-async function workflowLs(args: any): Promise<void> {
+async function workflowLs(args: ParsedArgs): Promise<void> {
   const base = await serverBase(args.server);
-  const resp: any = await request(base, "/api/comfy/workflows", { method: "GET" })
+  const resp = await request<{ workflows?: ComfyWorkflowSummary[] } | null>(base, "/api/comfy/workflows", { method: "GET" })
     .catch((e: unknown) => {
       const err = e as { message?: string; code?: string };
       die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
     });
-  const workflows: any[] = resp?.workflows ?? [];
+  const workflows = resp?.workflows ?? [];
   if (args.json) { json({ workflows }); return; }
   if (workflows.length === 0) {
     out("No workflow registered. Add one with: ima2 comfy workflow add <file> --id <id>");
@@ -145,12 +171,12 @@ async function workflowLs(args: any): Promise<void> {
   }
 }
 
-async function workflowInspect(args: any): Promise<void> {
+async function workflowInspect(args: ParsedArgs): Promise<void> {
   const file = args.positional[0];
   if (!file) die(2, "workflow file required");
   const base = await serverBase(args.server);
   const body = await readWorkflowFile(file);
-  const resp: any = await request(base, "/api/comfy/inspect", { method: "POST", body })
+  const resp = await request<ComfyInspectResponse>(base, "/api/comfy/inspect", { method: "POST", body })
     .catch((e: unknown) => {
       const err = e as { message?: string; code?: string };
       die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
@@ -169,14 +195,14 @@ async function workflowInspect(args: any): Promise<void> {
   }
 }
 
-async function workflowAdd(args: any): Promise<void> {
+async function workflowAdd(args: ParsedArgs): Promise<void> {
   const file = args.positional[0];
   if (!file) die(2, "workflow file required");
   if (!args.id) die(2, "--id is required");
   const base = await serverBase(args.server);
   const source = await readWorkflowFile(file);
 
-  const inspected: any = await request(base, "/api/comfy/inspect", { method: "POST", body: source })
+  const inspected = await request<ComfyInspectResponse>(base, "/api/comfy/inspect", { method: "POST", body: source })
     .catch((e: unknown) => {
       const err = e as { message?: string; code?: string };
       die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
@@ -219,8 +245,8 @@ async function workflowAdd(args: any): Promise<void> {
    * accepts the candidates that were already unambiguous.
    */
   const unresolved = (inspected.candidates ?? [])
-    .filter((candidate: any) => !candidate.unambiguous)
-    .map((candidate: any) => candidate.field)
+    .filter((candidate) => !candidate.unambiguous)
+    .map((candidate) => candidate.field)
     .filter((field: string, index: number, all: string[]) => all.indexOf(field) === index)
     .filter((field: string) => !(field in bind));
   if (unresolved.length > 0) {
@@ -236,7 +262,7 @@ async function workflowAdd(args: any): Promise<void> {
     die(2, "a prompt binding and an output node are required (see: ima2 comfy workflow inspect <file>)");
   }
 
-  const resp: any = await request(base, "/api/comfy/workflows", {
+  const resp = await request<{ workflow: ComfyWorkflowSummary }>(base, "/api/comfy/workflows", {
     method: "POST",
     body: {
       ...source,
@@ -260,11 +286,11 @@ async function workflowAdd(args: any): Promise<void> {
   }
 }
 
-async function workflowRm(args: any): Promise<void> {
+async function workflowRm(args: ParsedArgs): Promise<void> {
   const id = args.positional[0];
   if (!id) die(2, "workflow id required");
   const base = await serverBase(args.server);
-  const resp: any = await request(base, `/api/comfy/workflows/${encodeURIComponent(id)}`, { method: "DELETE" })
+  const resp = await request(base, `/api/comfy/workflows/${encodeURIComponent(id)}`, { method: "DELETE" })
     .catch((e: unknown) => {
       const err = e as { message?: string; code?: string };
       die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
@@ -273,7 +299,7 @@ async function workflowRm(args: any): Promise<void> {
   out(color.green("✓ ") + `removed ${id}`);
 }
 
-const WORKFLOW_SUB: Record<string, (args: any) => Promise<void>> = {
+const WORKFLOW_SUB: Record<string, (args: ParsedArgs) => Promise<void>> = {
   ls: workflowLs,
   inspect: workflowInspect,
   add: workflowAdd,
@@ -289,7 +315,7 @@ async function workflowSub(argv: string[]): Promise<void> {
   return handler(args);
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   export: exportSub,
   workflow: workflowSub,
 };

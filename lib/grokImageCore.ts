@@ -1,3 +1,4 @@
+import { thrownFields, type CodedError } from "./errInfo.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { mapSizeToGrokImageParams } from "./grokSizeMapper.js";
 import { detectImageMimeFromB64 } from "./refs.js";
@@ -62,11 +63,11 @@ export interface GrokReferenceImage {
 }
 
 export function getGrokTimeout(ctx: RouteRuntimeContext): number {
-  return (ctx.config as any).grokProvider?.generationTimeoutMs || 300_000;
+  return ctx.config?.grokProvider?.generationTimeoutMs || 300_000;
 }
 
 export function grokError(message: string, status: number, code: string): Error {
-  const err: any = new Error(message);
+  const err: CodedError = new Error(message);
   err.status = status;
   err.code = code;
   return err;
@@ -81,7 +82,7 @@ export function grokStageError(stage: "search" | "planner", message: string, sta
 }
 
 export function getPlannerConfig(ctx: RouteRuntimeContext): { model: string; timeoutMs: number; searchTimeoutMs: number } {
-  const grokCfg = (ctx.config as any).grokProvider || {};
+  const grokCfg = ctx.config?.grokProvider || {};
   return {
     model: grokCfg.plannerModel || DEFAULT_GROK_PLANNER_MODEL,
     timeoutMs: grokCfg.plannerTimeoutMs || 900_000,
@@ -162,7 +163,7 @@ export async function postGrokImages(
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      let parsed: any;
+      let parsed: { error?: string } | undefined;
       try { parsed = JSON.parse(text); } catch { /* ignore */ }
       const msg = parsed?.error || text || `HTTP ${res.status}`;
 
@@ -173,13 +174,14 @@ export async function postGrokImages(
     }
 
     return await res.json() as GrokImageResponse;
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     clearTimeout(timer);
-    if (e.name === "AbortError") {
+    if (eFields.name === "AbortError") {
       if (signal?.aborted) throw grokError("Generation canceled", 499, "GENERATION_CANCELED");
       throw grokError("Grok image generation timed out", 504, "GENERATION_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw grokError(`Grok request failed: ${e.message}`, 502, "GROK_NETWORK_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw grokError(`Grok request failed: ${eFields.message}`, 502, "GROK_NETWORK_FAILED");
   }
 }

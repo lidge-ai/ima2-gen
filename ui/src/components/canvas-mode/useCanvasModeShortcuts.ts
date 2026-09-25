@@ -1,3 +1,4 @@
+import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import { useEffect, useState, type KeyboardEvent } from "react";
 import { isEditableTarget } from "../../lib/domEvents";
 import type { GenerateItem } from "../../types";
@@ -6,7 +7,7 @@ interface UseCanvasModeShortcutsArgs {
   canvasOpen: boolean;
   canvasZoom: number;
   currentImage: GenerateItem | null;
-  annotations: any;
+  annotations: ReturnType<typeof useCanvasAnnotations>;
   undoBackgroundCleanup: () => boolean;
   redoBackgroundCleanup: () => boolean;
   handleBackgroundCleanupEscape: () => boolean;

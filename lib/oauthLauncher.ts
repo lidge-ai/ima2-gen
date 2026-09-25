@@ -2,9 +2,21 @@ import { config } from "../config.js";
 import { parseLocalhostPortFromUrl, parseOAuthReadyUrl } from "./runtimePorts.js";
 import { detectCodexAuth } from "./codexDetect.js";
 import { resolvePackageBin } from "./packageCli.js";
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, type SpawnOptions, spawn } from "node:child_process";
 
-export function startOAuthProxy(options: any = {}) {
+export interface OAuthProxyLaunchOptions {
+  oauthPort?: number | undefined;
+  restartDelayMs?: number | undefined;
+  detectAuth?: () => { authed?: boolean; proxyReady?: boolean; proxyAuthFile?: string | null };
+  execPath?: string;
+  resolveOAuthBin?: () => string;
+  /** Injectable for tests; the returned child is used through the ChildProcess surface. */
+  spawnImpl?(command: string, args: readonly string[], options: SpawnOptions): unknown;
+  onReady?: (info: { url: string; port: number; requestedPort: number }) => void;
+  onExit?: (info: { code: number | null; reason?: string }) => void;
+}
+
+export function startOAuthProxy(options: OAuthProxyLaunchOptions = {}) {
   const oauthPort = options.oauthPort ?? config.oauth.proxyPort;
   const restartDelayMs = options.restartDelayMs ?? config.oauth.restartDelayMs;
   let currentChild: ChildProcess | null = null;

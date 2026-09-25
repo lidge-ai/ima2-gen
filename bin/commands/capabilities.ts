@@ -7,6 +7,8 @@ import { parseArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { color, exitCodeForError, fail, json, out } from "../lib/output.js";
 
+type Ima2Capabilities = ReturnType<typeof buildIma2Capabilities>;
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PACKAGE_PATH = join(ROOT, "package.json");
 
@@ -46,7 +48,7 @@ function localCapabilities() {
   });
 }
 
-async function readCapabilities(args: ReturnType<typeof parseArgs>) {
+async function readCapabilities(args: ReturnType<typeof parseArgs>): Promise<Ima2Capabilities> {
   try {
     const server = await resolveServer({ serverFlag: args.server });
     return await request(server.base, "/api/capabilities", { timeoutMs: 5000 });
@@ -65,7 +67,7 @@ async function readCapabilities(args: ReturnType<typeof parseArgs>) {
  * usually missing a key. Without it an agent reads the vocabulary as
  * availability and picks a lane that cannot work.
  */
-function printLanes(capabilities: any): void {
+function printLanes(capabilities: Ima2Capabilities): void {
   const lanes = capabilities.lanes;
   if (!lanes || typeof lanes !== "object") {
     // Only a running server knows this, and `source` already says which we got.
@@ -76,7 +78,7 @@ function printLanes(capabilities: any): void {
     return;
   }
   out("lanes:");
-  for (const [id, lane] of Object.entries(lanes as Record<string, any>)) {
+  for (const [id, lane] of Object.entries(lanes)) {
     const counts = `image=${lane?.models?.image ?? 0} video=${lane?.models?.video ?? 0}`;
     const detail = lane?.status === "ready"
       ? counts
@@ -86,7 +88,7 @@ function printLanes(capabilities: any): void {
   out("");
 }
 
-function printText(capabilities: any): void {
+function printText(capabilities: Ima2Capabilities): void {
   out(`ima2 capabilities (${capabilities.source})`);
   out(`version: ${capabilities.version}`);
   out(`server: ${capabilities.server || "none"}`);
