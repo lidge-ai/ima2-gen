@@ -1427,7 +1427,7 @@
     },
     "imageModel": {
       "title": "이미지 모델",
-      "body": "앞으로 이미지 생성에 쓸 모델을 골라요. Grok 모델을 고르면 공급자도 Grok으로 바뀌어요.",
+      "body": "앞으로 이미지 생성에 쓸 모델을 골라요. 다른 공급자의 모델(Grok, OpenAI API, Gemini 등)을 고르면 그 공급자로 바뀌어요.",
       "gpt54Mini": "GPT-5.4 Mini",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",

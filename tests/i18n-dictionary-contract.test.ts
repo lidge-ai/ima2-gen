@@ -51,6 +51,11 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
     "sizeConfirm.reasonRatio", "sizeConfirm.reasonPixels", "sizeConfirm.reasonMinPixels",
     "sizeConfirm.reasonMin", "sizeConfirm.reasonMax", "sizeConfirm.reasonSnap",
   ]],
+  // GROK_IMAGE_MODEL_OPTIONS fullLabelKey literals in ui/src/lib/imageModels.ts.
+  ["ui/src/components/GrokModelPicker.tsx :: option.fullLabelKey", [
+    "settings.imageModel.grokImagine20", "settings.imageModel.grokImagineQuality",
+    "settings.imageModel.grokImagine",
+  ]],
   // CHAINING_ACTIONS labelKey literals in ui/src/lib/resultChaining.ts.
   ["ui/src/components/GalleryImageTile.tsx :: action.labelKey", [
     "chain.animate", "chain.edit", "chain.useAsRef", "chain.rebake",
@@ -91,6 +96,11 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
     "settings.videoModel.grokImagine", "settings.videoModel.grokImagine15",
     "settings.reasoning.none", "settings.reasoning.low", "settings.reasoning.medium",
     "settings.reasoning.high", "settings.reasoning.xhigh", "settings.reasoning.max",
+  ]],
+  // laneLabelKeys literals in the same file — lane tags on hinted settings rows.
+  ["ui/src/components/ImageModelSelect.tsx :: laneKey", [
+    "settings.account.apiTitle", "settings.account.agyTitle", "provider.geminiApiCompatTitle",
+    "settings.apiKeys.atlascloud.label", "settings.apiKeys.minimax.label", "settings.account.naiTitle",
   ]],
   // RAIL_ITEMS labelKey literals in NavRail.tsx.
   ["ui/src/components/NavRail.tsx :: item.labelKey", [
