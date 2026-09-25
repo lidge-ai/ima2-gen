@@ -1,8 +1,12 @@
 // WP5 (050): adapter mappings verified against the sanitized fixture schemas.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { RUNWAY_MODEL_CATALOG, runwayAdapter } from "../lib/mcp/adapters/runway.js";
 import { higgsfieldAdapter, HIGGSFIELD_BILLING_DENYLIST } from "../lib/mcp/adapters/higgsfield.js";
+import { importUrlToHiggsfield, uploadLocalMediaToHiggsfield } from "../lib/mcp/adapters/higgsfieldUpload.js";
 
 test("runway image request maps to generate_image with rationale and count=1", () => {
   const plan = runwayAdapter.buildGenerateCall({ kind: "image", prompt: "a red fox", model: "gen-4", ratio: "16:9" });
@@ -177,4 +181,70 @@ test("higgsfield adapter is executable: billing tools denylisted, generate/poll 
   const poll = higgsfieldAdapter.buildPollCall("abc-123");
   assert.equal(poll.toolName, "job_status");
   assert.equal(poll.args.jobId, "abc-123");
+});
+
+test("higgsfield medias use provider-declared roles (start_image/end_image/image/video)", () => {
+  const plan = higgsfieldAdapter.buildGenerateCall({
+    kind: "video", prompt: "pan", model: "cinematic_studio_3_0",
+    startFrameUrl: "media-start", endFrameUrl: "media-end",
+    referenceImages: [{ url: "media-ref", tag: "Jipy" }],
+    referenceVideoUrl: "media-video",
+  });
+  const params = plan.args.params as Record<string, unknown>; // justified: ToolCallPlan.args is Record<string, unknown>
+  // Tags are a Runway @alias concept; higgsfield medias carry only {value, role}.
+  assert.deepEqual(params.medias, [
+    { value: "media-start", role: "start_image" },
+    { value: "media-end", role: "end_image" },
+    { value: "media-ref", role: "image" },
+    { value: "media-video", role: "video" },
+  ]);
+});
+
+test("higgsfield requires a start frame whenever an end frame is present", () => {
+  assert.throws(() => higgsfieldAdapter.buildGenerateCall({
+    kind: "video", prompt: "x", model: "cinematic_studio_3_0", endFrameUrl: "media-end",
+  }), /MCP_END_FRAME_REQUIRES_START:cinematic_studio_3_0/);
+});
+
+test("higgsfield upload flows media_upload -> PUT -> media_confirm and returns media_id", async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "hf-upload-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = join(dir, "in.png");
+  writeFileSync(file, Buffer.from([1, 2, 3]));
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const manager = {
+    callTool: async (_provider: string, name: string, args: Record<string, unknown>) => {
+      calls.push({ name, args });
+      if (name === "media_upload") {
+        return { structuredContent: { uploads: [{ upload_url: "https://93.184.216.34/put/1", media_id: "mid-1" }] } };
+      }
+      if (name === "media_confirm") {
+        return { structuredContent: { results: [{ media_id: "mid-1", status: "confirmed" }] } };
+      }
+      throw new Error(`unexpected ${name}`);
+    },
+  };
+  const puts: string[] = [];
+  t.mock.method(globalThis, "fetch", async (target: unknown) => {
+    puts.push(String(target));
+    return new Response(null, { status: 200 });
+  });
+  const id = await uploadLocalMediaToHiggsfield(manager as never, file, { fileName: "in.png", mimeType: "image/png" });
+  assert.equal(id, "mid-1");
+  assert.deepEqual(puts, ["https://93.184.216.34/put/1"]);
+  assert.deepEqual(calls.map((call) => call.name), ["media_upload", "media_confirm"]);
+  assert.equal(calls[1].args.type, "image");
+});
+
+test("higgsfield import wraps media_import_url and returns media_id", async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const manager = {
+    callTool: async (_provider: string, name: string, args: Record<string, unknown>) => {
+      calls.push({ name, args });
+      return { structuredContent: { media_id: "mid-9", type: "image" } };
+    },
+  };
+  const id = await importUrlToHiggsfield(manager as never, "https://cdn.example.com/a.png", "image");
+  assert.equal(id, "mid-9");
+  assert.deepEqual(calls, [{ name: "media_import_url", args: { url: "https://cdn.example.com/a.png", type: "image" } }]);
 });

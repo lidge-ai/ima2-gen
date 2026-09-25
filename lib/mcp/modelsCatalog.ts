@@ -91,6 +91,17 @@ function syntheticDuration(record: Record<string, unknown>): McpModelParameter |
   return { name: "duration", type: "number", min, max };
 }
 
+// Provider media-role names project to ima2's canonical input-role vocabulary —
+// the same shape the runway static catalog emits. Higgsfield's generic media
+// roles are *_references; `text` is implied for every model since medias are
+// optional inputs and a prompt always applies (optional only for
+// marketing_studio_*), never a declared requirement.
+const INPUT_ROLE_CANONICAL: Record<string, string> = {
+  image: "image_references",
+  video: "video_references",
+  audio: "audio_references",
+};
+
 function parseCapabilities(record: Record<string, unknown>): McpModelCapabilities {
   const parameters = Array.isArray(record.parameters)
     ? record.parameters.slice(0, 100).map(parseParameter).filter((item): item is McpModelParameter => Boolean(item))
@@ -98,9 +109,10 @@ function parseCapabilities(record: Record<string, unknown>): McpModelCapabilitie
   const duration = syntheticDuration(record);
   if (duration && !parameters.some((parameter) => parameter.name === "duration")) parameters.push(duration);
   const mediaItems = Array.isArray(record.medias) ? record.medias.slice(0, 50) : [];
-  const inputRoles = boundedStrings(mediaItems.flatMap((item) => (
+  const declared = boundedStrings(mediaItems.flatMap((item) => (
     item && typeof item === "object" ? (item as { roles?: unknown | undefined }).roles ?? [] : []
   )), 100, 64);
+  const inputRoles = [...new Set(["text", ...declared.map((role) => INPUT_ROLE_CANONICAL[role] ?? role)])];
   return {
     source: "provider-declared",
     aspectRatios: boundedStrings(record.aspect_ratios, 50, 24),

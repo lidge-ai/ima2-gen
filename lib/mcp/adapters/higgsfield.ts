@@ -6,7 +6,9 @@
 // - Poll tool is `job_status({ jobId })` (uuid), NOT `get_task`.
 // - `job_status` supports `sync: true` (~25s server-side wait) to reduce churn.
 // - `generate_video`/`generate_image` take `medias[].value` as media_id/job_id
-//   via `media_import_url` / `media_upload_widget`, never raw URLs.
+//   via `media_upload` + `media_confirm` / `media_import_url`, never raw URLs,
+//   and `medias[].role` names the provider-declared role (image|start_image|
+//   end_image per models_explore — not the runway-style canonical names).
 // - Status enum: pending|waiting|queued|in_progress|ip_detect|completed|failed|canceled|nsfw|ip_detected
 // - Output URL lives at `generation.results.rawUrl`.
 //
@@ -70,6 +72,7 @@ export const HIGGSFIELD_VIDEO_MODELS = [
 
 const DEFAULT_MODEL = { image: "soul_2", video: "cinematic_studio_3_0" } as const;
 const TASK_ID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;
+const FORWARDED_PARAM_KEYS = new Set(["resolution", "quality", "count", "use_unlim"]);
 
 function buildGenerateCall(request: MediaJobRequest): ToolCallPlan {
   const model = request.model ?? DEFAULT_MODEL[request.kind];
@@ -86,26 +89,27 @@ function buildGenerateCall(request: MediaJobRequest): ToolCallPlan {
   }
   // Provider-declared scalar knobs (models catalog): resolution (nano_banana),
   // quality (soul), count. Only whitelisted keys are forwarded.
-  const FORWARDED_PARAM_KEYS = new Set(["resolution", "quality", "count", "use_unlim"]);
   for (const [key, value] of Object.entries(request.parameters ?? {})) {
     if (FORWARDED_PARAM_KEYS.has(key)) params[key] = value;
   }
-  // Reference images: Higgsfield requires media_id (from media_import_url),
-  // not raw URLs. The MCP media pipeline handles upload before calling here,
-  // so referenceImages[].url should already be a provider-hosted media_id or
-  // a public HTTPS URL that the server can auto-import.
+  // medias[].value must be a provider media_id (local uploads go through
+  // media_upload + media_confirm; https inputs through media_import_url).
+  // medias[].role must be a provider-declared role name — start_image /
+  // end_image / image (no higgsfield model declares a video-input role yet;
+  // `video` follows the role-as-type convention the audio role uses).
   const medias: Array<{ value: string; role: string }> = [];
   if (request.startFrameUrl) {
-    medias.push({ value: request.startFrameUrl, role: "start_frame" });
+    medias.push({ value: request.startFrameUrl, role: "start_image" });
   }
   if (request.endFrameUrl) {
-    medias.push({ value: request.endFrameUrl, role: "end_frame" });
+    if (!request.startFrameUrl) throw new Error(`MCP_END_FRAME_REQUIRES_START:${model}`);
+    medias.push({ value: request.endFrameUrl, role: "end_image" });
   }
   for (const ref of request.referenceImages ?? []) {
-    medias.push({ value: ref.url, role: ref.tag || "reference" });
+    medias.push({ value: ref.url, role: "image" });
   }
   if (request.referenceVideoUrl) {
-    medias.push({ value: request.referenceVideoUrl, role: "video_reference" });
+    medias.push({ value: request.referenceVideoUrl, role: "video" });
   }
   if (medias.length > 0) params.medias = medias;
 
