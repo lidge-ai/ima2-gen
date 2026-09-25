@@ -41,6 +41,20 @@ function updateDownloadedDialog(version) {
   };
 }
 
+/**
+ * Self-update coverage matches what the release publishes: signed+notarized
+ * Apple Silicon macOS, NSIS-installed Windows (every shipped Windows package
+ * is an installer; a zip is never published), and Linux only when running from
+ * an AppImage — a deb install has no writable self-update path and must stay
+ * inactive.
+ */
+function updaterSupported({ platform, arch, env }) {
+  if (platform === "darwin") return arch === "arm64";
+  if (platform === "win32") return true;
+  if (platform === "linux") return Boolean(env.APPIMAGE);
+  return false;
+}
+
 export async function createUpdaterController(options) {
   const {
     app,
@@ -48,12 +62,13 @@ export async function createUpdaterController(options) {
     prepareForInstall,
     platform = process.platform,
     arch = process.arch,
+    env = process.env,
     logger = console,
     loadUpdater = () => import("electron-updater"),
     autoDownload = true,
     onUpdateReady = () => {},
   } = options;
-  if (!app.isPackaged || platform !== "darwin" || arch !== "arm64") return inactiveController();
+  if (!app.isPackaged || !updaterSupported({ platform, arch, env })) return inactiveController();
 
   let autoUpdater;
   try {
