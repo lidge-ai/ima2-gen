@@ -17,20 +17,25 @@ export function useGrokStatus(): GrokStatus | null {
     const epoch = getLanAuthEpoch();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    // An OAuth change can start a poll while another is waiting or in flight;
+    // only the newest run may schedule the next one, so loops never pile up.
+    let run = 0;
 
     const poll = async (): Promise<void> => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      const current = ++run;
       if (cancelled || isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
       try {
         const res = await fetchApi("/api/grok/status");
-        if (cancelled) return;
+        if (cancelled || current !== run) return;
         const data: GrokStatus = await res.json();
-        if (cancelled || isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
+        if (cancelled || current !== run || isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
         setStatus(data);
         if (data.status !== "ready") {
           timer = setTimeout(poll, 10_000);
         }
       } catch {
-        if (cancelled) return;
+        if (cancelled || current !== run) return;
         setStatus({ status: "offline" });
         // One dropped request is not a verdict: keep polling like any other non-ready
         // status so the chip recovers when the server does.
