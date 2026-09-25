@@ -38,7 +38,10 @@ export class TrayController {
     this.tray.setToolTip("ima2");
     if (this.platform === "win32") {
       this.tray.on("click", () => this.actions.toggleTrayPopup?.(this.bounds()));
-      this.tray.on("double-click", () => this.actions.openApp());
+      this.tray.on("double-click", () => {
+        this.actions.hideTrayPopup?.();
+        this.actions.openApp();
+      });
     } else if (this.platform === "linux") {
       this.tray.on("click", () => this.actions.openApp());
     }
