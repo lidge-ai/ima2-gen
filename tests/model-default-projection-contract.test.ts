@@ -63,6 +63,17 @@ describe("current model defaults: runtime contract", () => {
       getImageModelOptionsForProvider("api").map((option) => option.value),
       ["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
     );
+    // Each Gemini lane sees only its own rows: the shared list is lane-tagged
+    // and Select resolves the trigger label by first value match, so the other
+    // lane's row would steal the label for shared ids like nano-banana-pro.
+    assert.deepEqual(
+      getImageModelOptionsForProvider("gemini-api").map((option) => `${option.value}:${option.shortLabel}`),
+      ["nano-banana-2:nb2 api", "nano-banana-pro:nbp api"],
+    );
+    assert.deepEqual(
+      getImageModelOptionsForProvider("agy").map((option) => `${option.value}:${option.shortLabel}`),
+      ["nano-banana-2:nb2 agy", "nano-banana-pro:nbp agy"],
+    );
     // The two GPT pickers are maintained by hand in different files, so pin the
     // OAuth order here too: without this they can silently drift apart, which is
     // how a model ends up selectable in one surface and missing from the other.

@@ -132,7 +132,12 @@ export function isNaiImageModel(value: unknown): boolean {
 
 export function getImageModelOptionsForProvider(provider: Provider) {
   if (provider === "grok" || provider === "grok-api") return GROK_IMAGE_MODEL_OPTIONS;
-  if (provider === "agy" || provider === "gemini-api") return GEMINI_IMAGE_MODEL_OPTIONS;
+  // The two Gemini lanes share one static list whose rows are lane-tagged, so
+  // each lane must see only its own rows: with both, shared ids (nano-banana-2,
+  // nano-banana-pro) produce duplicate Select values and the first row wins the
+  // trigger label regardless of the active lane.
+  if (provider === "agy" || provider === "gemini-api")
+    return GEMINI_IMAGE_MODEL_OPTIONS.filter((option) => !option.providerHint || option.providerHint === provider);
   if (provider === "atlascloud") return ATLASCLOUD_IMAGE_MODEL_OPTIONS;
   if (provider === "minimax") return MINIMAX_IMAGE_MODEL_OPTIONS;
   if (provider === "nai") return NAI_IMAGE_MODEL_OPTIONS;
