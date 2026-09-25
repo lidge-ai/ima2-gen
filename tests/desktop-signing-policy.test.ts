@@ -9,7 +9,7 @@ import { parse } from "yaml";
 import { MAC_SIGNING_INPUTS, resolveDesktopBuildPolicy, validateMacSigningCredentials } from "../desktop/scripts/desktop-build-policy.mjs";
 
 const REQUIRED = ["CSC_LINK", "CSC_KEY_PASSWORD", "APPLE_ID", "APPLE_APP_SPECIFIC_PASSWORD", "APPLE_TEAM_ID"];
-type Step = { id?: string; name?: string; uses?: string; if?: string; run?: string; env?: Record<string, string>; with?: Record<string, unknown>; "continue-on-error"?: boolean };
+type Step = { id?: string; name?: string; uses?: string; if?: string; run?: string; shell?: string; env?: Record<string, string>; with?: Record<string, unknown>; "continue-on-error"?: boolean };
 type Workflow = { on: { workflow_dispatch: { inputs: Record<string, { default: unknown }> }; push: { tags: string[]; branches: string[] }; pull_request?: unknown; pull_request_target?: unknown }; jobs: {
   prepare: { outputs: { matrix: string; changed: string }; steps: Step[] };
   build: { needs: string; if: string; strategy: { matrix: string }; steps: Step[] };
@@ -39,7 +39,7 @@ function assertWorkflowBoundary(workflow: Workflow) {
   assert.deepEqual(workflow.on.push.branches, ["dev"]);
   // A tag is the only ref that can reach a release, so dispatch has no publish input.
   assert.equal(workflow.on.workflow_dispatch.inputs.publish, undefined);
-  assert.equal(workflow.on.workflow_dispatch.inputs.platform.default, "mac");
+  assert.equal(workflow.on.workflow_dispatch.inputs.platform.default, "all");
   assert.equal(workflow.jobs.build.needs, "prepare");
   // prepare's paths step only runs on branch pushes; '' keeps tags/dispatches
   // unconditionally selected while 'false' skips the matrix on docs-only pushes.
@@ -54,7 +54,7 @@ function assertWorkflowBoundary(workflow: Workflow) {
   const signed = steps.find((step) => step.id === "mac_build")!;
   const verify = steps.find((step) => step.id === "mac_verify")!;
   const proof = steps.find((step) => step.with?.name === "ima2-macos-signature-proof")!;
-  const installers = steps.find((step) => step.with?.name === "ima2-desktop-${{ matrix.target }}")!;
+  const installers = steps.find((step) => step.with?.name === "ima2-desktop-${{ matrix.target }}-${{ matrix.arch }}")!;
   assert.deepEqual(Object.keys(preview.env!), ["CSC_IDENTITY_AUTO_DISCOVERY"]);
   assert.ok(preview.run?.includes("--config.mac.notarize=false"));
   // The dist:mac script owns --publish never. A second copy reaches electron-builder as an
@@ -81,6 +81,18 @@ function assertWorkflowBoundary(workflow: Workflow) {
   assert.ok(steps.indexOf(proof) < steps.indexOf(installers));
   assert.equal(installers.if, undefined, "installer upload retains GitHub's success-only default");
   for (const step of [signed, verify, proof, installers]) assert.notEqual(step["continue-on-error"], true);
+  // Windows and Linux legs build one arch each on a native runner.
+  const win = steps.find((step) => step.name === "Build (Windows)")!;
+  const linux = steps.find((step) => step.name === "Build (Linux)")!;
+  assert.equal(win.if, "matrix.target == 'win'");
+  assert.equal(linux.if, "matrix.target == 'linux'");
+  assert.match(win.run!, /dist:win -- --\$\{\{ matrix\.arch \}\}/);
+  assert.match(linux.run!, /dist:linux -- --\$\{\{ matrix\.arch \}\}/);
+  assert.equal(win.shell, "pwsh", "Windows leg needs Get-AuthenticodeSignature for the signing marker");
+  assert.equal(win.env?.WIN_CSC_LINK, "${{ secrets.WIN_CSC_LINK }}");
+  assert.equal(win.env?.WIN_CSC_KEY_PASSWORD, "${{ secrets.WIN_CSC_KEY_PASSWORD }}");
+  assert.match(win.run!, /signing-windows\.txt/);
+  assert.ok(Object.values(linux.env ?? {}).every((value) => !String(value).includes("CSC")), "Linux builds are never signed");
   assert.deepEqual([...workflow.jobs.draft_release.needs].sort(), ["build", "prepare"]);
   assertApprovalBoundary(workflow);
   for (const ref of ["refs/heads/dev", "refs/tags/desktop-v3.16.1"]) {
@@ -147,21 +159,47 @@ function assertGhRepositoryIsExplicit(workflow: Workflow) {
   }
 }
 
+const MAC_LEG = { os: "macos-latest", label: "macOS (Apple Silicon)", target: "mac", arch: "arm64" };
+const WIN_LEGS = [
+  { os: "windows-latest", label: "Windows (x64)", target: "win", arch: "x64" },
+  { os: "windows-11-arm", label: "Windows (arm64)", target: "win", arch: "arm64" },
+];
+const LINUX_LEGS = [
+  { os: "ubuntu-latest", label: "Linux (x64)", target: "linux", arch: "x64" },
+  { os: "ubuntu-24.04-arm", label: "Linux (arm64)", target: "linux", arch: "arm64" },
+];
+const ALL_TARGETS = ["mac", "win", "win", "linux", "linux"];
+
 test("desktop matrix filters before scheduling and rejects partial publication", () => {
   assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform: "mac", publish: false }).matrix.include,
-    [{ os: "macos-latest", label: "macOS (Apple Silicon)", target: "mac" }]);
+    [MAC_LEG]);
+  // A platform dispatch expands to every shipped arch leg.
+  assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform: "win", publish: "false" }).matrix.include, WIN_LEGS);
+  assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform: "linux", publish: "false" }).matrix.include, LINUX_LEGS);
   for (const platform of ["mac", "win", "linux"]) {
-    assert.equal(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform, publish: "false" }).matrix.include.length, 1);
     assert.throws(() => resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform, publish: true }), /tag-only/);
   }
-  // Distribution is Apple Silicon only; Windows and Linux stay reachable by dispatch.
-  for (const eventName of ["push", "pull_request", "workflow_dispatch"]) {
+  // A dev-branch push keeps the cheap unsigned macOS preview only.
+  for (const eventName of ["push", "pull_request"]) {
+    assert.deepEqual(resolveDesktopBuildPolicy({ eventName, ref: "refs/heads/dev" }).matrix.include.map((entry) => entry.target), ["mac"]);
     assert.deepEqual(resolveDesktopBuildPolicy({ eventName }).matrix.include.map((entry) => entry.target), ["mac"]);
   }
+  // A release tag and a bare dispatch build all five legs.
+  for (const eventName of ["push", "pull_request"]) {
+    assert.deepEqual(resolveDesktopBuildPolicy({ eventName, ref: "refs/tags/desktop-v3.16.1" }).matrix.include.map((entry) => entry.target), ALL_TARGETS);
+  }
+  assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch" })
+    .matrix.include.map((entry) => entry.target), ALL_TARGETS);
   assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform: "all" })
-    .matrix.include.map((entry) => entry.target), ["mac", "win", "linux"]);
+    .matrix.include.map((entry) => entry.target), ALL_TARGETS);
+  // Native modules make cross-arch builds unreliable: every non-x64 leg runs on
+  // a matching ARM runner, never a cross-arch x64 runner.
+  const armRunners = resolveDesktopBuildPolicy({ eventName: "workflow_dispatch" }).matrix.include
+    .filter((entry) => entry.arch === "arm64" && entry.target !== "mac")
+    .map((entry) => entry.os);
+  assert.deepEqual(armRunners.sort(), ["ubuntu-24.04-arm", "windows-11-arm"]);
   // A scheduled event cannot be steered to another platform by a stray input.
-  assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "push", platform: "win" })
+  assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "push", platform: "win", ref: "refs/heads/dev" })
     .matrix.include.map((entry) => entry.target), ["mac"]);
   assert.throws(() => resolveDesktopBuildPolicy({ eventName: "pull_request_target" }));
   assert.throws(() => resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform: "arbitrary-runner" }));
@@ -220,7 +258,7 @@ test("workflow assertions reject unsafe changes while ignoring display labels", 
     (w) => { w.jobs.build.steps.find((s) => s.id === "mac_verify")!.env!.VERIFY_REQUIRE_STAPLED = "0"; },
     (w) => { w.jobs.build.steps.find((s) => s.id === "mac_verify")!["continue-on-error"] = true; },
     (w) => { w.jobs.build.steps.find((s) => s.env?.CSC_IDENTITY_AUTO_DISCOVERY === "false")!.env!.CSC_LINK = "${{ secrets.MAC_CSC_LINK }}"; },
-    (w) => { w.jobs.build.steps.find((s) => s.with?.name === "ima2-desktop-${{ matrix.target }}")!.if = "always()"; },
+    (w) => { w.jobs.build.steps.find((s) => s.with?.name === "ima2-desktop-${{ matrix.target }}-${{ matrix.arch }}")!.if = "always()"; },
   ];
   for (const mutate of mutations) { const workflow = loadWorkflow(); mutate(workflow); assert.throws(() => assertWorkflowBoundary(workflow)); }
 });

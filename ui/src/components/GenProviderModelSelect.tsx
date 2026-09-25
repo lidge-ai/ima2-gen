@@ -174,7 +174,11 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     [providers],
   );
   const providerValue = mcpProvider ? `${MCP_PREFIX}${mcpProvider}` : `${CORE_PREFIX}${provider}`;
-  const coreModels = getImageModelOptionsForProvider(provider);
+  // This select is lane-scoped (onModelChange only sets the model): keep rows
+  // for this lane so sibling-lane rows that share a model value (the Gemini
+  // agy/api entries) can't shadow the right label or duplicate the list.
+  const coreModels = getImageModelOptionsForProvider(provider)
+    .filter((option) => option.providerHint === undefined || option.providerHint === provider);
   // An offline workflow stays listed but unselectable: removing it reads as
   // "my workflow disappeared", while leaving it live would start a generation
   // that is guaranteed to fail.

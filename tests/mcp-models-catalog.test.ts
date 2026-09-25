@@ -56,7 +56,11 @@ describe("parseModelsExploreItems", () => {
       name: "resolution", type: "string", description: "Output resolution",
       default: "1k", options: ["1k", "2k", "4k"],
     });
-    assert.deepEqual(nano?.capabilities.inputRoles, ["image"]);
+    // Provider-declared `image` role projects to the canonical image_references;
+    // `text` is implied for every higgsfield model (prompt always applies).
+    assert.deepEqual(nano?.capabilities.inputRoles, ["text", "image_references"]);
+    const cinematic = entries.find((entry) => entry.id === "cinematic_studio_3_0");
+    assert.deepEqual(cinematic?.capabilities.inputRoles, ["text", "image_references", "start_image", "end_image"]);
   });
 
   it("skips malformed items and falls back to id as label", () => {
@@ -67,7 +71,7 @@ describe("parseModelsExploreItems", () => {
     ]));
     assert.deepEqual(entries, [{
       id: "soul_2", label: "soul_2",
-      capabilities: { source: "provider-declared", aspectRatios: [], parameters: [], inputRoles: [] },
+      capabilities: { source: "provider-declared", aspectRatios: [], parameters: [], inputRoles: ["text"] },
     }]);
   });
 
@@ -83,7 +87,7 @@ describe("parseModelsExploreItems", () => {
       medias: [{ roles: ["start_image", "start_image", 7] }],
     } as never]));
     assert.deepEqual(entries[0].capabilities.aspectRatios, ["16:9"]);
-    assert.deepEqual(entries[0].capabilities.inputRoles, ["start_image"]);
+    assert.deepEqual(entries[0].capabilities.inputRoles, ["text", "start_image"]);
     assert.deepEqual(entries[0].capabilities.parameters.map((parameter) => parameter.name), ["resolution", "duration"]);
     assert.deepEqual(entries[0].capabilities.parameters[1], { name: "duration", type: "number", min: 4, max: 15 });
   });

@@ -4,48 +4,72 @@ import { docsPath } from '../../../i18n/docs';
 
 const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
 const releases = 'https://github.com/lidge-ai/ima2-gen/releases?q=desktop&expanded=true';
+const downloadSection = `${import.meta.env.BASE_URL}ko/#install`;
 ---
 
 <DocsLayout
   lang="ko"
   active="desktop"
-  title="Mac 앱"
-  description="Apple Silicon Mac에 ima2 데스크톱 앱을 설치합니다. 서명된 DMG를 받아 응용 프로그램 폴더로 옮기고 제공자에 로그인하세요."
+  title="데스크톱 앱"
+  description="macOS(Apple Silicon), Windows, Linux에 ima2 데스크톱 앱을 설치합니다. 내 플랫폼용 설치 파일을 받아 실행하고 제공자에 로그인하세요."
 >
   <p class="docs-eyebrow">시작하기</p>
-  <h1>Mac 앱</h1>
+  <h1>데스크톱 앱</h1>
   <p class="lead">
-    데스크톱 앱은 npm 패키지와 같은 로컬 서버와 스튜디오를 Mac 창과 메뉴 막대 아이콘으로 실행합니다.
-    Apple Silicon용으로 빌드했고, Apple 서명과 공증을 거쳤습니다.
+    데스크톱 앱은 npm 패키지와 같은 로컬 서버와 스튜디오를 전용 창과 메뉴 막대·트레이 아이콘으로 실행합니다.
+    Apple Silicon macOS(Apple 서명·공증), Windows, Linux용으로 배포합니다. 모든 설치 파일은
+    <a href={releases} target="_blank" rel="noopener">데스크톱 릴리스</a>의 최신 <strong>ima2 Desktop</strong> 릴리스에 있고,
+    사이트의 <a href={downloadSection}>다운로드 섹션</a>이 내 기기에 맞는 파일을 골라 줍니다.
   </p>
 
-  <h2>설치</h2>
+  <h2>macOS</h2>
   <ol>
-    <li><a href={releases} target="_blank" rel="noopener">데스크톱 릴리스</a>에서 가장 최신 <strong>ima2 Desktop</strong> 릴리스의 <code>ima2-&lt;버전&gt;-mac-arm64.dmg</code>를 받으세요.</li>
+    <li><code>ima2-&lt;버전&gt;-mac-arm64.dmg</code>를 받으세요.</li>
     <li>DMG를 열고 <strong>ima2</strong>를 <strong>응용 프로그램</strong> 폴더로 끌어다 놓으세요.</li>
     <li>ima2를 실행하면 로컬 서버가 켜지는 과정이 보이고, 준비되면 스튜디오가 열립니다.</li>
-    <li>환영 화면에서 제공자를 고르세요. ChatGPT가 가장 간단해요. 브라우저로 로그인하면 되고 API 키가 필요 없습니다.</li>
   </ol>
+
+  <div class="docs-callout docs-callout-info">
+    <strong>Windows·Linux.</strong> 이 설치 파일은 처음 포함되는 데스크톱 릴리스부터 제공됩니다. 최신 릴리스에
+    DMG만 있다면 아직 나오지 않은 것이고, 그때까지 <a href={downloadSection}>다운로드 섹션</a>에는 <em>준비 중</em>으로 표시됩니다.
+  </div>
+
+  <h2>Windows</h2>
+  <ol>
+    <li><code>ima2-&lt;버전&gt;-win-x64.exe</code>(ARM 기기는 <code>-win-arm64.exe</code>)를 받으세요.</li>
+    <li>설치 파일을 실행하세요. 설치 폴더를 고를 수 있고 관리자 권한은 필요 없습니다.</li>
+    <li>SmartScreen이 <strong>Windows의 PC 보호</strong>를 띄우면, 릴리스 페이지에서 받은 파일인지 확인한 뒤 <strong>추가 정보 → 실행</strong>을 누르세요.</li>
+  </ol>
+
+  <h2>Linux</h2>
+  <ol>
+    <li>AppImage: <code>ima2-&lt;버전&gt;-linux-x86_64.AppImage</code>(또는 <code>-linux-arm64.AppImage</code>)를 받고 <code>chmod +x ima2-*.AppImage</code> 후 실행하세요.</li>
+    <li>Debian / Ubuntu: <code>ima2-&lt;버전&gt;-linux-amd64.deb</code>(또는 <code>-linux-arm64.deb</code>)를 받고 <code>sudo apt install ./ima2-*.deb</code>를 실행하세요.</li>
+  </ol>
+
+  <p>처음 실행하면 환영 화면에서 제공자를 고르세요. ChatGPT가 가장 간단해요. 브라우저로 로그인하면 되고 API 키가 필요 없습니다.</p>
   <div class="docs-callout docs-callout-info">
     <strong>체크섬.</strong> 릴리스마다 <code>SHA256SUMS.txt</code>가 붙어 있습니다.
-    <code>shasum -a 256 ima2-&lt;버전&gt;-mac-arm64.dmg</code> 결과와 비교하세요.
+    macOS/Linux는 <code>shasum -a 256 &lt;파일&gt;</code>, PowerShell은 <code>Get-FileHash &lt;파일&gt;</code> 결과와 비교하세요.
   </div>
 
   <h2>요구 사항</h2>
   <ul>
-    <li>Apple Silicon Mac의 macOS. Intel Mac, Windows, Linux에서는 <a href={d('quickstart')}>설치 스크립트나 npm</a>을 쓰세요.</li>
+    <li>Apple Silicon macOS, Windows 10/11(x64 또는 ARM64), 64비트 Linux 데스크톱(x64 또는 ARM64).</li>
+    <li>Intel Mac에서는 <a href={d('quickstart')}>설치 스크립트나 npm</a>을 쓰세요.</li>
     <li>Node.js를 따로 설치하지 않아도 됩니다. 앱에 들어 있는 런타임으로 서버를 실행합니다.</li>
   </ul>
 
   <h2>업데이트</h2>
   <p>
-    앱이 새 데스크톱 릴리스를 확인하고, 설치를 위해 재시작하기 전에 먼저 물어봅니다. 앱 메뉴나 메뉴 막대
+    앱이 새 데스크톱 릴리스를 확인하고, 설치를 위해 재시작하기 전에 먼저 물어봅니다. 앱 메뉴나 메뉴 막대·트레이
     아이콘의 <strong>Check for Updates…</strong>로 직접 확인할 수도 있고, 설정에서 자동 다운로드를 끌 수 있습니다.
+    Linux에서는 AppImage만 앱 안에서 업데이트되고, <code>.deb</code> 설치는 새 <code>.deb</code>를 다시 설치해 업데이트합니다.
   </p>
 
   <h2>설정</h2>
   <p>
-    설정(<code>⌘,</code>)에서 서버 포트, 로그인 시 열기, 숨긴 채로 시작, 메뉴 막대 전용 모드, 창을 닫아도
+    설정(macOS <code>⌘,</code>, Windows·Linux <code>Ctrl+,</code>)에서 서버 포트, 로그인 시 열기, 숨긴 채로 시작, 메뉴 막대 전용 모드, 창을 닫아도
     서버 유지, 자세한 서버 로그, 설정 폴더를 바꿀 수 있습니다.
   </p>
 

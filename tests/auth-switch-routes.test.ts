@@ -153,6 +153,51 @@ describe("/api/auth/switch (codex)", () => {
     assert.equal(restarts, 0);
   });
 
+  it("two near-simultaneous grok starts let only the newest device login write the session", async () => {
+    let tokenPolls = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith(base)) return realFetch(input, init);
+      if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
+      if (url.endsWith("/.well-known/openid-configuration")) {
+        await new Promise((r) => setTimeout(r, 30));
+        return Response.json({
+          authorization_endpoint: "https://auth.x.ai/oauth2/authorize",
+          token_endpoint: "https://auth.x.ai/oauth2/token",
+          device_authorization_endpoint: "https://auth.x.ai/oauth2/device/code",
+        });
+      }
+      if (url.endsWith("/oauth2/device/code")) {
+        return Response.json({ device_code: "d", user_code: "GROK-1", verification_uri: "https://x.ai/device", expires_in: 600, interval: 1 });
+      }
+      if (url.endsWith("/oauth2/token")) {
+        tokenPolls++;
+        return Response.json({ access_token: "grok-access", refresh_token: "grok-refresh", expires_in: 3600 });
+      }
+      return new Response("unexpected", { status: 500 });
+    }) as typeof fetch;
+    const start = () => realFetch(`${base}/api/auth/switch`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: "grok" }),
+    });
+    const [first, second] = await Promise.all([start(), start()]);
+    // The superseded start is aborted before it can prompt, so its POST fails while
+    // the newest one returns a session.
+    assert.deepEqual([first.status, second.status].sort((a, b) => a - b), [200, 502]);
+    const loser = first.status === 200 ? second : first;
+    const winnerRes = first.status === 200 ? first : second;
+    await loser.text();
+    const winner = await winnerRes.json() as { sessionId: string };
+    const done = await waitFor(async () => {
+      const json = await (await realFetch(`${base}/api/auth/switch/${winner.sessionId}`)).json() as { status: string };
+      return json.status === "pending" ? undefined : json;
+    }, 15_000);
+    assert.equal(done.status, "complete");
+    assert.equal(tokenPolls, 1, "only the winning flow may reach the token endpoint");
+    assert.equal(JSON.parse(readFileSync(join(root, ".progrok", "auth.json"), "utf8")).accessToken, "grok-access");
+  });
+
   it("POST /api/oauth/restart forwards to the runtime hook", async () => {
     const res = await realFetch(`${base}/api/oauth/restart`, { method: "POST" });
     assert.deepEqual(await res.json(), { restarted: true });
