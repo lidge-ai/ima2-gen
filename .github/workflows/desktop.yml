@@ -165,7 +165,8 @@ jobs:
         shell: pwsh
         run: |
           npm --prefix desktop run dist:win -- --${{ matrix.arch }}
-          $exe = Get-ChildItem desktop/dist/*.exe | Select-Object -First 1
+          # Match the installer by name: electron-builder also leaves __uninstaller-nsis-*.exe in dist/.
+          $exe = Get-ChildItem "desktop/dist/ima2-*-win-${{ matrix.arch }}.exe" | Select-Object -First 1
           if ($null -eq $exe) { throw "dist produced no .exe" }
           $status = (Get-AuthenticodeSignature $exe.FullName).Status
           if ($env:WIN_CSC_LINK -and $status -ne 'Valid') { throw "WIN_CSC_LINK is set but the installer is not Authenticode signed ($status)" }
@@ -188,7 +189,7 @@ jobs:
           path: |
             desktop/dist/*.dmg
             desktop/dist/*.zip
-            desktop/dist/*.exe
+            desktop/dist/ima2-*.exe
             desktop/dist/*.AppImage
             desktop/dist/*.deb
             desktop/dist/*.blockmap
