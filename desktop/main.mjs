@@ -12,6 +12,7 @@ import { TrayPopup } from "./lib/tray-popup.mjs";
 import { collectTraySnapshot } from "./lib/tray-data.mjs";
 import { createLoginItem } from "./lib/login-item.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
+import { installPopupPolicy } from "./lib/window-open.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
 import { wireAppLifecycle } from "./lib/app-lifecycle.mjs";
 import { createUpdaterController } from "./lib/updater.mjs";
@@ -97,6 +98,7 @@ async function boot() {
   tray.create();
   tray.update({ settings: settingsStore.get() });
   installApplicationMenu(actions);
+  installPopupPolicy({ app, shell, getServerUrl: () => supervisor.url });
   registerIpc({ settingsStore, supervisor, actions, info: { rootDir, logFile: supervisor.logFile } });
 
   supervisor.on("status", (status) => {
