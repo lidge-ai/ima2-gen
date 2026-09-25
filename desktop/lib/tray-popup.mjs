@@ -102,6 +102,13 @@ export class TrayPopup {
     else this.show(trayBounds);
   }
 
+  // Drop the hidden popup without disposing the controller. A hidden window still counts for
+  // Electron, so keeping it alive would stop window-all-closed (quit-on-close) from firing.
+  release() {
+    if (this.win && !this.win.isDestroyed()) this.win.destroy();
+    this.win = null;
+  }
+
   destroy() {
     this.disposing = true;
     if (this.win && !this.win.isDestroyed()) this.win.destroy();

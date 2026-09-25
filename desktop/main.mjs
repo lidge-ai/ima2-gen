@@ -49,7 +49,10 @@ async function boot() {
     iconPath: appIcon,
     getServerUrl: () => supervisor.url,
     getSettings: () => settingsStore.get(),
-    onVisibilityChange: () => applyDockVisibility(settingsStore.get(), windows),
+    onVisibilityChange: () => {
+      if (!windows.main && !windows.settings && !settingsStore.get().keepRunningOnClose) popup.release();
+      applyDockVisibility(settingsStore.get(), windows);
+    },
     onHiddenToTray: () => notifyHiddenToTray(),
   });
   let trayHintShown = false;
