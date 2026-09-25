@@ -2,11 +2,11 @@ import { config as defaultConfig } from "../config.js";
 import { errInfo } from "./errInfo.js";
 import { parseJson, parseStream, safeDiagnosticLabel, type ResponseDiagnostics } from "./responsesParse.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
+import { runOAuthImageJob } from "./oauthImages.js";
 import {
   GENERATE_DEVELOPER_PROMPT,
   GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
   buildUserTextPrompt,
-  waitForOAuthReady,
 } from "./oauthProxy.js";
 
 type ToolChoiceSummary = "none" | "required" | "image_generation";
@@ -216,17 +216,9 @@ async function endpointFor(provider: string, options: ImageDoctorProbeOptions) {
       headers,
     };
   }
-  await waitForOAuthReady(ctx);
-  const port = ctx.config?.oauth?.proxyPort || defaultConfig.oauth.proxyPort;
-  const baseUrl = safeOAuthBaseUrl(options.oauthUrl || `http://127.0.0.1:${port}`);
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "text/event-stream, application/json",
-  };
-  return {
-    url: `${baseUrl}/v1/responses`,
-    headers,
-  };
+  // GPT OAuth probes go through runOAuthLaneProbe; only the API key lane reaches here.
+  void ctx;
+  throw Object.assign(new Error(`hosted-tool probes are API-only (provider ${provider})`), { code: "PROBE_PROVIDER_UNSUPPORTED" });
 }
 
 function apiAuthorizationHeader(apiKey: string | undefined) {
@@ -242,17 +234,6 @@ function apiAuthorizationHeader(apiKey: string | undefined) {
     });
   }
   return `Bearer ${key}`;
-}
-
-function safeOAuthBaseUrl(value: string) {
-  try {
-    const parsed = new URL(value);
-    parsed.username = "";
-    parsed.password = "";
-    return parsed.toString().replace(/\/$/, "");
-  } catch {
-    return value.replace(/\/$/, "");
-  }
 }
 
 function sanitizeProbeErrorMessage(value: string) {
@@ -419,9 +400,61 @@ async function runSingleProbe(provider: string, options: ImageDoctorProbeOptions
   }
 }
 
+
+/**
+ * GPT OAuth has no hosted image tool on GPT-6: the lane plans with the selected model and
+ * renders through the Images API (lib/oauthImages.ts). Probe that lane end to end instead of
+ * the hosted-tool variants, which would all fail by construction.
+ */
+async function runOAuthLaneProbe(
+  options: ImageDoctorProbeOptions,
+  id: string,
+  mode: "auto" | "direct",
+  settings: { model: string; size: string; quality: string; prompt: string },
+): Promise<ImageDoctorProbeResult> {
+  const start = Date.now();
+  const ctx = {
+    ...(options.ctx ?? { config: defaultConfig }),
+    ...(options.oauthUrl ? { oauthUrl: options.oauthUrl, oauthTransport: "proxy" as const } : { oauthTransport: "native" as const }),
+  } as RouteRuntimeContext;
+  const request = { stream: true, toolTypes: ["function"], toolChoiceKind: "none" as ToolChoiceSummary, promptId: options.prompt ? "custom" : BUILTIN_PROMPT_ID, promptChars: settings.prompt.length };
+  try {
+    const result = await runOAuthImageJob({
+      ctx, scope: "doctor-oauth", model: settings.model, mode, reasoningEffort: "low", webSearchEnabled: false,
+      developerPrompt: GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
+      userText: buildUserTextPrompt(settings.prompt, mode, { webSearchEnabled: false, size: settings.size }),
+      directPrompt: settings.prompt, images: [], maxImages: 1, quality: settings.quality, size: settings.size,
+    });
+    const image = result.images[0];
+    const partial = {
+      id, ok: Boolean(image?.b64), expectation: "image" as ProbeExpectation, request,
+      response: {
+        httpStatus: 200, contentType: "application/json", upstreamRequestId: null, durationMs: Date.now() - start,
+        eventCount: result.eventCount, eventTypes: result.eventTypes, webSearchCalls: result.webSearchCalls,
+        textOutputChars: result.text?.length ?? 0, imageResultCount: result.images.length,
+        firstImageChars: image?.b64.length ?? 0, diagnostics: result.diagnostics,
+      },
+      error: null,
+    };
+    return { ...partial, diagnosticReason: reasonFrom(partial) };
+  } catch (error) {
+    const err = error as { status?: number; code?: string; message?: string };
+    const partial = {
+      id, ok: false, expectation: "image" as ProbeExpectation, request,
+      response: {
+        httpStatus: typeof err.status === "number" ? err.status : null, contentType: null, upstreamRequestId: null,
+        durationMs: Date.now() - start, eventCount: 0, eventTypes: {}, webSearchCalls: 0, textOutputChars: 0,
+        imageResultCount: 0, firstImageChars: 0, diagnostics: null,
+      },
+      error: { code: err.code ?? null, type: null, param: null, message: sanitizeProbeErrorMessage(err.message ?? "OAuth lane probe failed") },
+    };
+    return { ...partial, diagnosticReason: reasonFrom(partial) };
+  }
+}
+
 export async function runImageDoctorProbe(options: ImageDoctorProbeOptions = {}) {
   const provider = options.provider || "oauth";
-  const model = options.model || defaultConfig.imageModels?.default || "gpt-5.6-luna";
+  const model = options.model || defaultConfig.imageModels?.default || "gpt-6-luna";
   const size = options.size || "1024x1024";
   const quality = options.quality || "low";
   const moderation = options.moderation || "low";
@@ -435,7 +468,13 @@ export async function runImageDoctorProbe(options: ImageDoctorProbeOptions = {})
     matrix: options.matrix === true,
   });
   const probes: ImageDoctorProbeResult[] = [];
-  for (const spec of specs) probes.push(await runSingleProbe(provider, options, spec));
+  if (provider === "api") {
+    for (const spec of specs) probes.push(await runSingleProbe(provider, options, spec));
+  } else {
+    const settings = { model, size, quality, prompt };
+    probes.push(await runOAuthLaneProbe(options, "oauth_plan_render", "auto", settings));
+    if (options.matrix === true) probes.push(await runOAuthLaneProbe(options, "oauth_direct_render", "direct", settings));
+  }
   return {
     provider,
     endpointKind: provider === "api" ? "api" : "oauth",

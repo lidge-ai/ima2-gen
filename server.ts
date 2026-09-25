@@ -16,6 +16,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { onShutdown } from "./bin/lib/platform.js";
 import { ensureDefaultSession } from "./lib/sessionStore.js";
 import { startOAuthProxy } from "./lib/oauthLauncher.js";
+import { resetCodexCaches } from "./lib/codexBackend/index.js";
 import { detectCodexAuth } from "./lib/codexDetect.js";
 import { migrateGeneratedStorage } from "./lib/storageMigration.js";
 import { purgeStaleJobs } from "./lib/inflight.js";
@@ -324,9 +325,10 @@ export function buildAdvertisePayload(ctx: RuntimeContext) {
       url: ctx.serverUrl,
     },
     oauth: {
+      mode: ctx.oauthTransport === "native" ? "native" : "proxy",
       configuredPort: Number(ctx.oauthPort),
       actualPort: Number(ctx.oauthActualPort || ctx.oauthPort),
-      url: ctx.oauthUrl,
+      url: ctx.oauthTransport === "native" ? ctx.config.oauth.codexBaseUrl : ctx.oauthUrl,
       status: ctx.oauthReadyState,
     },
     grok: { auth: loadGrokCredentials(ctx.grokAuthHomeDir) ? "oauth" : "none" },
@@ -393,6 +395,10 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     resolveOAuthReady = resolve;
   });
   const oauthReadyPromise = newOAuthReadyPromise();
+  // GPT OAuth calls the Codex backend in process (lib/codexBackend). A stubbed proxy child
+  // (tests) or IMA2_NO_OAUTH_PROXY (an external proxy at oauthUrl) keeps the HTTP transport.
+  const oauthTransport: "native" | "proxy" =
+    overrides.oauthChild !== undefined || !config.oauth.autoStart ? "proxy" : "native";
   const ctx: BootRuntimeContext = {
     rootDir,
     config,
@@ -402,7 +408,8 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     oauthPort,
     oauthActualPort: oauthPort,
     oauthUrl: `http://127.0.0.1:${oauthPort}`,
-    oauthReadyState: config.oauth.autoStart ? "starting" : "disabled",
+    oauthTransport,
+    oauthReadyState: oauthTransport === "native" ? "ready" : config.oauth.autoStart ? "starting" : "disabled",
     hasApiKey: !!apiKey,
     apiKey: apiKey ?? undefined,
     apiKeySource: loadedKey.apiKeySource as ApiKeySource,
@@ -446,7 +453,7 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
       ctx.oauthReadyState = "starting";
     },
   };
-  if (!config.oauth.autoStart) ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
+  if (!config.oauth.autoStart || oauthTransport === "native") ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   if (loadedVertexKey.json) {
     try {
       const { initVertexAuth } = await import("./lib/vertexAuth.js");
@@ -478,13 +485,22 @@ export async function startServer(overrides: StartServerOverrides = {}) {
     },
     onExit: () => ctx.markOAuthFailed(),
   });
+  const nativeOAuth = ctx.oauthTransport === "native";
   let oauthChild: StartServerOverrides["oauthChild"] =
     overrides.oauthChild !== undefined
       ? overrides.oauthChild
-      : !ctx.config.oauth.autoStart
+      : !ctx.config.oauth.autoStart || nativeOAuth
         ? null
         : launchOAuthProxy();
-  if (overrides.oauthChild === undefined && ctx.config.oauth.autoStart) {
+  if (nativeOAuth) {
+    // Native GPT OAuth re-reads the session file on every request, so a login needs no
+    // restart: forget the cached model roster so a different account shows up at once.
+    ctx.restartOAuthProxy = () => {
+      resetCodexCaches();
+      return { restarted: true };
+    };
+    ctx.syncOAuthProxySession = () => false;
+  } else if (overrides.oauthChild === undefined && ctx.config.oauth.autoStart) {
     // A login (web or CLI) writes a new session file; the running proxy only read the old one
     // (or none, and exited), so the new session was invisible until a server restart.
     let restarting: Promise<void> | null = null;
@@ -518,7 +534,7 @@ export async function startServer(overrides: StartServerOverrides = {}) {
       return true;
     };
   }
-  if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart) {
+  if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart || nativeOAuth) {
     ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   }
 

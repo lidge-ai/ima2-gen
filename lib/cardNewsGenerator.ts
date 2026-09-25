@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ulid } from "ulid";
-import { generateViaOAuth } from "./oauthProxy.js";
+import { generateViaResponses } from "./providers/adapters/openaiOperations.js";
 import type { OAuthReferenceRef } from "./oauthProxy/references.js";
 import { readTemplateBaseB64 } from "./cardNewsTemplateStore.js";
 import { writeCardNewsManifest, writeCardSidecar } from "./cardNewsManifestStore.js";
@@ -207,7 +207,9 @@ export async function generateCardNewsSet(ctxIn: RouteRuntimeContext, input: Gen
   const size = input.size || template.size || "2048x2048";
   const moderation = input.moderation || "low";
   const model = input.model || ctx.config.imageModels.default;
-  const generateFn = options.generateFn || generateViaOAuth;
+  // GPT OAuth lane (lib/oauthImages.ts): the template image rides along as the edit source.
+  const generateFn = options.generateFn || ((...args: Parameters<typeof generateViaResponses> extends [unknown, ...infer Rest] ? Rest : never) =>
+    generateViaResponses("oauth", ...args));
 
   const generatedCards = await mapLimit(cardsToGenerate, concurrency, async (card: CardInput, index: number) => {
     const cardOrder = Number(card.cardOrder || card.order || index + 1);
