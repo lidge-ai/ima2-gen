@@ -26,10 +26,10 @@ function modelCatalog(state: J6CatalogState, composer = false): { ok: true; lane
       { id: "wf-offline", label: "Offline image", description: "Unavailable (offline)", executable: true }];
   }
   if (state.mode === "locked") models.image = [{ id: "wf-locked", label: "Locked image", executable: false }];
-  if (state.mode === "key-missing") return { ok: true, lanes: { oauth: lane(["gpt-6-luna"]), comfy: { status: "key-missing", models } } };
-  if (state.mode === "disconnected") return { ok: true, lanes: { oauth: lane(["gpt-6-luna"]), comfy: { status: "disconnected", models } } };
+  if (state.mode === "key-missing") return { ok: true, lanes: { oauth: lane(["gpt-5.6-luna"]), comfy: { status: "key-missing", models } } };
+  if (state.mode === "disconnected") return { ok: true, lanes: { oauth: lane(["gpt-5.6-luna"]), comfy: { status: "disconnected", models } } };
   return { ok: true, lanes: {
-    oauth: lane(["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"]),
+    oauth: lane(["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol"]),
     api: lane(["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-sol"]),
     grok: lane(["grok-imagine-image-2.0", "grok-imagine-image-quality"], ["grok-imagine-video-1.5"]),
     "grok-api": lane(["grok-imagine-image-2.0", "grok-imagine-image-quality"], ["grok-imagine-video-1.5"]),
@@ -48,7 +48,7 @@ export function readFixtures(catalog: J6CatalogState, composer = false): Record<
     "/api/auth/lan/session": { mode: "local", authenticated: true, expiresAt: null },
     "/api/models": catalog.mode === "malformed" || catalog.mode === "invalid" ? { ok: true, lanes: { comfy: { status: "ready", models: { image: [{ id: 7, label: "bad" }], video: [] } } } } : catalog.mode === "missing" ? { ok: true, lanes: {} } : catalog.mode === "schema" ? { ok: true, lanes: { comfy: { status: "wrong-status", models: { image: [], video: [] } } } } : modelCatalog(catalog, composer),
     "/api/capabilities": { limits: { maxRefCount: 5 }, defaults: {} },
-    "/api/oauth/status": { status: "ready", models: ["gpt-6-luna"] },
+    "/api/oauth/status": { status: "ready", models: ["gpt-5.6-luna"] },
     "/api/grok/status": { status: "ready", models: ["grok-imagine-image-2.0"] },
     "/api/agy/status": { installed: false },
     "/api/keys/status": Object.fromEntries(["openai", "xai", "gemini", "vertex", "atlascloud", "minimax", "nai"]

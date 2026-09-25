@@ -139,7 +139,7 @@ test("WP02 Comfy video survives leave/return and bypasses saved multimode", asyn
 });
 
 for (const positive of [
-  { provider: "oauth", imageModel: "gpt-6-luna", label: "GPT", model: "6l" },
+  { provider: "oauth", imageModel: "gpt-5.6-luna", label: "GPT", model: "6l" },
   { provider: "grok-api", imageModel: "grok-imagine-image-quality", label: "xAI API", model: "grok+" },
 ]) {
   test(`WP02 ${positive.provider} Sequence renders and survives Comfy switch-return without submission`, async ({ browser }, info) => {

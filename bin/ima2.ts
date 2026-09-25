@@ -472,7 +472,7 @@ if ((args.includes("-h") || args.includes("--help")) && !helpOwningCommands.incl
 
 switch (command) {
   case "serve":
-    serve(args.slice(1));
+    void serve(args.slice(1));
     break;
   case "stop": {
     const { stop } = await import("./commands/stop.js");

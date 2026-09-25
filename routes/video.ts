@@ -299,7 +299,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         ? req.body.elementIds.filter((id: unknown) => typeof id === "string" && id)
         : [];
       let elementNotesFragment = "";
-      let elementResolvedRefs: string[] = [];
+      const elementResolvedRefs: string[] = [];
       let appliedElementIds: string[] = [];
       if (rawElementIds.length > 0) {
         try {

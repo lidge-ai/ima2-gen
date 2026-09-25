@@ -169,7 +169,7 @@ export async function renameCurrentSessionImpl(
         s.id === id ? { ...s, title, updatedAt: Date.now() } : s,
       ),
     });
-  } catch (err) {
+  } catch {
     get().showToast(t("toast.sessionRenameFailed"), true);
   }
 }
@@ -197,7 +197,7 @@ export async function deleteSessionByIdImpl(
         await get().createAndSwitchSession(t("session.firstGraph"));
       }
     }
-  } catch (err) {
+  } catch {
     get().showToast(t("toast.sessionDeleteFailed"), true);
   }
 }

@@ -17,7 +17,7 @@ export function SessionPicker() {
 
   const handleRename = () => {
     const next = window.prompt(t("session.renamePrompt"), active?.title ?? t("session.newSession"));
-    if (next && next.trim()) renameSession(next.trim());
+    if (next && next.trim()) void renameSession(next.trim());
   };
 
   const handleDelete = (id: string, title: string) => {
