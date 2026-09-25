@@ -16,7 +16,7 @@ export function GrokPlannerSelect() {
     fetchApi("/api/config/grok-planner")
       .then((r) => r.json() as Promise<PlannerConfig>)
       .then(setConfig)
-      .catch(() => {});
+      .catch(() => { /* best-effort: without planner config the row stays hidden */ });
   }, []);
 
   const onChange = async (model: string) => {
@@ -27,7 +27,7 @@ export function GrokPlannerSelect() {
         body: JSON.stringify({ model }),
       });
       setConfig((prev) => prev ? { ...prev, model } : null);
-    } catch {}
+    } catch (err) { console.warn("[settings] grok planner update failed:", err); }
   };
 
   if (!config) return null;

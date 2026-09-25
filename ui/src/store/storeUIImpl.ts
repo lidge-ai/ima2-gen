@@ -134,14 +134,14 @@ export function toggleRightPanelImpl(set: StoreSet, get: StoreGet): void {
   const next = !get().rightPanelOpen;
   try {
     localStorage.setItem(RIGHT_PANEL_OPEN_STORAGE_KEY, JSON.stringify(next));
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; in-memory state still updates */ }
   set({ rightPanelOpen: next });
 }
 
 export function setGalleryScopeImpl(scope: GalleryScope, set: StoreSet): void {
   try {
     localStorage.setItem(GALLERY_SCOPE_STORAGE_KEY, scope);
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; in-memory state still updates */ }
   set({ galleryScope: scope });
 }
 
@@ -149,7 +149,7 @@ export function setGalleryDefaultScopeImpl(scope: GalleryScope, set: StoreSet): 
   try {
     localStorage.setItem(GALLERY_DEFAULT_SCOPE_STORAGE_KEY, scope);
     localStorage.setItem(GALLERY_SCOPE_STORAGE_KEY, scope);
-  } catch {}
+  } catch { /* best-effort: storage may be unavailable; in-memory state still updates */ }
   set({ galleryDefaultScope: scope, galleryScope: scope });
 }
 
@@ -159,12 +159,12 @@ export function setUIModeImpl(m: UIMode, set: StoreSet): void {
       m === "card-news" && !ENABLE_CARD_NEWS_MODE ? "classic" :
       m === "node" && !ENABLE_NODE_MODE ? "classic" :
         m;
-  try { localStorage.setItem(UI_MODE_STORAGE_KEY, next); } catch {}
+  try { localStorage.setItem(UI_MODE_STORAGE_KEY, next); } catch { /* best-effort: storage may be unavailable; in-memory state still updates */ }
   set({ uiMode: next });
 }
 
 export function setHistoryStripLayoutImpl(layout: HistoryStripLayout, set: StoreSet): void {
-  try { localStorage.setItem(HISTORY_STRIP_LAYOUT_STORAGE_KEY, layout); } catch {}
+  try { localStorage.setItem(HISTORY_STRIP_LAYOUT_STORAGE_KEY, layout); } catch { /* best-effort: storage may be unavailable; in-memory state still updates */ }
   set({ historyStripLayout: layout });
 }
 

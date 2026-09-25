@@ -18,7 +18,7 @@ import { ensureDefaultSession } from "./lib/sessionStore.js";
 import { resetCodexCaches } from "./lib/codexBackend/index.js";
 import { migrateGeneratedStorage } from "./lib/storageMigration.js";
 import { purgeStaleJobs } from "./lib/inflight.js";
-import { configureLogger, logError } from "./lib/logger.js";
+import { configureLogger, logError, logWarn } from "./lib/logger.js";
 import { createRequestLogger } from "./lib/requestLogger.js";
 import { configureApiCachePolicy } from "./lib/apiCachePolicy.js";
 import { configureRoutes } from "./routes/index.js";
@@ -54,6 +54,13 @@ type BootRuntimeContext = RuntimeContext & {
 type ApiKeyLoadResult = { apiKey: string | null; apiKeySource: ApiKeySource };
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
+const warnedConfigPaths = new Set<string>();
+
+function warnConfigReadFailed(cfgPath: string, err: unknown) {
+  if (warnedConfigPaths.has(cfgPath)) return;
+  warnedConfigPaths.add(cfgPath);
+  logWarn("config", "config_read_failed", { path: cfgPath, errorName: err instanceof Error ? err.name : typeof err });
+}
 
 async function loadApiKey(): Promise<ApiKeyLoadResult> {
   if (process.env.OPENAI_API_KEY) {
@@ -68,7 +75,7 @@ async function loadApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { apiKey?: string };
       if (cfg.apiKey) return { apiKey: cfg.apiKey, apiKeySource: "config" };
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -86,7 +93,7 @@ async function loadXaiApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { xaiApiKey?: string };
       if (cfg.xaiApiKey) return { apiKey: cfg.xaiApiKey, apiKeySource: "config" };
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -104,7 +111,7 @@ async function loadGeminiApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { geminiApiKey?: string };
       if (cfg.geminiApiKey) return { apiKey: cfg.geminiApiKey, apiKeySource: "config" };
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -122,7 +129,7 @@ async function loadAtlasCloudApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { atlasCloudApiKey?: string };
       if (cfg.atlasCloudApiKey) return { apiKey: cfg.atlasCloudApiKey, apiKeySource: "config" };
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -140,7 +147,7 @@ async function loadMinimaxApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { minimaxApiKey?: string };
       if (cfg.minimaxApiKey) return { apiKey: cfg.minimaxApiKey, apiKeySource: "config" };
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -158,7 +165,7 @@ async function loadNaiApiKey(): Promise<ApiKeyLoadResult> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { naiApiKey?: string };
       if (cfg.naiApiKey) return { apiKey: cfg.naiApiKey, apiKeySource: "config" };
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -187,7 +194,7 @@ async function loadVertexKey(): Promise<VertexKeyLoadResult> {
         const parsed = JSON.parse(cfg.vertexServiceAccountJson);
         return { json: cfg.vertexServiceAccountJson, projectId: parsed.project_id || null, source: "config" };
       }
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return { json: null, projectId: null, source: "none" };
 }
@@ -202,7 +209,7 @@ async function loadGeminiAuthMode(): Promise<string | undefined> {
     try {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { geminiAuthMode?: string };
       if (cfg.geminiAuthMode === "vertex" || cfg.geminiAuthMode === "apikey") return cfg.geminiAuthMode;
-    } catch {}
+    } catch (err) { warnConfigReadFailed(cfgPath, err); }
   }
   return undefined;
 }
@@ -361,7 +368,7 @@ function unadvertise(ctx: RuntimeContext) {
     if (!existsSync(ctx.config.storage.advertiseFile)) return;
     const cur = JSON.parse(fsReadFileSync(ctx.config.storage.advertiseFile, "utf-8")) as { pid?: number };
     if (cur.pid === process.pid) unlinkSync(ctx.config.storage.advertiseFile);
-  } catch {}
+  } catch { /* best-effort: advertise file cleanup during shutdown */ }
 }
 
 type StartServerOverrides = RuntimeContextOverrides & {
@@ -494,8 +501,8 @@ export async function startServer(overrides: StartServerOverrides = {}) {
 
   onShutdown(async () => {
     unadvertise(ctx);
-    try { oauthChild?.stop?.(); } catch {}
-    try { oauthChild?.kill?.(); } catch {}
+    try { oauthChild?.stop?.(); } catch { /* best-effort: OAuth child may already be stopped */ }
+    try { oauthChild?.kill?.(); } catch { /* best-effort: OAuth child may already be stopped */ }
     stopAgentQueueWorker();
     clearInterval(reapTimer);
     if (tempReferenceReapTimer) clearInterval(tempReferenceReapTimer);

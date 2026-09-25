@@ -37,7 +37,7 @@ function loadStore() {
 }
 function saveStore(store) {
   writeFileSync(storePath, JSON.stringify(store, null, 2), { mode: 0o600 });
-  try { chmodSync(storePath, 0o600); } catch {}
+  try { chmodSync(storePath, 0o600); } catch { /* best-effort: chmod is unsupported on some platforms; file was written with mode 0600 */ }
 }
 
 let store = loadStore();
@@ -78,7 +78,7 @@ function waitForCallback() {
       if (code) resolve(code); else reject(new Error(`oauth error: ${err}`));
     });
     server.listen(CALLBACK_PORT, () => console.log(`[oauth] callback listening on ${REDIRECT_URL}`));
-    setTimeout(() => { try { server.close(); } catch {} ; reject(new Error("oauth callback timeout (10min)")); }, 600_000);
+    setTimeout(() => { try { server.close(); } catch { /* best-effort: server may already be closed */ } ; reject(new Error("oauth callback timeout (10min)")); }, 600_000);
   });
 }
 
