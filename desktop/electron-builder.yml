@@ -46,6 +46,7 @@ files:
   - desktop/scripts/make-icons.mjs
   - desktop/build/icon.png
   - desktop/build/tray*.png
+  - desktop/build/*.ico
   - "!desktop/node_modules"
   - "!desktop/dist"
   - "!ui/node_modules"
@@ -112,7 +113,7 @@ dmg:
     - { x: 410, y: 220, type: link, path: /Applications }
 
 win:
-  icon: build/icon.png
+  icon: build/icon.ico
   target:
     - target: nsis
       arch: [x64, arm64]
