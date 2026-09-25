@@ -1,5 +1,5 @@
-import type { ImageModel } from "../types";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { Provider } from "../types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IMAGE_MODEL_OPTIONS, OPENAI_IMAGE_MODEL_OPTIONS, GROK_IMAGE_MODEL_OPTIONS, GEMINI_IMAGE_MODEL_OPTIONS, UNSUPPORTED_IMAGE_MODELS, VIDEO_MODEL_OPTIONS, isGeminiImageModel } from "../lib/imageModels";
@@ -337,17 +337,42 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
     );
   }
 
+  // Settings lists every option across lanes, so a model value alone cannot say
+  // which lane's row was picked (nano-banana-2 exists on agy and gemini-api).
+  // The item value carries the hint so each row selects what its label advertises.
+  const optionItemValue = (option: (typeof modelOptions)[number]) =>
+    option.providerHint ? `${option.providerHint}:${option.value}` : option.value;
+
+  // Lane tags reuse the names the settings provider sections already show.
+  const laneLabelKeys: Partial<Record<Provider, string>> = {
+    api: "settings.account.apiTitle",
+    agy: "settings.account.agyTitle",
+    "gemini-api": "provider.geminiApiCompatTitle",
+    atlascloud: "settings.apiKeys.atlascloud.label",
+    minimax: "settings.apiKeys.minimax.label",
+    nai: "settings.account.naiTitle",
+  };
+
   return (
     <div className="image-model-select image-model-select--settings">
       <Select
         id={id}
-        value={imageModel}
-        onChange={(value) => setImageModel(value as ImageModel)}
+        value={optionItemValue(current)}
+        onChange={(value) => {
+          const option = modelOptions.find((candidate) => optionItemValue(candidate) === value);
+          if (!option) return;
+          if (option.providerHint) setProvider(option.providerHint);
+          setImageModel(option.value);
+        }}
         items={[
-          ...modelOptions.map((option) => ({
-            value: option.value,
-            label: t(option.fullLabelKey),
-          })),
+          ...modelOptions.map((option) => {
+            const laneKey = option.providerHint ? laneLabelKeys[option.providerHint] : undefined;
+            return {
+              value: optionItemValue(option),
+              label: t(option.fullLabelKey),
+              ...(laneKey ? { sub: t(laneKey) } : {}),
+            };
+          }),
           ...UNSUPPORTED_IMAGE_MODELS.map((option) => ({
             value: option.value,
             label: t(option.fullLabelKey),

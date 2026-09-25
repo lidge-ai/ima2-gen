@@ -22,7 +22,18 @@ const CHECKSUMMED = [
   `ima2-${VERSION}-mac-arm64.zip`,
   `ima2-${VERSION}-mac-arm64.dmg.blockmap`,
   `ima2-${VERSION}-mac-arm64.zip.blockmap`,
+  `ima2-${VERSION}-win-x64.exe`,
+  `ima2-${VERSION}-win-x64.exe.blockmap`,
+  `ima2-${VERSION}-win-arm64.exe`,
+  `ima2-${VERSION}-win-arm64.exe.blockmap`,
+  `ima2-${VERSION}-linux-x86_64.AppImage`,
+  `ima2-${VERSION}-linux-arm64.AppImage`,
+  `ima2-${VERSION}-linux-amd64.deb`,
+  `ima2-${VERSION}-linux-arm64.deb`,
   "latest-mac.yml",
+  "latest.yml",
+  "latest-linux.yml",
+  "latest-linux-arm64.yml",
 ];
 const PUBLIC_ASSETS = [...CHECKSUMMED, "SHA256SUMS.txt"];
 
@@ -185,7 +196,7 @@ class Harness {
       lines.push(`${digest}  ${name}`);
     }
     writeFileSync(join(dist, "SHA256SUMS.txt"), `${lines.join("\n")}\n`);
-    writeFileSync(join(dist, "RELEASE_NOTES.md"), `Apple Silicon macOS build for ima2 ${VERSION}.\n`);
+    writeFileSync(join(dist, "RELEASE_NOTES.md"), `Desktop builds for ima2 ${VERSION}.\n`);
   }
 
   sha256(path: string): string {
@@ -285,7 +296,7 @@ function withHarness(body: (harness: Harness) => void): void {
 describe("desktop release workflow shell", {
   skip: posixShell ? false : "the release jobs run on ubuntu-latest; no POSIX shell here",
 }, () => {
-  it("drafts a tag-bound release carrying exactly the six public assets", () => {
+  it("drafts a tag-bound release carrying exactly the seventeen public assets", () => {
     withHarness((harness) => {
       harness.seedBuildOutput();
       const draft = harness.runDraft();
@@ -364,7 +375,7 @@ describe("desktop release workflow shell", {
       [
         "an extra asset appears",
         (harness) => writeFileSync(join(harness.state, "assets/extra-installer.exe"), "x"),
-        /does not match the Apple Silicon allowlist/,
+        /does not match the desktop release allowlist/,
       ],
       [
         "a listed artifact is swapped",

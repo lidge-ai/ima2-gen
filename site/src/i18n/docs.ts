@@ -31,7 +31,7 @@ export const DOCS_NAV: DocsNavSection[] = [
     links: [
       { slug: '', en: 'Overview', ko: '개요' },
       { slug: 'quickstart', en: 'Quickstart', ko: '빠른 시작' },
-      { slug: 'desktop', en: 'Mac App', ko: 'Mac 앱' },
+      { slug: 'desktop', en: 'Desktop App', ko: '데스크톱 앱' },
     ],
   },
   {
