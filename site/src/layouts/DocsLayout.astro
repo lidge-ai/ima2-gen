@@ -3,6 +3,7 @@ import '../styles/global.css';
 import '../styles/docs.css';
 import { type Lang } from '../i18n/strings';
 import { DOCS_NAV, docsT } from '../i18n/docs';
+import ReleaseBanner from '../components/ReleaseBanner.astro';
 
 interface Props {
   lang?: Lang;
@@ -74,6 +75,7 @@ const koAlt = `${siteRoot}ko/docs${slugSuffix}`;
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
   </head>
   <body>
+    <ReleaseBanner lang={lang} />
     <button class="docs-menu-toggle" aria-label={docsT(lang, 'nav.toggle')} aria-expanded="false" data-docs-toggle>☰</button>
     <div class="docs-backdrop" data-docs-backdrop></div>
 
