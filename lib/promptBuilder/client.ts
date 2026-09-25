@@ -13,6 +13,7 @@ import {
 import { promptBuilderError } from "./errors.js";
 import {
   lanesForModel,
+  promptBuilderLaneModel,
   normalizeMessages,
   normalizePromptBuilderBackend,
   normalizeRequestModel,
@@ -70,7 +71,9 @@ async function prepareRequest(
     : PROMPT_BUILDER_AUTO_ORDER;
   const selection = selectPromptBuilderBackend(requestedBackend, lanes, allowedLanes);
   const model = requestedBackend === "auto"
-    ? (requestedModel === "auto" ? DEFAULT_PROMPT_BUILDER_MODELS[selection.backend] : requestedModel)
+    ? (requestedModel === "auto"
+      ? DEFAULT_PROMPT_BUILDER_MODELS[selection.backend]
+      : promptBuilderLaneModel(selection.backend, requestedModel))
     : requestedModel;
   const messages = normalizeMessages(input.messages);
   if (selection.fallbackFrom) logFallback(selection);

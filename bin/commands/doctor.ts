@@ -58,7 +58,7 @@ function showImageProbeHelp() {
     --quality <quality>    Default: low
     --moderation <value>   Default: low
     --prompt <text>        Override built-in cat prompt
-    --oauth-url <url>      Override GPT OAuth proxy URL
+    --oauth-url <url>      Send GPT OAuth checks to this endpoint
     --timeout-ms <ms>      Per-probe timeout
 `);
 }

@@ -67,9 +67,15 @@ export function normalizeRequestModel(
 }
 
 export function lanesForModel(model: string): ResolvedPromptBuilderBackend[] {
+  // A legacy GPT OAuth id still routes to GPT OAuth, on its GPT-6 tier (see promptBuilderLaneModel).
   return PROMPT_BUILDER_AUTO_ORDER.filter(
-    (lane) => PROMPT_BUILDER_MODELS[lane].includes(model),
+    (lane) => PROMPT_BUILDER_MODELS[lane].includes(promptBuilderLaneModel(lane, model)),
   );
+}
+
+/** The model id a lane actually receives: GPT OAuth takes the GPT-6 tier of a legacy id. */
+export function promptBuilderLaneModel(lane: ResolvedPromptBuilderBackend, model: string): string {
+  return lane === "oauth" ? migrateOAuthImageModel(model) : model;
 }
 
 export function normalizePromptBuilderConfig(

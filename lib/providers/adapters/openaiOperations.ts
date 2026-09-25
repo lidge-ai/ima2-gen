@@ -25,6 +25,7 @@ import {
 import { normalizeOAuthParams, normalizeImageToolModel } from "../../oauthNormalize.js";
 import { postResponses } from "../../responsesTransport.js";
 import { runOAuthImageJob, type OAuthPlanImage } from "../../oauthImages.js";
+import { API_FALLBACK_IMAGE_MODEL, FALLBACK_IMAGE_MODEL, migrateOAuthImageModel } from "../../imageModels.js";
 import type { ReferenceRef, GenerateOptions } from "./openaiTypes.js";
 
 function refImage(ref: ReferenceRef): OAuthPlanImage {
@@ -46,14 +47,22 @@ function normalizeRef(ref: ReferenceRef) {
   return { type: "input_image", image_url: `data:${mime};base64,${b64}` };
 }
 
-/** GPT OAuth runs on openai-oauth 2: a GPT-6 planner plus the Images API (lib/oauthImages.ts). */
+/** GPT OAuth calls the Codex backend in process: a GPT-6 planner plus gpt-image-2 (lib/oauthImages.ts). */
 function isOAuthLane(provider: string | undefined) {
   return provider !== "api";
 }
 
+/** The request model: a legacy OAuth id moves to its GPT-6 tier; the API lane keeps its own default. */
+function requestModel(provider: string | undefined, ctx: RouteRuntimeContext, requested: string | undefined): string {
+  if (!isOAuthLane(provider)) {
+    return requested || (ctx.config as { apiProvider?: { defaultImageModel?: string } } | undefined)?.apiProvider?.defaultImageModel || API_FALLBACK_IMAGE_MODEL;
+  }
+  return migrateOAuthImageModel(requested || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL);
+}
+
 export async function generateViaResponses(provider: string | undefined, prompt: string | undefined, quality: string | undefined, size: string | undefined, moderation: string = "low", references: ReferenceRef[] = [], requestId: string | null = null, mode: string = "auto", ctxRaw: RouteRuntimeContext = {}, options: GenerateOptions = {}) {
   const ctx = requireRuntimeContext(ctxRaw);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = requestModel(provider, ctx, options.model);
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
   const toolModel = normalizeImageToolModel(provider ?? "oauth", options.imageToolModel);
   if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
@@ -88,6 +97,7 @@ export async function generateViaResponses(provider: string | undefined, prompt:
       maxImages: 1,
       quality,
       size,
+      moderation,
       background: options.background,
       onFinalImage: options.onFinalImage,
     });
@@ -179,7 +189,7 @@ export async function generateMultimodeViaResponses(provider: string | undefined
     maxGeneratedImages,
     Math.max(1, Math.trunc(Number(options.maxImages) || 1)),
   );
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = requestModel(provider, ctx, options.model);
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
   const toolModel = normalizeImageToolModel(provider ?? "oauth", options.imageToolModel);
   if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
@@ -215,6 +225,7 @@ export async function generateMultimodeViaResponses(provider: string | undefined
       maxImages,
       quality,
       size,
+      moderation,
       onFinalImage: options.onFinalImage,
     });
   }
@@ -243,7 +254,7 @@ export async function generateMultimodeViaResponses(provider: string | undefined
 
 export async function editViaResponses(provider: string | undefined, prompt: string | undefined, imageB64: string | undefined, quality: string | undefined, size: string | undefined, moderation: string = "low", mode: string = "auto", ctxRaw: RouteRuntimeContext = {}, requestId: string | null = null, options: GenerateOptions = {}) {
   const ctx = requireRuntimeContext(ctxRaw);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = requestModel(provider, ctx, options.model);
   const webSearchEnabled = options.webSearchEnabled !== false && options.searchMode !== "off";
   const toolModel = normalizeImageToolModel(provider ?? "oauth", options.imageToolModel);
   if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
@@ -299,6 +310,7 @@ export async function editViaResponses(provider: string | undefined, prompt: str
       maxImages: 1,
       quality,
       size,
+      moderation,
       background: options.background,
     });
     const image = result.images[0];

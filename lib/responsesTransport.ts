@@ -252,8 +252,8 @@ export interface OAuthImagesResult {
 }
 
 /**
- * Render through the bundled openai-oauth proxy's Images API (gpt-image-2 on the ChatGPT
- * backend). Shares postResponses' endpoint readiness, timeout, cancellation and upstream
+ * Render through the GPT OAuth Images API (gpt-image-2 on the ChatGPT backend, called in
+ * process by lib/codexBackend). Shares postResponses' endpoint readiness, timeout, cancellation and upstream
  * error classification so OAuth failures surface with the same codes as before.
  */
 export async function postOAuthImages({
@@ -291,13 +291,13 @@ export async function postOAuthImages({
           upstreamMessageRedacted: true,
         });
       }
-      throw makeError(`OAuth proxy returned ${res.status}`, { status: res.status, upstreamBodyChars: text.length });
+      throw makeError(`GPT OAuth returned ${res.status}`, { status: res.status, upstreamBodyChars: text.length });
     }
     let parsed: { data?: Array<{ b64_json?: unknown }>; usage?: Record<string, number>; background?: unknown; output_format?: unknown };
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw makeError("OAuth proxy returned a non-JSON image response", { status: 502, upstreamBodyChars: text.length });
+      throw makeError("GPT OAuth returned a non-JSON image response", { status: 502, upstreamBodyChars: text.length });
     }
     const images = (Array.isArray(parsed.data) ? parsed.data : [])
       .map((item) => (typeof item?.b64_json === "string" && item.b64_json ? { b64: item.b64_json } : null))

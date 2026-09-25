@@ -12,7 +12,7 @@ const HELP = `
   Billing / Providers / GPT OAuth:
     billing [--json]                         API usage / quota
     providers [--json]                       Configured providers
-    oauth status [--json]                    GPT OAuth proxy state
+    oauth status [--json]                    GPT OAuth state
 
   Inflight jobs:
     inflight ls [--kind classic|node|multimode] [--session <id>] [--terminal] [--json]

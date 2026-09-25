@@ -28,7 +28,7 @@ function makeCatalog(): ModelCatalog {
       // Astra sits in BOTH lanes because that is what /api/models really
       // projects: the same supported GPT set appears under oauth and api. The
       // older single-lane entries above are long-standing fixture shorthand.
-      oauth: ready({ image: [{ id: "gpt-5.6-luna" }, { id: "gpt-6-astra" }, { id: "shared" }] }, { image: "gpt-5.6-luna" }),
+      oauth: ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6-astra" }, { id: "shared" }] }, { image: "gpt-6-luna" }),
       api: ready({ image: [{ id: "gpt-6-astra" }, { id: "shared" }] }, { image: "shared" }),
       grok: ready({ video: [{ id: "grok-video" }] }, { video: "grok-video" }),
       "grok-api": ready(),
@@ -73,7 +73,7 @@ describe("resolveTarget", () => {
 
   it("resolves namespaced models and canonicalizes only the model segment", () => {
     assert.deepStrictEqual(resolveTarget("image", { model: "oauth/luna" }, makeCatalog(), {}), {
-      ok: true, lane: "oauth", model: "gpt-5.6-luna", transport: "core",
+      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
     });
     assert.deepStrictEqual(resolveTarget("video", { model: "runway/veo-3.1" }, makeCatalog(), {}), {
       ok: true, lane: "runway", model: "veo-3.1", transport: "mcp",
@@ -110,6 +110,32 @@ describe("resolveTarget", () => {
 
   it("rejects unknown lanes, missing models, kind mismatches, and lane conflicts", () => {
     expectFailure(resolveTarget("image", { model: "unknown/x" }, makeCatalog(), {}), "UNKNOWN_LANE");
+  });
+
+  // GPT OAuth keeps only GPT-6. Saved defaults and scripts that still name a pre-GPT-6 id land
+  // on its GPT-6 tier inside the oauth lane; a bare legacy id never silently moves to the API lane.
+  it("maps legacy GPT OAuth ids to their GPT-6 tier only on the oauth lane", () => {
+    const catalog = makeCatalog();
+    catalog.lanes.api = ready({ image: [{ id: "gpt-5.6-luna" }, { id: "gpt-6-astra" }] }, { image: "gpt-5.6-luna" });
+    catalog.lanes.oauth = ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6-sol" }, { id: "gpt-6-astra" }] }, { image: "gpt-6-luna" });
+    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/gpt-5.6-luna" }, catalog, {}), {
+      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
+    });
+    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/gpt-5.6-sol" }, catalog, {}), {
+      ok: true, lane: "oauth", model: "gpt-6-sol", transport: "core",
+    });
+    assert.deepStrictEqual(resolveTarget("image", { model: "api/gpt-5.6-luna" }, catalog, {}), {
+      ok: true, lane: "api", model: "gpt-5.6-luna", transport: "core",
+    });
+    assert.deepStrictEqual(resolveTarget("image", {}, catalog, { image: "oauth/gpt-5.5" }), {
+      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
+    });
+    const bare = expectFailure(resolveTarget("image", { model: "gpt-5.6-luna" }, catalog, {}), "MODEL_AMBIGUOUS");
+    assert.deepStrictEqual(bare!.extra?.candidates, ["oauth/gpt-5.6-luna", "api/gpt-5.6-luna"]);
+  });
+
+  it("rejects missing models, kind mismatches, and lane conflicts", () => {
+    expectFailure(resolveTarget("image", { model: "unknown/x" }, makeCatalog(), {}), "UNKNOWN_LANE");
     expectFailure(resolveTarget("image", { model: "oauth/missing" }, makeCatalog(), {}), "MODEL_NOT_FOUND");
     expectFailure(resolveTarget("image", { model: "grok/grok-video" }, makeCatalog(), {}), "KIND_MISMATCH");
     expectFailure(
@@ -120,7 +146,7 @@ describe("resolveTarget", () => {
 
   it("resolves a unique bare alias and lets provider narrow an ambiguous id", () => {
     assert.deepStrictEqual(resolveTarget("image", { model: "luna" }, makeCatalog(), {}), {
-      ok: true, lane: "oauth", model: "gpt-5.6-luna", transport: "core",
+      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
     });
     assert.deepStrictEqual(resolveTarget("image", { model: "shared", provider: "api" }, makeCatalog(), {}), {
       ok: true, lane: "api", model: "shared", transport: "core",
@@ -161,7 +187,7 @@ describe("resolveTarget", () => {
   it("returns grouped models and two fix commands when the CLI default is absent", () => {
     const failure = expectFailure(resolveTarget("image", {}, makeCatalog(), {}), "NO_DEFAULT_MODEL");
     const models = failure!.extra?.models as Record<string, string[]>;
-    assert.deepStrictEqual(models.oauth, ["gpt-5.6-luna", "gpt-6-astra", "shared"]);
+    assert.deepStrictEqual(models.oauth, ["gpt-6-luna", "gpt-6-astra", "shared"]);
     assert.deepStrictEqual(models.runway, ["gen-4"]);
     assert.deepStrictEqual(failure!.extra?.fix, [
       "ima2 defaults set image <lane>/<model>",

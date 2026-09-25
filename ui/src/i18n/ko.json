@@ -787,10 +787,10 @@
     "statusLineTitle": "상태",
     "authMethodTitle": "인증",
     "authActive": "사용 중",
-    "oauthNotReady": "GPT OAuth 프록시가 아직 준비되지 않았습니다.",
+    "oauthNotReady": "GPT OAuth가 아직 준비되지 않았습니다.",
     "codexLoginRequired": "Codex 로그인이 필요합니다.",
     "codexLoginHint": "터미널에서 `ima2 login`을 실행하거나, 설정 → Codex 계정 전환에서 로그인하세요.",
-    "oauthStarting": "GPT OAuth 프록시가 시작 중입니다. 몇 초 후 다시 시도하세요.",
+    "oauthStarting": "GPT OAuth가 시작 중입니다. 몇 초 후 다시 시도하세요.",
     "serverUnreachable": "서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.",
     "apiInvalid": "API 키가 없거나 유효하지 않습니다. 서버의 .env 파일에서 OPENAI_API_KEY를 확인하세요.",
     "grokOffline": "Grok 로그인이 필요합니다.",
@@ -1653,8 +1653,8 @@
       "cta": "새로고침"
     },
     "oauthUnavailable": {
-      "title": "GPT OAuth 프록시를 사용할 수 없어요",
-      "body": "GPT OAuth 프록시가 아직 시작 중이거나, 사용할 수 없거나, fallback 포트로 이동했을 수 있어요. 먼저 새로고침하고, 계속되면 `ima2 doctor`의 GPT OAuth URL을 확인해 주세요.",
+      "title": "GPT OAuth를 사용할 수 없어요",
+      "body": "GPT OAuth가 시작 중이거나 연결할 곳에 닿지 못했어요. 먼저 새로고침하고, 계속되면 `ima2 gpt status`와 `ima2 doctor`를 확인해 주세요.",
       "cta": "새로고침"
     },
     "invalidRequest": {

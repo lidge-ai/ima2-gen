@@ -1,6 +1,24 @@
 import { config } from "../config.js";
 import type { AgentGenerationSettings } from "./agentTypes.js";
 import { deriveProviderIdSet } from "./providers/derive.js";
+import { API_FALLBACK_IMAGE_MODEL, FALLBACK_IMAGE_MODEL, migrateOAuthImageModel } from "./imageModels.js";
+import { deriveSupportedImageModels } from "./providers/derive.js";
+
+const OAUTH_IMAGE_MODELS = deriveSupportedImageModels("oauth");
+const API_IMAGE_MODELS = deriveSupportedImageModels("api");
+
+/**
+ * GPT OAuth keeps only GPT-6 and the API-key lane its own list, so an agent that switches lanes
+ * without naming a model must not carry the other lane's id: a legacy OAuth id moves to its GPT-6
+ * tier, and a GPT-6 id the API lane does not serve falls back to the API default.
+ */
+function modelForLane(provider: string, model: string): string {
+  if (provider === "oauth") return migrateOAuthImageModel(model);
+  if (provider === "api" && OAUTH_IMAGE_MODELS.has(model) && !API_IMAGE_MODELS.has(model)) {
+    return config.apiProvider?.defaultImageModel || API_FALLBACK_IMAGE_MODEL;
+  }
+  return model;
+}
 
 const PROVIDERS = deriveProviderIdSet();
 const QUALITIES = new Set(["low", "medium", "high"]);
@@ -13,7 +31,7 @@ const MAX_AGENT_PARALLELISM = Math.max(1, Math.trunc(config.limits.maxParallel))
 
 export const DEFAULT_AGENT_GENERATION_SETTINGS: AgentGenerationSettings = {
   provider: "oauth",
-  model: "gpt-5.6-luna",
+  model: FALLBACK_IMAGE_MODEL,
   quality: "medium",
   size: "1024x1024",
   format: "png",
@@ -31,9 +49,10 @@ export function normalizeAgentGenerationSettings(
   fallback: AgentGenerationSettings = DEFAULT_AGENT_GENERATION_SETTINGS,
 ): AgentGenerationSettings {
   const input = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const provider = cleanEnum(input.provider, PROVIDERS, fallback.provider);
   return {
-    provider: cleanEnum(input.provider, PROVIDERS, fallback.provider),
-    model: cleanString(input.model, fallback.model),
+    provider,
+    model: modelForLane(provider, cleanString(input.model, fallback.model)),
     quality: cleanEnum(input.quality, QUALITIES, fallback.quality),
     size: cleanSize(input.size, fallback.size),
     format: cleanEnum(input.format, FORMATS, fallback.format),

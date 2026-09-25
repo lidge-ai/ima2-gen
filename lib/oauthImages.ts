@@ -1,11 +1,11 @@
 /**
- * GPT OAuth image lane on openai-oauth 2 (the Codex image_gen shape).
+ * GPT OAuth image lane on the Codex backend (the Codex image_gen shape).
  *
  * GPT-6 models on the ChatGPT backend cannot call the hosted image_generation tool, so the
  * lane runs in two steps, the way Codex's image_gen.imagegen and OpenCodex's media bridge do:
  *   1. plan  — the selected GPT-6 model gets ima2's existing developer/user prompts plus a
  *              client function tool \`image_gen\` and writes the final prompt(s);
- *   2. render — each prompt goes to the proxy's Images API (gpt-image-2): /generations without
+ *   2. render — each prompt goes to the Images API (gpt-image-2): /generations without
  *              input images, /edits with the edit source and references.
  * Direct mode skips the planner and renders the user's prompt verbatim.
  * The result keeps ParsedResponsesResult's shape so routes, SSE, history and error
@@ -62,6 +62,7 @@ export interface OAuthImageJob {
   maxImages: number;
   quality?: string | undefined;
   size?: string | undefined;
+  moderation?: string | undefined;
   background?: string | undefined;
   onFinalImage?: FinalImageHandler | null | undefined;
 }
@@ -150,12 +151,14 @@ export function promptsFromCalls(calls: ParsedFunctionCall[] | undefined, maxIma
 }
 
 /** Map ima2's request fields onto what the OAuth Images API accepts. */
-export function renderFields(job: Pick<OAuthImageJob, "quality" | "size" | "background">) {
+export function renderFields(job: Pick<OAuthImageJob, "quality" | "size" | "background" | "moderation">) {
   const fields: Record<string, string> = {};
   const quality = job.quality === "xhigh" || job.quality === "max" ? "high" : job.quality;
   if (quality && IMAGES_QUALITY.has(quality)) fields.quality = quality;
   if (job.size && job.size !== "auto" && /^\d+x\d+$/.test(job.size)) fields.size = job.size;
   if (job.background && ["transparent", "opaque", "auto"].includes(job.background)) fields.background = job.background;
+  // Measured 2026-09-25: the ChatGPT Images endpoint accepts moderation "low" (200, one image).
+  if (job.moderation === "auto" || job.moderation === "low") fields.moderation = job.moderation;
   return fields;
 }
 
@@ -240,7 +243,7 @@ export async function runOAuthImageJob(job: OAuthImageJob): Promise<OAuthImageJo
   const kind = job.images.length ? "images.edits" : "images.generations";
   logEvent(job.scope, "plan_done", { requestId: job.requestId, direct, prompts: planned.prompts.length });
 
-  type Settled = { ok: true; value: Awaited<ReturnType<typeof renderOne>> } | { ok: false; error: unknown };
+  type Settled = { status: "done"; value: Awaited<ReturnType<typeof renderOne>> } | { status: "failed"; error: unknown };
   const slots = planned.prompts.map(() => {
     let resolve!: (value: Settled) => void;
     const promise = new Promise<Settled>((r) => { resolve = r; });
@@ -251,9 +254,9 @@ export async function runOAuthImageJob(job: OAuthImageJob): Promise<OAuthImageJo
     while (cursor < planned.prompts.length) {
       const index = cursor++;
       try {
-        slots[index]?.resolve({ ok: true, value: await renderOne(job, planned.prompts[index] as string) });
+        slots[index]?.resolve({ status: "done", value: await renderOne(job, planned.prompts[index] as string) });
       } catch (error) {
-        slots[index]?.resolve({ ok: false, error });
+        slots[index]?.resolve({ status: "failed", error });
       }
     }
   };
@@ -266,7 +269,7 @@ export async function runOAuthImageJob(job: OAuthImageJob): Promise<OAuthImageJo
   for (const [index, slot] of slots.entries()) {
     const settled = await slot.promise;
     eventTypes[kind] = (eventTypes[kind] ?? 0) + 1;
-    if (!settled.ok) {
+    if (settled.status === "failed") {
       firstError ??= settled.error;
       logEvent(job.scope, "render_failed", { requestId: job.requestId, index });
       continue;

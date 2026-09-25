@@ -148,7 +148,7 @@ describe("CLI feature parity contract", () => {
     for (const docs of [cliDocs, faq, faqKo, readme]) {
       assert.match(docs, /ima2 doctor image-probe --json/);
       // 3.0.0 fail-closed contract: diagnostic examples pass an explicit lane model.
-      assert.match(docs, /ima2 gen "고양이" --model oauth\/gpt-5\.6-luna --no-web-search --json/);
+      assert.match(docs, /ima2 gen "고양이" --model oauth\/gpt-6-luna --no-web-search --json/);
       assert.match(docs, /OAuth token|OAuth token 파일|OAuth token files/);
       assert.match(docs, /API key|API keys|API 키/);
       assert.match(docs, /base64/);

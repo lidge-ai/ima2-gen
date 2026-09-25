@@ -98,7 +98,7 @@ test("snapshot honors current legacy keys over memory and preserves raw workflow
     storage.rows.set(generationKey, JSON.stringify({ provider: "comfy", comfyVideoWorkflow: "wf-missing" }));
     storage.rows.set("ima2.imageModel", "wf-legacy");
     storage.rows.set(key, JSON.stringify({ version: 1, lanes: { comfy: { kind: "image", image: "wf-old" } } }));
-    assert.deepEqual(api.loadCoreSelectionSnapshot(), { provider: "comfy", imageModel: "gpt-5.6-luna",
+    assert.deepEqual(api.loadCoreSelectionSnapshot(), { provider: "comfy", imageModel: "gpt-6-luna",
       comfyWorkflow: "wf-legacy", comfyVideoWorkflow: "wf-missing", videoModelSelected: false });
     storage.rows.set(generationKey, JSON.stringify({ provider: "grok-api" }));
     storage.rows.set("ima2.imageModel", "grok-imagine-image-quality");

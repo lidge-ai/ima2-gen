@@ -787,10 +787,10 @@
     "statusLineTitle": "狀態",
     "authMethodTitle": "授權",
     "authActive": "已啟用",
-    "oauthNotReady": "GPT OAuth 代理程式尚未準備好。",
+    "oauthNotReady": "GPT OAuth 尚未準備好。",
     "codexLoginRequired": "需要 Codex 登入。",
     "codexLoginHint": "在終端機執行 `ima2 login`，或在 設定 → 切換 Codex 帳戶 中登入。",
-    "oauthStarting": "GPT OAuth 代理程式正在啟動。幾秒鐘後重試。",
+    "oauthStarting": "GPT OAuth 正在啟動。幾秒鐘後重試。",
     "serverUnreachable": "無法到達伺服器。確保後端正在運作。",
     "apiInvalid": "API 密鑰遺失或無效。檢查伺服器.env 中的 OPENAI_API_KEY。",
     "grokOffline": "需要登入 Grok。",
@@ -1653,8 +1653,8 @@
       "cta": "重新載入"
     },
     "oauthUnavailable": {
-      "title": "GPT OAuth 代理程式不可用",
-      "body": "GPT OAuth 代理程式正在啟動、無法使用或移至備用連接埠。先重新載入；如果仍然存在，請執行 `ima2 doctor` 並檢查報告的 GPT OAuth URL。",
+      "title": "GPT OAuth 不可用",
+      "body": "GPT OAuth 正在啟動或無法連線到端點。先重新載入；如果仍然存在，請執行 `ima2 gpt status` 與 `ima2 doctor`。",
       "cta": "重新載入"
     },
     "invalidRequest": {

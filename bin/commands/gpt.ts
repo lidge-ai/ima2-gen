@@ -2,7 +2,7 @@
  * ima2 gpt — ChatGPT (GPT OAuth) session management.
  *
  * The session lives in ima2's own store (lib/chatgptAuth.ts, ~/.ima2/chatgpt-auth.json) and
- * is read by the openai-oauth proxy. Codex CLI files are still accepted as a fallback, but
+ * is read by the server's GPT OAuth client (lib/codexBackend). Codex CLI files are still accepted as a fallback, but
  * logging in here gives ima2 an independent session that the Codex CLI never refreshes.
  */
 import { parseArgs } from "../lib/args.js";
@@ -25,7 +25,7 @@ const HELP = `
 
   Subcommands:
     login [--device]       Log in with your ChatGPT account (browser, or device code)
-    status [--json]        Show which session the GPT OAuth proxy uses
+    status [--json]        Show which session GPT OAuth uses
     logout                 Remove ima2's stored ChatGPT session
 
   Notes:
@@ -49,7 +49,7 @@ const LOGIN_HELP = `
 const STATUS_HELP = `
   ima2 gpt status [--json]
 
-  Show the ChatGPT session the GPT OAuth proxy will read: source file, account,
+  Show the ChatGPT session GPT OAuth will read: source file, account,
   plan, access-token expiry, and whether a refresh token is present.
 
   Options:
@@ -167,7 +167,7 @@ async function loginCmd(argv: string[]): Promise<void> {
     die(1, `ChatGPT login failed: ${error instanceof Error ? error.message : String(error)}`);
   }
   out(color.green("✓ ") + `ChatGPT session saved to ${session.path}${session.email ? ` (${session.email})` : ""}`);
-  if (await notifyServerOfGptLogin()) out(color.dim("  The running ima2 server reloaded the GPT OAuth proxy."));
+  if (await notifyServerOfGptLogin()) out(color.dim("  The running ima2 server picked up the new session."));
 }
 
 function statusCmd(argv: string[]): void {
@@ -192,7 +192,7 @@ async function logoutCmd(argv: string[]): Promise<void> {
     ? color.green("✓ ") + `Removed ${chatgptAuthFilePath()}`
     : color.yellow("○ ") + "ima2 had no stored ChatGPT session");
   const fallback = resolveChatgptSession();
-  if (fallback) out(color.dim(`  The GPT OAuth proxy will now use ${fallback.path} (${fallback.source}).`));
+  if (fallback) out(color.dim(`  GPT OAuth will now use ${fallback.path} (${fallback.source}).`));
   await notifyServerOfGptLogin();
 }
 

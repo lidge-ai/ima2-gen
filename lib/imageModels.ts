@@ -2,27 +2,13 @@ import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { deriveModels, deriveSupportedImageModels, deriveUnsupportedImageModels } from "./providers/derive.js";
 
 export const FALLBACK_IMAGE_MODEL = "gpt-6-luna";
+/** The API-key lane keeps its own list; its fallback is never a GPT OAuth-only id. */
+export const API_FALLBACK_IMAGE_MODEL = "gpt-5.6-luna";
 const VALID_IMAGE_MODELS = deriveSupportedImageModels("oauth");
 const VALID_API_IMAGE_MODELS = deriveSupportedImageModels("api");
 
-/**
- * GPT OAuth keeps only GPT-6 (sol / luna / astra). Earlier OAuth ids stay usable in saved
- * defaults, sessions and scripts by mapping to the matching GPT-6 tier, inside the same lane
- * and billing. The API-key lane keeps its own list and is never remapped.
- */
-export const LEGACY_OAUTH_IMAGE_MODELS: Readonly<Record<string, string>> = {
-  "gpt-5.6-sol": "gpt-6-sol",
-  "gpt-5.6-luna": "gpt-6-luna",
-  "gpt-5.6-terra": "gpt-6-luna",
-  "gpt-5.5": "gpt-6-luna",
-  "gpt-5.4": "gpt-6-luna",
-  "gpt-5.4-mini": "gpt-6-luna",
-};
-
-/** Map a legacy OAuth image model id onto its GPT-6 replacement; anything else is unchanged. */
-export function migrateOAuthImageModel(model: string): string {
-  return LEGACY_OAUTH_IMAGE_MODELS[model] ?? model;
-}
+export { LEGACY_OAUTH_IMAGE_MODELS, migrateOAuthImageModel } from "./oauthLegacyModels.js";
+import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
 const UNSUPPORTED_IMAGE_MODELS = deriveUnsupportedImageModels();
 const FALLBACK_REASONING_EFFORT = "none";
 const VALID_REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
@@ -94,14 +80,21 @@ export function normalizeImageModel(
   rawModel: unknown,
   provider: "oauth" | "api" = "oauth",
 ) {
-  const configured = (ctx?.config as { imageModels?: { default?: string; valid?: Set<string>; unsupported?: Set<string> } } | undefined)?.imageModels;
+  const runtimeConfig = ctx?.config as {
+    imageModels?: { default?: string; valid?: Set<string>; unsupported?: Set<string> };
+    apiProvider?: { defaultImageModel?: string };
+  } | undefined;
+  const configured = runtimeConfig?.imageModels;
   const oauth = provider === "oauth";
-  const fallback = oauth ? migrateOAuthImageModel(configured?.default ?? FALLBACK_IMAGE_MODEL) : FALLBACK_IMAGE_MODEL;
+  const laneFallback = oauth ? FALLBACK_IMAGE_MODEL : API_FALLBACK_IMAGE_MODEL;
+  const fallback = oauth
+    ? migrateOAuthImageModel(configured?.default ?? FALLBACK_IMAGE_MODEL)
+    : runtimeConfig?.apiProvider?.defaultImageModel ?? API_FALLBACK_IMAGE_MODEL;
   const valid = oauth ? (configured?.valid ?? VALID_IMAGE_MODELS) : VALID_API_IMAGE_MODELS;
   const unsupported = configured?.unsupported ?? UNSUPPORTED_IMAGE_MODELS;
 
   if (typeof rawModel !== "string" || rawModel.length === 0) {
-    return { model: valid.has(fallback) ? fallback : FALLBACK_IMAGE_MODEL };
+    return { model: valid.has(fallback) ? fallback : laneFallback };
   }
 
   const model = oauth ? migrateOAuthImageModel(rawModel) : rawModel;

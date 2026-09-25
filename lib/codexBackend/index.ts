@@ -130,9 +130,21 @@ export function usesNativeOAuth(ctx: OAuthTransportContext | null | undefined): 
   return ctx?.oauthTransport === "native";
 }
 
+/** An external endpoint URL without embedded credentials or a trailing slash. */
+export function safeOAuthBaseUrl(value: string): string {
+  try {
+    const parsed = new URL(value);
+    parsed.username = "";
+    parsed.password = "";
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return value.replace(/\/+$/, "");
+  }
+}
+
 /** The one call every GPT OAuth caller makes. */
 export function oauthFetch(ctx: OAuthTransportContext | null | undefined, path: string, init: RequestInit = {}): Promise<Response> {
   if (usesNativeOAuth(ctx)) return codexFetch(path, init);
-  const base = (ctx?.oauthUrl || "http://127.0.0.1:10531").replace(/\/+$/, "");
+  const base = safeOAuthBaseUrl(ctx?.oauthUrl || "http://127.0.0.1:10531");
   return fetch(`${base}${path}`, init);
 }

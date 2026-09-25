@@ -6,7 +6,7 @@ import {
   DEFAULT_GROK_PLANNER_MODEL,
   GROK_PLANNER_MODELS,
 } from "../config.ts";
-import { DEFAULT_IMAGE_MODEL, IMAGE_MODEL_OPTIONS } from "../ui/src/lib/imageModels.ts";
+import { DEFAULT_IMAGE_MODEL, IMAGE_MODEL_OPTIONS, getImageModelOptionsForProvider } from "../ui/src/lib/imageModels.ts";
 import { AGENT_LLM_MODEL_OPTIONS, getAgentLlmModelOption } from "../ui/src/lib/agentModelOptions.ts";
 
 function readSource(path: string) {
@@ -22,9 +22,10 @@ describe("current model defaults: runtime contract", () => {
     assert.ok(GROK_PLANNER_MODELS.includes("grok-4.5"));
     assert.ok(GROK_PLANNER_MODELS.includes("grok-4.6"));
     assert.equal(config.grokProvider.plannerModel, DEFAULT_GROK_PLANNER_MODEL);
-    assert.equal(config.imageModels.default, "gpt-5.6-luna");
-    assert.equal(config.styleSheet.model, "gpt-5.6-luna");
-    assert.equal(config.cardNewsPlanner.model, "gpt-5.6-luna");
+    assert.equal(config.imageModels.default, "gpt-6-luna");
+    assert.equal(config.apiProvider.defaultImageModel, "gpt-5.6-luna");
+    assert.equal(config.styleSheet.model, "gpt-6-luna");
+    assert.equal(config.cardNewsPlanner.model, "gpt-6-luna");
   });
 
   it("keeps compatibility activation while centralizing Grok fallbacks", () => {
@@ -48,9 +49,18 @@ describe("current model defaults: runtime contract", () => {
   });
 
   it("orders active UI model pickers from current defaults to compatibility choices", () => {
-    assert.equal(DEFAULT_IMAGE_MODEL, "gpt-5.6-luna");
+    assert.equal(DEFAULT_IMAGE_MODEL, "gpt-6-luna");
     assert.deepEqual(
-      IMAGE_MODEL_OPTIONS.slice(0, 7).map((option) => option.value),
+      IMAGE_MODEL_OPTIONS.slice(0, 9).map((option) => option.value),
+      ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra", "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
+    );
+    // GPT OAuth offers only GPT-6; the API-key picker keeps its own list with its default first.
+    assert.deepEqual(
+      getImageModelOptionsForProvider("oauth").map((option) => option.value),
+      ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"],
+    );
+    assert.deepEqual(
+      getImageModelOptionsForProvider("api").map((option) => option.value),
       ["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
     );
     // The two GPT pickers are maintained by hand in different files, so pin the
@@ -58,7 +68,7 @@ describe("current model defaults: runtime contract", () => {
     // how a model ends up selectable in one surface and missing from the other.
     assert.deepEqual(
       AGENT_LLM_MODEL_OPTIONS.filter((option) => option.provider === "oauth").map((option) => option.value),
-      ["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
+      ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"],
     );
     assert.deepEqual(
       AGENT_LLM_MODEL_OPTIONS.filter((option) => option.provider === "grok").map((option) => option.value),

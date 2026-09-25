@@ -67,10 +67,11 @@ export const OAUTH_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
   (option): option is OpenAIOption => OAUTH_MODEL_VALUES.has(option.value),
 );
 
-/** OpenAI API key lane: the models the OpenAI API serves. */
-export const API_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
-  (option): option is OpenAIOption => API_MODEL_VALUES.has(option.value),
-);
+/** OpenAI API key lane: the models the OpenAI API serves, its own default first. */
+const API_PICKER_ORDER = ["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"];
+export const API_IMAGE_MODEL_OPTIONS = API_PICKER_ORDER
+  .map((value) => IMAGE_MODEL_OPTIONS.find((option) => option.value === value))
+  .filter((option): option is OpenAIOption => option !== undefined && API_MODEL_VALUES.has(option.value));
 
 /** The GPT group in pickers that switch lanes by model: the OAuth lane's models. */
 export const OPENAI_IMAGE_MODEL_OPTIONS = OAUTH_IMAGE_MODEL_OPTIONS;
