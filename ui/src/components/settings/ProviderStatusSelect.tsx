@@ -85,6 +85,9 @@ export function ProviderStatusSelect({ mcpProviders }: { mcpProviders: McpProvid
     }
     if (record.status.state === "connecting") return t("mcp.connecting");
     if (record.status.state === "auth_required") return t("provider.statusAuthRequired");
+    if (record.status.state === "offline" || record.status.state === "error") {
+      return t(`mcp.status.${record.status.state}`);
+    }
     return t("provider.statusDisconnected");
   };
 
