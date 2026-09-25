@@ -2,6 +2,7 @@ import { readFile } from "fs/promises";
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { out, die, color, json, exitCodeForError, table } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 
 const HELP = `
   ima2 session <subcommand> [options]
@@ -34,15 +35,31 @@ const COMMON_FLAGS = {
   help: { short: "h", type: "boolean" },
 };
 
+interface SessionGraph {
+  version?: unknown;
+  nodes?: unknown[];
+  edges?: unknown[];
+}
+
+interface SessionDetail {
+  id?: string;
+  title?: string;
+  graph?: SessionGraph;
+  graphVersion?: unknown;
+  nodes?: unknown;
+  edges?: unknown[];
+  styleSheet?: { enabled?: boolean };
+}
+
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
 async function lsSub(argv: string[]) {
   const args = parseArgs(argv, { flags: COMMON_FLAGS });
   const server = await getServer(args);
-  const resp = await request(server.base, "/api/sessions").catch(handle);
+  const resp = await request<{ sessions?: Record<string, unknown>[] }>(server.base, "/api/sessions").catch(handle);
   const sessions = resp.sessions || [];
   if (args.json) { json({ sessions }); return; }
   if (sessions.length === 0) { out(color.dim("(no sessions)")); return; }
@@ -58,7 +75,7 @@ async function showSub(argv: string[]) {
   const id = args.positional[0];
   if (!id) die(2, "session id required");
   const server = await getServer(args);
-  const resp = await request(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
+  const resp = await request<SessionDetail & { session?: SessionDetail }>(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
   if (args.json) { json(resp); return; }
   const s = resp.session || resp;
   out(color.bold(s.id || id));
@@ -72,7 +89,7 @@ async function createSub(argv: string[]) {
   const title = args.positional.join(" ").trim();
   if (!title) die(2, "title required");
   const server = await getServer(args);
-  const resp = await request(server.base, "/api/sessions", {
+  const resp = await request<{ session?: { id?: string } }>(server.base, "/api/sessions", {
     method: "POST",
     body: { title },
   }).catch(handle);
@@ -130,7 +147,7 @@ async function graphSave(argv: string[]) {
     die(2, "graph file must contain { nodes: [], edges: [] }");
   const server = await getServer(args);
   // Step 1: fetch current version
-  const current: any = await request(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
+  const current = await request<{ session?: SessionDetail } | null>(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
   const session = current?.session;
   if (!session) die(1, "session not found");
   // The server returns the version flat as `graphVersion`; a brand-new session
@@ -142,16 +159,17 @@ async function graphSave(argv: string[]) {
     : 0;
   // Step 2: PUT with If-Match
   try {
-    const result: any = await request(server.base, `/api/sessions/${encodeURIComponent(id)}/graph`, {
+    const result = await request<{ graphVersion?: unknown }>(server.base, `/api/sessions/${encodeURIComponent(id)}/graph`, {
       method: "PUT",
       body: { nodes, edges },
       headers: { "If-Match": `"${version}"` },
     });
     if (args.json) { json(result); return; }
     out(color.green(`✓ saved (graphVersion: ${result.graphVersion})`));
-  } catch (e: any) {
-    if (e.status === 412 || e.code === "GRAPH_VERSION_CONFLICT") die(1, "graph version conflict — fetch latest and retry");
-    if (e.status === 413) die(1, e.message);
+  } catch (e: unknown) {
+    const err = e as { status?: number; code?: unknown; message?: string };
+    if (err.status === 412 || err.code === "GRAPH_VERSION_CONFLICT") die(1, "graph version conflict — fetch latest and retry");
+    if (err.status === 413) die(1, err.message);
     handle(e);
   }
 }
@@ -161,7 +179,7 @@ async function graphLoad(argv: string[]) {
   const id = args.positional[0];
   if (!id) die(2, "usage: session graph load <id>");
   const server = await getServer(args);
-  const resp: any = await request(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
+  const resp = await request<{ session?: SessionDetail } | null>(server.base, `/api/sessions/${encodeURIComponent(id)}`).catch(handle);
   const session = resp?.session;
   if (!session) die(1, "session not found");
   // Same shape mismatch as in graphSave: nodes/edges come back flat on the
@@ -242,7 +260,7 @@ async function ssExtract(argv: string[]) {
   json(resp);
 }
 
-function handle(e: unknown) {
+function handle(e: unknown): never {
   const err = e as { message?: string; code?: string };
   die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
 }
@@ -265,7 +283,7 @@ async function readLine(): Promise<string> {
   });
 }
 
-const SUB: Record<string, (argv: any[]) => Promise<void>> = {
+const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   ls: lsSub,
   show: showSub,
   create: createSub,

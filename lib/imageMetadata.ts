@@ -1,9 +1,10 @@
+import type { CodedError } from "./errInfo.js";
 export const IMA2_METADATA_SCHEMA = "ima2.generation.v1";
-export const IMA2_XMP_NAMESPACE = "https://github.com/lidge-jun/ima2-gen/ns/1.0/";
+export const IMA2_XMP_NAMESPACE = "https://github.com/lidge-ai/ima2-gen/ns/1.0/";
 export const IMA2_XMP_PROPERTY = "GenerationMetadata";
 export const MAX_EMBEDDED_METADATA_CHARS = 64 * 1024;
 
-function isPlainObject(value: unknown) {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -37,7 +38,12 @@ function xmlUnescape(value: unknown) {
     .replace(/&amp;/g, "&");
 }
 
-export function buildIma2MetadataPayload(meta: any = {}, context: any = {}) {
+export interface MetadataContext {
+  version?: unknown;
+}
+
+export function buildIma2MetadataPayload(metaInput: unknown = {}, context: MetadataContext = {}) {
+  const meta: Record<string, unknown> = isPlainObject(metaInput) ? metaInput : {};
   const payload = {
     schema: IMA2_METADATA_SCHEMA,
     app: "ima2-gen",
@@ -69,8 +75,8 @@ export function buildIma2MetadataPayload(meta: any = {}, context: any = {}) {
     parentNodeId: stringOrNull(meta.parentNodeId, 120),
     clientNodeId: stringOrNull(meta.clientNodeId, 120),
     requestId: stringOrNull(meta.requestId, 160),
-    refsCount: Number.isFinite(meta.refsCount) ? meta.refsCount : 0,
-    webSearchCalls: Number.isFinite(meta.webSearchCalls) ? meta.webSearchCalls : 0,
+    refsCount: numberOrNull(meta.refsCount) ?? 0,
+    webSearchCalls: numberOrNull(meta.webSearchCalls) ?? 0,
     styleSheetApplied: Boolean(meta.styleSheetApplied),
     presetIds: stringArray(meta.presetIds),
     elementIds: stringArray(meta.elementIds),
@@ -78,7 +84,7 @@ export function buildIma2MetadataPayload(meta: any = {}, context: any = {}) {
   return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
 }
 
-export function normalizeEmbeddedMetadata(value: any) {
+export function normalizeEmbeddedMetadata(value: unknown) {
   if (!isPlainObject(value)) return null;
   if (value.schema !== IMA2_METADATA_SCHEMA || value.app !== "ima2-gen") return null;
   return buildIma2MetadataPayload(value, { version: value.version });
@@ -87,13 +93,13 @@ export function normalizeEmbeddedMetadata(value: any) {
 export function buildIma2Xmp(metadataPayload: unknown) {
   const normalized = normalizeEmbeddedMetadata(metadataPayload);
   if (!normalized) {
-    const err: any = new Error("Invalid ima2 metadata payload");
+    const err: CodedError = new Error("Invalid ima2 metadata payload");
     err.code = "IMAGE_METADATA_INVALID";
     throw err;
   }
   const json = JSON.stringify(normalized);
   if (json.length > MAX_EMBEDDED_METADATA_CHARS) {
-    const err: any = new Error("ima2 metadata payload is too large");
+    const err: CodedError = new Error("ima2 metadata payload is too large");
     err.code = "IMAGE_METADATA_TOO_LARGE";
     throw err;
   }

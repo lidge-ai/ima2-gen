@@ -1,3 +1,4 @@
+import type { CodedError } from "./errInfo.js";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { AGY_PROCESS_POLICY } from "../config.js";
 import { buildAgyPathEnv, resolveAgyBin } from "./agyCli.js";
@@ -5,7 +6,7 @@ import { buildAgyPathEnv, resolveAgyBin } from "./agyCli.js";
 type AgyOutput = { stdout: string; stderr: string };
 
 export function agyError(message: string, status: number, code: string): Error {
-  const err: any = new Error(message);
+  const err: CodedError = new Error(message);
   err.status = status;
   err.code = code;
   return err;

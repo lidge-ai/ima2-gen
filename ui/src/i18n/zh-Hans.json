@@ -787,10 +787,10 @@
     "statusLineTitle": "状态",
     "authMethodTitle": "授权",
     "authActive": "已激活",
-    "oauthNotReady": "GPT OAuth 代理尚未准备好。",
+    "oauthNotReady": "GPT OAuth 尚未准备好。",
     "codexLoginRequired": "需要 Codex 登录。",
     "codexLoginHint": "在终端运行 `ima2 login`，或在 设置 → 切换 Codex 帐户 中登录。",
-    "oauthStarting": "GPT OAuth 代理正在启动。几秒钟后重试。",
+    "oauthStarting": "GPT OAuth 正在启动。几秒钟后重试。",
     "serverUnreachable": "无法到达服务器。确保后端正在运行。",
     "apiInvalid": "API 密钥丢失或无效。检查服务器.env 中的 OPENAI_API_KEY。",
     "grokOffline": "需要登录 Grok。",
@@ -1431,6 +1431,8 @@
       "gpt54Mini": "GPT-5.4 迷你",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
+      "gpt6Luna": "GPT-6 Luna",
+      "gpt6Sol": "GPT-6 Sol",
       "gpt6Astra": "GPT-6 Astra",
       "gpt56Sol": "GPT-5.6 索尔",
       "gpt56Terra": "GPT-5.6 泰拉",
@@ -1651,8 +1653,8 @@
       "cta": "重新加载"
     },
     "oauthUnavailable": {
-      "title": "GPT OAuth 代理不可用",
-      "body": "GPT OAuth 代理正在启动、不可用或移至备用端口。先重新加载；如果仍然存在，请运行 `ima2 doctor` 并检查报告的 GPT OAuth URL。",
+      "title": "GPT OAuth 不可用",
+      "body": "GPT OAuth 正在启动或无法连接到端点。先重新加载；如果仍然存在，请运行 `ima2 gpt status` 和 `ima2 doctor`。",
       "cta": "重新加载"
     },
     "invalidRequest": {

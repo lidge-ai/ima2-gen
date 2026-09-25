@@ -1,8 +1,20 @@
-import { spawn } from "node:child_process";
+import { type SpawnOptions, spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 
 import { errInfo } from "./errInfo.js";
-export async function openDirectory(dir: string, options: any = {}) {
+interface DirectoryOpenerChild {
+  on(event: "error", listener: (err: Error) => void): unknown;
+  on(event: "exit", listener: (code: number | null) => void): unknown;
+  unref?(): void;
+}
+
+export interface OpenDirectoryOptions {
+  platform?: NodeJS.Platform;
+  spawnImpl?(command: string, args: string[], options: SpawnOptions): DirectoryOpenerChild;
+  settleMs?: number;
+}
+
+export async function openDirectory(dir: string, options: OpenDirectoryOptions = {}) {
   await mkdir(dir, { recursive: true });
   const platform = options.platform || process.platform;
   const spawnImpl = options.spawnImpl || spawn;

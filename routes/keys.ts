@@ -97,7 +97,7 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       valid: !!vertexJson,
       maskedKey: ctx.vertexProjectId ? `project: ${ctx.vertexProjectId}` : null,
     };
-    status.geminiAuthMode = (ctx as any).geminiAuthMode
+    status.geminiAuthMode = ctx.geminiAuthMode
       || (vertexJson && !ctx.geminiApiKey ? "vertex" : "apikey");
     res.json(status);
   });
@@ -111,7 +111,7 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
     }
     const cfgPath = ctx.config.storage.configFile;
     await updateConfigFileAtomic(cfgPath, (existing) => { existing.geminiAuthMode = mode; });
-    (ctx as any).geminiAuthMode = mode;
+    ctx.geminiAuthMode = mode;
     return res.json({ ok: true, geminiAuthMode: mode });
   });
 
@@ -155,10 +155,10 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
     });
 
     // Hot-update runtime
-    (ctx as any).vertexServiceAccountJson = trimmed;
-    (ctx as any).vertexProjectId = parsed.project_id as string;
-    (ctx as any).hasVertexKey = true;
-    (ctx as any).geminiAuthMode = "vertex";
+    ctx.vertexServiceAccountJson = trimmed;
+    ctx.vertexProjectId = parsed.project_id as string;
+    ctx.hasVertexKey = true;
+    ctx.geminiAuthMode = "vertex";
 
     return res.json({ ok: true, provider: "vertex", source: "config", valid: true, projectId: parsed.project_id });
   });
@@ -175,9 +175,9 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
     await updateConfigFileAtomic(cfgPath, (existing) => { delete existing.vertexServiceAccountJson; });
 
     clearVertexAuth();
-    (ctx as any).vertexServiceAccountJson = undefined;
-    (ctx as any).vertexProjectId = undefined;
-    (ctx as any).hasVertexKey = false;
+    ctx.vertexServiceAccountJson = undefined;
+    ctx.vertexProjectId = undefined;
+    ctx.hasVertexKey = false;
 
     return res.json({ ok: true, provider: "vertex", removed: true });
   });
@@ -242,10 +242,10 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
         const validateRes = await fetch(url, opts);
         if (!validateRes.ok) throw new Error(`HTTP ${validateRes.status}`);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       return res.status(400).json({
         ok: false,
-        error: `API key validation failed: ${e.message || "unknown"}`,
+        error: `API key validation failed: ${(e instanceof Error ? e.message : "") || "unknown"}`,
         code: "KEY_VALIDATION_FAILED",
       });
     }
@@ -259,34 +259,34 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
 
     // Hot-update runtime context
     if (provider === "openai") {
-      (ctx as any).apiKey = trimmed;
-      (ctx as any).apiKeySource = "config";
-      (ctx as any).hasApiKey = true;
+      ctx.apiKey = trimmed;
+      ctx.apiKeySource = "config";
+      ctx.hasApiKey = true;
       try {
         const OpenAI = (await import("openai")).default;
-        (ctx as any).openai = new OpenAI({ apiKey: trimmed });
+        ctx.openai = new OpenAI({ apiKey: trimmed });
       } catch { /* ignore */ }
     } else if (provider === "xai") {
-      (ctx as any).xaiApiKey = trimmed;
-      (ctx as any).xaiApiKeySource = "config";
-      (ctx as any).hasXaiApiKey = true;
+      ctx.xaiApiKey = trimmed;
+      ctx.xaiApiKeySource = "config";
+      ctx.hasXaiApiKey = true;
     } else if (provider === "gemini") {
-      (ctx as any).geminiApiKey = trimmed;
-      (ctx as any).geminiApiKeySource = "config";
-      (ctx as any).hasGeminiApiKey = true;
-      (ctx as any).geminiAuthMode = "apikey";
+      ctx.geminiApiKey = trimmed;
+      ctx.geminiApiKeySource = "config";
+      ctx.hasGeminiApiKey = true;
+      ctx.geminiAuthMode = "apikey";
     } else if (provider === "atlascloud") {
-      (ctx as any).atlasCloudApiKey = trimmed;
-      (ctx as any).atlasCloudApiKeySource = "config";
-      (ctx as any).hasAtlasCloudApiKey = true;
+      ctx.atlasCloudApiKey = trimmed;
+      ctx.atlasCloudApiKeySource = "config";
+      ctx.hasAtlasCloudApiKey = true;
     } else if (provider === "minimax") {
-      (ctx as any).minimaxApiKey = trimmed;
-      (ctx as any).minimaxApiKeySource = "config";
-      (ctx as any).hasMinimaxApiKey = true;
+      ctx.minimaxApiKey = trimmed;
+      ctx.minimaxApiKeySource = "config";
+      ctx.hasMinimaxApiKey = true;
     } else if (provider === "nai") {
-      (ctx as any).naiApiKey = trimmed; // justified: RuntimeContext fields are readonly at the type level; every sibling key branch hot-updates through the same cast
-      (ctx as any).naiApiKeySource = "config"; // justified: same hot-update path as the minimax branch above
-      (ctx as any).hasNaiApiKey = true; // justified: same hot-update path as the minimax branch above
+      ctx.naiApiKey = trimmed;
+      ctx.naiApiKeySource = "config";
+      ctx.hasNaiApiKey = true;
     }
 
     return res.json({ ok: true, provider, source: "config", valid: true });
@@ -308,30 +308,30 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
 
     // Clear runtime
     if (provider === "openai") {
-      (ctx as any).apiKey = undefined;
-      (ctx as any).apiKeySource = "none";
-      (ctx as any).hasApiKey = false;
-      (ctx as any).openai = null;
+      ctx.apiKey = undefined;
+      ctx.apiKeySource = "none";
+      ctx.hasApiKey = false;
+      ctx.openai = null;
     } else if (provider === "xai") {
-      (ctx as any).xaiApiKey = undefined;
-      (ctx as any).xaiApiKeySource = "none";
-      (ctx as any).hasXaiApiKey = false;
+      ctx.xaiApiKey = undefined;
+      ctx.xaiApiKeySource = "none";
+      ctx.hasXaiApiKey = false;
     } else if (provider === "gemini") {
-      (ctx as any).geminiApiKey = undefined;
-      (ctx as any).geminiApiKeySource = "none";
-      (ctx as any).hasGeminiApiKey = false;
+      ctx.geminiApiKey = undefined;
+      ctx.geminiApiKeySource = "none";
+      ctx.hasGeminiApiKey = false;
     } else if (provider === "atlascloud") {
-      (ctx as any).atlasCloudApiKey = undefined;
-      (ctx as any).atlasCloudApiKeySource = "none";
-      (ctx as any).hasAtlasCloudApiKey = false;
+      ctx.atlasCloudApiKey = undefined;
+      ctx.atlasCloudApiKeySource = "none";
+      ctx.hasAtlasCloudApiKey = false;
     } else if (provider === "minimax") {
-      (ctx as any).minimaxApiKey = undefined;
-      (ctx as any).minimaxApiKeySource = "none";
-      (ctx as any).hasMinimaxApiKey = false;
+      ctx.minimaxApiKey = undefined;
+      ctx.minimaxApiKeySource = "none";
+      ctx.hasMinimaxApiKey = false;
     } else if (provider === "nai") {
-      (ctx as any).naiApiKey = undefined; // justified: RuntimeContext fields are readonly at the type level; every sibling key branch clears through the same cast
-      (ctx as any).naiApiKeySource = "none"; // justified: same clear path as the minimax branch above
-      (ctx as any).hasNaiApiKey = false; // justified: same clear path as the minimax branch above
+      ctx.naiApiKey = undefined;
+      ctx.naiApiKeySource = "none";
+      ctx.hasNaiApiKey = false;
     }
 
     return res.json({ ok: true, provider, removed: true });

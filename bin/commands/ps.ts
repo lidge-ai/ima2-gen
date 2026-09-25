@@ -1,5 +1,5 @@
 import { parseArgs } from "../lib/args.js";
-import { resolveServer, request } from "../lib/client.js";
+import { resolveServer, request, type InflightListResponse } from "../lib/client.js";
 import { out, dieWithError, color, json, table } from "../lib/output.js";
 
 import { errInfo } from "../../lib/errInfo.js";
@@ -31,8 +31,8 @@ export default async function psCmd(argv: string[]) {
   if (args.session) qs.set("sessionId", String(args.session));
   if (args.terminal) qs.set("includeTerminal", "1");
   const path = `/api/inflight${qs.toString() ? `?${qs}` : ""}`;
-  let resp;
-  try { resp = await request(server.base, path); }
+  let resp: InflightListResponse;
+  try { resp = await request<InflightListResponse>(server.base, path); }
   catch (e) {
     const err = errInfo(e);
     if (args.json) json({ ok: false, error: err.message, code: err.code, status: err.status });

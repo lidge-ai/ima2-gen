@@ -12,8 +12,9 @@ const EDIT = { generate: true, edit: true, mask: false, streaming: false } as co
 // lib/oauthProxy/multimodeGenerators.ts rejects masks unconditionally, but no
 // route reaches it, so it does not describe current behavior.
 const RESPONSES = { generate: true, edit: true, mask: true, streaming: true } as const;
-const UNSUPPORTED = { generate: false, edit: false, mask: false, streaming: false } as const;
-
+// GPT OAuth on the Codex backend (lib/oauthImages.ts): a GPT-6 model plans, the Images API
+// (gpt-image-2) renders. Edits and mask guidance work; the Images API has no partial frames.
+const OAUTH_IMAGES = { generate: true, edit: true, mask: true, streaming: false } as const;
 const GENERATE_ONLY = { generate: true, edit: false, mask: false, streaming: false } as const;
 
 export const REGISTRY = [
@@ -28,14 +29,9 @@ export const REGISTRY = [
       configKey: "oauth",
     }],
     models: [
-      { id: "gpt-5.5", kind: "image", supports: RESPONSES },
-      { id: "gpt-5.4", kind: "image", supports: RESPONSES },
-      { id: "gpt-5.4-mini", kind: "image", supports: RESPONSES },
-      { id: "gpt-5.6-sol", aliases: ["sol"], kind: "image", supports: RESPONSES },
-      { id: "gpt-5.6-terra", aliases: ["terra"], kind: "image", supports: RESPONSES },
-      { id: "gpt-5.6-luna", aliases: ["luna"], kind: "image", supports: RESPONSES },
-      { id: "gpt-6-astra", aliases: ["astra"], kind: "image", supports: RESPONSES },
-      { id: "gpt-5.3-codex-spark", aliases: ["spark"], kind: "image", supports: UNSUPPORTED },
+      { id: "gpt-6-luna", aliases: ["luna"], kind: "image", supports: OAUTH_IMAGES },
+      { id: "gpt-6-sol", aliases: ["sol"], kind: "image", supports: OAUTH_IMAGES },
+      { id: "gpt-6-astra", aliases: ["astra"], kind: "image", supports: OAUTH_IMAGES },
     ],
     referenceLimits: {},
     elementTaxonomy: "gpt",
@@ -58,10 +54,10 @@ export const REGISTRY = [
       { id: "gpt-5.5", kind: "image", supports: RESPONSES },
       { id: "gpt-5.4", kind: "image", supports: RESPONSES },
       { id: "gpt-5.4-mini", kind: "image", supports: RESPONSES },
-      { id: "gpt-5.6-sol", aliases: ["sol"], kind: "image", supports: RESPONSES },
-      { id: "gpt-5.6-terra", aliases: ["terra"], kind: "image", supports: RESPONSES },
-      { id: "gpt-5.6-luna", aliases: ["luna"], kind: "image", supports: RESPONSES },
-      { id: "gpt-6-astra", aliases: ["astra"], kind: "image", supports: RESPONSES },
+      { id: "gpt-5.6-sol", kind: "image", supports: RESPONSES },
+      { id: "gpt-5.6-terra", kind: "image", supports: RESPONSES },
+      { id: "gpt-5.6-luna", kind: "image", supports: RESPONSES },
+      { id: "gpt-6-astra", kind: "image", supports: RESPONSES },
     ],
     referenceLimits: {},
     elementTaxonomy: "gpt",

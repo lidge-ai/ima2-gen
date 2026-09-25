@@ -7,6 +7,7 @@ import { logEvent } from "./logger.js";
 import { getPlannerConfig } from "./grokImageCore.js";
 import { fetchWithGrokAuth, getGrokEndpoint } from "./grokRuntime.js";
 import { waitForOAuthReady } from "./oauthProxy/runtime.js";
+import { oauthFetch } from "./codexBackend/index.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "./runtimeContext.js";
 import type { AgentGenerationPlan, AgentGenerationSettings } from "./agentTypes.js";
 
@@ -140,7 +141,7 @@ async function requestResponsesPlan(
   settings: AgentGenerationSettings,
   signal: AbortSignal,
 ): Promise<string> {
-  let url: string;
+  let url: string | null;
   let headers: Record<string, string>;
   if (settings.provider === "api") {
     if (!ctx.apiKey) throw plannerError("API key is required for Agent planner", "API_KEY_REQUIRED", 401);
@@ -148,13 +149,13 @@ async function requestResponsesPlan(
     headers = { "Content-Type": "application/json", Accept: "text/event-stream", Authorization: `Bearer ${ctx.apiKey}` };
   } else {
     await waitForOAuthReady(ctx);
-    url = `${ctx.oauthUrl}/v1/responses`;
+    url = null; // GPT OAuth: oauthFetch routes to the native Codex client or the proxy
     headers = { "Content-Type": "application/json", Accept: "text/event-stream" };
   }
   // stream:true is required — the bundled OAuth proxy returns an empty
   // `output` array for non-streaming Responses calls, which used to make the
   // planner silently fall back to the regex-derived image plan.
-  const res = await fetch(url, {
+  const init: RequestInit = {
     method: "POST",
     headers,
     signal,
@@ -167,7 +168,8 @@ async function requestResponsesPlan(
       reasoning: { effort: "low" },
       stream: true,
     }),
-  });
+  };
+  const res = url ? await fetch(url, init) : await oauthFetch(ctx, "/v1/responses", init);
   if (!res.ok) throw plannerHttpError(settings.provider, res.status);
   const payload = await readResponsesTextPayload(res);
   return payload.text;

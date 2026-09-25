@@ -95,7 +95,7 @@ async function generateAgentImage(
     rawWebSearchEnabled: webSearchEnabled,
     searchMode: webSearchEnabled ? "on" : "off",
   });
-  if (providerOptions.error) {
+  if (providerOptions.error !== undefined) {
     const err = new Error(providerOptions.error) as Error & { code?: string | undefined; status?: number | undefined };
     err.code = providerOptions.code;
     err.status = providerOptions.status;

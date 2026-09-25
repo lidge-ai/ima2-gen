@@ -3,7 +3,7 @@ import DocsLayout from '../../../../layouts/DocsLayout.astro';
 import { docsPath } from '../../../../i18n/docs';
 
 const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
-const cliMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md';
+const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
 ---
 
 <DocsLayout
@@ -25,16 +25,16 @@ const cliMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/CLI.md';
     <tbody>
       <tr><td><code>IMA2_PORT</code> / <code>PORT</code></td><td><code>3333</code></td><td>웹 서버 포트.</td></tr>
       <tr><td><code>IMA2_HOST</code></td><td><code>127.0.0.1</code></td><td>웹 서버 바인드 호스트.</td></tr>
-      <tr><td><code>IMA2_OAUTH_PROXY_PORT</code> / <code>OAUTH_PORT</code></td><td><code>10531</code></td><td>OAuth 프록시 포트.</td></tr>
+      <tr><td><code>IMA2_OAUTH_PROXY_PORT</code> / <code>OAUTH_PORT</code></td><td><code>10531</code></td><td><code>IMA2_NO_OAUTH_PROXY=1</code>일 때 쓰는 외부 GPT OAuth 엔드포인트 포트.</td></tr>
       <tr><td><code>IMA2_SERVER</code></td><td>—</td><td>CLI 타깃 오버라이드.</td></tr>
       <tr><td><code>IMA2_CONFIG_DIR</code></td><td><code>~/.ima2</code></td><td>설정과 SQLite 위치.</td></tr>
       <tr><td><code>IMA2_ADVERTISE_FILE</code></td><td><code>~/.ima2/server.json</code></td><td>런타임 탐색 파일.</td></tr>
       <tr><td><code>IMA2_GENERATED_DIR</code></td><td><code>~/.ima2/generated</code></td><td>생성 이미지 디렉터리.</td></tr>
-      <tr><td><code>IMA2_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-5.6-luna</code></td><td>서버 폴백 이미지 모델.</td></tr>
+      <tr><td><code>IMA2_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-6-luna</code></td><td>서버 폴백 이미지 모델.</td></tr>
       <tr><td><code>IMA2_PROMPT_BUILDER_BACKEND</code></td><td><code>auto</code></td><td>Prompt Builder 텍스트 백엔드. 자동 선택은 준비된 지원 경로 가운데 하나를 고릅니다.</td></tr>
       <tr><td><code>IMA2_PROMPT_BUILDER_MODEL</code></td><td>자동 백엔드에서는 <code>auto</code></td><td>선택한 백엔드 전용 Builder model. 백엔드를 바꾸면 해당 경로의 기본 모델로 함께 바뀝니다.</td></tr>
       <tr><td><code>IMA2_REASONING_EFFORT</code></td><td><code>medium</code></td><td>기본(OAuth) 경로의 reasoning effort 기본값; none·low·medium·high·xhigh 중 하나.</td></tr>
-      <tr><td><code>IMA2_NO_OAUTH_PROXY</code></td><td>—</td><td><code>1</code>로 설정하면 자동 시작 OAuth 프록시 비활성화.</td></tr>
+      <tr><td><code>IMA2_NO_OAUTH_PROXY</code></td><td>—</td><td><code>1</code>로 설정하면 GPT OAuth 호출을 ChatGPT 대신 <code>127.0.0.1:IMA2_OAUTH_PROXY_PORT</code>의 OpenAI 호환 엔드포인트로 보냅니다.</td></tr>
       <tr><td><code>IMA2_LOG_LEVEL</code></td><td><code>info</code></td><td>serve는 info, dev는 debug 기본; debug·info·warn·error·silent 지원.</td></tr>
       <tr><td><code>IMA2_INFLIGHT_TERMINAL_TTL_MS</code></td><td><code>300000</code></td><td>디버그 뷰용 최근 종료 작업 보존 시간.</td></tr>
       <tr><td><code>OPENAI_API_KEY</code></td><td>—</td><td>API 프로바이더 Responses 경로 및 보조 기능용 API key.</td></tr>

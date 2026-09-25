@@ -70,6 +70,25 @@ function runCli(args, configDir) {
 }
 
 describe("CLI image/video defaults behavior", () => {
+  it("defaults set model writes each GPT lane only a model it serves", async () => {
+    const configDir = mkdtempSync(join(tmpdir(), "ima2-defaults-model-"));
+    const saved = () => JSON.parse(readFileSync(join(configDir, "config.json"), "utf8"));
+    try {
+      // A legacy id: GPT OAuth takes its GPT-6 tier, the API-key lane keeps the id it serves.
+      assert.equal((await runCli(["defaults", "set", "model", "gpt-5.6-luna"], configDir)).code, 0);
+      assert.equal(saved().imageModels.default, "gpt-6-luna");
+      assert.equal(saved().apiProvider.defaultImageModel, "gpt-5.6-luna");
+      // A GPT OAuth-only id never becomes the API-key default.
+      assert.equal((await runCli(["defaults", "set", "model", "gpt-6-sol"], configDir)).code, 0);
+      assert.equal(saved().imageModels.default, "gpt-6-sol");
+      assert.equal(saved().apiProvider.defaultImageModel, "gpt-5.6-luna");
+      const bad = await runCli(["defaults", "set", "model", "gpt-9"], configDir);
+      assert.equal(bad.code, 2);
+    } finally {
+      rmSync(configDir, { recursive: true, force: true });
+    }
+  });
+
   it("validates ready targets, persists raw CLI keys, lists, and resets without restart notice", async () => {
     const configDir = mkdtempSync(join(tmpdir(), "ima2-defaults-ready-"));
     const server = createServer((req, res) => {

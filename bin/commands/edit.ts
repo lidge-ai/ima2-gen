@@ -1,5 +1,5 @@
 import { parseArgs } from "../lib/args.js";
-import { resolveServer, request, resolveHistoryReference } from "../lib/client.js";
+import { resolveServer, request, resolveHistoryReference, type JsonRecord } from "../lib/client.js";
 import { fileToDataUri, dataUriToFile, defaultOutName } from "../lib/files.js";
 import { out, die, dieWithError, color, json } from "../lib/output.js";
 import { config } from "../../config.js";
@@ -48,7 +48,7 @@ const HELP = `
     -s, --size <WxH>
     -o, --out <file>
         --json
-        --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-5.6-luna
+        --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-6-luna
                                       Aliases: luna, astra, sol, terra, spark
         --image-tool-model <id>       API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --provider <${PROVIDER_VALUES.join("|")}>
@@ -108,9 +108,9 @@ export default async function editCmd(argv: string[]) {
   const explicitOut = args.out ? String(args.out) : null;
   const requestId = createCliRequestId("req_cli_edit");
 
-  let resp;
+  let resp: { image?: string; requestId?: unknown; elapsed?: unknown };
   try {
-    const editBody: any = {
+    const editBody: JsonRecord = {
       prompt: args.prompt,
       image: imageB64,
       quality: args.quality,
@@ -126,7 +126,7 @@ export default async function editCmd(argv: string[]) {
     if (args.provider) editBody.provider = args.provider;
     if (args["no-web-search"]) editBody.webSearchEnabled = false;
     else if (args["web-search"]) editBody.webSearchEnabled = true;
-    resp = await request(server.base, "/api/edit", {
+    resp = await request<typeof resp>(server.base, "/api/edit", {
       method: "POST",
       body: editBody,
       timeoutMs,

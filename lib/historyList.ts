@@ -98,13 +98,15 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
     };
   }));
 
-  rows.push(...setRows);
-  rows.sort((a, b) => {
+  type FileRow = (typeof rows)[number];
+  type SetRow = (typeof setRows)[number];
+  const allRows: Array<FileRow | (SetRow & Partial<Omit<FileRow, keyof SetRow>>)> = [...rows, ...setRows];
+  allRows.sort((a, b) => {
     if (b.createdAt !== a.createdAt) return b.createdAt - a.createdAt;
     return b.filename < a.filename ? -1 : b.filename > a.filename ? 1 : 0;
   });
 
-  return rows;
+  return allRows;
 }
 
 async function readImageSidecar(full: string, rel: string) {
@@ -136,61 +138,81 @@ async function readImageMetadata(full: string, rel: string) {
   }
 }
 
+interface CardNewsSetManifestFile {
+  setId?: string;
+  title?: string;
+  size?: string;
+  createdAt?: number;
+  sessionId?: string | null;
+  requestId?: string | null;
+  cards?: Array<{
+    imageFilename?: string;
+    headline?: unknown;
+    body?: unknown;
+    cardOrder?: unknown;
+    status?: string;
+  }>;
+}
+
+function cardNewsSetRow(entryName: string, manifestPath: string, manifest: CardNewsSetManifestFile) {
+  const first = (manifest.cards || []).find((card) => card.imageFilename);
+  const filename = `cardnews/${entryName}/manifest.json`;
+  return {
+    filename,
+    url: first?.imageFilename
+      ? `/generated/cardnews/${encodeURIComponent(entryName)}/${encodeURIComponent(first.imageFilename)}`
+      : "",
+    createdAt: manifest.createdAt || 0,
+    prompt: null,
+    userPrompt: null,
+    revisedPrompt: null,
+    promptMode: null,
+    composerPrompt: null,
+    composerInsertedPrompts: null,
+    quality: null,
+    size: manifest.size || null,
+    format: "card-news-set",
+    model: null,
+    provider: "oauth",
+    usage: null,
+    webSearchCalls: 0,
+    sessionId: manifest.sessionId || null,
+    nodeId: null,
+    parentNodeId: null,
+    clientNodeId: null,
+    requestId: manifest.requestId || null,
+    kind: "card-news-set",
+    setId: manifest.setId || entryName,
+    cardId: null,
+    cardOrder: null,
+    title: manifest.title || "Untitled card news",
+    headline: manifest.title || "Untitled card news",
+    body: null,
+    cards: (manifest.cards || []).map((card) => ({
+      url: card.imageFilename
+        ? `/generated/cardnews/${encodeURIComponent(entryName)}/${encodeURIComponent(card.imageFilename)}`
+        : "",
+      headline: card.headline,
+      body: card.body,
+      cardOrder: card.cardOrder,
+      imageFilename: card.imageFilename,
+      status: card.status || "generated",
+    })),
+    refsCount: 0,
+    dir: dirname(manifestPath),
+  };
+}
+
 async function listCardNewsSetRows(baseDir: string) {
   const root = join(baseDir, "cardnews");
   const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
-  const rows: any[] = [];
+  const rows: Array<ReturnType<typeof cardNewsSetRow>> = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     try {
       const manifestPath = join(root, entry.name, "manifest.json");
-      const manifest = JSON.parse(await readFile(manifestPath, "utf-8")) as any;
-      const first = (manifest.cards || []).find((card: any) => card.imageFilename);
-      const filename = `cardnews/${entry.name}/manifest.json`;
-      rows.push({
-        filename,
-        url: first?.imageFilename
-          ? `/generated/cardnews/${encodeURIComponent(entry.name)}/${encodeURIComponent(first.imageFilename)}`
-          : "",
-        createdAt: manifest.createdAt || 0,
-        prompt: null,
-        userPrompt: null,
-        revisedPrompt: null,
-        promptMode: null,
-        composerPrompt: null,
-        composerInsertedPrompts: null,
-        quality: null,
-        size: manifest.size || null,
-        format: "card-news-set",
-        model: null,
-        provider: "oauth",
-        usage: null,
-        webSearchCalls: 0,
-        sessionId: manifest.sessionId || null,
-        nodeId: null,
-        parentNodeId: null,
-        clientNodeId: null,
-        requestId: manifest.requestId || null,
-        kind: "card-news-set",
-        setId: manifest.setId || entry.name,
-        cardId: null,
-        cardOrder: null,
-        title: manifest.title || "Untitled card news",
-        headline: manifest.title || "Untitled card news",
-        body: null,
-        cards: (manifest.cards || []).map((card: any) => ({
-          url: card.imageFilename
-            ? `/generated/cardnews/${encodeURIComponent(entry.name)}/${encodeURIComponent(card.imageFilename)}`
-            : "",
-          headline: card.headline,
-          body: card.body,
-          cardOrder: card.cardOrder,
-          imageFilename: card.imageFilename,
-          status: card.status || "generated",
-        })),
-        refsCount: 0,
-        dir: dirname(manifestPath),
-      });
+      const manifest = JSON.parse(await readFile(manifestPath, "utf-8")) as CardNewsSetManifestFile;
+      rows.push(cardNewsSetRow(entry.name, manifestPath, manifest));
     } catch (e) {
       const err = errInfo(e);
       if (err.code !== "ENOENT") console.warn("[history] card-news manifest parse fail:", entry.name, err.message);

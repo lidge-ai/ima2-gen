@@ -174,7 +174,7 @@ async function rmSub(argv: string[]) {
   out(color.dim(restartNotice()));
 }
 
-type Sub = (argv: any[]) => Promise<void>;
+type Sub = (argv: string[]) => Promise<void>;
 const SUB: Record<string, Sub> = {
   path: pathSub,
   ls:   lsSub,

@@ -13,6 +13,7 @@ directories:
 
 extraMetadata:
   main: desktop/main.mjs
+  desktopName: ima2.desktop
 
 # Rebuild native modules (better-sqlite3 etc.) against Electron's ABI.
 npmRebuild: true
@@ -31,7 +32,6 @@ files:
   - routes/**/*.js
   - ui/dist/**
   - skills/**
-  - vendor/**
   - assets/card-news/templates/**
   - assets/mcp-snapshots/**
   - assets/logo.png
@@ -46,6 +46,7 @@ files:
   - desktop/scripts/make-icons.mjs
   - desktop/build/icon.png
   - desktop/build/tray*.png
+  - desktop/build/*.ico
   - "!desktop/node_modules"
   - "!desktop/dist"
   - "!ui/node_modules"
@@ -74,7 +75,7 @@ afterPack: build/sign-extra-binaries.mjs
 electronUpdaterCompatibility: ">=2.16"
 publish:
   provider: github
-  owner: lidge-jun
+  owner: lidge-ai
   repo: ima2-gen
   releaseType: draft
   tagNamePrefix: desktop-v
@@ -112,7 +113,7 @@ dmg:
     - { x: 410, y: 220, type: link, path: /Applications }
 
 win:
-  icon: build/icon.png
+  icon: build/icon.ico
   target:
     - target: nsis
       arch: [x64, arm64]

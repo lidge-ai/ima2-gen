@@ -3,7 +3,7 @@ import { t, type Lang } from '../i18n/strings';
 import LangToggle from './LangToggle.astro';
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
-const repoUrl = 'https://github.com/lidge-jun/ima2-gen';
+const repoUrl = 'https://github.com/lidge-ai/ima2-gen';
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const homeHref = lang === 'ko' ? `${base}/ko` : `${base}/`;
 const faqHref = lang === 'ko' ? `${base}/ko/faq` : `${base}/faq`;

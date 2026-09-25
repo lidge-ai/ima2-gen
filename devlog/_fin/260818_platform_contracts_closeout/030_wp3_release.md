@@ -23,7 +23,7 @@ tags: [ima2-gen, devlog, wp3, release]
 5. **승인은 2회다** (감사 블로커 2): `npm-stable` 환경(id 19898997367)이
    release.yml의 `tag` job과 publish.yml의 `publish-stable` job을 **각각**
    게이트한다. 두 run에 대해 각각
-   `gh api repos/lidge-jun/ima2-gen/actions/runs/<run_id>/pending_deployments
+   `gh api repos/lidge-ai/ima2-gen/actions/runs/<run_id>/pending_deployments
    -X POST -f state=approved -f "environment_ids[]=19898997367"` 실행.
    두 번째를 놓치면 태그는 됐는데 npm latest가 안 움직이는 좌초 상태가 된다.
 6. 검증: npm dist-tags latest=3.6.0, gh release view v3.6.0,

@@ -15,8 +15,7 @@ import { dirname, join } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { onShutdown } from "./bin/lib/platform.js";
 import { ensureDefaultSession } from "./lib/sessionStore.js";
-import { startOAuthProxy } from "./lib/oauthLauncher.js";
-import { detectCodexAuth } from "./lib/codexDetect.js";
+import { resetCodexCaches } from "./lib/codexBackend/index.js";
 import { migrateGeneratedStorage } from "./lib/storageMigration.js";
 import { purgeStaleJobs } from "./lib/inflight.js";
 import { configureLogger, logError } from "./lib/logger.js";
@@ -35,7 +34,7 @@ import { closeDb } from "./lib/db.js";
 import { stopAgentQueueWorker } from "./lib/agentQueueWorker.js";
 import { reapCardNewsJobs } from "./lib/cardNewsJobStore.js";
 import { reapTerminalJobs } from "./lib/inflight.js";
-import { errInfo } from "./lib/errInfo.js";
+import { errInfo, thrownFields } from "./lib/errInfo.js";
 import { TEMPLATE_FILE_MAX_BYTES } from "./lib/nodeTemplateFile.js";
 import { templateImportBodyErrors } from "./routes/nodeTemplates.js";
 import { loadGrokCredentials } from "./lib/xaiAuth.js";
@@ -283,7 +282,7 @@ export function buildApp(ctx: RuntimeContext) {
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const info = errInfo(error);
     const candidateStatus = Number(info.status);
-    const operational = Boolean((error as any)?.isOperational)
+    const operational = Boolean(thrownFields(error).isOperational)
       || (Number.isInteger(candidateStatus) && candidateStatus >= 400 && candidateStatus < 500);
     const status = operational ? candidateStatus : 500;
     if (!operational) logError("server", "unhandled:error", error);
@@ -324,9 +323,10 @@ export function buildAdvertisePayload(ctx: RuntimeContext) {
       url: ctx.serverUrl,
     },
     oauth: {
+      mode: ctx.oauthTransport === "native" ? "native" : "proxy",
       configuredPort: Number(ctx.oauthPort),
       actualPort: Number(ctx.oauthActualPort || ctx.oauthPort),
-      url: ctx.oauthUrl,
+      url: ctx.oauthTransport === "native" ? ctx.config.oauth.codexBaseUrl : ctx.oauthUrl,
       status: ctx.oauthReadyState,
     },
     grok: { auth: loadGrokCredentials(ctx.grokAuthHomeDir) ? "oauth" : "none" },
@@ -393,6 +393,10 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     resolveOAuthReady = resolve;
   });
   const oauthReadyPromise = newOAuthReadyPromise();
+  // GPT OAuth calls the Codex backend in process (lib/codexBackend). A stubbed proxy child
+  // (tests) or IMA2_NO_OAUTH_PROXY (an external proxy at oauthUrl) keeps the HTTP transport.
+  const oauthTransport: "native" | "proxy" =
+    overrides.oauthChild !== undefined || !config.oauth.autoStart ? "proxy" : "native";
   const ctx: BootRuntimeContext = {
     rootDir,
     config,
@@ -402,7 +406,8 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     oauthPort,
     oauthActualPort: oauthPort,
     oauthUrl: `http://127.0.0.1:${oauthPort}`,
-    oauthReadyState: config.oauth.autoStart ? "starting" : "disabled",
+    oauthTransport,
+    oauthReadyState: oauthTransport === "native" ? "ready" : config.oauth.autoStart ? "starting" : "disabled",
     hasApiKey: !!apiKey,
     apiKey: apiKey ?? undefined,
     apiKeySource: loadedKey.apiKeySource as ApiKeySource,
@@ -446,7 +451,7 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
       ctx.oauthReadyState = "starting";
     },
   };
-  if (!config.oauth.autoStart) ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
+  if (!config.oauth.autoStart || oauthTransport === "native") ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
   if (loadedVertexKey.json) {
     try {
       const { initVertexAuth } = await import("./lib/vertexAuth.js");
@@ -469,58 +474,19 @@ export async function startServer(overrides: StartServerOverrides = {}) {
   }
   purgeStaleJobs();
   const app = buildApp(ctx);
-  const launchOAuthProxy = () => startOAuthProxy({
-    oauthPort: ctx.oauthPort,
-    restartDelayMs: ctx.config.oauth.restartDelayMs,
-    onReady: ({ url, port }: { url: string; port: number }) => {
-      ctx.markOAuthReady({ url, port });
-      advertise(ctx);
-    },
-    onExit: () => ctx.markOAuthFailed(),
-  });
-  let oauthChild: StartServerOverrides["oauthChild"] =
-    overrides.oauthChild !== undefined
-      ? overrides.oauthChild
-      : !ctx.config.oauth.autoStart
-        ? null
-        : launchOAuthProxy();
-  if (overrides.oauthChild === undefined && ctx.config.oauth.autoStart) {
-    // A login (web or CLI) writes a new session file; the running proxy only read the old one
-    // (or none, and exited), so the new session was invisible until a server restart.
-    let restarting: Promise<void> | null = null;
+  // GPT OAuth calls the Codex backend in process and re-reads the session file on every
+  // request, so a login needs no restart: forgetting the cached model roster is enough for a
+  // different account to show up at once. An injected child (tests) or an external endpoint
+  // (IMA2_NO_OAUTH_PROXY) owns its own lifecycle.
+  const oauthChild: StartServerOverrides["oauthChild"] = overrides.oauthChild ?? null;
+  if (ctx.oauthTransport === "native") {
     ctx.restartOAuthProxy = () => {
-      ctx.markOAuthStarting();
-      if (!restarting) {
-        const previous = oauthChild;
-        restarting = (async () => {
-          try {
-            await previous?.stopAndWait?.();
-          } catch (error) {
-            console.error(`[gpt-oauth] restart aborted: ${(error as Error).message}`);
-            ctx.markOAuthFailed();
-            return;
-          }
-          oauthChild = launchOAuthProxy();
-        })().finally(() => { restarting = null; });
-      }
+      resetCodexCaches();
       return { restarted: true };
     };
-    // A CLI login (or logout) can change which session file the proxy should read without
-    // being able to reach this server (e.g. a LAN-bound server the CLI cannot authenticate to).
-    // Status polls and generation admission call this to catch up on their own.
-    ctx.syncOAuthProxySession = () => {
-      if (restarting) return false;
-      const wanted = detectCodexAuth({ probe: false }).proxyAuthFile;
-      const launched = (oauthChild as { authFile?: string | null } | null)?.authFile ?? null;
-      if (wanted === launched) return false;
-      console.log(`[gpt-oauth] session file changed (${launched ?? "none"} -> ${wanted ?? "none"}); restarting proxy`);
-      ctx.restartOAuthProxy?.();
-      return true;
-    };
+    ctx.syncOAuthProxySession = () => false;
   }
-  if (overrides.oauthChild !== undefined || !ctx.config.oauth.autoStart) {
-    ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
-  }
+  ctx.markOAuthReady({ url: ctx.oauthUrl, port: ctx.oauthPort });
 
   let server: import("node:net").Server;
   let reapTimer: NodeJS.Timeout;
@@ -558,7 +524,7 @@ export async function startServer(overrides: StartServerOverrides = {}) {
     console.warn(`[mcp.restore] code=${String((error as Error)?.message ?? error).split(":")[0]}`);
   });
   console.log(`Image Gen running at ${ctx.serverUrl}`);
-  console.log(`Provider policy: GPT OAuth, API-key Responses, and Grok (xAI OAuth or API key) providers. GPT OAuth proxy port ${ctx.oauthPort}.`);
+  console.log(`Provider policy: GPT OAuth, API-key Responses, and Grok (xAI OAuth or API key) providers. GPT OAuth ${ctx.oauthTransport === "native" ? "calls ChatGPT directly" : `uses ${ctx.oauthUrl}`}.`);
   advertise(ctx);
   try {
     const s = ensureDefaultSession();

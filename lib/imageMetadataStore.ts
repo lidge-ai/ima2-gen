@@ -1,6 +1,7 @@
+import { thrownFields, type CodedError } from "./errInfo.js";
 import { readFile } from "node:fs/promises";
 import sharp from "sharp";
-import { buildIma2MetadataPayload, buildIma2Xmp, parseIma2Xmp } from "./imageMetadata.js";
+import { buildIma2MetadataPayload, buildIma2Xmp, parseIma2Xmp, type MetadataContext } from "./imageMetadata.js";
 
 const SUPPORTED_FORMATS = new Set(["png", "jpeg", "jpg", "webp"]);
 
@@ -14,31 +15,46 @@ export function isSupportedMetadataFormat(format: unknown) {
   return SUPPORTED_FORMATS.has(String(format || "").toLowerCase());
 }
 
-export async function embedImageMetadata(buffer: Buffer, format: unknown, metadata: unknown, context: any = {}) {
+type MetadataFormat = "png" | "jpeg" | "webp";
+
+function isMetadataFormat(format: string): format is MetadataFormat {
+  return format === "png" || format === "jpeg" || format === "webp";
+}
+
+export interface MetadataEmbedResult {
+  buffer: Buffer;
+  embedded: boolean;
+  metadata?: ReturnType<typeof buildIma2MetadataPayload>;
+  warning?: unknown;
+  code?: unknown;
+}
+
+export async function embedImageMetadata(buffer: Buffer, format: unknown, metadata: unknown, context: MetadataContext = {}): Promise<MetadataEmbedResult> {
   const normalizedFormat = normalizeImageMetadataFormat(format);
-  if (!isSupportedMetadataFormat(normalizedFormat)) {
-    const err: any = new Error(`Unsupported image metadata format: ${format}`);
+  if (!isMetadataFormat(normalizedFormat)) {
+    const err: CodedError = new Error(`Unsupported image metadata format: ${format}`);
     err.code = "IMAGE_METADATA_UNSUPPORTED_FORMAT";
     throw err;
   }
   const payload = buildIma2MetadataPayload(metadata, context);
   const xmp = buildIma2Xmp(payload);
   const next = await sharp(buffer)
-    .toFormat(normalizedFormat as any)
+    .toFormat(normalizedFormat)
     .withXmp(xmp)
     .toBuffer();
   return { buffer: next, embedded: true, metadata: payload };
 }
 
-export async function embedImageMetadataBestEffort(buffer: Buffer, format: unknown, metadata: unknown, context: any = {}) {
+export async function embedImageMetadataBestEffort(buffer: Buffer, format: unknown, metadata: unknown, context: MetadataContext = {}): Promise<MetadataEmbedResult> {
   try {
     return await embedImageMetadata(buffer, format, metadata, context);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorFields = thrownFields(error);
     return {
       buffer,
       embedded: false,
-      warning: error?.message || "metadata embedding failed",
-      code: error?.code || "IMAGE_METADATA_EMBED_FAILED",
+      warning: errorFields.message || "metadata embedding failed",
+      code: errorFields.code || "IMAGE_METADATA_EMBED_FAILED",
     };
   }
 }

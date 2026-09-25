@@ -2,7 +2,7 @@
 created: 2026-05-27
 status: phase 1 verified / pending commit
 tags: [ima2-gen, issue-77, preview, long-prompt, frontend, jawdev]
-github_issue: https://github.com/lidge-jun/ima2-gen/issues/77
+github_issue: https://github.com/lidge-ai/ima2-gen/issues/77
 ---
 
 # Issue 77 Long Prompt Preview Layout

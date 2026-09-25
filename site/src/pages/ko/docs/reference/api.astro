@@ -3,7 +3,7 @@ import DocsLayout from '../../../../layouts/DocsLayout.astro';
 import { docsPath } from '../../../../i18n/docs';
 
 const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
-const apiMd = 'https://github.com/lidge-jun/ima2-gen/blob/main/docs/API.md';
+const apiMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/API.md';
 
 // JSON 중괄호가 Astro 표현식으로 파싱되지 않도록 리터럴 문자열로 렌더링.
 const genBody = `{
@@ -60,7 +60,7 @@ const genBody = `{
   <pre><code>{genBody}</code></pre>
   <p>
     품질: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api, agy, gemini-api, atlascloud, minimax, nai, comfy.
-    앱 기본 OpenAI 모델은 <code>gpt-5.6-luna</code>입니다.
+    GPT OAuth 기본 모델은 <code>gpt-6-luna</code>(그 밖에 <code>gpt-6-sol</code>, <code>gpt-6-astra</code>)이고, API 키 레인 기본값은 <code>gpt-5.6-luna</code>입니다.
     Grok 이미지 모델은 <code>grok-imagine-image-2.0</code>(기본), <code>grok-imagine-image</code>, <code>grok-imagine-image-quality</code>입니다.
     Gemini 모델은 <code>nano-banana-2</code>(Flash)와 <code>nano-banana-pro</code>(Pro)입니다.
     웹 UI는 <code>GET /api/events</code> (SSE 멀티플렉싱)로 모든 생성 진행 이벤트를 받습니다:
@@ -146,7 +146,7 @@ const genBody = `{
     <tbody>
       <tr><td><code>GET /api/health</code></td><td>헬스 체크 (<code>ima2 ping</code>). <code>grok: &lbrace; auth: "oauth" | "none" &rbrace;</code>를 포함하며 <code>~/.ima2/server.json</code>에도 같은 값이 실립니다.</td></tr>
       <tr><td><code>GET /api/providers</code></td><td>프로바이더 가용성과 런타임 포트 (<code>ima2 providers</code>).</td></tr>
-      <tr><td><code>GET /api/oauth/status</code></td><td>OAuth 프록시 상태 (<code>ima2 oauth status</code>).</td></tr>
+      <tr><td><code>GET /api/oauth/status</code></td><td>GPT OAuth 상태 (<code>ima2 oauth status</code>).</td></tr>
       <tr><td><code>GET /api/grok/status</code></td><td>xAI OAuth 세션 상태와 이미지 모델 probe (<code>ima2 grok status</code>). <code>ready</code>·<code>no_image_model</code>·<code>error</code>·<code>offline</code>을 반환하고, 세션이 없으면 사유는 <code>login_required</code>입니다.</td></tr>
       <tr><td><code>GET /api/storage/status</code></td><td>스토리지 점검.</td></tr>
       <tr><td><code>POST /api/storage/open-generated-dir</code></td><td>OS 파일 매니저에서 생성 디렉터리 열기.</td></tr>
@@ -165,7 +165,7 @@ const genBody = `{
       <tr><td><code>AUTH_CHATGPT_EXPIRED</code></td><td>Codex/ChatGPT OAuth 세션 만료.</td></tr>
       <tr><td><code>AUTH_API_KEY_INVALID</code></td><td>API key가 무효·취소·할당량 초과.</td></tr>
       <tr><td><code>NETWORK_FAILED</code></td><td>네트워크·프록시·VPN·방화벽 실패.</td></tr>
-      <tr><td><code>OAUTH_UNAVAILABLE</code></td><td>로컬 OAuth 프록시 사용 불가.</td></tr>
+      <tr><td><code>OAUTH_UNAVAILABLE</code></td><td>GPT OAuth 사용 불가.</td></tr>
       <tr><td><code>GRAPH_VERSION_CONFLICT</code></td><td>stale 그래프 버전에 대한 저장.</td></tr>
       <tr><td><code>NODE_NOT_FOUND</code></td><td>노드 메타데이터를 찾을 수 없음.</td></tr>
       <tr><td><code>GROK_REF_TOO_MANY</code></td><td>Grok 요청에 총 세 장을 넘는 입력 이미지가 포함됨.</td></tr>

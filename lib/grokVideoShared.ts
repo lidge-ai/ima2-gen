@@ -87,7 +87,7 @@ export const FAILED_CODE_MAP: Record<string, { code: string; status: number }> =
 };
 
 export function videoConfig(ctx: RouteRuntimeContext): VideoConfig {
-  const g = (ctx.config as any).grokProvider || {}; // justified: RouteRuntimeContext.config is a loose runtime bag; every Grok adapter reads grokProvider this way
+  const g = ctx.config?.grokProvider || {};
   const plannerTimeoutMs = g.plannerTimeoutMs || 900_000;
   const searchTimeoutMs = g.searchTimeoutMs || 300_000;
   // The planning ceiling must stay STRICTLY greater than the two stages it contains, or a
@@ -138,8 +138,17 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export function normalizeVideoPoll(data: any): GrokVideoPollResult { // justified: raw xAI JSON response, shape is validated field by field below
-  const status = data?.status;
+/** Raw xAI video poll JSON; the upstream omits fields depending on the job status. */
+export interface XaiVideoPollJson {
+  status?: string;
+  progress?: unknown;
+  video?: { url?: string; duration?: number | null; respect_moderation?: boolean };
+  usage?: { cost_in_usd_ticks?: number };
+  error?: { code?: string };
+}
+
+export function normalizeVideoPoll(data: XaiVideoPollJson | null | undefined): GrokVideoPollResult {
+  const status = data?.status as GrokVideoPollResult["status"];
   return {
     status,
     progress: typeof data?.progress === "number" ? data.progress : undefined,

@@ -787,10 +787,10 @@
     "statusLineTitle": "Status",
     "authMethodTitle": "Auth",
     "authActive": "Active",
-    "oauthNotReady": "GPT OAuth proxy is not ready yet.",
+    "oauthNotReady": "GPT OAuth is not ready yet.",
     "codexLoginRequired": "Codex login required.",
     "codexLoginHint": "Run `ima2 login` in your terminal, or use Settings → Switch Codex account.",
-    "oauthStarting": "GPT OAuth proxy is starting. Try again in a few seconds.",
+    "oauthStarting": "GPT OAuth is starting. Try again in a few seconds.",
     "serverUnreachable": "Cannot reach the server. Make sure the backend is running.",
     "apiInvalid": "API key is missing or invalid. Check OPENAI_API_KEY in the server's .env.",
     "grokOffline": "Grok login is required.",
@@ -1431,6 +1431,8 @@
       "gpt54Mini": "GPT-5.4 Mini",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
+      "gpt6Luna": "GPT-6 Luna",
+      "gpt6Sol": "GPT-6 Sol",
       "gpt6Astra": "GPT-6 Astra",
       "gpt56Sol": "GPT-5.6 Sol",
       "gpt56Terra": "GPT-5.6 Terra",
@@ -1651,8 +1653,8 @@
       "cta": "Reload"
     },
     "oauthUnavailable": {
-      "title": "GPT OAuth proxy unavailable",
-      "body": "The GPT OAuth proxy is starting, unavailable, or moved to a fallback port. Reload first; if it persists, run `ima2 doctor` and check the reported GPT OAuth URL.",
+      "title": "GPT OAuth unavailable",
+      "body": "GPT OAuth is starting or cannot reach its endpoint. Reload first; if it persists, run `ima2 gpt status` and `ima2 doctor`.",
       "cta": "Reload"
     },
     "invalidRequest": {

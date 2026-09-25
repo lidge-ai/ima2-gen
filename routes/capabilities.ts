@@ -31,7 +31,7 @@ export function registerCapabilitiesRoutes(app: Express, ctxRaw: RouteRuntimeCon
   });
 
   app.get("/api/config/grok-planner", (_req: Request, res: Response) => {
-    res.json({ model: (ctx.config as any).grokProvider.plannerModel, options: GROK_PLANNER_MODELS });
+    res.json({ model: ctx.config.grokProvider.plannerModel, options: GROK_PLANNER_MODELS });
   });
 
   app.patch("/api/config/grok-planner", (req: Request, res: Response) => {
@@ -40,7 +40,7 @@ export function registerCapabilitiesRoutes(app: Express, ctxRaw: RouteRuntimeCon
       res.status(400).json({ error: `Invalid model. Options: ${GROK_PLANNER_MODELS.join(", ")}` });
       return;
     }
-    (ctx.config as any).grokProvider.plannerModel = model;
+    ctx.config.grokProvider.plannerModel = model;
     res.json({ model });
   });
 }

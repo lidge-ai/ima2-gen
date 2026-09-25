@@ -1,3 +1,4 @@
+import { thrownFields } from "./errInfo.js";
 import { logEvent } from "./logger.js";
 import { SAFETY_INTENT_POLICY } from "./promptSafetyPolicy.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
@@ -242,7 +243,7 @@ export async function searchGrokVisualContext(
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      let parsed: any;
+      let parsed: { error?: string } | undefined;
       try { parsed = JSON.parse(text); } catch { /* ignore */ }
       const msg = parsed?.error || text || `HTTP ${res.status}`;
       throw grokStageError("search", msg, res.status);
@@ -252,14 +253,15 @@ export async function searchGrokVisualContext(
     if (!summary) throw grokError("Grok web search returned no research summary", 502, "GROK_SEARCH_EMPTY_RESPONSE");
     logEvent("grok", "search:done", { requestId: options.requestId, plannerModel, summaryChars: summary.length });
     return { summary };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     clearTimeout(timer);
-    if (e.name === "AbortError") {
+    if (eFields.name === "AbortError") {
       if (options.signal?.aborted) throw grokError("Generation canceled", 499, "GENERATION_CANCELED");
       throw grokError("Grok web search timed out", 504, "GROK_SEARCH_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw grokError(`Grok web search request failed: ${e.message}`, 502, "GROK_SEARCH_NETWORK_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw grokError(`Grok web search request failed: ${eFields.message}`, 502, "GROK_SEARCH_NETWORK_FAILED");
   }
 }
 
@@ -270,7 +272,7 @@ export function parseGrokImagePlan(response: GrokChatResponse, fallbackModel: st
     throw grokError("Grok planner did not call generate_image", 502, "GROK_PLANNER_EMPTY_TOOL_CALL");
   }
 
-  let args: any;
+  let args: { prompt?: unknown };
   try {
     args = JSON.parse(call.function.arguments);
   } catch {
@@ -300,7 +302,7 @@ export async function planGrokImage(
     webSearchEnabled?: boolean | undefined;
   } = {},
 ): Promise<GrokImagePlan> {
-  const imageModel = options.model || (ctx.config as any).grokProvider?.defaultImageModel || "grok-imagine-image-quality";
+  const imageModel = options.model || ctx.config?.grokProvider?.defaultImageModel || "grok-imagine-image-quality";
   const planner = getPlannerConfig(ctx);
   const plannerModel = options.plannerModel || planner.model;
   const sizeParams = mapSizeToGrokImageParams(options.size);
@@ -338,7 +340,7 @@ export async function planGrokImage(
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      let parsed: any;
+      let parsed: { error?: string } | undefined;
       try { parsed = JSON.parse(text); } catch { /* ignore */ }
       const msg = parsed?.error || text || `HTTP ${res.status}`;
       throw grokStageError("planner", msg, res.status);
@@ -355,13 +357,14 @@ export async function planGrokImage(
       resolution: sizeParams.resolution,
     });
     return plan;
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const eFields = thrownFields(e);
     clearTimeout(timer);
-    if (e.name === "AbortError") {
+    if (eFields.name === "AbortError") {
       if (options.signal?.aborted) throw grokError("Generation canceled", 499, "GENERATION_CANCELED");
       throw grokError("Grok planner timed out", 504, "GROK_PLANNER_TIMEOUT");
     }
-    if (e.code && e.status) throw e;
-    throw grokError(`Grok planner request failed: ${e.message}`, 502, "GROK_PLANNER_NETWORK_FAILED");
+    if (eFields.code && eFields.status) throw e;
+    throw grokError(`Grok planner request failed: ${eFields.message}`, 502, "GROK_PLANNER_NETWORK_FAILED");
   }
 }

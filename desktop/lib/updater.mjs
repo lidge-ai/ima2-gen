@@ -51,6 +51,7 @@ export async function createUpdaterController(options) {
     logger = console,
     loadUpdater = () => import("electron-updater"),
     autoDownload = true,
+    onUpdateReady = () => {},
   } = options;
   if (!app.isPackaged || platform !== "darwin" || arch !== "arm64") return inactiveController();
 
@@ -99,6 +100,7 @@ export async function createUpdaterController(options) {
   };
 
   autoUpdater.on("update-downloaded", (info) => {
+    onUpdateReady(info);
     void (async () => {
       const prompt = await dialog.showMessageBox(updateDownloadedDialog(info.version));
       if (prompt.response !== UPDATE_INSTALL_BUTTON) return;

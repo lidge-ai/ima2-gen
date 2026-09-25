@@ -19,24 +19,24 @@ passed all6 jobs and266 E2E cases. Re-read heads/checks/reviews before any merge
 
 | PR | Head branch | Current base | Reviewed head | Exact-head full CI | Landing |
 |---|---|---|---|---|---|
-| 199 | codex/prod-prereq-nai | dev | 2d8af5c3c77b5044f8201de3260a95b6b9e2912d | [34026761774](https://github.com/lidge-jun/ima2-gen/actions/runs/34026761774) success | Not merged |
-| 198 | codex/prod-wp00-roadmap | codex/prod-prereq-nai | 5f4170b0c9fbb0d8774a6b29f6993c8580a1d18f | [34026761568](https://github.com/lidge-jun/ima2-gen/actions/runs/34026761568) success | Not merged |
-| 200 | codex/prod-wp01-capabilities | codex/prod-wp00-roadmap | 99f27afe9a810fdf6db9b96c2a9ec6e5ff7c6adb | [34026761569](https://github.com/lidge-jun/ima2-gen/actions/runs/34026761569) success | Not merged |
-| 201 | codex/prod-wp02-selection | codex/prod-wp01-capabilities | 1d876b7004fac9a3bc846adf363fe89c22729540 | [34026761635](https://github.com/lidge-jun/ima2-gen/actions/runs/34026761635) success | Not merged |
-| 202 | codex/prod-wp03-execution | codex/prod-wp02-selection | 383f0c393ed4ff6977839ce721698841a8d6c6fd | [34026763546](https://github.com/lidge-jun/ima2-gen/actions/runs/34026763546) success | Not merged |
-| 203 | codex/prod-wp04-openai | codex/prod-wp03-execution | 5d6fc708c0ef1197c22f9bbb5afab4a0a3088ad6 | [34026763094](https://github.com/lidge-jun/ima2-gen/actions/runs/34026763094) success | Not merged |
-| 204 | codex/prod-wp05-grok | codex/prod-wp04-openai | 05a0fb26b446fa442897a573de408ec7dfcb4609 | [34026763151](https://github.com/lidge-jun/ima2-gen/actions/runs/34026763151) success | Not merged |
-| 205 | codex/prod-wp06-google | codex/prod-wp05-grok | 7c5a40bb082fd7936c00d45f472dd856927160ea | [34026763299](https://github.com/lidge-jun/ima2-gen/actions/runs/34026763299) success | Not merged |
-| 206 | codex/prod-wp06m-video-bounds | codex/prod-wp06-google | b60b3441ea72198cce14413c138dcab3ea958f69 | [34026764879](https://github.com/lidge-jun/ima2-gen/actions/runs/34026764879) success | Not merged |
-| 207 | codex/prod-wp06s-agy-artifacts | codex/prod-wp06m-video-bounds | f8fdb3a975b6f834eab9ebb4b4f3ac97e4600c78 | [34026765052](https://github.com/lidge-jun/ima2-gen/actions/runs/34026765052) success | Not merged |
-| 208 | codex/prod-wp07-jobs | codex/prod-wp06s-agy-artifacts | 59c088cf7ef1448e845e89833ad62b9cbc0c6ca8 | [34026764881](https://github.com/lidge-jun/ima2-gen/actions/runs/34026764881) success | Not merged |
-| 209 | codex/prod-wp08-composer | codex/prod-wp07-jobs | 849b3df31e8585487e4baa2cb0c5d1e14609dcd6 | [34026765261](https://github.com/lidge-jun/ima2-gen/actions/runs/34026765261) success | Not merged |
-| 210 | codex/prod-wp08c-provider-display | codex/prod-wp08-composer | ed885032fb07977a5e5625119578ade73078b6a9 | [34026766734](https://github.com/lidge-jun/ima2-gen/actions/runs/34026766734) success | Not merged |
-| 211 | codex/prod-wp09-journeys | codex/prod-wp08c-provider-display | 3e704f9402ce76f63d66f1b42af6b2464a4c5b72 | [34026766800](https://github.com/lidge-jun/ima2-gen/actions/runs/34026766800) success | Not merged |
-| 212 | codex/prod-wp10-diagnostics | codex/prod-wp09-journeys | 1e2e05ae186cd618d8973434d95439491699d52e | [34026766960](https://github.com/lidge-jun/ima2-gen/actions/runs/34026766960) success | Not merged |
-| 213 | codex/prod-wp11-installation | codex/prod-wp10-diagnostics | 6607dc6417bf41e706360bfe03c975ff51871657 | [34026766753](https://github.com/lidge-jun/ima2-gen/actions/runs/34026766753) success | Not merged |
-| 215 | codex/prod-wp12-readiness | codex/prod-wp11-installation | 2f8b4823a2462db07b6dcc280e397817cc437956 | [34031781195](https://github.com/lidge-jun/ima2-gen/actions/runs/34031781195) success | Not merged |
-| 217 | codex/prod-wp12s-lan-security | codex/prod-wp12-readiness | b1432ba38b377d8732d94a9e17301e94eb988a03 | [34044138017](https://github.com/lidge-jun/ima2-gen/actions/runs/34044138017) success | Not merged |
+| 199 | codex/prod-prereq-nai | dev | 2d8af5c3c77b5044f8201de3260a95b6b9e2912d | [34026761774](https://github.com/lidge-ai/ima2-gen/actions/runs/34026761774) success | Not merged |
+| 198 | codex/prod-wp00-roadmap | codex/prod-prereq-nai | 5f4170b0c9fbb0d8774a6b29f6993c8580a1d18f | [34026761568](https://github.com/lidge-ai/ima2-gen/actions/runs/34026761568) success | Not merged |
+| 200 | codex/prod-wp01-capabilities | codex/prod-wp00-roadmap | 99f27afe9a810fdf6db9b96c2a9ec6e5ff7c6adb | [34026761569](https://github.com/lidge-ai/ima2-gen/actions/runs/34026761569) success | Not merged |
+| 201 | codex/prod-wp02-selection | codex/prod-wp01-capabilities | 1d876b7004fac9a3bc846adf363fe89c22729540 | [34026761635](https://github.com/lidge-ai/ima2-gen/actions/runs/34026761635) success | Not merged |
+| 202 | codex/prod-wp03-execution | codex/prod-wp02-selection | 383f0c393ed4ff6977839ce721698841a8d6c6fd | [34026763546](https://github.com/lidge-ai/ima2-gen/actions/runs/34026763546) success | Not merged |
+| 203 | codex/prod-wp04-openai | codex/prod-wp03-execution | 5d6fc708c0ef1197c22f9bbb5afab4a0a3088ad6 | [34026763094](https://github.com/lidge-ai/ima2-gen/actions/runs/34026763094) success | Not merged |
+| 204 | codex/prod-wp05-grok | codex/prod-wp04-openai | 05a0fb26b446fa442897a573de408ec7dfcb4609 | [34026763151](https://github.com/lidge-ai/ima2-gen/actions/runs/34026763151) success | Not merged |
+| 205 | codex/prod-wp06-google | codex/prod-wp05-grok | 7c5a40bb082fd7936c00d45f472dd856927160ea | [34026763299](https://github.com/lidge-ai/ima2-gen/actions/runs/34026763299) success | Not merged |
+| 206 | codex/prod-wp06m-video-bounds | codex/prod-wp06-google | b60b3441ea72198cce14413c138dcab3ea958f69 | [34026764879](https://github.com/lidge-ai/ima2-gen/actions/runs/34026764879) success | Not merged |
+| 207 | codex/prod-wp06s-agy-artifacts | codex/prod-wp06m-video-bounds | f8fdb3a975b6f834eab9ebb4b4f3ac97e4600c78 | [34026765052](https://github.com/lidge-ai/ima2-gen/actions/runs/34026765052) success | Not merged |
+| 208 | codex/prod-wp07-jobs | codex/prod-wp06s-agy-artifacts | 59c088cf7ef1448e845e89833ad62b9cbc0c6ca8 | [34026764881](https://github.com/lidge-ai/ima2-gen/actions/runs/34026764881) success | Not merged |
+| 209 | codex/prod-wp08-composer | codex/prod-wp07-jobs | 849b3df31e8585487e4baa2cb0c5d1e14609dcd6 | [34026765261](https://github.com/lidge-ai/ima2-gen/actions/runs/34026765261) success | Not merged |
+| 210 | codex/prod-wp08c-provider-display | codex/prod-wp08-composer | ed885032fb07977a5e5625119578ade73078b6a9 | [34026766734](https://github.com/lidge-ai/ima2-gen/actions/runs/34026766734) success | Not merged |
+| 211 | codex/prod-wp09-journeys | codex/prod-wp08c-provider-display | 3e704f9402ce76f63d66f1b42af6b2464a4c5b72 | [34026766800](https://github.com/lidge-ai/ima2-gen/actions/runs/34026766800) success | Not merged |
+| 212 | codex/prod-wp10-diagnostics | codex/prod-wp09-journeys | 1e2e05ae186cd618d8973434d95439491699d52e | [34026766960](https://github.com/lidge-ai/ima2-gen/actions/runs/34026766960) success | Not merged |
+| 213 | codex/prod-wp11-installation | codex/prod-wp10-diagnostics | 6607dc6417bf41e706360bfe03c975ff51871657 | [34026766753](https://github.com/lidge-ai/ima2-gen/actions/runs/34026766753) success | Not merged |
+| 215 | codex/prod-wp12-readiness | codex/prod-wp11-installation | 2f8b4823a2462db07b6dcc280e397817cc437956 | [34031781195](https://github.com/lidge-ai/ima2-gen/actions/runs/34031781195) success | Not merged |
+| 217 | codex/prod-wp12s-lan-security | codex/prod-wp12-readiness | b1432ba38b377d8732d94a9e17301e94eb988a03 | [34044138017](https://github.com/lidge-ai/ima2-gen/actions/runs/34044138017) success | Not merged |
 
 Native stack216 contains199,198,200–213,215;215 is still draft.217 is a separate
 manual child. Native-stack operation is gated on the explicit owner answer; do

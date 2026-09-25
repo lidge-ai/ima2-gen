@@ -150,8 +150,8 @@ describe("ima2 CLI commands (live server)", () => {
       res.setHeader("Content-Type", "application/json");
       if (req.url === "/api/health") { res.end('{"ok":true}'); return; }
       if (req.url === "/api/models") {
-        res.end(JSON.stringify({ ok: true, lanes: { oauth: { status: "ready", defaults: { image: "gpt-5.6-luna" },
-          models: { image: [{ id: "gpt-5.6-luna" }], video: [] } } } })); return;
+        res.end(JSON.stringify({ ok: true, lanes: { oauth: { status: "ready", defaults: { image: "gpt-6-luna" },
+          models: { image: [{ id: "gpt-6-luna" }], video: [] } } } })); return;
       }
       if (req.url === "/api/generate" && req.method === "POST") {
         let raw = ""; req.on("data", (chunk) => { raw += chunk; }); req.on("end", () => {
@@ -168,7 +168,7 @@ describe("ima2 CLI commands (live server)", () => {
       const result = await runCLI(["gen", "hi", "--model", "oauth/luna", "--out", target, "--json", "--server", base]);
       assert.strictEqual(result.code, 0);
       assert.strictEqual(requestBody.provider, "oauth");
-      assert.strictEqual(requestBody.model, "gpt-5.6-luna");
+      assert.strictEqual(requestBody.model, "gpt-6-luna");
       assert.strictEqual(JSON.parse(result.stdout).images[0].path, target);
     } finally {
       await new Promise((resolve) => fake.close(resolve));

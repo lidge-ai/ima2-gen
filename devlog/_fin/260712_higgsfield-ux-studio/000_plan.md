@@ -10,7 +10,7 @@ ima2 웹 UI의 전반적인 UX를 힉스필드급 스튜디오 수준으로 끌�
 SaaS 전환, 팀 협업, 과금/거버넌스는 전부 스코프 밖이다. 로컬 개인 스튜디오라는
 정체성은 유지하고, "쓰는 감각"만 상용 스튜디오급으로 만든다.
 
-사이트(<https://lidge-jun.github.io/ima2-gen/>)는 이미 리브랜딩 완료·배포
+사이트(<https://lidge-ai.github.io/ima2-gen/>)는 이미 리브랜딩 완료·배포
 상태다. `site/src/styles/global.css`의 디자인 언어(근검정 `#0b0b0f`, 노이즈
 오버레이, 글래스 패널, 프리즘 그라데이션, Clash Display/Satoshi/IBM Plex Mono)가
 이 레인의 시각 기준점이고, 앱 UI를 그 질감에 맞춘다. 사이트 작업은 이 레인에

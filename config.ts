@@ -255,6 +255,11 @@ export const config = {
     proxyPort: pickInt(firstDefined(env.IMA2_OAUTH_PROXY_PORT, env.OAUTH_PORT), fileCfg.oauth?.proxyPort, 10531),
     // IMA2_NO_OAUTH_PROXY=1 disables auto-start; default is auto-start enabled.
     autoStart: !pickBool(env.IMA2_NO_OAUTH_PROXY, fileCfg.oauth?.disableAutoStart, false),
+    // GPT OAuth calls the Codex backend directly (lib/codexBackend). The base URL and client
+    // version are overridable for tests and for pinning a Codex build; the version otherwise
+    // follows the latest published @openai/codex, which gates the model roster.
+    codexBaseUrl: pickStr(env.IMA2_CODEX_BASE_URL, fileCfg.oauth?.codexBaseUrl, "https://chatgpt.com/backend-api/codex"),
+    codexClientVersion: pickStr(env.IMA2_CODEX_CLIENT_VERSION, fileCfg.oauth?.codexClientVersion, ""),
     statusTimeoutMs: pickInt(env.IMA2_OAUTH_STATUS_TIMEOUT_MS, fileCfg.oauth?.statusTimeoutMs, 3000),
     generationTimeoutMs: pickInt(
       env.IMA2_OAUTH_GENERATION_TIMEOUT_MS,
@@ -348,10 +353,10 @@ export const config = {
   },
   styleSheet: {
     maxPrefix: pickInt(env.IMA2_STYLE_SHEET_MAX_PREFIX, fileCfg.styleSheet?.maxPrefix, 4000),
-    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-5.6-luna"),
+    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-5.6-luna"), // runs on the API-key client (lib/styleSheet.ts)
   },
   imageModels: {
-    default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-5.6-luna"),
+    default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna"),
     valid: deriveSupportedImageModels("oauth"),
     unsupported: deriveUnsupportedImageModels(),
     reasoningEffort: pickStr(
@@ -362,6 +367,8 @@ export const config = {
     validReasoningEfforts: new Set(["none", "low", "medium", "high", "xhigh", "max"]),
   },
   apiProvider: {
+    /** The OpenAI API-key lane's own image models (GPT OAuth keeps only GPT-6). */
+    validImageModels: deriveSupportedImageModels("api"),
     defaultImageModel: pickStr(
       env.IMA2_API_IMAGE_MODEL_DEFAULT,
       fileCfg.apiProvider?.defaultImageModel,
@@ -442,7 +449,7 @@ export const config = {
   },
   cardNewsPlanner: {
     enabled: pickBool(env.IMA2_CARD_NEWS_PLANNER, fileCfg.cardNewsPlanner?.enabled, true),
-    model: pickStr(env.IMA2_CARD_NEWS_PLANNER_MODEL, fileCfg.cardNewsPlanner?.model, "gpt-5.6-luna"),
+    model: pickStr(env.IMA2_CARD_NEWS_PLANNER_MODEL, fileCfg.cardNewsPlanner?.model, "gpt-6-luna"),
     timeoutMs: pickInt(env.IMA2_CARD_NEWS_PLANNER_TIMEOUT_MS, fileCfg.cardNewsPlanner?.timeoutMs, 60_000),
     deterministicFallback: pickBool(
       env.IMA2_CARD_NEWS_PLANNER_FALLBACK,

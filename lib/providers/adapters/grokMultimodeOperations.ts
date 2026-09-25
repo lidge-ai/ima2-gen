@@ -1,4 +1,4 @@
-import { errInfo } from "../../errInfo.js";
+import { errInfo, thrownFields } from "../../errInfo.js";
 import {
   imageEditPayload,
   imagePayload,
@@ -50,10 +50,10 @@ export async function generateMultimodeViaGrok(
     onFinalImage?: ((image: { b64: string; revisedPrompt?: string | undefined; mime?: string | undefined }, index: number) => void | Promise<void>) | undefined;
   } = {},
 ): Promise<GrokMultimodeResult> {
-  const model = options.model || (ctx.config as any).grokProvider?.defaultImageModel || "grok-imagine-image-quality";
+  const model = options.model || ctx.config?.grokProvider?.defaultImageModel || "grok-imagine-image-quality";
   const maxGeneratedImages = Math.max(
     1,
-    Math.trunc(Number((ctx.config as any).limits?.maxGeneratedImages) || 24),
+    Math.trunc(Number(ctx.config?.limits?.maxGeneratedImages) || 24),
   );
   const maxImages = Math.min(
     maxGeneratedImages,
@@ -110,8 +110,9 @@ export async function generateMultimodeViaGrok(
         if (result.usage?.cost_in_usd_ticks) totalCost += result.usage.cost_in_usd_ticks;
         await options.onFinalImage?.(img, i);
       }
-    } catch (e: any) {
-      if (e.code === "GENERATION_CANCELED") throw e;
+    } catch (e: unknown) {
+      const eFields = thrownFields(e);
+      if (eFields.code === "GENERATION_CANCELED") throw e;
       logEvent("grok", "multimode:item-error", { requestId: options.requestId, index: i, error: errInfo(e) });
       itemErrors.push(e);
     }

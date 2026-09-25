@@ -1,6 +1,30 @@
-export function buildCardNewsPlannerMessages(input: any = {}) {
-  const roleTemplate: any = input.roleTemplate || {};
-  const imageTemplate: any = input.imageTemplate || {};
+interface PlannerRoleTemplate {
+  id?: string | undefined;
+  roles?: Array<{ role?: string | undefined; promptHint?: string | undefined; preferredSlots?: unknown[] | undefined }> | undefined;
+}
+
+interface PlannerImageTemplate {
+  id?: string | undefined;
+  name?: string | undefined;
+  stylePrompt?: string | undefined;
+  recommendedOutputSizes?: unknown[] | undefined;
+  slots?: unknown[] | undefined;
+  palette?: unknown[] | undefined;
+}
+
+export interface CardNewsPlannerInput {
+  topic?: string | undefined;
+  audience?: string | undefined;
+  goal?: string | undefined;
+  contentBrief?: string | undefined;
+  size?: string | undefined;
+  roleTemplate?: PlannerRoleTemplate | null | undefined;
+  imageTemplate?: PlannerImageTemplate | null | undefined;
+}
+
+export function buildCardNewsPlannerMessages(input: CardNewsPlannerInput = {}) {
+  const roleTemplate: PlannerRoleTemplate = input.roleTemplate || {};
+  const imageTemplate: PlannerImageTemplate = input.imageTemplate || {};
   return [
     {
       role: "developer",
@@ -45,7 +69,7 @@ export function buildCardNewsPlannerMessages(input: any = {}) {
         },
         roleTemplate: {
           id: roleTemplate.id,
-          roles: (roleTemplate.roles || []).map((role: any) => ({
+          roles: (roleTemplate.roles || []).map((role) => ({
             role: role.role,
             promptHint: role.promptHint,
             preferredSlots: role.preferredSlots || [],

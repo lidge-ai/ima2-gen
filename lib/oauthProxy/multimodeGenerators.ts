@@ -1,3 +1,6 @@
+import type { GenerateOptions } from "../providers/adapters/openaiTypes.js";
+import type { CodedError } from "../errInfo.js";
+import type { UpstreamErr } from "../generationErrors.js";
 import { setJobPhase } from "../inflight.js";
 import { logEvent } from "../logger.js";
 import { compressReferenceB64ForOAuth } from "../referenceImageCompress.js";
@@ -25,7 +28,7 @@ import {
   summarizeEventTypes,
   waitForOAuthReady,
 } from "./runtime.js";
-import { readImageStream, readMultimodeImageStream } from "./streams.js";
+import { readImageStream, readMultimodeImageStream, type OAuthResponsesJson } from "./streams.js";
 import { config } from "../../config.js";
 
 const RESEARCH_SUFFIX = config.oauth.researchSuffix;
@@ -39,7 +42,7 @@ export async function generateMultimodeViaOAuth(
   requestId: string | null = null,
   mode: string = "auto",
   ctx: RouteRuntimeContext = {},
-  options: any = {},
+  options: GenerateOptions = {},
 ) {
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
@@ -93,7 +96,7 @@ export async function generateMultimodeViaOAuth(
     const res = await fetchOAuth(`${oauthUrl}/v1/responses`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-      signal: options.signal || timeout.signal,
+      signal: options.signal || timeout.signal || null,
       body: JSON.stringify({
         model,
         input: [
@@ -127,8 +130,8 @@ export async function generateMultimodeViaOAuth(
     if (requestId) setJobPhase(requestId, "streaming");
     const contentType = res.headers.get("content-type") || "";
     if (!contentType.includes("text/event-stream")) {
-      const json: any = await res.json();
-      const images: Array<{ b64: any; revisedPrompt: any }> = [];
+      const json = await res.json() as OAuthResponsesJson;
+      const images: Array<{ b64: string; revisedPrompt: string | null }> = [];
       for (const item of json.output || []) {
         if (item.type === "image_generation_call" && item.result && images.length < maxImages) {
           images.push({
@@ -171,12 +174,12 @@ export async function generateMultimodeViaOAuth(
   }
 }
 
-export async function editViaOAuth(prompt: string, imageB64: string, quality: string, size: string, moderation: string = "low", mode: string = "auto", ctx: RouteRuntimeContext = {}, requestId: string | null = null, options: any = {}) {
+export async function editViaOAuth(prompt: string, imageB64: string, quality: string, size: string, moderation: string = "low", mode: string = "auto", ctx: RouteRuntimeContext = {}, requestId: string | null = null, options: GenerateOptions = {}) {
   await waitForOAuthReady(ctx);
   const maskPresent = typeof options.mask === "string" && options.mask.length > 0;
   if (maskPresent && !ctx.config?.oauth?.maskedEditEnabled) {
     logEvent("oauth-edit", "mask_unsupported", { requestId, maskPresent: true });
-    const err: any = new Error("Masked edit is not supported by the current OAuth image provider");
+    const err: CodedError = new Error("Masked edit is not supported by the current OAuth image provider");
     err.status = 400;
     err.code = "EDIT_MASK_NOT_SUPPORTED";
     throw err;
@@ -184,7 +187,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
   if (maskPresent) {
     // TODO(#31): enable upstream mask payload after STEP-0 verification
     logEvent("oauth-edit", "mask_unsupported", { requestId, maskPresent: true });
-    const err: any = new Error("Masked edit is not supported by the current OAuth image provider");
+    const err: CodedError = new Error("Masked edit is not supported by the current OAuth image provider");
     err.status = 400;
     err.code = "EDIT_MASK_NOT_SUPPORTED";
     throw err;
@@ -199,7 +202,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
   });
   const references = Array.isArray(options.references) ? options.references : [];
   const referenceImagesForRequest = await Promise.all(
-    references.map((ref: OAuthReferenceRef) =>
+    references.map((ref) =>
       compressReferenceB64ForOAuth(typeof ref === "string" ? ref : ref?.b64, {
         maxB64Bytes: ctx.config?.limits?.maxRefB64Bytes,
         force: true,
@@ -282,7 +285,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
       ...summarizeEventTypes(eventTypes),
     });
     if (resultB64) return { b64: resultB64, usage, revisedPrompt, webSearchCalls };
-    const emptyErr: any = new Error("No image data received from OAuth edit");
+    const emptyErr: Error & UpstreamErr & { parentImagePresent?: boolean } = new Error("No image data received from OAuth edit");
     emptyErr.eventCount = eventCount;
     emptyErr.eventTypes = eventTypes;
     emptyErr.size = size;

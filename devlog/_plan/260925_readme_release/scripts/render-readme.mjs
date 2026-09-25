@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 
 const [mdPath = "../README.md", outPrefix = "/tmp/ima2-readme-render"] = process.argv.slice(2);
 const md = resolve(mdPath);
-const html = execFileSync("gh", ["api", "markdown", "-f", "mode=gfm", "-f", "context=lidge-jun/ima2-gen", "-F", `text=@${md}`], { encoding: "utf8", maxBuffer: 1 << 26 });
+const html = execFileSync("gh", ["api", "markdown", "-f", "mode=gfm", "-f", "context=lidge-ai/ima2-gen", "-F", `text=@${md}`], { encoding: "utf8", maxBuffer: 1 << 26 });
 const { chromium } = createRequire(join(process.cwd(), "package.json"))("playwright");
 const browser = await chromium.launch();
 for (const theme of ["light", "dark"]) {

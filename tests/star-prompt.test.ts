@@ -38,7 +38,7 @@ describe("star prompt", () => {
 
     assert.deepStrictEqual(result, { ok: true });
     assert.strictEqual(seenCommand, "gh");
-    assert.deepStrictEqual(seenArgs, ["api", "-X", "PUT", "/user/starred/lidge-jun/ima2-gen"]);
+    assert.deepStrictEqual(seenArgs, ["api", "-X", "PUT", "/user/starred/lidge-ai/ima2-gen"]);
     assert.strictEqual(seenOptions.windowsHide, true);
   });
 

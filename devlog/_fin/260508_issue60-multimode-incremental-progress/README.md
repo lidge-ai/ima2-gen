@@ -1,7 +1,7 @@
 # Issue #60 - Multimode 4-image progress and partial output recovery
 
-**GitHub**: https://github.com/lidge-jun/ima2-gen/issues/60  
-**Repo**: https://github.com/lidge-jun/ima2-gen  
+**GitHub**: https://github.com/lidge-ai/ima2-gen/issues/60  
+**Repo**: https://github.com/lidge-ai/ima2-gen  
 **Status**: completed / moved to _fin  
 **Date**: 2026-05-08  
 **Scope**: frontend + backend + contract tests  
@@ -629,7 +629,7 @@ catch-path generated?.* reads with pre-await route-local accumulators.
 Required review question:
 
 ```text
-Given https://github.com/lidge-jun/ima2-gen and issue #60, review the diff-level
+Given https://github.com/lidge-ai/ima2-gen and issue #60, review the diff-level
 plan in this file. Is the proposed frontend multimode inflight polling and
 backend onFinalImage incremental save/send design correct? Reply PASS or
 NEEDS_FIX first, then list only blocker-level corrections.

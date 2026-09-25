@@ -3,6 +3,7 @@ import type { ParsedResponsesResult } from "./responsesParse.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { imageToolChoice, tools } from "./responsesTools.js";
 import { emptyResponseError } from "./responsesErrors.js";
+import { thrownFields } from "./errInfo.js";
 import {
   GENERATE_DEVELOPER_PROMPT,
   GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
@@ -139,7 +140,7 @@ export async function retryPromptOnlyJsonImage({
         if (e && typeof e === "object") Object.assign(e, retryMeta);
         throw e;
       }
-      logEvent("oauth", "retry_error", { requestId, attempt, error: (e as Error).message, status: (e as any).status, code: (e as any).code });
+      logEvent("oauth", "retry_error", { requestId, attempt, error: (e as Error).message, status: thrownFields(e).status, code: thrownFields(e).code });
       continue;
     }
     const image = lastRetry.images[0];

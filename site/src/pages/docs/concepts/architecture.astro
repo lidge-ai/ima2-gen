@@ -3,20 +3,20 @@ import DocsLayout from '../../../layouts/DocsLayout.astro';
 import { docsPath } from '../../../i18n/docs';
 
 const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
-const gh = 'https://github.com/lidge-jun/ima2-gen/blob/main';
+const gh = 'https://github.com/lidge-ai/ima2-gen/blob/main';
 ---
 
 <DocsLayout
   lang="en"
   active="concepts/architecture"
   title="Architecture"
-  description="How ima2-gen fits together — CLI and web UI call a local Express server that delegates to route modules, a local OAuth proxy, SQLite, and the generated-image directory."
+  description="How ima2-gen fits together — CLI and web UI call a local Express server that delegates to route modules, an in-process GPT OAuth client, SQLite, and the generated-image directory."
 >
   <p class="docs-eyebrow">Concepts</p>
   <h1>Architecture</h1>
   <p class="lead">
     ima2-gen is a combined image-generation CLI and web UI. Both call <code>/api/*</code> endpoints
-    on a local Express server that delegates to route modules, a local OAuth proxy, SQLite, and your
+    on a local Express server that delegates to route modules, an in-process GPT OAuth client, SQLite, and your
     generated-image directory.
   </p>
 
@@ -25,13 +25,13 @@ const gh = 'https://github.com/lidge-jun/ima2-gen/blob/main';
 Web UI (ui/dist, served)          ──┼──→ server.ts ──→ routes/*
                                     │                     │
                                     │           lib/*  (storage, sessions, inflight, metadata)
-                                    │           openai-oauth  (OpenAI OAuth proxy)
+                                    │           lib/codexBackend  (GPT OAuth → ChatGPT)
                                     │           lib/xaiAuth.ts  (xAI OAuth session)
                                     │           ~/.ima2/generated  (images + sidecars)
                                     └────────── better-sqlite3  (sessions + graph)</code></pre>
   <p>
     The runtime path is intentionally direct. CLI commands and the browser call the same endpoints;
-    the server sends image requests through the OAuth proxy, the API-key Responses path, or a direct
+    the server sends image requests to ChatGPT through its GPT OAuth client, the API-key Responses path, or a direct
     call to <code>api.x.ai</code> for Grok/xAI Images API, saves files under the configured generated
     directory, and persists graph sessions in SQLite.
   </p>
@@ -42,7 +42,7 @@ Web UI (ui/dist, served)          ──┼──→ server.ts ──→ routes/
     <tbody>
       <tr><td><code>server.ts</code></td><td>Express bootstrap; registers routes. Paired runtime artifact <code>server.js</code>.</td></tr>
       <tr><td><code>routes/*</code></td><td>API surfaces: capabilities, events (SSE multiplex), generate, edit, multimode, nodes, sessions, history, imageImport, health, storage, metadata, annotations, canvasVersions, comfy, prompts, promptImport, keys, auth, quota, grok, agy, the always-on agent (Agent Mode) and promptBuilder routes, video, and dev-gated cardNews.</td></tr>
-      <tr><td><code>lib/*</code></td><td>Storage, OAuth proxy, logging, sessions, inflight state, eventBus (pub/sub ring buffer for SSE multiplexing), ssePublish (cancel-done race guard), image metadata embed/restore, prompt-library SQLite, reference compression, canvas-version store, soft-delete trash.</td></tr>
+      <tr><td><code>lib/*</code></td><td>Storage, GPT OAuth client, logging, sessions, inflight state, eventBus (pub/sub ring buffer for SSE multiplexing), ssePublish (cancel-done race guard), image metadata embed/restore, prompt-library SQLite, reference compression, canvas-version store, soft-delete trash.</td></tr>
       <tr><td><code>bin/*</code></td><td>CLI dispatcher and client commands — near-complete parity with the server API. Agent Mode is the intentional web-UI-only exception; prompt builder uses <code>ima2 prompt build</code>.</td></tr>
       <tr><td><code>ui/src/*</code></td><td>React UI, React Flow node mode, Canvas Mode, the Agent Mode workspace (<code>components/agent/*</code>), mobile shell, prompt-library panel.</td></tr>
     </tbody>

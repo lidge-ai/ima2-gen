@@ -1,12 +1,13 @@
 import type { AgentGenerationSettings } from "../components/agent/agentTypes";
 import { MAX_GENERATION_COUNT } from "./generationLimits";
+import { DEFAULT_IMAGE_MODEL } from "./imageModels";
 
 export const MAX_AGENT_VARIANTS = MAX_GENERATION_COUNT;
 export const MAX_AGENT_PARALLELISM = MAX_GENERATION_COUNT;
 
 export const DEFAULT_AGENT_GENERATION_SETTINGS: AgentGenerationSettings = {
   provider: "oauth",
-  model: "gpt-5.6-luna",
+  model: DEFAULT_IMAGE_MODEL,
   quality: "medium",
   size: "1024x1024",
   format: "png",

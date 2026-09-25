@@ -1,7 +1,7 @@
 import { copyFile, mkdir } from "node:fs/promises";
 import { join, dirname, basename, isAbsolute } from "node:path";
 import { config } from "../../config.js";
-import { request } from "./client.js";
+import { request, type HistoryListResponse, type InflightListResponse } from "./client.js";
 import { exitCodeForError } from "./output.js";
 
 export type RecoverOutputTarget = {
@@ -74,9 +74,9 @@ async function tryTerminalRecovery(
   requestId: string,
   target: RecoverOutputTarget,
 ): Promise<RecoverOutputResult | null> {
-  const inflight = await request(base, "/api/inflight?includeTerminal=1");
-  const jobs = Array.isArray(inflight.jobs) ? (inflight.jobs as any[]) : [];
-  const terminalJobs = Array.isArray(inflight.terminalJobs) ? (inflight.terminalJobs as any[]) : [];
+  const inflight = await request<InflightListResponse>(base, "/api/inflight?includeTerminal=1");
+  const jobs = Array.isArray(inflight.jobs) ? inflight.jobs : [];
+  const terminalJobs = Array.isArray(inflight.terminalJobs) ? inflight.terminalJobs : [];
 
   const activeMatch = jobs.find((j) => j.requestId === requestId);
   if (activeMatch) {
@@ -105,8 +105,8 @@ async function tryHistoryRecovery(
   target: RecoverOutputTarget,
 ): Promise<RecoverOutputResult | null> {
   const limit = expectedRecoveryCount(target);
-  const hist = await request(base, `/api/history?limit=${limit}&requestId=${encodeURIComponent(requestId)}`);
-  const items = Array.isArray(hist.items) ? (hist.items as any[]) : [];
+  const hist = await request<HistoryListResponse>(base, `/api/history?limit=${limit}&requestId=${encodeURIComponent(requestId)}`);
+  const items = Array.isArray(hist.items) ? hist.items : [];
   const filenames = items
     .filter((it) => it.requestId === requestId && typeof it.filename === "string")
     .map((it) => String(it.filename))

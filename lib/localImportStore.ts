@@ -1,3 +1,4 @@
+import type { CodedError } from "./errInfo.js";
 import type { RuntimeContext } from "./runtimeContext.js";
 import { mkdir, writeFile } from "fs/promises";
 import { basename, join, normalize } from "path";
@@ -28,7 +29,7 @@ function ensureInsideGeneratedDir(generatedDir: string, filename: string) {
   const full = normalize(join(generatedDir, filename));
   const root = normalize(generatedDir);
   if (!full.startsWith(root)) {
-    const err: any = new Error("Imported path escapes generated directory");
+    const err: CodedError = new Error("Imported path escapes generated directory");
     err.status = 400;
     err.code = "IMPORT_PATH_ESCAPE";
     throw err;
@@ -50,14 +51,14 @@ function safeOriginalName(input: unknown) {
 
 export async function createLocalImport(ctx: RuntimeContext, { buffer, originalFilename }: { buffer: Buffer; originalFilename?: string | null }) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
-    const err: any = new Error("Image body is required");
+    const err: CodedError = new Error("Image body is required");
     err.status = 400;
     err.code = "EMPTY_IMPORT";
     throw err;
   }
   const format = detectFormat(buffer);
   if (!format) {
-    const err: any = new Error("Only PNG, JPEG, or WebP is supported");
+    const err: CodedError = new Error("Only PNG, JPEG, or WebP is supported");
     err.status = 400;
     err.code = "IMPORT_BAD_FORMAT";
     throw err;

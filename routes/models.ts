@@ -112,7 +112,7 @@ function lane(
 
 function oauthLane(ctx: RuntimeContext, image: McpModelEntry[]): ModelLaneDto {
   const ready = ctx.oauthReadyState === "ready";
-  const reason = ready ? undefined : `oauth proxy ${ctx.oauthReadyState ?? "not ready"}`;
+  const reason = ready ? undefined : `GPT OAuth ${ctx.oauthReadyState ?? "not ready"}`;
   return lane(
     { status: ready ? "ready" : "disconnected", ...(reason ? { reason } : {}) },
     { image: ctx.config.imageModels.default },

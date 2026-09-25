@@ -1,6 +1,7 @@
 import { parseArgs, type ParsedArgs } from "../lib/args.js";
-import { resolveServer, request } from "../lib/client.js";
+import { resolveServer, request, type JsonRecord } from "../lib/client.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
+import { errInfo } from "../../lib/errInfo.js";
 import { config as runtimeConfig } from "../../config.js";
 
 const HELP = `
@@ -45,10 +46,10 @@ function ensureCardNewsEnabled() {
 
 async function getServer(args: ParsedArgs) {
   try { return await resolveServer({ serverFlag: args.server }); }
-  catch (e: any) { die(exitCodeForError(e), e.message); throw e; }
+  catch (e) { die(exitCodeForError(e), errInfo(e).message); }
 }
 
-function parseData(raw: unknown): any {
+function parseData(raw: unknown): unknown {
   if (!raw) return {};
   if (typeof raw !== "string") return {};
   try { return JSON.parse(raw); }
@@ -170,7 +171,7 @@ async function jobRetrySub(argv: string[]) {
   if (!jobId) die(2, "jobId required");
   ensureCardNewsEnabled();
   const server = await getServer(args);
-  const body: any = {};
+  const body: JsonRecord = {};
   if (args.cards) body.cardIds = String(args.cards).split(",").map((s: string) => s.trim()).filter(Boolean);
   const resp = await request(server.base, `/api/cardnews/jobs/${encodeURIComponent(jobId)}/retry`, { method: "POST", body })
     .catch((e) => die(exitCodeForError(e), e.message));
@@ -205,7 +206,7 @@ async function exportSub(argv: string[]) {
   if (resp && typeof resp === "object" && Object.keys(resp).length > 0) out(JSON.stringify(resp, null, 2));
 }
 
-type Sub = (argv: any[]) => Promise<void>;
+type Sub = (argv: string[]) => Promise<void>;
 
 export default async function cardnewsCmd(argv: string[]) {
   const sub = argv[0];

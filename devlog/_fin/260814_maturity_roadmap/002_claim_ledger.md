@@ -24,7 +24,7 @@ tags: [ima2-gen, devlog, research, evidence]
 | C-02 | 릴리스 컷도 실패했다 (평가서 미언급, 우리가 추가) | verified | release run `31604716464` failure. `assert-clean`이 `M ui/tsconfig.node.tsbuildinfo` 검출 |
 | C-03 | GitHub Actions가 SHA로 고정돼 있다 | **partial** | 대부분 40자 SHA다(`.github/workflows/publish.yml` 50행 등). 그러나 `.github/workflows/nix.yml:18`의 `cachix/install-nix-action@v30`은 태그다. `090`이 이 한 건을 다룬다 |
 | C-04 | SBOM과 릴리스 매니페스트가 있다 | verified | `.github/workflows/publish.yml` 107행 "Upload tested package, manifest, and SBOM" |
-| C-05 | 저장소 크기가 약 358MiB다 | verified | `gh api repos/lidge-jun/ima2-gen` → `size` = 367028 KB ≈ 358.4 MiB |
+| C-05 | 저장소 크기가 약 358MiB다 | verified | `gh api repos/lidge-ai/ima2-gen` → `size` = 367028 KB ≈ 358.4 MiB |
 | C-06 | `SECURITY.md`, `CODEOWNERS`, `CONTRIBUTING.md`가 없다 | verified | 저장소 루트와 `.github/`에 없음. `.github/`에는 `workflows/`만 존재 |
 
 ## 코드·아키텍처
