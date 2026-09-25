@@ -13,6 +13,7 @@ import { collectTraySnapshot } from "./lib/tray-data.mjs";
 import { createLoginItem } from "./lib/login-item.mjs";
 import { installApplicationMenu } from "./lib/menu.mjs";
 import { installContextMenus } from "./lib/context-menu.mjs";
+import { installPopupPolicy } from "./lib/window-open.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
 import { wireAppLifecycle } from "./lib/app-lifecycle.mjs";
 import { createUpdaterController } from "./lib/updater.mjs";
@@ -99,6 +100,7 @@ async function boot() {
   tray.update({ settings: settingsStore.get() });
   installApplicationMenu(actions);
   installContextMenus({ app, Menu, clipboard, dialog, shell });
+  installPopupPolicy({ app, shell, getServerUrl: () => supervisor.url });
   registerIpc({ settingsStore, supervisor, actions, info: { rootDir, logFile: supervisor.logFile } });
 
   supervisor.on("status", (status) => {

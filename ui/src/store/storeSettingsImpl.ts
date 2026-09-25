@@ -170,7 +170,7 @@ async function runMcpGenerate(get: StoreGet): Promise<void> {
       mcpReferenceSelection: prepared.selection, currentImageFilename: state.currentImage?.filename ?? null,
       mcpCharacterElementId: state.mcpCharacterElementId ?? null,
       ...(elementReferences.length > 0 ? { elementReferences } : {}),
-    }, prompt, `mcp_ui_${Date.now()}`);
+    }, prompt, `mcp_ui_${crypto.randomUUID()}`);
     if (!input) return;
     await submitMcpGeneration(input, get, Boolean(tempBatchId));
   } catch (error) {

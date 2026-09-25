@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { jsonFetch, jsonGetObservation } from "./api-core";
-import { armStreamTimeout, subscribe } from "./eventChannel";
+import { armStreamTimeout, subscribe, whenConnected } from "./eventChannel";
 import { parseSseErrorPayload } from "./sseStreamError";
 
 export type McpConnectionState =
@@ -266,7 +266,7 @@ export async function startMcpGeneration(
   input: McpGenerateInput,
   callbacks: McpJobCallbacks,
 ): Promise<string> {
-  const requestId = input.requestId ?? `mcp_ui_${Date.now()}`;
+  const requestId = input.requestId ?? `mcp_ui_${crypto.randomUUID()}`;
   const stopWatching = watchMcpJob(requestId, callbacks);
   try {
     const providers = await listMcpProviders();
@@ -276,6 +276,11 @@ export async function startMcpGeneration(
       error.code = selected ? "MCP_NOT_CONNECTED" : "MCP_PROVIDER_UNKNOWN";
       throw error;
     }
+    // Await SSE transport open immediately before submitting (same guard as
+    // videoExtendStream): on a fresh connection a terminal job event emitted
+    // before the server-side subscription is installed would be lost, hanging
+    // the job until MCP_STREAM_TIMEOUT.
+    await whenConnected();
     await jsonFetch<{ ok: boolean; requestId: string }>("/api/mcp/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

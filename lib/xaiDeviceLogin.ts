@@ -21,6 +21,8 @@ const MIN_POLL_INTERVAL_SECONDS = 5;
 const SLOW_DOWN_STEP_MS = 5_000;
 const DEVICE_REQUEST_TIMEOUT_MS = 15_000;
 const TOKEN_REQUEST_TIMEOUT_MS = 10_000;
+/** Consecutive transport/5xx poll failures tolerated before the login gives up. */
+const MAX_CONSECUTIVE_POLL_FAILURES = 3;
 
 export interface XaiDeviceCodeInfo {
   userCode: string;
@@ -48,7 +50,8 @@ interface DeviceCodeGrant {
 type PollOutcome =
   | { kind: "token"; payload: Record<string, unknown> }
   | { kind: "pending" }
-  | { kind: "slow_down" };
+  | { kind: "slow_down" }
+  | { kind: "retryable"; status?: number };
 
 interface PollDeps {
   doFetch: typeof fetch;
@@ -110,10 +113,18 @@ async function requestDeviceCode(
 }
 
 async function pollTokenOnce(tokenEndpoint: string, deviceCode: string, deps: PollDeps): Promise<PollOutcome> {
-  const response = await deps.doFetch(tokenEndpoint, {
-    ...formEncoded({ grant_type: DEVICE_CODE_GRANT, client_id: XAI_OAUTH_CLIENT_ID, device_code: deviceCode }),
-    signal: requestSignal(deps.signal, TOKEN_REQUEST_TIMEOUT_MS),
-  });
+  let response: Response;
+  try {
+    response = await deps.doFetch(tokenEndpoint, {
+      ...formEncoded({ grant_type: DEVICE_CODE_GRANT, client_id: XAI_OAUTH_CLIENT_ID, device_code: deviceCode }),
+      signal: requestSignal(deps.signal, TOKEN_REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (deps.signal?.aborted) throw error;
+    // A reset or one timed-out poll must not kill an interactive login the user is
+    // still completing; the caller tolerates a few consecutive failures.
+    return { kind: "retryable" };
+  }
   if (response.ok) return { kind: "token", payload: (await response.json()) as Record<string, unknown> };
   const raw = await response.text();
   let oauthError: string | undefined;
@@ -125,6 +136,7 @@ async function pollTokenOnce(tokenEndpoint: string, deviceCode: string, deps: Po
   }
   if (oauthError === "authorization_pending") return { kind: "pending" };
   if (oauthError === "slow_down") return { kind: "slow_down" };
+  if (response.status === 429 || response.status >= 500) return { kind: "retryable", status: response.status };
   throw new Error(`xAI device login failed: ${oauthError ?? `HTTP ${response.status}`}`);
 }
 
@@ -141,12 +153,23 @@ async function pollUntilAuthorized(
   const deadlineMs = grant.expiresIn * 1000;
   let intervalMs = Math.max(grant.intervalSeconds, MIN_POLL_INTERVAL_SECONDS) * 1000;
   let sleptMs = 0;
+  let consecutiveFailures = 0;
+  let lastFailureStatus: number | undefined;
   while (Math.max(Date.now() - startedAt, sleptMs) < deadlineMs) {
     await deps.sleep(intervalMs);
     sleptMs += intervalMs;
     if (deps.signal?.aborted) throw new Error("xAI device login was aborted");
     const outcome = await pollTokenOnce(tokenEndpoint, grant.deviceCode, deps);
     if (outcome.kind === "token") return outcome.payload;
+    if (outcome.kind === "retryable") {
+      consecutiveFailures += 1;
+      if (outcome.status !== undefined) lastFailureStatus = outcome.status;
+      if (consecutiveFailures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+        throw new Error(`xAI device login failed: the token endpoint kept failing (last: HTTP ${lastFailureStatus ?? "network"})`);
+      }
+      continue;
+    }
+    consecutiveFailures = 0;
     if (outcome.kind === "slow_down") intervalMs += SLOW_DOWN_STEP_MS;
   }
   throw new Error("xAI device login expired before it was approved");
