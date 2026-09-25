@@ -24,7 +24,7 @@ Local image generation studio — CLI + 웹 UI
 - Runtime: Node.js ES Module; package engine is shown in the generated table above
 - Server: Express 5
 - API Client: OpenAI SDK range is rendered in the runtime-install contract above
-- OAuth: openai-oauth (ChatGPT 세션 프록시)
+- GPT OAuth: in-process Codex backend client (`lib/codexBackend`); GPT-6 plans, gpt-image-2 renders
 - Grok: xAI OAuth (device code) 또는 API key, api.x.ai 직접 호출
 - Gemini: Google Generative Language API / Vertex AI
 - Frontend: React + Vite (`ui/src`, built to `ui/dist`)

@@ -60,7 +60,7 @@ and shares the app API request budget. Respect `Retry-After` on 429; a full
 
 Image generation supports OAuth, API-key, Grok, and Gemini (`agy` and `gemini-api`) providers.
 
-- `provider: "oauth"` uses the local Codex OAuth proxy.
+- `provider: "oauth"` calls ChatGPT's Codex backend from the server: a GPT-6 model plans the prompt and `gpt-image-2` renders it.
 - `provider: "api"` uses the OpenAI Responses API with the hosted `image_generation` tool.
 - `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session in `~/.progrok/auth.json`. Classic, Node and multimode image generation honor `webSearchEnabled: false` (Node also honors `searchMode: "off"`): this skips `/v1/responses` search, not the configured planner's forced `generate_image` call. Planner default is `grok-4.3`; `grok-4.6` and `grok-4.5` remain selectable overrides. References select `/v1/images/edits` instead of `/v1/images/generations`. Agent's omitted-option search default is unchanged.
 - `provider: "agy"` spawns the Antigravity CLI (`agy -p`) to generate images via Google Gemini's `default_api:generate_image` tool. Model is `nano-banana-2`. Output is fixed at 1024×1024 JPEG. Max 3 reference images (i2i). No web search, quality, size, or mask controls. Multimode returns a single image. Video is unsupported (`AGY_VIDEO_UNSUPPORTED`).
@@ -151,7 +151,7 @@ inventing a runtime `lanes` availability result.
 | `GET` | `/api/health` | Server health, version, paths, provider policy; includes `grok: { auth: "oauth" \| "none" }`, mirrored in `~/.ima2/server.json` |
 | `POST` | `/api/admin/stop` | Clean shutdown (local admin only): requires the boot-generated `X-Ima2-Admin-Nonce` from `~/.ima2/server.json`; any request with an `Origin` header is refused (browser drive-by protection). Responds `202` then self-signals SIGTERM |
 | `GET` | `/api/providers` | Provider availability and runtime ports |
-| `GET` | `/api/oauth/status` | OAuth proxy status and visible models, plus `auth` / `grokAuth` login verdicts: `{ provider, loggedIn, health: healthy\|warning\|reauth_required\|not_logged_in, reason?, source?, email?, plan?, accountId (masked), expiresAt?, refreshable, action?, note? }`. A proxy that exited because no session file exists reports `auth_required`. |
+| `GET` | `/api/oauth/status` | GPT OAuth status and visible models, plus `auth` / `grokAuth` login verdicts: `{ provider, loggedIn, health: healthy\|warning\|reauth_required\|not_logged_in, reason?, source?, email?, plan?, accountId (masked), expiresAt?, refreshable, action?, note? }`. A proxy that exited because no session file exists reports `auth_required`. |
 | `GET` | `/api/grok/status` | xAI OAuth session state and visible xAI image models: `ready`, `no_image_model`, `error`, or `offline` with `reason: "login_required"` when no session is stored |
 | `GET` | `/api/billing` | Billing/status probe, including API key source when configured |
 | `GET` | `/api/quota` | Provider quota: returns `{ codex, grok, nai }`. Codex windows are `5h` and `7d`. NovelAI returns a `v5-battery` remaining-charge window when available (`resetsAt` is the ISO ETA for +1%, not full recharge), with Anlas balances in `nai.anlasFixed` / `nai.anlasPurchased`; a missing meter has no window. NovelAI account email is always null. Eligible Grok Build xAI OIDC/external auth returns a `weekly` percentage/reset window from `GET /v1/billing?format=credits`. If unavailable, the legacy endpoint may return a `monthly` window plus `billing: { usedUsd, limitUsd }`. |
@@ -160,10 +160,10 @@ inventing a runtime `lanes` availability result.
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/api/auth/switch` | Start an OAuth login. Body: `{ "provider": "grok" \| "codex", "flow"?: "browser" \| "device" }`. `codex` defaults to the browser flow (callback on `localhost:1455`, so the browser must be on the server machine); `device` works from any machine. Grok always uses the device code. Returns `{ sessionId, flow, userCode, verificationUrl, expiresIn }`; `userCode` is empty for the browser flow. A completed `codex` login restarts the GPT OAuth proxy. |
+| `POST` | `/api/auth/switch` | Start an OAuth login. Body: `{ "provider": "grok" \| "codex", "flow"?: "browser" \| "device" }`. `codex` defaults to the browser flow (callback on `localhost:1455`, so the browser must be on the server machine); `device` works from any machine. Grok always uses the device code. Returns `{ sessionId, flow, userCode, verificationUrl, expiresIn }`; `userCode` is empty for the browser flow. A completed `codex` login restarts the GPT GPT OAuth. |
 | `GET` | `/api/auth/switch/:sessionId` | Poll switch-account session status. Returns `{ status }` where status is `pending`, `complete`, `error`, or `expired`. |
 | `DELETE` | `/api/auth/switch/:sessionId` | Cancel a pending login and release its callback port. |
-| `POST` | `/api/oauth/restart` | Respawn the GPT OAuth proxy so it reads the current session file (used by `ima2 login` / `ima2 gpt login` / `ima2 gpt logout`). Returns `{ restarted, reason? }`. |
+| `POST` | `/api/oauth/restart` | Make GPT OAuth pick up the current session file (it re-reads the file on every request; this clears the cached model roster) (used by `ima2 login` / `ima2 gpt login` / `ima2 gpt logout`). Returns `{ restarted, reason? }`. |
 
 The Switch Account flow opens a browser verification URL. Once the user completes the device-code step, the server saves the new credentials (Grok: `~/.progrok/auth.json`; Codex: via `codex login --device-auth`) and the session transitions to `complete`. This endpoint is surfaced as a **Switch Account** button in the Settings QuotaCard for Grok and Codex providers.
 
@@ -347,7 +347,7 @@ Supported moderation values: `auto`, `low`.
 When `storyboard` is `true`, the server prepends storyboard keyframe instructions so image
 generations maintain character and scene continuity for multi-shot video production.
 
-Current app default: `gpt-5.6-luna`. `gpt-5.5` and the other supported GPT image models remain available when callers explicitly select them.
+GPT OAuth default: `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier). API-key default: `gpt-5.6-luna`; `gpt-5.5` and the other API models remain available when callers select them.
 
 When `provider` is `"nai"`, classic, multimode, and node generation accept the
 same 13 provider-native fields: `negativePrompt`, `sampler`, `noiseSchedule`,
@@ -928,7 +928,7 @@ The studio's one-time star prompt stars the repository with the user's own `gh` 
 | `AUTH_CHATGPT_EXPIRED` | Codex/ChatGPT OAuth session expired |
 | `AUTH_API_KEY_INVALID` | API key is invalid, revoked, out of quota, or wrong org |
 | `NETWORK_FAILED` | Network, proxy, VPN, or firewall failure |
-| `OAUTH_UNAVAILABLE` | Local OAuth proxy is not available |
+| `OAUTH_UNAVAILABLE` | GPT OAuth is not available |
 | `OPEN_GENERATED_DIR_FAILED` | The server could not open the generated image folder |
 | `GRAPH_VERSION_REQUIRED` | Missing graph `If-Match` header |
 | `GRAPH_VERSION_CONFLICT` | Stale graph version |

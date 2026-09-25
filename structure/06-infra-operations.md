@@ -39,11 +39,11 @@ with synthetic providers/credentials. The fixture keeps actual binds loopback an
 unchanged child egress/filesystem/process restrictions. See docs/API.md and CLI.md
 for user contracts; no private state or credential is part of runtime receipts.
 
-`ima2-gen` operates as an npm package, local Node server, OAuth proxy, SQLite-backed graph store, image file store, and React build artifact. Users see one CLI, but internally the server, UI bundle, local config, runtime port discovery, and runtime data move together.
+`ima2-gen` operates as an npm package, local Node server with an in-process GPT OAuth client, SQLite-backed graph store, image file store, and React build artifact. Users see one CLI, but internally the server, UI bundle, local config, runtime port discovery, and runtime data move together.
 
 This document matters because development mode and packaged mode take different paths. Developers run `npm run dev`, which builds the UI and launches the watched server. Users run `ima2 serve`, which checks for `ui/dist` and starts the server. Node mode is enabled in both paths by default. CLI clients read `~/.ima2/server.json` to find the running server. Config and generated data are split between the repo and the user's home directory.
 
-For operations work, choose the layer first. Auth and provider changes touch config and the OAuth proxy. Release work touches `package.json`, `files`, and `prepublishOnly`. Test work touches `scripts/run-tests.mjs` and `tests/*.test.{js,ts,mjs,cjs,mts,cts}`. UI build work touches `ui/package.json` and `ui/dist`.
+For operations work, choose the layer first. Auth and provider changes touch config and the GPT OAuth client (`lib/codexBackend`). Release work touches `package.json`, `files`, and `prepublishOnly`. Test work touches `scripts/run-tests.mjs` and `tests/*.test.{js,ts,mjs,cjs,mts,cts}`. UI build work touches `ui/package.json` and `ui/dist`.
 
 ---
 
@@ -57,7 +57,7 @@ graph TD
     SRV --> DIST["ui/dist"]
     SRV --> GEN["~/.ima2/generated"]
     SRV --> DB["SQLite via better-sqlite3"]
-    SRV --> OAUTH["openai-oauth<br/>default port 10531"]
+    SRV --> OAUTH["lib/codexBackend<br/>chatgpt.com/backend-api/codex"]
     SRV --> XAI["api.x.ai<br/>OAuth bearer / API key"]
     SRV --> ENV["env vars"]
     SRV --> ADV["actual runtime URLs<br/>~/.ima2/server.json"]
@@ -73,9 +73,9 @@ graph TD
 | bin | `ima2` -> `./bin/ima2.js` |
 | package engine | generated runtime-install table above; `package.json` is authoritative |
 | release toolchain | Node `24.17.0` from `.node-version`; npm `11.18.0` from `packageManager` |
-| publish files | `bin/**/*.js`, `lib/**/*.js`, `routes/**/*.js`, `skills/`, `ui/dist/`, `docs/`, `vendor/`, `assets/card-news/templates/`, `integrations/comfyui/ima2_gen_bridge/*`, `server.js`, `config.js`, `.env.example`, `README.md`, `CHANGELOG.md`, `LICENSE` |
-| bundled dependencies | patched `openai-oauth`, `zod` |
-| major dependencies | `@openai/codex`, `express`, `openai`, `openai-oauth`, `better-sqlite3`, `dotenv`, `sharp`, `trash`, `ulid`, `zod`; exact versions come from the package manifest and lockfile |
+| publish files | `bin/**/*.js`, `lib/**/*.js`, `routes/**/*.js`, `skills/`, `ui/dist/`, `docs/`, `assets/card-news/templates/`, `integrations/comfyui/ima2_gen_bridge/*`, `server.js`, `config.js`, `.env.example`, `README.md`, `CHANGELOG.md`, `LICENSE` |
+| bundled dependencies | `zod` |
+| major dependencies | `@openai/codex`, `express`, `openai`, `better-sqlite3`, `dotenv`, `sharp`, `trash`, `ulid`, `zod`; exact versions come from the package manifest and lockfile |
 
 README may still mention a different Node baseline. The operational baseline is the current `engines.node` field in `package.json`.
 
@@ -224,7 +224,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_NAI_DEFAULT_STEPS` / `IMA2_NAI_DEFAULT_SCALE` | NovelAI sampling defaults, `23` and `5` |
 | `IMA2_PORT` / `PORT` | Server preferred port, default `3333`; falls back to next free port when occupied |
 | `IMA2_HOST` | Server bind host, default `127.0.0.1` |
-| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | OAuth proxy preferred port, default `10531`; the actual ready URL is captured when the proxy falls back |
+| `IMA2_OAUTH_PROXY_PORT` / `OAUTH_PORT` | Port of the external GPT OAuth endpoint used with `IMA2_NO_OAUTH_PROXY=1`, default `10531` |
 | `IMA2_SERVER` | CLI target server URL override |
 | `IMA2_CONFIG_DIR` | Used by tests to isolate config directory |
 | `IMA2_MCP_PROVIDERS` | Comma-separated compiled MCP provider allowlist; defaults to `runway,higgsfield` |
@@ -232,7 +232,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_MCP_SNAPSHOT_DIR` | Sanitized MCP tool snapshot directory override |
 | `IMA2_ADVERTISE_FILE` | Overrides runtime discovery file path |
 | `VITE_IMA2_API_TARGET` / `IMA2_DEV_API_TARGET` | Split Vite dev API proxy target override |
-| `IMA2_IMAGE_MODEL_DEFAULT` | Server fallback image model, default `gpt-5.6-luna` |
+| `IMA2_IMAGE_MODEL_DEFAULT` | Server fallback GPT OAuth image model, default `gpt-6-luna` |
 | `IMA2_REASONING_EFFORT` | Server OAuth/default reasoning effort, default `medium` |
 | `IMA2_API_IMAGE_MODEL_DEFAULT` | Default image model for `provider: "api"` (Responses path), default `gpt-5.6-luna` |
 | `IMA2_API_REASONING_EFFORT` | Default reasoning effort for `provider: "api"`, default `low` |
@@ -254,7 +254,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_DEV` | Master dev gate; enables verbose logs and turns on `config.features.cardNews` |
 | `IMA2_CARD_NEWS` | Server feature flag for the dev-only card-news API surface; either this or `IMA2_DEV=1` mounts `routes/cardNews.js` |
 | `IMA2_CARD_NEWS_PLANNER` | Optional flag to enable LLM-backed card-news planning |
-| `IMA2_CARD_NEWS_PLANNER_MODEL` | Model used when the card-news planner is enabled, default `gpt-5.6-luna` |
+| `IMA2_CARD_NEWS_PLANNER_MODEL` | Model used when the card-news planner is enabled, default `gpt-6-luna` |
 | `IMA2_CARD_NEWS_PLANNER_TIMEOUT_MS` | Card-news planner request timeout |
 | `IMA2_CARD_NEWS_PLANNER_FALLBACK` | Switch for falling back to the deterministic planner when the LLM planner fails |
 | `IMA2_GENERATED_DIR` / `IMA2_GENERATED_DIRNAME` | Override the generated images directory (absolute path or directory name under `~/.ima2`) |
@@ -272,11 +272,12 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_GENERATED_HEX_BYTES` / `IMA2_NODE_HEX_BYTES` | Filename randomness for classic and node assets |
 | `IMA2_INFLIGHT_REAP_MS` | Inflight registry sweep interval |
 | `IMA2_OAUTH_STATUS_TIMEOUT_MS` | `/api/oauth/status` upstream timeout |
-| `IMA2_OAUTH_RESTART_DELAY_MS` | OAuth proxy restart cooldown |
-| `IMA2_NO_OAUTH_PROXY` | Disable the embedded OAuth proxy |
+| `IMA2_OAUTH_RESTART_DELAY_MS` | Legacy restart cooldown; unused by the in-process GPT OAuth client |
+| `IMA2_NO_OAUTH_PROXY` | Send GPT OAuth calls to an external OpenAI-compatible endpoint instead of ChatGPT |
+| `IMA2_CODEX_CLIENT_VERSION` | Codex client version sent to ChatGPT; default is the latest `@openai/codex` release, at least `0.157.0` |
 | `IMA2_RESEARCH_SUFFIX` | Optional suffix appended when research mode is on |
 | `IMA2_STYLE_SHEET_MAX_PREFIX` | Max characters of a session style sheet injected into the next prompt |
-| `IMA2_STYLE_MODEL` | Model used by `/api/sessions/:id/style-sheet/extract`, default `gpt-5.6-luna` |
+| `IMA2_STYLE_MODEL` | Model used by `/api/sessions/:id/style-sheet/extract`, default `gpt-6-luna` |
 | `IMA2_STATIC_MAX_AGE` | Static asset Cache-Control max-age |
 | `VITE_IMA2_DEV` | UI build-time dev flag; pairs with `VITE_IMA2_CARD_NEWS=1` to expose the dev-only card-news workspace in the bundle |
 
@@ -284,7 +285,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 
 Generation and edit endpoints support OAuth, API-key, Grok, Gemini, Atlas Cloud, MiniMax, NovelAI, and ComfyUI providers. `provider: "nai"` calls the NovelAI image API with a saved persistent token, decodes the returned ZIP archive to PNG, and is text-to-image only — references and edits are refused rather than downgraded. `provider: "api"` calls the OpenAI Responses API with the hosted `image_generation` tool and requires `OPENAI_API_KEY` or the configured API key path. `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session stored in `~/.progrok/auth.json`; classic, Node, and Agent generation perform mandatory xAI Web Search and then a `grok-4.5` custom-tool planner call before executing xAI Images API. xAI does not document OAuth access to `api.x.ai` — only `/v1/me` is documented as accepting an OAuth token — so this lane works today but carries no compatibility promise; `grok-api` with `XAI_API_KEY` remains the documented path. If Grok generation includes references, a Node parent image, or an Agent current image, those images are sent into the planner and the final image call uses xAI `/v1/images/edits` with the same references instead of the text-only generation endpoint. Grok Node requests are capped at three total input images, and Agent Grok turns force web search on because the planner depends on it.
 
-Runtime port fallback is intentional. If a preferred backend or OAuth proxy port is occupied, the server records the actual bound URL in `~/.ima2/server.json` and health/status responses. CLI clients and split Vite dev proxy resolution should consume that actual URL instead of reconstructing `localhost:${configuredPort}`.
+Runtime port fallback is intentional. If the preferred backend port is occupied, the server records the actual bound URL in `~/.ima2/server.json` and health/status responses. CLI clients and split Vite dev proxy resolution should consume that actual URL instead of reconstructing `localhost:${configuredPort}`.
 
 MCP restore begins only after that actual backend port is published, because the callback origin is part of the credential binding. A usable same-binding record restores automatically without opening a browser. Endpoint/origin mismatches remain on disk and surface as `auth_required`; only a new user-initiated Connect flow may replace the registration after token exchange succeeds. Missing, corrupt, pending-only, and disabled records remain passive. OAuth state and PKCE verifiers intentionally live only in memory, so a browser flow interrupted by process restart cannot resume.
 
@@ -425,7 +426,7 @@ filesystem replacement.
 
 - [ ] If `package.json` scripts or engines change, update this doc.
 - [ ] If config file locations change, update discovery flow in `[[02-command-reference]]`.
-- [ ] If OAuth proxy startup changes, update `[[03-server-api]]` and provider docs.
+- [ ] If the GPT OAuth client (`lib/codexBackend`) changes, update `[[03-server-api]]` and provider docs.
 - [ ] If `ui/dist` publish policy changes, update `[[04-frontend-architecture]]`.
 - [ ] If tests are added, update the test map in `[[01-file-function-map]]`.
 

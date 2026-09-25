@@ -62,7 +62,7 @@ const genBody = `{
   <pre><code>{genBody}</code></pre>
   <p>
     Quality: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api,
-    agy, gemini-api, atlascloud, minimax, nai, comfy. The app default is <code>gpt-5.6-luna</code>. Grok image models: <code>grok-imagine-image-2.0</code> (default),
+    agy, gemini-api, atlascloud, minimax, nai, comfy. GPT OAuth defaults to <code>gpt-6-luna</code> (also <code>gpt-6-sol</code>, <code>gpt-6-astra</code>); the API-key lane defaults to <code>gpt-5.6-luna</code>. Grok image models: <code>grok-imagine-image-2.0</code> (default),
     <code>grok-imagine-image</code> and <code>grok-imagine-image-quality</code>. Gemini API models: <code>nano-banana-2</code>
     (default) and <code>nano-banana-pro</code>. The web UI uses <code>GET /api/events</code>
     (SSE multiplexing) for all generation progress: POST routes accept
@@ -149,7 +149,7 @@ const genBody = `{
     <tbody>
       <tr><td><code>GET /api/health</code></td><td>Health check (<code>ima2 ping</code>). Includes <code>grok: &lbrace; auth: "oauth" | "none" &rbrace;</code>, mirrored in <code>~/.ima2/server.json</code>.</td></tr>
       <tr><td><code>GET /api/providers</code></td><td>Provider availability and runtime ports (<code>ima2 providers</code>).</td></tr>
-      <tr><td><code>GET /api/oauth/status</code></td><td>OAuth proxy status (<code>ima2 oauth status</code>).</td></tr>
+      <tr><td><code>GET /api/oauth/status</code></td><td>GPT OAuth status (<code>ima2 oauth status</code>).</td></tr>
       <tr><td><code>GET /api/grok/status</code></td><td>xAI OAuth session status and image-model probe (<code>ima2 grok status</code>). Returns <code>ready</code>, <code>no_image_model</code>, <code>error</code>, or <code>offline</code> with reason <code>login_required</code> when no session exists.</td></tr>
       <tr><td><code>GET /api/storage/status</code></td><td>Storage inspection.</td></tr>
       <tr><td><code>POST /api/storage/open-generated-dir</code></td><td>Open the generated directory in the OS file manager.</td></tr>
@@ -183,7 +183,7 @@ const genBody = `{
       <tr><td><code>AUTH_CHATGPT_EXPIRED</code></td><td>Codex/ChatGPT OAuth session expired.</td></tr>
       <tr><td><code>AUTH_API_KEY_INVALID</code></td><td>API key is invalid, revoked, or out of quota.</td></tr>
       <tr><td><code>NETWORK_FAILED</code></td><td>Network, proxy, VPN, or firewall failure.</td></tr>
-      <tr><td><code>OAUTH_UNAVAILABLE</code></td><td>Local OAuth proxy is not available.</td></tr>
+      <tr><td><code>OAUTH_UNAVAILABLE</code></td><td>GPT OAuth is not available.</td></tr>
       <tr><td><code>GRAPH_VERSION_CONFLICT</code></td><td>Save made against a stale graph version.</td></tr>
       <tr><td><code>NODE_NOT_FOUND</code></td><td>Node metadata was not found.</td></tr>
       <tr><td><code>GROK_REF_TOO_MANY</code></td><td>Grok request included more than three total input images.</td></tr>

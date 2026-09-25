@@ -10,13 +10,13 @@ const gh = 'https://github.com/lidge-jun/ima2-gen/blob/main';
   lang="ko"
   active="concepts/architecture"
   title="아키텍처"
-  description="ima2-gen의 구성 — CLI와 웹 UI가 로컬 Express 서버를 호출하고, 서버가 라우트 모듈·OAuth 프록시·SQLite·생성 이미지 디렉터리로 위임합니다."
+  description="ima2-gen의 구성 — CLI와 웹 UI가 로컬 Express 서버를 호출하고, 서버가 라우트 모듈·GPT OAuth 클라이언트·SQLite·생성 이미지 디렉터리로 위임합니다."
 >
   <p class="docs-eyebrow">핵심 개념</p>
   <h1>아키텍처</h1>
   <p class="lead">
     ima2-gen은 이미지 생성 CLI와 웹 UI가 결합된 앱입니다. 둘 다 로컬 Express 서버의
-    <code>/api/*</code> 엔드포인트를 호출하고, 서버는 라우트 모듈·로컬 OAuth 프록시·SQLite·생성
+    <code>/api/*</code> 엔드포인트를 호출하고, 서버는 라우트 모듈·서버 안의 GPT OAuth 클라이언트·SQLite·생성
     이미지 디렉터리로 위임합니다.
   </p>
 
@@ -25,13 +25,13 @@ const gh = 'https://github.com/lidge-jun/ima2-gen/blob/main';
 Web UI (ui/dist, served)          ──┼──→ server.ts ──→ routes/*
                                     │                     │
                                     │           lib/*  (storage, sessions, inflight, metadata)
-                                    │           openai-oauth  (OpenAI OAuth proxy)
+                                    │           lib/codexBackend  (GPT OAuth → ChatGPT)
                                     │           lib/xaiAuth.ts  (xAI OAuth session)
                                     │           ~/.ima2/generated  (images + sidecars)
                                     └────────── better-sqlite3  (sessions + graph)</code></pre>
   <p>
     런타임 경로는 의도적으로 단순합니다. CLI 명령과 브라우저가 같은 엔드포인트를 호출하고, 서버는
-    OAuth 프록시, API key Responses 경로, 또는 Grok/xAI Images API를 위한 <code>api.x.ai</code> 직접
+    GPT OAuth 클라이언트, API key Responses 경로, 또는 Grok/xAI Images API를 위한 <code>api.x.ai</code> 직접
     호출로 이미지 요청을 보내고, 설정된 생성 디렉터리에 파일을 저장하고, 그래프 세션을 SQLite에
     보존합니다.
   </p>
@@ -42,7 +42,7 @@ Web UI (ui/dist, served)          ──┼──→ server.ts ──→ routes/
     <tbody>
       <tr><td><code>server.ts</code></td><td>Express 부트스트랩, 라우트 등록. 짝 런타임 산출물 <code>server.js</code>.</td></tr>
       <tr><td><code>routes/*</code></td><td>API 표면: capabilities, events (SSE 멀티플렉스), generate, edit, multimode, nodes, sessions, history, imageImport, health, storage, metadata, annotations, canvasVersions, comfy, prompts, promptImport, keys, auth, quota, grok, agy, 항상 등록되는 agent(Agent 모드)·promptBuilder 라우트, video, dev 게이트된 cardNews.</td></tr>
-      <tr><td><code>lib/*</code></td><td>스토리지, OAuth 프록시, 로깅, 세션, inflight 상태, eventBus (SSE 멀티플렉싱용 pub/sub 링 버퍼), ssePublish (취소-완료 레이스 가드), 이미지 메타데이터 임베드/복원, 프롬프트 라이브러리 SQLite, 레퍼런스 압축, canvas 버전 저장소, soft-delete 휴지통.</td></tr>
+      <tr><td><code>lib/*</code></td><td>스토리지, GPT OAuth 클라이언트, 로깅, 세션, inflight 상태, eventBus (SSE 멀티플렉싱용 pub/sub 링 버퍼), ssePublish (취소-완료 레이스 가드), 이미지 메타데이터 임베드/복원, 프롬프트 라이브러리 SQLite, 레퍼런스 압축, canvas 버전 저장소, soft-delete 휴지통.</td></tr>
       <tr><td><code>bin/*</code></td><td>CLI 디스패처와 클라이언트 명령 — 서버 API와 거의 완전한 패리티. Agent Mode는 의도적인 웹 UI 전용 예외이고, prompt builder는 <code>ima2 prompt build</code>를 씁니다.</td></tr>
       <tr><td><code>ui/src/*</code></td><td>React UI, React Flow node 모드, Canvas Mode, Agent 모드 워크스페이스(<code>components/agent/*</code>), 모바일 셸, 프롬프트 라이브러리 패널.</td></tr>
     </tbody>

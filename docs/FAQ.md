@@ -14,12 +14,11 @@ For Korean, see [FAQ.ko.md](FAQ.ko.md). For Traditional Chinese, see [FAQ.zh-TW.
 | GPT OAuth login fails | Re-run `ima2 setup` (option 1), then restart `ima2 serve`. |
 | API key provider says `API_KEY_REQUIRED` | Configure an API key, or switch back to the GPT OAuth provider. |
 | Old gallery images look missing | Run `ima2 doctor`, then see [Recover Old Generated Images](RECOVER_OLD_IMAGES.md). |
-| `gpt-5.5` fails | Update Codex CLI first, then try `gpt-5.4` as the stable fallback. |
+| A GPT-6 model fails on GPT OAuth | Run `ima2 gpt login` again, check `ima2 models --kind image`, then try `gpt-6-luna`. |
 | Reference upload fails | Use JPEG/PNG, lower the resolution, and keep references to 5 images or fewer. |
 | Prompt Studio controls are unclear | Read the [Prompt Studio manual](PROMPT_STUDIO.md) for multimode, Direct, reasoning, and gallery behavior. |
 | Image generation returns `EMPTY_RESPONSE` or no image data | Run `ima2 doctor image-probe --json`, then collect the safe support bundle below. |
-| Windows reports OAuth/proxy failures around port `10531` | Run `ima2 doctor`; if needed start with `IMA2_OAUTH_PROXY_PORT=11531 ima2 serve`. |
-| `fetch failed` repeats on a proxy/VPN network | Enable proxy TUN/TURN-style mode, or set `HTTP_PROXY` / `HTTPS_PROXY` in the same terminal. |
+| `fetch failed` repeats on a proxy/VPN network | Enable proxy TUN/TURN-style mode, or start `ima2 serve` with `HTTPS_PROXY` and `NODE_USE_ENV_PROXY=1`. |
 
 ## Install and update
 
@@ -134,18 +133,17 @@ Use the **Switch Account** button in Settings > QuotaCard for the provider. This
 
 ### Which model should I use?
 
-The app starts with `gpt-5.6-luna`; choose another model only when you need an explicit compatibility or account-specific override.
+On GPT OAuth the app starts with `gpt-6-luna`. The lane offers three GPT-6 models: the one you pick plans the image and `gpt-image-2` renders it.
 
-- `gpt-5.6-luna`: current app default.
-- `gpt-6-astra`: newest GPT image model; selectable, not the default.
-- `gpt-5.6-sol` / `gpt-5.6-terra`: current GPT-5.6 alternatives;
-  availability depends on your OAuth account access, so upstream may reject them
-  until the rollout reaches you.
-- `gpt-5.5` / `gpt-5.4` / `gpt-5.4-mini`: supported compatibility choices.
+- `gpt-6-luna`: the default.
+- `gpt-6-sol`: the other everyday GPT-6 model.
+- `gpt-6-astra`: reasons longest and is the slowest; a `none` reasoning effort runs as `low`.
 
-### Why does `gpt-5.5` fail when other models work?
+Older OAuth ids (`gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`) still work in saved settings and scripts. `gpt-5.6-sol` runs as `gpt-6-sol` and the rest run as `gpt-6-luna`. The API-key lane (`provider: "api"`) keeps its own list, with `gpt-5.6-luna` as its default.
 
-`gpt-5.5` may require a newer Codex CLI, backend capability, or account/quota availability. Update Codex CLI first. If it still fails, use `gpt-5.4` as the stable fallback.
+### Why does one GPT-6 model fail when the others work?
+
+The GPT OAuth lane uses the GPT-6 models your ChatGPT plan exposes. Update ima2-gen, sign in again with `ima2 gpt login`, and check `ima2 models --kind image`. If one model keeps failing, switch to `gpt-6-luna`.
 
 ### How many images can Plus or Pro generate?
 
@@ -243,31 +241,25 @@ The API may report reference errors such as `REF_TOO_MANY`, `REF_TOO_LARGE`, `RE
 
 ## Network and OAuth errors
 
-### Why did the backend or OAuth proxy move to another port?
+### Why did the backend move to another port?
 
-`ima2-gen` is a local app. If the preferred backend port `3333` or OAuth proxy port `10531` is already in use, the runtime can fall back to the next available port and records the actual URLs in:
+`ima2-gen` is a local app. If the preferred backend port `3333` is already in use, the runtime falls back to the next available port and records the actual URL in:
 
 ```text
 ~/.ima2/server.json
 ```
 
-Use:
+Run this to see the configured and actual backend URLs:
 
 ```bash
 ima2 doctor
 ```
 
-to see the configured and actual backend/OAuth URLs.
+GPT OAuth needs no local port: the server calls ChatGPT directly.
 
-### Windows: what if `AnySign4PC.exe` owns port `10531`?
+### How do I point split frontend development at the real backend?
 
-Some Windows security software can occupy the default OAuth proxy port. Current builds track the actual fallback port, but you can also force a quieter range:
-
-```bash
-IMA2_OAUTH_PROXY_PORT=11531 ima2 serve
-```
-
-For split frontend development, point Vite at the actual backend:
+Pass the backend URL that `ima2 doctor` reports to Vite:
 
 ```bash
 VITE_IMA2_API_TARGET=http://localhost:3334 npm run ui:dev
@@ -277,7 +269,7 @@ VITE_IMA2_API_TARGET=http://localhost:3334 npm run ui:dev
 
 Usually one of these:
 
-- the local OAuth proxy is not ready,
+- GPT OAuth could not reach `chatgpt.com`,
 - the server was restarted,
 - a VPN/proxy/firewall blocked the request,
 - an auto-start Windows network interception tool, including a DNS/fragmentation
@@ -311,8 +303,8 @@ If `ima2 serve` is running, also capture one search-off and one normal cat
 generation result:
 
 ```bash
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json > ima2-cat-no-search.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --json > ima2-cat-current.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json > ima2-cat-no-search.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --json > ima2-cat-current.json
 ```
 
 The probe JSON is designed to be safe to attach to a public issue. It reports
@@ -343,22 +335,17 @@ How to read the result:
 
 ### What if `fetch failed` keeps happening behind a proxy or VPN?
 
-This usually means the local OAuth proxy cannot reach the upstream service through your network path. `openai-oauth` runs as a local localhost proxy, commonly on port `10531`.
+GPT OAuth requests leave from the `ima2 serve` process and go straight to `chatgpt.com`, so the network path of that process is what matters.
 
-Try:
-
-```bash
-openai-oauth --port 10531
-```
-
-If your network requires a proxy, enable your proxy client's TUN/TURN-style mode so terminal processes can use it. On Windows, also temporarily disable auto-start DNS or fragmentation bypass tools such as SecretDNS and retry. If that is not enough, set the proxy variables in the same terminal that runs `openai-oauth` or `ima2 serve`:
+If your network requires a proxy, enable your proxy client's TUN/TURN-style mode so terminal processes can use it. On Windows, also temporarily disable auto-start DNS or fragmentation bypass tools such as SecretDNS and retry. If that is not enough, set the proxy in the terminal that starts `ima2 serve`. Node.js reads `HTTPS_PROXY` only when `NODE_USE_ENV_PROXY=1` is also set:
 
 ```bash
-export HTTP_PROXY=http://127.0.0.1:7890
 export HTTPS_PROXY=http://127.0.0.1:7890
+export NODE_USE_ENV_PROXY=1
+ima2 serve
 ```
 
-Use the host and port from your proxy client. If `ima2-gen` still fails after the local OAuth proxy is reachable, collect the exact command, OS, proxy setup, and terminal error before opening a new issue.
+Use the host and port from your proxy client. If `ima2-gen` still fails, collect the exact command, OS, proxy setup, and terminal error before opening a new issue.
 
 ### What should I check on a company computer?
 
