@@ -410,7 +410,12 @@ async function performRefresh(stored: GrokCredentials, opts: GetAccessTokenOptio
       ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
       ...(opts.deps !== undefined ? { deps: opts.deps } : {}),
     });
-    const merged: GrokCredentials = { ...stored, ...fresh };
+    // The file is the single source of truth and other writers (progrok, a device login,
+    // a logout) can move it while a refresh is in flight — never clobber or resurrect it.
+    const current = loadGrokCredentials(opts.homeDir);
+    if (!current) throw new GrokAuthError("GROK_AUTH_REQUIRED", LOGIN_REQUIRED_MESSAGE);
+    if (current.refreshToken !== stored.refreshToken) return current;
+    const merged: GrokCredentials = { ...current, ...fresh };
     // An unknown new expiry must erase the old one rather than inherit a stale deadline.
     if (fresh.expiresAt === undefined) delete merged.expiresAt;
     saveGrokCredentials(merged, opts.homeDir);
@@ -424,7 +429,16 @@ function runRefreshFlight(stored: GrokCredentials, opts: GetAccessTokenOptions):
   const now = opts.deps?.now ?? Date.now;
   const existing = refreshFlight;
   if (existing && now() - existing.startedAt <= FLIGHT_STALE_MS) return existing.promise;
-  const flight: RefreshFlight = { startedAt: now(), promise: performRefresh(stored, opts) };
+  // The flight is shared, so no caller's signal may reach it: one aborted request must
+  // not fail every other caller joined to the same refresh (callers abort via their
+  // own await in getGrokAccessToken instead).
+  const shared: GetAccessTokenOptions = {
+    ...(opts.forceRefresh !== undefined ? { forceRefresh: opts.forceRefresh } : {}),
+    ...(opts.rejectedAccessToken !== undefined ? { rejectedAccessToken: opts.rejectedAccessToken } : {}),
+    ...(opts.homeDir !== undefined ? { homeDir: opts.homeDir } : {}),
+    ...(opts.deps !== undefined ? { deps: opts.deps } : {}),
+  };
+  const flight: RefreshFlight = { startedAt: now(), promise: performRefresh(stored, shared) };
   // Release only when we are still the current flight, so a slow earlier refresh cannot
   // clear a newer one (OpenCodex index.ts:537 pattern).
   flight.promise = flight.promise.finally(() => {
@@ -452,8 +466,20 @@ export async function getGrokAccessToken(opts: GetAccessTokenOptions = {}): Prom
       `Grok session expired and cannot be refreshed. ${LOGIN_REQUIRED_MESSAGE}`,
     );
   }
-  const fresh = await runRefreshFlight(stored, opts);
+  const fresh = await raceWithAbort(runRefreshFlight(stored, opts), opts.signal);
   return fresh.accessToken;
+}
+
+/** A caller bails on its own signal without cancelling the shared flight. */
+function raceWithAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(signal.reason as unknown);
+  return Promise.race([
+    promise,
+    new Promise<never>((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(signal.reason as unknown), { once: true });
+    }),
+  ]);
 }
 
 /** Test-only: clears the single-flight slot and the terminal-failure negative cache. */

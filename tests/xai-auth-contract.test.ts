@@ -14,6 +14,7 @@ import {
   GrokAuthError,
   XaiTokenRequestError,
   __resetGrokAuthStateForTest,
+  clearGrokCredentials,
   discoverXaiOAuthEndpoints,
   getGrokAccessToken,
   grokAuthFilePath,
@@ -265,6 +266,56 @@ describe("lib/xaiAuth contract", () => {
     saveGrokCredentials(creds, homeDir);
     const error = await expectAuthError(getGrokAccessToken({ homeDir, deps }));
     assert.equal(error.code, "GROK_AUTH_REFRESH_FAILED");
+  });
+
+  it("does not clobber a credential file another writer replaced during the refresh", async () => {
+    seedCredentials({ expiresAt: Date.now() + 60_000 });
+    stubFetch(async () => {
+      // progrok or a device login rewrote the file while our refresh was in flight.
+      saveGrokCredentials({ accessToken: "access-newer", refreshToken: "refresh-newer", expiresAt: Date.now() + 3_600_000 }, homeDir);
+      return jsonResponse(200, { access_token: "access-old-lineage", refresh_token: "refresh-old-lineage", expires_in: 3600 });
+    });
+
+    assert.equal(await getGrokAccessToken({ homeDir, deps }), "access-newer");
+    const stored = readStored();
+    assert.equal(stored.accessToken, "access-newer");
+    assert.equal(stored.refreshToken, "refresh-newer", "the newer session must survive the racing refresh");
+  });
+
+  it("does not resurrect the session when the credential file is deleted mid-refresh", async () => {
+    seedCredentials({ expiresAt: Date.now() + 60_000 });
+    stubFetch(async () => {
+      clearGrokCredentials(homeDir);
+      return jsonResponse(200, { access_token: "access-new", refresh_token: "refresh-new", expires_in: 3600 });
+    });
+
+    const error = await expectAuthError(getGrokAccessToken({ homeDir, deps }));
+    assert.equal(error.code, "GROK_AUTH_REQUIRED");
+    assert.equal(loadGrokCredentials(homeDir), null, "a logout mid-refresh must stay a logout");
+  });
+
+  it("rejects an aborted caller without failing the other callers on the shared refresh", async () => {
+    seedCredentials({ expiresAt: Date.now() + 60_000 });
+    let resolveToken: ((response: Response) => void) | undefined;
+    stubFetch(async () => new Promise<Response>((resolve) => { resolveToken = resolve; }));
+
+    const controller = new AbortController();
+    const abortReason = new Error("job cancelled");
+    const first = getGrokAccessToken({ homeDir, deps, signal: controller.signal }).then(
+      (token) => ({ token }),
+      (error: unknown) => ({ error }),
+    );
+    const second = getGrokAccessToken({ homeDir, deps });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    controller.abort(abortReason);
+    resolveToken!(jsonResponse(200, { access_token: "access-new", expires_in: 3600 }));
+
+    const firstResult = await first;
+    assert.ok("error" in firstResult && firstResult.error === abortReason, "the aborted caller gets its own reason");
+    assert.equal(await second, "access-new", "the joined caller still gets the refreshed token");
+    assert.equal(fetchCalls.length, 1);
+    assert.equal(readStored().accessToken, "access-new");
   });
 
   it("leaves no temp files behind after a refresh", async () => {
