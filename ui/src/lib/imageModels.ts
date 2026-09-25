@@ -61,7 +61,7 @@ const NAI_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.nai.image);
 const OAUTH_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.oauth.image);
 const API_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.api.image);
 
-type OpenAIOption = { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string };
+type OpenAIOption = { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string; providerHint?: Provider };
 
 /** GPT OAuth (the default GPT lane): GPT-6 sol / luna / astra. */
 export const OAUTH_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
