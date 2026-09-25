@@ -136,7 +136,7 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   const modelInput = activeProvider === "api"
     ? (rawModel || apiConfig.defaultImageModel || FALLBACK_IMAGE_MODEL)
     : rawModel;
-  const modelCheck = normalizeImageModel(ctx, modelInput);
+  const modelCheck = normalizeImageModel(ctx, modelInput, activeProvider);
   if (modelCheck.error) return { error: modelCheck.error, code: modelCheck.code, status: modelCheck.status };
 
   const reasoningInput = activeProvider === "api"

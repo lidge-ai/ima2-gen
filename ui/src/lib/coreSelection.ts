@@ -28,11 +28,21 @@ export type CoreSelectionMemory = Partial<Record<Provider, RememberedCoreSelecti
 
 const staticIds: ReadonlySet<string> = new Set(IMAGE_MODEL_IDS);
 const defaults: Record<Provider, ImageModel> = {
-  oauth: DEFAULT_IMAGE_MODEL, api: DEFAULT_IMAGE_MODEL,
+  oauth: DEFAULT_IMAGE_MODEL, api: "gpt-5.6-luna",
   grok: "grok-imagine-image-2.0", "grok-api": "grok-imagine-image-2.0",
   agy: "nano-banana-2", "gemini-api": "nano-banana-pro",
   atlascloud: "openai/gpt-image-2/text-to-image", minimax: "image-01",
   nai: "nai-diffusion-5-full", comfy: DEFAULT_IMAGE_MODEL,
+};
+
+/** GPT OAuth kept only GPT-6; a remembered pre-GPT-6 pick moves to its GPT-6 tier (server rule). */
+const LEGACY_OAUTH_MODELS: Readonly<Record<string, ImageModel>> = {
+  "gpt-5.6-sol": "gpt-6-sol",
+  "gpt-5.6-luna": "gpt-6-luna",
+  "gpt-5.6-terra": "gpt-6-luna",
+  "gpt-5.5": "gpt-6-luna",
+  "gpt-5.4": "gpt-6-luna",
+  "gpt-5.4-mini": "gpt-6-luna",
 };
 
 function staticImage(provider: Provider, value: unknown): value is ImageModel {
@@ -67,9 +77,12 @@ export function reconcileCoreSelection(input: CoreSelectionInput): CoreSelection
       comfyVideoWorkflow: workflow(input.comfyVideoWorkflow),
     };
   }
+  const imageModel = provider === "oauth" && typeof input.imageModel === "string"
+    ? LEGACY_OAUTH_MODELS[input.imageModel] ?? input.imageModel
+    : input.imageModel;
   return {
     provider,
-    imageModel: staticImage(provider, input.imageModel) ? input.imageModel : defaults[provider],
+    imageModel: staticImage(provider, imageModel) ? imageModel : defaults[provider],
     videoModelSelected: provider === "grok" || provider === "grok-api"
       ? normalizeVideoModelValue(input.videoModelSelected) : false,
     comfyWorkflow: null,

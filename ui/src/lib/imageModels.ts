@@ -18,7 +18,7 @@ export function normalizeImageQuality(provider: unknown, imageToolModel: unknown
   return quality;
 }
 
-export const DEFAULT_IMAGE_MODEL: ImageModel = "gpt-5.6-luna";
+export const DEFAULT_IMAGE_MODEL: ImageModel = "gpt-6-luna";
 export const IMAGE_MODEL_STORAGE_KEY = "ima2.imageModel";
 
 export const IMAGE_MODEL_OPTIONS: Array<{
@@ -27,8 +27,10 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   fullLabelKey: string;
   providerHint?: Provider;
 }> = [
-  { value: "gpt-5.6-luna", shortLabel: "5.6l", fullLabelKey: "settings.imageModel.gpt56Luna" },
+  { value: "gpt-6-luna", shortLabel: "6l", fullLabelKey: "settings.imageModel.gpt6Luna" },
+  { value: "gpt-6-sol", shortLabel: "6s", fullLabelKey: "settings.imageModel.gpt6Sol" },
   { value: "gpt-6-astra", shortLabel: "6a", fullLabelKey: "settings.imageModel.gpt6Astra" },
+  { value: "gpt-5.6-luna", shortLabel: "5.6l", fullLabelKey: "settings.imageModel.gpt56Luna" },
   { value: "gpt-5.6-terra", shortLabel: "5.6t", fullLabelKey: "settings.imageModel.gpt56Terra" },
   { value: "gpt-5.6-sol", shortLabel: "5.6s", fullLabelKey: "settings.imageModel.gpt56Sol" },
   { value: "gpt-5.5", shortLabel: "5.5", fullLabelKey: "settings.imageModel.gpt55" },
@@ -55,14 +57,23 @@ const ATLASCLOUD_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.atlascloud.image
 const MINIMAX_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.minimax.image);
 const NAI_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.nai.image);
 
-export const OPENAI_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
-  (option): option is { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string } =>
-    !option.value.startsWith("grok-")
-    && !GEMINI_MODEL_VALUES.has(option.value)
-    && !ATLASCLOUD_MODEL_VALUES.has(option.value)
-    && !MINIMAX_MODEL_VALUES.has(option.value)
-    && !NAI_MODEL_VALUES.has(option.value),
+const OAUTH_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.oauth.image);
+const API_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.api.image);
+
+type OpenAIOption = { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string };
+
+/** GPT OAuth (the default GPT lane): GPT-6 sol / luna / astra. */
+export const OAUTH_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
+  (option): option is OpenAIOption => OAUTH_MODEL_VALUES.has(option.value),
 );
+
+/** OpenAI API key lane: the models the OpenAI API serves. */
+export const API_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
+  (option): option is OpenAIOption => API_MODEL_VALUES.has(option.value),
+);
+
+/** The GPT group in pickers that switch lanes by model: the OAuth lane's models. */
+export const OPENAI_IMAGE_MODEL_OPTIONS = OAUTH_IMAGE_MODEL_OPTIONS;
 
 export const GROK_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter((option) =>
   option.value.startsWith("grok-"),
@@ -91,9 +102,7 @@ export const NAI_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
 export const UNSUPPORTED_IMAGE_MODELS: Array<{
   value: UnsupportedImageModel;
   fullLabelKey: string;
-}> = [
-  { value: "gpt-5.3-codex-spark", fullLabelKey: "settings.imageModel.gpt53CodexSpark" },
-];
+}> = [];
 
 export function isImageModel(value: unknown): value is ImageModel {
   return IMAGE_MODEL_OPTIONS.some((option) => option.value === value);
@@ -130,7 +139,8 @@ export function getImageModelOptionsForProvider(provider: Provider) {
   // gpt-5.6-luna under a ComfyUI selection and send a model the lane cannot
   // execute.
   if (provider === "comfy") return [];
-  return OPENAI_IMAGE_MODEL_OPTIONS;
+  if (provider === "api") return API_IMAGE_MODEL_OPTIONS;
+  return OAUTH_IMAGE_MODEL_OPTIONS;
 }
 
 export function getImageModelShortLabel(value: string | null | undefined, provider?: string | null): string | null {

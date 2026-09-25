@@ -353,10 +353,10 @@ export const config = {
   },
   styleSheet: {
     maxPrefix: pickInt(env.IMA2_STYLE_SHEET_MAX_PREFIX, fileCfg.styleSheet?.maxPrefix, 4000),
-    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-5.6-luna"),
+    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-6-luna"),
   },
   imageModels: {
-    default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-5.6-luna"),
+    default: pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna"),
     valid: deriveSupportedImageModels("oauth"),
     unsupported: deriveUnsupportedImageModels(),
     reasoningEffort: pickStr(
@@ -447,7 +447,7 @@ export const config = {
   },
   cardNewsPlanner: {
     enabled: pickBool(env.IMA2_CARD_NEWS_PLANNER, fileCfg.cardNewsPlanner?.enabled, true),
-    model: pickStr(env.IMA2_CARD_NEWS_PLANNER_MODEL, fileCfg.cardNewsPlanner?.model, "gpt-5.6-luna"),
+    model: pickStr(env.IMA2_CARD_NEWS_PLANNER_MODEL, fileCfg.cardNewsPlanner?.model, "gpt-6-luna"),
     timeoutMs: pickInt(env.IMA2_CARD_NEWS_PLANNER_TIMEOUT_MS, fileCfg.cardNewsPlanner?.timeoutMs, 60_000),
     deterministicFallback: pickBool(
       env.IMA2_CARD_NEWS_PLANNER_FALLBACK,

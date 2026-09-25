@@ -1,3 +1,4 @@
+import { migrateOAuthImageModel } from "../imageModels.js";
 import {
   DEFAULT_PROMPT_BUILDER_MODELS,
   MAX_MESSAGES,
@@ -34,9 +35,11 @@ export function normalizePromptBuilderModel(
   backend: PromptBuilderBackend,
   raw: unknown,
 ): string {
-  const candidate = typeof raw === "string" && raw.trim()
+  const given = typeof raw === "string" && raw.trim()
     ? raw.trim()
     : DEFAULT_PROMPT_BUILDER_MODELS[backend];
+  // Saved GPT OAuth settings from before GPT-6 keep working on the matching GPT-6 tier.
+  const candidate = backend === "oauth" ? migrateOAuthImageModel(given) : given;
   if (!PROMPT_BUILDER_MODELS[backend].includes(candidate)) {
     throw promptBuilderError(
       `model for ${backend} must be one of: ${PROMPT_BUILDER_MODELS[backend].join(", ")}`,
