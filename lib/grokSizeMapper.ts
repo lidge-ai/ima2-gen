@@ -17,6 +17,8 @@ const SUPPORTED_ASPECTS = [
   "9:19.5",
   "20:9",
   "9:20",
+  "21:9",
+  "5:2",
 ] as const;
 
 const PRESET_MAP: Record<string, GrokImageSizeParams> = {

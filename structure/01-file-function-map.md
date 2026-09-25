@@ -298,7 +298,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/xaiDeviceLogin.ts` | 209 | Stateless xAI device-code login used by the CLI when no server is running |
 | `lib/xaiAuth.ts` | 464 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
 | `lib/grokUpstreamRetry.ts` | 165 | Pre-response retry guard for idempotent Grok fetches: socket resets, transient 5xx, Retry-After backoff |
-| `lib/grokSizeMapper.ts` | 86 | Grok model image-size mapping and validation |
+| `lib/grokSizeMapper.ts` | 88 | Grok model image-size mapping and validation |
 | `lib/grokVideoCanvas.ts` | 41 | Grok video canvas/source preparation helpers |
 | `lib/grokVideoDownload.ts` | 167 | Bounded incremental video download, validation and reader cleanup; callers own persistence |
 | `lib/videoExtendI2vOperation.ts` | 105 | Actual whole last-frame background operation Promise, preserving phase/persistence/terminal order |
@@ -392,7 +392,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 310 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 31 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 276 | UI-side image model labels and `resolveCoreModelValue` lane gating |
+| Image models | `ui/src/lib/imageModels.ts` | 277 | UI-side image model labels and `resolveCoreModelValue` lane gating |
 | Core selection policy | `ui/src/lib/coreSelection.ts` | 155 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
 | Core selection persistence | `ui/src/store/coreSelectionPersistence.ts` | 59 | Legacy active snapshot and bounded versioned lane-memory storage boundary |
 | Core selection actions | `ui/src/store/storeCoreSelectionImpl.ts` | 84 | One selection patch for provider/image/video/workflow choices, including explicit slot clearing |
