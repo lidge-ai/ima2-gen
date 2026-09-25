@@ -1,7 +1,7 @@
 # ima2-gen one-click install (Windows / PowerShell)
 #
 # Usage (one-liner):
-#   irm https://lidge-jun.github.io/ima2-gen/install-windows.ps1 | iex
+#   irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
 #
 # Or download and run:
 #   powershell -ExecutionPolicy Bypass -File .\install-windows.ps1

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { executionTestProcess } from "./_executionTestProcess.ts";
 import { openRouteHarness, responsesSse } from "./_executionRouteHarness.ts";
+import { imagesJson } from "./_oauthNativeFixture.ts";
 
 type Harness = Awaited<ReturnType<typeof openRouteHarness>>;
 type Fixture = Parameters<Parameters<Harness["run"]>[2]>[0];
@@ -100,7 +101,8 @@ if (executionTestProcess(import.meta.url)) describe("node execution: real route 
 
   for (const provider of ["api", "oauth"]) it(`H1 ${provider} saves all supported formats including jpg`, async () => {
     for (const format of ["png", "jpeg", "jpg", "webp"]) {
-      await harness.run("node", { upstream: () => frames(red) }, async (fixture) => {
+      // GPT OAuth in direct mode renders once through the Images API.
+      await harness.run("node", { upstream: () => (provider === "oauth" ? imagesJson(red) : frames(red)) }, async (fixture) => {
         const response = await fixture.post({ ...BASE, provider, format });
         const body = await response.json();
         await fixture.waitSettled();

@@ -1,5 +1,6 @@
 import { canonicalizeImageModel } from "./model-aliases.js";
 import { deriveProviderIds } from "../../lib/providers/derive.js";
+import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
 import { listProviders } from "../../lib/mcp/providerRegistry.js";
 import type { CoreProviderId } from "../../lib/providers/registry.js";
 
@@ -45,6 +46,11 @@ function canonicalModel(kind: "image" | "video", model: string): string {
   return kind === "image" ? canonicalizeImageModel(model) ?? model : model;
 }
 
+/** GPT OAuth keeps only GPT-6; a saved or scripted legacy OAuth id resolves to its GPT-6 tier. */
+function laneModel(lane: string, kind: "image" | "video", model: string): string {
+  return kind === "image" && lane === "oauth" ? migrateOAuthImageModel(model) : model;
+}
+
 function modelExists(info: LaneInfo | undefined, kind: "image" | "video", model: string): boolean {
   return info?.models[kind].some((entry) => entry.id === model) ?? false;
 }
@@ -56,11 +62,12 @@ function findModel(info: LaneInfo | undefined, kind: "image" | "video", model: s
 function resolveLaneModel(
   kind: "image" | "video",
   lane: Lane,
-  model: string,
+  requested: string,
   catalog: ModelCatalog,
 ): ResolveResult {
   const info = catalog.lanes[lane];
   if (!info) return failure("UNKNOWN_LANE", `Unknown lane: ${lane}`);
+  const model = laneModel(lane, kind, requested);
   const entry = findModel(info, kind, model);
   if (!entry) {
     const otherKind = kind === "image" ? "video" : "image";
@@ -135,10 +142,11 @@ function resolveBare(
   catalog: ModelCatalog,
 ): ResolveResult {
   const model = canonicalModel(kind, rawModel);
+  const existsIn = (lane: Lane) => modelExists(catalog.lanes[lane], kind, laneModel(lane, kind, model));
   const lanes = provider
     ? [provider as Lane]
-    : LANES.filter((lane) => modelExists(catalog.lanes[lane], kind, model));
-  const matches = lanes.filter((lane) => modelExists(catalog.lanes[lane], kind, model));
+    : LANES.filter(existsIn);
+  const matches = lanes.filter(existsIn);
   if (matches.length > 1) {
     return failure("MODEL_AMBIGUOUS", `${model} exists in multiple lanes; pass --provider <lane>`, {
       candidates: matches.map((lane) => `${lane}/${model}`),

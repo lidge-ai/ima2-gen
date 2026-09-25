@@ -18,8 +18,8 @@
   src,
 }:
 let
-  # openai-oauth is vendored as `file:vendor/openai-oauth-<version>.tgz` (a
-  # bundleDependency). importNpmLock resolves a `file:` entry as
+  # A vendored `file:vendor/<name>.tgz` dependency (none today; openai-oauth was one
+  # until GPT OAuth moved in process). importNpmLock resolves a `file:` entry as
   # `npmRoot + "/" + resolved`, which keeps the literal `file:` prefix and points
   # outside the tree. Strip it so it resolves to the committed tgz; npm then
   # installs it by extraction. (buildNodeModules does not forward

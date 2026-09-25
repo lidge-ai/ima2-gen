@@ -4,6 +4,10 @@ import express from "express";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { adaptFetchAssignmentsForNativeOAuth } from "./_oauthNativeFixture.ts";
+
+// GPT OAuth plans then renders; keep this file's one-call image fixtures (see the helper).
+adaptFetchAssignmentsForNativeOAuth();
 
 const TEST_DIR = mkdtempSync(join(tmpdir(), "ima2-agent-ux-"));
 process.env.IMA2_CONFIG_DIR = TEST_DIR;

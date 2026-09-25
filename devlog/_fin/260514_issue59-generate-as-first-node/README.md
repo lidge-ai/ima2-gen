@@ -2,7 +2,7 @@
 title: "Issue #59 — Generate As First Node"
 status: completed / moved to _fin
 created: 2026-05-14
-github: https://github.com/lidge-jun/ima2-gen/issues/59
+github: https://github.com/lidge-ai/ima2-gen/issues/59
 tags: [canvas, node-mode, viewer, ux]
 ---
 
@@ -29,7 +29,7 @@ current image/composition into Node Mode as the first/root node.
 
 Canonical issue:
 
-- https://github.com/lidge-jun/ima2-gen/issues/59
+- https://github.com/lidge-ai/ima2-gen/issues/59
 
 ## Library Assessment
 

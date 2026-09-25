@@ -17,7 +17,7 @@
 - R = b96a11ed8a46c5782e673b5eeb61129d9f3aee9d; origin/main = origin/dev = origin/preview = v3.15.0 = R.
 - npm: latest 3.15.0 (gitHead R, integrity sha512-gNOuyIdRffCmqcfRrP1A9PgaZGxSbmfEzwZJtoqPy0gp6gT7lTiQNiqn7BfQsojwzbV5lvTQHRnWHIKD2JbPmQ==), preview 3.15.0-preview.260907.34165674345.1 (gitHead R).
 - `node scripts/release-contract.mjs finalize-check 3.15.0 R` exit 0 (signatureVerified true, runId 34167194583).
-- GitHub release https://github.com/lidge-jun/ima2-gen/releases/tag/v3.15.0 (main, not draft, not prerelease).
+- GitHub release https://github.com/lidge-ai/ima2-gen/releases/tag/v3.15.0 (main, not draft, not prerelease).
 - Rollback baseline recorded before dispatch: 3.14.0 @ 36aa6fce, integrity sha512-VBL8fh14xEV1i4Y++BGdc/wS+5JruJzTSeJ/rCTOh56RGzwQtJ2NHM5R3uDdNSrJYA6ubWoWy+2GL+J2wLFlbQ==.
 
 ## Artifact proof

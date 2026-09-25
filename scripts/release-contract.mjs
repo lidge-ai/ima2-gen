@@ -8,7 +8,7 @@ import { verifyRegistrySignatures } from "./registry-signature-proof.mjs";
 export { parsePackOutput, verifyArtifactDigest } from "./release-artifact-contract.mjs";
 
 const PACKAGE_NAME = "ima2-gen";
-const REPOSITORY = "https://github.com/lidge-jun/ima2-gen";
+const REPOSITORY = "https://github.com/lidge-ai/ima2-gen";
 const WORKFLOW_PATH = ".github/workflows/publish.yml";
 const IN_TOTO_TYPE = "https://in-toto.io/Statement/v1";
 const PROVENANCE_TYPE = "https://slsa.dev/provenance/v1";

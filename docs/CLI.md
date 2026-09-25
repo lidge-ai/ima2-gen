@@ -126,7 +126,7 @@ target applies. Their `--provider` accepts explicit lanes only
 Provider override semantics:
 
 - `api` forces the API-key Responses path and requires a configured API key.
-- `oauth` forces the local OAuth proxy path.
+- `oauth` forces GPT OAuth: the server calls ChatGPT directly, a GPT-6 model plans and `gpt-image-2` renders.
 - `grok` calls `https://api.x.ai` directly with the xAI OAuth session in `~/.progrok/auth.json`. Classic generation first runs mandatory xAI Web Search through Responses API, then asks `grok-4.5` to call ima2's local `generate_image` tool, then ima2 executes xAI `/v1/images/generations`. `grok-4.3` remains available as an explicit compatibility override. If `--ref` images are attached, the final step uses xAI `/v1/images/edits` instead so image-to-image/reference context is preserved. Models: `grok-imagine-image`, `grok-imagine-image-quality`. Size is mapped to xAI `aspect_ratio` and `resolution`; the UI web-search toggle is OpenAI-provider-only because Grok search is always on in this path.
 - `agy` spawns the Antigravity CLI to generate via Google Gemini (`nano-banana-2`). Fixed 1024×1024 JPEG output, max 3 refs. No web search, quality, size, or mask controls. If `agy` is not on the server process PATH, ima2 also checks common user-local installs such as `~/.local/bin/agy`; set `IMA2_AGY_BIN=/absolute/path/to/agy` to force a specific binary.
 - `gemini-api` calls the Google Generative Language API directly. Models: `nano-banana-2` (Gemini 3.1 Flash Image) and `nano-banana-pro` (Gemini 3 Pro Image). Use `--model nano-banana-2` or `--model nano-banana-pro` to select. Supports `--size` for aspect ratio and resolution (512px–4K) on the direct API path; Vertex AI ignores aspect/size. Requires `GEMINI_API_KEY` or a Vertex AI service account (`VERTEX_SERVICE_ACCOUNT_JSON`). Switching from `agy` or `gemini-api` provider auto-selects the corresponding Gemini model; switching away resets to the GPT default.
@@ -197,7 +197,7 @@ documented multi-image editing limit.
 
 ```bash
 ima2 models --kind image
-ima2 defaults set image oauth/gpt-5.6-luna
+ima2 defaults set image oauth/gpt-6-luna
 ima2 gen "a poster of a samurai cat" --model api/gpt-5.4 --reasoning-effort high
 ima2 grok login
 ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
@@ -381,8 +381,8 @@ For GPT OAuth no-image reports, a useful support bundle is:
 ```bash
 ima2 doctor
 ima2 doctor image-probe --json > ima2-image-probe.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --no-web-search --json > ima2-cat-no-search.json
-ima2 gen "고양이" --model oauth/gpt-5.6-luna --json > ima2-cat-current.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --no-web-search --json > ima2-cat-no-search.json
+ima2 gen "고양이" --model oauth/gpt-6-luna --json > ima2-cat-current.json
 ```
 
 Do not share ChatGPT cookies, OAuth token files, API keys, prompt history, raw
@@ -479,7 +479,7 @@ Card News requires the server to be started with `IMA2_CARD_NEWS=1` (or `feature
 | `ima2 storage open` | Open the generated dir in the OS file manager (POST) |
 | `ima2 billing` | API usage probe via `/api/billing` (OpenAI/API-key credits when configured). Grok and NovelAI quota are web-UI only via `GET /api/quota`: weekly percentage/reset for current Grok Build xAI auth, with legacy monthly `usedUsd`/`limitUsd` fallback. |
 | `ima2 providers` | Configured providers |
-| `ima2 oauth status` | OAuth proxy state |
+| `ima2 oauth status` | GPT OAuth state |
 | `ima2 grok status` | Stored xAI OAuth session, with `--probe` for image-model visibility |
 | `ima2 ping` | Health-check the running server |
 

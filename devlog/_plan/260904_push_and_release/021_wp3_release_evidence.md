@@ -11,7 +11,7 @@ npm gitHead: d2afe6b2aa7d006e2cd9765aa632714f96435db2
 npm latest:  3.13.1
 ```
 
-GitHub Release: https://github.com/lidge-jun/ima2-gen/releases/tag/v3.13.1
+GitHub Release: https://github.com/lidge-ai/ima2-gen/releases/tag/v3.13.1
 
 ## 실행 순서 (실제로 한 것)
 

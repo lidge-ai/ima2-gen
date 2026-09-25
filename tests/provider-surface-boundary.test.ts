@@ -259,7 +259,9 @@ describe("provider surface HTTP boundaries", { concurrency: false }, () => {
     });
   }
 
-  for (const provider of ["oauth", "api"] as const) {
+  // GPT OAuth masked edits (source then mask guide, rendered through the Images API) are pinned in
+  // tests/oauth-image-lane-contract.test.ts; this keeps the Responses wire of the API-key lane.
+  for (const provider of ["api"] as const) {
     it(`${provider} preserves masked edit forwarding through Responses`, async () => {
       await withApp(async ({ post, calls }) => {
         const res = await post("/api/edit", { provider, image, mask: `data:image/png;base64,${mask}` });

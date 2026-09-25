@@ -21,7 +21,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
 
   <h2>프로바이더 경로</h2>
   <ul>
-    <li><code>provider: "oauth"</code> — 로컬 Codex OAuth 프록시를 사용합니다. 기본 경로이며 API key가 필요 없습니다.</li>
+    <li><code>provider: "oauth"</code> — 서버가 ChatGPT 세션으로 ChatGPT의 Codex 백엔드를 직접 호출합니다. GPT-6 모델이 프롬프트를 기획하고 <code>gpt-image-2</code>가 그립니다. 기본 경로이며 API key가 필요 없습니다.</li>
     <li><code>provider: "api"</code> — 호스티드 <code>image_generation</code> 도구로 OpenAI Responses API를 호출합니다. <code>OPENAI_API_KEY</code>가 필요합니다.</li>
     <li><code>provider: "grok"</code> — <code>~/.progrok/auth.json</code>의 xAI OAuth 세션으로 <code>api.x.ai</code>를 직접 호출합니다. 필수 xAI Web Search와 planner pass(기본 <code>grok-4.3</code>, 설정 또는 <code>--planner-model</code>로 변경)를 거친 뒤 xAI Images API를 호출합니다. Grok 4.5·4.6도 고를 수 있습니다.</li>
     <li><code>provider: "grok-api"</code> — <code>grok</code>과 같은 xAI pipeline을 직접 <code>XAI_API_KEY</code>로 실행합니다.</li>
@@ -40,7 +40,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
     <thead><tr><th>값</th><th>동작</th></tr></thead>
     <tbody>
       <tr><td><code>auto</code></td><td>지원 명령에서만 쓰는 routing mode이며 provider lane이 아닙니다.</td></tr>
-      <tr><td><code>oauth</code></td><td>로컬 OAuth 프록시 경로 강제.</td></tr>
+      <tr><td><code>oauth</code></td><td>GPT OAuth 경로 강제.</td></tr>
       <tr><td><code>api</code></td><td>API key Responses 경로 강제; 설정된 key가 필요합니다.</td></tr>
       <tr><td><code>grok</code></td><td><code>api.x.ai</code>로 가는 xAI OAuth 경로 강제. 최초 1회 <code>ima2 grok login</code> 또는 웹 UI 로그인으로 device code 인증을 진행합니다.</td></tr>
       <tr><td><code>grok-api</code></td><td>OAuth 세션 대신 xAI API key를 직접 사용. <code>grok</code>과 동일한 파이프라인(Web Search → planner → 이미지 생성). 웹 UI key 관리 또는 <code>XAI_API_KEY</code> env var 필요. 비디오 생성도 지원.</td></tr>
@@ -64,18 +64,17 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
 
   <h2>모델</h2>
   <p>
-    GPT 이미지 레인의 기본 모델은 <code>gpt-5.6-luna</code>입니다. Prompt Builder는 별도 백엔드
+    GPT OAuth 레인의 기본 모델은 <code>gpt-6-luna</code>이고, API 키 레인은 <code>gpt-5.6-luna</code>를 유지합니다. Prompt Builder는 별도 백엔드
     설정을 따르며, GPT 백엔드를 쓸 때 Luna가 기본 Builder model입니다.
   </p>
   <table>
     <thead><tr><th>모델</th><th>용도</th></tr></thead>
     <tbody>
-      <tr><td><code>gpt-5.6-luna</code></td><td>현재 GPT 이미지 기본값. Prompt Builder가 GPT 백엔드를 쓸 때도 기본 모델입니다.</td></tr>
-      <tr><td><code>gpt-6-astra</code></td><td>가장 최신 GPT 이미지 모델. OAuth·API 레인에서 고를 수 있지만 기본값은 아닙니다.</td></tr>
-      <tr><td><code>gpt-5.6-terra</code> / <code>gpt-5.6-sol</code></td><td>계정에서 지원할 때 고를 수 있는 GPT-5.6 대안.</td></tr>
-      <tr><td><code>gpt-5.4-mini</code></td><td>호환 모델.</td></tr>
-      <tr><td><code>gpt-5.4</code></td><td>권장 균형 선택지.</td></tr>
-      <tr><td><code>gpt-5.5</code></td><td>Codex CLI/OAuth 백엔드가 지원할 때 가장 강한 품질. 할당량을 더 쓰거나 Codex CLI 업데이트가 필요할 수 있습니다.</td></tr>
+      <tr><td><code>gpt-6-luna</code></td><td>GPT OAuth 기본값. Prompt Builder가 GPT OAuth를 쓸 때도 기본 모델입니다.</td></tr>
+      <tr><td><code>gpt-6-sol</code></td><td>GPT OAuth의 또 다른 일상용 GPT-6 모델.</td></tr>
+      <tr><td><code>gpt-6-astra</code></td><td>가장 오래 추론하는 대신 가장 느립니다. OAuth·API 레인에서 고를 수 있습니다.</td></tr>
+      <tr><td><code>gpt-5.6-luna</code> / <code>gpt-5.6-terra</code> / <code>gpt-5.6-sol</code></td><td>API 키 레인 모델(<code>gpt-5.6-luna</code>가 기본값). GPT OAuth에서는 <code>gpt-6-sol</code>(sol) 또는 <code>gpt-6-luna</code>로 바뀝니다.</td></tr>
+      <tr><td><code>gpt-5.5</code> / <code>gpt-5.4</code> / <code>gpt-5.4-mini</code></td><td>API 키 레인 호환 모델. GPT OAuth에서는 <code>gpt-6-luna</code>로 실행됩니다.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>빠른 호환 Grok 이미지 모델.</td></tr>
       <tr><td><code>grok-imagine-image-quality</code></td><td>최고 품질 Grok 이미지 모델.</td></tr>
       <tr><td><code>grok-imagine-image-2.0</code></td><td>새 세션의 기본 Grok 이미지 모델.</td></tr>

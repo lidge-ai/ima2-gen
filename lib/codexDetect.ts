@@ -3,7 +3,7 @@
 // - OpenAI Codex stores auth under CODEX_HOME (default ~/.codex/auth.json).
 // - Legacy chatgpt-local stores auth under ~/.chatgpt-local/auth.json.
 // - Auth may live in OS keyring instead of a file (file absence ≠ unauth).
-// - openai-oauth can only consume a file-backed Codex session.
+// - ima2's GPT OAuth client (lib/codexBackend) can only consume a file-backed Codex session.
 import { existsSync } from "node:fs";
 import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
 import { homedir } from "node:os";

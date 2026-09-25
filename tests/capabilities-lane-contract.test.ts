@@ -17,8 +17,8 @@ const EXPECTED_SURFACES = {
   oauth: {
     generate: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
     edit: { supported: true, references: true, mask: true, streaming: false, catalogAccess: "static" },
-    multimode: { supported: true, references: true, mask: false, streaming: true, catalogAccess: "static" },
-    node: { supported: true, references: true, mask: false, streaming: true, catalogAccess: "static" },
+    multimode: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+    node: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
     video: { supported: false, references: false, mask: false, streaming: false, catalogAccess: "static" },
   },
   comfy: {
@@ -44,7 +44,12 @@ describe("capability lane contract", () => {
     for (const [id, expected] of Object.entries(EXPECTED_SURFACES)) {
       assert.deepEqual(built.providerSurfaces[id], expected);
     }
-    assert.deepEqual(built.providerSurfaces.api, EXPECTED_SURFACES.oauth);
+    // The API-key lane streams partial frames through the Responses image tool; GPT OAuth does not.
+    assert.deepEqual(built.providerSurfaces.api, {
+      ...EXPECTED_SURFACES.oauth,
+      multimode: { ...EXPECTED_SURFACES.oauth.multimode, streaming: true },
+      node: { ...EXPECTED_SURFACES.oauth.node, streaming: true },
+    });
   });
 
   it("serializes the same capability facts when server lanes are disconnected", () => {

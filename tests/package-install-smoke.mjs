@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync, writeFileSync, realpathSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, isAbsolute, sep } from "node:path";
@@ -138,9 +138,9 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
       const packManifest = [parsePackOutput(pack.stdout)];
       console.log(JSON.stringify({ kind: "packed-runtime-inventory", name: packManifest[0].name,
         version: packManifest[0].version, files: packManifest[0].files }));
-      for (const bundled of ["openai-oauth", "zod"]) {
-        assert.ok(packManifest[0].bundled.includes(bundled), `packed artifact should bundle ${bundled}`);
-      }
+      assert.ok(packManifest[0].bundled.includes("zod"), "packed artifact should bundle zod");
+      // GPT OAuth calls the Codex backend in process; the openai-oauth proxy is no longer shipped.
+      assert.equal(packManifest[0].bundled.includes("openai-oauth"), false, "packed artifact must not bundle openai-oauth");
       tarball = join(packDir, packManifest[0].filename);
     }
 
@@ -150,8 +150,8 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
 
     const packageRoot = join(projectDir, "node_modules", "ima2-gen");
     const cliPath = join(packageRoot, "bin", "ima2.js");
-    const binShim = (name) => join(packageRoot, "node_modules", ".bin", process.platform === "win32" ? `${name}.cmd` : name);
-    assert.equal(existsSync(binShim("openai-oauth")), true, "packaged install should include bundled openai-oauth bin");
+    assert.equal(existsSync(join(packageRoot, "node_modules", "openai-oauth")), false, "packaged install must not carry the old OAuth proxy");
+    assert.equal(existsSync(join(packageRoot, "lib", "codexBackend", "client.js")), true, "packaged install should include the in-process GPT OAuth client");
 
     const installedRequire = createRequire(join(packageRoot, "package.json"));
     const packageManifest = (packageName) => {
@@ -180,20 +180,11 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
       assert.equal(typeof entry, "string", `${packageName} should declare the ${binName} bin`);
       return join(dependencyRoot, entry);
     };
-    const oauthBin = packageBin("openai-oauth", "openai-oauth");
     const codexBin = packageBin("@openai/codex", "codex");
     assert.doesNotThrow(() => installedRequire.resolve("zod/v4"));
-
-    const oauthRoot = join(packageRoot, "node_modules", "openai-oauth");
-    const oauthPackage = JSON.parse(readFileSync(join(oauthRoot, "package.json"), "utf8"));
-    assert.equal(oauthPackage.version, "1.0.2-ima2.2");
-    assert.match(oauthPackage.ima2Patch, /originator\/version headers/);
-    const oauthRuntime = readdirSync(join(oauthRoot, "dist"))
-      .filter((name) => name.endsWith(".js"))
-      .map((name) => readFileSync(join(oauthRoot, "dist", name), "utf8"))
-      .join("\n");
-    for (const marker of ["codex_cli_rs", "IMA2_CODEX_CLIENT_VERSION", "0.144.0"]) {
-      assert.ok(oauthRuntime.includes(marker), `installed OAuth runtime should include ${marker}`);
+    const oauthClient = readFileSync(join(packageRoot, "lib", "codexBackend", "client.js"), "utf8");
+    for (const marker of ["CODEX_CLIENT_VERSION_FLOOR", "0.157.0"]) {
+      assert.ok(oauthClient.includes(marker), `installed GPT OAuth client should include ${marker}`);
     }
     if (process.env.IMA2_PACKAGE_TARBALL && process.env.GITHUB_SHA) {
       const installedPackage = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
@@ -236,9 +227,6 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     assert.equal(installationReport.summary.failed, 0);
     assert.ok(installationReport.checks.some((check) => check.code === "NODE_RUNTIME_OK" && check.kind === "pass"));
     assert.ok(installationReport.checks.every((check) => !check.lane && check.evidence === "local" && check.kind !== "fail"));
-
-    const oauthHelp = run(process.execPath, [oauthBin, "--help"], { cwd: projectDir, env });
-    assert.match(oauthHelp.stdout, /openai-oauth|Options/i);
 
     const codexStatus = spawnSync(process.execPath, [codexBin, "login", "status"], spawnOptions({
       cwd: projectDir,

@@ -16,8 +16,8 @@ const VARIANTS = {
     code: "GROK_API_KEY_MISSING", error: GROK_MESSAGE, copy: COPY.en },
   "oauth-unavailable": { provider: "oauth", model: "gpt-5.6-luna", status: 503,
     code: "OAUTH_UNAVAILABLE", error: "OAuth proxy unavailable", copy: {
-      title: "GPT OAuth proxy unavailable",
-      body: "The GPT OAuth proxy is starting, unavailable, or moved to a fallback port. Reload first; if it persists, run `ima2 doctor` and check the reported GPT OAuth URL.", cta: "Reload" } },
+      title: "GPT OAuth unavailable",
+      body: "GPT OAuth is starting or cannot reach its endpoint. Reload first; if it persists, run `ima2 gpt status` and `ima2 doctor`.", cta: "Reload" } },
   "invalid-request": { provider: "api", model: "gpt-5.6-luna", status: 400,
     code: "INVALID_REQUEST", error: "Invalid size for image generation", copy: {
       title: "Image request needs changes",

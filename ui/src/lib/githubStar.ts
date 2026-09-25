@@ -5,7 +5,7 @@ export type StarState = "starred" | "not-starred" | "unauthenticated";
 export interface StarStatus { state: StarState | null; prompted: boolean; repo: string; url: string }
 
 const STAR_ENDPOINT = "/api/github/star";
-const PUBLIC_REPO_API = "https://api.github.com/repos/lidge-jun/ima2-gen";
+const PUBLIC_REPO_API = "https://api.github.com/repos/lidge-ai/ima2-gen";
 
 export function fetchStarStatus(): Promise<StarStatus> {
   return jsonFetch<StarStatus>(STAR_ENDPOINT);

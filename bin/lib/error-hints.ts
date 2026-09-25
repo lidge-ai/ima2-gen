@@ -2,9 +2,9 @@ const HINTS: Record<string, string> = {
   SERVER_UNREACHABLE: "Start `ima2 serve`, or pass `--server <url>`.",
   APIKEY_DISABLED: "API-key generation is supported in current builds; switch providers or update the configured API key.",
   IMAGE_MODEL_UNSUPPORTED:
-    "This model is visible but cannot generate images here. Use gpt-5.4 or gpt-5.4-mini.",
-  INVALID_IMAGE_MODEL: "Use one of: gpt-5.5, gpt-5.4, gpt-5.4-mini, gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, gpt-6-astra.",
-  OAUTH_UNAVAILABLE: "GPT OAuth proxy is unavailable. Check `ima2 doctor` and restart `ima2 serve`.",
+    "This model is visible but cannot generate images here. Use gpt-6-luna, gpt-6-sol, or gpt-6-astra.",
+  INVALID_IMAGE_MODEL: "GPT OAuth: gpt-6-luna, gpt-6-sol, gpt-6-astra. OpenAI API: see `ima2 models --lane api`.",
+  OAUTH_UNAVAILABLE: "GPT OAuth is unavailable. Check `ima2 doctor` and `ima2 gpt status`.",
   NETWORK_FAILED: "Network/proxy failed. This is not a moderation refusal.",
   SAFETY_REFUSAL: "The image backend refused this generation.",
   MODERATION_REFUSED: "The prompt or image was rejected by moderation.",

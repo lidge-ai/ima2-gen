@@ -1,7 +1,7 @@
 import type { RuntimeContext } from "./runtimeContext.js";
 import { normalizeImageToolModel } from "./oauthNormalize.js";
 import { ATLASCLOUD_TEXT_TO_IMAGE_MODEL } from "./atlasCloudImageAdapter.js";
-import { FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, normalizeImageModel, normalizeReasoningEffort, normalizeGrokImageModel, normalizeGeminiApiModel, normalizeMinimaxImageModel, normalizeNaiImageModel, normalizeComfyWorkflowModel } from "./imageModels.js";
+import { API_FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, normalizeImageModel, normalizeReasoningEffort, normalizeGrokImageModel, normalizeGeminiApiModel, normalizeMinimaxImageModel, normalizeNaiImageModel, normalizeComfyWorkflowModel } from "./imageModels.js";
 
 export interface ProviderOptionsInput {
   provider?: string | undefined;
@@ -144,9 +144,9 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   if (toolModelCheck.error !== undefined) return { error: toolModelCheck.error, code: toolModelCheck.code, status: toolModelCheck.status };
   const apiConfig: { defaultImageModel?: string; defaultReasoningEffort?: string; defaultSize?: string; allowWebSearch?: boolean } = ctx?.config?.apiProvider || {};
   const modelInput = activeProvider === "api"
-    ? (rawModel || apiConfig.defaultImageModel || FALLBACK_IMAGE_MODEL)
+    ? (rawModel || apiConfig.defaultImageModel || API_FALLBACK_IMAGE_MODEL)
     : rawModel;
-  const modelCheck = normalizeImageModel(ctx, modelInput);
+  const modelCheck = normalizeImageModel(ctx, modelInput, activeProvider);
   if (modelCheck.error !== undefined) return { error: modelCheck.error, code: modelCheck.code, status: modelCheck.status };
 
   const reasoningInput = activeProvider === "api"

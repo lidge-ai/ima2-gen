@@ -46,7 +46,7 @@ closeout docs. Existing stable GitHub Release is v3.13.1, non-draft/non-prerelea
 Registry latest3.13.1 and preview3.13.1-preview.260904.33885929065.1 both identify
 d2afe6b2. Stable rollback integrity:
 `sha512-88C+Y0+ImW4Huh+ECfCOunuDFgp17OYZcuSE7Y4NoaH4GmlezkXcyaR//DU6hdhEz1MhCMgn/2L7O6Ig3mgwtg==`.
-Remote Pages is workflow-built at https://lidge-jun.github.io/ima2-gen/.
+Remote Pages is workflow-built at https://lidge-ai.github.io/ima2-gen/.
 Repo allows merge commits and does not auto-delete branches. No settings changed.
 
 ## Actual topology / authority prerequisite

@@ -13,7 +13,7 @@ medium. `oauthNormalize.ts` owns this allowlist and `providerOptions.ts` validat
 API values. `openaiOperations.ts` emits the tool model, and sidecar/history metadata
 preserves it. See `docs/API.md` for exact values.
 
-`server.ts` is the runtime bootstrap for `ima2-gen`. The browser UI and CLI both call `/api/*` endpoints registered from `routes/*.ts`. TypeScript is the source of truth; `server.js`/`routes/*.js`/`lib/*.js` are generated runtime outputs, ignored in the current checkout, and must be built before package/runtime verification rather than hand-edited. The server starts the OAuth proxy, serves the built UI, wires route modules, stores generated image files under the configured generated directory, reconstructs history, and exposes graph sessions.
+`server.ts` is the runtime bootstrap for `ima2-gen`. The browser UI and CLI both call `/api/*` endpoints registered from `routes/*.ts`. TypeScript is the source of truth; `server.js`/`routes/*.js`/`lib/*.js` are generated runtime outputs, ignored in the current checkout, and must be built before package/runtime verification rather than hand-edited. The server hosts the in-process GPT OAuth client (`lib/codexBackend`), serves the built UI, wires route modules, stores generated image files under the configured generated directory, reconstructs history, and exposes graph sessions.
 
 This document matters because the UI and CLI share the same server contract. For example, `/api/generate` returns a different shape for single-image and multi-image responses. `/api/history` supports both a flat list and session grouping. Node mode uses separate `/api/node/generate` and `/api/sessions/*` contracts. If those differences are not documented, clients can break quietly.
 
@@ -75,7 +75,7 @@ graph TD
 | `POST` | `/api/auth/switch` | `{ provider, flow? }` | Start Switch Account OAuth (codex: native browser PKCE or device code; grok: device code) |
 | `GET` | `/api/auth/switch/:sessionId` | none | Poll Switch Account session |
 | `DELETE` | `/api/auth/switch/:sessionId` | none | Cancel a pending login and free the callback port |
-| `POST` | `/api/oauth/restart` | none | Respawn the GPT OAuth proxy to read the current session file |
+| `POST` | `/api/oauth/restart` | none | Make GPT OAuth pick up the current session file (clears the cached model roster) |
 | `GET` | `/api/agy/status` | `{ ready, ... }` | AGY CLI provider probe |
 | `GET` | `/api/generation-requests` | `{ items }` | Last 200 generation attempts (#95) |
 | `GET` | `/api/storage/status` | `{ ok, data: { generatedDirLabel, generatedCount, legacyCandidatesScanned, legacySourcesFound, legacyFilesFound, state, messageKind, recoveryDocsPath, doctorCommand, overrides } }` | Summarizes gallery storage and legacy recovery state for UI support banners |
@@ -87,7 +87,7 @@ The live generation/edit provider can be OAuth, API-key, Grok, Gemini, Atlas Clo
 
 Storage endpoints are local-support helpers. `/api/storage/open-generated-dir` never accepts a browser-supplied path; it opens `ctx.config.storage.generatedDir` only.
 
-Runtime responses expose configured and actual ports separately. The backend can bind `3334+` when `3333` is occupied, and the OAuth proxy can report an actual fallback port when `10531` is occupied. Clients should follow the URL in `~/.ima2/server.json` or the `runtime.*.url` fields rather than rebuilding URLs from configured defaults.
+Runtime responses expose configured and actual ports separately. The backend can bind `3334+` when `3333` is occupied, and an external GPT OAuth endpoint (`IMA2_NO_OAUTH_PROXY=1`) reports its configured port when `10531` is occupied. Clients should follow the URL in `~/.ima2/server.json` or the `runtime.*.url` fields rather than rebuilding URLs from configured defaults.
 
 ## Image Execution Ownership
 
@@ -220,7 +220,7 @@ References/edit/masks remain explicit `NAI_*_UNSUPPORTED` failures.
 
 `/api/generate` accepts up to 5 `references`. `n` is clamped from 1 to `limits.maxGeneratedImages` (default 24, configurable through `IMA2_MAX_GENERATED_IMAGES`). Result files are written to the configured generated directory, usually `~/.ima2/generated`, and sidecar JSON stores prompt, quality, size, format, moderation, model, provider, usage, web search counts, generation time (`elapsed`, numeric seconds), and `reasoningEffort`. `elapsed` and `reasoningEffort` are also embedded in the PNG XMP and returned by `/api/history`, so per-image metadata survives reload (#79, forward-fix — only items generated after the fix carry them).
 
-Image generation model selection is explicit. If omitted, the server defaults to `gpt-5.6-luna`. Supported image models are `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini`. `gpt-5.3-codex-spark` can appear in OAuth model status, but it does not support the `image_generation` tool, so generation endpoints reject it with `IMAGE_MODEL_UNSUPPORTED` before calling OAuth.
+Image generation model selection is explicit. If omitted, GPT OAuth defaults to `gpt-6-luna` (GPT OAuth accepts `gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra` and maps legacy ids to their GPT-6 tier). API-key image models are `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini`. `gpt-5.3-codex-spark` can appear in OAuth model status, but it does not support the `image_generation` tool, so generation endpoints reject it with `IMAGE_MODEL_UNSUPPORTED` before calling OAuth.
 
 For `provider: "api"`, missing options use `config.apiProvider` defaults: `gpt-5.6-luna`, `low` reasoning effort, `1024x1024`, and web search enabled. These defaults are overridable via `apiProvider.*` config or the `IMA2_API_IMAGE_MODEL_DEFAULT`, `IMA2_API_REASONING_EFFORT`, `IMA2_API_IMAGE_SIZE`, and `IMA2_API_ALLOW_WEB_SEARCH` env vars (see `06-infra-operations`). Validated request options still pass through. Generate/edit/multimode/node use `providers/adapters/openaiExecution.ts`, `openaiOperations.ts`, and `responsesTransport.ts` for the shared OAuth/API Responses payload, including reasoning-effort, web-search, and reference-image plumbing. `lib/responsesImageAdapter.ts` remains the compatibility re-export for agent/sprite consumers. `tests/api-provider-parity.test.ts` and `tests/provider-execution-*.test.ts` cover the parity and dispatch contracts.
 
@@ -615,7 +615,7 @@ Graph edges are the source of truth for node parentage. On save, the server filt
 
 Graph saves may include observability headers: `X-Ima2-Graph-Save-Id`, `X-Ima2-Graph-Save-Reason`, and `X-Ima2-Tab-Id`. The server logs these values for `graph_save` and `graph_conflict` events but must not treat them as authorization or correctness inputs.
 
-Style sheet endpoints persist a per-session reference style summary in SQLite. `/style-sheet/extract` calls the OAuth Responses API with `IMA2_STYLE_MODEL` (default `gpt-5.6-luna`) to derive a short text style sheet from a single history image; the route enforces that the source image belongs to the same session. `enabled` is a separate toggle that determines whether the style sheet is injected into the next prompt; the actual injection uses up to `IMA2_STYLE_SHEET_MAX_PREFIX` characters and is performed at the route layer.
+Style sheet endpoints persist a per-session reference style summary in SQLite. `/style-sheet/extract` calls the OpenAI API-key client with `IMA2_STYLE_MODEL` (default `gpt-5.6-luna`) to derive a short text style sheet from a single history image; the route enforces that the source image belongs to the same session. `enabled` is a separate toggle that determines whether the style sheet is injected into the next prompt; the actual injection uses up to `IMA2_STYLE_SHEET_MAX_PREFIX` characters and is performed at the route layer.
 
 ## Image Metadata API
 
