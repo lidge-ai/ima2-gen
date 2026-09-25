@@ -107,7 +107,7 @@ export default function App() {
     if (isLanSessionLocked()) return;
     void syncCapabilities();
     hydrateHistory();
-    if (ENABLE_AGENT_MODE || ENABLE_NODE_MODE) loadSessions();
+    if (ENABLE_AGENT_MODE || ENABLE_NODE_MODE) loadSessions(); // eslint-disable-line @typescript-eslint/no-floating-promises -- loadSessions reports its own failures
     void reconcileInflight();
     startInFlightPolling();
     ensureConnected();
