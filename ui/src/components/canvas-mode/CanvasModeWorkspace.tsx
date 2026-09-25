@@ -110,7 +110,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
 
   const displayQuality = formatQualityAlias(currentImage?.quality);
   const displaySize = formatSizeAlias(currentImage?.size);
-  const displayModel = getImageModelShortLabel(currentImage?.model);
+  const displayModel = getImageModelShortLabel(currentImage?.model, currentImage?.provider);
   const imageKey = currentImage?.filename ?? currentImage?.url ?? currentImage?.image ?? null;
   const latestCanvasVersion = findCanvasVersionForSource(history, currentImage);
   const canvasDisplayImage = canvasOpen ? (canvasVersionItem ?? latestCanvasVersion ?? currentImage) : currentImage;
