@@ -20,6 +20,12 @@ mock.module("node:fs", { namedExports: {
     ? "{}" : Reflect.apply(readFileSync, undefined, args),
 } });
 const { fetchNaiQuota, registerQuotaRoutes } = await import("../routes/quota.ts");
+// The Codex usage lane reads ~/.codex/auth.json and friends with async fs, which
+// the mock above does not cover; give it a store with no session instead.
+const { setCodexSessionStoreForTests } = await import("../lib/codexBackend/index.ts");
+const noCodexSession = async (): Promise<never> => { throw new Error("no ChatGPT session in tests"); };
+setCodexSessionStoreForTests({ get: noCodexSession, refresh: noCodexSession });
+test.after(() => { setCodexSessionStoreForTests(null); });
 const originalFetch = globalThis.fetch;
 test.afterEach(() => { globalThis.fetch = originalFetch; mock.restoreAll(); });
 

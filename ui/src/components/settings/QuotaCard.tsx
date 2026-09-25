@@ -132,7 +132,12 @@ function SwitchAccountButton({ provider, onComplete }: { provider: "grok" | "cod
         return;
       }
       const data = await res.json() as { sessionId: string; userCode: string; verificationUrl: string; flow?: "browser" | "device" };
-      if (isLanSessionLocked() || epoch !== getLanAuthEpoch()) return;
+      if (isLanSessionLocked() || epoch !== getLanAuthEpoch()) {
+        // The login died with the LAN session; don't leave the card stuck on "starting".
+        switching.current = false;
+        setState({ phase: "idle" });
+        return;
+      }
       setState({ phase: "waiting", ...data, flow: data.flow ?? flow });
       window.open(data.verificationUrl, "_blank");
     } catch (e) {
