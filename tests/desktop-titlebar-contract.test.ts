@@ -37,7 +37,7 @@ describe("integrated titlebar", () => {
     // hiddenInset draws a ~52px-wide, ~14px-tall cluster whose top-left is (x, y).
     assert.ok(Math.abs(x + 26 - railW / 2) <= 2, `traffic lights (x=${x}) are not centered over the ${railW}px rail`);
     assert.ok(Math.abs(y + 7 - rowH / 2) <= 2, `traffic lights (y=${y}) are not centered in the ${rowH}px row`);
-    assert.ok(/\.nav-rail \{[^}]*width: var\(--nav-rail-w/s.test(src("ui/src/styles/nav-rail.css")),
+    assert.ok(/\.app--mac-desktop \.nav-rail \{[^}]*width: var\(--nav-rail-w\)/s.test(css),
       "the rail must follow --nav-rail-w so the grid column and rail stay in sync");
   });
 

@@ -13,6 +13,7 @@
 }
 
 .app--mac-desktop .nav-rail {
+  width: var(--nav-rail-w);
   padding-top: var(--mac-titlebar-h);
   -webkit-app-region: drag;
 }
