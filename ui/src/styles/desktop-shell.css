@@ -1,0 +1,22 @@
+/* ── macOS desktop shell (Electron, titleBarStyle: hiddenInset) ──────────────
+ * The window paints its traffic lights over the top-left corner of the page.
+ * Only the nav rail makes room for them: it widens just enough to hold the
+ * ~52px cluster and reserves a top row, so every other column keeps its
+ * browser layout. trafficLightPosition in desktop/lib/windows.mjs centers the
+ * cluster over this rail (pinned by tests/desktop-titlebar-contract.test.ts).
+ * The rail's empty surface doubles as the window drag handle. Browser sessions
+ * never get `app--mac-desktop`, so none of this applies there.
+ */
+.app.app--mac-desktop {
+  --nav-rail-w: 72px;
+  --mac-titlebar-h: 40px;
+}
+
+.app--mac-desktop .nav-rail {
+  padding-top: var(--mac-titlebar-h);
+  -webkit-app-region: drag;
+}
+
+.app--mac-desktop .nav-rail__btn {
+  -webkit-app-region: no-drag;
+}

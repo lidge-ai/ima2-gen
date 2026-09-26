@@ -1,25 +1,14 @@
 import { BrowserWindow, app, ipcMain, shell } from "electron";
-import { isLocalServerUrl } from "./window-open.mjs";
 
-/**
- * Only bundled desktop pages (file://) may drive the shell. Channels the served
- * ima2 UI legitimately needs (the settings gear in its top strip) opt in with
- * `allowServed`, which also trusts the local server origin — never remote pages.
- */
+/** Only the bundled desktop pages (file://) may drive the shell; the served ima2 UI gets no IPC. */
+function handle(channel, fn) {
+  ipcMain.handle(channel, (e, ...args) => {
+    if (!e.senderFrame?.url.startsWith("file:")) throw new Error(`ipc ${channel}: untrusted sender`);
+    return fn(e, ...args);
+  });
+}
+
 export function registerIpc({ settingsStore, supervisor, actions, info }) {
-  const isTrustedSender = (url, allowServed) => {
-    if (url.startsWith("file:")) return true;
-    return allowServed && isLocalServerUrl(url, supervisor.url);
-  };
-  function handle(channel, fn, { allowServed = false } = {}) {
-    ipcMain.handle(channel, (e, ...args) => {
-      if (!isTrustedSender(e.senderFrame?.url ?? "", allowServed)) {
-        throw new Error(`ipc ${channel}: untrusted sender`);
-      }
-      return fn(e, ...args);
-    });
-  }
-
   handle("desktop:status", () => supervisor.snapshot());
   handle("desktop:settings:get", () => settingsStore.get());
   handle("desktop:settings:save", (_e, patch) => settingsStore.update(patch ?? {}));
@@ -36,7 +25,7 @@ export function registerIpc({ settingsStore, supervisor, actions, info }) {
   handle("desktop:check-updates", () => actions.checkForUpdates());
   handle("desktop:server:restart", () => actions.restartServer());
   handle("desktop:open-app", () => actions.openApp());
-  handle("desktop:open-settings", () => actions.openSettings(), { allowServed: true });
+  handle("desktop:open-settings", () => actions.openSettings());
   handle("desktop:open-in-browser", () => actions.openInBrowser());
   handle("desktop:open-generated", () => actions.openGenerated());
   handle("desktop:open-logs", () => actions.openLogs());

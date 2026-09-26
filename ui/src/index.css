@@ -294,7 +294,7 @@ body::after {
 @import "./styles/prompt-library-core.css";
 @import "./styles/prompt-library-detail.css";
 @import "./styles/prompt-library-extras.css";
-@import "./styles/top-strip.css";
+@import "./styles/desktop-shell.css";
 
 .node-studio-empty-overlay { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; padding: 72px 16px 24px; pointer-events: none; }
 .node-studio-empty-overlay > * { pointer-events: auto; }

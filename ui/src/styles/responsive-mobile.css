@@ -209,6 +209,18 @@
   .right-panel.collapsed {
     width: min(320px, 85vw);
   }
+  .right-panel-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    left: auto;
+    transform: none;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    z-index: 60;
+  }
   .right-panel-backdrop {
     position: fixed;
     inset: 0;
