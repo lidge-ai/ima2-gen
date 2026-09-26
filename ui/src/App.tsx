@@ -28,10 +28,8 @@ import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "./li
 import { useGalleryViewerNavigation } from "./hooks/useGalleryViewerNavigation";
 import { useBrowserAttentionBadge } from "./hooks/useBrowserAttentionBadge";
 import { useIsMobile } from "./hooks/useIsMobile";
-import { useRightPanelShortcut, useSidebarCollapse } from "./hooks/useSidebarCollapse";
 import { useVisualViewportInset } from "./hooks/useVisualViewportInset";
-import { SidebarTopStrip } from "./components/SidebarTopStrip";
-import { desktopBridge, isMacDesktop } from "./lib/desktopShell";
+import { isMacDesktop } from "./lib/desktopShell";
 import { resolveWorkspaceSettings } from "./lib/workspaceProfile";
 import { useI18n } from "./i18n";
 
@@ -92,13 +90,6 @@ export default function App() {
   const isAssetGenMode = uiMode === "asset-gen";
   const isHomeMode = uiMode === "home";
   const isMobile = useIsMobile();
-  const { collapsed: navCollapsed, toggle: toggleNav } = useSidebarCollapse();
-  const rightPanelOpen = useAppStore((s) => s.rightPanelOpen);
-  const toggleRightPanel = useAppStore((s) => s.toggleRightPanel);
-  useRightPanelShortcut(toggleRightPanel);
-  const desktop = desktopBridge();
-  const noSidebarMode = isHomeMode || isAgentMode || isAssetsMode || isAssetGenMode;
-  const hasRightPanel = !isMobile && uiMode !== "agent" && uiMode !== "card-news" && !isAssetsMode && !isAssetGenMode && !isHomeMode;
   const workspaceSettings = resolveWorkspaceSettings(workspaceProfile);
   const promptStudioClassic =
     !isMobile &&
@@ -171,22 +162,11 @@ export default function App() {
           showHistoryStrip && historyStripLayout === "horizontal" ? " app--history-horizontal" : ""
         }${
           showHistoryStrip && historyStripLayout === "sidebar" ? " app--history-sidebar" : ""
-        }${desktop ? " app--desktop" : ""}${isMacDesktop() ? " app--macos" : ""}${
-          navCollapsed && !isMobile ? " app--nav-collapsed" : ""
-        }${noSidebarMode ? " app--no-sidebar" : ""}${!rightPanelOpen && hasRightPanel ? " app--rp-collapsed" : ""}`}
+        }${isMacDesktop() && !isMobile ? " app--mac-desktop" : ""}`}
         data-history-strip-layout={historyStripLayout}
         data-mobile={isMobile ? "1" : undefined}
         data-ui-mode={uiMode}
       >
-        {isMobile ? null : (
-          <SidebarTopStrip
-            collapsed={navCollapsed}
-            onToggle={toggleNav}
-            controlsId={noSidebarMode ? undefined : "app-sidebar"}
-            panelCollapsed={!rightPanelOpen}
-            onPanelToggle={hasRightPanel && !settingsOpen ? toggleRightPanel : undefined}
-          />
-        )}
         <NavRail />
         {isHomeMode ? null : <Sidebar />}
         <MobileAppBar />

@@ -2,9 +2,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 // The full bridge is only for the bundled desktop pages (loading/settings).
 // The served ima2 UI (http://127.0.0.1:<port>) runs in the same window and gets
-// a minimal bridge — enough to know it is inside the desktop shell (the sidebar
-// top strip reads platform for the traffic-light inset) and to reopen the
-// settings window — but not to touch settings, the server process, or the disk.
+// only the platform (the nav rail reserves room for the macOS traffic lights) —
+// no IPC at all. Desktop settings live in the application menu (Cmd+,).
 if (window.location.protocol === "file:") {
   contextBridge.exposeInMainWorld("ima2Desktop", {
     platform: process.platform,
@@ -39,6 +38,5 @@ if (window.location.protocol === "file:") {
 } else {
   contextBridge.exposeInMainWorld("ima2Desktop", {
     platform: process.platform,
-    openSettings: () => ipcRenderer.invoke("desktop:open-settings"),
   });
 }

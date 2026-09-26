@@ -89,6 +89,19 @@ export function RightPanel() {
         role={isMobile && open ? "dialog" : undefined}
         tabIndex={isMobile ? -1 : undefined}
       >
+        {!isMobile && (
+          <button
+            type="button"
+            className="right-panel-toggle"
+            aria-expanded={open}
+            aria-controls="right-panel-body"
+            onClick={toggle}
+            aria-label={open ? t("panel.toggleAriaHide") : t("panel.toggleAriaShow")}
+            title={open ? t("panel.toggleHide") : t("panel.toggleShow")}
+          >
+            {open ? ">" : "<"}
+          </button>
+        )}
         <div
           id="right-panel-body"
           className="right-panel-body"

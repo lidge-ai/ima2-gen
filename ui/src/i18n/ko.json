@@ -469,8 +469,10 @@
   "panel": {
     "closeSettings": "설정 닫기",
     "detailSettings": "세부 설정",
-    "toggleShow": "패널 보기",
-    "toggleHide": "패널 숨기기",
+    "toggleShow": "세부 설정 보기",
+    "toggleHide": "세부 설정 숨기기",
+    "toggleAriaShow": "사이드 패널 보기",
+    "toggleAriaHide": "사이드 패널 숨기기",
     "open": "열기",
     "close": "닫기"
   },
@@ -1922,10 +1924,7 @@
     "agent": "에이전트",
     "assets": "보관함",
     "assetGen": "에셋 생성",
-    "settings": "설정",
-    "collapseSidebar": "사이드바 접기",
-    "expandSidebar": "사이드바 펼치기",
-    "desktopSettings": "앱 설정"
+    "settings": "설정"
   },
   "assetGen": {
     "title": "에셋 생성",

@@ -21,6 +21,7 @@ const AFTER_TARGETS = [
   { file: "canvas-background-cleanup.css", selector: ".canvas-toolbar__zoom-button" },
   { file: "sprite-curator.css", selector: ".sprite-rail__actions button" },
   { file: "agent-stage.css", selector: ".agent-right-sidebar__overlay-header button" },
+  { file: "right-panel.css", selector: ".right-panel-toggle" },
 ];
 
 /** Selectors with actual 44px dimensions. */
@@ -37,8 +38,8 @@ describe("ui-touch-target-contract", () => {
       const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const afterRe = new RegExp(escaped + "::after[^}]*width:\\s*44px");
       assert.ok(afterRe.test(css), selector + "::after should have width: 44px in " + file);
-      const posRe = new RegExp(escaped + "\\s*\\{[^}]*position:\\s*relative");
-      assert.ok(posRe.test(css), selector + " should have position: relative in " + file);
+      const posRe = new RegExp(escaped + "\\s*\\{[^}]*position:\\s*(relative|absolute)");
+      assert.ok(posRe.test(css), selector + " should be positioned (relative or absolute) in " + file);
     });
   }
 

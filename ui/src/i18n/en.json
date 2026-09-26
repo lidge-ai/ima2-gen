@@ -469,8 +469,10 @@
   "panel": {
     "closeSettings": "Close settings",
     "detailSettings": "Settings",
-    "toggleShow": "Show panel",
-    "toggleHide": "Hide panel",
+    "toggleShow": "Show settings",
+    "toggleHide": "Hide settings",
+    "toggleAriaShow": "Show side panel",
+    "toggleAriaHide": "Hide side panel",
     "open": "Open",
     "close": "Close"
   },
@@ -1922,10 +1924,7 @@
     "agent": "Agent",
     "assets": "Assets",
     "assetGen": "Asset Gen",
-    "settings": "Settings",
-    "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar",
-    "desktopSettings": "App settings"
+    "settings": "Settings"
   },
   "assetGen": {
     "title": "Asset generation",

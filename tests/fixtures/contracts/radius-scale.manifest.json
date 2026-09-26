@@ -2949,6 +2949,13 @@
   {
     "file": "ui/src/styles/right-panel.css",
     "atRule": null,
+    "selector": ".right-panel-toggle",
+    "expected": "var(--r-sm) 0 0 var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/right-panel.css",
+    "atRule": null,
     "selector": ".secondary-btn",
     "expected": "var(--r-sm)",
     "important": false
@@ -3356,13 +3363,6 @@
     "file": "ui/src/styles/onboarding.css",
     "atRule": null,
     "selector": ".onboarding__choice",
-    "expected": "var(--r-md)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/top-strip.css",
-    "atRule": null,
-    "selector": ".sidebar-top__btn",
     "expected": "var(--r-md)",
     "important": false
   }

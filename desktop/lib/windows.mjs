@@ -8,10 +8,11 @@ const PRELOAD = join(desktopDir, "preload.cjs");
 const LOADING_PAGE = join(desktopDir, "pages", "loading.html");
 const SETTINGS_PAGE = join(desktopDir, "pages", "settings.html");
 
-// The web UI draws the title row itself (ui/src/styles/top-strip.css, --chrome-top-h).
-// The traffic lights sit inside it: x clears the toggle-left air, y centers the
-// ~14px-tall cluster in the 40px row. Pinned by tests/desktop-titlebar-contract.test.ts.
-const TRAFFIC_LIGHT_POSITION = { x: 16, y: 13 };
+// The web UI reserves the traffic lights' corner in its nav rail
+// (ui/src/styles/desktop-shell.css: --nav-rail-w, --mac-titlebar-h): x centers the
+// ~52px cluster over the rail, y centers it in the rail's top row.
+// Pinned by tests/desktop-titlebar-contract.test.ts.
+const TRAFFIC_LIGHT_POSITION = { x: 10, y: 13 };
 
 export class WindowManager {
   constructor({ getServerUrl, getSettings, iconPath, onVisibilityChange, onHiddenToTray }) {
