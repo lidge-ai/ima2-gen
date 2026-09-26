@@ -46,12 +46,33 @@
   flex: 1 1 auto;
 }
 
-.logo-actions {
-  display: inline-flex;
+/* Second row of the sidebar header: prompt-library bookmark + provider/model
+   selects. Kept out of .logo so the brand line never collapses; the selects
+   share the remaining width and truncate instead of overflowing. */
+.sidebar-controls {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  margin-left: auto;
-  flex: 0 0 auto;
+  gap: 6px;
+  min-width: 0;
+}
+.sidebar-controls .gen-provider-model {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  flex-wrap: nowrap;
+}
+.sidebar-controls .gen-provider-model__select {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+.sidebar-controls .gen-provider-model .ctl-select__trigger {
+  width: 100%;
+}
+.sidebar-controls .gen-provider-model .ctl-select__value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logo-title {

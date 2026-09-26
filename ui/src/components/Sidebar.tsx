@@ -93,10 +93,12 @@ export function SidebarChrome() {
           {/* The old desktop titlebar showed the server URL; keep it here. */}
           {desktop ? <div className="logo-host">{serverHost()}</div> : null}
         </div>
-        <div className="logo-actions">
-          <PromptLibraryButton />
-          <GenProviderModelSelect compact={isMobile} />
-        </div>
+      </div>
+      {/* Controls get their own row: the 260px column cannot fit brand +
+          bookmark + two selects on one line without collapsing the wordmark. */}
+      <div className="sidebar-controls">
+        <PromptLibraryButton />
+        <GenProviderModelSelect compact={isMobile} />
       </div>
     </>
   );
