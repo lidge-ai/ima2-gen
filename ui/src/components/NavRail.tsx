@@ -178,7 +178,7 @@ export function NavRail() {
       if (resolved.settings) {
         openSettings();
       } else {
-        if (settingsOpen) closeSettings();
+        if (useAppStore.getState().settingsOpen) closeSettings();
         setUIMode(resolved.mode);
       }
     };
