@@ -246,11 +246,19 @@ test("T6 retired attachment highlight follows the mounted textarea after scroll 
         const input = element.querySelector<HTMLTextAreaElement>(".composer__textarea")!;
         const mirror = element.querySelector<HTMLElement>(".composer__prompt-mirror")!;
         const actual = getComputedStyle(mirror), expected = getComputedStyle(input);
+        /* Text-geometry keys must match exactly. Dimensional keys (width/height)
+           tolerate sub-px divergence: the mirror is absolute inset:0 and resolves
+           through the containing block's used height, while the textarea resolves
+           its own percentage — the two paths can land one Chromium layout quantum
+           (1/64px) apart after any flex redistribution, with no visual effect. */
         const keys = ["width", "height", "paddingLeft", "paddingRight", "paddingTop", "paddingBottom", "lineHeight", "fontSize"] as const;
+        const DIMENSIONAL = new Set<string>(["width", "height"]);
         const marks = Array.from(mirror.querySelectorAll<HTMLElement>(".dead-tag"));
         const box = input.getBoundingClientRect();
         const visible = marks.map((mark) => mark.getBoundingClientRect()).find((r) => r.top >= box.top && r.bottom <= box.bottom);
-        return { aligned: keys.every((key) => actual[key] === expected[key]), scrollTop: input.scrollTop,
+        return { aligned: keys.every((key) => DIMENSIONAL.has(key)
+          ? Math.abs(parseFloat(actual[key]) - parseFloat(expected[key])) < 0.02
+          : actual[key] === expected[key]), scrollTop: input.scrollTop,
           mirrorScrollTop: mirror.scrollTop, markCount: marks.length, pointerTransparent: actual.pointerEvents === "none",
           hitTextarea: !!visible && document.elementFromPoint(visible.left + visible.width / 2, visible.top + visible.height / 2) === input };
       });
