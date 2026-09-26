@@ -24,6 +24,7 @@ Deferred / 미래 항목은 `_plan/` 직속이 아니라 `_plan/_future/`에 둔
 
 | 경로 | 상태 |
 |---|---|
+| `260926_pr325_merge_release/` | PR #325(desktop 통합 타이틀바) 리뷰·다듬기 → dev 스쿼시 머지 → post-merge CI → dev→main 프로모션 → v3.23.0 릴리스(npm/GitHub/desktop/pages). 000 로드맵, 010~030 단계 문서. |
 | `260922_macos_arm64_release/` | 데스크톱 배포 1~4단계. Apple Silicon 전용 DMG/ZIP, fail-closed 서명·공증, packaged darwin/arm64 updater와 사용자 승인 설치, exact asset/checksum Draft 및 `desktop-production` 승인 후 공개 workflow를 구현. Environment 설정, 실제 tagged notarization과 두 버전 live update는 후속 범위. |
 | `260917_issue_pr_triage_release/` | 2026-09-17 기준 열린 이슈/PR 전수 정리와 v3.16.1 릴리스. 이슈 #244(grok 서브커맨드 `--help` 부작용) 수정, dependabot #242/#243 판정, PR #229 판정, #150 재triage. 진행 문서는 000~050. |
 | `260908_xai_imagine_spec_resync/` | v3.15.1로 배포 완료. xAI ref2v 상한 7->14, 모델별 ref2v 길이, 연장 1-15s, 이미지 편집 5장, 날짜 별칭, 오디오 단독 ref2v를 서버·UI·CLI·문서에 반영. GUI에 보이스 선택과 영상 편집 버튼 추가. 남은 것: 컴포저 드롭에서 편집으로 들어가는 흐름(결과 카드로 대체 가능). 배포 기록은 070_release_v3151.md. |
