@@ -471,6 +471,8 @@
     "detailSettings": "Settings",
     "toggleShow": "Show settings",
     "toggleHide": "Hide settings",
+    "toggleAriaShow": "Show side panel",
+    "toggleAriaHide": "Hide side panel",
     "open": "Open",
     "close": "Close"
   },

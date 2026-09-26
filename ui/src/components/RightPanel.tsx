@@ -96,7 +96,7 @@ export function RightPanel() {
             aria-expanded={open}
             aria-controls="right-panel-body"
             onClick={toggle}
-            aria-label={open ? t("panel.toggleHide") : t("panel.toggleShow")}
+            aria-label={open ? t("panel.toggleAriaHide") : t("panel.toggleAriaShow")}
             title={open ? t("panel.toggleHide") : t("panel.toggleShow")}
           >
             {open ? ">" : "<"}
