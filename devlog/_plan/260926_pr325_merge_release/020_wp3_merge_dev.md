@@ -20,3 +20,8 @@
    desktop.yml unsigned mac build SUCCESS. cancelled/skipped는 green이 아님
    (DEV-CI-EVIDENCE-01: 집계 job의 dependency까지 확인).
 Exit: 관련 run 전부 conclusion=success.
+
+## Merge record (2026-09-26)
+
+- gh pr merge 325 --squash → origin/dev = eba67ec4 "desktop: integrated title bar +
+  collapsible sidebar (Codex-style) (#325)".
