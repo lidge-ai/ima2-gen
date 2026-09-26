@@ -254,7 +254,13 @@ test("T6 retired attachment highlight follows the mounted textarea after scroll 
           mirrorScrollTop: mirror.scrollTop, markCount: marks.length, pointerTransparent: actual.pointerEvents === "none",
           hitTextarea: !!visible && document.elementFromPoint(visible.left + visible.width / 2, visible.top + visible.height / 2) === input };
       });
-      await expect.poll(async () => { const m = await metrics(); return m.aligned && m.scrollTop === m.mirrorScrollTop && m.hitTextarea; }).toBe(true);
+      try {
+        await expect.poll(async () => { const m = await metrics(); return m.aligned && m.scrollTop === m.mirrorScrollTop && m.hitTextarea; }, { timeout: 15000 }).toBe(true);
+      } catch (error) {
+        await writeFile(info.outputPath("t6-failure-metrics-" + width + ".json"), JSON.stringify(await metrics(), null, 2));
+        await page.screenshot({ path: info.outputPath("t6-failure-" + width + ".png"), fullPage: true });
+        throw error;
+      }
       const result = await metrics(); expect(result.markCount).toBe(60); expect(result.scrollTop).toBeGreaterThan(0);
       expect(result.pointerTransparent).toBe(true); await capture(page, info, `t6-mirror-${width}`, result);
     }
