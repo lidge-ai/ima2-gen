@@ -1,4 +1,6 @@
 const api = window.ima2Desktop;
+// Gates the macOS-only drag strip styling (loading.css); absent outside darwin.
+document.documentElement.dataset.platform = api?.platform ?? "";
 const $ = (id) => document.getElementById(id);
 const rowServer = $("row-server");
 const rowOpen = $("row-open");

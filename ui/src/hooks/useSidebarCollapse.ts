@@ -3,7 +3,7 @@ import { desktopBridge } from "../lib/desktopShell";
 
 const STORAGE_KEY = "ima2.sidebarCollapsed";
 
-export function readSidebarCollapsed(): boolean {
+function readSidebarCollapsed(): boolean {
   try {
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   } catch {
