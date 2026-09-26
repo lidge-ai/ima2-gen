@@ -39,3 +39,16 @@ Scope: PR #325 diff (+605/-217, 35 files) 전수 리뷰. 확인된 지적만 PR 
 2. gh api repos/lidge-ai/ima2-gen/commits/<SHA>/check-runs?per_page=100 — 전 check SUCCESS.
 3. 리뷰 지적 표: 지적/판정(fix|rebut)/근거 file:line.
 Exit: 0 failures, pending 없음, exact head SHA 일치.
+
+## Review outcome (2026-09-26)
+
+- 독립 리뷰(kimi Galileo) + main 리뷰: VERDICT PASS, blockers=0. preload 최소 브리지
+  (platform+openSettings만)와 will-navigate/isTrustedSender 가드가 유지됨을 확인.
+- Low #1 dead exports 수정: App.tsx가 isMacDesktop()을 쓰도록, readSidebarCollapsed의
+  불필요한 export 제거.
+- Low #2 loading drag strip이 Windows/Linux에서 dead space였던 것을 :root[data-platform]
+  게이트로 darwin 전용화 (loading.js가 bridge platform을 기록).
+- Low #3 (.right-panel.collapsed CSS) 반박: 모바일 드로어 경로가 아직 collapsed 클래스를
+  사용하므로 dead code가 아님. 이 PR의 regression도 아니어서 후속 과제로 남김.
+- Polish 커밋: 1e4df794 (PR 브랜치 push). 로컬 게이트: tsc x2 clean, eslint 0 errors,
+  계약 테스트 41/41 pass.
