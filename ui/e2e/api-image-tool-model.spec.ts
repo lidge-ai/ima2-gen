@@ -21,7 +21,7 @@ async function submit(page: Page, capture: J6Capture, origin: string) {
 }
 
 async function settings(page: Page) {
-  const toggle = page.locator(".right-panel-toggle");
+  const toggle = page.locator(".panel-top__toggle");
   if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
   await page.locator(".right-panel").getByRole("tab", { name: "Settings", exact: true }).click();
 }

@@ -469,8 +469,8 @@
   "panel": {
     "closeSettings": "關閉設定",
     "detailSettings": "設定",
-    "toggleShow": "顯示設定",
-    "toggleHide": "隱藏設定",
+    "toggleShow": "顯示面板",
+    "toggleHide": "隱藏面板",
     "open": "打開",
     "close": "關閉"
   },

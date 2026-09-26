@@ -71,7 +71,7 @@ export function SidebarTopStrip({ collapsed, onToggle, controlsId, panelCollapse
         <div className="panel-top" role="toolbar" aria-label={t("panel.detailSettings")}>
           <button
             type="button"
-            className="sidebar-top__btn"
+            className="sidebar-top__btn panel-top__toggle"
             onClick={onPanelToggle}
             aria-label={panelLabel}
             aria-expanded={!panelCollapsed}
