@@ -59,7 +59,9 @@
   flex: 1 1 auto;
   min-width: 0;
   max-width: none;
-  flex-wrap: nowrap;
+  /* keep wrap: the catalog-state/error row uses flex-basis 100% to take its
+     own line (canvas-accordion.css); the two selects stay on line one because
+     their flex-basis is 0 and nothing else competes for the row */
 }
 .sidebar-controls .gen-provider-model__select {
   flex: 1 1 0;
