@@ -1,6 +1,6 @@
 /* Loading screen shown in the main window until the local server answers. */
 .boot {
-  height: 100%;
+  height: calc(100% - 38px); /* leave room for the .drag strip under the traffic lights */
   padding: 0 24px 48px;
   display: flex;
   flex-direction: column;

@@ -1922,7 +1922,10 @@
     "agent": "에이전트",
     "assets": "보관함",
     "assetGen": "에셋 생성",
-    "settings": "설정"
+    "settings": "설정",
+    "collapseSidebar": "사이드바 접기",
+    "expandSidebar": "사이드바 펼치기",
+    "desktopSettings": "앱 설정"
   },
   "assetGen": {
     "title": "에셋 생성",

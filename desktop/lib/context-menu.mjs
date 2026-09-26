@@ -1,14 +1,13 @@
-// Right-click context menus for every webContents (main view, titlebar,
-// settings, OAuth popups). Electron ships no default menu, so without this a
+// Right-click context menus for every webContents (main window, settings,
+// tray popup, OAuth popups). Electron ships no default menu, so without this a
 // right-click does nothing. Kept electron-free: `contextMenuTemplate` and
 // `canOpenExternally` are pure and `installContextMenus` takes its Electron
 // pieces as injected deps, the same convention as app-lifecycle.mjs /
 // login-item.mjs, so node:test can exercise the template without a runtime.
 //
 // Edit commands are dispatched as explicit `contents.*()` calls rather than
-// menu `role`s: the app's content lives in embedded WebContentsViews, and on
-// macOS roles route through the window's first responder — which is the host
-// window's shell page, not the view that was right-clicked.
+// menu `role`s: on macOS roles route through the window's first responder,
+// which may not be the surface that was right-clicked.
 
 const EDIT_ACTIONS = [
   { id: "undo", label: "Undo", flag: "canUndo" },

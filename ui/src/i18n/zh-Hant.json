@@ -1922,7 +1922,10 @@
     "agent": "代理人",
     "assets": "資產",
     "assetGen": "資產生成",
-    "settings": "設定"
+    "settings": "設定",
+    "collapseSidebar": "收合側邊欄",
+    "expandSidebar": "展開側邊欄",
+    "desktopSettings": "應用程式設定"
   },
   "assetGen": {
     "title": "資產生成",

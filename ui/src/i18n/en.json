@@ -1922,7 +1922,10 @@
     "agent": "Agent",
     "assets": "Assets",
     "assetGen": "Asset Gen",
-    "settings": "Settings"
+    "settings": "Settings",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "desktopSettings": "App settings"
   },
   "assetGen": {
     "title": "Asset generation",

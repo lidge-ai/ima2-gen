@@ -3372,5 +3372,12 @@
     "selector": ".onboarding__choice",
     "expected": "var(--r-md)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/top-strip.css",
+    "atRule": null,
+    "selector": ".sidebar-top__btn",
+    "expected": "var(--r-md)",
+    "important": false
   }
 ]
