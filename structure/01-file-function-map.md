@@ -365,7 +365,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 
 | Area | File | Lines | Responsibility |
 |---|---|---:|---|
-| App shell | `ui/src/App.tsx` | 215 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, prompt library overlay, mobile shell (dark-only since Phase 010) |
+| App shell | `ui/src/App.tsx` | 236 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, prompt library overlay, mobile shell (dark-only since Phase 010) |
 | Entry | `ui/src/main.tsx` | 89 | React mount |
 | Types | `ui/src/types.ts` | 331 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
@@ -408,12 +408,12 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Reasoning | `ui/src/lib/reasoning.ts` | 43 | Reasoning-effort label/option helpers |
 | Web search | `ui/src/lib/webSearch.ts` | 4 | Web-search toggle option helpers |
 | Canvas helpers | `ui/src/lib/canvas/*` | n/a | Canvas Mode primitives: alpha detection, annotation/mask/merge/export rendering, background cleanup masks, background removal, coordinates, eraser, hit test, blank canvas, object keys |
-| Style | `ui/src/index.css` | 105 | Global shell entry; feature styles modularized into `ui/src/styles/*` |
+| Style | `ui/src/index.css` | 349 | Global shell entry; feature styles modularized into `ui/src/styles/*` |
 | Canvas styles | `ui/src/styles/canvas-mode.css`, `canvas-background-cleanup.css` | n/a | Canvas Mode and background-cleanup specific styles |
 | Components | `ui/src/components/*.tsx` | n/a | Sidebar, canvas, modal, node cards, batch bar, panels, controls, settings, themes, error surfaces, prompt library, prompt import dialog, gallery tiles, metadata restore, mobile shell, multimode preview |
 | Canvas Mode subtree | `ui/src/components/canvas-mode/*` | ~3404 | Canvas workspace split across 24 focused workspace/tool/hook files |
 | Card-news subtree | `ui/src/components/card-news/*` | n/a | Dev-only card-news workspace shell and editors |
-| Hooks | `ui/src/hooks/*.ts` | 1218 | Billing/OAuth status polling, browser-attention badge, canvas annotations, blank-canvas creation, gallery viewer navigation, mobile breakpoint, visual-viewport inset |
+| Hooks | `ui/src/hooks/*.ts` | 1656 | Billing/OAuth status polling, browser-attention badge, canvas annotations, blank-canvas creation, gallery viewer navigation, mobile breakpoint, visual-viewport inset, sidebar collapse |
 | i18n | `ui/src/i18n/*` | 2823 | English/Korean translations (~1411 lines each in `en.json`/`ko.json`) plus locale runtime |
 
 ## Major Components

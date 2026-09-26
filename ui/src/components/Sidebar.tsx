@@ -10,6 +10,7 @@ import { SidebarHistory } from "./history/SidebarHistory";
 import { useAppStore } from "../store/useAppStore";
 import { ENABLE_AGENT_MODE, ENABLE_CARD_NEWS_MODE, ENABLE_NODE_MODE } from "../lib/devMode";
 import { useI18n } from "../i18n";
+import { desktopBridge, serverHost } from "../lib/desktopShell";
 import { resolveWorkspaceSettings } from "../lib/workspaceProfile";
 import { useIsMobile } from "../hooks/useIsMobile";
 
@@ -81,6 +82,7 @@ export function SidebarStack() {
 
 export function SidebarChrome() {
   const isMobile = useIsMobile();
+  const desktop = desktopBridge();
   return (
     <>
       <div className="logo">
@@ -88,11 +90,15 @@ export function SidebarChrome() {
         <div className="logo-copy">
           <div className="logo-title">ima2</div>
           <div className="logo-title logo-title--gen">gen</div>
+          {/* The old desktop titlebar showed the server URL; keep it here. */}
+          {desktop ? <div className="logo-host">{serverHost()}</div> : null}
         </div>
-        <div className="logo-actions">
-          <PromptLibraryButton />
-          <GenProviderModelSelect compact={isMobile} />
-        </div>
+      </div>
+      {/* Controls get their own row: the 260px column cannot fit brand +
+          bookmark + two selects on one line without collapsing the wordmark. */}
+      <div className="sidebar-controls">
+        <PromptLibraryButton />
+        <GenProviderModelSelect compact={isMobile} />
       </div>
     </>
   );
@@ -100,7 +106,7 @@ export function SidebarChrome() {
 
 export function Sidebar() {
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" id="app-sidebar">
       <div className="sidebar__scroll">
         <SidebarStack />
       </div>

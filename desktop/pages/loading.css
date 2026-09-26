@@ -69,3 +69,9 @@ li[data-state="error"] .d { color: var(--danger); }
   li[data-state="active"] .ic { animation: boot-spin .9s linear infinite; }
 }
 @keyframes boot-spin { to { transform: rotate(360deg); } }
+
+/* The .drag strip exists for macOS hiddenInset (traffic lights float over it).
+   Windows/Linux keep the native frame, where the strip would be dead space. */
+.drag { display: none; }
+:root[data-platform="darwin"] .drag { display: block; }
+:root[data-platform="darwin"] .boot { height: calc(100% - 40px); }
