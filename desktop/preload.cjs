@@ -40,6 +40,5 @@ if (window.location.protocol === "file:") {
   contextBridge.exposeInMainWorld("ima2Desktop", {
     platform: process.platform,
     openSettings: () => ipcRenderer.invoke("desktop:open-settings"),
-    openInBrowser: () => ipcRenderer.invoke("desktop:open-in-browser"),
   });
 }

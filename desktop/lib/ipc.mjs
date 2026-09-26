@@ -1,4 +1,5 @@
 import { BrowserWindow, app, ipcMain, shell } from "electron";
+import { isLocalServerUrl } from "./window-open.mjs";
 
 /**
  * Only bundled desktop pages (file://) may drive the shell. Channels the served
@@ -8,7 +9,7 @@ import { BrowserWindow, app, ipcMain, shell } from "electron";
 export function registerIpc({ settingsStore, supervisor, actions, info }) {
   const isTrustedSender = (url, allowServed) => {
     if (url.startsWith("file:")) return true;
-    return allowServed && Boolean(supervisor.url) && url.startsWith(supervisor.url);
+    return allowServed && isLocalServerUrl(url, supervisor.url);
   };
   function handle(channel, fn, { allowServed = false } = {}) {
     ipcMain.handle(channel, (e, ...args) => {
@@ -36,7 +37,7 @@ export function registerIpc({ settingsStore, supervisor, actions, info }) {
   handle("desktop:server:restart", () => actions.restartServer());
   handle("desktop:open-app", () => actions.openApp());
   handle("desktop:open-settings", () => actions.openSettings(), { allowServed: true });
-  handle("desktop:open-in-browser", () => actions.openInBrowser(), { allowServed: true });
+  handle("desktop:open-in-browser", () => actions.openInBrowser());
   handle("desktop:open-generated", () => actions.openGenerated());
   handle("desktop:open-logs", () => actions.openLogs());
   handle("desktop:open-config-dir", () => shell.openPath(actions.configDir()));

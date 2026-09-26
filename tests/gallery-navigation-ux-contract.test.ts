@@ -167,7 +167,7 @@ describe("gallery navigation UX contract", () => {
     assert.match(horizontalAppRule, /grid-template-rows:\s*var\(--history-strip-h\) minmax\(0,\s*1fr\)/);
     assert.match(sidebarAppRule, /grid-template-columns:\s*var\(--nav-rail-w\) 260px minmax\(0,\s*1fr\) auto/);
     assert.match(sidebarAppRule, /grid-template-rows:\s*minmax\(0,\s*1fr\) var\(--history-strip-h\)/);
-    assert.match(rightPanelRule, /width:\s*266px/);
+    assert.match(rightPanelRule, /width:\s*var\(--right-panel-w,\s*266px\)/);
     assert.match(historyRule, /flex-direction:\s*column/);
     assert.match(historyRule, /overflow-y:\s*auto/);
     assert.match(historyRule, /overflow-x:\s*hidden/);

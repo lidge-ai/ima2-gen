@@ -33,6 +33,9 @@ describe("integrated titlebar", () => {
     const row = css.match(/--chrome-top-h:\s*(\d+)px/);
     const inset = css.match(/\.app--macos \{ --tl-inset: (\d+)px; \}/);
     assert.ok(row && inset, "top-strip.css must pin --chrome-top-h and the macOS --tl-inset");
+    assert.ok(css.includes(".panel-top"), "the mirrored right-panel strip must exist");
+    assert.ok(/\.panel-top \{[^}]*height: var\(--chrome-top-h\)/s.test(css),
+      ".panel-top must share the same row height as the left strip");
     const rowH = Number(row[1]);
     // Traffic lights are ~12-14px tall: y is their TOP edge, so centering them
     // in the row means y + ~7 == rowH / 2. Bound generously, pin the row math.
@@ -48,7 +51,7 @@ describe("integrated titlebar", () => {
     assert.ok(served.includes('"desktop:open-settings"'), "served UI needs the settings button");
     for (const ch of [
       "desktop:status", "settings:get", "settings:save", "server:restart",
-      "open-logs", "open-config-dir", "desktop:quit", "tray:snapshot",
+      "open-logs", "open-config-dir", "open-in-browser", "desktop:quit", "tray:snapshot",
     ]) {
       assert.ok(!served.includes(ch), `served UI must not reach ${ch}`);
     }
@@ -56,11 +59,11 @@ describe("integrated titlebar", () => {
 
   it("gates served-UI ipc channels on the local server origin", () => {
     const ipc = src("desktop/lib/ipc.mjs");
-    assert.ok(ipc.includes("url.startsWith(supervisor.url)"),
-      "allowServed must verify the sender is the local server");
+    assert.ok(ipc.includes("isLocalServerUrl(url, supervisor.url)"),
+      "allowServed must compare the sender origin (scheme+host+port) with the local server");
     assert.ok(ipc.includes('handle("desktop:open-settings", () => actions.openSettings(), { allowServed: true })'));
     // every privileged channel stays file://-only
-    for (const ch of ["desktop:status", "desktop:settings:get", "desktop:settings:save", "desktop:server:restart", "desktop:quit"]) {
+    for (const ch of ["desktop:status", "desktop:settings:get", "desktop:settings:save", "desktop:server:restart", "desktop:quit", "desktop:open-in-browser"]) {
       const line = ipc.split("\n").find((l) => l.includes(`handle("${ch}"`));
       assert.ok(line && !line.includes("allowServed"), `${ch} must remain file://-only`);
     }

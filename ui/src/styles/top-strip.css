@@ -16,11 +16,17 @@
   --tl-inset: 0px;
   /* Visible width of the floating strip: inset + toggle + trailing button. */
   --chrome-strip-w: calc(var(--tl-inset) + 78px);
+  /* Width of the right panel column (right-panel.css reads the same var). */
+  --right-panel-w: 266px;
 }
 .app--macos { --tl-inset: 80px; }
 
 .sidebar-top {
   position: fixed;
+  /* Hit-transparent except interactive children: sidebar content scrolled
+     under the strip must stay clickable (elementFromPoint sees through).
+     -webkit-app-region: drag is compositor-level and unaffected. */
+  pointer-events: none;
   top: 0;
   left: 0;
   z-index: 300;
@@ -35,6 +41,7 @@
 }
 
 .sidebar-top__btn {
+  pointer-events: auto;
   -webkit-app-region: no-drag;
   display: inline-flex;
   align-items: center;
@@ -161,4 +168,50 @@
 /* Settings fills everything after the nav rail; collapsed, from the edge. */
 .app.app--nav-collapsed.app--settings-open .settings-workspace {
   grid-column: 1 / -1;
+}
+
+/* ── Right panel toggle (mirrored strip at the top right) ────────────────────
+ * Same 40px row as .sidebar-top, pinned to the window's top-right corner over
+ * the right panel's column. The panel's content starts below the row, and a
+ * hidden panel (`app--rp-collapsed`) leaves only the floating toggle. */
+.panel-top {
+  position: fixed;
+  pointer-events: none;
+  top: 0;
+  right: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  height: var(--chrome-top-h);
+  width: var(--right-panel-w);
+  padding: 0 8px;
+  -webkit-app-region: drag;
+}
+.app:not([data-mobile="1"]) .right-panel-body {
+  padding-top: calc(16px + var(--chrome-top-h));
+}
+.app:not([data-mobile="1"]).app--rp-collapsed .right-panel {
+  display: none;
+}
+.app:not([data-mobile="1"]).app--rp-collapsed .panel-top {
+  width: auto;
+}
+/* With the panel hidden, the horizontal history strip's right edge runs under
+   the floating toggle — clear it like the left edge clears the strip. */
+.app:not([data-mobile="1"]).app--rp-collapsed.app--history-horizontal .history-strip {
+  padding-right: calc(12px + 44px);
+}
+/* Settings view already hides the panel; hide its toggle too. */
+.app:not([data-mobile="1"]).app--settings-open .panel-top {
+  display: none;
+}
+
+/* ── Row alignment across rail and sidebar ───────────────────────────────────
+ * The rail's first 40px icon and the sidebar's logo row share one center line:
+ * both columns get identical top clearance and the logo row is pinned to the
+ * same height as a rail button. */
+.app:not([data-mobile="1"]) .sidebar .logo {
+  min-height: var(--chrome-top-h);
 }

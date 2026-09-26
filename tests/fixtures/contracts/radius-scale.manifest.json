@@ -2788,13 +2788,6 @@
   {
     "file": "ui/src/styles/responsive-mobile.css",
     "atRule": "media (max-width: 800px)",
-    "selector": ".right-panel-toggle",
-    "expected": "var(--r-md)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/responsive-mobile.css",
-    "atRule": "media (max-width: 800px)",
     "selector": ".settings-shell",
     "expected": "var(--r-2xl)",
     "important": false
@@ -2951,13 +2944,6 @@
     "atRule": null,
     "selector": ".right-panel-tabs__button",
     "expected": "var(--r-sm)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/right-panel.css",
-    "atRule": null,
-    "selector": ".right-panel-toggle",
-    "expected": "var(--r-sm) 0 0 var(--r-sm)",
     "important": false
   },
   {

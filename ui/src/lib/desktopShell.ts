@@ -4,7 +4,6 @@
 export interface DesktopBridge {
   platform?: string;
   openSettings?: () => void;
-  openInBrowser?: () => void;
 }
 
 declare global {

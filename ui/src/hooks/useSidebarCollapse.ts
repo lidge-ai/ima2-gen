@@ -53,3 +53,20 @@ export function useSidebarCollapse() {
 
   return { collapsed, toggle };
 }
+
+/** Cmd/Ctrl+Alt+B mirrors the sidebar shortcut for the right panel. The Alt
+    modifier keeps it off the browser's bookmark bindings, so it works inside
+    and outside the desktop shell. */
+export function useRightPanelShortcut(togglePanel: () => void) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || !e.altKey || e.shiftKey) return;
+      if (e.key.toLowerCase() !== "b") return;
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+      togglePanel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [togglePanel]);
+}
