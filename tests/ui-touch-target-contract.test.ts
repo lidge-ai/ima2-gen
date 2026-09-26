@@ -21,7 +21,6 @@ const AFTER_TARGETS = [
   { file: "canvas-background-cleanup.css", selector: ".canvas-toolbar__zoom-button" },
   { file: "sprite-curator.css", selector: ".sprite-rail__actions button" },
   { file: "agent-stage.css", selector: ".agent-right-sidebar__overlay-header button" },
-  { file: "right-panel.css", selector: ".right-panel-toggle" },
 ];
 
 /** Selectors with actual 44px dimensions. */

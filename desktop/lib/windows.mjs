@@ -1,13 +1,17 @@
 import { BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mountTitlebarLayout } from "./titlebar.mjs";
 import { isExternalWebUrl, isLocalServerUrl, resolveWindowOpen } from "./window-open.mjs";
 
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const PRELOAD = join(desktopDir, "preload.cjs");
 const LOADING_PAGE = join(desktopDir, "pages", "loading.html");
 const SETTINGS_PAGE = join(desktopDir, "pages", "settings.html");
+
+// The web UI draws the title row itself (ui/src/styles/top-strip.css, --chrome-top-h).
+// The traffic lights sit inside it: x clears the toggle-left air, y centers the
+// ~14px-tall cluster in the 40px row. Pinned by tests/desktop-titlebar-contract.test.ts.
+const TRAFFIC_LIGHT_POSITION = { x: 16, y: 13 };
 
 export class WindowManager {
   constructor({ getServerUrl, getSettings, iconPath, onVisibilityChange, onHiddenToTray }) {
@@ -17,8 +21,6 @@ export class WindowManager {
     this.onVisibilityChange = onVisibilityChange ?? (() => {});
     this.onHiddenToTray = onHiddenToTray ?? (() => {});
     this.main = null;
-    this.mainContent = null;
-    this.titlebar = null;
     this.settings = null;
     this.quitting = false;
   }
@@ -51,12 +53,9 @@ export class WindowManager {
       minHeight: 600,
       title: "ima2",
       titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
-      trafficLightPosition: { x: 14, y: 14 },
+      trafficLightPosition: TRAFFIC_LIGHT_POSITION,
     }));
     this.main = win;
-    const { bar, content } = mountTitlebarLayout(win, this.#webPreferences());
-    this.titlebar = bar;
-    this.mainContent = content;
     win.show();
     win.on("close", (e) => {
       if (this.quitting || !this.getSettings().keepRunningOnClose) return;
@@ -66,52 +65,48 @@ export class WindowManager {
     });
     win.on("closed", () => {
       this.main = null;
-      this.mainContent = null;
-      this.titlebar = null;
       this.onVisibilityChange();
     });
     win.on("hide", () => this.onVisibilityChange());
     win.on("show", () => this.onVisibilityChange());
-    content.webContents.setWindowOpenHandler(({ url }) => {
+    const contents = win.webContents;
+    contents.setWindowOpenHandler(({ url }) => {
       const outcome = resolveWindowOpen(url, this.getServerUrl());
       if (outcome === "allow") return { action: "allow" };
       if (outcome === "external") void shell.openExternal(url);
       return { action: "deny" };
     });
-    content.webContents.on("will-navigate", (e, url) => {
+    contents.on("will-navigate", (e, url) => {
       if (isLocalServerUrl(url, this.getServerUrl()) || url.startsWith("file:")) return;
       e.preventDefault();
       if (isExternalWebUrl(url)) void shell.openExternal(url);
     });
     // A server that is up but fails the page load would otherwise leave Chromium's error
     // page with no way back; show the loading screen (and its restart/log actions) instead.
-    content.webContents.on("did-fail-load", (_e, code, _desc, url, isMainFrame) => {
+    contents.on("did-fail-load", (_e, code, _desc, url, isMainFrame) => {
       if (!isMainFrame || code === -3 || String(url).startsWith("file:")) return;
-      void content.webContents.loadFile(LOADING_PAGE);
+      void contents.loadFile(LOADING_PAGE);
     });
     this.syncMainContent();
     return win;
   }
 
-  /** Point the main content view at the live server once it is up, else the loading page. */
+  /** Point the main window at the live server once it is up, else the loading page. */
   syncMainContent() {
-    const view = this.mainContent;
-    if (!view || !this.main || this.main.isDestroyed()) return;
+    const win = this.main;
+    if (!win || win.isDestroyed()) return;
+    const contents = win.webContents;
     const url = this.getServerUrl();
-    const current = view.webContents.getURL();
+    const current = contents.getURL();
     if (url) {
-      if (!current.startsWith(url)) void view.webContents.loadURL(url);
+      if (!current.startsWith(url)) void contents.loadURL(url);
       return;
     }
-    if (!current.startsWith("file:")) void view.webContents.loadFile(LOADING_PAGE);
+    if (!current.startsWith("file:")) void contents.loadFile(LOADING_PAGE);
   }
 
   #allContents() {
-    const list = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed()).map((w) => w.webContents);
-    for (const view of [this.titlebar, this.mainContent]) {
-      if (view && !view.webContents.isDestroyed()) list.push(view.webContents);
-    }
-    return list;
+    return BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed()).map((w) => w.webContents);
   }
 
   showSettings() {

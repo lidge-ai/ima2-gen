@@ -3,8 +3,8 @@ import { editMenu } from "./edit-menu.mjs";
 
 const isMac = process.platform === "darwin";
 
-/* Built-in view roles act on the focused BrowserWindow's own webContents, which is an
-   empty host for the titlebar/content WebContentsViews — target the focused view instead. */
+/* The main window's own webContents is the app, but reload/zoom should still
+   follow whichever surface is focused (popups, devtools) — target it directly. */
 function focused() {
   return webContents.getFocusedWebContents();
 }

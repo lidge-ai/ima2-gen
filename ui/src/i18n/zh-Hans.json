@@ -469,8 +469,8 @@
   "panel": {
     "closeSettings": "关闭设置",
     "detailSettings": "设置",
-    "toggleShow": "显示设置",
-    "toggleHide": "隐藏设置",
+    "toggleShow": "显示面板",
+    "toggleHide": "隐藏面板",
     "open": "打开",
     "close": "关闭"
   },
@@ -1922,7 +1922,10 @@
     "agent": "代理人",
     "assets": "资产",
     "assetGen": "资产生成",
-    "settings": "设置"
+    "settings": "设置",
+    "collapseSidebar": "收起侧边栏",
+    "expandSidebar": "展开侧边栏",
+    "desktopSettings": "应用设置"
   },
   "assetGen": {
     "title": "资产生成",

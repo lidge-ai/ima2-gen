@@ -1,0 +1,217 @@
+/* ── Sidebar top strip + collapse (integrated titlebar) ──────────────────────
+ * Fixed strip across the top of the nav-rail + sidebar columns. In the
+ * Electron shell on macOS (`app--macos`) it carries the traffic-light inset —
+ * the lights are painted by the window itself, so their center must sit on the
+ * strip's 40px row (trafficLightPosition in desktop/lib/windows.mjs, pinned by
+ * tests/desktop-titlebar-contract.test.ts). The strip is a window-drag region;
+ * buttons inside it are no-drag. Collapsed (`app--nav-collapsed`) hides the nav
+ * rail + sidebar outright and lets the strip float transparently over the main
+ * area's top-left corner. Mobile (≤800px, `data-mobile="1"`) never renders the
+ * strip, so none of this applies there.
+ */
+
+.app {
+  --chrome-top-h: 40px;
+  /* Room reserved at the strip's left edge for the macOS traffic lights. */
+  --tl-inset: 0px;
+  /* Visible width of the floating strip: inset + toggle + trailing button. */
+  --chrome-strip-w: calc(var(--tl-inset) + 78px);
+  /* Width of the right panel column (right-panel.css reads the same var). */
+  --right-panel-w: 266px;
+}
+.app--macos { --tl-inset: 80px; }
+
+.sidebar-top {
+  position: fixed;
+  /* Hit-transparent except interactive children: sidebar content scrolled
+     under the strip must stay clickable (elementFromPoint sees through).
+     -webkit-app-region: drag is compositor-level and unaffected. */
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--chrome-top-h);
+  /* Span nav rail + sidebar so the whole left chrome's top row drags. */
+  width: calc(var(--nav-rail-w) + 260px);
+  padding: 0 8px 0 var(--tl-inset);
+  -webkit-app-region: drag;
+}
+
+.sidebar-top__btn {
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.sidebar-top__btn:hover { background: var(--control-hover); color: var(--text); }
+.sidebar-top__btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.sidebar-top__btn:active { transform: scale(0.94); }
+.sidebar-top__btn--trailing { margin-left: auto; }
+
+/* Server address under the brand, replacing the old desktop titlebar's URL. */
+.logo-host {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The strip floats over the nav rail's and sidebar's top — pad their content
+   clear of it. Applies in the browser too: the toggle lives there as well. */
+.app:not([data-mobile="1"]) .nav-rail {
+  padding-top: calc(8px + var(--chrome-top-h));
+}
+.app:not([data-mobile="1"]) .sidebar__scroll {
+  padding-top: calc(8px + var(--chrome-top-h));
+}
+
+/* Modes without a sidebar: the strip floats over the workspace's left rail. */
+.app--no-sidebar .sidebar-top,
+.app--nav-collapsed .sidebar-top {
+  width: auto;
+}
+.app:not([data-mobile="1"]).app--no-sidebar .agent-session-rail-wrap,
+.app:not([data-mobile="1"]).app--no-sidebar .assets-folders,
+.app:not([data-mobile="1"]).app--no-sidebar .assetgen-form {
+  padding-top: var(--chrome-top-h);
+}
+.app:not([data-mobile="1"]).app--settings-open .settings-workspace {
+  padding-top: calc(24px + var(--chrome-top-h));
+}
+
+/* ── Collapsed: no nav rail, no sidebar ── */
+.app.app--nav-collapsed .nav-rail,
+.app.app--nav-collapsed > .sidebar {
+  display: none;
+}
+
+/* Default layout (vertical gallery rail): rail becomes the first column. */
+.app.app--nav-collapsed {
+  grid-template-columns: var(--gallery-rail-w) minmax(0, 1fr) auto;
+}
+/* The floating strip overlaps the rail's top — push its thumbs below it. */
+.app.app--nav-collapsed .history-strip {
+  padding-top: calc(10px + var(--chrome-top-h));
+}
+
+/* Horizontal strip layout: the strip row shares the top row with the
+   floating chrome, so clear its left edge instead. */
+.app.app--nav-collapsed.app--history-horizontal {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: var(--history-strip-h) minmax(0, 1fr);
+}
+.app.app--nav-collapsed.app--history-horizontal .history-strip {
+  grid-column: 1;
+  grid-row: 1;
+  padding-top: 10px;
+  padding-left: calc(12px + var(--chrome-strip-w));
+}
+.app.app--nav-collapsed.app--history-horizontal .canvas,
+.app.app--nav-collapsed.app--history-horizontal .node-canvas,
+.app.app--nav-collapsed.app--history-horizontal .card-news-workspace,
+.app.app--nav-collapsed.app--history-horizontal .settings-workspace {
+  grid-column: 1;
+  grid-row: 2;
+}
+.app.app--nav-collapsed.app--history-horizontal .right-panel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+/* Bottom-strip layout: the history strip drops under the canvas. */
+.app.app--nav-collapsed.app--history-sidebar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) var(--history-strip-h);
+}
+.app.app--nav-collapsed.app--history-sidebar .history-strip {
+  grid-column: 1;
+  grid-row: 2;
+  padding-top: 10px;
+}
+.app.app--nav-collapsed.app--history-sidebar .canvas,
+.app.app--nav-collapsed.app--history-sidebar .node-canvas,
+.app.app--nav-collapsed.app--history-sidebar .card-news-workspace,
+.app.app--nav-collapsed.app--history-sidebar .settings-workspace {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+.app.app--nav-collapsed.app--history-sidebar .right-panel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+/* Prompt-studio classic and sidebar-less modes collapse to a single column. */
+.app.app--nav-collapsed.app--prompt-studio[data-ui-mode="classic"],
+.app.app--nav-collapsed[data-ui-mode="home"],
+.app.app--nav-collapsed[data-ui-mode="agent"],
+.app.app--nav-collapsed[data-ui-mode="assets"],
+.app.app--nav-collapsed[data-ui-mode="asset-gen"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Settings fills everything after the nav rail; collapsed, from the edge. */
+.app.app--nav-collapsed.app--settings-open .settings-workspace {
+  grid-column: 1 / -1;
+}
+
+/* ── Right panel toggle (mirrored strip at the top right) ────────────────────
+ * Same 40px row as .sidebar-top, pinned to the window's top-right corner over
+ * the right panel's column. The panel's content starts below the row, and a
+ * hidden panel (`app--rp-collapsed`) leaves only the floating toggle. */
+.panel-top {
+  position: fixed;
+  pointer-events: none;
+  top: 0;
+  right: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  height: var(--chrome-top-h);
+  width: var(--right-panel-w);
+  padding: 0 8px;
+  -webkit-app-region: drag;
+}
+.app:not([data-mobile="1"]) .right-panel-body {
+  padding-top: calc(16px + var(--chrome-top-h));
+}
+.app:not([data-mobile="1"]).app--rp-collapsed .right-panel {
+  display: none;
+}
+.app:not([data-mobile="1"]).app--rp-collapsed .panel-top {
+  width: auto;
+}
+/* With the panel hidden, the horizontal history strip's right edge runs under
+   the floating toggle — clear it like the left edge clears the strip. */
+.app:not([data-mobile="1"]).app--rp-collapsed.app--history-horizontal .history-strip {
+  padding-right: calc(12px + 44px);
+}
+/* Settings view already hides the panel; hide its toggle too. */
+.app:not([data-mobile="1"]).app--settings-open .panel-top {
+  display: none;
+}
+
+/* ── Row alignment across rail and sidebar ───────────────────────────────────
+ * The rail's first 40px icon and the sidebar's logo row share one center line:
+ * both columns get identical top clearance and the logo row is pinned to the
+ * same height as a rail button. */
+.app:not([data-mobile="1"]) .sidebar .logo {
+  min-height: var(--chrome-top-h);
+}

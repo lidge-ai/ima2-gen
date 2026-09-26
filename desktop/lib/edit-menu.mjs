@@ -2,10 +2,10 @@
 // exercise the template, the same convention as context-menu.mjs.
 //
 // On macOS the edit roles send copy:/paste:/… down the responder chain, which
-// reaches the focused WebContentsView and also the native save/open panels, so
+// reaches the focused webContents and also the native save/open panels, so
 // the stock roles stay. On Windows and Linux a role runs against the focused
-// BrowserWindow's own webContents — the empty host behind the titlebar and
-// content views — so Ctrl+C/V/X/A would do nothing. There each item calls the
+// BrowserWindow's own webContents — correct for the main window, but wrong
+// when a popup/devtools surface holds focus. There each item calls the
 // command on the focused webContents instead.
 
 const EDIT_ITEMS = [

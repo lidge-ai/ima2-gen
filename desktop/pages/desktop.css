@@ -22,7 +22,7 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
-.drag { -webkit-app-region: drag; height: 38px; }
+.drag { -webkit-app-region: drag; height: 40px; }
 main { padding: 0 28px 28px; }
 h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
 .sub { color: var(--muted); margin: 0 0 20px; }
