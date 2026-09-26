@@ -71,11 +71,8 @@
 .sidebar-controls .gen-provider-model .ctl-select__trigger {
   width: 100%;
 }
-.sidebar-controls .gen-provider-model .ctl-select__value {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* Labels must wrap, never clip: the J6 e2e contract asserts
+   scrollWidth <= clientWidth + 1 on .ctl-select__value. */
 
 .logo-title {
   font-family: var(--font-display, 'Clash Display', system-ui, sans-serif);
