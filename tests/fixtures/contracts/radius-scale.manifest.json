@@ -2788,13 +2788,6 @@
   {
     "file": "ui/src/styles/responsive-mobile.css",
     "atRule": "media (max-width: 800px)",
-    "selector": ".right-panel-toggle",
-    "expected": "var(--r-md)",
-    "important": false
-  },
-  {
-    "file": "ui/src/styles/responsive-mobile.css",
-    "atRule": "media (max-width: 800px)",
     "selector": ".settings-shell",
     "expected": "var(--r-2xl)",
     "important": false

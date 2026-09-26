@@ -38,8 +38,8 @@ describe("ui-touch-target-contract", () => {
       const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const afterRe = new RegExp(escaped + "::after[^}]*width:\\s*44px");
       assert.ok(afterRe.test(css), selector + "::after should have width: 44px in " + file);
-      const posRe = new RegExp(escaped + "\\s*\\{[^}]*position:\\s*relative");
-      assert.ok(posRe.test(css), selector + " should have position: relative in " + file);
+      const posRe = new RegExp(escaped + "\\s*\\{[^}]*position:\\s*(relative|absolute)");
+      assert.ok(posRe.test(css), selector + " should be positioned (relative or absolute) in " + file);
     });
   }
 

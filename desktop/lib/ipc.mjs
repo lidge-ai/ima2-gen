@@ -3,7 +3,7 @@ import { BrowserWindow, app, ipcMain, shell } from "electron";
 /** Only the bundled desktop pages (file://) may drive the shell; the served ima2 UI gets no IPC. */
 function handle(channel, fn) {
   ipcMain.handle(channel, (e, ...args) => {
-    if (!e.senderFrame?.url.startsWith("file:")) throw new Error(`ipc ${channel}: untrusted sender`);
+    if (!(e.senderFrame?.url ?? "").startsWith("file:")) throw new Error(`ipc ${channel}: untrusted sender`);
     return fn(e, ...args);
   });
 }

@@ -413,7 +413,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Components | `ui/src/components/*.tsx` | n/a | Sidebar, canvas, modal, node cards, batch bar, panels, controls, settings, themes, error surfaces, prompt library, prompt import dialog, gallery tiles, metadata restore, mobile shell, multimode preview |
 | Canvas Mode subtree | `ui/src/components/canvas-mode/*` | ~3404 | Canvas workspace split across 24 focused workspace/tool/hook files |
 | Card-news subtree | `ui/src/components/card-news/*` | n/a | Dev-only card-news workspace shell and editors |
-| Hooks | `ui/src/hooks/*.ts` | 1656 | Billing/OAuth status polling, browser-attention badge, canvas annotations, blank-canvas creation, gallery viewer navigation, mobile breakpoint, visual-viewport inset |
+| Hooks | `ui/src/hooks/*.ts` | 1601 | Billing/OAuth status polling, browser-attention badge, canvas annotations, blank-canvas creation, gallery viewer navigation, mobile breakpoint, visual-viewport inset |
 | i18n | `ui/src/i18n/*` | 2823 | English/Korean translations (~1411 lines each in `en.json`/`ko.json`) plus locale runtime |
 
 ## Major Components
