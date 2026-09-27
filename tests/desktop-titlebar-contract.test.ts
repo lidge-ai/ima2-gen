@@ -48,16 +48,22 @@ describe("integrated titlebar", () => {
     assert.equal(Number(inset[1]), 80, "macOS strip inset must cover the traffic-light cluster");
   });
 
-  it("shares the same 40px row with overlay caption buttons on Windows/Linux", () => {
+  it("shares the same 40px row with overlay caption buttons on Windows", () => {
     const windows = src("desktop/lib/windows.mjs");
-    // The main window hides the native caption on non-mac so no second bar
-    // stacks above the web strip; the overlay paints min/max/close into it.
-    assert.ok(/titleBarStyle: process\.platform === "darwin" \? "hiddenInset" : "hidden"/.test(windows),
-      "non-mac main window must use titleBarStyle hidden");
+    // Only Windows hides the native caption and overlays min/max/close into the
+    // web strip; Linux keeps the native default frame (overlay unverified there).
+    assert.ok(/titleBarStyle: process\.platform === "darwin" \? "hiddenInset" : process\.platform === "win32" \? "hidden" : "default"/.test(windows),
+      "only win32 may drop the native caption; other non-mac stays on the default frame");
+    assert.ok(windows.includes('process.platform === "win32" ? { titleBarOverlay: TITLE_BAR_OVERLAY, autoHideMenuBar: true } : {}'),
+      "titleBarOverlay and the auto-hidden menu bar must be win32-only");
     const overlay = windows.match(/TITLE_BAR_OVERLAY = \{ height: (\d+), color: "(#[0-9a-fA-F]+)", symbolColor: "(#[0-9a-fA-F]+)" \}/);
-    assert.ok(overlay, "non-mac main window needs a pinned titleBarOverlay literal");
+    assert.ok(overlay, "Windows main window needs a pinned titleBarOverlay literal");
     assert.ok(windows.includes("autoHideMenuBar: true"),
       "the native menu bar must not render a second row (Alt still reveals it)");
+
+    const loading = src("desktop/pages/loading.css");
+    assert.ok(!loading.includes('data-platform="linux"'),
+      "loading page keeps its native frame on Linux — no drag strip there");
 
     const css = src("ui/src/styles/top-strip.css");
     const row = css.match(/--chrome-top-h:\s*calc\((\d+)px \/ var\(--chrome-zoom, 1\)\)/);

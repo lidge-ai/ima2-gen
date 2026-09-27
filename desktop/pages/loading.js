@@ -1,6 +1,6 @@
 const api = window.ima2Desktop;
 // Gates the drag strip styling (loading.css); present wherever the shell hides
-// the native caption (darwin hiddenInset, win32/linux titleBarOverlay).
+// the native caption (darwin hiddenInset, win32 titleBarOverlay).
 document.documentElement.dataset.platform = api?.platform ?? "";
 const $ = (id) => document.getElementById(id);
 const rowServer = $("row-server");

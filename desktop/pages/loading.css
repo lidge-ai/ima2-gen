@@ -71,14 +71,11 @@ li[data-state="error"] .d { color: var(--danger); }
 @keyframes boot-spin { to { transform: rotate(360deg); } }
 
 /* The .drag strip exists wherever the shell has no native caption: macOS
-   hiddenInset (traffic lights float over it) and Windows/Linux hidden, where
-   the overlay caption buttons occupy the top-right ~140px of the same row. */
+   hiddenInset (traffic lights float over it) and Windows hidden, where the
+   overlay caption buttons occupy the top-right ~140px of the same row. */
 .drag { display: none; }
 :root[data-platform="darwin"] .drag,
-:root[data-platform="win32"] .drag,
-:root[data-platform="linux"] .drag { display: block; }
+:root[data-platform="win32"] .drag { display: block; }
 :root[data-platform="darwin"] .boot,
-:root[data-platform="win32"] .boot,
-:root[data-platform="linux"] .boot { height: calc(100% - 40px); }
-:root[data-platform="win32"] .drag,
-:root[data-platform="linux"] .drag { margin-right: 140px; }
+:root[data-platform="win32"] .boot { height: calc(100% - 40px); }
+:root[data-platform="win32"] .drag { margin-right: 140px; }

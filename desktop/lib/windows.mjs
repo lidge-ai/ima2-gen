@@ -13,7 +13,7 @@ const SETTINGS_PAGE = join(desktopDir, "pages", "settings.html");
 // ~14px-tall cluster in the 40px row. Pinned by tests/desktop-titlebar-contract.test.ts.
 const TRAFFIC_LIGHT_POSITION = { x: 16, y: 13 };
 
-// Non-mac gets min/max/close painted into the same 40px row via the Window
+// Windows gets min/max/close painted into the same 40px row via the Window
 // Controls Overlay: a transparent background lets the web strip show through,
 // symbols match --text-muted. autoHideMenuBar hides the native menu row while
 // Alt still reveals it, so menu accelerators keep working.
@@ -58,9 +58,9 @@ export class WindowManager {
       minWidth: 960,
       minHeight: 600,
       title: "ima2",
-      titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
+      titleBarStyle: process.platform === "darwin" ? "hiddenInset" : process.platform === "win32" ? "hidden" : "default",
       trafficLightPosition: TRAFFIC_LIGHT_POSITION,
-      ...(process.platform === "darwin" ? {} : { titleBarOverlay: TITLE_BAR_OVERLAY, autoHideMenuBar: true }),
+      ...(process.platform === "win32" ? { titleBarOverlay: TITLE_BAR_OVERLAY, autoHideMenuBar: true } : {}),
     }));
     this.main = win;
     win.show();
