@@ -68,7 +68,9 @@ beforeBuild: build/ensure-icons.mjs
 # not sign Mach-O binaries it did not place there. Seven of them have no file
 # extension (codex, rg, zsh, macos-trash, esbuild), so notarization rejects the
 # upload unless they are signed here first.
-afterPack: build/sign-extra-binaries.mjs
+# after-pack.mjs first fails the build if any production dependency is absent from the
+# packaged node_modules, then runs sign-extra-binaries.mjs.
+afterPack: build/after-pack.mjs
 
 # The updater reads this metadata from the packaged app. Draft creation keeps a
 # release invisible to installed updaters until a release operator publishes it.
