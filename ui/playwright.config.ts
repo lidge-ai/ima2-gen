@@ -11,7 +11,9 @@ export default defineConfig({
   // CI is set by GitHub itself: an IMA2_* or PW_TEST_* variable would trip the
   // J6 preflight (fixtures/appServer.ts assertJ6Isolation).
   fullyParallel: false,
-  workers: process.env.CI ? 3 : 1,
+  workers: process.env.CI ? 4 : 1,
+  // Per-test durations in the CI log show where the suite spends its time.
+  reporter: process.env.CI ? "list" : "line",
   projects: [
     { name: "isolation", testMatch: "fixture-isolation.spec.ts" },
     { name: "journeys", testIgnore: "fixture-isolation.spec.ts", dependencies: ["isolation"] },

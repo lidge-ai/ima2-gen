@@ -342,7 +342,7 @@ jobs:
     if: github.event_name != 'push' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     # The suite used to run serially (~21 min, it once hit the former 20-minute
-    # bound). It now spreads spec files over three Playwright workers
+    # bound). It now spreads spec files over four Playwright workers
     # (ui/playwright.config.ts); the bound stays as headroom for upload.
     timeout-minutes: 25
     steps:
