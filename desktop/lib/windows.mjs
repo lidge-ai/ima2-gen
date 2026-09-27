@@ -15,8 +15,9 @@ const TRAFFIC_LIGHT_POSITION = { x: 16, y: 13 };
 
 // Windows gets min/max/close painted into the same 40px row via the Window
 // Controls Overlay: a transparent background lets the web strip show through,
-// symbols match --text-muted. autoHideMenuBar hides the native menu row while
-// Alt still reveals it, so menu accelerators keep working.
+// symbols match --text-muted. autoHideMenuBar hides the native menu row (bare
+// Alt doesn't reveal it on frameless windows — Electron #9990); menu commands
+// remain reachable via accelerators.
 const TITLE_BAR_OVERLAY = { height: 40, color: "#00000000", symbolColor: "#90909d" };
 
 export class WindowManager {
