@@ -218,6 +218,12 @@
 .app:not([data-mobile="1"]).app--rp-collapsed .panel-top {
   width: auto;
 }
+/* Without a panel toggle (Windows views with no right panel) the strip is only
+   the drag surface under the overlay caption buttons: hug that inset instead of
+   spanning the panel column, so it cannot swallow clicks on the workspace. */
+.panel-top[aria-hidden="true"] {
+  width: auto;
+}
 /* With the panel hidden, the horizontal history strip's right edge runs under
    the floating toggle — clear it like the left edge clears the strip. */
 .app:not([data-mobile="1"]).app--rp-collapsed.app--history-horizontal .history-strip {
