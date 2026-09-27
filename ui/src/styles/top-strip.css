@@ -181,6 +181,15 @@
   grid-column: 1 / -1;
 }
 
+/* Sidebar-less workspaces pin column 2 for the nav rail; collapsed, the rail
+   is gone and they own the single column instead of an implicit second track. */
+.app.app--nav-collapsed > .home-workspace,
+.app.app--nav-collapsed > .agent-workspace,
+.app.app--nav-collapsed > .assets-workspace,
+.app.app--nav-collapsed > .assetgen-workspace {
+  grid-column: 1 / -1;
+}
+
 /* ── Right panel toggle (mirrored strip at the top right) ────────────────────
  * Same 40px row as .sidebar-top, pinned to the window's top-right corner over
  * the right panel's column. The panel's content starts below the row, and a
@@ -213,6 +222,11 @@
    the floating toggle — clear it like the left edge clears the strip. */
 .app:not([data-mobile="1"]).app--rp-collapsed.app--history-horizontal .history-strip {
   padding-right: calc(12px + 44px + var(--wc-inset));
+}
+/* The node canvas's top-right toolbar gets the same clearance — otherwise its
+   rightmost button sits under the floating toggle. */
+.app:not([data-mobile="1"]).app--rp-collapsed .node-canvas .node-studio-toolbar {
+  margin-right: calc(15px + 44px + var(--wc-inset));
 }
 /* The right-edge toggle clears the Windows overlay caption buttons. */
 .app--windows .panel-top {

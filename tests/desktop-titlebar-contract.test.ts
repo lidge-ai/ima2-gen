@@ -79,6 +79,20 @@ describe("integrated titlebar", () => {
       "desktopShell must expose a Windows check off the bridge platform");
   });
 
+  it("keeps sidebar-less workspaces and the node toolbar clear of the strip", () => {
+    const css = src("ui/src/styles/top-strip.css");
+    // Collapsed nav drops the grid to one column — the sidebar-less workspaces
+    // pin column 2 for the rail, so without the override they leave a dead band.
+    assert.ok(
+      /\.app\.app--nav-collapsed > \.home-workspace,\s*\.app\.app--nav-collapsed > \.agent-workspace,\s*\.app\.app--nav-collapsed > \.assets-workspace,\s*\.app\.app--nav-collapsed > \.assetgen-workspace \{\s*grid-column: 1 \/ -1;/s.test(css),
+      "collapsed home/agent/assets/assetgen workspaces must span the single column",
+    );
+    assert.ok(
+      /\.app--rp-collapsed \.node-canvas \.node-studio-toolbar \{[^}]*margin-right: calc\(15px \+ 44px \+ var\(--wc-inset\)\)/s.test(css),
+      "the node canvas toolbar must clear the floating panel toggle when collapsed",
+    );
+  });
+
   it("exposes only a minimal bridge to the served UI", () => {
     const preload = src("desktop/preload.cjs");
     const served = preload.slice(preload.indexOf("} else {"));
