@@ -3,7 +3,9 @@
  * Electron shell on macOS (`app--macos`) it carries the traffic-light inset —
  * the lights are painted by the window itself, so their center must sit on the
  * strip's 40px row (trafficLightPosition in desktop/lib/windows.mjs, pinned by
- * tests/desktop-titlebar-contract.test.ts). The strip is a window-drag region;
+ * tests/desktop-titlebar-contract.test.ts). Page zoom (⌘+/⌘−) scales CSS px
+ * but not the lights, so the row height and inset divide by --chrome-zoom
+ * (set by syncDesktopChromeZoom) to stay fixed in screen points. The strip is a window-drag region;
  * buttons inside it are no-drag. Collapsed (`app--nav-collapsed`) hides the nav
  * rail + sidebar outright and lets the strip float transparently over the main
  * area's top-left corner. Mobile (≤800px, `data-mobile="1"`) never renders the
@@ -11,7 +13,7 @@
  */
 
 .app {
-  --chrome-top-h: 40px;
+  --chrome-top-h: calc(40px / var(--chrome-zoom, 1));
   /* Room reserved at the strip's left edge for the macOS traffic lights. */
   --tl-inset: 0px;
   /* Visible width of the floating strip: inset + toggle + trailing button. */
@@ -19,7 +21,7 @@
   /* Width of the right panel column (right-panel.css reads the same var). */
   --right-panel-w: 266px;
 }
-.app--macos { --tl-inset: 80px; }
+.app--macos { --tl-inset: calc(80px / var(--chrome-zoom, 1)); }
 
 .sidebar-top {
   position: fixed;

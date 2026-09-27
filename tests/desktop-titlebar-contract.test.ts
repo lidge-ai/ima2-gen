@@ -30,9 +30,12 @@ describe("integrated titlebar", () => {
     const [x, y] = [Number(pos[1]), Number(pos[2])];
 
     const css = src("ui/src/styles/top-strip.css");
-    const row = css.match(/--chrome-top-h:\s*(\d+)px/);
-    const inset = css.match(/\.app--macos \{ --tl-inset: (\d+)px; \}/);
+    // Both are divided by the page zoom so ⌘−/⌘+ cannot slide the row off the lights.
+    const row = css.match(/--chrome-top-h:\s*calc\((\d+)px \/ var\(--chrome-zoom, 1\)\)/);
+    const inset = css.match(/\.app--macos \{ --tl-inset: calc\((\d+)px \/ var\(--chrome-zoom, 1\)\); \}/);
     assert.ok(row && inset, "top-strip.css must pin --chrome-top-h and the macOS --tl-inset");
+    assert.ok(src("ui/src/App.tsx").includes("syncDesktopChromeZoom()"),
+      "App must publish --chrome-zoom for the zoom-independent title row");
     assert.ok(css.includes(".panel-top"), "the mirrored right-panel strip must exist");
     assert.ok(/\.panel-top \{[^}]*height: var\(--chrome-top-h\)/s.test(css),
       ".panel-top must share the same row height as the left strip");

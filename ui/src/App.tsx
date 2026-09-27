@@ -31,7 +31,7 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useRightPanelShortcut, useSidebarCollapse } from "./hooks/useSidebarCollapse";
 import { useVisualViewportInset } from "./hooks/useVisualViewportInset";
 import { SidebarTopStrip } from "./components/SidebarTopStrip";
-import { desktopBridge, isMacDesktop } from "./lib/desktopShell";
+import { desktopBridge, isMacDesktop, syncDesktopChromeZoom } from "./lib/desktopShell";
 import { resolveWorkspaceSettings } from "./lib/workspaceProfile";
 import { useI18n } from "./i18n";
 
@@ -112,6 +112,8 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+
+  useEffect(() => syncDesktopChromeZoom(), []);
 
   useEffect(() => {
     if (isLanSessionLocked()) return;
