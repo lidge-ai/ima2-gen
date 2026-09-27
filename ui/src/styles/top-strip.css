@@ -12,6 +12,9 @@
  * strip, so none of this applies there.
  */
 
+/* Default for browsers; the desktop shell overrides it inline on <html>. */
+:root { --chrome-zoom: 1; }
+
 .app {
   --chrome-top-h: calc(40px / var(--chrome-zoom, 1));
   /* Room reserved at the strip's left edge for the macOS traffic lights. */
