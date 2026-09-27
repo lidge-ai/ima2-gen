@@ -124,6 +124,7 @@ is empty again; GitHub parity and CI receipts live in the archived closeout.
 
 | Unit | Status | Open issue |
 |---|---|---|
+| `260927_release_pipeline_simplify/` | Faster PR gate (parallel Playwright workers) and a shorter release: reuse main's push CI for version-only cuts, slimmer stable package job, desktop and Pages dispatched by the release, one `npm run release` command. | — |
 | `260925_brand_refresh/` | Monochrome "2" mark everywhere (assets/brand, desktop icons, UI/site favicon), desktop loading screen from real supervisor status, three-step first-run onboarding, one-time GitHub star prompt via the user's gh, site Mac app guide, README polish with corrected facts. Gap audit in 001/002. | — |
 | `260925_readme_release/` | OpenCodex-grade README header and structure (banner, showcase table, collapsed reference), fresh dark-theme screenshots from an isolated demo runtime, translations aligned, then the v3.21.0 npm/GitHub/desktop/Pages release. | — |
 | `260922_macos_arm64_release/` | Desktop release phases 1–4: Apple Silicon-only DMG/ZIP, exact root-version `desktop-v<version>`, fail-closed signing/notarization, packaged darwin/arm64 updater, exact Draft assets/checksums, and `desktop-production` approval before publication. Environment setup, live tagged notarization and a two-version update remain out of scope. | — |
