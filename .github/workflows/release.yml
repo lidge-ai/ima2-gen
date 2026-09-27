@@ -94,11 +94,31 @@ jobs:
         timeout-minutes: 45
       - name: Refuse a candidate whose verification changed tracked output
         run: node scripts/release-cut.mjs assert-clean
+      # D2: a version-only commit (package.json + lockfile bump) adds no code
+      # delta, so the parent commit's main push CI already proves this tree.
+      # Only then is reusing that run even considered.
+      - id: versiononly
+        name: Check that the version commit only changes version files
+        run: >-
+          node scripts/release-cut.mjs version-only
+          "$(git rev-parse ${{ steps.commit.outputs.sha }}^)"
+          "${{ steps.commit.outputs.sha }}"
+      - id: reuse
+        name: Reuse the main push CI for the parent commit
+        # Canary must still exercise the candidate CI gate end to end, so the
+        # reuse path stays off in canary mode even for version-only bumps.
+        if: ${{ inputs.dry_run != 'canary' && steps.versiononly.outputs.version_only == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # 30, not 45: a fallback after a full wait still has to fit the candidate
+        # CI (45) and the preview wait (100) inside the cut job's 240 minutes.
+        run: node scripts/wait-ci-gate.mjs reuse-push "$(git rev-parse ${{ steps.commit.outputs.sha }}^)" 30
+        timeout-minutes: 35
       # Exact-SHA CI gate (roadmap 030): the candidate must exist on the remote
       # before CI can check it out, but main/preview must not move before the gate
       # passes — so the candidate rides a dedicated ref that nothing else reads.
       - name: Publish the candidate to its own ref
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           CANDIDATE_SHA: ${{ steps.commit.outputs.sha }}
         run: |
@@ -107,19 +127,19 @@ jobs:
             "$CANDIDATE_SHA:refs/heads/release-candidate"
       - id: ci_mark
         name: Record the CI run high-water mark
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: echo "id=$(node scripts/wait-ci-gate.mjs latest-id)" >> "$GITHUB_OUTPUT"
       - name: Dispatch CI for the exact candidate SHA
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
           gh workflow run ci.yml --ref release-candidate
           -f sha=${{ steps.commit.outputs.sha }}
       - name: Wait for the candidate CI gate
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
@@ -128,7 +148,7 @@ jobs:
           "${{ steps.commit.outputs.sha }}"
           45
       - name: Clean up the candidate ref
-        if: ${{ always() && inputs.dry_run != 'true' }}
+        if: ${{ always() && inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           CANDIDATE_SHA: ${{ steps.commit.outputs.sha }}
         run: |
@@ -219,6 +239,35 @@ jobs:
             "$SHA:refs/heads/main" \
             "$SHA:refs/heads/dev" \
             "refs/tags/v$VERSION:refs/tags/v$VERSION"
+      # D4: desktop assets build in parallel with the npm stable publish, so
+      # the tag job starts them instead of a hand-pushed tag after the fact.
+      # A pre-existing desktop-v tag must resolve to this SHA or the job
+      # fails: dispatching on an unverified tag could ship binaries for the
+      # wrong commit.
+      - name: Push the desktop release tag
+        env:
+          VERSION: ${{ needs.cut.outputs.version }}
+          SHA: ${{ needs.cut.outputs.sha }}
+        run: |
+          git fetch origin --tags
+          if git rev-parse -q --verify "refs/tags/desktop-v$VERSION" >/dev/null; then
+            EXISTING=$(git rev-parse "refs/tags/desktop-v$VERSION^{commit}")
+            if [ "$EXISTING" != "$SHA" ]; then
+              echo "refs/tags/desktop-v$VERSION already exists at $EXISTING, expected the release SHA $SHA"
+              exit 1
+            fi
+          else
+            git push origin "$SHA:refs/tags/desktop-v$VERSION"
+          fi
+      - name: Start the desktop release build
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v${{ needs.cut.outputs.version }} -f platform=all"
+          gh workflow run desktop.yml \
+            --ref "desktop-v${{ needs.cut.outputs.version }}" \
+            -f platform=all
       - id: stable_mark
         name: Record the publish run high-water mark
         env:
@@ -245,4 +294,20 @@ jobs:
             echo "- sha: ${{ needs.cut.outputs.sha }}"
             echo "- main, dev, preview, and the tag all point at that commit"
             echo "- npm preview and latest were published by publish.yml"
+            echo "- desktop build: desktop.yml dispatched on refs/tags/desktop-v${{ needs.cut.outputs.version }}"
+            echo "- re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v${{ needs.cut.outputs.version }} -f platform=all"
+            echo "- re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ needs.cut.outputs.sha }} -f release_version=${{ needs.cut.outputs.version }}"
           } >> "$GITHUB_STEP_SUMMARY"
+      # D5: the Pages site rebuilds from the release inputs once npm stable
+      # has landed. Failure here must not fail the release, so the dispatch
+      # tolerates errors and the summary above carries the re-dispatch command.
+      - name: Deploy the Pages site for this release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ needs.cut.outputs.sha }} -f release_version=${{ needs.cut.outputs.version }}"
+          gh workflow run pages.yml \
+            --ref main \
+            -f release_sha=${{ needs.cut.outputs.sha }} \
+            -f release_version=${{ needs.cut.outputs.version }}

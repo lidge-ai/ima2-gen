@@ -37,7 +37,9 @@ function assertWorkflowBoundary(workflow: Workflow) {
   assert.equal(workflow.on.pull_request, undefined);
   assert.deepEqual(workflow.on.push.tags, ["desktop-v*"]);
   assert.deepEqual(workflow.on.push.branches, ["dev"]);
-  // A tag is the only ref that can reach a release, so dispatch has no publish input.
+  // The release path is a desktop-v tag ref (pushed or dispatched), and the
+  // workflow exposes no publish input at all: publication is gated by the
+  // desktop-production environment on that tag ref.
   assert.equal(workflow.on.workflow_dispatch.inputs.publish, undefined);
   assert.equal(workflow.on.workflow_dispatch.inputs.platform.default, "all");
   assert.equal(workflow.jobs.build.needs, "prepare");
@@ -98,26 +100,35 @@ function assertWorkflowBoundary(workflow: Workflow) {
   for (const ref of ["refs/heads/dev", "refs/tags/desktop-v3.16.1"]) {
     assert.equal(condition(signed.if!, "pull_request", ref), false, "PR outputs cannot grant signing");
     assert.equal(condition(verify.if!, "pull_request", ref), false);
-    // The unsigned preview runs on branch pushes only, never on a tag or a PR.
+    // The unsigned preview runs on branch pushes only, never on a tag; the
+    // workflow has no pull_request trigger at all.
     assert.equal(condition(preview.if!, "pull_request", ref), false);
-    assert.equal(condition(workflow.jobs.draft_release.if, "pull_request", ref, "all", true), false);
-    for (const platform of ["all", "mac", "win", "linux"]) {
-      // No dispatch input combination can reach a release.
-      assert.equal(condition(workflow.jobs.draft_release.if, "workflow_dispatch", ref, platform, false), false);
-      assert.equal(condition(workflow.jobs.draft_release.if, "workflow_dispatch", ref, platform, true), false);
-      assert.equal(condition(workflow.jobs.publish_release.if, "workflow_dispatch", ref, platform, true), false);
-    }
     assert.equal(condition(signed.if!, "workflow_dispatch", ref), true);
     assert.equal(condition(signed.if!, "workflow_dispatch", ref, "all", false, "win"), false);
     assert.equal(condition(verify.if!, "workflow_dispatch", ref, "mac", false, "mac", "failure"), true);
     assert.equal(condition(proof.if!, "workflow_dispatch", ref, "mac", false, "mac", "failure"), true);
     assert.equal(condition(verify.if!, "workflow_dispatch", ref, "mac", false, "mac", "skipped"), false);
   }
-  assert.equal(condition(workflow.jobs.draft_release.if, "push", "refs/tags/desktop-v3.16.1"), true);
-  assert.equal(condition(workflow.jobs.draft_release.if, "push", "refs/heads/dev"), false);
+  // The release path is the desktop-v tag ref under both events: release.yml
+  // pushes the tag with GITHUB_TOKEN (no push workflow fires) and dispatches
+  // this workflow on the tag ref. Branch refs never reach draft or publish
+  // under either event, whatever the dispatch inputs claim.
+  for (const eventName of ["push", "workflow_dispatch"] as const) {
+    assert.equal(condition(workflow.jobs.draft_release.if, eventName, "refs/tags/desktop-v3.16.1"), true);
+    assert.equal(condition(workflow.jobs.publish_release.if, eventName, "refs/tags/desktop-v3.16.1"), true);
+    for (const ref of ["refs/heads/dev", "refs/heads/main"]) {
+      assert.equal(condition(workflow.jobs.draft_release.if, eventName, ref), false, `${eventName} on ${ref} must not draft`);
+      assert.equal(condition(workflow.jobs.publish_release.if, eventName, ref), false, `${eventName} on ${ref} must not publish`);
+      for (const platform of ["all", "mac", "win", "linux"]) {
+        assert.equal(condition(workflow.jobs.draft_release.if, "workflow_dispatch", ref, platform, true), false);
+        assert.equal(condition(workflow.jobs.publish_release.if, "workflow_dispatch", ref, platform, true), false);
+      }
+    }
+    // The unsigned preview stays limited to non-tag branch pushes.
+    assert.equal(condition(preview.if!, eventName, "refs/tags/desktop-v3.16.1"), false);
+  }
   assert.equal(condition(signed.if!, "push", "refs/heads/dev"), false);
-  assert.equal(condition(preview.if!, "push", "refs/heads/dev"), true);
-  assert.equal(condition(preview.if!, "push", "refs/tags/desktop-v3.16.1"), false);
+  assert.equal(condition(preview.if!, "push", "refs/heads/main"), true);
   // The build matrix is skipped only when a branch push touched nothing desktop.
   assert.equal(condition(workflow.jobs.build.if, "push", "refs/heads/dev", "all", false, "mac", "success", "false"), false);
   assert.equal(condition(workflow.jobs.build.if, "push", "refs/heads/dev", "all", false, "mac", "success", "true"), true);
@@ -178,6 +189,19 @@ test("desktop matrix filters before scheduling and rejects partial publication",
   assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform: "linux", publish: "false" }).matrix.include, LINUX_LEGS);
   for (const platform of ["mac", "win", "linux"]) {
     assert.throws(() => resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform, publish: true }), /tag-only/);
+  }
+  // A dispatch on the desktop-v tag ref is the release path: it builds every
+  // shipped asset no matter which platform the input named, and publish is
+  // accepted there because the tag ref itself is the release authorization.
+  for (const platform of ["mac", "win", "linux"]) {
+    assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", platform, ref: "refs/tags/desktop-v3.16.1" })
+      .matrix.include.map((entry) => entry.target), ALL_TARGETS);
+  }
+  assert.deepEqual(resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", publish: true, ref: "refs/tags/desktop-v3.16.1" })
+    .matrix.include.map((entry) => entry.target), ALL_TARGETS);
+  // A branch dispatch with publish set is still refused: only a tag ref releases.
+  for (const ref of ["refs/heads/dev", "refs/heads/main", ""]) {
+    assert.throws(() => resolveDesktopBuildPolicy({ eventName: "workflow_dispatch", publish: true, ref }), /tag-only/);
   }
   // A dev-branch push keeps the cheap unsigned macOS preview only.
   for (const eventName of ["push", "pull_request"]) {
@@ -250,7 +274,7 @@ test("workflow gates credentials, native proof and publication by the actual eve
 
 test("workflow assertions reject unsafe changes while ignoring display labels", () => {
   const mutations: ((workflow: Workflow) => void)[] = [
-    (w) => { w.jobs.draft_release.if = "startsWith(github.ref, 'refs/tags/desktop-v')"; },
+    (w) => { w.jobs.draft_release.if = "github.event_name == 'push'"; },
     (w) => { w.jobs.publish_release.environment.name = "desktop-staging"; },
     (w) => { w.jobs.publish_release.steps.find((s) => s.name === "Require configured production approval gate")!.run = "true"; },
     (w) => { (w.jobs.draft_release as { environment?: unknown }).environment = { name: "desktop-production", url: "x" }; },

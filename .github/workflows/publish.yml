@@ -95,8 +95,19 @@ jobs:
       - name: Set preview package version
         if: needs.prepare.outputs.channel == 'preview'
         run: npm version "${{ needs.prepare.outputs.version }}" --no-git-tag-version
+      # Preview lane only (D3, 260927 release pipeline simplify): the stable
+      # tag can only exist after release.yml's preview proof, and prepare
+      # re-verifies that proof for the latest channel, so the same gitHead
+      # already passed verify:release:source minutes earlier on the preview
+      # lane (the same reasoning as the windows-consumer skip above). Latest
+      # packs from build:release (ui:build + build:server + build:cli +
+      # lint:pkg) instead of re-running the full source suite.
       - run: npm run verify:release:source
+        if: needs.prepare.outputs.channel == 'preview'
         timeout-minutes: 25
+      - run: npm run build:release
+        if: needs.prepare.outputs.channel == 'latest'
+        timeout-minutes: 15
       - id: artifact
         name: Pack release artifact once
         run: node scripts/release-contract.mjs pack "$RUNNER_TEMP/npm-release"

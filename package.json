@@ -35,9 +35,9 @@
     "docs:runtime": "node --import tsx scripts/generate-runtime-install-contract.mjs",
     "docs:runtime:check": "node --import tsx scripts/generate-runtime-install-contract.mjs --check",
     "publish:dry-run": "node scripts/publish-dry-run.mjs",
-    "release:patch": "gh workflow run release.yml -f bump=patch -f dry_run=false",
-    "release:minor": "gh workflow run release.yml -f bump=minor -f dry_run=false",
-    "release:major": "gh workflow run release.yml -f bump=major -f dry_run=false",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major",
     "audit:gate": "node scripts/audit-gate.mjs --audit-level high --omit dev && node scripts/audit-gate.mjs --prefix ui --audit-level high",
     "verify:release:source": "npm run test:native-deps && npm run typecheck && npm run typecheck:tests && npm run test:inventory && npm run ui:build && npm run build:server && npm run build:cli && npm run test:provider-registry && npm test && npm run lint:pkg && npm run test:install-policy && npm run audit:gate",
     "verify:release": "npm run verify:release:source && npm run test:package-install",
@@ -46,8 +46,10 @@
     "build:server": "tsc -p tsconfig.build.json",
     "build:cli": "tsc -p tsconfig.bin.json && node scripts/fix-shebangs.mjs",
     "postinstall": "echo '\\n  [ima2] Gallery thumbnails will be auto-generated on next server start.\\n  Or run: ima2 backfill-thumbs\\n'",
-    "release:dry": "gh workflow run release.yml -f bump=patch -f dry_run=true",
-    "release:canary": "gh workflow run release.yml -f bump=patch -f dry_run=canary"
+    "release:dry": "node scripts/release.mjs patch --dry-run",
+    "release:canary": "node scripts/release.mjs patch --canary",
+    "build:release": "npm run ui:build && npm run build:server && npm run build:cli && npm run lint:pkg",
+    "release": "node scripts/release.mjs"
   },
   "keywords": [
     "image-generation",

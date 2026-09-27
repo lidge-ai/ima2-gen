@@ -121,6 +121,26 @@ export function assertPreviewProof({ version, sha, previewVersion, previewGitHea
   return problems;
 }
 
+/**
+ * D2 (release pipeline simplify): the release cut may reuse the main push CI
+ * only when the version commit changed nothing but version files. A
+ * package.json + lockfile bump carries no code delta, so the parent commit's
+ * push CI already proves the tree. Any other file means the candidate must
+ * prove itself.
+ */
+export function isVersionOnlyDiff(files) {
+  if (!Array.isArray(files) || files.length === 0) return false;
+  return files.every((file) => file === "package.json" || file === "package-lock.json");
+}
+
+function versionOnly(base, sha) {
+  if (!base || !sha) throw new Error("usage: release-cut.mjs version-only <baseSha> <sha>");
+  const files = git(["diff", "--name-only", base, sha]).split("\n").filter(Boolean);
+  const versionOnly = isVersionOnlyDiff(files);
+  console.log(`[release] version commit diff: ${files.join(", ") || "(empty)"}`);
+  emit({ version_only: versionOnly });
+}
+
 function contains(ancestor, descendant) {
   try {
     execFileSync("git", ["merge-base", "--is-ancestor", ancestor, descendant], { stdio: "ignore" });
@@ -232,6 +252,7 @@ const COMMANDS = {
   preflight: () => preflight(),
   "assert-baseline": () => baseline(),
   commit: (args) => commit(args[0] || "patch"),
+  "version-only": (args) => versionOnly(args[0], args[1]),
   "assert-clean": () => assertClean(),
   "assert-remotes-unmoved": (args) => remotesUnmoved(args[0]),
   "assert-preview-proof": (args) => previewProof(args[0], args[1]),
@@ -242,7 +263,7 @@ if (isMain) {
   const [command, ...args] = process.argv.slice(2);
   try {
     const run = COMMANDS[command];
-    if (!run) throw new Error("usage: release-cut.mjs preflight | assert-baseline | commit <bump> | assert-clean | assert-remotes-unmoved <sha> | assert-preview-proof <version> <sha>");
+    if (!run) throw new Error("usage: release-cut.mjs preflight | assert-baseline | commit <bump> | version-only <baseSha> <sha> | assert-clean | assert-remotes-unmoved <sha> | assert-preview-proof <version> <sha>");
     run(args);
   } catch (error) {
     console.error(`[release-cut] ${error.message}`);

@@ -199,7 +199,11 @@ jobs:
   draft_release:
     name: Create verified draft release
     needs: [prepare, build]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')
+    # The release path is a desktop-v tag ref under either event: release.yml
+    # pushes the desktop-vX tag with GITHUB_TOKEN (which triggers no push
+    # workflow) and dispatches this workflow with --ref desktop-vX, so a
+    # workflow_dispatch on the tag ref must draft exactly like a tag push.
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -306,7 +310,10 @@ jobs:
   publish_release:
     name: Publish approved desktop release
     needs: draft_release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')
+    # Same tag-ref release path as draft_release; publication stays behind the
+    # desktop-production environment, whose branch policy admits only
+    # desktop-v* tags, so widening the event does not widen who can approve.
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:

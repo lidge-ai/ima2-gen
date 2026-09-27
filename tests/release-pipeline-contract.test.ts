@@ -23,7 +23,7 @@ import {
 import { gypfileNames, validateBundleParity, validateInstallPolicy } from "../scripts/check-install-policy.mjs";
 import { npmInvocation } from "../scripts/npm-subprocess.mjs";
 import { assertActionPinned, assertAllActionsPinned } from "./_actionPins.mjs";
-import { assertUnitProvenance, REQUIRED_UNITS } from "../scripts/release-cut.mjs";
+import { assertUnitProvenance, isVersionOnlyDiff, REQUIRED_UNITS } from "../scripts/release-cut.mjs";
 import { parse } from "yaml";
 
 const SHA = "a".repeat(40);
@@ -539,12 +539,14 @@ describe("package install policy contract", () => {
   it("maps every release script to an explicit bump/dry_run pair", () => {
     // c1b: a missing or wrong dry_run flag turns a release command into a silent
     // no-op (or a dry dispatch into a real release). Assert exact strings.
+    // D6 routes every entry through scripts/release.mjs, which dispatches
+    // release.yml with the matching dry_run input itself.
     const pkg = JSON.parse(readFileSync(join(repoRoot(), "package.json"), "utf8"));
-    assert.equal(pkg.scripts["release:dry"], "gh workflow run release.yml -f bump=patch -f dry_run=true");
-    assert.equal(pkg.scripts["release:canary"], "gh workflow run release.yml -f bump=patch -f dry_run=canary");
-    assert.equal(pkg.scripts["release:patch"], "gh workflow run release.yml -f bump=patch -f dry_run=false");
-    assert.equal(pkg.scripts["release:minor"], "gh workflow run release.yml -f bump=minor -f dry_run=false");
-    assert.equal(pkg.scripts["release:major"], "gh workflow run release.yml -f bump=major -f dry_run=false");
+    assert.equal(pkg.scripts["release:dry"], "node scripts/release.mjs patch --dry-run");
+    assert.equal(pkg.scripts["release:canary"], "node scripts/release.mjs patch --canary");
+    assert.equal(pkg.scripts["release:patch"], "node scripts/release.mjs patch");
+    assert.equal(pkg.scripts["release:minor"], "node scripts/release.mjs minor");
+    assert.equal(pkg.scripts["release:major"], "node scripts/release.mjs major");
   });
 
   it("gates the tag job on a real release and keeps the candidate ref leased", () => {
@@ -866,5 +868,172 @@ describe("registry proof window", () => {
       assert.ok(Number(step[2]) * 60_000 >= REGISTRY_PROOF_MAX_TIMEOUT_MS + REGISTRY_PROOF_ATTEMPT_BUDGET_MS);
     }
     assert.equal(workflow.includes("IMA2_REGISTRY_PROOF_TIMEOUT_MS"), false, "the override stays local/manual");
+  });
+});
+
+describe("version-only reuse classification (D2)", () => {
+  it("accepts only a non-empty subset of package.json and package-lock.json", () => {
+    assert.equal(isVersionOnlyDiff(["package.json"]), true);
+    assert.equal(isVersionOnlyDiff(["package-lock.json"]), true);
+    assert.equal(isVersionOnlyDiff(["package.json", "package-lock.json"]), true);
+    // Empty diff is not a version commit; neither is anything else.
+    assert.equal(isVersionOnlyDiff([]), false);
+    assert.equal(isVersionOnlyDiff(["package.json", "README.md"]), false);
+    assert.equal(isVersionOnlyDiff(["server.ts"]), false);
+    for (const value of [null, undefined, {}, "package.json"] as never[]) {
+      assert.equal(isVersionOnlyDiff(value), false, JSON.stringify(value));
+    }
+  });
+
+  it("version-only step in the cut reads the diff against the parent commit", () => {
+    const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
+    assert.match(workflow, /release-cut\.mjs version-only/);
+    assert.match(workflow, /git rev-parse \$\{\{ steps\.commit\.outputs\.sha \}\}\^/);
+    assert.match(workflow, /id: versiononly/);
+    assert.match(workflow, /id: reuse/);
+    assert.match(workflow, /wait-ci-gate\.mjs reuse-push/);
+    // The version-only check runs after verify and before any reuse decision.
+    const cleanIndex = workflow.indexOf("release-cut.mjs assert-clean");
+    const versionOnlyIndex = workflow.indexOf("id: versiononly");
+    const reuseIndex = workflow.indexOf("id: reuse");
+    const candidateIndex = workflow.indexOf("Publish the candidate to its own ref");
+    assert.ok(cleanIndex > -1 && cleanIndex < versionOnlyIndex, "version-only check follows assert-clean");
+    assert.ok(versionOnlyIndex < reuseIndex, "reuse decision follows the version-only check");
+    assert.ok(reuseIndex < candidateIndex, "reuse decision precedes the candidate push");
+  });
+
+  it("reuse is skipped in canary and every candidate step carries the reuse guard", () => {
+    const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
+    assert.match(
+      workflow,
+      /if: \$\{\{ inputs\.dry_run != 'canary' && steps\.versiononly\.outputs\.version_only == 'true' \}\}/,
+      "canary must still exercise the candidate CI gate",
+    );
+    const candidateNames = [
+      "Publish the candidate to its own ref",
+      "Record the CI run high-water mark",
+      "Dispatch CI for the exact candidate SHA",
+      "Wait for the candidate CI gate",
+      "Clean up the candidate ref",
+    ];
+    for (const name of candidateNames) {
+      const stepStart = workflow.indexOf(`name: ${name}`);
+      assert.ok(stepStart > -1, name);
+      const stepEnd = workflow.indexOf("\n      - ", stepStart);
+      const stepBlock = workflow.slice(stepStart, stepEnd === -1 ? workflow.length : stepEnd);
+      assert.match(
+        stepBlock,
+        /steps\.reuse\.outputs\.reusable != 'true'/,
+        `${name} must be skipped when the main push CI was reused`,
+      );
+      assert.match(stepBlock, /inputs\.dry_run != 'true'/, `${name} keeps its dry_run guard`);
+    }
+  });
+
+  it("classifies a main push run reusable only when it is green with every family run", async () => {
+    const { classifyPushRun } = await import("../scripts/wait-ci-gate.mjs");
+    const sha = "e".repeat(40);
+    const run = { databaseId: 9, event: "push", headBranch: "main", headSha: sha, status: "completed", conclusion: "success" };
+    const jobs = [
+      { name: "ci", conclusion: "success" },
+      { name: "test (ubuntu-latest, node 22.23.0, npm 11.18.0)", conclusion: "success" },
+      { name: "windows (node 22.23.0, npm 11.18.0)", conclusion: "success" },
+      { name: "macOS native installation", conclusion: "success" },
+      { name: "frontend e2e (ubuntu)", conclusion: "success" },
+    ];
+
+    const green = classifyPushRun(run, jobs);
+    assert.equal(green.reusable, true);
+    assert.equal(green.red, false);
+
+    // schedule/dispatch runs on the same SHA never count.
+    for (const event of ["schedule", "workflow_dispatch"]) {
+      const verdict = classifyPushRun({ ...run, event }, jobs);
+      assert.equal(verdict.reusable, false, event);
+      assert.equal(verdict.red, false, event);
+      assert.match(verdict.reason, new RegExp(event));
+    }
+
+    // A run on any branch but main is not the main push CI.
+    const branch = classifyPushRun({ ...run, headBranch: "dev" }, jobs);
+    assert.equal(branch.reusable, false);
+    assert.match(branch.reason, /not main/);
+
+    // A skipped e2e job means the push CI never exercised the suite.
+    const skipped = classifyPushRun(run, jobs.map((j) => j.name.startsWith("frontend e2e") ? { ...j, conclusion: "skipped" } : j));
+    assert.equal(skipped.reusable, false);
+    assert.equal(skipped.red, false);
+    assert.match(skipped.reason, /frontend e2e/);
+
+    // Missing ci aggregator -> not reusable.
+    const noAggregator = classifyPushRun(run, jobs.filter((j) => j.name !== "ci"));
+    assert.equal(noAggregator.reusable, false);
+    assert.match(noAggregator.reason, /ci/);
+
+    // A missing family entirely -> not reusable.
+    const noWindows = classifyPushRun(run, jobs.filter((j) => !j.name.startsWith("windows (")));
+    assert.equal(noWindows.reusable, false);
+    assert.match(noWindows.reason, /windows/);
+
+    // Failure is red: the parent tree itself is broken.
+    const red = classifyPushRun({ ...run, conclusion: "failure" }, jobs);
+    assert.deepEqual(red, { reusable: false, red: true, reason: `main CI is red for ${sha}` });
+
+    // Cancelled/skipped/incomplete run -> fallback, never red.
+    for (const conclusion of ["cancelled", "skipped", null]) {
+      const verdict = classifyPushRun({ ...run, conclusion }, jobs);
+      assert.equal(verdict.reusable, false, String(conclusion));
+      assert.equal(verdict.red, false, String(conclusion));
+    }
+
+    // No run at all -> fallback.
+    const none = classifyPushRun(null, jobs);
+    assert.equal(none.reusable, false);
+    assert.equal(none.red, false);
+  });
+});
+
+describe("tag job dispatches (D4/D5)", () => {
+  it("pushes or verifies the desktop tag before dispatching the desktop build", () => {
+    const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
+    const atomicIndex = workflow.indexOf("Create and atomically push main, dev, and the tag");
+    const tagIndex = workflow.indexOf("Push the desktop release tag");
+    const dispatchIndex = workflow.indexOf("Start the desktop release build");
+    assert.ok(atomicIndex > -1 && atomicIndex < tagIndex, "desktop tag follows the atomic push");
+    assert.ok(tagIndex < dispatchIndex, "desktop build dispatches only after the tag exists");
+    const tagBlock = workflow.slice(tagIndex, dispatchIndex);
+    // An existing desktop-v tag must resolve to the release SHA or the job fails.
+    assert.match(tagBlock, /git rev-parse -q --verify "refs\/tags\/desktop-v\$VERSION"/);
+    assert.match(tagBlock, /desktop-v\$VERSION\^\{commit\}/);
+    assert.match(tagBlock, /exit 1/);
+    // Absent tag: push the SHA to the tag ref.
+    assert.match(tagBlock, /git push origin "\$SHA:refs\/tags\/desktop-v\$VERSION"/);
+    const dispatchBlock = workflow.slice(dispatchIndex, workflow.indexOf("Record the publish run high-water mark", dispatchIndex));
+    assert.match(dispatchBlock, /gh workflow run desktop\.yml/);
+    assert.match(dispatchBlock, /--ref "desktop-v/);
+    assert.match(dispatchBlock, /-f platform=all/);
+    assert.match(dispatchBlock, /continue-on-error: true/);
+    assert.match(dispatchBlock, /GH_TOKEN/);
+    assert.match(dispatchBlock, /re-dispatch desktop:/);
+  });
+
+  it("deploys Pages after the stable wait and writes the summary before it", () => {
+    const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
+    const waitIndex = workflow.indexOf("Wait for the stable publish to finish");
+    const summaryIndex = workflow.indexOf("Write the release summary");
+    const pagesIndex = workflow.indexOf("Deploy the Pages site for this release");
+    assert.ok(waitIndex > -1 && waitIndex < summaryIndex, "summary follows the stable publish wait");
+    assert.ok(summaryIndex < pagesIndex, "summary precedes the Pages dispatch");
+    const pagesBlock = workflow.slice(pagesIndex);
+    assert.match(pagesBlock, /gh workflow run pages\.yml/);
+    assert.match(pagesBlock, /--ref main/);
+    assert.match(pagesBlock, /-f release_sha=/);
+    assert.match(pagesBlock, /-f release_version=/);
+    assert.match(pagesBlock, /continue-on-error: true/);
+    assert.match(pagesBlock, /GH_TOKEN/);
+    const summaryBlock = workflow.slice(summaryIndex, pagesIndex);
+    assert.match(summaryBlock, /desktop-v/);
+    assert.match(summaryBlock, /re-dispatch desktop:/);
+    assert.match(summaryBlock, /re-dispatch pages:/);
   });
 });

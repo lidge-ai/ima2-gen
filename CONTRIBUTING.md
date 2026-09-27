@@ -31,6 +31,31 @@ A red `dev` run is a regression to fix forward on `dev` — not a signal to
 revert the merge or re-run the PR gate. CodeQL keeps running on pull
 requests because it is the pre-merge security scan.
 
+## Releasing (maintainers)
+
+One command runs the whole release from a maintainer machine with `gh` signed in:
+
+```bash
+npm run release -- patch --promote --approve   # or minor / major
+```
+
+`scripts/release.mjs` merges the dev -> main promotion PR (`--promote`),
+dispatches `release.yml` pinned to that main SHA, watches it, approves the
+`npm-stable` and `desktop-production` deployments of this release
+(`--approve`; without it the script prints the approve commands), and keeps
+watching until the desktop release is published. Add `--dry-run` to verify
+without touching any remote, `--canary` to also exercise the candidate CI gate,
+and `--yes` to skip the confirmation prompts.
+
+Inside `release.yml` the cut reuses main's push CI when the version commit only
+changes `package.json`/`package-lock.json` (a dedicated candidate CI run is
+dispatched otherwise), publishes the preview, then the tag job pushes
+`main`/`dev`/`vX.Y.Z` atomically, pushes `desktop-vX.Y.Z` and starts the
+desktop build in parallel with the npm stable publish, and finally dispatches
+the Pages deploy. The approvals stay on purpose: `npm-stable` gates the tag
+and the stable publish, and `desktop-production` gates the public desktop
+release.
+
 ## Devlog
 
 Implementation work belongs in a numbered unit under
@@ -52,4 +77,3 @@ files.
   images committed to a PR branch ride the merge into the integration
   branch. A maintainer can waive the gate with the `ui-screenshot-waived`
   label or a comment stating the change does not touch the UI.
-

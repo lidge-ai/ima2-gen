@@ -20,10 +20,14 @@ export const MAC_SIGNING_INPUTS = [
 
 /**
  * A desktop-v* tag is the release path, so it builds every shipped
- * architecture. A dev-branch push still gets only the cheap unsigned macOS
- * preview: win/linux packaging evidence comes from dispatch and tag builds,
- * not from repeating five legs on every merge. Manual dispatch defaults to
- * all platforms but stays selectable per OS.
+ * architecture. That includes a workflow_dispatch on the tag ref: release.yml
+ * pushes the desktop-vX tag with GITHUB_TOKEN (which triggers no push
+ * workflow) and dispatches this workflow with --ref desktop-vX, so the tag ref
+ * must ship every asset no matter which platform the dispatch input named. A
+ * dev-branch push still gets only the cheap unsigned macOS preview: win/linux
+ * packaging evidence comes from dispatch and tag builds, not from repeating
+ * five legs on every merge. A branch dispatch defaults to all platforms but
+ * stays selectable per OS.
  *
  * @param {{ eventName: string, platform?: string, publish?: boolean | string, ref?: string }} input
  */
@@ -31,9 +35,12 @@ export function resolveDesktopBuildPolicy({ eventName, platform = 'all', publish
   if (!['pull_request', 'push', 'workflow_dispatch'].includes(eventName)) {
     throw new Error('Unsupported desktop build event');
   }
-  const selected = eventName === 'workflow_dispatch'
-    ? (platform || 'all')
-    : (ref.startsWith('refs/tags/') ? 'all' : 'mac');
+  const isTagRef = ref.startsWith('refs/tags/desktop-v');
+  // A tag ref builds every shipped asset even under dispatch: the release
+  // must ship all platforms no matter which platform input named one of them.
+  const selected = ref.startsWith('refs/tags/')
+    ? 'all'
+    : (eventName === 'workflow_dispatch' ? (platform || 'all') : 'mac');
   if (!['all', 'mac', 'win', 'linux'].includes(selected)) {
     throw new Error('Desktop platform must be all, mac, win, or linux');
   }
@@ -42,8 +49,10 @@ export function resolveDesktopBuildPolicy({ eventName, platform = 'all', publish
       throw new Error('Desktop publish input must be true or false');
     }
     // A tag is the only thing that can reach a release: it pins the version the
-    // build validates against and is the ref a protection rule can guard.
-    if (publish === true || publish === 'true') {
+    // build validates against and is the ref a protection rule can guard. A
+    // dispatch on the tag ref already is the release path, so only a dispatch
+    // on a branch ref with publish set is refused.
+    if ((publish === true || publish === 'true') && !isTagRef) {
       throw new Error('Publishing is tag-only; a dispatched desktop build cannot release');
     }
   }
