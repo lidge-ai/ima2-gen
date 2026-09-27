@@ -341,8 +341,9 @@ jobs:
     needs: changes
     if: github.event_name != 'push' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
-    # The retained serial suite reached case253/258 at the former20-minute
-    # job bound. Reserve time to finish and upload; individual test limits stay unchanged.
+    # The suite used to run serially (~21 min, it once hit the former 20-minute
+    # bound). It now spreads spec files over three Playwright workers
+    # (ui/playwright.config.ts); the bound stays as headroom for upload.
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4

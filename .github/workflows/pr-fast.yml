@@ -107,9 +107,9 @@ jobs:
       # ui/dist has to already exist or the measurement reads far too small.
       - name: Enforce the npm package size budget
         run: node scripts/collect-package-metrics.mjs package
-      # The full suite stays in the fast gate: 355 files run in 79s on Ubuntu,
-      # so sharding or a unit/integration split would add structure without
-      # buying time. What the fast gate drops is the Windows lane and the two
+      # The full suite stays in the fast gate: it takes about 3 minutes on
+      # Ubuntu (measured 2026-09-27), less than the frontend job, so a split would
+      # not shorten the gate. What the fast gate drops is the Windows lane and the two
       # package smokes, which cost 573s of the 831s Windows job.
       - name: Run tests
         run: npm test
