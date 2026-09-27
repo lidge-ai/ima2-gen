@@ -19,3 +19,22 @@ moving tests out of the gate.
   Reads the change: the step runs `npm --prefix ui run test:e2e` -> playwright.config.ts.
 - A second run (rerun of the job) also passes: flake check for parallel workers.
 - If parallel runs flake on shared state, fall back to fewer workers and record why.
+
+## Result (PR #334 runs, frontend e2e step, 270 tests)
+
+| Config | e2e | job | run |
+|---|---|---|---|
+| serial (before) | 17.3m | 19.1m | 36318668408 |
+| 3 workers, file-parallel | 9.1m | 11.2m | 36321822908 |
+| 4 workers, file-parallel | 12.1m | 14.1m | 36322547503 |
+| 3 workers, fully parallel journeys | 12.4m | 14.7m | (549a0772 run) |
+
+The runner is CPU-bound: summed test time grows from ~17m serial to ~31-35m under
+parallel load because each test runs an app server plus Chromium on 4 vCPUs.
+Fully parallel journeys also repeat per-file beforeAll preflights (composer bundle
+build) on every worker. Final: 3 workers, file-parallel, list reporter on CI.
+
+Follow-up (not in this unit): more speed needs more runners — shard the journeys
+project over two jobs after checking how Playwright shards the isolation
+dependency, or move the Tailwind build test (84s alone) out of the isolation
+project's serial prefix.

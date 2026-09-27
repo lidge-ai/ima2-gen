@@ -76,10 +76,13 @@ describe("release.mjs own-run filter", () => {
   it("accepts only newer runs on this release's tags", () => {
     const publish = { ...base, workflow: "publish.yml" };
     const desktop = { ...base, workflow: "desktop.yml" };
-    // release.yml dispatches publish.yml on the default branch.
-    assert.equal(isOwnRun({ databaseId: 101, headBranch: "main", event: "workflow_dispatch" }, publish), true);
-    assert.equal(isOwnRun({ databaseId: 100, headBranch: "main", event: "workflow_dispatch" }, publish), false);
-    assert.equal(isOwnRun({ databaseId: 101, headBranch: "preview", event: "push" }, publish), false);
+    // release.yml dispatches publish.yml on the default branch; run-name names the ref.
+    const stable = { headBranch: "main", event: "workflow_dispatch", displayTitle: "Publish refs/tags/v3.24.0" };
+    assert.equal(isOwnRun({ databaseId: 101, ...stable }, publish), true);
+    assert.equal(isOwnRun({ databaseId: 100, ...stable }, publish), false);
+    assert.equal(isOwnRun({ databaseId: 101, ...stable, displayTitle: "Publish refs/heads/preview" }, publish), false);
+    assert.equal(isOwnRun({ databaseId: 101, ...stable, displayTitle: "Publish refs/tags/v3.23.9" }, publish), false);
+    assert.equal(isOwnRun({ databaseId: 101, ...stable, event: "push" }, publish), false);
     assert.equal(isOwnRun({ databaseId: 102, headBranch: "desktop-v3.24.0", event: "workflow_dispatch" }, desktop), true);
     assert.equal(isOwnRun({ databaseId: 100, headBranch: "desktop-v3.24.0", event: "workflow_dispatch" }, desktop), false);
     assert.equal(isOwnRun({ databaseId: 101, headBranch: "dev", event: "push" }, desktop), false);

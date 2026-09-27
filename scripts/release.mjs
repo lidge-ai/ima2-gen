@@ -78,15 +78,17 @@ export function selectPendingApprovals(pending, allowedEnvs = RELEASE_ENVS) {
 }
 
 // release.yml dispatches publish.yml on the default branch (the ref it publishes
-// is an input, so headBranch reads "main"), and the release concurrency group
-// allows one cut at a time: any publish.yml dispatch above the high-water mark is
-// this release's. desktop.yml is dispatched on the desktop-v<version> tag ref.
-// Run ids are repository-wide and increase monotonically, so anything at or
-// below the mark belongs to an earlier release.
+// is an input, so headBranch reads "main"); publish.yml's run-name carries that
+// ref, so only the stable run for refs/tags/v<version> matches — a recovery or
+// preview dispatch in the same window does not. desktop.yml is dispatched on
+// the desktop-v<version> tag ref. Run ids are repository-wide and increase
+// monotonically, so anything at or below the mark belongs to an earlier release.
 export function isOwnRun(run, { afterId, version, workflow }) {
   const id = Number(run.databaseId ?? run.id);
   if (!Number.isFinite(id) || id <= afterId) return false;
-  if (workflow === "publish.yml") return run.event === "workflow_dispatch";
+  if (workflow === "publish.yml") {
+    return run.event === "workflow_dispatch" && run.displayTitle === "Publish refs/tags/v" + version;
+  }
   return (run.headBranch ?? "") === "desktop-v" + version;
 }
 
@@ -156,7 +158,7 @@ async function ensurePromoted(ctx) {
 
 function runListArgs(workflow, extra = []) {
   return ["run", "list", "--workflow", workflow, "--limit", "30",
-    "--json", "databaseId,status,conclusion,headBranch,event,url", ...extra];
+    "--json", "databaseId,status,conclusion,headBranch,event,displayTitle,url", ...extra];
 }
 
 function highWaterMark(ctx) {

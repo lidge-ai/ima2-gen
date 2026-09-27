@@ -1,4 +1,7 @@
 name: Publish to npm
+# The published ref in the run title lets scripts/release.mjs pick out the stable
+# run of its own release (refs/tags/vX.Y.Z) among other dispatches.
+run-name: Publish ${{ inputs.publish_ref || github.ref }}
 
 on:
   push:
