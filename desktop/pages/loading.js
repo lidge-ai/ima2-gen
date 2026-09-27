@@ -1,5 +1,6 @@
 const api = window.ima2Desktop;
-// Gates the macOS-only drag strip styling (loading.css); absent outside darwin.
+// Gates the drag strip styling (loading.css); present wherever the shell hides
+// the native caption (darwin hiddenInset, win32/linux titleBarOverlay).
 document.documentElement.dataset.platform = api?.platform ?? "";
 const $ = (id) => document.getElementById(id);
 const rowServer = $("row-server");

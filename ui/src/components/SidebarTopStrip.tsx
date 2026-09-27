@@ -1,5 +1,5 @@
 import { useI18n } from "../i18n";
-import { desktopBridge } from "../lib/desktopShell";
+import { desktopBridge, isWindowsDesktop } from "../lib/desktopShell";
 import { IconSettings } from "./NavRail";
 
 interface SidebarTopStripProps {
@@ -67,19 +67,28 @@ export function SidebarTopStrip({ collapsed, onToggle, controlsId, panelCollapse
           </button>
         ) : null}
       </div>
-      {onPanelToggle ? (
-        <div className="panel-top" role="toolbar" aria-label={t("panel.detailSettings")}>
-          <button
-            type="button"
-            className="sidebar-top__btn panel-top__toggle"
-            onClick={onPanelToggle}
-            aria-label={panelLabel}
-            aria-expanded={!panelCollapsed}
-            aria-controls="right-panel-body"
-            title={panelLabel}
-          >
-            <IconPanelRight />
-          </button>
+      {/* Windows keeps the strip mounted even without a panel toggle: it is
+          the drag surface under the window's overlay caption buttons. */}
+      {onPanelToggle || isWindowsDesktop() ? (
+        <div
+          className="panel-top"
+          role={onPanelToggle ? "toolbar" : undefined}
+          aria-label={onPanelToggle ? t("panel.detailSettings") : undefined}
+          aria-hidden={onPanelToggle ? undefined : true}
+        >
+          {onPanelToggle ? (
+            <button
+              type="button"
+              className="sidebar-top__btn panel-top__toggle"
+              onClick={onPanelToggle}
+              aria-label={panelLabel}
+              aria-expanded={!panelCollapsed}
+              aria-controls="right-panel-body"
+              title={panelLabel}
+            >
+              <IconPanelRight />
+            </button>
+          ) : null}
         </div>
       ) : null}
     </>

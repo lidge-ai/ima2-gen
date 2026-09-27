@@ -48,6 +48,37 @@ describe("integrated titlebar", () => {
     assert.equal(Number(inset[1]), 80, "macOS strip inset must cover the traffic-light cluster");
   });
 
+  it("shares the same 40px row with overlay caption buttons on Windows/Linux", () => {
+    const windows = src("desktop/lib/windows.mjs");
+    // The main window hides the native caption on non-mac so no second bar
+    // stacks above the web strip; the overlay paints min/max/close into it.
+    assert.ok(/titleBarStyle: process\.platform === "darwin" \? "hiddenInset" : "hidden"/.test(windows),
+      "non-mac main window must use titleBarStyle hidden");
+    const overlay = windows.match(/TITLE_BAR_OVERLAY = \{ height: (\d+), color: "(#[0-9a-fA-F]+)", symbolColor: "(#[0-9a-fA-F]+)" \}/);
+    assert.ok(overlay, "non-mac main window needs a pinned titleBarOverlay literal");
+    assert.ok(windows.includes("autoHideMenuBar: true"),
+      "the native menu bar must not render a second row (Alt still reveals it)");
+
+    const css = src("ui/src/styles/top-strip.css");
+    const row = css.match(/--chrome-top-h:\s*calc\((\d+)px \/ var\(--chrome-zoom, 1\)\)/);
+    const inset = css.match(/\.app--windows \{ --wc-inset: calc\((\d+)px \/ var\(--chrome-zoom, 1\)\); \}/);
+    assert.ok(row && inset, "top-strip.css must pin --chrome-top-h and the Windows --wc-inset");
+    assert.equal(Number(overlay[1]), Number(row[1]),
+      "overlay height must equal the web strip's row height");
+    assert.ok(Number(inset[1]) >= 46 * 3,
+      `--wc-inset=${inset[1]} must clear the 3 caption buttons (~46px each)`);
+    assert.ok(/\.app--windows \.panel-top \{[^}]*var\(--wc-inset\)/s.test(css),
+      "the right-strip toggle must sit clear of the overlay buttons");
+    assert.ok(css.includes("app--settings-open:not(.app--windows) .panel-top"),
+      "on Windows .panel-top must stay mounted as the drag surface under the overlay");
+
+    assert.ok(src("ui/src/App.tsx").includes('" app--windows"'),
+      "App must tag the windows desktop shell like app--macos");
+    const shell = src("ui/src/lib/desktopShell.ts");
+    assert.ok(shell.includes('platform === "win32"'),
+      "desktopShell must expose a Windows check off the bridge platform");
+  });
+
   it("exposes only a minimal bridge to the served UI", () => {
     const preload = src("desktop/preload.cjs");
     const served = preload.slice(preload.indexOf("} else {"));

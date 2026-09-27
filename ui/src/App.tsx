@@ -31,7 +31,7 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useRightPanelShortcut, useSidebarCollapse } from "./hooks/useSidebarCollapse";
 import { useVisualViewportInset } from "./hooks/useVisualViewportInset";
 import { SidebarTopStrip } from "./components/SidebarTopStrip";
-import { desktopBridge, isMacDesktop, syncDesktopChromeZoom } from "./lib/desktopShell";
+import { desktopBridge, isMacDesktop, isWindowsDesktop, syncDesktopChromeZoom } from "./lib/desktopShell";
 import { resolveWorkspaceSettings } from "./lib/workspaceProfile";
 import { useI18n } from "./i18n";
 
@@ -174,6 +174,8 @@ export default function App() {
         }${
           showHistoryStrip && historyStripLayout === "sidebar" ? " app--history-sidebar" : ""
         }${desktop ? " app--desktop" : ""}${isMacDesktop() ? " app--macos" : ""}${
+          isWindowsDesktop() ? " app--windows" : ""
+        }${
           navCollapsed && !isMobile ? " app--nav-collapsed" : ""
         }${noSidebarMode ? " app--no-sidebar" : ""}${!rightPanelOpen && hasRightPanel ? " app--rp-collapsed" : ""}`}
         data-history-strip-layout={historyStripLayout}

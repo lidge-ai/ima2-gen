@@ -21,11 +21,17 @@ export function isMacDesktop(): boolean {
   return desktopBridge()?.platform === "darwin";
 }
 
+export function isWindowsDesktop(): boolean {
+  return desktopBridge()?.platform === "win32";
+}
+
 /**
- * Page zoom (⌘+/⌘−) of the desktop shell's web contents. The macOS traffic
- * lights are painted by the window in screen points and never zoom, so the
- * title row must be sized in screen points too. The window has no frame
- * (hiddenInset) and the page fills it, so outer/inner width is the zoom factor.
+ * Page zoom (⌘+/⌘−) of the desktop shell's web contents. The window-painted
+ * controls — macOS traffic lights, Windows/Linux overlay caption buttons —
+ * are drawn in screen points and never zoom, so the title row must be sized
+ * in screen points too. The window has no frame (hiddenInset/hidden) and the
+ * page fills it, so outer/inner width is the zoom factor on every desktop
+ * platform.
  */
 export function desktopZoomFactor(): number {
   if (typeof window === "undefined" || !desktopBridge()) return 1;
