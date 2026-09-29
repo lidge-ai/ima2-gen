@@ -15,6 +15,7 @@ export function runBundledCli({ rootDir, args, env, command, timeoutMs = 20_000,
     let stderr = "";
     let settled = false;
     let timer = null;
+    let timedOut = null;
     const finish = (result) => { if (!settled) { settled = true; clearTimeout(timer); resolve({ stdout, stderr, ...result }); } };
     let child;
     try {
@@ -23,11 +24,16 @@ export function runBundledCli({ rootDir, args, env, command, timeoutMs = 20_000,
       finish({ code: null, error: error.message });
       return;
     }
-    timer = setTimeout(() => { try { child.kill(); } catch { /* already gone */ } finish({ code: null, error: `timed out after ${timeoutMs} ms` }); }, timeoutMs);
+    // On timeout, kill the CLI and wait (briefly) for it to exit, so no stray process outlives the call.
+    timer = setTimeout(() => {
+      timedOut = { code: null, error: `timed out after ${timeoutMs} ms` };
+      try { child.kill("SIGKILL"); } catch { /* already gone */ }
+      timer = setTimeout(() => finish(timedOut), 2_000);
+    }, timeoutMs);
     child.stdout.on("data", (b) => { stdout += String(b); });
     child.stderr.on("data", (b) => { stderr += String(b); });
     child.on("error", (error) => finish({ code: null, error: error.message }));
-    child.on("close", (code) => finish({ code }));
+    child.on("close", (code) => finish(timedOut ?? { code }));
   });
 }
 

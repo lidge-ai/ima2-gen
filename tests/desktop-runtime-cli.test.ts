@@ -51,7 +51,7 @@ describe("runBundledCli", () => {
       assert.match(slow.error, /timed out/);
     } finally {
       // On Windows the killed "hang" child can hold the directory for a moment.
-      rmSync(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+      rmSync(root, { recursive: true, force: true, maxRetries: 50, retryDelay: 200 });
     }
   });
 
