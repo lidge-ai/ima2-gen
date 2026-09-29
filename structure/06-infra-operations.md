@@ -75,8 +75,9 @@ Four launchers run the same `server.js`, and each marks its child so the adverti
 | login service (launchd / systemd) | `IMA2_SERVICE=1` → `service` | hops |
 | desktop app | `IMA2_DESKTOP=1` → `desktop` | pinned |
 
-`ima2 start` and the desktop choose the boot id themselves (`IMA2_BOOT_ID`) and wait for a health
-answer carrying that pid and boot id, so they never mistake another server for the one they started.
+`ima2 start` and the desktop choose the boot id themselves (`IMA2_BOOT_ID`). `ima2 start` waits for a health
+answer carrying that pid and boot id. The desktop reads its child's stdout (running line, stop-intent line)
+and checks the boot id with one health probe afterwards, logging a mismatch.
 
 `bin/lib/runtime.ts` answers "what runs here" with three values. `live` names the server that
 answered; `absent-proven` means the advertised URL and every port from the configured one to

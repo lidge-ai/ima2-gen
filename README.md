@@ -263,7 +263,7 @@ Grok video generation defaults to canonical `grok-imagine-video-1.5`; `grok-imag
 |---|---|
 | `ima2 serve [--dev]` | Start the local web server in this terminal; `--dev` enables verbose server diagnostics; `--background` is the same as `ima2 start` |
 | `ima2 start [--port N] [--json]` | Start the server in the background and return once it answers. Already running → says so and exits 0. The port is pinned: a busy port is an error, never a silent hop. Output goes to `~/.ima2/logs/server.log` |
-| `ima2 stop [--json] [--service] [--force]` | Stop the running server safely: the advertised pid must answer `/api/health`, then a graceful admin-API stop, then signals (`taskkill` on Windows). A login-service server needs `--service`, so KeepAlive does not bring it straight back. `--expect-pid` with `--expect-boot` or `--expect-started` refuses unless exactly that server runs |
+| `ima2 stop [--json] [--service] [--force]` | Stop the running server safely: the advertised pid is checked against `/api/health` (or, when the server is unreachable, against its process start time), then a graceful admin-API stop, then signals (`taskkill` on Windows). A login-service server needs `--service`, so KeepAlive does not bring it straight back. `--expect-pid` with `--expect-boot` or `--expect-started` refuses unless exactly that server runs |
 | `ima2 restart [--port N]` | Stop a terminal or background server, then start it again in the background |
 | `ima2 status --runtime [--json]` | Who runs the server: pid, URL, launcher (terminal, `ima2 start`, login service or desktop app), boot id and service state. Exits 0 when running, 3 when not, 1 when it cannot tell |
 | `ima2 logs [-n N] [-f]` | Show or follow the background server log |

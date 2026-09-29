@@ -31,6 +31,7 @@ Grok视频生成用途`POST /api/video/generate` (SSE）。看视频
 |方法|小路|笔记|
 |---|---|---|
 | `GET` | `/api/health` |服务器健康状况、版本、路径、提供商策略；包含`grok: { auth: "oauth" \| "none" }` 以及运行身份 `bootId`、`launcher`（`foreground` \| `background` \| `service` \| `desktop`）、`root`，同样写入`~/.ima2/server.json`|
+| `POST` | `/api/admin/stop` |干净关闭（仅限本机管理）：需要 `~/.ima2/server.json` 中启动时生成的 `X-Ima2-Admin-Nonce`；带 `Origin` 头的请求一律拒绝（防止浏览器跨站调用）。返回 `202`，在服务器 stdout 打印 `IMA2_STOP_INTENT <bootId>`（桌面应用据此区分主动停止与崩溃），然后向自身发送 SIGTERM|
 | `GET` | `/api/providers` |提供者可用性和运行时端口|
 | `GET` | `/api/oauth/status` | GPT OAuth 状态和可见模型|
 | `GET` | `/api/grok/status` | xAI OAuth会话状态和可见xAI图像模型。返回`ready`、`no_image_model`、`error`或`offline`；没有会话时原因是`login_required`|
