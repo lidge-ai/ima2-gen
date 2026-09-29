@@ -2,7 +2,7 @@ name: Release
 
 # Replaces scripts/release.sh. The cut runs here end to end:
 #   baseline -> version commit -> main -> preview -> preview publish proof
-#   -> stable tag (main+dev+tag atomically) -> stable publish
+#   -> stable tag (main+tag atomically, then land on dev) -> stable publish
 #
 # publish.yml still owns publishing and stays the only holder of id-token: write. It is
 # reached by workflow_dispatch rather than by the pushes below, because a GITHUB_TOKEN

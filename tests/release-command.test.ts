@@ -1,5 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   bumpVersion,
   desktopTagAction,
@@ -244,7 +248,7 @@ describe("release.mjs resume", () => {
           ? SHA + "\trefs/tags/v3.24.1"
           : SHA + "\trefs/tags/v3.24.1\n" + SHA + "\trefs/tags/desktop-v3.24.1";
       }
-      if (joined.startsWith("git push")) return "";
+      if (joined.startsWith("git push") || joined.startsWith("git fetch")) return "";
       if (joined.startsWith("gh release view desktop-v3.24.1")) {
         desktopRuns += 1;
         if (desktopRuns < 2) throw new Error("release not found");
@@ -263,6 +267,60 @@ describe("release.mjs resume", () => {
     assert.deepEqual(calls.filter((c) => c.startsWith("git push")), ["git push origin " + SHA + ":refs/tags/desktop-v3.24.1"]);
     // No promotion in a resume.
     assert.ok(!calls.some((c) => c.includes("pr list") || c.includes("rev-list --count")));
+  });
+
+  it("pushes the desktop tag for a release commit this clone has never fetched", async () => {
+    const root = mkdtempSync(join(tmpdir(), "ima2-desktop-tag-"));
+    try {
+      const git = (cwd: string, ...args: string[]) =>
+        execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+      const origin = join(root, "origin.git");
+      const ci = join(root, "ci");
+      const maintainer = join(root, "maintainer");
+      git(root, "init", "-q", "--bare", "-b", "main", origin);
+      git(root, "clone", "-q", origin, ci);
+      for (const clone of [ci]) {
+        git(clone, "config", "user.name", "test");
+        git(clone, "config", "user.email", "test@example.test");
+      }
+      writeFileSync(join(ci, "package.json"), '{"version":"3.24.0"}\n');
+      git(ci, "add", "package.json");
+      git(ci, "commit", "-q", "-m", "base");
+      git(ci, "push", "-q", "origin", "HEAD:refs/heads/main");
+      git(root, "clone", "-q", origin, maintainer);
+      // CI cuts and tags a commit after the maintainer's last fetch.
+      writeFileSync(join(ci, "package.json"), '{"version":"3.24.1"}\n');
+      git(ci, "commit", "-q", "-am", "release 3.24.1");
+      const releaseSha = git(ci, "rev-parse", "HEAD");
+      git(ci, "push", "-q", "origin", "HEAD:refs/heads/main", "HEAD:refs/tags/v3.24.1");
+
+      let desktopViews = 0;
+      const run = (bin: string, args: string[]) => {
+        if (bin === "git") return git(maintainer, ...args);
+        const joined = [bin, ...args].join(" ");
+        if (joined.startsWith("gh run list") && joined.includes("release.yml")) {
+          return joined.includes("--event") && desktopViews === 0 && !run.dispatched
+            ? "[]"
+            : JSON.stringify([{ databaseId: 900, status: "completed", url: "https://example.test/run/900" }]);
+        }
+        if (joined.startsWith("gh workflow run release.yml")) { run.dispatched = true; return ""; }
+        if (joined.startsWith("gh run view 900")) return JSON.stringify({ status: "completed", conclusion: "success", jobs: [] });
+        if (joined.startsWith("gh api")) return "[]";
+        if (joined.startsWith("gh run list")) return "[]";
+        if (joined.startsWith("gh release view desktop-v3.24.1")) {
+          desktopViews += 1;
+          if (desktopViews < 2) throw new Error("release not found");
+          return JSON.stringify({ isDraft: false });
+        }
+        throw new Error("unexpected command: " + joined);
+      };
+      run.dispatched = false;
+      const code = await runRelease(["resume", "3.24.1", "--yes"], { run, sleep: () => Promise.resolve(), log: () => {} });
+      assert.equal(code, 0);
+      assert.equal(git(ci, "ls-remote", origin, "refs/tags/desktop-v3.24.1").split(/\s+/)[0], releaseSha);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

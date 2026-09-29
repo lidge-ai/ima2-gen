@@ -162,6 +162,9 @@ function ensureDesktopTag(ctx) {
   }
   if (action === "push") {
     try {
+      // CI minted vX.Y.Z; this clone does not have that commit until it fetches
+      // the tag, and git cannot push an object it does not have.
+      ctx.run("git", ["fetch", "--no-tags", "origin", "refs/tags/" + release + ":refs/tags/" + release]);
       ctx.run("git", ["push", "origin", tags[release] + ":refs/tags/" + desktop]);
     } catch (error) {
       if (isRuleRejection(error)) {
@@ -265,7 +268,10 @@ async function findDispatchedRun(ctx, afterId) {
   const deadline = Date.now() + 2 * 60 * 1000;
   while (Date.now() < deadline) {
     const runs = JSON.parse(ctx.run("gh", runListArgs("release.yml", ["--event", "workflow_dispatch"])));
-    const run = runs.find((candidate) => Number(candidate.databaseId) > afterId);
+    // The oldest dispatch above the mark is ours; a later one belongs to someone else.
+    const run = runs
+      .filter((candidate) => Number(candidate.databaseId) > afterId)
+      .sort((a, b) => Number(a.databaseId) - Number(b.databaseId))[0];
     if (run) return run;
     await ctx.sleep(5000);
   }

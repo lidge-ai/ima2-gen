@@ -288,7 +288,11 @@ function mergeIntoDev(sha, version) {
   try {
     git(["merge", "--no-ff", "--no-edit", "-m", `[agent] chore: land release v${version} on dev`, sha]);
   } catch (error) {
-    execFileSync("git", ["merge", "--abort"], { stdio: "ignore" });
+    try {
+      execFileSync("git", ["merge", "--abort"], { stdio: "ignore" });
+    } catch {
+      // The merge never started (for example the SHA was missing); nothing to abort.
+    }
     fail([`merging v${version} into dev conflicts (${error.message.split("\n")[0]}); merge ${sha} into dev by hand, then run: npm run release -- resume ${version}`]);
   }
   return pushDev("HEAD:refs/heads/dev");
