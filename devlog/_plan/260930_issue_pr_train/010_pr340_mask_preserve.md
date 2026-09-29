@@ -52,3 +52,9 @@ composite in flight, whatever the job concurrency. Sources above 4096² keep the
 through the fallback (one mask_preserve_failed warning). docs/API.md states the bound.
 Tests: a PNG declaring 4097 × 4096 is rejected by preserveOutsideMask; two concurrent composites
 both succeed (queue does not deadlock or drop a job).
+
+Reflection (Confucius, same agent): ALIGNED. Gap: oversized sources are not rejected before the
+provider call, so a >4096² masked edit saves unpreserved provider bytes. Disposition: kept as is.
+/api/edit accepts such requests today; rejecting them pre-dispatch is an edit-route contract change
+outside this PR. The fallback is logged and the sidecar omits maskOutsidePreserved, and docs/API.md
+states the bound.
