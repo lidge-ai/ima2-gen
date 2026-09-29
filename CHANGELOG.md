@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.25.0] - 2026-09-30
+
+### Added
+
+- **Masked edits keep everything outside the mask** — after a masked edit the server restores the source wherever the mask is opaque and blends soft mask edges, so the model can no longer redraw the area you kept. Transparent source pixels stay transparent, and a result that comes back at another size is fitted to the source first. On by default; turn it off with `IMA2_PRESERVE_OUTSIDE_MASK=0` or `ima2 config set features.preserveOutsideMask false`. Composites run one at a time and sources above 4096 × 4096 keep the provider result; the sidecar records `maskOutsidePreserved` when the lock ran. (#340, thanks @ree9622)
+- **GPT OAuth waits out per-minute rate limits** — a transient 429 ("rate limit reached … try again in Ns") on the planner or a render now waits and retries the same request with jitter, while usage, quota and billing limits still fail at once. Each job has one budget shared by the plan and every render: `IMA2_OAUTH_RATE_RETRY_MAX` (5 retries), `IMA2_OAUTH_RATE_RETRY_BASE_MS` (8000), `IMA2_OAUTH_RATE_RETRY_MAX_MS` (45000 per wait), `IMA2_OAUTH_RATE_RETRY_TOTAL_MS` (120000 in total), and no wait runs past the job's generation timeout. A job canceled during a rate limit ends as `499 GENERATION_CANCELED`. (#339, thanks @ree9622)
+
+### Changed
+
+- Tests retry temp-directory cleanup on Windows file locks and give media events 30 seconds (#350).
+
+## [3.24.1] - 2026-09-29
+
 ### Changed
 
 - **Releases finish on their own** — a PR merged into dev during a release no longer fails it: the stable publish requires the tag to match and main, dev and preview to contain the release, and the tag job lands the release on dev by fast-forward or merge. `npm run release` pushes the admin-only `desktop-v` tag as soon as the release tag lands, which starts the desktop build.
