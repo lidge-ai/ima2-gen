@@ -199,8 +199,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PUBLISH_RUN_TITLE: Publish refs/heads/preview
-        # package source gate (25) + Windows consumer (40) + publish margin.
-        run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 100
+        # package source gate (25) + Windows consumer (40) + the registry proof
+        # window (up to 51 minutes when npm is slow to show the version).
+        run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 130
       - name: Require the npm preview proof before tagging
         if: ${{ inputs.dry_run == 'false' }}
         run: >-
@@ -217,7 +218,7 @@ jobs:
     # being skipped with it, and the target step below proves the tag instead.
     if: ${{ !cancelled() && inputs.dry_run == 'false' && (inputs.resume_version != '' || (needs.cut.result == 'success' && needs.cut.outputs.dry_run == 'false')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     # The approval gate sits here, before the atomic push, not on the stable
     # publish job downstream. GitHub holds an environment-gated job before its
     # first step, so a declined or ignored approval leaves main, dev, and the
@@ -232,7 +233,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           fetch-depth: 0
-          ref: ${{ needs.cut.outputs.sha || format('refs/tags/v{0}', inputs.resume_version) }}
+          # A resume checks out main: the release tag may not exist yet.
+          ref: ${{ needs.cut.outputs.sha || 'main' }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.node-version'
@@ -277,6 +279,19 @@ jobs:
           git push --atomic origin \
             "$SHA:refs/heads/main" \
             "refs/tags/v$VERSION:refs/tags/v$VERSION"
+      # A resume may finish a cut that stopped after main and the preview proof
+      # but before the tag (npm was slow to show the preview). resume-guard found
+      # the version commit and checked that proof; the workflow token may push v*.
+      - name: Create the missing release tag
+        if: steps.target.outputs.mint_tag == 'true'
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v$VERSION" "$SHA"
+          git push origin "refs/tags/v$VERSION:refs/tags/v$VERSION"
       # Fast-forward when dev has not moved, a merge commit when it has, nothing
       # when dev already contains the release. Never a force push.
       - name: Land the release on dev
@@ -370,10 +385,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PUBLISH_RUN_TITLE: Publish refs/tags/v${{ steps.target.outputs.version }}
-        # 80, not the 60-minute default: publish.yml's stable job is also
-        # environment-gated, so this wait now covers a second approval. The
-        # job timeout above is the real ceiling.
-        run: node scripts/wait-publish-run.mjs wait "${{ steps.stable_mark.outputs.id }}" "v${{ steps.target.outputs.version }}" 80
+        # 130, not the 60-minute default: publish.yml's stable job is also
+        # environment-gated (a second approval) and its registry proof can take
+        # up to 51 minutes. The job timeout above is the real ceiling.
+        run: node scripts/wait-publish-run.mjs wait "${{ steps.stable_mark.outputs.id }}" "v${{ steps.target.outputs.version }}" 130
       - name: Write the release summary
         run: |
           {

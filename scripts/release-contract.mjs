@@ -339,8 +339,9 @@ async function guardPublishCommand(manifestPath, npmTag, ref, sha) {
 
 // npm processes provenance-bearing publishes asynchronously; 3.16.1 and 3.17.0 took 5-6 minutes
 // to appear, which the old 120s window turned into red publish jobs for successful publishes.
-export const REGISTRY_PROOF_TIMEOUT_MS = 15 * 60_000;
-export const REGISTRY_PROOF_MAX_TIMEOUT_MS = 20 * 60_000;
+// 3.24.1-preview was still E404 more than 15 minutes after its publish, so the window is 35.
+export const REGISTRY_PROOF_TIMEOUT_MS = 35 * 60_000;
+export const REGISTRY_PROOF_MAX_TIMEOUT_MS = 45 * 60_000;
 export const REGISTRY_PROOF_POLL_MS = 10_000;
 // Worst case for one attempt, since the deadline is only checked between attempts: two npm views
 // and the provenance fetch (30s each) plus npm install and audit signatures (120s each).

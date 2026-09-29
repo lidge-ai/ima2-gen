@@ -76,6 +76,12 @@ that main contains it, then runs only what is still missing: landing on dev, the
 desktop tag and build, the stable publish (skipped when npm latest already has
 that commit and the GitHub release exists), and the Pages deploy.
 
+Resume also finishes a cut that stopped before the tag, for example when npm was
+slow to show the preview package. Without `vX.Y.Z` it takes the
+`[agent] chore: release vX.Y.Z` commit on main, requires the npm preview to prove
+that exact commit, and mints the tag first. Resuming this way needs release.yml
+from main, so promote dev to main first if the resume fix is not there yet.
+
 ## Devlog
 
 Implementation work belongs in a numbered unit under

@@ -200,7 +200,7 @@ function commit(bump) {
   git(["config", "user.name", "github-actions[bot]"]);
   git(["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
   git(["add", "package.json", "package-lock.json"]);
-  git(["commit", "-m", `[agent] chore: release v${version}`]);
+  git(["commit", "-m", releaseCommitSubject(version)]);
   emit({ version, sha: git(["rev-parse", "HEAD"]) });
 }
 
@@ -259,16 +259,31 @@ export function planDevLanding({ devContainsSha, shaContainsDev }) {
   return "merge";
 }
 
-/** A resume may only finish a version whose tag, package version and main agree. */
-export function assertResumable({ version, sha, packageVersion, mainContainsSha }) {
+/** Subject of the version commit that `commit` creates; a resume finds an untagged cut by it. */
+export function releaseCommitSubject(version) {
+  return `[agent] chore: release v${version}`;
+}
+
+/**
+ * A resume may only finish a version whose tag (or version commit), package version and main
+ * agree. Without a tag, the resume is about to mint one, so it needs the same npm preview proof
+ * the cut requires before tagging.
+ *
+ * @param {{ version: string, sha: string, packageVersion: string | null, mainContainsSha: boolean,
+ *   tagged?: boolean, previewVersion?: string | null, previewGitHead?: string | null }} check
+ */
+export function assertResumable({
+  version, sha, packageVersion, mainContainsSha, tagged = true, previewVersion, previewGitHead,
+}) {
   const problems = [];
   if (!/^\d+\.\d+\.\d+$/.test(String(version))) problems.push(`resume version must be stable X.Y.Z (got ${version})`);
   if (!FULL_OID.test(String(sha || ""))) {
-    problems.push(`tag v${version} does not exist on the remote`);
+    problems.push(`tag v${version} does not exist on the remote and origin/main has no "${releaseCommitSubject(version)}" commit`);
     return problems;
   }
   if (packageVersion !== version) problems.push(`package.json at v${version} is ${packageVersion ?? "(unreadable)"}`);
   if (!mainContainsSha) problems.push(`origin/main does not contain v${version} (${sha})`);
+  if (!tagged) problems.push(...assertPreviewProof({ version, sha, previewVersion, previewGitHead }));
   return problems;
 }
 
@@ -322,22 +337,38 @@ function readPackageVersionAt(sha) {
   }
 }
 
+/** The newest commit on origin/main whose subject is exactly the version commit's subject. */
+function findReleaseCommit(version) {
+  const subject = releaseCommitSubject(version);
+  const lines = git(["log", "origin/main", "-n", "500", "--format=%H%x09%s"]).split("\n");
+  const hit = lines.map((line) => line.split("\t")).find(([, s]) => s === subject);
+  return hit ? hit[0] : "";
+}
+
 function resumeGuard(version) {
   let sha = "";
   try {
-    sha = git(["rev-list", "-n1", `refs/tags/v${version}`]);
+    sha = execFileSync("git", ["rev-list", "-n1", `refs/tags/v${version}`], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     sha = "";
   }
+  const tagged = Boolean(sha);
+  if (!tagged) sha = findReleaseCommit(version);
   const problems = assertResumable({
     version,
     sha,
     packageVersion: sha ? readPackageVersionAt(sha) : null,
     mainContainsSha: sha ? contains(sha, git(["rev-parse", "origin/main"])) : false,
+    tagged,
+    previewVersion: tagged ? undefined : npmView(`${PACKAGE_NAME}@preview`, "version"),
+    previewGitHead: tagged ? undefined : npmView(`${PACKAGE_NAME}@preview`, "gitHead"),
   });
   if (problems.length) fail(problems);
-  console.log(`[release] resuming v${version} at ${sha}`);
-  emit({ version, sha });
+  console.log(`[release] resuming v${version} at ${sha}${tagged ? "" : " (untagged: the tag will be minted)"}`);
+  emit({ version, sha, mint_tag: String(!tagged) });
 }
 
 const COMMANDS = {

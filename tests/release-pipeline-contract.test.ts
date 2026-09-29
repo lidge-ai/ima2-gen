@@ -571,6 +571,26 @@ describe("package install policy contract", () => {
     assert.match(assertResumable({ ...ok, version: "3.24" }).join(), /stable X\.Y\.Z/);
   });
 
+  it("resumes an untagged cut only with the npm preview proof for its version commit", async () => {
+    const { assertResumable, releaseCommitSubject } = await import("../scripts/release-cut.mjs");
+    assert.equal(releaseCommitSubject("3.24.1"), "[agent] chore: release v3.24.1");
+    // v3.24.1: main and preview reached the version commit, npm was slow, the tag never came.
+    const untagged = {
+      version: "3.24.1", sha: SHA, packageVersion: "3.24.1", mainContainsSha: true, tagged: false,
+      previewVersion: "3.24.1-preview.260929.36573790959.1", previewGitHead: SHA,
+    };
+    assert.deepEqual(assertResumable(untagged), []);
+    assert.match(assertResumable({ ...untagged, previewGitHead: "b".repeat(40) }).join(), /does not prove/);
+    assert.match(assertResumable({ ...untagged, previewVersion: "3.24.0-preview.1" }).join(), /not a 3\.24\.1 candidate/);
+    // A missing preview must never read as a proof.
+    assert.equal(assertResumable({ ...untagged, previewVersion: null, previewGitHead: null }).length, 2);
+    // A tagged resume needs no preview proof: the tag already certified it.
+    assert.deepEqual(assertResumable({ ...untagged, tagged: true, previewVersion: null, previewGitHead: null }), []);
+    // The commit that cut() creates carries exactly the subject resume-guard looks for.
+    const source = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
+    assert.match(source, /git\(\["commit", "-m", releaseCommitSubject\(version\)\]\)/);
+  });
+
   it("land-dev really fast-forwards, merges, skips, and stops on a conflict", () => {
     const script = join(repoRoot(), "scripts/release-cut.mjs");
     const root = mkdtempSync(join(tmpdir(), "ima2-land-dev-"));
@@ -985,7 +1005,8 @@ describe("registry proof window", () => {
   });
 
   it("covers observed npm delays by default and accepts only a bounded integer override", () => {
-    assert.ok(REGISTRY_PROOF_TIMEOUT_MS >= 2 * 6.2 * 60_000, "default window covers twice the slowest observed delay");
+    // 3.24.1-preview was still E404 more than 15 minutes after its publish.
+    assert.ok(REGISTRY_PROOF_TIMEOUT_MS >= 2 * 15.2 * 60_000, "default window covers twice the slowest observed delay");
     assert.equal(registryProofTimeoutMs({}), REGISTRY_PROOF_TIMEOUT_MS);
     assert.equal(registryProofTimeoutMs({ IMA2_REGISTRY_PROOF_TIMEOUT_MS: "" }), REGISTRY_PROOF_TIMEOUT_MS);
     assert.equal(registryProofTimeoutMs({ IMA2_REGISTRY_PROOF_TIMEOUT_MS: "60000" }), 60_000);
@@ -1167,7 +1188,21 @@ describe("tag job dispatches (D4/D5)", () => {
     // After the target step nothing reads the cut outputs, or a resume would see empty values.
     const afterTarget = job.slice(job.indexOf("Resolve the release version and SHA") + target.length);
     assert.doesNotMatch(afterTarget, /needs\.cut\.outputs/);
-    assert.match(job, /ref: \$\{\{ needs\.cut\.outputs\.sha \|\| format\('refs\/tags\/v\{0\}', inputs\.resume_version\) \}\}/);
+    // A resume checks out main, because the release tag may not exist yet.
+    assert.match(job, /ref: \$\{\{ needs\.cut\.outputs\.sha \|\| 'main' \}\}/);
+  });
+
+  it("mints a missing release tag in a resume before landing dev", () => {
+    const job = tagJob(releaseYml());
+    const mint = stepBlock(job, "Create the missing release tag");
+    assert.match(mint, /if: steps\.target\.outputs\.mint_tag == 'true'/);
+    assert.match(mint, /git tag "v\$VERSION" "\$SHA"/);
+    assert.match(mint, /git push origin "refs\/tags\/v\$VERSION:refs\/tags\/v\$VERSION"/);
+    assert.doesNotMatch(mint, /refs\/heads\//, "minting touches no branch");
+    assert.ok(job.indexOf("Resolve the release version and SHA") < job.indexOf("Create the missing release tag"));
+    assert.ok(job.indexOf("Create the missing release tag") < job.indexOf("Land the release on dev"));
+    const cut = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
+    assert.match(cut, /emit\(\{ version, sha, mint_tag: String\(!tagged\) \}\)/);
   });
 
   it("never pushes the admin-only desktop tag from CI and dispatches only for an existing tag", () => {
