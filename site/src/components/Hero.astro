@@ -2,6 +2,7 @@
 import CodeCopy from './CodeCopy.astro';
 import Screenshot from './Screenshot.astro';
 import Marquee from './Marquee.astro';
+import HeroDownload from './HeroDownload.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang; }
 const { lang } = Astro.props;
@@ -50,6 +51,8 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
     <div class="hero-lower">
       <div class="hero-copy reveal" style="--i:1">
         <p class="sub" id="hero-sub">{t(lang, 'hero.sub')}</p>
+        <HeroDownload lang={lang} />
+        <p class="npm-label">{t(lang, 'hero.npm.label')}</p>
         <CodeCopy command={t(lang, 'hero.cta.cmd')} />
         <details class="oneclick-details">
           <summary class="oneclick-summary">{lang === 'ko' ? '원클릭 설치 (npm 필요 없음)' : 'One-Click Install (no npm required)'}<span class="oneclick-chevron" aria-hidden="true"></span></summary>
@@ -64,7 +67,10 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
       </div>
 
       <div class="hero-visual reveal" style="--i:2">
-        <div class="shot-frame glass-panel"><Screenshot src="screenshots/classic-generate-light.png" alt={t(lang, 'hero.shot.alt')} eager /></div>
+        <div class="shot-frame glass-panel app-window">
+          <div class="app-titlebar" aria-hidden="true"><span class="app-dots"><i></i><i></i><i></i></span><span class="app-title">ima2</span></div>
+          <Screenshot src="screenshots/classic-generate-light.png" alt={t(lang, 'hero.shot.alt')} eager />
+        </div>
       </div>
     </div>
   </div>
@@ -107,6 +113,13 @@ const marqueeItems = ['100% LOCAL GALLERY', 'NO API KEY NEEDED', 'IMAGE + VIDEO'
   .hero-visual { position: relative; z-index: 3; }
   .shot-frame { position: relative; z-index: 2; padding: 7px; box-shadow: 0 32px 90px rgba(0,0,0,.62); transform: rotate(-4deg); transform-origin: 50% 80%; }
   .shot-frame :global(.screenshot) { border: 0; box-shadow: none; }
+  .app-titlebar { position: relative; display: flex; align-items: center; height: 30px; padding: 0 12px; }
+  .app-dots { display: flex; gap: 7px; }
+  .app-dots i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+  .app-dots i:nth-child(2) { background: #febc2e; }
+  .app-dots i:nth-child(3) { background: #28c840; }
+  .app-title { position: absolute; left: 50%; transform: translateX(-50%); color: var(--text-dim); font: 600 12px/1 var(--font-body); }
+  .npm-label { margin: 0 0 10px; color: var(--text-dim); font-size: 13px; }
   .cluster { z-index: 2; width: min(38vw, 550px); right: -60px; top: 480px; opacity: .78; }
   .cluster img { animation-duration: 6.5s; }
   .oneclick-details { margin: 10px 0 8px; max-width: 540px; }

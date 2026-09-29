@@ -20,17 +20,40 @@ const en: Dict = {
   'header.nav.install': 'Install',
   'header.nav.faq': 'FAQ',
   'header.nav.docs': 'Docs',
+  'header.nav.download': 'Download',
   'header.gh': 'GitHub ↗',
 
   // Hero
-  'hero.eyebrow': 'Local AI studio · Image + Video',
+  'hero.eyebrow': 'Desktop app + CLI · Image + Video',
   'hero.h1.line1': 'Branch the',
   'hero.h1.line2': 'images you',
   'hero.h1.em': 'love.',
   'hero.sub':
     "An AI studio for the way you actually iterate. Generate images in Classic, fan out in Node, create videos with Grok, and clean up in Canvas. Free ChatGPT + SuperGrok is all you need.",
   'hero.cta.cmd': 'npm install -g ima2-gen && ima2 serve',
+  'hero.npm.label': 'Prefer the terminal? Install the CLI with npm:',
+  'hero.dl.platforms': 'macOS (Apple Silicon) · Windows · Linux',
+  'hero.dl.others': 'Other platforms ↓',
   'hero.cross.lang': '한국어 README →',
+
+  // Desktop app
+  'desktop.tag': '00 · Desktop app',
+  'desktop.h.before': 'Your studio as an app, ',
+  'desktop.h.em': 'not a browser tab.',
+  'desktop.lede':
+    'The desktop app is the same ima2 studio with its own server inside. Install it, open it, sign in, and generate. It stays out of the way until you need it.',
+  'desktop.f1.t': 'Nothing to set up first',
+  'desktop.f1.b': 'The installer carries its own server and runtime. No Node.js, no npm, no terminal.',
+  'desktop.f2.t': 'Lives in your tray',
+  'desktop.f2.b': 'Keep the server running when you close the window, start at login, or run from the menu bar only.',
+  'desktop.f3.t': 'Works with the CLI',
+  'desktop.f3.b': 'If ima2 start or the login service already runs a server, the app attaches to it or takes it over. You choose in Settings.',
+  'desktop.f4.t': 'Updates itself',
+  'desktop.f4.b': 'On macOS it checks for new releases and installs them when you restart, after you say yes.',
+  'desktop.platforms': 'macOS on Apple Silicon · Windows x64 and ARM64 · Linux x64 and ARM64 (AppImage, .deb)',
+  'desktop.all': 'All download options ↓',
+  'desktop.tray.aria': 'The ima2 tray menu',
+  'desktop.tray.status': 'Server running · 127.0.0.1:3333',
   'hero.shot.alt':
     'ima2-gen video playback with gallery sidebar showing generated images and videos.',
 
@@ -259,17 +282,40 @@ const ko: Dict = {
   'header.nav.install': '설치',
   'header.nav.faq': 'FAQ',
   'header.nav.docs': '문서',
+  'header.nav.download': '다운로드',
   'header.gh': 'GitHub ↗',
 
   // Hero
-  'hero.eyebrow': '로컬 AI 스튜디오 · 이미지 + 영상',
+  'hero.eyebrow': '데스크톱 앱 + CLI · 이미지 + 영상',
   'hero.h1.line1': '마음에 든 한 장,',
   'hero.h1.line2': '거기서 바로',
   'hero.h1.em': '펼치기.',
   'hero.sub':
     '이미지 한 장으로 끝나지 않잖아요. Classic으로 만들고, Node로 방향을 나누고, Video로 움직이게 하고, Canvas로 마무리하세요. 무료 ChatGPT + SuperGrok이면 충분합니다.',
   'hero.cta.cmd': 'npm install -g ima2-gen && ima2 serve',
+  'hero.npm.label': '터미널이 편하다면 npm으로 CLI를 설치하세요.',
+  'hero.dl.platforms': 'macOS (Apple Silicon) · Windows · Linux',
+  'hero.dl.others': '다른 플랫폼 ↓',
   'hero.cross.lang': 'English landing →',
+
+  // Desktop app
+  'desktop.tag': '00 · 데스크톱 앱',
+  'desktop.h.before': '브라우저 탭 말고, ',
+  'desktop.h.em': '앱으로 쓰는 스튜디오.',
+  'desktop.lede':
+    '데스크톱 앱은 서버를 안에 품은 같은 ima2 스튜디오입니다. 설치하고 열고 로그인하면 바로 생성할 수 있고, 필요할 때까지는 조용히 기다립니다.',
+  'desktop.f1.t': '미리 설치할 것이 없습니다',
+  'desktop.f1.b': '설치 파일에 서버와 런타임이 들어 있습니다. Node.js도 npm도 터미널도 필요 없습니다.',
+  'desktop.f2.t': '트레이에 머뭅니다',
+  'desktop.f2.b': '창을 닫아도 서버를 계속 돌리거나, 로그인할 때 시작하거나, 메뉴 막대에만 띄울 수 있습니다.',
+  'desktop.f3.t': 'CLI와 함께 씁니다',
+  'desktop.f3.b': 'ima2 start나 로그인 서비스가 이미 서버를 돌리고 있으면 앱이 거기에 붙거나 넘겨받습니다. 설정에서 고르면 됩니다.',
+  'desktop.f4.t': '스스로 업데이트합니다',
+  'desktop.f4.b': 'macOS에서는 새 릴리스를 확인하고, 동의하면 다시 시작할 때 설치합니다.',
+  'desktop.platforms': 'Apple Silicon macOS · Windows x64/ARM64 · Linux x64/ARM64 (AppImage, .deb)',
+  'desktop.all': '모든 다운로드 보기 ↓',
+  'desktop.tray.aria': 'ima2 트레이 메뉴',
+  'desktop.tray.status': 'Server running · 127.0.0.1:3333',
   'hero.shot.alt':
     'ima2-gen 비디오 재생 화면 — 갤러리 사이드바에 생성된 이미지와 영상 목록.',
 

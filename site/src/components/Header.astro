@@ -26,7 +26,7 @@ const markStyle = `--mark: url("${base}/brand-mark.svg")`;
       <a href={faqHref}>{t(lang, 'header.nav.faq')}</a>
       <a href={docsHref}>{t(lang, 'header.nav.docs')}</a>
     </nav>
-    <div class="right"><LangToggle current={lang} /><a class="gh foil-hover" href={repoUrl} target="_blank" rel="noopener">{t(lang, 'header.gh')}</a></div>
+    <div class="right"><a class="nav-download" href={`${homeHref}#desktop`}>{t(lang, 'header.nav.download')}</a><LangToggle current={lang} /><a class="gh foil-hover" href={repoUrl} target="_blank" rel="noopener">{t(lang, 'header.gh')}</a></div>
   </div>
 </header>
 
@@ -40,5 +40,8 @@ const markStyle = `--mark: url("${base}/brand-mark.svg")`;
   nav a:hover { color: var(--text); }
   .right { display: flex; align-items: center; gap: 14px; }
   .gh { padding: 7px 12px; border: 1px solid var(--glass-line); border-radius: 4px; font-family: var(--font-mono); font-size: 11px; }
+  .nav-download { padding: 7px 13px; border-radius: 4px; background: var(--text); color: var(--bg); font: 600 12px/1 var(--font-display); transition: opacity .2s ease; }
+  .nav-download:hover { opacity: .8; }
   @media (max-width: 820px) { nav { display: none; } .topbar { top: 6px; width: calc(100% - 12px); margin-top: 6px; } .row { min-height: 54px; } }
+  @media (max-width: 480px) { .nav-download { display: none; } }
 </style>

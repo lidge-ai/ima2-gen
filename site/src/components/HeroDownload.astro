@@ -1,0 +1,40 @@
+---
+import { t, type Lang } from '../i18n/strings';
+import { PLATFORM_ORDER, RELEASES_PAGE } from '../scripts/desktopRelease';
+import { downloadLabels } from '../scripts/desktopDownload';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const labels = downloadLabels((key) => t(lang, key), PLATFORM_ORDER);
+---
+
+<div class="hero-download" data-desktop-download data-labels={JSON.stringify(labels)}>
+  <a class="hero-dl" data-dl-primary href={RELEASES_PAGE} target="_blank" rel="noopener">
+    <span data-dl-primary-label>{t(lang, 'install.desktop.cta')}</span>
+    <span class="hero-dl-arrow" aria-hidden="true">↓</span>
+  </a>
+  <p class="hero-dl-meta">
+    <span data-dl-detected hidden></span>
+    <span class="hero-dl-platforms">{t(lang, 'hero.dl.platforms')}</span>
+    <a href="#install">{t(lang, 'hero.dl.others')}</a>
+  </p>
+</div>
+
+<script>
+  import { mountDesktopDownloads } from '../scripts/desktopDownload';
+  mountDesktopDownloads();
+</script>
+
+<style>
+  .hero-download { display: flex; flex-direction: column; gap: 12px; margin: 0 0 26px; }
+  .hero-dl { align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 24px; border-radius: 6px; background: var(--text); color: var(--bg); font: 600 16px/1 var(--font-display); letter-spacing: 0; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); transition: transform 180ms ease, box-shadow 180ms ease; }
+  .hero-dl:hover { transform: translateY(-1px); box-shadow: 0 22px 60px rgba(0, 0, 0, .55); }
+  .hero-dl:focus-visible { outline: 2px solid #7ad7ff; outline-offset: 3px; }
+  .hero-dl-arrow { font-size: 18px; }
+  .hero-dl-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; color: var(--text-dim); font: 500 11px/1.6 var(--font-mono); letter-spacing: .04em; }
+  .hero-dl-meta [hidden] { display: none; }
+  .hero-dl-meta a { border-bottom: 1px solid var(--line); color: var(--text-dim); }
+  .hero-dl-meta a:hover { color: var(--text); }
+  @media (max-width: 480px) {
+    .hero-dl { align-self: stretch; justify-content: center; }
+  }
+</style>

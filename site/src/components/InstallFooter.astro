@@ -10,13 +10,8 @@ const jaReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.ja.
 const zhReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.zh-CN.md';
 const zhTwReadme = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/README.zh-TW.md';
 import { PLATFORM_ORDER, RELEASES_PAGE } from '../scripts/desktopRelease';
-const desktopLabels = {
-  ctaFor: t(lang, 'install.desktop.ctaFor'),
-  detected: t(lang, 'install.desktop.detected'),
-  soon: t(lang, 'install.desktop.soon'),
-  platforms: Object.fromEntries(PLATFORM_ORDER.map((id) => [id, t(lang, `dl.platform.${id}`)])),
-  os: { mac: t(lang, 'dl.os.mac'), win: t(lang, 'dl.os.win'), linux: t(lang, 'dl.os.linux') },
-};
+import { downloadLabels } from '../scripts/desktopDownload';
+const desktopLabels = downloadLabels((key) => t(lang, key), PLATFORM_ORDER);
 ---
 
 <section class="std install-section" id="install">
@@ -73,52 +68,8 @@ const desktopLabels = {
 </section>
 
 <script>
-  import { detectPlatform, formatSize, loadDesktopRelease, preferredPlatforms, type Os, type PlatformId } from '../scripts/desktopRelease';
-
-  interface Labels { ctaFor: string; detected: string; soon: string; platforms: Record<PlatformId, string>; os: Record<Exclude<Os, 'unknown'>, string>; }
-  const root = document.querySelector<HTMLElement>('[data-desktop-download]');
-
-  if (root) {
-    const labels = JSON.parse(root.dataset.labels ?? '{}') as Labels;
-    void Promise.all([loadDesktopRelease(), detectPlatform()]).then(([release, detected]) => {
-      if (!release) return;
-      const byPlatform = new Map(release.assets.map((a) => [a.platform, a]));
-
-      root.querySelectorAll<HTMLLIElement>('[data-platform]').forEach((item) => {
-        const asset = byPlatform.get(item.dataset.platform as PlatformId);
-        const link = item.querySelector('a');
-        const meta = item.querySelector('[data-dl-meta]');
-        if (!link || !meta) return;
-        if (asset) {
-          link.href = asset.url;
-          link.removeAttribute('target');
-          meta.textContent = formatSize(asset.size) || '↓';
-          meta.removeAttribute('aria-hidden');
-        } else {
-          link.href = release.url;
-          item.classList.add('is-soon');
-          meta.textContent = labels.soon;
-          meta.removeAttribute('aria-hidden');
-        }
-      });
-
-      const primary = preferredPlatforms(detected).map((id) => byPlatform.get(id)).find(Boolean);
-      const primaryLink = root.querySelector<HTMLAnchorElement>('[data-dl-primary]');
-      const primaryLabel = root.querySelector('[data-dl-primary-label]');
-      if (!primary || !primaryLink || !primaryLabel || detected.os === 'unknown') return;
-      primaryLink.href = primary.url;
-      primaryLink.removeAttribute('target');
-      primaryLabel.textContent = labels.ctaFor.replace('{platform}', labels.os[detected.os]);
-      root.querySelector(`[data-platform="${primary.platform}"]`)?.classList.add('is-primary');
-      const detectedEl = root.querySelector<HTMLElement>('[data-dl-detected]');
-      if (detectedEl) {
-        detectedEl.textContent = labels.detected
-          .replace('{platform}', labels.platforms[primary.platform])
-          .replace('{version}', `v${release.version}`);
-        detectedEl.hidden = false;
-      }
-    });
-  }
+  import { mountDesktopDownloads } from '../scripts/desktopDownload';
+  mountDesktopDownloads();
 </script>
 
 <style>
