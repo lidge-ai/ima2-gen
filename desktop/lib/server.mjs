@@ -196,6 +196,7 @@ export class ServerSupervisor extends EventEmitter {
       resolve: () => this.#resolve(settings),
       stop: async (args) => parseStop(await this.runCli(args, settings)),
       probe: (url) => this.probe(url),
+      cancelled: () => gen !== this.generation,
     });
     if (gen !== this.generation) return;
     if (result.ok) {

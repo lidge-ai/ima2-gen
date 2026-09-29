@@ -170,6 +170,7 @@ describe("ServerSupervisor", () => {
   });
 
   it("a previous child's delayed exit does not clear its replacement", async () => {
+    // (see also: stop during takeover, below)
     const h = harness([ABSENT]);
     try {
       const first = await running(h);
@@ -197,6 +198,30 @@ describe("ServerSupervisor", () => {
       exit(c, 0);
       await tick(1300);
       assert.equal(h.children.length, 2, "treated as an unrequested exit and respawned");
+    } finally {
+      await h.cleanup();
+    }
+  });
+
+  it("a stop while takeover re-checks the server never runs the CLI stop", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    let call = 0;
+    const h = harness([NATIVE], { askTakeover: async () => ({ approve: true }) });
+    (h.sup as unknown as { runCli: unknown }).runCli = async (args: string[]) => {
+      h.cliCalls.push(args);
+      call += 1;
+      if (call === 2) await gate; // the takeover's fresh status check
+      return args[0] === "stop" ? STOPPED : NATIVE;
+    };
+    try {
+      const pending = h.sup.start(SETTINGS);
+      await tick();
+      await h.sup.stop();
+      release();
+      await pending;
+      assert.equal(h.cliCalls.filter((a) => a[0] === "stop").length, 0);
+      assert.equal(h.children.length, 0);
     } finally {
       await h.cleanup();
     }

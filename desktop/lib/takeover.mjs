@@ -37,12 +37,15 @@ async function waitQuiet(url, probe, { attempts = 20, needed = 3, delayMs = 250 
  * @param resolve  () => Promise<{ok, status?, reason?}> — a fresh status answer
  * @param stop     (args) => Promise<{ok, report?, reason?}> — runs the bundled CLI stop
  * @param probe    (url) => Promise<"refused"|"answered"> — a raw liveness probe
+ * @param cancelled () => boolean — true once the caller no longer wants this takeover
  */
-export async function takeOver({ approved, resolve, stop, probe, quiet }) {
+export async function takeOver({ approved, resolve, stop, probe, quiet, cancelled = () => false }) {
   if (!approved?.stoppable || approved.serviceOwnership === "unknown" || !approved.runtime) {
     return { ok: false, reason: "this server cannot be taken over safely" };
   }
   const now = await resolve();
+  // Checked right before the only destructive step: a quit or stop during the re-check wins.
+  if (cancelled()) return { ok: false, cancelled: true, reason: "the takeover was cancelled" };
   if (!now.ok) return { ok: false, reason: now.reason };
   if (now.status.liveness !== "live" || !sameIdentity(now.status.runtime, approved.runtime)) {
     return { ok: false, reason: "the running server changed since you approved the takeover" };

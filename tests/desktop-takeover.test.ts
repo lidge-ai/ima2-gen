@@ -40,4 +40,13 @@ describe("takeover", () => {
   it("uses the start time for pre-upgrade servers and --service for managed ones", () => {
     assert.deepEqual(stopArgs(approved({ serviceOwnership: "managed" }, { bootId: null })), ["stop", "--json", "--expect-pid", "4242", "--expect-started", "7", "--service"]);
   });
+
+  it("a cancellation during the re-check stops nothing", async () => {
+    let cancelled = false;
+    let stopped = false;
+    const result = await takeOver({ approved: approved(), quiet, cancelled: () => cancelled, resolve: async () => { cancelled = true; return { ok: true, status: approved() }; }, stop: async () => { stopped = true; return stopOk; }, probe: async () => "refused" });
+    assert.equal(result.ok, false);
+    assert.equal(result.cancelled, true);
+    assert.equal(stopped, false);
+  });
 });
