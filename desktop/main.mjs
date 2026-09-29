@@ -17,6 +17,8 @@ import { installPopupPolicy } from "./lib/window-open.mjs";
 import { registerIpc } from "./lib/ipc.mjs";
 import { wireAppLifecycle } from "./lib/app-lifecycle.mjs";
 import { createUpdaterController } from "./lib/updater.mjs";
+import { launchOrigin } from "./lib/launch-origin.mjs";
+import { askTakeover } from "./lib/takeover-prompt.mjs";
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(desktopDir, "..");
@@ -42,12 +44,20 @@ async function boot() {
   });
 
   const settingsStore = createSettingsStore(app.getPath("userData"));
+  // Declared before the supervisor so its takeover prompt can find the window once it exists.
+  let windows;
   const supervisor = new ServerSupervisor({
     rootDir,
     isPackaged: app.isPackaged,
     logFile: join(app.getPath("logs"), "server.log"),
+    origin: launchOrigin(process.argv, isMac ? app.getLoginItemSettings() : {}),
+    askTakeover: async (status) => {
+      const answer = await askTakeover({ dialog, status, parent: windows?.main ?? null });
+      if (answer.remember) settingsStore.update({ existingServer: answer.approve ? "takeover" : "attach" });
+      return answer;
+    },
   });
-  const windows = new WindowManager({
+  windows = new WindowManager({
     iconPath: appIcon,
     getServerUrl: () => supervisor.url,
     getSettings: () => settingsStore.get(),
@@ -83,6 +93,7 @@ async function boot() {
     openSettings: () => windows.showSettings(),
     openUrl: (url) => shell.openExternal(url),
     restartServer: () => supervisor.restart(settingsStore.get()),
+    useBundledServer: () => supervisor.useBundledServer(settingsStore.get()),
     checkForUpdates: () => updater.checkForUpdates({ manual: true }),
     updaterActive: updater.active,
     configDir,

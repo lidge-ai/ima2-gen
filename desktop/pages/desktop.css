@@ -45,7 +45,7 @@ section {
 .row label { flex: 1; }
 .row label.switch { flex: none; }
 .row label small { display: block; color: var(--muted); font-size: 11.5px; }
-input[type="number"], input[type="text"] {
+input[type="number"], input[type="text"], select {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
@@ -55,7 +55,8 @@ input[type="number"], input[type="text"] {
   width: 140px;
 }
 input[type="text"].wide { width: 220px; }
-input:focus { outline: 1px solid var(--accent); }
+select { width: 220px; }
+input:focus, select:focus { outline: 1px solid var(--accent); }
 .switch { position: relative; width: 38px; height: 22px; flex: none; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch span {

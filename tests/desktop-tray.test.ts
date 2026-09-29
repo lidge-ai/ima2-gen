@@ -50,7 +50,7 @@ describe("login item", () => {
     assert.equal(item.isEnabled(), false);
     item.set(true);
     assert.equal(item.isEnabled(), true);
-    assert.match(readFileSync(file, "utf8"), /^Exec="\/opt\/apps\/ima2 1\.0\.AppImage"$/m);
+    assert.match(readFileSync(file, "utf8"), /^Exec="\/opt\/apps\/ima2 1\.0\.AppImage" --autostart$/m);
     item.set(false);
     assert.equal(existsSync(file), false);
   });
@@ -59,13 +59,13 @@ describe("login item", () => {
     const calls: unknown[] = [];
     let open = false;
     const app = {
-      getLoginItemSettings: () => ({ openAtLogin: open }),
+      getLoginItemSettings: (q?: { args?: string[] }) => ({ openAtLogin: open && q?.args?.[0] === "--autostart" }),
       setLoginItemSettings: (s: { openAtLogin: boolean }) => { calls.push(s); open = s.openAtLogin; },
     };
     const item = createLoginItem({ app, platform: "win32" });
     item.set(true);
     item.set(true);
-    assert.deepEqual(calls, [{ openAtLogin: true }]);
+    assert.deepEqual(calls, [{ openAtLogin: true, args: ["--autostart"] }]);
     assert.equal(item.isEnabled(), true);
   });
 
@@ -84,7 +84,7 @@ describe("login item", () => {
   });
 
   it("leaves plain exec paths unquoted", () => {
-    assert.match(linuxAutostartEntry("/usr/bin/ima2"), /^Exec=\/usr\/bin\/ima2$/m);
+    assert.match(linuxAutostartEntry("/usr/bin/ima2"), /^Exec=\/usr\/bin\/ima2 --autostart$/m);
   });
 });
 

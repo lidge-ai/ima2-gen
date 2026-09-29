@@ -35,6 +35,7 @@ export function registerIpc({ settingsStore, supervisor, actions, info }) {
   }));
   handle("desktop:check-updates", () => actions.checkForUpdates());
   handle("desktop:server:restart", () => actions.restartServer());
+  handle("desktop:server:use-bundled", () => actions.useBundledServer());
   handle("desktop:open-app", () => actions.openApp());
   handle("desktop:open-settings", () => actions.openSettings(), { allowServed: true });
   handle("desktop:open-in-browser", () => actions.openInBrowser());

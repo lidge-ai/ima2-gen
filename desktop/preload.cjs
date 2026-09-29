@@ -13,6 +13,7 @@ if (window.location.protocol === "file:") {
     saveSettings: (patch) => ipcRenderer.invoke("desktop:settings:save", patch),
     getInfo: () => ipcRenderer.invoke("desktop:info"),
     restartServer: () => ipcRenderer.invoke("desktop:server:restart"),
+    useBundledServer: () => ipcRenderer.invoke("desktop:server:use-bundled"),
     checkForUpdates: () => ipcRenderer.invoke("desktop:check-updates"),
     openApp: () => ipcRenderer.invoke("desktop:open-app"),
     openSettings: () => ipcRenderer.invoke("desktop:open-settings"),

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   inspectManager,
   parseLaunchctlPrint,
+  parseServiceConfigDir,
   parseSystemctlShow,
   serviceOwnership,
   type ManagerState,
@@ -37,14 +38,15 @@ test("inspectManager distinguishes absent, bound and unknown", () => {
   assert.deepEqual(inspectManager({ platform: "darwin", exists: () => false }), { state: "absent" });
   assert.deepEqual(inspectManager({ platform: "darwin", exists: () => true, run: fail("Could not find service") }), { state: "absent" });
   assert.equal(inspectManager({ platform: "darwin", exists: () => true, run: fail("Operation not permitted") }).state, "unknown");
-  assert.deepEqual(inspectManager({ platform: "darwin", exists: () => true, run: ok(LAUNCHCTL) }), { state: "bound", kind: "launchd", pid: 4242, active: true });
-  assert.deepEqual(inspectManager({ platform: "linux", exists: () => true, run: ok("MainPID=9\nActiveState=active") }), { state: "bound", kind: "systemd", pid: 9, active: true });
+  const readFile = () => "Environment=IMA2_CONFIG_DIR=/srv/ima2\n";
+  assert.deepEqual(inspectManager({ platform: "darwin", exists: () => true, run: ok(LAUNCHCTL), readFile }), { state: "bound", kind: "launchd", pid: 4242, active: true, configDir: "/srv/ima2" });
+  assert.deepEqual(inspectManager({ platform: "linux", exists: () => true, run: ok("MainPID=9\nActiveState=active"), readFile: () => { throw new Error("EACCES"); } }), { state: "bound", kind: "systemd", pid: 9, active: true, configDir: null });
   assert.equal(inspectManager({ platform: "linux", exists: () => true, run: fail("Failed to connect to bus") }).state, "unknown");
   assert.deepEqual(inspectManager({ platform: "win32" }), { state: "absent" });
 });
 
 test("service ownership needs the manager to report the runtime's own pid", () => {
-  const bound = (pid: number | null, active = true): ManagerState => ({ state: "bound", kind: "launchd", pid, active });
+  const bound = (pid: number | null, active = true): ManagerState => ({ state: "bound", kind: "launchd", pid, active, configDir: null });
   assert.equal(serviceOwnership({ pid: 5 }, bound(5)), "managed");
   // A pre-upgrade service server does not report its launcher: the pid match still decides.
   assert.equal(serviceOwnership({ pid: 5, launcher: null }, bound(5)), "managed");
@@ -56,4 +58,10 @@ test("service ownership needs the manager to report the runtime's own pid", () =
   assert.equal(serviceOwnership({ pid: 5, launcher: "service" }, { state: "absent" }), "unknown");
   assert.equal(serviceOwnership({ pid: 5 }, { state: "unknown", reason: "x" }), "unknown");
   assert.equal(serviceOwnership({ pid: 5 }, { state: "absent" }), "unmanaged");
+});
+
+test("the service's config dir comes from the plist or unit, else the default", () => {
+  assert.equal(parseServiceConfigDir("<key>IMA2_CONFIG_DIR</key><string>/a &amp; b</string>"), "/a & b");
+  assert.equal(parseServiceConfigDir("Environment=IMA2_CONFIG_DIR=/srv/ima2\n"), "/srv/ima2");
+  assert.equal(parseServiceConfigDir("<key>IMA2_SERVICE</key><string>1</string>", "/home/me"), "/home/me/.ima2");
 });

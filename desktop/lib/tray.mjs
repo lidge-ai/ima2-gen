@@ -1,4 +1,5 @@
 import { Menu, Tray, nativeImage } from "electron";
+import { describeLauncher } from "./takeover-prompt.mjs";
 
 const STATE_LABEL = {
   starting: "Starting server…",
@@ -73,15 +74,20 @@ export class TrayController {
   }
 
   statusLine() {
-    const { state, url, external, lastError } = this.status;
-    if (state === "running" && url) return `${STATE_LABEL.running} · ${url.replace(/^https?:\/\//, "")}${external ? " (external)" : ""}`;
+    const { state, url, guest, lastError, stoppedBy } = this.status;
+    if (state === "running" && url) {
+      const owner = guest ? ` (${describeLauncher(guest.launcher, guest.serviceManaged).toLowerCase()})` : "";
+      return `${STATE_LABEL.running} · ${url.replace(/^https?:\/\//, "")}${owner}`;
+    }
     if (state === "error" && lastError) return `${STATE_LABEL.error}: ${lastError}`;
+    if (state === "stopped" && stoppedBy === "cli") return "Server stopped (ima2 stop)";
     return STATE_LABEL[state] ?? state;
   }
 
   menuTemplate() {
     const running = this.status.state === "running";
     const updater = Boolean(this.actions.updaterActive);
+    const guest = this.status.ownership === "guest" ? this.status.guest : null;
     return [
       { label: this.statusLine(), enabled: false },
       { type: "separator" },
@@ -91,7 +97,8 @@ export class TrayController {
       { label: "Open Generated Folder", click: () => this.actions.openGenerated() },
       { type: "separator" },
       { label: "Start at Login", type: "checkbox", checked: Boolean(this.settings.openAtLogin), click: (item) => this.actions.setOpenAtLogin?.(item.checked) },
-      { label: "Restart Server", click: () => this.actions.restartServer(), enabled: !this.status.external },
+      { label: "Use Bundled Server", visible: Boolean(guest), enabled: Boolean(guest && !guest.takeoverBlocker), click: () => this.actions.useBundledServer?.() },
+      { label: this.status.state === "stopped" ? "Start Server" : "Restart Server", click: () => this.actions.restartServer(), enabled: !guest },
       { label: "Open Server Log", click: () => this.actions.openLogs() },
       { type: "separator" },
       { label: this.updatePending ? "Update Ready — Restart to Install…" : "Check for Updates…", enabled: updater, visible: updater, click: () => this.actions.checkForUpdates() },

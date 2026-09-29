@@ -106,7 +106,7 @@ test("a pre-upgrade server without a boot id is approved by its start time", asy
 test("a service-owned server is refused without --service, even without a launcher field", async () => {
   const f = await fixture();
   try {
-    const managed = (): ManagerState => ({ state: "bound", kind: "launchd", pid: f.pid, active: true });
+    const managed = (): ManagerState => ({ state: "bound", kind: "launchd", pid: f.pid, active: true, configDir: null });
     const report = await run(f, { inspect: managed });
     assert.equal(report.outcome, "refused");
     assert.equal(report.code, "service-managed");
@@ -120,7 +120,7 @@ test("--service stops the manager, not the process, and confirms the server stay
   const f = await fixture({ launcher: "service" });
   try {
     let managerStops = 0;
-    const managed = (): ManagerState => ({ state: "bound", kind: "systemd", pid: f.pid, active: true });
+    const managed = (): ManagerState => ({ state: "bound", kind: "systemd", pid: f.pid, active: true, configDir: null });
     const stopManager = async () => { managerStops++; f.child.kill("SIGKILL"); return { ok: true, message: "Service stopped." }; };
     const report = await run(f, { inspect: managed, service: true, stopManager }, { launcher: "service" });
     assert.equal(report.outcome, "stopped");
@@ -146,7 +146,7 @@ test("an unanswerable service manager refuses instead of guessing", async () => 
 test("a desktop server beside a dormant service registration is not refused", async () => {
   const f = await fixture({ launcher: "desktop" });
   try {
-    const dormant = (): ManagerState => ({ state: "bound", kind: "launchd", pid: null, active: false });
+    const dormant = (): ManagerState => ({ state: "bound", kind: "launchd", pid: null, active: false, configDir: null });
     const report = await run(f, { inspect: dormant }, { launcher: "desktop" });
     assert.equal(report.outcome, "stopped");
     assert.equal(report.launcher, "desktop");

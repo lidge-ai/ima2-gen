@@ -23,6 +23,8 @@ export interface StatusReport {
   advertiseStale: boolean;
   manager: ManagerState;
   serviceOwnership: ServiceOwnership;
+  /** Whether the login service serves this config dir; null when there is no service or it cannot tell. */
+  serviceSharesConfig: boolean | null;
   logFile: string;
   reason?: string;
 }
@@ -32,6 +34,7 @@ export function buildStatusReport(
   manager: ManagerState,
   serviceOwnership: ServiceOwnership,
   logFile: string,
+  serviceSharesConfig: boolean | null = null,
 ): StatusReport {
   return {
     schema: STATUS_SCHEMA,
@@ -43,6 +46,7 @@ export function buildStatusReport(
     advertiseStale: resolved.advertiseStale,
     manager,
     serviceOwnership,
+    serviceSharesConfig,
     logFile,
     ...(resolved.reason ? { reason: resolved.reason } : {}),
   };

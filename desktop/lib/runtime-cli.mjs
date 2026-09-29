@@ -1,0 +1,60 @@
+import { spawn } from "node:child_process";
+import { join } from "node:path";
+
+export const STATUS_SCHEMA = "ima2-status/1";
+export const STOP_SCHEMA = "ima2-stop/1";
+const STATUS_EXIT = { live: 0, "absent-proven": 3, unknown: 1 };
+
+/**
+ * Run the bundled CLI (bin/ima2.js next to server.js) and collect its output.
+ * Resolves; never rejects: a spawn error or timeout is reported in the result.
+ */
+export function runBundledCli({ rootDir, args, env, command, timeoutMs = 20_000, spawnFn = spawn }) {
+  return new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const finish = (result) => { if (!settled) { settled = true; clearTimeout(timer); resolve({ stdout, stderr, ...result }); } };
+    let child;
+    try {
+      child = spawnFn(command.bin, [join(rootDir, "bin", "ima2.js"), ...args], { cwd: rootDir, env: { ...env, ...command.env }, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+    } catch (error) {
+      finish({ code: null, error: error.message });
+      return;
+    }
+    const timer = setTimeout(() => { try { child.kill(); } catch { /* already gone */ } finish({ code: null, error: `timed out after ${timeoutMs} ms` }); }, timeoutMs);
+    child.stdout.on("data", (b) => { stdout += String(b); });
+    child.stderr.on("data", (b) => { stderr += String(b); });
+    child.on("error", (error) => finish({ code: null, error: error.message }));
+    child.on("close", (code) => finish({ code }));
+  });
+}
+
+function lastJson(stdout) {
+  const line = String(stdout).trim().split(/\r?\n/).pop() ?? "";
+  try {
+    return JSON.parse(line);
+  } catch {
+    return null;
+  }
+}
+
+function failure(run, what) {
+  const detail = run.error ?? (String(run.stderr).trim().split(/\r?\n/).pop() || `exit ${run.code}`);
+  return { ok: false, reason: `${what}: ${detail}` };
+}
+
+/** A status answer counts only when its exit code agrees with its liveness. */
+export function parseStatus(run) {
+  const doc = lastJson(run.stdout);
+  if (!doc || doc.schema !== STATUS_SCHEMA) return failure(run, "the bundled CLI gave no ima2-status/1 answer");
+  if (STATUS_EXIT[doc.liveness] === undefined || STATUS_EXIT[doc.liveness] !== run.code) return failure(run, `the bundled CLI answered ${doc.liveness} with exit ${run.code}`);
+  return { ok: true, status: doc };
+}
+
+export function parseStop(run) {
+  const doc = lastJson(run.stdout);
+  if (!doc || doc.schema !== STOP_SCHEMA) return failure(run, "the bundled CLI gave no ima2-stop/1 answer");
+  if ((run.code === 0) !== (doc.ok === true)) return failure(run, `the stop report and exit ${run.code} disagree`);
+  return { ok: true, report: doc };
+}

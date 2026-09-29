@@ -1,8 +1,23 @@
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import { config } from "../../config.js";
 import { resolveRuntime, serverLogFile } from "../lib/runtime.js";
 import { STATUS_EXIT, buildStatusReport, type StatusReport } from "../lib/runtimeReport.js";
 import { RuntimeArgError, humanWriter, portFlag } from "../lib/runtimeArgs.js";
-import { inspectManager, serviceOwnership } from "../lib/serviceManager.js";
+import { inspectManager, serviceOwnership, type ManagerState } from "../lib/serviceManager.js";
+
+function canonical(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+export function serviceSharesConfig(manager: ManagerState, configDir: string): boolean | null {
+  if (manager.state !== "bound" || !manager.configDir) return null;
+  return canonical(manager.configDir) === canonical(configDir);
+}
 
 export async function collectRuntimeStatus(port: number = config.server.port): Promise<StatusReport> {
   const resolved = await resolveRuntime({ advertiseFile: config.storage.advertiseFile, port });
@@ -10,7 +25,7 @@ export async function collectRuntimeStatus(port: number = config.server.port): P
   const ownership = resolved.runtime
     ? serviceOwnership(resolved.runtime, manager)
     : manager.state === "unknown" ? "unknown" : "unmanaged";
-  return buildStatusReport(resolved, manager, ownership, serverLogFile(config.storage.configDir));
+  return buildStatusReport(resolved, manager, ownership, serverLogFile(config.storage.configDir), serviceSharesConfig(manager, config.storage.configDir));
 }
 
 const LAUNCHER_LABEL: Record<string, string> = {

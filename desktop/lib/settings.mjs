@@ -13,10 +13,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
   devLogging: false,
   nodeBinary: "",
   configDir: "",
+  // What to do when another (non-bundled) ima2 server already runs at startup.
+  existingServer: "ask",
 });
 
 const BOOL_KEYS = ["openAtLogin", "startHidden", "menubarOnly", "keepRunningOnClose", "autoUpdate", "devLogging"];
 const STR_KEYS = ["nodeBinary", "configDir"];
+const ENUM_KEYS = { existingServer: ["ask", "attach", "takeover"] };
 
 export function sanitizeSettings(input) {
   const src = input && typeof input === "object" ? input : {};
@@ -28,6 +31,9 @@ export function sanitizeSettings(input) {
   }
   for (const key of STR_KEYS) {
     if (typeof src[key] === "string") out[key] = src[key].trim();
+  }
+  for (const [key, allowed] of Object.entries(ENUM_KEYS)) {
+    if (allowed.includes(src[key])) out[key] = src[key];
   }
   return out;
 }

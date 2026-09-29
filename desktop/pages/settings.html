@@ -25,6 +25,14 @@
         <label>Verbose server logging<small>IMA2_DEV=1 · debug log level</small></label>
         <label class="switch"><input id="devLogging" type="checkbox" /><span></span></label>
       </div>
+      <div class="row">
+        <label>When another ima2 server is running<small>A server started by 'ima2 serve', 'ima2 start' or the login service</small></label>
+        <select id="existingServer">
+          <option value="ask">Ask me</option>
+          <option value="attach">Use it</option>
+          <option value="takeover">Replace it with the bundled server</option>
+        </select>
+      </div>
     </section>
 
     <section>
@@ -70,6 +78,7 @@
 
     <div class="actions">
       <button id="restart">Restart Server</button>
+      <button id="use-bundled" hidden>Use Bundled Server</button>
       <button id="logs">Open Server Log</button>
       <button id="config">Open Config Folder</button>
     </div>

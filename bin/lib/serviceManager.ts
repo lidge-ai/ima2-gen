@@ -8,14 +8,14 @@
  * restarts, so callers refuse destructive work on "unknown".
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { LAUNCHD_LABEL, SYSTEMD_UNIT } from "./serviceTemplates.js";
 
 export type ManagerState =
   | { state: "absent" }
-  | { state: "bound"; kind: "launchd" | "systemd"; pid: number | null; active: boolean }
+  | { state: "bound"; kind: "launchd" | "systemd"; pid: number | null; active: boolean; configDir: string | null }
   | { state: "unknown"; reason: string };
 
 export type ServiceOwnership = "managed" | "unmanaged" | "unknown";
@@ -62,22 +62,44 @@ export function parseSystemctlShow(text: string): { pid: number | null; active: 
   return { pid: pid > 0 ? pid : null, active: active === "active" };
 }
 
+/**
+ * Which config dir the installed service serves: the IMA2_CONFIG_DIR baked into
+ * the plist or unit, else the default ~/.ima2. The single login service may
+ * belong to a different config dir than the desktop or CLI asking about it.
+ */
+export function parseServiceConfigDir(text: string, home: string = homedir()): string {
+  const plist = /<key>IMA2_CONFIG_DIR<\/key>\s*<string>([^<]*)<\/string>/.exec(text)?.[1];
+  if (plist !== undefined) return plist.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
+  const unit = /^Environment=IMA2_CONFIG_DIR=(.*)$/m.exec(text)?.[1];
+  return unit !== undefined ? unit.trim() : join(home, ".ima2");
+}
+
 export interface InspectOptions {
   platform?: NodeJS.Platform;
   run?: Runner;
   exists?: (path: string) => boolean;
+  readFile?: (path: string) => string;
+}
+
+function readConfigDir(path: string, readFile: (p: string) => string): string | null {
+  try {
+    return parseServiceConfigDir(readFile(path));
+  } catch {
+    return null;
+  }
 }
 
 export function inspectManager(opts: InspectOptions = {}): ManagerState {
   const platform = opts.platform ?? process.platform;
   const run = opts.run ?? defaultRunner;
   const exists = opts.exists ?? existsSync;
-  if (platform === "darwin") return inspectLaunchd(run, exists);
-  if (platform === "linux") return inspectSystemd(run, exists);
+  const readFile = opts.readFile ?? ((p: string) => readFileSync(p, "utf-8"));
+  if (platform === "darwin") return inspectLaunchd(run, exists, readFile);
+  if (platform === "linux") return inspectSystemd(run, exists, readFile);
   return { state: "absent" };
 }
 
-function inspectLaunchd(run: Runner, exists: (p: string) => boolean): ManagerState {
+function inspectLaunchd(run: Runner, exists: (p: string) => boolean, readFile: (p: string) => string): ManagerState {
   if (!exists(launchdPlistPath())) return { state: "absent" };
   const r = run("/bin/launchctl", ["print", `${guiDomain()}/${LAUNCHD_LABEL}`]);
   if (!r.ok) {
@@ -87,16 +109,16 @@ function inspectLaunchd(run: Runner, exists: (p: string) => boolean): ManagerSta
   }
   const parsed = parseLaunchctlPrint(r.stdout);
   if (!parsed) return { state: "unknown", reason: "launchctl print output had no state line" };
-  return { state: "bound", kind: "launchd", ...parsed };
+  return { state: "bound", kind: "launchd", ...parsed, configDir: readConfigDir(launchdPlistPath(), readFile) };
 }
 
-function inspectSystemd(run: Runner, exists: (p: string) => boolean): ManagerState {
+function inspectSystemd(run: Runner, exists: (p: string) => boolean, readFile: (p: string) => string): ManagerState {
   if (!exists(systemdUnitPath())) return { state: "absent" };
   const r = run("systemctl", ["--user", "show", SYSTEMD_UNIT, "-p", "MainPID", "-p", "ActiveState"]);
   if (!r.ok) return { state: "unknown", reason: `systemctl show failed: ${(r.stderr || r.stdout).trim().slice(0, 200)}` };
   const parsed = parseSystemctlShow(r.stdout);
   if (!parsed) return { state: "unknown", reason: "systemctl show output had no MainPID/ActiveState" };
-  return { state: "bound", kind: "systemd", ...parsed };
+  return { state: "bound", kind: "systemd", ...parsed, configDir: readConfigDir(systemdUnitPath(), readFile) };
 }
 
 /**

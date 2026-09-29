@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { AUTOSTART_FLAG } from "./launch-origin.mjs";
 
 /**
  * Electron's login-item API covers macOS and Windows only. Linux desktops follow the XDG
@@ -23,7 +24,8 @@ export function linuxAutostartEntry(execPath) {
     "Type=Application",
     "Name=ima2",
     "Comment=Local-first visual generation studio",
-    `Exec=${quoted}`,
+    // The flag tells the app it was started at login (desktop/lib/launch-origin.mjs).
+    `Exec=${quoted} ${AUTOSTART_FLAG}`,
     "Icon=ima2",
     "Terminal=false",
     "X-GNOME-Autostart-enabled=true",
@@ -33,14 +35,17 @@ export function linuxAutostartEntry(execPath) {
 
 export function createLoginItem({ app, platform = process.platform, env = process.env, execPath = process.execPath }) {
   if (platform !== "linux") {
+    // Windows compares login items by path *and* args, so reads must pass the same args.
+    const query = platform === "win32" ? { args: [AUTOSTART_FLAG] } : undefined;
+    const read = () => app.getLoginItemSettings(query);
     return {
       supported: true,
-      isEnabled: () => app.getLoginItemSettings().openAtLogin === true,
+      isEnabled: () => read().openAtLogin === true,
       set: (enabled, { hidden = false } = {}) => {
-        const current = app.getLoginItemSettings();
+        const current = read();
         const darwin = platform === "darwin";
         if (current.openAtLogin === enabled && (!darwin || current.openAsHidden === hidden)) return;
-        app.setLoginItemSettings(darwin ? { openAtLogin: enabled, openAsHidden: hidden } : { openAtLogin: enabled });
+        app.setLoginItemSettings(darwin ? { openAtLogin: enabled, openAsHidden: hidden } : { openAtLogin: enabled, args: [AUTOSTART_FLAG] });
       },
     };
   }
