@@ -15,6 +15,7 @@ import {
   REGISTRY_PROOF_POLL_MS,
   REGISTRY_PROOF_TIMEOUT_MS,
   registryProofTimeoutMs,
+  STABLE_BRANCHES,
   validateProvenance,
   validateRemoteRefs,
   verifyArtifactDigest,
@@ -87,13 +88,38 @@ describe("release channel contract", () => {
     assert.equal(plan.shouldVerify, false);
   });
 
-  it("requires every live stable ref to identify the preview-proven SHA", () => {
-    const refs = { main: SHA, dev: SHA, preview: SHA, "v2.0.14": SHA };
-    assert.doesNotThrow(() => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs }));
+  it("requires the stable tag to equal the SHA and the release branches to contain it", () => {
+    const LATER = "c".repeat(40);
+    const refs = { main: SHA, dev: LATER, preview: SHA, "v2.0.14": SHA };
+    // dev kept receiving merges during the release (v3.23.2): a descendant is fine.
+    const containsAll = (ancestor: string, descendant: string) => ancestor === SHA && [SHA, LATER].includes(descendant);
+    assert.deepEqual(STABLE_BRANCHES, ["main", "dev", "preview"]);
+    assert.doesNotThrow(() => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs, contains: containsAll }));
+    // A dev that lost the release commit would orphan it.
     assert.throws(
-      () => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs: { ...refs, preview: "b".repeat(40) } }),
-      /remote preview/,
+      () => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs, contains: (_a: string, d: string) => d !== LATER }),
+      /remote dev .* does not contain/,
     );
+    // The tag itself is immutable and must match exactly.
+    assert.throws(
+      () => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs: { ...refs, "v2.0.14": LATER }, contains: containsAll }),
+      /remote v2\.0\.14 is c+, expected a+/,
+    );
+    assert.throws(
+      () => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs: { ...refs, preview: "" }, contains: containsAll }),
+      /remote preview is missing/,
+    );
+    // Without a predicate a stable check must refuse rather than pass.
+    assert.throws(() => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs }), /contains\(\) predicate/);
+  });
+
+  it("keeps a preview publish exact", () => {
+    assert.doesNotThrow(() => validateRemoteRefs({ ref: "refs/heads/preview", sha: SHA, refs: { preview: SHA } }));
+    assert.throws(
+      () => validateRemoteRefs({ ref: "refs/heads/preview", sha: SHA, refs: { preview: "b".repeat(40) }, contains: () => true }),
+      /remote preview is b+, expected a+/,
+    );
+    assert.throws(() => validateRemoteRefs({ ref: "refs/heads/main", sha: SHA, refs: {} }), /unsupported publish ref/);
   });
 });
 
@@ -508,6 +534,110 @@ describe("package install policy contract", () => {
     assert.equal(pickRun([...runs].reverse(), mark)?.databaseId, 102);
   });
 
+  it("follows only the publish run for its own ref when given a run title", async () => {
+    const { pickRun } = await import("../scripts/wait-publish-run.mjs");
+    const runs = [
+      // A hand dispatch for another ref landed first, above the mark.
+      { databaseId: 201, event: "workflow_dispatch", displayTitle: "Publish refs/heads/preview" },
+      { databaseId: 202, event: "workflow_dispatch", displayTitle: "Publish refs/tags/v3.24.1" },
+    ];
+    assert.equal(pickRun(runs, 200, "Publish refs/tags/v3.24.1")?.databaseId, 202);
+    assert.equal(pickRun(runs, 200, "Publish refs/tags/v3.24.2"), undefined);
+    // No title keeps the old behaviour.
+    assert.equal(pickRun(runs, 200)?.databaseId, 201);
+  });
+
+  it("lands the release on dev by fast-forward, merge, or not at all", async () => {
+    const { planDevLanding } = await import("../scripts/release-cut.mjs");
+    assert.equal(planDevLanding({ devContainsSha: true, shaContainsDev: true }), "noop");
+    assert.equal(planDevLanding({ devContainsSha: true, shaContainsDev: false }), "noop");
+    // dev has not moved since the cut: the release commit sits right on top of it.
+    assert.equal(planDevLanding({ devContainsSha: false, shaContainsDev: true }), "fast-forward");
+    // A PR merged into dev during the release.
+    assert.equal(planDevLanding({ devContainsSha: false, shaContainsDev: false }), "merge");
+  });
+
+  it("resumes only a version whose tag, package version and main agree", async () => {
+    const { assertResumable } = await import("../scripts/release-cut.mjs");
+    const ok = { version: "3.24.1", sha: SHA, packageVersion: "3.24.1", mainContainsSha: true };
+    assert.deepEqual(assertResumable(ok), []);
+    assert.match(assertResumable({ ...ok, sha: "" }).join(), /tag v3\.24\.1 does not exist/);
+    // A missing tag reports only that; nothing else about it can be known.
+    assert.equal(assertResumable({ ...ok, sha: "" }).length, 1);
+    assert.match(assertResumable({ ...ok, sha: "abc123" }).join(), /does not exist/);
+    assert.match(assertResumable({ ...ok, packageVersion: "3.24.0" }).join(), /package\.json at v3\.24\.1 is 3\.24\.0/);
+    assert.match(assertResumable({ ...ok, packageVersion: null }).join(), /\(unreadable\)/);
+    assert.match(assertResumable({ ...ok, mainContainsSha: false }).join(), /origin\/main does not contain v3\.24\.1/);
+    assert.match(assertResumable({ ...ok, version: "3.24" }).join(), /stable X\.Y\.Z/);
+  });
+
+  it("land-dev really fast-forwards, merges, skips, and stops on a conflict", () => {
+    const script = join(repoRoot(), "scripts/release-cut.mjs");
+    const root = mkdtempSync(join(tmpdir(), "ima2-land-dev-"));
+    try {
+      const git = (cwd: string, ...args: string[]) =>
+        execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+      const origin = join(root, "origin.git");
+      const work = join(root, "work");
+      git(root, "init", "-q", "--bare", "-b", "main", origin);
+      git(root, "clone", "-q", origin, work);
+      git(work, "config", "user.name", "test");
+      git(work, "config", "user.email", "test@example.test");
+      const commit = (file: string, body: string, message: string) => {
+        writeFileSync(join(work, file), body);
+        git(work, "add", file);
+        git(work, "commit", "-q", "-m", message);
+        return git(work, "rev-parse", "HEAD");
+      };
+      const landDev = (sha: string) =>
+        spawnSync(process.execPath, [script, "land-dev", sha, "9.9.9"], { cwd: work, encoding: "utf8" });
+      const originDev = () => git(work, "ls-remote", origin, "refs/heads/dev").split(/\s+/)[0];
+      const isAncestor = (a: string, d: string) =>
+        spawnSync("git", ["merge-base", "--is-ancestor", a, d], { cwd: work }).status === 0;
+
+      commit("package.json", '{"version":"9.9.8"}\n', "base");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/main", "HEAD:refs/heads/dev");
+
+      // dev did not move: the release commit fast-forwards it.
+      const release = commit("package.json", '{"version":"9.9.9"}\n', "release 9.9.9");
+      let result = landDev(release);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /fast-forward/);
+      assert.equal(originDev(), release);
+
+      // dev already contains the release: nothing to do.
+      result = landDev(release);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /noop/);
+
+      // A PR merged into dev during the next release: merge, never force.
+      git(work, "checkout", "-q", "-b", "feature", release);
+      const feature = commit("feature.txt", "feature\n", "feature");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
+      git(work, "checkout", "-q", "--detach", release);
+      const next = commit("package.json", '{"version":"9.9.10"}\n', "release 9.9.10");
+      result = landDev(next);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /merge/);
+      const merged = originDev();
+      assert.ok(isAncestor(next, merged) && isAncestor(feature, merged), "dev keeps both the feature and the release");
+      assert.match(git(work, "log", "-1", "--format=%s", merged), /land release v9\.9\.9 on dev/);
+
+      // A conflicting dev change stops with the resume hint and leaves dev alone.
+      git(work, "checkout", "-q", "--detach", merged);
+      const conflicting = commit("package.json", '{"version":"dev-edit"}\n', "dev edits package.json");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
+      git(work, "checkout", "-q", "--detach", next);
+      const clash = commit("package.json", '{"version":"9.9.11"}\n', "release 9.9.11");
+      result = landDev(clash);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /conflicts[\s\S]*npm run release -- resume 9\.9\.9/);
+      assert.equal(originDev(), conflicting);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps build caches out of the index so verification cannot dirty the release", () => {
     // A tracked .tsbuildinfo is rewritten by every UI build, so the release cut's
     // post-verification clean check failed on it (run 31604716464). These files are
@@ -551,11 +681,16 @@ describe("package install policy contract", () => {
 
   it("gates the tag job on a real release and keeps the candidate ref leased", () => {
     const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
-    // The most dangerous dry-run failure mode: tag has only `needs: cut`, so a
-    // missing or permissive job-level if performs a real release. It must be
-    // == 'false' (not != 'true') so canary cannot slip through.
-    assert.match(workflow, /if: needs\.cut\.outputs\.dry_run == 'false'/);
-    assert.doesNotMatch(workflow, /if: needs\.cut\.outputs\.dry_run != 'true'/);
+    // The most dangerous dry-run failure mode: a missing or permissive job-level
+    // if performs a real release. dry_run must be == 'false' (not != 'true') so
+    // canary cannot slip through, and !cancelled() must stay or a resume (which
+    // skips the cut) could never reach the tag job.
+    const tagIf = /\n  tag:\n[\s\S]*?\n    if: (.+)\n/.exec(workflow)?.[1] ?? "";
+    assert.match(tagIf, /!cancelled\(\)/);
+    assert.match(tagIf, /inputs\.dry_run == 'false'/);
+    assert.match(tagIf, /needs\.cut\.result == 'success' && needs\.cut\.outputs\.dry_run == 'false'/);
+    assert.match(tagIf, /inputs\.resume_version != ''/);
+    assert.doesNotMatch(tagIf, /dry_run != 'true'/);
     // The workflow default must be the harmless mode.
     assert.match(workflow, /dry_run:[\s\S]*?default: 'true'/);
     // Candidate ref: leased replacement and owned cleanup.
@@ -994,27 +1129,110 @@ describe("version-only reuse classification (D2)", () => {
 });
 
 describe("tag job dispatches (D4/D5)", () => {
-  it("pushes or verifies the desktop tag before dispatching the desktop build", () => {
-    const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
-    const atomicIndex = workflow.indexOf("Create and atomically push main, dev, and the tag");
-    const tagIndex = workflow.indexOf("Push the desktop release tag");
-    const dispatchIndex = workflow.indexOf("Start the desktop release build");
-    assert.ok(atomicIndex > -1 && atomicIndex < tagIndex, "desktop tag follows the atomic push");
-    assert.ok(tagIndex < dispatchIndex, "desktop build dispatches only after the tag exists");
-    const tagBlock = workflow.slice(tagIndex, dispatchIndex);
+  const releaseYml = () => readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
+  // One step's text: from its name to the next step of the same job.
+  const stepBlock = (workflow: string, name: string) => {
+    const start = workflow.indexOf("name: " + name);
+    assert.ok(start > -1, "missing step " + name);
+    const next = workflow.indexOf("\n      - ", start);
+    return workflow.slice(start, next === -1 ? undefined : next);
+  };
+  const tagJob = (workflow: string) => workflow.slice(workflow.indexOf("\n  tag:\n"));
+
+  it("pushes main and the tag atomically, then lands the release on dev", () => {
+    const workflow = releaseYml();
+    const job = tagJob(workflow);
+    const atomic = stepBlock(job, "Create and atomically push main and the tag");
+    // A dev that moved during the release must not reject main and the tag.
+    assert.doesNotMatch(atomic, /refs\/heads\/dev/);
+    assert.match(atomic, /git push --atomic origin/);
+    assert.match(atomic, /refs\/heads\/main/);
+    assert.match(atomic, /if: inputs\.resume_version == ''/);
+    const land = stepBlock(job, "Land the release on dev");
+    assert.match(land, /release-cut\.mjs land-dev "\$SHA" "\$VERSION"/);
+    assert.doesNotMatch(land, /if:/, "a resume lands dev too");
+    assert.ok(job.indexOf("Create and atomically push main and the tag") < job.indexOf("Land the release on dev"));
+    assert.ok(job.indexOf("Land the release on dev") < job.indexOf("Check the desktop release tag"));
+    const cut = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
+    assert.doesNotMatch(cut, /--force/, "dev is never force-pushed");
+  });
+
+  it("resolves version and SHA once and reads them from there in both modes", () => {
+    const job = tagJob(releaseYml());
+    const target = stepBlock(job, "Resolve the release version and SHA");
+    assert.match(job, /- id: target\n\s+name: Resolve the release version and SHA/);
+    assert.match(target, /release-cut\.mjs resume-guard "\$RESUME_VERSION"/);
+    assert.ok(job.indexOf("Fetch release branches and tags") < job.indexOf("Resolve the release version and SHA"), "resume-guard needs origin/main");
+    assert.ok(job.indexOf("Resolve the release version and SHA") < job.indexOf("Refuse to tag if the remotes moved"));
+    // After the target step nothing reads the cut outputs, or a resume would see empty values.
+    const afterTarget = job.slice(job.indexOf("Resolve the release version and SHA") + target.length);
+    assert.doesNotMatch(afterTarget, /needs\.cut\.outputs/);
+    assert.match(job, /ref: \$\{\{ needs\.cut\.outputs\.sha \|\| format\('refs\/tags\/v\{0\}', inputs\.resume_version\) \}\}/);
+  });
+
+  it("never pushes the admin-only desktop tag from CI and dispatches only for an existing tag", () => {
+    const workflow = releaseYml();
+    const job = tagJob(workflow);
+    const check = stepBlock(job, "Check the desktop release tag");
     // An existing desktop-v tag must resolve to the release SHA or the job fails.
-    assert.match(tagBlock, /git rev-parse -q --verify "refs\/tags\/desktop-v\$VERSION"/);
-    assert.match(tagBlock, /desktop-v\$VERSION\^\{commit\}/);
-    assert.match(tagBlock, /exit 1/);
-    // Absent tag: push the SHA to the tag ref.
-    assert.match(tagBlock, /git push origin "\$SHA:refs\/tags\/desktop-v\$VERSION"/);
-    const dispatchBlock = workflow.slice(dispatchIndex, workflow.indexOf("Record the publish run high-water mark", dispatchIndex));
+    assert.match(check, /git rev-parse -q --verify "refs\/tags\/desktop-v\$VERSION"/);
+    assert.match(check, /desktop-v\$VERSION\^\{commit\}/);
+    assert.match(check, /exit 1/);
+    assert.match(check, /present=true/);
+    assert.match(check, /present=false/);
+    // v3.24.0: the workflow token cannot create desktop-v tags. The only mention
+    // of a push is the by-hand hint inside the notice.
+    assert.doesNotMatch(check, /^\s*git push/m);
+    assert.doesNotMatch(workflow, /DESKTOP_TAG_DEPLOY_KEY/);
+    const dispatchBlock = stepBlock(job, "Start the desktop release build");
+    assert.match(dispatchBlock, /if: steps\.desktop_tag\.outputs\.present == 'true'/);
+    // Never dispatch over a public release or a build still running for this tag
+    // (desktop.yml cancels an in-flight run of the same ref).
+    assert.match(dispatchBlock, /gh release view "desktop-v\$VERSION" --json isDraft --jq \.isDraft 2>\/dev\/null \|\| echo missing/);
+    assert.match(dispatchBlock, /--branch "desktop-v\$VERSION"/);
+    assert.match(dispatchBlock, /select\(\.status != "completed"\)/);
+    assert.ok(job.indexOf("Check the desktop release tag") < job.indexOf("Start the desktop release build"));
     assert.match(dispatchBlock, /gh workflow run desktop\.yml/);
     assert.match(dispatchBlock, /--ref "desktop-v/);
     assert.match(dispatchBlock, /-f platform=all/);
     assert.match(dispatchBlock, /continue-on-error: true/);
     assert.match(dispatchBlock, /GH_TOKEN/);
     assert.match(dispatchBlock, /re-dispatch desktop:/);
+  });
+
+  it("skips the stable publish only when npm and GitHub already have this release", () => {
+    const job = tagJob(releaseYml());
+    const state = stepBlock(job, "Check whether the stable release already landed");
+    assert.match(job, /- id: stable_state\n/);
+    // Every probe tolerates "not found", or a normal release would die here.
+    assert.match(state, /done=false/);
+    assert.match(state, /npm view "ima2-gen@\$VERSION" gitHead 2>\/dev\/null \|\| true/);
+    assert.match(state, /npm view ima2-gen@latest version 2>\/dev\/null \|\| true/);
+    assert.match(state, /HAS_GH=1 \|\| HAS_GH=0/);
+    assert.match(state, /echo "done=\$done" >> "\$GITHUB_OUTPUT"/);
+    for (const name of ["Record the publish run high-water mark", "Publish the stable release", "Wait for the stable publish to finish"]) {
+      assert.match(stepBlock(job, name), /if: steps\.stable_state\.outputs\.done != 'true'/, name);
+    }
+    // The wait follows only the run for this ref, never a hand dispatch for another.
+    assert.match(stepBlock(job, "Wait for the stable publish to finish"), /"Publish refs\/tags\/v\$\{\{ steps\.target\.outputs\.version \}\}"/);
+  });
+
+  it("refuses a dry resume and keeps the cut out of a resume", () => {
+    const workflow = releaseYml();
+    assert.match(workflow, /resume_version:\n\s+description: .+\n\s+required: false\n\s+default: ''\n\s+type: string/);
+    assert.match(workflow, /refuse-dry-resume:[\s\S]{0,120}?if: inputs\.resume_version != '' && inputs\.dry_run != 'false'/);
+    assert.match(workflow, /\n  cut:\n\s+name: [^\n]+\n\s+if: inputs\.resume_version == ''/);
+    assert.match(workflow, /100 "Publish refs\/heads\/preview"/);
+  });
+
+  it("rechecks the stable refs only when publish-stable is about to publish", () => {
+    const workflow = readFileSync(join(repoRoot(), ".github/workflows/publish.yml"), "utf8");
+    const stable = workflow.slice(workflow.indexOf("publish-stable:"), workflow.indexOf("create-github-release:"));
+    const recheck = stepBlock(stable, "Recheck live release refs");
+    assert.match(recheck, /if: steps\.registry\.outputs\.should_publish == 'true'/);
+    assert.ok(stable.indexOf("Guard immutable registry version") < stable.indexOf("Recheck live release refs"));
+    const preview = workflow.slice(workflow.indexOf("publish-preview:"), workflow.indexOf("publish-stable:"));
+    assert.doesNotMatch(stepBlock(preview, "Recheck live release refs"), /should_publish/);
   });
 
   it("deploys Pages after the stable wait and writes the summary before it", () => {

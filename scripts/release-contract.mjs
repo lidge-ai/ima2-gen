@@ -185,15 +185,30 @@ export function classifyPublish(input) {
   throw new Error(`unsupported publish ref ${ref}`);
 }
 
-export function validateRemoteRefs({ ref, sha, refs }) {
-  const required = ref === "refs/heads/preview"
-    ? ["preview"]
-    : ref.startsWith("refs/tags/")
-      ? ["main", "dev", "preview", ref.slice("refs/tags/".length)]
-      : [];
-  if (!required.length) throw new Error(`unsupported publish ref ${ref}`);
-  for (const name of required) {
-    if (refs[name] !== sha) throw new Error(`remote ${name} is ${refs[name] || "missing"}, expected ${sha}`);
+/** Release branches a stable tag must be reachable from. */
+export const STABLE_BRANCHES = ["main", "dev", "preview"];
+
+/**
+ * A preview publish ships whatever preview points at, so preview must equal the SHA.
+ * A stable publish ships an immutable tag: the tag must equal the SHA, while the
+ * release branches only have to contain it. Integration keeps merging into dev during
+ * a release (v3.23.2 failed on exactly that), and containment is what protects merged
+ * work from being orphaned behind the tag.
+ *
+ * @param {{ ref: string, sha: string, refs: Record<string, string>, contains?: (ancestor: string, descendant: string) => boolean }} check
+ */
+export function validateRemoteRefs({ ref, sha, refs, contains }) {
+  if (ref === "refs/heads/preview") {
+    if (refs.preview !== sha) throw new Error(`remote preview is ${refs.preview || "missing"}, expected ${sha}`);
+    return;
+  }
+  if (!ref.startsWith("refs/tags/")) throw new Error(`unsupported publish ref ${ref}`);
+  const tag = ref.slice("refs/tags/".length);
+  if (refs[tag] !== sha) throw new Error(`remote ${tag} is ${refs[tag] || "missing"}, expected ${sha}`);
+  if (typeof contains !== "function") throw new Error("a stable ref check needs a contains() predicate");
+  for (const name of STABLE_BRANCHES) {
+    if (!refs[name]) throw new Error(`remote ${name} is missing, expected it to contain ${sha}`);
+    if (!contains(sha, refs[name])) throw new Error(`remote ${name} (${refs[name]}) does not contain ${sha}`);
   }
 }
 
@@ -428,9 +443,13 @@ function remoteRefMap(ref) {
   return refs;
 }
 
+function gitContains(ancestor, descendant) {
+  return run("git", ["merge-base", "--is-ancestor", ancestor, descendant], { allowFailure: true }).status === 0;
+}
+
 function assertRemoteRefCommand(ref, sha) {
   run("git", ["fetch", "origin", "main", "dev", "preview", "--tags"]);
-  validateRemoteRefs({ ref, sha, refs: remoteRefMap(ref) });
+  validateRemoteRefs({ ref, sha, refs: remoteRefMap(ref), contains: gitContains });
   console.log(`[release-contract] live refs verified for ${ref}@${sha}`);
 }
 
@@ -452,7 +471,7 @@ async function prepareCommand() {
     runAttempt: process.env.GITHUB_RUN_ATTEMPT,
   });
   if (plan.channel === "latest") {
-    validateRemoteRefs({ ref, sha, refs: remoteRefMap(ref) });
+    validateRemoteRefs({ ref, sha, refs: remoteRefMap(ref), contains: gitContains });
     await verifyPreviewProof(manifest.version, sha);
   } else {
     run("git", ["merge-base", "--is-ancestor", "origin/main", sha]);
