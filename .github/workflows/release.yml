@@ -192,6 +192,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run publish.yml \
+            --ref preview \
             -f publish_ref=refs/heads/preview \
             -f publish_sha=${{ steps.commit.outputs.sha }}
       - name: Wait for the preview publish to finish
@@ -376,8 +377,11 @@ jobs:
         if: steps.stable_state.outputs.done != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+        # --ref runs publish.yml on the tag itself, so GITHUB_SHA is the release
+        # commit even when main has moved past it (a resume after a promotion).
         run: |
           gh workflow run publish.yml \
+            --ref "v${{ steps.target.outputs.version }}" \
             -f publish_ref="refs/tags/v${{ steps.target.outputs.version }}" \
             -f publish_sha=${{ steps.target.outputs.sha }}
       - name: Wait for the stable publish to finish

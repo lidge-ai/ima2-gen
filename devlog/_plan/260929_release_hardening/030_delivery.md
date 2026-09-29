@@ -66,3 +66,16 @@ Fix in this phase (C4, release):
 3. Tests, CONTRIBUTING, CHANGELOG. PR to dev, then promote dev → main (the dispatched workflow comes
    from main), then npm run release -- resume 3.24.1 --approve --yes.
 The Windows cleanup flake is wp4.
+
+## wp3 B amendment 2: the resumed stable publish ran on main, not on the tag
+
+Resume run 36580960098 minted v3.24.1 at d71f73cb, landed dev (merge bb3cff29), and release.mjs
+pushed desktop-v3.24.1 (desktop.yml 36581120764, event push, one run; desktop-production approved
+by hand with the same API call --approve makes, because release.mjs stops watching after a failed
+run). Publish run 36581080410 failed in "Install-smoke the exact release artifact": the tarball
+gitHead d71f73cb was compared with GITHUB_SHA a086d88a, the main tip the dispatch ran on. That only
+held while main sat exactly on the release commit.
+Fix: release.yml dispatches publish.yml with --ref on the published ref (--ref vX for stable,
+--ref preview for preview), and tests/package-install-smoke.mjs compares with PUBLISH_SHA (falling
+back to GITHUB_SHA). The 3.24.1 smoke runs from the tag's own tree, so only the --ref change helps
+3.24.1; the smoke fix protects later releases. Then promote and resume 3.24.1 again.

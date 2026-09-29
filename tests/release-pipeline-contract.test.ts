@@ -1265,6 +1265,13 @@ describe("tag job dispatches (D4/D5)", () => {
 
   it("skips the stable publish only when npm and GitHub already have this release", () => {
     const job = tagJob(releaseYml());
+    // Dispatching on the tag makes GITHUB_SHA the release commit even after main moved on
+    // (v3.24.1's resume failed the package smoke on exactly that).
+    assert.match(stepBlock(job, "Publish the stable release"), /--ref "v\$\{\{ steps\.target\.outputs\.version \}\}"/);
+    assert.match(stepBlock(releaseYml(), "Publish the preview candidate"), /--ref preview/);
+    const smoke = readFileSync(join(repoRoot(), "tests/package-install-smoke.mjs"), "utf8");
+    assert.match(smoke, /const sourceSha = process\.env\.PUBLISH_SHA \|\| process\.env\.GITHUB_SHA;/);
+    assert.doesNotMatch(smoke, /gitHead, process\.env\.GITHUB_SHA/);
     const state = stepBlock(job, "Check whether the stable release already landed");
     assert.match(job, /- id: stable_state\n/);
     // Every probe tolerates "not found", or a normal release would die here.

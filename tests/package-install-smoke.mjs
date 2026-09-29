@@ -116,13 +116,16 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
   try {
     let tarball = process.env.IMA2_PACKAGE_TARBALL;
     const uiOutput = process.env.IMA2_PACKAGE_UI_OUTPUT_DIR;
+    // publish.yml names the package source commit; GITHUB_SHA is only the commit the
+    // workflow runs on, which is not the release commit when main moved past it.
+    const sourceSha = process.env.PUBLISH_SHA || process.env.GITHUB_SHA;
     let uiIdentity;
     if (uiOutput !== undefined) {
       assert(uiOutput && tarball, "installed UI opt-in requires an output directory and a provided TGZ; no source-pack fallback");
       uiIdentity = JSON.parse(process.env.IMA2_PACKAGE_UI_IDENTITY || "null");
       assert(uiIdentity && ["candidate", "published"].includes(uiIdentity.artifactKind), "missing artifact identity");
       for (const sha of [uiIdentity.sourceSha, uiIdentity.driverSha]) assert.match(sha, /^[0-9a-f]{40}$/);
-      assert.equal(uiIdentity.sourceSha, process.env.GITHUB_SHA, "UI product SHA must bind the install smoke");
+      assert.equal(uiIdentity.sourceSha, sourceSha, "UI product SHA must bind the install smoke");
       assert.equal(uiIdentity.driverSha, process.env.IMA2_PACKAGE_UI_DRIVER_SHA, "driver SHA mismatch");
       assert.equal(uiIdentity.artifactKind, process.env.IMA2_PACKAGE_UI_ARTIFACT_KIND, "artifact kind mismatch");
       mkdirSync(uiOutput, { recursive: true });
@@ -186,9 +189,9 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     for (const marker of ["CODEX_CLIENT_VERSION_FLOOR", "0.157.0"]) {
       assert.ok(oauthClient.includes(marker), `installed GPT OAuth client should include ${marker}`);
     }
-    if (process.env.IMA2_PACKAGE_TARBALL && process.env.GITHUB_SHA) {
+    if (process.env.IMA2_PACKAGE_TARBALL && sourceSha) {
       const installedPackage = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
-      assert.equal(installedPackage.gitHead, process.env.GITHUB_SHA, "release tarball should embed its source SHA");
+      assert.equal(installedPackage.gitHead, sourceSha, "release tarball should embed its source SHA");
     }
 
     mkdirSync(configDir, { recursive: true });
