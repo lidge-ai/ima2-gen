@@ -2,9 +2,12 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   bumpVersion,
+  desktopTagAction,
   dryRunInput,
+  isRuleRejection,
   isOwnRun,
   parseArgs,
+  parseRemoteTags,
   runRelease,
   selectPendingApprovals,
 } from "../scripts/release.mjs";
@@ -175,5 +178,114 @@ describe("release.mjs dispatch flow (injected runner)", () => {
       "-f", "bump=patch", "-f", "dry_run=true", "-f", "expected_sha=" + MAIN_SHA,
     ]);
     assert.ok(!calls.some(([, args]) => args[0] === "api"));
+    // Dry runs never touch tags.
+    assert.ok(!calls.some(([, args]) => args[0] === "ls-remote" || args[0] === "push"));
+  });
+
+  it("--yes answers every prompt, even one the caller supplied", async () => {
+    const responses = BASE_RESPONSES.map((response) =>
+      response.out === "PLACEHOLDER-LIST" ? { needles: response.needles, out: "[]" } : response,
+    );
+    const { run } = scriptedRunner(responses);
+    let listCalls = 0;
+    const runCounting = (bin: string, args: string[]) => {
+      if (bin === "gh" && args[0] === "run" && args[1] === "list" && ++listCalls === 2) {
+        return JSON.stringify([{ databaseId: 500, status: "completed", url: "https://example.test/run/500" }]);
+      }
+      return run(bin, args);
+    };
+    const code = await runRelease(["patch", "--dry-run", "--yes"], {
+      run: runCounting,
+      sleep: () => Promise.resolve(),
+      log: () => {},
+      ask: () => { throw new Error("--yes must not prompt"); },
+    });
+    assert.equal(code, 0);
+  });
+});
+
+describe("release.mjs resume", () => {
+  it("parses resume X.Y.Z and refuses cut-only switches", () => {
+    const parsed = parseArgs(["resume", "3.24.1", "--approve", "--yes"]);
+    assert.equal(parsed.mode, "resume");
+    assert.equal(parsed.version, "3.24.1");
+    assert.deepEqual([...parsed.flags].sort(), ["--approve", "--yes"]);
+    assert.equal(parseArgs(["patch"]).mode, "cut");
+    assert.throws(() => parseArgs(["resume"]), /stable X\.Y\.Z/);
+    assert.throws(() => parseArgs(["resume", "3.24"]), /stable X\.Y\.Z/);
+    assert.throws(() => parseArgs(["resume", "3.24.1-preview.1"]), /stable X\.Y\.Z/);
+    for (const flag of ["--promote", "--dry-run", "--canary"]) {
+      assert.throws(() => parseArgs(["resume", "3.24.1", flag]), /resume does not take/);
+    }
+  });
+
+  it("dispatches release.yml with resume_version, pushes the desktop tag once, and skips promotion", async () => {
+    const SHA = "d".repeat(40);
+    const calls: string[] = [];
+    let lsRemote = 0;
+    let desktopRuns = 0;
+    const run = (bin: string, args: string[]) => {
+      const joined = [bin, ...args].join(" ");
+      calls.push(joined);
+      if (joined.startsWith("gh run list") && joined.includes("release.yml")) {
+        return calls.filter((c) => c.startsWith("gh run list") && c.includes("release.yml")).length === 1
+          ? "[]"
+          : JSON.stringify([{ databaseId: 700, status: "completed", url: "https://example.test/run/700" }]);
+      }
+      if (joined.startsWith("gh workflow run release.yml")) return "";
+      if (joined.startsWith("gh run view 700")) {
+        return JSON.stringify({ status: "completed", conclusion: "success", jobs: [] });
+      }
+      if (joined.startsWith("gh api")) return "[]";
+      if (joined.startsWith("git ls-remote")) {
+        lsRemote += 1;
+        // First only the release tag exists; after the push both do.
+        return lsRemote === 1
+          ? SHA + "\trefs/tags/v3.24.1"
+          : SHA + "\trefs/tags/v3.24.1\n" + SHA + "\trefs/tags/desktop-v3.24.1";
+      }
+      if (joined.startsWith("git push")) return "";
+      if (joined.startsWith("gh release view desktop-v3.24.1")) {
+        desktopRuns += 1;
+        if (desktopRuns < 2) throw new Error("release not found");
+        return JSON.stringify({ isDraft: false });
+      }
+      if (joined.startsWith("gh run list")) return "[]";
+      throw new Error("unexpected command: " + joined);
+    };
+    const code = await runRelease(["resume", "3.24.1", "--yes"], {
+      run,
+      sleep: () => Promise.resolve(),
+      log: () => {},
+    });
+    assert.equal(code, 0);
+    assert.ok(calls.includes("gh workflow run release.yml -f bump=patch -f dry_run=false -f resume_version=3.24.1"));
+    assert.deepEqual(calls.filter((c) => c.startsWith("git push")), ["git push origin " + SHA + ":refs/tags/desktop-v3.24.1"]);
+    // No promotion in a resume.
+    assert.ok(!calls.some((c) => c.includes("pr list") || c.includes("rev-list --count")));
+  });
+});
+
+describe("release.mjs desktop tag", () => {
+  it("waits for the release tag, pushes once, and refuses a desktop tag at another commit", () => {
+    assert.equal(desktopTagAction({ releaseTagSha: "", desktopTagSha: "" }), "wait");
+    assert.equal(desktopTagAction({ releaseTagSha: "a", desktopTagSha: "" }), "push");
+    assert.equal(desktopTagAction({ releaseTagSha: "a", desktopTagSha: "a" }), "done");
+    assert.equal(desktopTagAction({ releaseTagSha: "a", desktopTagSha: "b" }), "conflict");
+  });
+
+  it("reads lightweight tags and prefers the peeled commit of an annotated tag", () => {
+    assert.deepEqual(parseRemoteTags("aaa\trefs/tags/v1.0.0\n"), { "v1.0.0": "aaa" });
+    assert.deepEqual(
+      parseRemoteTags("tagobj\trefs/tags/desktop-v1.0.0\ncommit1\trefs/tags/desktop-v1.0.0^{}\nnoise"),
+      { "desktop-v1.0.0": "commit1" },
+    );
+    assert.deepEqual(parseRemoteTags(""), {});
+  });
+
+  it("recognises a tag ruleset rejection so a non-admin run stops retrying", () => {
+    assert.ok(isRuleRejection({ stderr: "remote: error: GH013: Repository rule violations found" }));
+    assert.ok(isRuleRejection(new Error("Cannot create ref due to creations being restricted.")));
+    assert.ok(!isRuleRejection(new Error("Could not resolve host: github.com")));
   });
 });

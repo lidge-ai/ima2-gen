@@ -12,6 +12,10 @@
  *
  * Usage: node scripts/release.mjs <patch|minor|major> [--dry-run|--canary]
  *          [--promote] [--approve] [--yes]
+ *        node scripts/release.mjs resume <X.Y.Z> [--approve] [--yes]
+ *
+ * `resume` finishes an already-tagged version (dev landing, desktop tag and build,
+ * stable publish, Pages) through release.yml's resume_version input.
  */
 import { execFileSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
@@ -24,7 +28,10 @@ const SWITCHES = ["--dry-run", "--canary", "--promote", "--approve", "--yes"];
 const RELEASE_ENVS = ["npm-stable", "desktop-production"];
 const USAGE =
   "Usage: node scripts/release.mjs <patch|minor|major> " +
-  "[--dry-run|--canary] [--promote] [--approve] [--yes]";
+  "[--dry-run|--canary] [--promote] [--approve] [--yes]\n" +
+  "       node scripts/release.mjs resume <X.Y.Z> [--approve] [--yes]";
+// Switches that only make sense when cutting a new version.
+const CUT_ONLY = ["--dry-run", "--canary", "--promote"];
 
 class ExitError extends Error {
   constructor(code) {
@@ -33,20 +40,36 @@ class ExitError extends Error {
   }
 }
 
-export function parseArgs(argv) {
-  const [bump, ...rest] = argv;
-  if (!BUMPS.includes(bump ?? "")) {
-    throw new Error(USAGE + "\n  (first argument must be one of: " + BUMPS.join(", ") + ")");
-  }
+function parseFlags(rest) {
   const flags = new Set();
   for (const arg of rest) {
     if (!SWITCHES.includes(arg)) throw new Error(USAGE + "\n  (unknown flag: " + arg + ")");
     flags.add(arg);
   }
+  return flags;
+}
+
+export function parseArgs(argv) {
+  const [first, ...rest] = argv;
+  if (first === "resume") {
+    const [version, ...flagArgs] = rest;
+    if (!/^\d+\.\d+\.\d+$/.test(version ?? "")) {
+      throw new Error(USAGE + "\n  (resume needs a stable X.Y.Z version)");
+    }
+    const flags = parseFlags(flagArgs);
+    const refused = CUT_ONLY.filter((flag) => flags.has(flag));
+    if (refused.length) throw new Error(USAGE + "\n  (resume does not take " + refused.join(", ") + ")");
+    return { mode: "resume", version, flags };
+  }
+  const bump = first;
+  if (!BUMPS.includes(bump ?? "")) {
+    throw new Error(USAGE + "\n  (first argument must be one of: " + BUMPS.join(", ") + ", resume)");
+  }
+  const flags = parseFlags(rest);
   if (flags.has("--dry-run") && flags.has("--canary")) {
     throw new Error(USAGE + "\n  (--dry-run and --canary are mutually exclusive)");
   }
-  return { bump, flags };
+  return { mode: "cut", bump, flags };
 }
 
 export function dryRunInput(flags) {
@@ -94,6 +117,78 @@ export function isOwnRun(run, { afterId, version, workflow }) {
 
 const defaultRun = (bin, args) =>
   execFileSync(bin, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+
+/**
+ * desktop-v tags are restricted to repository admins, so CI cannot mint them;
+ * this script, run by a maintainer, pushes desktop-vX.Y.Z at the release commit
+ * once vX.Y.Z exists. A user push fires desktop.yml's push trigger.
+ */
+export function desktopTagAction({ releaseTagSha, desktopTagSha }) {
+  if (!releaseTagSha) return "wait";
+  if (!desktopTagSha) return "push";
+  return desktopTagSha === releaseTagSha ? "done" : "conflict";
+}
+
+/** Parses `git ls-remote --tags` output; a peeled "^{}" line wins over the tag object. */
+export function parseRemoteTags(output) {
+  const tags = {};
+  const peeled = {};
+  for (const line of String(output || "").split("\n")) {
+    const [sha, ref] = line.trim().split(/\s+/);
+    if (!sha || !ref?.startsWith("refs/tags/")) continue;
+    const name = ref.slice("refs/tags/".length);
+    if (name.endsWith("^{}")) peeled[name.slice(0, -3)] = sha;
+    else tags[name] = sha;
+  }
+  return { ...tags, ...peeled };
+}
+
+function ensureDesktopTag(ctx) {
+  if (ctx.desktopTagDone || ctx.desktopTagBlocked || dryRunInput(ctx.flags) !== "false") return;
+  const release = "v" + ctx.version;
+  const desktop = "desktop-v" + ctx.version;
+  let tags;
+  try {
+    tags = parseRemoteTags(ctx.run("git", [
+      "ls-remote", "--tags", "origin", "refs/tags/" + release, "refs/tags/" + desktop,
+    ]));
+  } catch (error) {
+    ctx.log("Could not read the remote tags (" + firstLine(error) + "); retrying.");
+    return;
+  }
+  const action = desktopTagAction({ releaseTagSha: tags[release], desktopTagSha: tags[desktop] });
+  if (action === "conflict") {
+    throw new Error(desktop + " points at " + tags[desktop] + ", but " + release + " is " + tags[release]);
+  }
+  if (action === "push") {
+    try {
+      ctx.run("git", ["push", "origin", tags[release] + ":refs/tags/" + desktop]);
+    } catch (error) {
+      if (isRuleRejection(error)) {
+        // Not an admin: retrying cannot succeed, so say who has to act and stop.
+        ctx.desktopTagBlocked = true;
+        ctx.log("The tag ruleset rejected " + desktop + ": only a repository admin can create it. " +
+          "An admin runs: git push origin " + tags[release] + ":refs/tags/" + desktop +
+          " (or npm run release -- resume " + ctx.version + ").");
+        return;
+      }
+      ctx.log("Could not push " + desktop + " (" + firstLine(error) + "); retrying. " +
+        "The tag ruleset admits repository admins only; by hand: git push origin " + tags[release] + ":refs/tags/" + desktop);
+      return;
+    }
+    ctx.log("Pushed " + desktop + " at " + tags[release] + "; desktop.yml starts from the tag push.");
+  }
+  if (action === "push" || action === "done") ctx.desktopTagDone = true;
+}
+
+function firstLine(error) {
+  return String(error?.message ?? error).split("\n")[0];
+}
+
+export function isRuleRejection(error) {
+  const text = String(error?.stderr ?? "") + String(error?.message ?? error);
+  return /GH013|repository rule violations|creations being restricted/i.test(text);
+}
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -233,20 +328,38 @@ async function watchRun(ctx, release, approvals) {
     ]));
     for (const job of view.jobs) reportJob(ctx, seen, job);
     await checkApprovals(ctx, approvals);
+    ensureDesktopTag(ctx);
     if (view.status === "completed") return view.conclusion;
     await ctx.sleep(20000);
   }
 }
 
+// A missing release makes `gh release view` exit non-zero; that only means
+// "not public yet", never a failure of the release.
+function desktopPublished(ctx) {
+  try {
+    const view = JSON.parse(ctx.run("gh", ["release", "view", "desktop-v" + ctx.version, "--json", "isDraft"]));
+    return view?.isDraft === false;
+  } catch {
+    return false;
+  }
+}
+
 // The desktop build outlives release.yml (it starts in the tag job and needs
 // desktop-production approval after ~10 minutes of packaging), so keep
-// watching it once the release itself has succeeded.
+// watching it once the release itself has succeeded. A desktop release that is
+// already public (a resume, or a build that finished first) ends the watch.
 async function watchDesktop(ctx, approvals) {
   const deadline = Date.now() + 90 * 60 * 1000;
   while (Date.now() < deadline) {
+    if (desktopPublished(ctx)) {
+      ctx.log("Desktop release desktop-v" + ctx.version + " is published.");
+      return "success";
+    }
+    ensureDesktopTag(ctx);
     await checkApprovals(ctx, approvals);
     const [run] = ownRuns(ctx, "desktop.yml");
-    if (!run) ctx.log("Desktop run not found yet (release.yml dispatches it on desktop-v" + ctx.version + ").");
+    if (!run) ctx.log("Waiting for the desktop.yml run on desktop-v" + ctx.version + " (it starts when the tag is pushed).");
     else if (run.status === "completed") {
       ctx.log("Desktop run finished: " + run.conclusion + " " + run.url);
       return run.conclusion;
@@ -257,16 +370,44 @@ async function watchDesktop(ctx, approvals) {
   return "timed_out";
 }
 
+async function watchDispatched(ctx) {
+  const release = await findDispatchedRun(ctx, ctx.afterId);
+  ctx.releaseId = release.databaseId;
+  ctx.log("Release run: " + release.url);
+  const conclusion = await watchRun(ctx, release, new Set());
+  ctx.log("Release run finished: " + conclusion);
+  return conclusion;
+}
+
+async function runResume(ctx) {
+  ctx.afterId = highWaterMark(ctx);
+  ctx.log("Dispatching release.yml: resume_version=" + ctx.version + " dry_run=false");
+  if (!(await ctx.ask("Resume the release of v" + ctx.version + " now?"))) throw new ExitError(0);
+  ctx.run("gh", [
+    "workflow", "run", "release.yml",
+    "-f", "bump=patch", "-f", "dry_run=false", "-f", "resume_version=" + ctx.version,
+  ]);
+  if ((await watchDispatched(ctx)) !== "success") return 1;
+  return (await watchDesktop(ctx, new Set())) === "success" ? 0 : 1;
+}
+
 export async function runRelease(argv, deps = {}) {
-  const { bump, flags } = parseArgs(argv);
+  const parsed = parseArgs(argv);
+  const { flags } = parsed;
   const ctx = {
-    bump,
+    bump: parsed.bump,
     flags,
     run: deps.run ?? defaultRun,
     sleep: deps.sleep ?? defaultSleep,
     log: deps.log ?? ((line) => console.log(line)),
-    ask: deps.ask ?? confirm,
+    // --yes answers every confirmation, whoever supplied the prompt.
+    ask: flags.has("--yes") ? () => Promise.resolve(true) : (deps.ask ?? confirm),
   };
+  if (parsed.mode === "resume") {
+    ctx.version = parsed.version;
+    return runResume(ctx);
+  }
+  const { bump } = parsed;
   await ensurePromoted(ctx);
   const sha = ctx.run("git", ["rev-parse", "origin/main"]);
   const version = bumpVersion(
@@ -282,11 +423,7 @@ export async function runRelease(argv, deps = {}) {
     "workflow", "run", "release.yml",
     "-f", "bump=" + bump, "-f", "dry_run=" + dry, "-f", "expected_sha=" + sha,
   ]);
-  const release = await findDispatchedRun(ctx, ctx.afterId);
-  ctx.releaseId = release.databaseId;
-  ctx.log("Release run: " + release.url);
-  const conclusion = await watchRun(ctx, release, new Set());
-  ctx.log("Release run finished: " + conclusion);
+  const conclusion = await watchDispatched(ctx);
   if (conclusion !== "success") return 1;
   if (dry !== "false") return 0;
   return (await watchDesktop(ctx, new Set())) === "success" ? 0 : 1;
