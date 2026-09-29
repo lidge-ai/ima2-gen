@@ -5,10 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "fs/promises";
 import {
   existsSync,
-  writeFileSync,
   unlinkSync,
-  chmodSync,
-  mkdirSync,
   readFileSync as fsReadFileSync,
 } from "fs";
 import { dirname, join } from "path";
@@ -27,6 +24,7 @@ import { createApiRequestBudget } from "./lib/apiRequestBudget.js";
 import { createLocalLanAccess, createLanApiGuard as tokenOnlyLanApiGuard } from "./lib/localLanAccess.js";
 import { createGeneratedMediaAccess } from "./lib/generatedMediaAccess.js";
 import { getServerPort, listenWithPortFallback } from "./lib/runtimePorts.js";
+import { resolveBootId, resolveLauncher, writeAdvertiseAtomic } from "./lib/runtimeIdentity.js";
 import { shutdownServerAndMcp, startMcpRestoreAfterListen } from "./lib/mcp/shutdown.js";
 import type { RuntimeContext, RuntimeContextOverrides, ApiKeySource } from "./lib/runtimeContext.js";
 
@@ -324,6 +322,9 @@ export function buildAdvertisePayload(ctx: RuntimeContext) {
     startedAt: ctx.startedAt,
     version: ctx.packageVersion,
     adminNonce: ctx.adminNonce,
+    bootId: ctx.bootId,
+    launcher: ctx.launcher,
+    root: ctx.rootDir,
     backend: {
       configuredPort: Number(ctx.serverConfiguredPort || ctx.config.server.port),
       actualPort: Number(ctx.serverActualPort || ctx.config.server.port),
@@ -347,16 +348,9 @@ function advertise(ctx: RuntimeContext) {
   try {
     // The payload carries the admin nonce (a kill-switch credential): the file
     // must be owner-only, or any local user on a shared host can stop the
-    // server (adversarial review 260821c, blocker 3).
-    mkdirSync(dirname(ctx.config.storage.advertiseFile), { recursive: true, mode: 0o700 });
-    writeFileSync(
-      ctx.config.storage.advertiseFile,
-      JSON.stringify(buildAdvertisePayload(ctx)),
-      { mode: 0o600 },
-    );
-    // mode applies only at creation: a crash-survivor file from an older build
-    // keeps its old permissions, so re-assert them on every publish.
-    chmodSync(ctx.config.storage.advertiseFile, 0o600);
+    // server (adversarial review 260821c, blocker 3). The write goes through a
+    // temp file and a rename so a reader never parses half a document.
+    writeAdvertiseAtomic(ctx.config.storage.advertiseFile, buildAdvertisePayload(ctx));
   } catch (e) {
     const err = errInfo(e);
     console.warn("[advertise] skipped:", err.message);
@@ -422,6 +416,8 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     startedAt: overrides.startedAt ?? Date.now(),
     packageVersion: overrides.packageVersion ?? readPackageVersion(),
     adminNonce: randomUUID(),
+    bootId: resolveBootId(process.env),
+    launcher: resolveLauncher(process.env),
     xaiApiKey: loadedXaiKey.apiKey ?? undefined,
     xaiApiKeySource: loadedXaiKey.apiKeySource as ApiKeySource,
     hasXaiApiKey: !!loadedXaiKey.apiKey,
@@ -520,9 +516,12 @@ export async function startServer(overrides: StartServerOverrides = {}) {
   server = await listenWithPortFallback(app, ctx.config.server.port, {
     host: ctx.config.server.host,
     label: "server",
+    ...(ctx.config.server.strictPort ? { maxAttempts: 0 } : {}),
     onFallback: ({ requestedPort, actualPort }: { requestedPort: number; actualPort: number }) => {
       console.log(`[server.port] requested=${requestedPort} actual=${actualPort} reason=EADDRINUSE`);
     },
+  }).catch((error: unknown) => {
+    throw strictPortError(error, ctx.config.server.strictPort, ctx.config.server.port);
   });
   ctx.serverActualPort = getServerPort(server) || ctx.config.server.port;
   server.once("close", app.locals.disposeLocalLanAccess);
@@ -586,6 +585,16 @@ export async function startServer(overrides: StartServerOverrides = {}) {
   return { app, server, oauthChild, ctx };
 }
 
+/** A pinned port that is taken ends the boot with one clear line instead of a hop. */
+function strictPortError(error: unknown, strict: boolean, port: number): unknown {
+  if (!strict || (error as { code?: string })?.code !== "PORT_RANGE_EXHAUSTED") return error;
+  return Object.assign(new Error(`[server.port] strict port ${port} busy`), { code: "STRICT_PORT_BUSY", cause: error });
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await startServer();
+  await startServer().catch((error: unknown) => {
+    if ((error as { code?: string })?.code !== "STRICT_PORT_BUSY") throw error;
+    console.error((error as Error).message);
+    process.exit(1);
+  });
 }

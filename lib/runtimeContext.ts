@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { config as runtimeConfigDefault } from "../config.js";
 import type { McpConnectionManager } from "./mcp/connectionManager.js";
 import type { ComfyWorkflowRecord } from "./comfyWorkflowStore.js";
+import type { Launcher } from "./runtimeIdentity.js";
 
 export type AppConfig = typeof runtimeConfigDefault;
 export type ApiKeySource = "env" | "oauth" | "config" | "none" | undefined;
@@ -18,6 +19,10 @@ export interface RuntimeContext {
    * rotate it).
    */
   adminNonce: string;
+  /** One process lifetime; published in the advertise file and /api/health. */
+  bootId: string;
+  /** Who started this server (lib/runtimeIdentity.ts). */
+  launcher: Launcher;
   config: AppConfig;
   /**
    * Directory whose `.progrok/auth.json` holds the xAI OAuth session. Tests inject an
@@ -141,6 +146,8 @@ export function requireRuntimeContext(ctx: RouteRuntimeContext | undefined): Run
     target.serverUrl = `http://localhost:${port}`;
   }
   if (target.startedAt === undefined) target.startedAt = Date.now();
+  if (target.bootId === undefined) target.bootId = "00000000-0000-4000-8000-000000000000";
+  if (target.launcher === undefined) target.launcher = "foreground";
   if (target.xaiApiKey === undefined && !Object.prototype.hasOwnProperty.call(target, 'xaiApiKey')) target.xaiApiKey = undefined;
   if (target.hasXaiApiKey === undefined) target.hasXaiApiKey = false;
   if (target.xaiApiKeySource === undefined) target.xaiApiKeySource = undefined;
@@ -194,6 +201,8 @@ export function createTestRuntimeContext(over: RuntimeContextOverrides = {}): Ru
     apiKey: undefined,
     apiKeySource: undefined,
     adminNonce: "",
+    bootId: "00000000-0000-4000-8000-000000000000",
+    launcher: "foreground",
     config: {} as AppConfig,
     hasApiKey: false,
     oauthActualPort: undefined,

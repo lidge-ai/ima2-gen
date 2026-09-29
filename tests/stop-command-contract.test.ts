@@ -185,6 +185,18 @@ describe("POST /api/admin/stop gates", () => {
   test("the correct nonce without an Origin is accepted with 202", async () => {
     // Intercept the self-signal so the test process does not shut down.
     const originalKill = process.kill.bind(process);
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    const intents: string[] = [];
+    // Capture the stop-intent line (and keep it out of the test output).
+    (process.stdout as { write: unknown }).write = ((chunk: unknown, ...rest: unknown[]) => {
+      if (String(chunk).startsWith("IMA2_STOP_INTENT ")) {
+        intents.push(String(chunk));
+        const cb = rest.find((x) => typeof x === "function") as (() => void) | undefined;
+        cb?.();
+        return true;
+      }
+      return (originalWrite as (...a: unknown[]) => boolean)(chunk, ...rest);
+    }) as typeof process.stdout.write;
     let signalled: string | number | undefined;
     (process as { kill: typeof process.kill }).kill = ((pid: number, sig?: string | number) => {
       if (pid === process.pid && sig === "SIGTERM") {
@@ -205,9 +217,13 @@ describe("POST /api/admin/stop gates", () => {
         // the self-signal is deferred via setImmediate
         await new Promise((r2) => setTimeout(r2, 50));
         assert.equal(signalled, "SIGTERM");
+        // ...and follows the stop-intent line the desktop supervisor reads.
+        assert.equal(intents.length, 1);
+        assert.match(intents[0]!, /^IMA2_STOP_INTENT \S+\n$/);
       });
     } finally {
       (process as { kill: typeof process.kill }).kill = originalKill;
+      (process.stdout as { write: unknown }).write = originalWrite;
     }
   });
 });

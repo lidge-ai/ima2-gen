@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -14,6 +13,13 @@ import {
   serviceStateStale,
   type ServiceState,
 } from "../lib/serviceTemplates.js";
+import {
+  defaultRunner as run,
+  guiDomain,
+  launchdPlistPath as plistPath,
+  systemdUnitPath as unitPath,
+  type RunResult,
+} from "../lib/serviceManager.js";
 import {
   corroborateByStartTime,
   escalateKill,
@@ -35,12 +41,6 @@ function stateFile(): string {
 }
 function logDir(): string {
   return join(configDir(), "logs");
-}
-function plistPath(): string {
-  return join(homedir(), "Library", "LaunchAgents", `${LAUNCHD_LABEL}.plist`);
-}
-function unitPath(): string {
-  return join(homedir(), ".config", "systemd", "user", SYSTEMD_UNIT);
 }
 function advertisePath(): string {
   return process.env.IMA2_ADVERTISE_FILE || join(configDir(), "server.json");
@@ -68,22 +68,6 @@ function renderInput() {
     logDir: logDir(),
     configDir: process.env.IMA2_CONFIG_DIR,
   };
-}
-
-interface RunResult { ok: boolean; stdout: string; stderr: string; }
-
-function run(cmd: string, args: string[]): RunResult {
-  try {
-    const stdout = execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-    return { ok: true, stdout, stderr: "" };
-  } catch (e) {
-    const err = e as { stdout?: string; stderr?: string; message?: string };
-    return { ok: false, stdout: err.stdout ?? "", stderr: err.stderr ?? err.message ?? "" };
-  }
-}
-
-function guiDomain(): string {
-  return `gui/${process.getuid?.() ?? 501}`;
 }
 
 function writeState(): void {
@@ -325,24 +309,36 @@ async function start(): Promise<void> {
   console.log(health.ok ? `\n  Service started — ${health.entry?.url}\n` : "\n  Start issued; server not answering yet. See 'ima2 service logs'.\n");
 }
 
+/**
+ * Stop the login service itself (bootout / systemctl stop), without touching
+ * the server process: with KeepAlive, killing the pid just respawns it. Also
+ * used by `ima2 stop --service` and the desktop takeover.
+ */
+export async function stopServiceManager(): Promise<{ ok: boolean; message: string }> {
+  if (process.platform === "win32") return { ok: false, message: "Windows service management is not built in yet." };
+  if (process.platform === "darwin") {
+    if (!(await macBootout())) {
+      return {
+        ok: false,
+        message: `launchctl bootout did not take — the job is still registered. Inspect: launchctl print gui/$UID/${LAUNCHD_LABEL}`,
+      };
+    }
+  } else if (process.platform === "linux") {
+    const r = run("systemctl", ["--user", "stop", SYSTEMD_UNIT]);
+    if (!r.ok) return { ok: false, message: `systemctl --user stop failed: ${r.stderr.trim() || "unknown error"}` };
+  }
+  return { ok: true, message: "Service stopped (registration removed until 'ima2 service start')." };
+}
+
 async function stopSvc(): Promise<void> {
-  // bootout (not kill): with KeepAlive, killing the pid just respawns it.
-  if (process.platform === "win32") {
-    console.log("\n  Windows service management is not built in yet.\n");
+  const result = await stopServiceManager();
+  if (!result.ok) {
+    console.error(`\n  ${result.message}\n`);
     process.exitCode = 1;
     return;
   }
-  if (process.platform === "darwin") {
-    const drained = await macBootout();
-    if (!drained) {
-      console.error("\n  launchctl bootout did not take — the job is still registered.");
-      console.error(`  Inspect: launchctl print gui/$UID/${LAUNCHD_LABEL}\n`);
-      process.exitCode = 1;
-      return;
-    }
-  } else if (process.platform === "linux") run("systemctl", ["--user", "stop", SYSTEMD_UNIT]);
   await stopLiveServer();
-  console.log("\n  Service stopped (registration removed until 'ima2 service start').\n");
+  console.log(`\n  ${result.message}\n`);
 }
 
 async function status(): Promise<void> {

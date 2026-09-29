@@ -135,6 +135,8 @@ export const config = {
   server: {
     // Accept both IMA2_PORT and legacy PORT.
     port: pickInt(firstDefined(env.IMA2_PORT, env.PORT), fileCfg.server?.port, 3333),
+    // Background starts pin the port: a busy port is an error, never a silent hop.
+    strictPort: env.IMA2_STRICT_PORT === "1",
     host: pickStr(env.IMA2_HOST, fileCfg.server?.host, "127.0.0.1"),
     lanToken: env.IMA2_LAN_TOKEN || "",
     // Lazy validation permits config rm to repair a bad file-layer value.

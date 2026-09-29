@@ -46,9 +46,24 @@ test("listenWithPortFallback binds the next available port", async () => {
 });
 
 test("OAuth ready URL parser returns actual fallback port", () => {
+  // (see also the strict case below)
   const url = parseOAuthReadyUrl("OpenAI-compatible endpoint ready at http://127.0.0.1:10532/v1");
   assert.equal(url, "http://127.0.0.1:10532");
   assert.equal(parseLocalhostPortFromUrl(url), 10532);
+});
+
+test("maxAttempts 0 pins the port: a busy port fails instead of hopping", async () => {
+  const base = 4750 + Math.floor(Math.random() * 200);
+  const blocker = await occupy(base);
+  const app = express();
+  try {
+    await assert.rejects(
+      listenWithPortFallback(app, base, { host: "127.0.0.1", maxAttempts: 0, label: "strict" }),
+      (err: { code?: string }) => err.code === "PORT_RANGE_EXHAUSTED",
+    );
+  } finally {
+    await new Promise((resolve) => blocker.close(resolve));
+  }
 });
 
 test("server accept-stop and MCP shutdown start together and both settle", async () => {

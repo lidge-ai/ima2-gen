@@ -15,6 +15,10 @@ export interface AdvertiseEntry {
   url?: string;
   adminNonce?: string;
   startedAt?: number;
+  bootId?: string;
+  launcher?: string;
+  root?: string;
+  version?: string;
   [key: string]: unknown;
 }
 

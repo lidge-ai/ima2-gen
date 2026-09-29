@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { logEvent } from "../lib/logger.js";
+import { stopIntentLine } from "../lib/runtimeIdentity.js";
 
 /**
  * Local admin surface. POST /api/admin/stop shuts the server down cleanly.
@@ -23,6 +24,11 @@ import { logEvent } from "../lib/logger.js";
  * agent queue, timers, DB close, exit) and its shutdownStarted latch makes the
  * signal idempotent. Calling shutdownServerAndMcp() directly here would strand
  * proxy children and leave a stale advertise file (audit blocker 2).
+ *
+ * Before the self-signal the route prints the stop-intent line on stdout and
+ * signals only once that write has flushed. A supervisor that owns this
+ * process's pipe (the desktop shell) reads it to tell a requested stop from a
+ * crash, so it does not restart a server the user just stopped.
  */
 export function registerAdminRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
@@ -42,12 +48,15 @@ export function registerAdminRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
     }
     logEvent("admin", "stop_requested", { pid: process.pid });
     res.status(202).json({ ok: true, pid: process.pid, stopping: true });
-    setImmediate(() => {
+    const selfSignal = () => {
       try {
         process.kill(process.pid, "SIGTERM");
       } catch {
         process.exit(0);
       }
+    };
+    setImmediate(() => {
+      process.stdout.write(stopIntentLine(ctx.bootId), () => selfSignal());
     });
   });
 }

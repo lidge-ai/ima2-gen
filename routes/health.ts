@@ -57,6 +57,9 @@ export function registerHealthRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
       activeJobs: listJobs().length,
       pid: process.pid,
       startedAt: ctx.startedAt,
+      bootId: ctx.bootId,
+      launcher: ctx.launcher,
+      root: ctx.rootDir,
       runtime: runtimePorts(),
     });
   });
