@@ -1203,6 +1203,34 @@ describe("tag job dispatches (D4/D5)", () => {
     assert.ok(job.indexOf("Create the missing release tag") < job.indexOf("Land the release on dev"));
     const cut = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
     assert.match(cut, /emit\(\{ version, sha, mint_tag: String\(!tagged\) \}\)/);
+    // Every normal release depends on this: the cut branch of the target step never
+    // asks for a tag, or the mint step would run after the atomic push and fail.
+    const target = stepBlock(job, "Resolve the release version and SHA");
+    const cutBranch = target.slice(target.indexOf("else"));
+    assert.ok(target.indexOf("else") > -1);
+    assert.doesNotMatch(cutBranch, /mint_tag/);
+  });
+
+  it("finds the newest version commit with exactly this version's subject", async () => {
+    const { findReleaseCommit } = await import("../scripts/release-cut.mjs");
+    const root = mkdtempSync(join(tmpdir(), "ima2-find-release-"));
+    try {
+      const git = (...args: string[]) =>
+        execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+      git("init", "-q", "-b", "main");
+      git("config", "user.name", "test");
+      git("config", "user.email", "test@example.test");
+      const commit = (subject: string) => { git("commit", "-q", "--allow-empty", "-m", subject); return git("rev-parse", "HEAD"); };
+      commit("[agent] chore: release v3.24.1");
+      const newer = commit("[agent] chore: release v3.24.1");
+      commit("[agent] chore: release v3.24.10");
+      commit("feat: mention [agent] chore: release v3.24.1 in a body-less subject suffix");
+      const run = (args: string[]) => git(...args);
+      assert.equal(findReleaseCommit("3.24.1", "main", run), newer);
+      assert.equal(findReleaseCommit("3.24.2", "main", run), "");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("never pushes the admin-only desktop tag from CI and dispatches only for an existing tag", () => {

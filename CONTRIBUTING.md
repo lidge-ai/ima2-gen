@@ -81,6 +81,8 @@ slow to show the preview package. Without `vX.Y.Z` it takes the
 `[agent] chore: release vX.Y.Z` commit on main, requires the npm preview to prove
 that exact commit, and mints the tag first. Resuming this way needs release.yml
 from main, so promote dev to main first if the resume fix is not there yet.
+Run it before any newer cut publishes its preview: the next preview replaces
+the proof and the untagged resume then refuses.
 
 ## Devlog
 

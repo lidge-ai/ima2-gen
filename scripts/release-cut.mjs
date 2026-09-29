@@ -337,10 +337,10 @@ function readPackageVersionAt(sha) {
   }
 }
 
-/** The newest commit on origin/main whose subject is exactly the version commit's subject. */
-function findReleaseCommit(version) {
+/** The newest commit on `ref` whose subject is exactly the version commit's subject. */
+export function findReleaseCommit(version, ref = "origin/main", run = git) {
   const subject = releaseCommitSubject(version);
-  const lines = git(["log", "origin/main", "-n", "500", "--format=%H%x09%s"]).split("\n");
+  const lines = run(["log", ref, "-n", "500", "--format=%H%x09%s"]).split("\n");
   const hit = lines.map((line) => line.split("\t")).find(([, s]) => s === subject);
   return hit ? hit[0] : "";
 }
