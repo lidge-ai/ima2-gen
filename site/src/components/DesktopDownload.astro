@@ -1,0 +1,40 @@
+---
+import { t, type Lang } from '../i18n/strings';
+import { PLATFORM_ORDER, RELEASES_PAGE } from '../scripts/desktopRelease';
+import { downloadLabels } from '../scripts/desktopDownload';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+const labels = downloadLabels((key) => t(lang, key), PLATFORM_ORDER);
+---
+
+<div class="desktop-download-cta" data-desktop-download data-labels={JSON.stringify(labels)}>
+  <a class="desktop-dl-primary" data-dl-primary href={RELEASES_PAGE} target="_blank" rel="noopener">
+    <span data-dl-primary-label>{t(lang, 'install.desktop.cta')}</span>
+    <span class="desktop-dl-arrow" aria-hidden="true">↓</span>
+  </a>
+  <p class="desktop-dl-meta">
+    <span data-dl-detected hidden></span>
+    <a href="#install">{t(lang, 'desktop.others')}</a>
+  </p>
+</div>
+
+<script>
+  import { mountDesktopDownloads } from '../scripts/desktopDownload';
+  mountDesktopDownloads();
+</script>
+
+<style>
+  .desktop-download-cta { display: flex; flex-direction: column; gap: 12px; margin: -24px 0 64px; }
+  .desktop-dl-primary { align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 24px; border-radius: 6px; background: var(--text); color: var(--bg); font: 600 16px/1 var(--font-display); letter-spacing: 0; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); transition: transform 180ms ease, box-shadow 180ms ease; }
+  .desktop-dl-primary:hover { transform: translateY(-1px); box-shadow: 0 22px 60px rgba(0, 0, 0, .55); }
+  .desktop-dl-primary:focus-visible { outline: 2px solid #7ad7ff; outline-offset: 3px; }
+  .desktop-dl-arrow { font-size: 18px; }
+  .desktop-dl-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; color: var(--text-dim); font: 500 11px/1.6 var(--font-mono); letter-spacing: .04em; }
+  .desktop-dl-meta [hidden] { display: none; }
+  .desktop-dl-meta a { border-bottom: 1px solid var(--line); color: var(--text-dim); }
+  .desktop-dl-meta a:hover { color: var(--text); }
+  @media (max-width: 900px) { .desktop-download-cta { margin: -14px 0 44px; } }
+  @media (max-width: 480px) {
+    .desktop-dl-primary { align-self: stretch; justify-content: center; }
+  }
+</style>

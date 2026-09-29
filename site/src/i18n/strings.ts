@@ -24,16 +24,13 @@ const en: Dict = {
   'header.gh': 'GitHub ↗',
 
   // Hero
-  'hero.eyebrow': 'Desktop app + CLI · Image + Video',
+  'hero.eyebrow': 'Local AI studio · Image + Video',
   'hero.h1.line1': 'Branch the',
   'hero.h1.line2': 'images you',
   'hero.h1.em': 'love.',
   'hero.sub':
     "An AI studio for the way you actually iterate. Generate images in Classic, fan out in Node, create videos with Grok, and clean up in Canvas. Free ChatGPT + SuperGrok is all you need.",
   'hero.cta.cmd': 'npm install -g ima2-gen && ima2 serve',
-  'hero.npm.label': 'Prefer the terminal? Install the CLI with npm:',
-  'hero.dl.platforms': 'macOS (Apple Silicon) · Windows · Linux',
-  'hero.dl.others': 'Other platforms ↓',
   'hero.cross.lang': '한국어 README →',
 
   // Desktop app
@@ -51,7 +48,7 @@ const en: Dict = {
   'desktop.f4.t': 'Updates itself',
   'desktop.f4.b': 'On macOS it checks for new releases and installs them when you restart, after you say yes.',
   'desktop.platforms': 'macOS on Apple Silicon · Windows x64 and ARM64 · Linux x64 and ARM64 (AppImage, .deb)',
-  'desktop.all': 'All download options ↓',
+  'desktop.others': 'Other platforms and the npm CLI ↓',
   'desktop.tray.aria': 'The ima2 tray menu',
   'desktop.tray.status': 'Server running · 127.0.0.1:3333',
   'hero.shot.alt':
@@ -286,16 +283,13 @@ const ko: Dict = {
   'header.gh': 'GitHub ↗',
 
   // Hero
-  'hero.eyebrow': '데스크톱 앱 + CLI · 이미지 + 영상',
+  'hero.eyebrow': '로컬 AI 스튜디오 · 이미지 + 영상',
   'hero.h1.line1': '마음에 든 한 장,',
   'hero.h1.line2': '거기서 바로',
   'hero.h1.em': '펼치기.',
   'hero.sub':
     '이미지 한 장으로 끝나지 않잖아요. Classic으로 만들고, Node로 방향을 나누고, Video로 움직이게 하고, Canvas로 마무리하세요. 무료 ChatGPT + SuperGrok이면 충분합니다.',
   'hero.cta.cmd': 'npm install -g ima2-gen && ima2 serve',
-  'hero.npm.label': '터미널이 편하다면 npm으로 CLI를 설치하세요.',
-  'hero.dl.platforms': 'macOS (Apple Silicon) · Windows · Linux',
-  'hero.dl.others': '다른 플랫폼 ↓',
   'hero.cross.lang': 'English landing →',
 
   // Desktop app
@@ -313,7 +307,7 @@ const ko: Dict = {
   'desktop.f4.t': '스스로 업데이트합니다',
   'desktop.f4.b': 'macOS에서는 새 릴리스를 확인하고, 동의하면 다시 시작할 때 설치합니다.',
   'desktop.platforms': 'Apple Silicon macOS · Windows x64/ARM64 · Linux x64/ARM64 (AppImage, .deb)',
-  'desktop.all': '모든 다운로드 보기 ↓',
+  'desktop.others': '다른 플랫폼과 npm CLI ↓',
   'desktop.tray.aria': 'ima2 트레이 메뉴',
   'desktop.tray.status': 'Server running · 127.0.0.1:3333',
   'hero.shot.alt':
