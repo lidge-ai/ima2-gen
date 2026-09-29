@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import {
   inspectManager,
   parseLaunchctlPrint,
@@ -63,5 +64,5 @@ test("service ownership needs the manager to report the runtime's own pid", () =
 test("the service's config dir comes from the plist or unit, else the default", () => {
   assert.equal(parseServiceConfigDir("<key>IMA2_CONFIG_DIR</key><string>/a &amp; b</string>"), "/a & b");
   assert.equal(parseServiceConfigDir("Environment=IMA2_CONFIG_DIR=/srv/ima2\n"), "/srv/ima2");
-  assert.equal(parseServiceConfigDir("<key>IMA2_SERVICE</key><string>1</string>", "/home/me"), "/home/me/.ima2");
+  assert.equal(parseServiceConfigDir("<key>IMA2_SERVICE</key><string>1</string>", "/home/me"), join("/home/me", ".ima2"));
 });
