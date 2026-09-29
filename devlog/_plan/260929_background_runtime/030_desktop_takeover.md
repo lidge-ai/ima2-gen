@@ -25,7 +25,9 @@ Consumes `ima2-status/1` and `ima2-stop/1` from wp2. Decisions D1, D6, D8.
 | resolved | classify | existingServer | origin | action |
 |---|---|---|---|---|
 | resolver could not run (bundled CLI missing / unparseable) | — | any | any | blocked ("bundled CLI unavailable", Retry; no spawn) |
-| absent-proven | — | any | any | start |
+| absent-proven, manager absent or bound inactive | — | any | any | start |
+| absent-proven, manager bound **active** | — | any | any | wait-service: re-resolve every 1 s for up to 20 s; live → classify as below; still absent → blocked ("the login service is running but not answering yet — wait, or stop it with ima2 service stop") |
+| absent-proven, manager unknown | — | any | any | blocked (cannot tell whether a login service is about to start a server) |
 | unknown | — | any | any | blocked (error "an ima2 server answers but cannot be identified", Retry; no spawn) |
 | live | bundled | any | any | attach-bundled |
 | live | native | attach | any | attach-guest |
@@ -39,7 +41,7 @@ Takeover failure → attach as guest if the old server still answers, else `erro
 
 ## Acceptance
 
-1. `tests/desktop-startup-decision.test.ts` covers every table row + `classifyRuntime` root comparison.
+1. `tests/desktop-startup-decision.test.ts` covers every table row (including absent + active manager → wait-service, absent + unknown manager → blocked) + `classifyRuntime` root comparison.
 2. `tests/desktop-runtime-cli.test.ts`: parse accepts exit 0/3/1 with the matching liveness, rejects wrong schema / garbage / mismatched exit; `runBundledCli` against a real `node -e` script honours timeout and receives `IMA2_PORT`/`IMA2_CONFIG_DIR` from `desktopRuntimeEnv`. Resolver launch failure → `blocked`, spawn never called.
 3. `tests/desktop-takeover.test.ts` with injected `runCli`/`probe`: identity changed → refused before stop; stop not ok → refused; still answering after stop → refused; happy path passes `--service` for service launcher.
    Also: `serviceOwnership:"unknown"` → takeover never offered and stop never called; stop argv carries `--expect-pid/--expect-boot`; `stoppable:false` never calls stop.

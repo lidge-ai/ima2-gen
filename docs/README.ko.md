@@ -260,8 +260,12 @@ Grok video generation defaults to canonical `grok-imagine-video-1.5`; `grok-imag
 
 | Command | Description |
 |---|---|
-| `ima2 serve [--dev]` | Start the local web server; `--dev` enables verbose server diagnostics |
-| `ima2 stop [--force]` | Stop the running server safely — graceful admin-API stop first, then SIGTERM/SIGKILL; verifies the advertised pid against `/api/health` so a recycled pid is never killed |
+| `ima2 serve [--dev]` | Start the local web server in this terminal; `--dev` enables verbose server diagnostics; `--background` is the same as `ima2 start` |
+| `ima2 start [--port N] [--json]` | Start the server in the background and return once it answers. Already running → says so and exits 0. The port is pinned: a busy port is an error, never a silent hop. Output goes to `~/.ima2/logs/server.log` |
+| `ima2 stop [--json] [--service] [--force]` | Stop the running server safely: the advertised pid must answer `/api/health`, then a graceful admin-API stop, then signals (`taskkill` on Windows). A login-service server needs `--service`, so KeepAlive does not bring it straight back. `--expect-pid` with `--expect-boot` or `--expect-started` refuses unless exactly that server runs |
+| `ima2 restart [--port N]` | Stop a terminal or background server, then start it again in the background |
+| `ima2 status --runtime [--json]` | Who runs the server: pid, URL, launcher (terminal, `ima2 start`, login service or desktop app), boot id and service state. Exits 0 when running, 3 when not, 1 when it cannot tell |
+| `ima2 logs [-n N] [-f]` | Show or follow the background server log |
 | `ima2 service <sub>` | Background service: `install`/`uninstall`/`start`/`stop`/`restart`/`status`/`logs`/`repair` — launchd on macOS, systemd user unit on Linux, auto-start on login with crash restart |
 | `ima2 setup` | Reconfigure saved auth |
 | `ima2 status` | Show config and OAuth status |
@@ -481,7 +485,7 @@ npm run build
 <details>
 <summary><b>데스크톱 앱 빌드 (Electron, English)</b></summary>
 
-`desktop/` wraps the same local server and UI in a menubar/tray app for macOS, Windows, and Linux. It supervises `server.js` as a child process (attaching to an already-running server on the configured port instead of starting a second one) and adds a native settings window: port, open at login, start hidden, menubar-only (macOS), keep-server-on-close, log level, config directory.
+`desktop/` wraps the same local server and UI in a menubar/tray app for macOS, Windows, and Linux. It supervises `server.js` as a child process and adds a native settings window: port, open at login, start hidden, menubar-only (macOS), keep-server-on-close, log level, config directory, and what to do when another ima2 server is already running. At launch it asks its bundled CLI (`ima2 status --runtime --json`) what is running. Its own server is reused; a server started from a terminal, by `ima2 start` or by the login service is either reused, replaced with the bundled server, or offered for replacement (the default). Replacing stops exactly that server through the bundled CLI (`ima2 stop --expect-pid ... --json`, with `--service` for the login service) and then starts the bundled one. The tray's **Use Bundled Server** does the same later. When `ima2 stop` stops the app's own server, the app shows it as stopped instead of restarting it.
 
 ```bash
 cd desktop

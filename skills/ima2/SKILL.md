@@ -37,9 +37,14 @@ ima2 ping
 If the server is not running:
 
 ```bash
-ima2 serve
+ima2 start                       # background; or 'ima2 serve' to keep it in this terminal
 ima2 open
 ```
+
+Check or control the running server with `ima2 status --runtime --json` (pid, url, launcher:
+foreground / background / service / desktop; exit 0 running, 3 not running, 1 unknown),
+`ima2 stop --json`, `ima2 restart` and `ima2 logs -n 50`. A server started by the login service
+needs `ima2 stop --service`; a server started by the desktop app is restarted from the app.
 
 Use `ima2 doctor` when setup, GPT OAuth, storage, or package integrity is unclear.
 

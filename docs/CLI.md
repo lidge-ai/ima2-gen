@@ -9,6 +9,11 @@ For a quick start, see the [main README](../README.md). For endpoint mapping, se
 | Command | Description |
 |---|---|
 | `ima2 serve [--dev]` | Start the local web server; `--dev` enables verbose server diagnostics |
+| `ima2 start [--port N] [--dev] [--json]` | Start the server in the background and return once it answers (`ima2-start/1` with `--json`). Already running → exits 0. The port is pinned; a busy port is reported. Output: `~/.ima2/logs/server.log` |
+| `ima2 stop [--json] [--service] [--force]` | Stop the running server safely (`ima2-stop/1` with `--json`). `--service` stops a login-service server through launchd/systemd. `--expect-pid <pid>` with `--expect-boot <id>` or `--expect-started <ms>` refuses unless exactly that server runs |
+| `ima2 restart [--port N]` | Stop a terminal or background server and start it in the background; a desktop or login-service server is restarted by its owner |
+| `ima2 status --runtime [--json]` | Who runs the server (`ima2-status/1`): liveness, pid, url, launcher, boot id, service manager and ownership. Exit 0 running, 3 not running, 1 unknown |
+| `ima2 logs [-n N] [-f]` | Show or follow the background server log |
 | `ima2 setup` / `ima2 login` | Reconfigure saved auth (interactive) |
 | `ima2 status` | Show config and OAuth status |
 | `ima2 doctor` | Diagnose Node, package, config, and auth |
@@ -18,6 +23,32 @@ For a quick start, see the [main README](../README.md). For endpoint mapping, se
 | `ima2 grok login/status/logout` | Manage the xAI OAuth session used by the Grok provider |
 | `ima2 reset` | Remove saved config |
 | `ima2 backfill-thumbs` | Generate missing gallery thumbnails for images and videos (offline, no running server needed) |
+
+
+## Background runtime
+
+`ima2 serve` runs the server in the current terminal. `ima2 start` runs the same server in the
+background, pins its port (a busy port is an error instead of a hop to the next one) and returns once
+`/api/health` answers with the pid and boot id it started. `ima2 status --runtime` tells you who
+runs the server now:
+
+| `launcher` | Started by |
+|---|---|
+| `foreground` | `ima2 serve` in a terminal |
+| `background` | `ima2 start` |
+| `service` | the login service (`ima2 service install`) |
+| `desktop` | the ima2 desktop app |
+
+Servers from releases before this field existed report no launcher; a login service is still
+recognised because its manager reports the same pid.
+
+The three `--json` documents are stable wire contracts (a rename bumps the schema):
+
+- `ima2-status/1`: `{ schema, ok, liveness: "live"|"absent-proven"|"unknown", source, runtime: { pid, url, port, version, startedAt, bootId, launcher, root } | null, stoppable, advertiseStale, manager: { state: "absent"|"bound"|"unknown", ... }, serviceOwnership: "managed"|"unmanaged"|"unknown", serviceSharesConfig, logFile, reason? }`. Only `absent-proven` (every candidate port refused the connection) means nothing runs.
+- `ima2-start/1`: `{ schema, ok, outcome: "started"|"already-running"|"refused"|"failed", pid, url, port, launcher, logFile, message }`.
+- `ima2-stop/1`: `{ schema, ok, outcome: "stopped"|"not-running"|"refused"|"failed", code?, method: "graceful"|"term"|"kill"|"taskkill"|"service"|null, pid, launcher, runtimeDown, message }`. Refusal codes include `identity-changed`, `service-managed`, `not-service-managed`, `ownership-unknown` and `advertise-stale`.
+
+With `--json`, stdout carries exactly one document and human text goes to stderr.
 
 ## API image tool selection
 

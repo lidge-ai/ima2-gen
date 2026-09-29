@@ -30,7 +30,7 @@ Grok影片生成用途`POST /api/video/generate` (SSE）。看影片
 
 |方法|小路|筆記|
 |---|---|---|
-| `GET` | `/api/health` |伺服器健康狀況、版本、路徑、提供者策略；包含`grok: { auth: "oauth" \| "none" }`，同樣寫入`~/.ima2/server.json`|
+| `GET` | `/api/health` |伺服器健康狀況、版本、路徑、提供者策略；包含`grok: { auth: "oauth" \| "none" }` 以及執行身分 `bootId`、`launcher`（`foreground` \| `background` \| `service` \| `desktop`）、`root`，同樣寫入`~/.ima2/server.json`|
 | `GET` | `/api/providers` |提供者可用性和運行時端口|
 | `GET` | `/api/oauth/status` | GPT OAuth 狀態和可見模型|
 | `GET` | `/api/grok/status` | xAI OAuth工作階段狀態和可見xAI影像模型。回傳`ready`、`no_image_model`、`error`或`offline`；沒有工作階段時原因是`login_required`|

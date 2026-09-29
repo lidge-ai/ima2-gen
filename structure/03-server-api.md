@@ -60,7 +60,7 @@ graph TD
 | `GET` | `/api/providers` | `{ apiKey, oauth, oauthPort, apiKeyDisabled, apiKeySource, runtime }` | Reports available providers and runtime ports to the UI. `apiKeyDisabled` is a legacy compatibility field and is `false` in current API-provider builds. |
 | `GET` | `/api/capabilities` | `{ ok, source, version, defaults, valid, limits, guidance, providerSurfaces }` | Agent-facing defaults and structural core surface facts, independent of optional runtime lane availability |
 | `GET` | `/api/models` | `{ ok, lanes }` | Core lanes add the same `surfaces` projection; MCP model metadata and Comfy per-workflow binding roles remain distinct |
-| `GET` | `/api/health` | `{ ok, version, provider, uptimeSec, activeJobs, pid, startedAt, runtime }` | Used by CLI discovery and health checks |
+| `GET` | `/api/health` | `{ ok, version, provider, uptimeSec, activeJobs, pid, startedAt, bootId, launcher, root, runtime }` | Used by CLI discovery, `ima2 status --runtime` and the desktop takeover; `bootId`/`launcher`/`root` come from `lib/runtimeIdentity.ts` and are mirrored in `~/.ima2/server.json` |
 | `GET` | `/api/oauth/status` | `{ status, models?, auth, grokAuth, runtime }` | Proxy readiness plus login verdicts (`lib/authStatus.ts`); a dead proxy with no session file reports `auth_required` |
 | `GET` | `/api/billing` | `{ oauth, apiKeyValid, apiKeySource, credits?, costs? }` | Probes billing/model state when an API key exists |
 | `GET` | `/api/quota` | `{ codex?, grok? }` | Grok Build weekly credits percentage/reset via `billing?format=credits`; optional legacy monthly dollar fallback; web-UI only |

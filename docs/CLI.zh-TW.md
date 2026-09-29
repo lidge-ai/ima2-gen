@@ -9,6 +9,11 @@
 |命令|描述|
 |---|---|
 | `ima2 serve [--dev]` |啟動本地網路伺服器；`--dev`啟用詳細的伺服器診斷|
+| `ima2 start [--port N] [--json]` |在背景啟動伺服器，健康檢查通過後返回；已在執行則直接成功（結束碼 0）。連接埠固定，被佔用時回報錯誤而不是換連接埠。日誌：`~/.ima2/logs/server.log`|
+| `ima2 stop [--json] [--service] [--force]` |安全停止伺服器；登入服務啟動的伺服器需加 `--service`（透過 launchd/systemd 停止）。`--expect-pid` 搭配 `--expect-boot` 或 `--expect-started` 時，只停止確認過的那個伺服器|
+| `ima2 restart [--port N]` |停止終端機或背景啟動的伺服器，再於背景啟動|
+| `ima2 status --runtime [--json]` |誰在執行伺服器：pid、URL、啟動方（終端機、`ima2 start`、登入服務、桌面應用程式）、boot id、服務狀態。執行中結束碼 0，未執行 3，無法判斷 1|
+| `ima2 logs [-n N] [-f]` |檢視或持續輸出背景伺服器日誌|
 | `ima2 setup` / `ima2 login` |重新配置已儲存的身份驗證（互動式）|
 | `ima2 status` |顯示配置和OAuth地位|
 | `ima2 doctor` |診斷節點、套件、配置和身份驗證|

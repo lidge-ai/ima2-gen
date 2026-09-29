@@ -52,7 +52,11 @@ sequenceDiagram
 | Command | Alias | Role | Main files |
 |---|---|---|---|
 | `ima2 serve [--dev]` | none | Run setup if needed and start the server; `--dev` enables verbose diagnostics | `bin/ima2.ts`, `server.ts` |
-| `ima2 stop [--force]` | none | Stop the running server: verify advertised pid against `/api/health`, graceful nonce-authed `POST /api/admin/stop`, then SIGTERM→SIGKILL; cleans stale advertise files; idempotent | `bin/commands/stop.ts`, `lib/processControl.ts`, `routes/admin.ts` |
+| `ima2 start [--port N] [--dev] [--json]` | none | Detached background server (`IMA2_LAUNCHER=background`, `IMA2_STRICT_PORT=1`, spawner-chosen `IMA2_BOOT_ID`); waits for health with that pid and boot id; idempotent when one already runs; `ima2-start/1` | `bin/commands/start.ts`, `bin/lib/runtime.ts` |
+| `ima2 stop [--json] [--service] [--force] [--expect-pid P (--expect-boot B \| --expect-started T)]` | none | Verify advertised pid against `/api/health`, graceful nonce-authed `POST /api/admin/stop`, then SIGTERM→SIGKILL (`taskkill` on Windows); service ownership from the live launchd/systemd pid (`--service` stops the manager); identity guard for approved takeovers; `ima2-stop/1` | `bin/commands/stop.ts`, `bin/lib/stopRuntime.ts`, `bin/lib/serviceManager.ts`, `lib/processControl.ts`, `routes/admin.ts` |
+| `ima2 restart` | none | Stop (identity-guarded) then `start`; refuses desktop and login-service servers | `bin/commands/start.ts` |
+| `ima2 status --runtime [--json]` | none | Three-state resolver over the advertise file and the port-hop range; `ima2-status/1`; exit 0/3/1 | `bin/commands/runtimeStatus.ts`, `bin/lib/runtime.ts`, `bin/lib/runtimeReport.ts` |
+| `ima2 logs [-n N] [-f]` | none | Tail the background server log | `bin/commands/logs.ts` |
 | `ima2 service <sub>` | none | Background service (launchd / systemd user unit): install/uninstall/start/stop/restart/status/logs/repair with PATH-baked artifacts and KeepAlive-honest stop | `bin/commands/service.ts`, `bin/lib/serviceTemplates.ts` |
 | `ima2 setup` | `login` | Configure API key or OAuth interactively | `bin/ima2.ts` |
 | `ima2 status` | none | Show config, provider, and OAuth session state | `bin/ima2.ts`, `lib/codexDetect.ts` |

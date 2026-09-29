@@ -63,6 +63,52 @@ graph TD
     SRV --> ADV["actual runtime URLs<br/>~/.ima2/server.json"]
 ```
 
+## Background runtime and desktop takeover
+
+Four launchers run the same `server.js`, and each marks its child so the advertise file and
+`/api/health` can say who started it (`lib/runtimeIdentity.ts`):
+
+| Launcher | Marker | Port |
+|---|---|---|
+| `ima2 serve` (terminal) | none → `foreground` | hops to the next free port when busy |
+| `ima2 start` | `IMA2_LAUNCHER=background` | pinned (`IMA2_STRICT_PORT=1`) |
+| login service (launchd / systemd) | `IMA2_SERVICE=1` → `service` | hops |
+| desktop app | `IMA2_DESKTOP=1` → `desktop` | pinned |
+
+`ima2 start` and the desktop choose the boot id themselves (`IMA2_BOOT_ID`) and wait for a health
+answer carrying that pid and boot id, so they never mistake another server for the one they started.
+
+`bin/lib/runtime.ts` answers "what runs here" with three values. `live` names the server that
+answered; `absent-proven` means the advertised URL and every port from the configured one to
++20 refused the connection; anything else is `unknown` and must not be read as absence. Service
+ownership comes from the live manager (`bin/lib/serviceManager.ts`): a server belongs to the login
+service only when launchd or systemd reports its pid; a manager that cannot be asked is `unknown`,
+and destructive commands refuse it even with `--force`.
+
+At launch the desktop runs its bundled CLI (`bin/ima2.js status --runtime --json` with the app's port
+and config dir) and decides (`desktop/lib/startup-decision.mjs`):
+
+| Answer | Action |
+|---|---|
+| bundled CLI failed, incomplete answer, or `unknown` | blocked with the reason; no spawn |
+| `absent-proven`, no active login service for this config dir | start the bundled server |
+| `absent-proven`, login service for this config dir is active | wait up to 20 s for it, then blocked |
+| `live`, launcher `desktop` from this app bundle | attach |
+| `live`, other launcher | per setting `existingServer`: `ask` (default; login launches never prompt), `attach`, `takeover` |
+| `live` but not stoppable (no advertisement) or ownership `unknown` | attach as guest; takeover unavailable |
+
+A takeover re-reads the status, requires the same pid and boot id (or start time for older
+servers), runs `ima2 stop --json --expect-pid ... [--service]`, waits for three refused probes, then
+starts the bundled server. A stop or quit during any of this cancels it (generation guard in
+`desktop/lib/server.mjs`). When the app's own child prints `IMA2_STOP_INTENT <bootId>` (from
+`POST /api/admin/stop`) and exits 0, the app shows "stopped" instead of restarting it; any other exit
+keeps the crash-restart policy.
+
+Verification: `tests/runtime-*.test.ts`, `tests/stop-json-contract.test.ts`,
+`tests/service-manager-parse.test.ts`, `tests/desktop-{startup-decision,runtime-cli,takeover,server-supervisor}.test.ts`.
+The packaged GUI prompt and tray item are checked by hand.
+
+
 ## Package Contract
 
 | Item | Current value |

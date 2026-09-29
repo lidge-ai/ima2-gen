@@ -148,8 +148,8 @@ inventing a runtime `lanes` availability result.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/api/health` | Server health, version, paths, provider policy; includes `grok: { auth: "oauth" \| "none" }`, mirrored in `~/.ima2/server.json` |
-| `POST` | `/api/admin/stop` | Clean shutdown (local admin only): requires the boot-generated `X-Ima2-Admin-Nonce` from `~/.ima2/server.json`; any request with an `Origin` header is refused (browser drive-by protection). Responds `202` then self-signals SIGTERM |
+| `GET` | `/api/health` | Server health, version, paths, provider policy; includes `grok: { auth: "oauth" \| "none" }` and the runtime identity `bootId`, `launcher` (`foreground` \| `background` \| `service` \| `desktop`) and `root`, mirrored in `~/.ima2/server.json` |
+| `POST` | `/api/admin/stop` | Clean shutdown (local admin only): requires the boot-generated `X-Ima2-Admin-Nonce` from `~/.ima2/server.json`; any request with an `Origin` header is refused (browser drive-by protection). Responds `202`, prints `IMA2_STOP_INTENT <bootId>` on the server's stdout (the desktop app reads it to tell a requested stop from a crash), then self-signals SIGTERM |
 | `GET` | `/api/providers` | Provider availability and runtime ports |
 | `GET` | `/api/oauth/status` | GPT OAuth status and visible models, plus `auth` / `grokAuth` login verdicts: `{ provider, loggedIn, health: healthy\|warning\|reauth_required\|not_logged_in, reason?, source?, email?, plan?, accountId (masked), expiresAt?, refreshable, action?, note? }`. A proxy that exited because no session file exists reports `auth_required`. |
 | `GET` | `/api/grok/status` | xAI OAuth session state and visible xAI image models: `ready`, `no_image_model`, `error`, or `offline` with `reason: "login_required"` when no session is stored |

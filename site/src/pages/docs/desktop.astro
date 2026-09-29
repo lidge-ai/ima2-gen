@@ -74,13 +74,23 @@ const downloadSection = `${import.meta.env.BASE_URL}#install`;
   <p>
     Settings (<code>⌘,</code> on macOS, <code>Ctrl+,</code> on Windows and Linux) cover the server port,
     opening at login, starting hidden, menu-bar-only mode, keeping the server running when the window
-    closes, verbose server logging and the config directory.
+    closes, verbose server logging, the config directory, and what to do when another ima2 server is
+    already running.
   </p>
 
   <h2>Shared with the CLI</h2>
   <p>
     The app uses the same config directory as an npm install (<code>~/.ima2</code> by default), so
-    history, sign-ins and settings are shared. If an ima2 server is already running on the configured
-    port, the app attaches to it instead of starting a second one.
+    history, sign-ins and settings are shared. The app never starts a second server beside one that
+    already runs. If the running server is its own, it reconnects. If it was started from a terminal,
+    by <code>ima2 start</code> or by the login service, the app asks whether to keep using it or
+    replace it with the server inside the app; <strong>Settings → When another ima2 server is
+    running</strong> makes the choice permanent, and <strong>Use Bundled Server</strong> in the tray
+    menu switches later. Replacing a login-service server stops the service until your next login;
+    run <code>ima2 service uninstall</code> to remove it for good.
+  </p>
+  <p>
+    The CLI can control the app's server too: <code>ima2 status --runtime</code> shows it as started by
+    the desktop app, and <code>ima2 stop</code> stops it without the app restarting it.
   </p>
 </DocsLayout>

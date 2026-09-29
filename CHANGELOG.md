@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.24.0] - Unreleased
+
+### Added
+
+- **Background runtime from the CLI** — `ima2 start` runs the server in the background, pins its port (a busy port is an error, never a silent hop) and returns once it answers; `ima2 restart` and `ima2 logs [-n N] [-f]` round it out, and `ima2 serve --background` is an alias.
+- **`ima2 status --runtime [--json]`** — who runs the server: pid, URL, launcher (`foreground`, `background`, `service`, `desktop`), boot id, service manager and ownership, as a stable `ima2-status/1` document. Exit codes: 0 running, 3 not running, 1 unknown.
+- **`ima2 stop --json`** — an `ima2-stop/1` document; `--service` stops a login-service server through launchd/systemd; `--expect-pid` with `--expect-boot` or `--expect-started` refuses unless exactly the approved server runs. `ima2 stop` now works on Windows (graceful admin stop, then `taskkill` after an identity match).
+- **Desktop takeover** — at launch the desktop asks its bundled CLI what already runs. A server from a terminal, `ima2 start` or the login service is kept, replaced with the bundled server, or offered for replacement (new setting *When another ima2 server is running*, default *Ask me*; login launches never prompt). The tray and settings page gain **Use Bundled Server**.
+
+### Changed
+
+- `/api/health` and `~/.ima2/server.json` carry `bootId`, `launcher` and `root`; the advertise file is written atomically.
+- The desktop no longer restarts a server that `ima2 stop` stopped on purpose (the admin stop prints `IMA2_STOP_INTENT <bootId>`), and it blocks with a reason instead of starting a second server when it cannot tell what is running. Its server child pins the port.
+- A stale `service-state.json` no longer makes `ima2 stop` refuse; service ownership comes from the live launchd/systemd pid, and an unanswerable manager is refused even with `--force`.
+
 ## [3.0.0] - 2026-07-16
 
 ### Breaking

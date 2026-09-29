@@ -70,12 +70,20 @@ const downloadSection = `${import.meta.env.BASE_URL}ko/#install`;
   <h2>설정</h2>
   <p>
     설정(macOS <code>⌘,</code>, Windows·Linux <code>Ctrl+,</code>)에서 서버 포트, 로그인 시 열기, 숨긴 채로 시작, 메뉴 막대 전용 모드, 창을 닫아도
-    서버 유지, 자세한 서버 로그, 설정 폴더를 바꿀 수 있습니다.
+    서버 유지, 자세한 서버 로그, 설정 폴더, 그리고 다른 ima2 서버가 이미 돌고 있을 때 어떻게 할지를 바꿀 수 있습니다.
   </p>
 
   <h2>CLI와 공유</h2>
   <p>
     앱은 npm 설치와 같은 설정 폴더(기본 <code>~/.ima2</code>)를 써서 기록, 로그인, 설정을 함께 씁니다.
-    설정한 포트에서 ima2 서버가 이미 돌고 있으면 새로 띄우지 않고 그 서버에 붙습니다.
+    이미 돌고 있는 서버 옆에 두 번째 서버를 띄우지는 않습니다. 돌고 있는 서버가 앱 자신의 것이면 다시 연결하고,
+    터미널이나 <code>ima2 start</code>, 로그인 서비스가 띄운 서버라면 그대로 쓸지, 앱에 들어 있는 서버로 바꿀지 묻습니다.
+    <strong>설정 → 다른 ima2 서버가 돌고 있을 때</strong>에서 답을 고정할 수 있고, 나중에는 트레이 메뉴의
+    <strong>Use Bundled Server</strong>로 바꿀 수 있습니다. 로그인 서비스 서버를 바꾸면 그 서비스는 다음 로그인 때까지 멈춥니다.
+    아예 없애려면 <code>ima2 service uninstall</code>을 실행하세요.
+  </p>
+  <p>
+    CLI로도 앱의 서버를 다룰 수 있습니다. <code>ima2 status --runtime</code>은 데스크톱 앱이 띄운 서버라고 알려 주고,
+    <code>ima2 stop</code>으로 멈추면 앱이 다시 띄우지 않습니다.
   </p>
 </DocsLayout>

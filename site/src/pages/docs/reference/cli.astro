@@ -27,6 +27,11 @@ const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
     <thead><tr><th>Command</th><th>Description</th></tr></thead>
     <tbody>
       <tr><td><code>ima2 serve [--dev]</code></td><td>Start the local web server; <code>--dev</code> enables verbose diagnostics.</td></tr>
+      <tr><td><code>ima2 start [--port N] [--json]</code></td><td>Start the server in the background and return once it answers. Already running exits 0; the port is pinned, so a busy port is reported. Logs: <code>~/.ima2/logs/server.log</code>.</td></tr>
+      <tr><td><code>ima2 stop [--json] [--service] [--force]</code></td><td>Stop the running server safely. A login-service server needs <code>--service</code>; <code>--expect-pid</code> refuses unless exactly the approved server runs.</td></tr>
+      <tr><td><code>ima2 restart</code></td><td>Stop a terminal or background server and start it again in the background.</td></tr>
+      <tr><td><code>ima2 status --runtime [--json]</code></td><td>Who runs the server: pid, URL, launcher (terminal, <code>ima2 start</code>, login service, desktop app). Exit 0 running, 3 not running, 1 unknown.</td></tr>
+      <tr><td><code>ima2 logs [-n N] [-f]</code></td><td>Show or follow the background server log.</td></tr>
       <tr><td><code>ima2 setup</code> / <code>ima2 login</code></td><td>Reconfigure saved auth (interactive).</td></tr>
       <tr><td><code>ima2 status</code></td><td>Show config and OAuth status.</td></tr>
       <tr><td><code>ima2 doctor</code></td><td>Diagnose Node, package, config, and auth.</td></tr>

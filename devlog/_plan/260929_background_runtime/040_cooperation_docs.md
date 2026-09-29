@@ -28,3 +28,5 @@ SIGTERM) → respawn scheduled; exit 1 → respawn scheduled.
 README CLI section; `structure/02-command-reference.md`, `structure/06-infra-operations.md`,
 `structure/03-server-api.md` (health fields); `skills/ima2/SKILL.md` command table; `docs/` CLI page if present
 (`rg -l "ima2 stop" docs site/src`); CHANGELOG entry under the next version.
+
+wp4 A fold (reviewer GO-WITH-FIXES, 1): also update `site/src/pages/docs/desktop.astro` (+ Korean strings in `site/src/i18n/strings.ts`), `site/src/pages/docs/reference/cli.astro`, and `docs/API.md` (+ zh-CN, zh-TW) for the health fields and the stop-intent line.
