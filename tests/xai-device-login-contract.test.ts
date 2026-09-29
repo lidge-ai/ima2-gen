@@ -84,7 +84,7 @@ describe("lib/xaiDeviceLogin runXaiDeviceLogin", () => {
 
   afterEach(() => {
     globalThis.fetch = realFetch;
-    rmSync(homeDir, { recursive: true, force: true });
+    rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("polls through authorization_pending and slow_down, then saves the session", async () => {

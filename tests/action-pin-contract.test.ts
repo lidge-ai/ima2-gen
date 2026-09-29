@@ -395,7 +395,7 @@ describe("action pin gate", () => {
       });
       assert.deepEqual(offenders, ["deeper/action.yml"]);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -433,7 +433,7 @@ describe("action pin gate", () => {
       assert.deepEqual(found, [".github/workflows/a.yml"], `discovery escaped the repo: ${found.join(", ")}`);
       if (linked) assert.ok(!found.some((path) => path.startsWith("link")), "a symlinked local action must not be followed");
     } finally {
-      rmSync(base, { recursive: true, force: true });
+      rmSync(base, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 

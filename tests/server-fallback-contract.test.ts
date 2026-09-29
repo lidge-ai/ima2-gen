@@ -81,7 +81,7 @@ test("server falls back when advertised localhost port is occupied", async (t) =
     child?.kill("SIGTERM");
     await new Promise<void>((resolve) => child?.once("exit", resolve) || resolve());
     await new Promise<any>((resolve) => blocker.close(resolve));
-    rmSync(home, { recursive: true, force: true });
-    rmSync(generated, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    rmSync(generated, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

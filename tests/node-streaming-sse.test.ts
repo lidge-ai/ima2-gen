@@ -83,7 +83,7 @@ describe("Node route SSE streaming", () => {
     await new Promise<void>((resolve, reject) => {
       oauthServer.close((err) => (err ? reject(err) : resolve()));
     });
-    await rm(rootDir, { recursive: true, force: true });
+    await rm(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("streams phase and final node events for root generation, without partial frames", async () => {

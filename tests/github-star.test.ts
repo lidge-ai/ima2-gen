@@ -42,7 +42,7 @@ const req = (remoteAddress: string) => ({ socket: { remoteAddress } }) as never;
 describe("github star state", () => {
   let dir = "";
   beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), "ima2-star-")); });
-  afterEach(async () => { setStarDepsForTests(null); await rm(dir, { recursive: true, force: true }); });
+  afterEach(async () => { setStarDepsForTests(null); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
   it("reports unauthenticated when gh is missing", async () => {
     const { deps } = fakeDeps(dir, { missing: true });
@@ -105,7 +105,7 @@ describe("github star state", () => {
 describe("github star routes", () => {
   let dir = "";
   beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), "ima2-star-route-")); });
-  afterEach(async () => { setStarDepsForTests(null); await rm(dir, { recursive: true, force: true }); });
+  afterEach(async () => { setStarDepsForTests(null); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
   it("answers loopback peers and refuses LAN peers", async () => {
     const { deps, calls } = fakeDeps(dir, { probe: 1 });

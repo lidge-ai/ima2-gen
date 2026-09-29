@@ -319,7 +319,7 @@ describe("release.mjs resume", () => {
       assert.equal(code, 0);
       assert.equal(git(ci, "ls-remote", origin, "refs/tags/desktop-v3.24.1").split(/\s+/)[0], releaseSha);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 });

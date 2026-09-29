@@ -9,7 +9,7 @@ import { registerMcpConnectionRoutes } from "../routes/mcpConnections.js";
 import { clearModelsCatalogCache } from "../lib/mcp/modelsCatalog.js";
 
 const dir = mkdtempSync(join(tmpdir(), "ima2-mcp-routes-"));
-after(() => rmSync(dir, { recursive: true, force: true }));
+after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
 const fakeManager = {
   last: new Map<string, Record<string, unknown>>(),

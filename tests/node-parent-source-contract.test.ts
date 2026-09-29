@@ -13,7 +13,7 @@ const sessionStore = await import("../lib/sessionStore.ts");
 
 after(() => {
   db.closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 function node(id: string, serverNodeId?: string, nodeType?: string) {

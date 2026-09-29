@@ -30,7 +30,7 @@ afterEach(() => {
 
 after(async () => {
   db.closeDb();
-  await rm(TEST_DIR, { recursive: true, force: true });
+  await rm(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 const STRUCTURED_RE = /^[a-z0-9.\-]+_\d+x\d+_\d{8}_[a-z0-9가-힣一-鿿\-]+(_\d+)*\.(png|jpe?g|webp)$/;

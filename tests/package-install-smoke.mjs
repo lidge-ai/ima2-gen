@@ -339,6 +339,6 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     assert.ok(previewBytes.byteLength > 1000);
   } finally {
     if (child) await killServer(child);
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

@@ -227,7 +227,7 @@ describe("loadCliDefaults", () => {
       assert.strictEqual(child.status, 0, child.stderr);
       assert.strictEqual(child.stdout, '{"image":"oauth/gpt-5.6-luna"}\n');
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 });
@@ -364,7 +364,7 @@ after(() => {
   for (const client of clients) client.end();
   fakeServer.closeAllConnections();
   fakeServer.close();
-  rmSync(transpiledDir, { recursive: true, force: true });
+  rmSync(transpiledDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 // A loaded windows-latest runner can spend most of a 1s budget on process

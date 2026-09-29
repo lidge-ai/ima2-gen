@@ -36,6 +36,6 @@ test("history rows round-trip videoLineage from the sidecar", async () => {
     const row = (await listHistoryRows(dir)).find((item) => item.filename === "child.mp4");
     assert.deepEqual(row?.videoLineage, videoLineage);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

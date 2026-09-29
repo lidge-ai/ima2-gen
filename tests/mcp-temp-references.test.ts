@@ -31,7 +31,7 @@ const {
 const { registerMcpTempReferenceRoutes } = await import("../routes/mcpTempReferences.ts");
 const { safeGeneratedFilePath } = await import("../lib/videoFrameExtract.ts");
 
-after(() => rmSync(rootDir, { recursive: true, force: true }));
+after(() => rmSync(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
 const PNG_FIXTURE = Buffer.from(
   "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63600000000200015c2d05cf0000000049454e44ae426082",

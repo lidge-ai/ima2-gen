@@ -46,7 +46,7 @@ test("findRunningServer resolves a live advertised server", async () => {
     if (prev === undefined) delete process.env.IMA2_ADVERTISE_FILE;
     else process.env.IMA2_ADVERTISE_FILE = prev;
     live.close();
-    rmSync(home, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -64,6 +64,6 @@ test("findRunningServer skips a dead advertised candidate", async () => {
   } finally {
     if (prev === undefined) delete process.env.IMA2_ADVERTISE_FILE;
     else process.env.IMA2_ADVERTISE_FILE = prev;
-    rmSync(home, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

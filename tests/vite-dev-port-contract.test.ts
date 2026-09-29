@@ -23,7 +23,7 @@ test("resolveDevApiTarget reads backend.url from advertise file", () => {
     const result = resolveDevApiTarget({ env: { IMA2_CONFIG_DIR: dir } });
     assert.deepEqual(result, { url: "http://localhost:3335", source: "server.json" });
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -34,6 +34,6 @@ test("resolveDevApiTarget falls back through legacy port", () => {
     const result = resolveDevApiTarget({ env: { IMA2_CONFIG_DIR: dir } });
     assert.deepEqual(result, { url: "http://localhost:3336", source: "server.json" });
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

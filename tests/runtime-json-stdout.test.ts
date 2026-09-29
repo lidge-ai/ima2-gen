@@ -24,6 +24,6 @@ process.stderr.write("RESULT " + JSON.stringify(r) + "\\n");`;
     assert.match(run.stderr, /BUILD-OUT/);
     assert.match(run.stderr, /RESULT \{"ok":true,"built":true/);
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

@@ -28,7 +28,7 @@ afterEach(async () => {
   (config.storage as { configDir: string }).configDir = originalConfigDir;
   while (scratchDirs.length > 0) {
     const dir = scratchDirs.pop()!;
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

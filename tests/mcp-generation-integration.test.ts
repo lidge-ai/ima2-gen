@@ -15,7 +15,7 @@ mkdirSync(join(dir, "generated"), { recursive: true });
 const db = await import("../lib/db.ts");
 const { subscribe } = await import("../lib/eventBus.ts");
 const { registerMcpMediaRoutes } = await import("../routes/mcpMedia.ts");
-after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true }); });
+after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 const fakeManager = { status: () => ({ provider: "runway", state: "connected" }) };
 

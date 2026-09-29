@@ -26,10 +26,10 @@ export async function receiptFixture() {
     await readdir(join(root, "ui/public/fonts"));
     return { root, dist: join(root, "ui/dist"), put, async close() {
       for (const [key, value] of saved) process.env[key] = value;
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     } };
   } catch (error) {
     for (const [key, value] of saved) process.env[key] = value;
-    await rm(root, { recursive: true, force: true }); throw error;
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); throw error;
   }
 }

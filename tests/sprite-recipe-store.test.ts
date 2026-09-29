@@ -8,7 +8,7 @@ process.env.IMA2_CONFIG_DIR = dir; process.env.IMA2_DB_PATH = join(dir, "db.sqli
 const { closeDb, getDb } = await import("../lib/db.ts");
 const { spriteRecipeStore } = await import("../lib/spriteRecipeStore.ts");
 const { normalizeSpriteRecipe } = await import("../lib/spriteRecipeSchema.ts");
-after(() => { closeDb(); rmSync(dir, { recursive: true, force: true }); });
+after(() => { closeDb(); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 const definition = { version: 1, character: { id: "hero", description: "blue knight", baseAssetId: null }, cell: { width: 64, height: 64, safeMarginX: 4, safeMarginY: 4 }, chromaKey: { name: "green", hex: "#00FF00", rgb: [0, 255, 0] }, states: [{ key: "idle", frames: 4, fps: 12, loop: true, action: "breathe" }], style: "pixel art" };
 describe("sprite recipe schema and store", () => {
   it("normalizes defaults and rejects duplicate states and chroma mismatch", () => { assert.equal(normalizeSpriteRecipe(definition).version, 1); assert.throws(() => normalizeSpriteRecipe({ ...definition, states: [...definition.states, definition.states[0]] }), (error: any) => error.code === "INVALID_SPRITE_RECIPE"); assert.throws(() => normalizeSpriteRecipe({ ...definition, chromaKey: { ...definition.chromaKey, hex: "#FFFFFF" } }), /hex and rgb/); });

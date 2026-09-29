@@ -25,7 +25,7 @@ const limits = { maxGlobalRunning: 2, maxSessionRunning: 1 };
 
 after(() => {
   db.closeDb();
-  rmSync(testDir, { recursive: true, force: true });
+  rmSync(testDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 describe("Agent queue persistence contracts", () => {

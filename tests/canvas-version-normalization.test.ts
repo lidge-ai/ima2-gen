@@ -44,7 +44,7 @@ test("canvas filename suffix normalization preserves output and directory forms"
     }
   } finally {
     for (const handle of handles.reverse()) handle.restore();
-    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -151,6 +151,6 @@ test("canvas reads and writes stay inside generated storage", async (t) => {
     });
   } finally {
     for (const handle of handles.reverse()) handle.restore();
-    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

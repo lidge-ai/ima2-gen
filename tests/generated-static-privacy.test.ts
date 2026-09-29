@@ -50,6 +50,6 @@ test("/generated serves media files but never generated sidecar metadata", async
     assert.equal(raster.headers.get("content-security-policy"), null);
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

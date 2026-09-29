@@ -143,7 +143,7 @@ describe("Card News template contract", () => {
       assert.equal(loadedPlan.cards[0].textFields[0].text, "중간고사 역전 플랜");
       assert.match(result.cards[0].url, /\/generated\/cardnews\//);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -164,7 +164,7 @@ describe("Card News template contract", () => {
       const loaded = await readCardNewsSetPlan(ctx, "cs_legacy");
       assert.deepEqual(loaded.cards[0].textFields, []);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -214,7 +214,7 @@ describe("Card News template contract", () => {
       assert.equal((cardRow as { sidecarFilename?: unknown }).sidecarFilename, undefined);
       assert.equal(cardRow.cardId, "card_1");
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -300,7 +300,7 @@ describe("Card News template contract", () => {
       const manifest = JSON.parse(await readFile(join(generatedDir, "cardnews", result.setId, "manifest.json"), "utf8"));
       assert.equal(manifest.cards.length, 2);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 

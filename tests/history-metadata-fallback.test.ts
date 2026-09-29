@@ -46,7 +46,7 @@ test("history rows use embedded metadata when sidecar json is missing", async ()
     assert.equal(rows[0].requestId, "req_history_meta");
     assert.equal(rows[0].refsCount, 1);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -77,6 +77,6 @@ test("history rows prefer sidecar metadata over embedded metadata", async () => 
     assert.equal(rows[0].size, "2048x2048");
     assert.equal(rows[0].quality, "medium");
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

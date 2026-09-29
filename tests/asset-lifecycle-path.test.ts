@@ -109,6 +109,6 @@ test("asset mutations reject roots and unsafe restore paths before effects", asy
     });
   } finally {
     for (const handle of mocks.reverse()) handle.restore();
-    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

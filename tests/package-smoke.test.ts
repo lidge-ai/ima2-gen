@@ -82,7 +82,7 @@ function readPackManifest() {
       assert.fail(`Could not parse npm pack --dry-run --json output: ${error.message}`);
     }
   } finally {
-    rmSync(packDestination, { recursive: true, force: true });
+    rmSync(packDestination, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

@@ -205,7 +205,7 @@ export async function openRouteHarness(): Promise<RouteHarness> {
       entries.close(); unsubscribe?.();
       await closeServer(server);
       modules.inflight._resetForTests();
-      await rm(generatedDir, { recursive: true, force: true });
+      await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
       cleanup = undefined;
       globalThis.fetch = inactiveFetch;
       assert.deepEqual(violations, [], "Unmatched upstream calls (even if caught by the route)");
@@ -234,7 +234,7 @@ export async function openRouteHarness(): Promise<RouteHarness> {
         finally {
           globalThis.fetch = inactiveFetch;
           modules.inflight._resetForTests();
-          await rm(generatedDir, { recursive: true, force: true });
+          await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
         }
       }
     }

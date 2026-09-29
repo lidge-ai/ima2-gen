@@ -69,7 +69,7 @@ describe("ima2 CLI commands (live server)", () => {
       server.kill("SIGTERM");
       await new Promise<any>((r) => server.on("exit", r));
     }
-    try { rmSync(FAKE_HOME, { recursive: true, force: true }); } catch {}
+    try { rmSync(FAKE_HOME, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); } catch {}
   });
 
   it("ima2 ping reaches advertised server", async () => {

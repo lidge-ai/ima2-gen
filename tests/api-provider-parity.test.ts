@@ -131,7 +131,7 @@ async function withApp(fn, { apiKey = "sk-test" } = {}) {
       await imageTransport.deactivate();
       await drain();
     } finally { appOrigin = undefined; appServer = undefined; }
-    await rm(rootDir, { recursive: true, force: true });
+    await rm(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

@@ -113,4 +113,4 @@ describe("ima2 upscale CLI contract (054)", () => {
   });
 });
 
-after(() => { rmSync(FAKE_HOME, { recursive: true, force: true }); });
+after(() => { rmSync(FAKE_HOME, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });

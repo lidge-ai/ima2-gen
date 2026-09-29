@@ -107,7 +107,7 @@ afterEach(async () => {
   clearModelsCatalogCache();
   await Promise.all([...servers].map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
   servers.clear();
-  for (const homeDir of grokHomes) rmSync(homeDir, { recursive: true, force: true });
+  for (const homeDir of grokHomes) rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   grokHomes.clear();
 });
 

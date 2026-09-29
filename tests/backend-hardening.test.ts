@@ -43,7 +43,7 @@ test("Card News traversal setId is rejected with 400 before any filesystem write
     assert.deepEqual(await readdir(generatedDir), []);
   } finally {
     await close(server);
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -67,7 +67,7 @@ test("Card News rejects excessive cards and concurrency", async () => {
     assert.deepEqual(await readdir(generatedDir), []);
   } finally {
     await close(server);
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -88,8 +88,8 @@ test("asset deletion rejects symlinks that resolve outside generated storage", a
     assert.equal(await import("node:fs/promises").then((fs) => fs.readFile(outside, "utf8")), "secret");
   } finally {
     config.storage.generatedDir = oldGeneratedDir;
-    await rm(generatedDir, { recursive: true, force: true });
-    await rm(outsideDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(outsideDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

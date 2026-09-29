@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { concatVideos } from "../lib/videoConcat.js";
 
 const dir = mkdtempSync(join(tmpdir(), "ima2-concat-test-"));
-after(() => rmSync(dir, { recursive: true, force: true }));
+after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
 const hasFfmpeg = (() => {
   try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); return true; } catch { return false; }

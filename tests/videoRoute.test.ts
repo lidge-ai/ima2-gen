@@ -177,7 +177,7 @@ for (const downloadCase of ["invalid-mp4", "declared-too-large"] as const) {
       assert.deepEqual(fixture.violations, [], "artifact arrayBuffer and bridge validation remain clean");
     } finally {
       await fixture.finishCase();
-      await rm(generatedDir, { recursive: true, force: true });
+      await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 }
@@ -225,7 +225,7 @@ test("/api/video/generate streams progress and saves mp4 + sidecar", async () =>
     assert.equal(sidecar.videoContinuity.entries[0].revisedPrompt, "english clip");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -253,7 +253,7 @@ test("/api/video/generate records image-to-video mode when a reference is given"
     assert.equal(sidecar.video.refsCount, 1);
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -273,7 +273,7 @@ test("/api/video/generate uses configured Grok Video 1.5 default when model is o
     assert.equal(startBody?.model, "grok-imagine-video-1.5");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -315,7 +315,7 @@ test("/api/video/generate exposes fallback model metadata for 1.5 Ref2V", async 
     assert.deepEqual(sidecar.video.modelFallback, fallback);
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -339,7 +339,7 @@ test("/api/video/generate accepts Grok Video 1.5 image-to-video 1080p", async ()
     assert.equal(done.data.video.resolution, "1080p");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -364,7 +364,7 @@ test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas sh
     assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -384,7 +384,7 @@ test("saveGeneratedVideoArtifact removes mp4 when sidecar write fails", async ()
     await assert.rejects(access(join(generatedDir, filename)), (err: any) => err?.code === "ENOENT");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -424,7 +424,7 @@ test("/api/video/generate continueFromVideo extracts parent frame and stores bra
     assert.ok(attempts.every((attempt) => attempt.pid && attempt.closed && attempt.callbackDone));
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -460,7 +460,7 @@ test("/api/video/generate accepts the comfy lane and refuses grok-only options",
     assert.equal(oauth.find((e) => e.event === "error")?.data.code, "VIDEO_PROVIDER_UNSUPPORTED");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -482,7 +482,7 @@ test("/api/video/generate rejects non-grok provider and bad params", async () =>
     assert.equal(badRef1080.find((e) => e.event === "error")?.data.code, "INVALID_VIDEO_RESOLUTION");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

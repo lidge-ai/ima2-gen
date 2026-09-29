@@ -33,7 +33,7 @@ function harness(cliAnswers: Array<{ code: number | null; stdout: string; stderr
     const stream = (sup as unknown as { logStream: { end: (cb: () => void) => void } | null }).logStream;
     if (stream) await new Promise<void>((r) => stream.end(() => r()));
     sup.dispose();
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   };
   return { sup, children, cliCalls, cleanup };
 }

@@ -26,7 +26,7 @@ const db = await import("../lib/db.js");
 
 test.after(() => {
   db.closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 test("every canonical phase is one of the eight #151 names", () => {

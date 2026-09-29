@@ -15,8 +15,8 @@ async function withTempDirs(fn) {
   try {
     return await fn({ rootDir, targetDir });
   } finally {
-    await rm(rootDir, { recursive: true, force: true });
-    await rm(targetDir, { recursive: true, force: true });
+    await rm(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(targetDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 
@@ -237,7 +237,7 @@ test("inspectGeneratedStorage summarizes recoverable and not_found states", asyn
     assert.ok(recoverable.legacySourcesFound >= 1);
     assert.ok(recoverable.legacyFilesFound >= 1);
 
-    await rm(legacyDir, { recursive: true, force: true });
+    await rm(legacyDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     const notFound = await inspectGeneratedStorage(makeCtx(rootDir, targetDir), {
       env: { IMA2_TEST_HOME: home },
       legacyDirs: [legacyDir],

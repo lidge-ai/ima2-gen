@@ -90,7 +90,7 @@ describe("native GPT OAuth follows the session file", () => {
   after(async () => {
     setStore?.(null);
     await new Promise((r) => upstream.close(r));
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("uses the token that is in the file now, not the first one it read", async () => {

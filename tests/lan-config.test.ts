@@ -43,7 +43,7 @@ async function fixture() {
       define: { "import.meta.url": JSON.stringify(pathToFileURL(join(root, "config.js")).href) },
     });
     source = compiled.outputFiles[0].text;
-  } catch (error) { await rm(root, { recursive: true, force: true }); throw error; }
+  } catch (error) { await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); throw error; }
   finally { stop(); }
   const run = (action: string[] | null = null, overrides: Record<string, string> = {}) => {
     const env: NodeJS.ProcessEnv = { IMA2_CONFIG_DIR: join(root, "primary"),
@@ -55,7 +55,7 @@ async function fixture() {
       input: source, cwd: root, env, encoding: "utf8", timeout: 10_000, maxBuffer: 1024 * 1024,
     });
   };
-  return { root, primary, legacy, run, close: () => rm(root, { recursive: true, force: true }) };
+  return { root, primary, legacy, run, close: () => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }) };
 }
 
 test("LAN config: env/file/default chain and immutable security bounds", async () => {

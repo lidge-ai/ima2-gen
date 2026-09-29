@@ -52,7 +52,7 @@ test("POST /api/history/import-local rejects non-image bodies", async () => {
     assert.equal(res.body.code, "IMPORT_BAD_FORMAT");
   } finally {
     await closeServer(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -77,7 +77,7 @@ test("POST /api/history/import-local accepts PNG and writes to generated/", asyn
     assert.ok(written.length > 0);
   } finally {
     await closeServer(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -94,7 +94,7 @@ test("POST /api/history/import-local rejects empty body", async () => {
     assert.equal(res.body.code, "EMPTY_IMPORT");
   } finally {
     await closeServer(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -108,5 +108,5 @@ test("JSON objects cannot impersonate an image Buffer", async () => {
       assert.equal(response.body.code, "EMPTY_IMPORT");
       assert.deepEqual(await readdir(dir), [], "invalid shapes never produce output files");
     }
-  } finally { await closeServer(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { await closeServer(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });

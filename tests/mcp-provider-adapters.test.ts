@@ -214,7 +214,7 @@ test("higgsfield requires a start frame whenever an end frame is present", () =>
 
 test("higgsfield upload flows media_upload -> PUT -> media_confirm and returns media_id", async (t) => {
   const dir = mkdtempSync(join(tmpdir(), "hf-upload-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const file = join(dir, "in.png");
   writeFileSync(file, Buffer.from([1, 2, 3]));
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];

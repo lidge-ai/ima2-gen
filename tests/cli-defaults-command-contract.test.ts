@@ -86,7 +86,7 @@ describe("CLI image/video defaults behavior", () => {
       const bad = await runCli(["defaults", "set", "model", "gpt-9"], configDir);
       assert.equal(bad.code, 2);
     } finally {
-      rmSync(configDir, { recursive: true, force: true });
+      rmSync(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -116,7 +116,7 @@ describe("CLI image/video defaults behavior", () => {
       assert.equal(JSON.parse(readFileSync(join(configDir, "config.json"), "utf8")).defaults.image, undefined);
     } finally {
       await new Promise<any>((resolve) => server.close(resolve));
-      rmSync(configDir, { recursive: true, force: true });
+      rmSync(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -143,7 +143,7 @@ describe("CLI image/video defaults behavior", () => {
       assert.equal(down.code, 3); assert.equal(JSON.parse(down.stdout).code, "SERVER_UNREACHABLE");
     } finally {
       await new Promise<any>((resolve) => server.close(resolve));
-      rmSync(configDir, { recursive: true, force: true });
+      rmSync(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 });

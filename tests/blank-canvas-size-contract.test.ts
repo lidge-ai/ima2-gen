@@ -44,7 +44,7 @@ describe("blank canvas size honors right-sidebar size selection", () => {
       assert.deepEqual(resolveBlankCanvasSize("custom"), { width: 1024, height: 1024 });
       assert.deepEqual(resolveBlankCanvasSize(""), { width: 1024, height: 1024 });
     } finally {
-      rmSync(tempDir, { recursive: true, force: true });
+      rmSync(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 

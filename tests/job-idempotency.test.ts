@@ -14,7 +14,7 @@ const db = await import("../lib/db.js");
 test.beforeEach(() => idem._resetForTests());
 test.after(() => {
   db.closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 test("a key is read from the header, the body, or neither", () => {

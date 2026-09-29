@@ -39,7 +39,7 @@ test("traces a local file and reports machine-readable results", async () => {
     const svg = await readFile(output, "utf8");
     assert.ok(svg.startsWith("<svg"));
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

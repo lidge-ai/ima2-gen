@@ -14,7 +14,7 @@ const { getDb, closeDb } = await import("../lib/db.ts");
 const { config } = await import("../config.ts");
 
 beforeEach(() => { jobs._resetForTests(); bus._resetForTest(); });
-after(() => { closeDb(); rmSync(testRoot, { recursive: true, force: true }); });
+after(() => { closeDb(); rmSync(testRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 function start(id: string): AbortController {
   assert.deepEqual(jobs.startJob({ requestId: id, kind: "node", prompt: "owned prompt",

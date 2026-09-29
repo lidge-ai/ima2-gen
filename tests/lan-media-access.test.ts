@@ -26,7 +26,7 @@ async function fixture(t: import("node:test").TestContext, host = "0.0.0.0") {
   app.use((_req, res) => res.status(404).end());
   const server = createServer(app);
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
-  t.after(async () => { access.dispose(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await fs.rm(directory, { recursive: true, force: true }); });
+  t.after(async () => { access.dispose(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await fs.rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
   const address = server.address(); assert.ok(address && typeof address === "object");
   const base = `http://127.0.0.1:${address.port}`;
   const login = await fetch(`${base}/api/auth/lan/session`, { method: "POST", headers: { origin: base, "content-type": "application/json", "x-ima2-token": "synthetic-media-token" }, body: "{}" });

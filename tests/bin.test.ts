@@ -34,8 +34,8 @@ describe("ima2 CLI", () => {
   });
 
   after(() => {
-    if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true, force: true });
-    if (existsSync(FAKE_HOME)) rmSync(FAKE_HOME, { recursive: true, force: true });
+    if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    if (existsSync(FAKE_HOME)) rmSync(FAKE_HOME, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("should show help when no command given", async () => {

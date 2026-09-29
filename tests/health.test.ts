@@ -107,8 +107,8 @@ describe("Server: /api/health + advertisement", () => {
     if (oauthServer) {
       await new Promise<any>((resolve) => oauthServer.close(resolve));
     }
-    try { rmSync(FAKE_HOME, { recursive: true, force: true }); } catch {}
-    try { rmSync(FAKE_GENERATED_DIR, { recursive: true, force: true }); } catch {}
+    try { rmSync(FAKE_HOME, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); } catch {}
+    try { rmSync(FAKE_GENERATED_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); } catch {}
   });
 
   it("GET /api/health returns expected shape", async () => {

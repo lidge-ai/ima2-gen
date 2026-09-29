@@ -13,7 +13,7 @@ const jobs = await import("../lib/inflight.ts");
 const bus = await import("../lib/eventBus.ts");
 const { closeDb } = await import("../lib/db.ts");
 beforeEach(() => { jobs._resetForTests(); bus._resetForTest(); });
-after(() => { closeDb(); rmSync(testRoot, { recursive: true, force: true }); });
+after(() => { closeDb(); rmSync(testRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 function response() {
   const chunks: string[] = [];

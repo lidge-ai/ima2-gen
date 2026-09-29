@@ -82,7 +82,7 @@ test("corrupt cache: an unreadable snapshot fails closed instead of throwing", (
     writeFileSync(join(dir, "higgsfield.json"), JSON.stringify({ unexpected: true }));
     assert.equal(readLocalSnapshot(dir, "higgsfield"), null, "a shape mismatch must be rejected");
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -94,7 +94,7 @@ test("snapshot writes stay inside the allowlist", () => {
       "an unknown provider must not be able to choose the write path",
     );
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

@@ -33,7 +33,7 @@ test("ui dist freshness detects stale Vite source", () => {
     setMtime(join(root, "ui", "src", "main.tsx"), 200);
     assert.deepEqual(getUiDistBuildStatus(root), { needsBuild: true, reason: "stale" });
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -45,7 +45,7 @@ test("ui dist freshness accepts newer dist", () => {
     setMtime(join(root, "ui", "dist", "index.html"), 200);
     assert.deepEqual(getUiDistBuildStatus(root), { needsBuild: false, reason: "fresh" });
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -56,6 +56,6 @@ test("ui dist freshness still builds when dist is missing and source exists", ()
     writeFileSync(join(root, "ui", "package.json"), "{}");
     assert.deepEqual(getUiDistBuildStatus(root), { needsBuild: true, reason: "missing" });
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

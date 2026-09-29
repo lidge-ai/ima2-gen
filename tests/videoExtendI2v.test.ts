@@ -114,7 +114,7 @@ test("extend returns 202, injects the extracted frame, and emits the ordered ter
     assert.deepEqual(order, ["phase:queued", "phase:extracting-frame", "planning", "submitted", "progress", "phase:persisting", "done"]);
     const sidecar = JSON.parse(await readFile(join(dir, "child.mp4.json"), "utf8"));
     assert.deepEqual(sidecar.videoLineage, { id: "child.mp4", parentId: "root.mp4", rootId: "root.mp4", seriesId: "root.mp4", sequenceIndex: 1 });
-  } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 test("duplicate active requestId returns 409 and starts the provider once", async () => {
@@ -143,7 +143,7 @@ test("duplicate active requestId returns 409 and starts the provider once", asyn
   } finally {
     release();
     await close(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -172,7 +172,7 @@ test("duplicate 409 publishes no error on the active job channel (terminal uniqu
     release();
     stopWatch();
     await close(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -202,7 +202,7 @@ test("cancel during extraction ends with exactly one terminal event and zero pro
     release();
     stopWatch();
     await close(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -242,7 +242,7 @@ test("cancel during preflight (sidecar await) stops before 202 and provider work
     release();
     stopWatch();
     await close(server);
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -264,7 +264,7 @@ test("unreadable parent sidecar fails closed with VIDEO_PARENT_METADATA_INVALID 
     assert.equal(payload.code, "VIDEO_PARENT_METADATA_INVALID");
     await fixture.drain();
     assert.equal(providerCalls, 0);
-  } finally { await close(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 describe("extraction failures are typed and never call the provider", () => {
@@ -289,7 +289,7 @@ describe("extraction failures are typed and never call the provider", () => {
       assert.equal(terminal.data.code, item.code);
       assert.equal(terminal.data.retryable, item.retryable);
       assert.equal(providerCalls, 0);
-    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
 });
 
@@ -323,7 +323,7 @@ test("child-of-child and siblings preserve durable branches and inherit prompt a
     assert.deepEqual({ ...siblingLineage, id: childLineage.id }, childLineage);
     assert.equal(child.prompt, "parent user prompt");
     assert.match(prompts[0], /Camera motion: natural handheld/);
-  } finally { await close(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 describe("sidecar failure rolls back the MP4 and cancel suppresses done", () => {
@@ -339,7 +339,7 @@ describe("sidecar failure rolls back the MP4 and cancel suppresses done", () => 
       assert.equal((await watcher.terminal).data.code, "VIDEO_PERSIST_FAILED");
       assert.equal(watcher.events.filter((event) => event.event === "done").length, 0);
       await assert.rejects(access(join(dir, "broken.mp4")), (error: any) => error?.code === "ENOENT");
-    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
   test("cancel", async () => {
     const dir = await mkdtemp(join(fixture.root, "ima2-extend-cancel-"));
@@ -355,7 +355,7 @@ describe("sidecar failure rolls back the MP4 and cancel suppresses done", () => 
       abortJob(requestId);
       assert.equal((await watcher.terminal).data.code, "GENERATION_CANCELED");
       assert.equal(watcher.events.filter((event) => event.event === "done").length, 0);
-    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
 });
 
@@ -368,7 +368,7 @@ test("remote sourceVideoId fails before extraction", async () => {
     assert.equal(response.status, 400);
     assert.equal((await response.json()).code, "VIDEO_SOURCE_LOCAL_ONLY");
     assert.equal(extracts, 0);
-  } finally { await close(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 function defaultUpstream(stream: ReturnType<typeof makeVideoStreamFixture>) {
@@ -439,7 +439,7 @@ for (const kind of ["invalid-mp4", "declared-too-large"] as const) {
       assert.equal(stream.stats.arrayBufferCalls, 0);
       if (kind === "declared-too-large") { assert.equal(stream.stats.pulls, 0); assert.equal(stream.stats.sourceCancelCalls, 1); }
       stream.assertDrained();
-    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+    } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
 }
 
@@ -469,7 +469,7 @@ test("finishCase waits for whole last-frame work after cancel removes inflight",
     assert.equal(fixture.calls.length, 0, "canceled extraction never reaches the default provider");
     assert.deepEqual(watcher.events.filter((event) => event.event === "error" || event.event === "done").map((event) => event.data.code), ["GENERATION_CANCELED"]);
     assert.deepEqual((await readdir(dir)).sort(), ["root.mp4", "root.mp4.json"]);
-  } finally { release(); await finishing; watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { release(); await finishing; watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 test("real last-frame path sends PNG image.url to generations and never calls extensions", async (t) => {
@@ -494,6 +494,6 @@ test("real last-frame path sends PNG image.url to generations and never calls ex
     assert.equal(extraction.length, 1);
     assert.ok(extraction[0].closed && extraction[0].callbackDone && extraction[0].code === 0);
     t.diagnostic(JSON.stringify({ ffmpegExtraction: extraction[0] }));
-  } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true }); }
+  } finally { watcher.stop(); await close(server); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 }

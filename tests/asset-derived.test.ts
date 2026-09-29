@@ -22,7 +22,7 @@ const PNG_1PX = Buffer.from(
 
 after(() => {
   db.closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 async function withApp(fn: (baseUrl: string) => Promise<void>) {

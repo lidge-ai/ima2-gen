@@ -19,7 +19,7 @@ const db = await import("../lib/db.ts");
 const originalFetch = globalThis.fetch;
 
 afterEach(() => { globalThis.fetch = originalFetch; });
-after(() => { db.closeDb(); rmSync(TEST_DIR, { recursive: true, force: true }); });
+after(() => { db.closeDb(); rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 function sseResponse(events: unknown[]) {
   const encoder = new TextEncoder();

@@ -52,7 +52,7 @@ test("thumbnail backfill recursively covers nested media and skips trash", async
     assert.equal(await exists(thumbPathForImage(imagePath)), true);
     assert.equal(await exists(thumbPathForImage(trashImagePath)), false);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -81,6 +81,6 @@ test("thumbnail backfill reports files that fail thumbnail generation", async ()
     assert.equal(result.failures[0].kind, "image");
     assert.match(result.failures[0].reason, /unsupported image format|Input file/i);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

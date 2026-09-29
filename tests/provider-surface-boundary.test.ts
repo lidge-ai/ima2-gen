@@ -82,7 +82,7 @@ after(async () => {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-  if (rootDir) await rm(rootDir, { recursive: true, force: true });
+  if (rootDir) await rm(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   grokAuth?.cleanup();
 });
 

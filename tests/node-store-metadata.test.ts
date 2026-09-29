@@ -212,6 +212,6 @@ test("node metadata stays in the supplied canonical generated directory", async 
     });
   } finally {
     for (const handle of handles.reverse()) handle.restore();
-    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

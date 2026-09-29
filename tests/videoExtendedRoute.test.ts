@@ -184,7 +184,7 @@ for (const operation of ["edit", "extend"] as const) {
         assert.deepEqual(await readdir(generatedDir), [], "no MP4, sidecar or thumbnail");
       } finally {
         await fixture.finishCase();
-        await rm(generatedDir, { recursive: true, force: true });
+        await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
       }
     });
   }
@@ -214,7 +214,7 @@ test("/api/video/extend/native persists real downloaded bytes and sidecar", asyn
     assert.deepEqual((await readdir(generatedDir)).sort(), [data.filename, `${data.filename}.json`].sort());
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -249,7 +249,7 @@ test("/api/video/edit forwards xAI payload and saves local video artifact", asyn
     assert.deepEqual(meta.video.sourceUrl, { kind: "url", origin: "http://127.0.0.1:" + new URL(proxyUrl).port, pathname: "out.mp4" });
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -289,7 +289,7 @@ test("/api/video/edit rejects whitespace prompt and unsafe generated-file inputs
     assert.equal((await linked.json()).error, "invalid file path", "canonical rejection must precede MP4 decoding");
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     await rm(join(fixture.root, "outside-generated.mp4"), { force: true });
   }
 });
@@ -325,7 +325,7 @@ test("/api/video/extend/native validates duration/model and rejects moderation-b
     assert.match((await blocked.json()).error, /moderation/i);
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -344,7 +344,7 @@ test("/api/video/extend/native reports moderation block even when upstream omits
     assert.match((await blocked.json()).error, /moderation/i);
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -368,7 +368,7 @@ test("/api/video/frame rejects unsafe, invalid, and undecodable generated inputs
     assert.match((await undecodable.json()).error, /ffmpeg failed/);
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -399,7 +399,7 @@ test("/api/video/frame supports generated relative and absolute paths safely", a
     }
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -418,7 +418,7 @@ test("/api/video/analyze rejects remote URLs before frame extraction", async () 
     assert.match((await remote.json()).error, /generated .mp4/);
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -458,7 +458,7 @@ test("/api/video/analyze extracts first/last frames and sends input_image payloa
     }
   } finally {
     await fixture.finishCase();
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

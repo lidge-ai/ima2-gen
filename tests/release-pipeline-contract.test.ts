@@ -135,7 +135,7 @@ describe("release artifact and provenance contract", () => {
       writeFileSync(tarball, "changed");
       assert.throws(() => verifyArtifactDigest(manifest, tarball), /digest mismatch/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -654,7 +654,7 @@ describe("package install policy contract", () => {
       assert.match(result.stderr, /conflicts[\s\S]*npm run release -- resume 9\.9\.9/);
       assert.equal(originDev(), conflicting);
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -1229,7 +1229,7 @@ describe("tag job dispatches (D4/D5)", () => {
       assert.equal(findReleaseCommit("3.24.1", "main", run), newer);
       assert.equal(findReleaseCommit("3.24.2", "main", run), "");
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 

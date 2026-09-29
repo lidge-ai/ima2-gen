@@ -86,7 +86,7 @@ async function withFixtures(work: (root: string) => Promise<void>, heavyAllowed 
     for (const file of Object.keys(FIXTURES)) writeFileSync(join(root, file), fixtureSource(file, heavyAllowed));
     writeFileSync(join(root, 'must-not-discover.test.ts'), "throw new Error('unexpected discovery');");
     await work(root);
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 }
 
 function copiedDriver(root: string, from: string, to: string) {

@@ -117,6 +117,6 @@ test("extended video immediate history item equals the refreshed history shape",
     assert.equal(immediate.prompt, "server prompt", "server prompt must override source metadata");
     assert.equal(immediate.createdAt, createdAt, "server createdAt must be preserved verbatim");
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

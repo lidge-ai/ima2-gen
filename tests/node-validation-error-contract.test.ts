@@ -48,7 +48,7 @@ async function withNodeApp(fn) {
   } finally {
     await new Promise((resolve) => appServer.close(resolve));
     await new Promise((resolve) => oauthServer.close(resolve));
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

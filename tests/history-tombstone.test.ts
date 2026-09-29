@@ -94,8 +94,8 @@ describe("History: delete tombstone + pagination", () => {
       child.kill(process.platform === "win32" ? "SIGINT" : "SIGTERM");
       await new Promise((r) => child.on("exit", r));
     }
-    rmSync(FAKE_HOME, { recursive: true, force: true });
-    rmSync(GEN_DIR, { recursive: true, force: true });
+    rmSync(FAKE_HOME, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    rmSync(GEN_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("delete moves file and sidecar to the configured OS-trash test seam", async () => {

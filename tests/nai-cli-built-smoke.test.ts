@@ -148,7 +148,7 @@ test("built gen, multimode, and node CLIs send the same NovelAI payload", async 
   const port = await listen(server);
   t.after(() => close(server));
   const root = await mkdtemp(join(tmpdir(), "ima2-nai-cli-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.after(() => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const env = { IMA2_CONFIG_DIR: join(root, "config"), IMA2_GENERATED_DIR: join(root, "generated") };
   await mkdir(env.IMA2_CONFIG_DIR, { recursive: true });
   await writeFile(join(env.IMA2_CONFIG_DIR, "config.json"), JSON.stringify({ defaults: { image: `nai/${MODEL}` } }));

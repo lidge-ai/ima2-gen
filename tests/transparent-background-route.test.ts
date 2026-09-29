@@ -62,7 +62,7 @@ async function withHarness(
   } finally {
     await new Promise<void>((resolve) => appServer.close(() => resolve()));
     await new Promise<void>((resolve) => oauthServer.close(() => resolve()));
-    await rm(generatedDir, { recursive: true, force: true });
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

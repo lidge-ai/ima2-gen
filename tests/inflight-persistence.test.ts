@@ -18,7 +18,7 @@ beforeEach(() => {
 
 after(() => {
   db.closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 test("active inflight metadata survives database close and reopen", () => {

@@ -157,7 +157,7 @@ function runGateWithStubNpm(stubBody: string): { status: number | null; stdout: 
     );
     return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

@@ -58,7 +58,7 @@ async function withServer<T>(fn: (base: string) => Promise<T>): Promise<T> {
 
 afterEach(async () => {
   (config.storage as { configDir: string }).configDir = originalConfigDir;
-  while (scratch.length > 0) await rm(scratch.pop()!, { recursive: true, force: true });
+  while (scratch.length > 0) await rm(scratch.pop()!, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 const post = (base: string, path: string, body: unknown) =>

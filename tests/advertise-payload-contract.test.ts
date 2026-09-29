@@ -41,7 +41,7 @@ test("a HOME with no auth.json advertises grok.auth none", () => {
     const payload = buildAdvertisePayload(ctxWith({ grokAuthHomeDir: homeDir }));
     assert.equal(payload.grok.auth, "none");
   } finally {
-    rmSync(homeDir, { recursive: true, force: true });
+    rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -57,6 +57,6 @@ test("grok auth state does not disturb the backend advertise contract", () => {
     }
   } finally {
     seeded.cleanup();
-    rmSync(empty, { recursive: true, force: true });
+    rmSync(empty, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

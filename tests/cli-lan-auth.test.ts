@@ -101,7 +101,7 @@ after(() => {
   for (const listener of process.listeners("unhandledRejection")) {
     if (!listeners.unhandledRejection.includes(listener)) process.removeListener("unhandledRejection", listener);
   }
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 function denied(status = 401, code = "LAN_TOKEN_REQUIRED"): Response {

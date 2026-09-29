@@ -15,7 +15,7 @@ describe("star prompt", () => {
     } finally {
       if (prev === undefined) delete process.env.IMA2_CONFIG_DIR;
       else process.env.IMA2_CONFIG_DIR = prev;
-      await rm(dir, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 

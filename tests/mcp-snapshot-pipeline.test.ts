@@ -13,7 +13,7 @@ import type { SnapshotSource } from "../lib/contracts/types.js";
 const dir = mkdtempSync(join(tmpdir(), "ima2-mcp-snap-"));
 const snapshotDir = join(dir, "snapshots");
 const packageRoot = join(dir, "pkg");
-after(() => rmSync(dir, { recursive: true, force: true }));
+after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
 const rawTools: Array<Record<string, unknown>> = [
   { name: "generate_image", description: "make", inputSchema: { type: "object", properties: { prompt: { type: "string" } } } },

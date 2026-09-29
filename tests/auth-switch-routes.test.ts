@@ -78,7 +78,7 @@ describe("/api/auth/switch (codex)", () => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("device flow: returns the code, saves the ima2 session, and restarts the proxy", async () => {

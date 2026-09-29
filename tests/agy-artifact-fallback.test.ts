@@ -27,7 +27,7 @@ test("findRecentAgyArtifact returns matching file within time window", async () 
     const result = await findRecentAgyArtifact(now - 1000, [root]);
     assert.equal(result, artifact);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -42,7 +42,7 @@ test("findRecentAgyArtifact ignores files outside time window", async () => {
     const result = await findRecentAgyArtifact(Date.now(), [root]);
     assert.equal(result, null);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -55,7 +55,7 @@ test("findRecentAgyArtifact ignores non-matching filenames", async () => {
     const result = await findRecentAgyArtifact(Date.now() - 10_000, [root]);
     assert.equal(result, null);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -72,7 +72,7 @@ test("findRecentAgyArtifact finds files in subdirectories", async () => {
     const result = await findRecentAgyArtifact(now - 1000, [root]);
     assert.equal(result, artifact);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -92,7 +92,7 @@ test("findRecentAgyArtifact respects depth limit of 5", async () => {
     const result = await findRecentAgyArtifact(now - 1000, [root]);
     assert.equal(result, null, "should not find files beyond depth 5");
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -109,8 +109,8 @@ test("findRecentAgyArtifact does not follow symlinks into directories", async ()
     const result = await findRecentAgyArtifact(now - 1000, [root]);
     assert.equal(result, null, "should not follow symlinks");
   } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(external, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(external, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -128,7 +128,7 @@ test("findRecentAgyArtifact returns newest when multiple candidates exist", asyn
     const result = await findRecentAgyArtifact(now - 5000, [root]);
     assert.equal(result, newer, "should return the most recent file");
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -149,8 +149,8 @@ test("findRecentAgyArtifact excludes matching file symlinks without touching tar
     assert.equal(await readFile(regular, "utf8"), "accepted regular");
     assert.equal((await lstat(link)).isSymbolicLink(), true);
   } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(outside, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(outside, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -168,6 +168,6 @@ test("findRecentAgyArtifact excludes matching nonregular entries", async () => {
     assert.equal(await findRecentAgyArtifact(Date.now() - 1000, [root]), null);
     assert.equal((await lstat(directory)).isDirectory(), true);
     if (fifo) assert.equal((await lstat(fifo)).isFIFO(), true);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 }

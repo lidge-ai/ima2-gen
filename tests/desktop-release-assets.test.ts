@@ -118,7 +118,7 @@ function fixture(
   mutateProof(proof);
   writeFileSync(join(directory, "signature-proof/report.json"), JSON.stringify(proof, null, 2) + "\n");
 
-  return { directory, bytes, cleanup: () => rmSync(directory, { recursive: true, force: true }) };
+  return { directory, bytes, cleanup: () => rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }) };
 }
 
 function run(directory: string) {

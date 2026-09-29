@@ -59,7 +59,7 @@ test("a server the advertisement vouches for is live and stoppable", async () =>
     assert.equal(r.runtime?.launcher, "background");
   } finally {
     await close(server);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -71,7 +71,7 @@ test("a stale advertisement plus refused ports proves absence", async () => {
     assert.equal(r.status, "absent-proven");
     assert.equal(r.advertiseStale, true);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -91,7 +91,7 @@ test("a server that hopped ports is found without an advertisement, but is not s
     }
   } finally {
     await close(server);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -104,7 +104,7 @@ test("an advertised pid that is alive while another pid answers is unknown", asy
     assert.match(r.reason ?? "", /advertised pid/);
   } finally {
     await close(server);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -118,6 +118,6 @@ test("a listener that is not ima2, or that hangs, is unknown — never absence",
   } finally {
     await close(foreign.server);
     await close(hanging.server);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

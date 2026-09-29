@@ -74,7 +74,7 @@ async function withTinyDiscovery(probe: string, check: (result: Awaited<ReturnTy
     await symlink(modules, join(root, "node_modules"), process.platform === "win32" ? "junction" : "dir");
     check(await invokeRunner(root));
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

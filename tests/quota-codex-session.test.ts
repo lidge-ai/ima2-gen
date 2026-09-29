@@ -137,7 +137,7 @@ describe("/api/quota codex lane follows the session store", () => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("an expired-but-refreshable token refreshes first, reports usage, and persists the rotation", async () => {

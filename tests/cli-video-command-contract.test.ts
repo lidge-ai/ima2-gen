@@ -95,7 +95,7 @@ after(async () => {
     server.closeAllConnections?.();
     server.close();
   }
-  for (const dir of tempDirs) await rm(dir, { recursive: true, force: true });
+  for (const dir of tempDirs) await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 describe("ima2 video CLI contracts", () => {

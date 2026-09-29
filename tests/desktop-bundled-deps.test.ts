@@ -7,7 +7,7 @@ import verifyBundledDependencies, { missingBundledDependencies, packagedAppDir }
 
 function packagedApp(t, installed: string[]) {
   const root = fs.mkdtempSync(join(fs.realpathSync(tmpdir()), 'ima2-bundled-deps-'));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const context = { electronPlatformName: 'darwin', appOutDir: root, packager: { appInfo: { productFilename: 'ima2' } } };
   const appDir = packagedAppDir(context);
   fs.mkdirSync(appDir, { recursive: true });

@@ -36,7 +36,7 @@ test("executeMediaJob no longer dumps raw submit responses (RAW SUBMIT canary)",
 
 test("logMcpJobError scrubs nested cause before persisting to jobs.log", async (t) => {
   const dir = mkdtempSync(join(tmpdir(), "ima2-joblog-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const generatedDir = join(dir, "generated");
   const error = new Error(`MCP_DOWNLOAD_FAILED:${SIGNED_URL}`);
   (error as { cause?: unknown }).cause = new Error(`fetch failed for ${SIGNED_URL} as ${EMAIL} token ${LONG_TOKEN}`);

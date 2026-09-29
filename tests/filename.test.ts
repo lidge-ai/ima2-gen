@@ -192,7 +192,7 @@ describe("writeFileUnique", () => {
     try {
       await fn(dir);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   }
 

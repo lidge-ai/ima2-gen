@@ -24,7 +24,7 @@ export async function isolateExecution() {
     for (const [key, value] of saved) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }
-    await rm(rootDir, { recursive: true, force: true });
+    await rm(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   };
   try {
   imageTransport = installGrokImageTransportFixture();

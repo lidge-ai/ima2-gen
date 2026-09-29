@@ -48,6 +48,6 @@ test("spawnDetached runs a child that logs to the file and answers health", asyn
   } finally {
     try { process.kill(child.pid!); } catch { /* already gone */ }
     await new Promise((r) => setTimeout(r, 200));
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

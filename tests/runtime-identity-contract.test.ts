@@ -55,6 +55,6 @@ test("the advertise file is replaced atomically and stays owner-only", () => {
     if (process.platform !== "win32") assert.equal(statSync(file).mode & 0o777, 0o600);
     assert.ok(existsSync(file));
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

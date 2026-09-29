@@ -30,7 +30,7 @@ test("history rows include .mp4 video artifacts with mediaType video", async () 
     assert.equal(row.video.xaiVideoRequestId, "vid-1");
     assert.equal(row.provider, "grok");
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -44,7 +44,7 @@ test("history rows default mediaType image for png", async () => {
     assert.equal(row.mediaType, "image");
     assert.equal(row.video, null);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -63,6 +63,6 @@ test("history rows tolerate sidecarless mp4 artifacts without parsing video byte
     assert.equal(warnings.some((line) => line.includes("sidecar parse fail") || line.includes("embedded metadata read fail")), false);
   } finally {
     console.warn = originalWarn;
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

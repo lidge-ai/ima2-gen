@@ -280,7 +280,7 @@ class Harness {
   }
 
   cleanup(): void {
-    rmSync(this.dir, { recursive: true, force: true });
+    rmSync(this.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

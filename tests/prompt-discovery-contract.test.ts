@@ -73,7 +73,7 @@ function repo(overrides = {}) {
 describe("prompt discovery contract", () => {
   afterEach(async () => {
     globalThis.fetch = originalFetch;
-    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })));
   });
 
   it("registers discovery routes and keeps search separate from commit", () => {

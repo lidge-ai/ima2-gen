@@ -13,6 +13,6 @@ test("persistVideoArtifact rolls back the MP4 when atomic sidecar commit fails",
     await assert.rejects(persistVideoArtifact(dir, filename, Buffer.from("video"), { kind: "video" }));
     await assert.rejects(access(join(dir, filename)), (error: any) => error?.code === "ENOENT");
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

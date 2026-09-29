@@ -90,7 +90,7 @@ async function grokFixture() {
     },
     cleanup: async () => {
       await trap.close();
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     },
   };
 }
@@ -119,7 +119,7 @@ describe("CLI help safety", () => {
     assert.match(result.stdout, /Usage: ima2 backfill-thumbs/);
     assert.doesNotMatch(result.stdout, /Scanning|Done:/);
     assert.deepEqual(after, before);
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   // #244: grokCmd dispatched login/status/logout before parsing their argv, so

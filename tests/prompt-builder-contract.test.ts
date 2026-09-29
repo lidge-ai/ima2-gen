@@ -371,7 +371,7 @@ async function withPromptBuilderRoutes(
     await fn({ baseUrl: `http://127.0.0.1:${address.port}`, configFile, ctx });
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

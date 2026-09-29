@@ -43,5 +43,5 @@ test("depth two has a merge parent but cannot prove older ancestry; unshallow re
     assert.equal(absent.status, 128);
     git(["fetch", "--unshallow"], shallow);
     assert.equal(git(["merge-base", "--is-ancestor", oldest, "HEAD"], shallow), "");
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });

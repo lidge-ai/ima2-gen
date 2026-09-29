@@ -38,7 +38,7 @@ after(() => {
   db?.closeDb();
   for (const key of Object.keys(ownedEnv)) delete process.env[key];
   for (const [key, value] of savedEnv) process.env[key] = value;
-  rmSync(testRoot, { recursive: true, force: true });
+  rmSync(testRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   assert.equal(existsSync(testRoot), false);
 });
 const { config } = await import("../config.ts");

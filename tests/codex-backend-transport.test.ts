@@ -82,7 +82,7 @@ describe("native GPT OAuth transport", () => {
   after(async () => {
     transport?.setCodexSessionStoreForTests(null);
     await new Promise((resolve) => upstream.close(resolve));
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("shapes a GPT-6 planner call as Responses-lite and streams the backend events back", async () => {
@@ -174,7 +174,7 @@ describe("native GPT OAuth transport", () => {
         },
       );
     } finally {
-      rmSync(empty, { recursive: true, force: true });
+      rmSync(empty, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 });

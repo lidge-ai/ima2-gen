@@ -34,7 +34,7 @@ describe("generation request log", () => {
       assert.equal(entries[0].id, "2");
       assert.equal(entries[1].id, "1");
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -51,7 +51,7 @@ describe("generation request log", () => {
       const entries = await listGenerationRequestLog(logPath);
       assert.deepEqual(entries, []);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -66,7 +66,7 @@ describe("generation request log", () => {
       assert.equal(entries.length, 200);
       assert.equal(entries[0].id, "new");
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -83,7 +83,7 @@ describe("generation request log", () => {
       const entries = await listGenerationRequestLog(validPath);
       assert.deepEqual(entries.map((e) => e.id), ["recover"]);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -99,7 +99,7 @@ describe("generation request log", () => {
       assert.equal(entries[0].succeeded, 0);
       assert.equal(entries[0].error, "moderation_blocked");
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 });

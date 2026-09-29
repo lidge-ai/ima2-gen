@@ -204,7 +204,7 @@ test("BUG-R1: saved non-core providers do not poison node generation recovery", 
         if (value === undefined) delete process.env[key];
         else process.env[key] = value;
       }
-      rmSync(ownedDir, { recursive: true, force: true });
+      rmSync(ownedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   }
 });

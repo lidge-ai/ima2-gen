@@ -50,7 +50,7 @@ describe("native ChatGPT OAuth store and login", () => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("saves a token response in the Codex auth.json shape with 0600 permissions", () => {

@@ -42,8 +42,8 @@ test("a strict port that is busy exits 1 with the strict-port line", async (t) =
     assert.ok(!existsSync(join(home, "server.json")), "nothing was advertised");
   } finally {
     await new Promise((r) => blocker.close(() => r(null)));
-    rmSync(home, { recursive: true, force: true });
-    rmSync(generated, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    rmSync(generated, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -72,7 +72,7 @@ test("the server advertises and reports launcher, boot id and root", async () =>
   } finally {
     child.kill("SIGTERM");
     await new Promise((r) => child.once("exit", r));
-    rmSync(home, { recursive: true, force: true });
-    rmSync(generated, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    rmSync(generated, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

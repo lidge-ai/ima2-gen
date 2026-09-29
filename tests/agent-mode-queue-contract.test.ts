@@ -26,7 +26,7 @@ afterEach(() => {
 
 after(() => {
   db.closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 function sseResponse(events: unknown[]) {

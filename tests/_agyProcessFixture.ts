@@ -252,7 +252,7 @@ async function configure(state: State, scenario: string, options: Record<string,
     assert.deepEqual(Object.keys(options), [], "No unrecognized child control options");
     state.cursor = state.observations.length;
     state.lastFailure = undefined;
-    await rm(join(state.root, ".gemini", "antigravity-cli", "brain", "artifact"), { recursive: true, force: true });
+    await rm(join(state.root, ".gemini", "antigravity-cli", "brain", "artifact"), { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     await writeFile(join(state.root, "agy-observations.jsonl"), "");
     await writeFile(join(state.root, "agy-control.json"), JSON.stringify({ scenario }));
   } catch (error) { throw error; }

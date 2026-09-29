@@ -22,10 +22,10 @@ async function importGalleryShortcuts() {
   try {
     return {
       module: await import(pathToFileURL(modulePath).href),
-      cleanup: () => rmSync(dir, { recursive: true, force: true }),
+      cleanup: () => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }),
     };
   } catch (error) {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     throw error;
   }
 }

@@ -55,7 +55,7 @@ async function withKeyRoutes(
     await fn({ baseUrl: `http://127.0.0.1:${addr.port}`, configFile });
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await rm(rootDir, { recursive: true, force: true });
+    await rm(rootDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

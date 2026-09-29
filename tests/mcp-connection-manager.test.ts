@@ -26,7 +26,7 @@ function deferred(): Deferred {
 
 function tempDir(t: TestContext): string {
   const dir = mkdtempSync(join(tmpdir(), "ima2-mcp-manager-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   return dir;
 }
 

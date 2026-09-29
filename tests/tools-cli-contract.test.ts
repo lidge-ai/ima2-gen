@@ -9,7 +9,7 @@ import { join } from "node:path";
 
 const run = promisify(execFile);
 const dir = mkdtempSync(join(tmpdir(), "ima2-tools-cli-"));
-after(() => rmSync(dir, { recursive: true, force: true }));
+after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
 const env = { ...process.env, IMA2_CONFIG_DIR: dir, IMA2_DB_PATH: join(dir, "db.sqlite") };
 

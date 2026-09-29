@@ -33,7 +33,7 @@ beforeEach(() => {
 
 after(() => {
   closeDb();
-  rmSync(TEST_DIR, { recursive: true, force: true });
+  rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 test("finishJob moves active jobs into terminal history without polluting active list", () => {

@@ -200,7 +200,7 @@ describe("Grok weekly credits quota", () => {
       assert.strictEqual(seen[0]!.headers.get("x-grok-client-version"), "0.2.101");
       assert.strictEqual(seen[0]!.headers.get("x-grok-client-mode"), "headless");
     } finally {
-      rmSync(homeDir, { recursive: true, force: true });
+      rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   });
 
@@ -244,7 +244,7 @@ describe("Grok weekly credits quota", () => {
         }], mode);
         assert.deepStrictEqual(result.billing, { usedUsd: 25, limitUsd: 100 }, mode);
       } finally {
-        rmSync(homeDir, { recursive: true, force: true });
+        rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
       }
     }
   });
@@ -286,7 +286,7 @@ describe("Grok weekly credits quota", () => {
         assert.strictEqual(result.windows[0]?.label, "monthly", mode);
         assert.ok(!seen.some((url) => url.includes("format=credits")), mode);
       } finally {
-        rmSync(homeDir, { recursive: true, force: true });
+        rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
       }
     }
   });

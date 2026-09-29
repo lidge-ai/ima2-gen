@@ -26,6 +26,6 @@ export function seedGrokAuth(options: {
   }, null, 2), { mode: 0o600 });
   return {
     homeDir, accessToken, bearer: `Bearer ${accessToken}`,
-    cleanup: () => rmSync(homeDir, { recursive: true, force: true }),
+    cleanup: () => rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }),
   };
 }

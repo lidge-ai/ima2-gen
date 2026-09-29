@@ -27,7 +27,7 @@ test("resolveAgyBin honors explicit IMA2_AGY_BIN when file exists", async () => 
       customBin,
     );
   } finally {
-    await rm(tempDir, { recursive: true, force: true });
+    await rm(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -55,7 +55,7 @@ test("resolveAgyBin falls back to ~/.local/bin when server PATH is minimal", asy
       `${localBin}${delimiter}/usr/bin`,
     );
   } finally {
-    await rm(tempHome, { recursive: true, force: true });
+    await rm(tempHome, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

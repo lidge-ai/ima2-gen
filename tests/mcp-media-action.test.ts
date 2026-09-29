@@ -21,7 +21,7 @@ writeFileSync(join(dir, "config.json"), "{}");
 const db = await import("../lib/db.ts");
 const { subscribe } = await import("../lib/eventBus.ts");
 const { registerMcpMediaRoutes } = await import("../routes/mcpMedia.ts");
-after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true }); });
+after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 // Local snapshot so the router sees live runway tools.
 writeFileSync(join(dir, "snapshots", "runway.json"), JSON.stringify({
@@ -83,9 +83,10 @@ async function withApp(run: (base: string) => Promise<void>, overrides: Partial<
   } finally { await new Promise<void>((resolve) => server.close(() => resolve())); }
 }
 
-function waitForEvent(requestId: string, name: string, timeoutMs = 8000): Promise<Record<string, unknown>> {
+// 30 s: on a slow Windows runner the done event arrived 1.1 s after an 8 s wait gave up.
+function waitForEvent(requestId: string, name: string, timeoutMs = 30_000): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { stop(); reject(new Error(`timeout waiting ${name}`)); }, timeoutMs);
+    const timer = setTimeout(() => { stop(); reject(new Error(`timeout waiting ${name} after ${timeoutMs} ms`)); }, timeoutMs);
     const stop = subscribe((ev) => {
       if (ev.jobId === requestId && (ev.event === name || (name === "terminal" && ["done", "error"].includes(ev.event)))) {
         clearTimeout(timer); stop(); resolve({ ...ev.data, event: ev.event });

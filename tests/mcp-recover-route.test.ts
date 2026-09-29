@@ -15,7 +15,7 @@ mkdirSync(join(dir, "generated"), { recursive: true });
 
 const db = await import("../lib/db.ts");
 const { registerMcpRecoverRoutes } = await import("../routes/mcpRecover.ts");
-after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true }); });
+after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 const fakeManagerConnected = {
   status: () => ({ provider: "runway", state: "connected" }),

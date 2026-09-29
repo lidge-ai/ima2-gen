@@ -50,7 +50,7 @@ async function run(f: Fixture, opts: Partial<StopOptions> = {}, health: Record<s
 
 async function done(f: Fixture): Promise<void> {
   if (f.child.exitCode === null && f.child.signalCode === null) f.child.kill("SIGKILL");
-  rmSync(f.dir, { recursive: true, force: true });
+  rmSync(f.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 
 test("no advertisement is an idempotent not-running", async () => {
@@ -62,7 +62,7 @@ test("no advertisement is an idempotent not-running", async () => {
     assert.equal(report.ok, true);
     assert.equal(report.runtimeDown, true);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

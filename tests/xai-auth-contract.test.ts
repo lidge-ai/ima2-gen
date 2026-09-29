@@ -88,7 +88,7 @@ describe("lib/xaiAuth contract", () => {
   afterEach(() => {
     globalThis.fetch = realFetch;
     __resetGrokAuthStateForTest();
-    rmSync(homeDir, { recursive: true, force: true });
+    rmSync(homeDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
   it("throws GROK_AUTH_REQUIRED without touching the network when no credential file exists", async () => {
