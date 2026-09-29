@@ -103,7 +103,7 @@ export class ServerSupervisor extends EventEmitter {
       rootDir, args, env: desktopRuntimeEnv(settings), command: resolveNodeCommand({ nodeBinary: settings.nodeBinary, isPackaged }),
     }));
     Object.assign(this, { child: null, state: "stopped", url: null, external: false, lastError: null, crashTimes: [], stopping: false, logStream: null, configDir: "" });
-    Object.assign(this, { ownership: null, guest: null, guestStatus: null, note: null, stoppedBy: null, childBootId: null, stopIntent: false, stdoutBuf: "" });
+    Object.assign(this, { ownership: null, guest: null, guestStatus: null, note: null, stoppedBy: null, childBootId: null, generation: 0 });
   }
 
   #setState(state, extra = {}) {
@@ -139,20 +139,23 @@ export class ServerSupervisor extends EventEmitter {
 
   async start(settings) {
     if (this.child || this.state === "starting") return;
+    const gen = ++this.generation;
     this.stopping = false;
     this.lastError = null;
     this.#setState("starting", { url: null, external: false, ownership: null, guest: null, note: null, stoppedBy: null });
     let parsed = await this.#resolve(settings);
+    if (gen !== this.generation) return;
     let decision = this.#decide(parsed, settings);
-    if (decision.action === "wait-service") ({ parsed, decision } = await this.#waitForService(settings));
+    if (decision.action === "wait-service") ({ parsed, decision } = await this.#waitForService(settings, gen));
+    if (gen !== this.generation) return;
     this.#log(`[desktop] startup: ${decision.action}${decision.reason ? ` — ${decision.reason}` : ""}`);
-    await this.#apply(decision, parsed, settings);
+    await this.#apply(decision, parsed, settings, gen);
   }
 
   /** A login service is active but not answering yet: give it time instead of racing it. */
-  async #waitForService(settings) {
+  async #waitForService(settings, gen) {
     const deadline = Date.now() + SERVICE_WAIT_MS;
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && gen === this.generation) {
       await sleep(1_000);
       const parsed = await this.#resolve(settings);
       const decision = this.#decide(parsed, settings);
@@ -161,15 +164,16 @@ export class ServerSupervisor extends EventEmitter {
     return { parsed: null, decision: { action: "blocked", reason: "the login service is running but its server is not answering yet — wait, or stop it with 'ima2 service stop'" } };
   }
 
-  async #apply(decision, parsed, settings) {
+  async #apply(decision, parsed, settings, gen) {
     const status = parsed?.status;
-    if (decision.action === "start") return this.#spawn(settings);
+    if (decision.action === "start") return this.#spawn(settings, gen);
     if (decision.action === "attach-bundled") return this.#attach(status, "bundled");
     if (decision.action === "attach-guest") return this.#attach(status, "guest", decision.reason ?? null);
-    if (decision.action === "takeover") return this.#takeOver(status, settings);
+    if (decision.action === "takeover") return this.#takeOver(status, settings, gen);
     if (decision.action === "ask") {
       const answer = await this.askTakeover(status);
-      return answer?.approve ? this.#takeOver(status, settings) : this.#attach(status, "guest");
+      if (gen !== this.generation) return;
+      return answer?.approve ? this.#takeOver(status, settings, gen) : this.#attach(status, "guest");
     }
     this.lastError = decision.reason ?? "the ima2 runtime could not be resolved";
     this.#setState("error", { url: null });
@@ -185,7 +189,7 @@ export class ServerSupervisor extends EventEmitter {
     this.#setState("running", { url: String(r.url).replace(/\/$/, ""), external: ownership === "guest", ownership, guest, note });
   }
 
-  async #takeOver(status, settings) {
+  async #takeOver(status, settings, gen) {
     this.#setState("starting", { url: null, external: false, ownership: null, guest: null, note: "Switching to the bundled server…" });
     const result = await takeOver({
       approved: status,
@@ -193,13 +197,15 @@ export class ServerSupervisor extends EventEmitter {
       stop: async (args) => parseStop(await this.runCli(args, settings)),
       probe: (url) => this.probe(url),
     });
+    if (gen !== this.generation) return;
     if (result.ok) {
       this.#log("[desktop] takeover: the other server stopped; starting the bundled server");
-      return this.#spawn(settings);
+      return this.#spawn(settings, gen);
     }
     this.#log(`[desktop] takeover failed: ${result.reason}`);
     this.lastError = `Could not switch to the bundled server: ${result.reason}`;
     const after = await this.#resolve(settings);
+    if (gen !== this.generation) return;
     if (after.ok && after.status.liveness === "live") return this.#attach(after.status, "guest", this.lastError);
     this.#setState("error", { url: null, note: null });
   }
@@ -207,15 +213,19 @@ export class ServerSupervisor extends EventEmitter {
   /** Tray / settings action: replace the attached native server with the bundled one. */
   async useBundledServer(settings) {
     if (this.ownership !== "guest" || !this.guestStatus || this.state === "starting") return;
-    await this.#takeOver(this.guestStatus, settings);
+    const gen = ++this.generation;
+    this.stopping = false;
+    await this.#takeOver(this.guestStatus, settings, gen);
   }
 
-  #spawn(settings) {
+  /** Every async path carries the generation it began in; stop() and a newer start() retire it. */
+  #spawn(settings, gen) {
+    if (gen !== this.generation || this.stopping || this.child) return;
     const { bin, env: nodeEnv } = resolveNodeCommand({ nodeBinary: settings.nodeBinary, isPackaged: this.isPackaged });
     const env = { ...desktopRuntimeEnv(settings, { forServer: true }), ...nodeEnv };
     const serverPath = join(this.rootDir, "server.js");
-    Object.assign(this, { configDir: settings.configDir || "", childBootId: env.IMA2_BOOT_ID, stopIntent: false, stdoutBuf: "" });
-    this.#log(`[desktop] starting server: ${bin} ${serverPath} (port ${settings.port}, boot ${this.childBootId})`);
+    this.configDir = settings.configDir || "";
+    this.#log(`[desktop] starting server: ${bin} ${serverPath} (port ${settings.port}, boot ${env.IMA2_BOOT_ID})`);
     let child;
     try {
       child = this.spawnFn(bin, [serverPath], { cwd: this.rootDir, env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
@@ -225,16 +235,22 @@ export class ServerSupervisor extends EventEmitter {
       this.#setState("error");
       return;
     }
+    this.#track(child, { bootId: env.IMA2_BOOT_ID, buf: "", stopIntent: false }, settings, gen);
+  }
+
+  #track(child, own, settings, gen) {
     this.child = child;
-    child.stdout.on("data", (buf) => this.#onStdout(buf));
-    child.stderr.on("data", (buf) => { for (const line of String(buf).split(/\r?\n/)) this.#onLine(line, false); });
+    this.childBootId = own.bootId;
+    child.stdout.on("data", (buf) => this.#onStdout(child, own, buf));
+    child.stderr.on("data", (buf) => { for (const line of String(buf).split(/\r?\n/)) this.#onLine(child, own, line, false); });
     child.on("error", (err) => {
+      if (this.child !== child) return;
       this.lastError = err.message;
       this.#log(`[desktop] spawn error: ${err.message}`);
       this.child = null;
       this.#setState("error");
     });
-    child.once("exit", (code, signal) => this.#afterStdout(child, () => this.#onExit(code, signal, settings)));
+    child.once("exit", (code, signal) => this.#afterStdout(child, () => this.#onExit(child, own, code, signal, settings, gen)));
   }
 
   /** The exit event can beat the last stdout chunk; the stop-intent line may be in it. */
@@ -246,38 +262,41 @@ export class ServerSupervisor extends EventEmitter {
     child.stdout.once("end", () => { clearTimeout(timer); once(); });
   }
 
-  #onStdout(buf) {
-    this.stdoutBuf += String(buf);
-    const lines = this.stdoutBuf.split(/\r?\n/);
-    this.stdoutBuf = lines.pop() ?? "";
-    for (const line of lines) this.#onLine(line, true);
+  #onStdout(child, own, buf) {
+    own.buf += String(buf);
+    const lines = own.buf.split(/\r?\n/);
+    own.buf = lines.pop() ?? "";
+    for (const line of lines) this.#onLine(child, own, line, true);
   }
 
-  #onLine(line, fromStdout) {
+  /** Only a complete stdout line from this child, naming this child's boot, is a stop intent. */
+  #onLine(child, own, line, completeStdoutLine) {
     if (!line) return;
     this.#log(line);
-    if (fromStdout && line === `${STOP_INTENT_PREFIX}${this.childBootId}`) this.stopIntent = true;
+    if (completeStdoutLine && line === `${STOP_INTENT_PREFIX}${own.bootId}`) own.stopIntent = true;
     const m = line.match(RUNNING_RE);
-    if (m && this.state === "starting") {
+    if (m && this.child === child && this.state === "starting") {
       this.#setState("running", { url: m[1].replace(/\/$/, ""), external: false, ownership: "bundled", guest: null, note: null });
-      void this.#confirmBoot();
+      void this.#confirmBoot(own.bootId);
     }
   }
 
-  async #confirmBoot() {
+  async #confirmBoot(bootId) {
     const health = await probeHealth(this.url);
-    if (health?.bootId && health.bootId !== this.childBootId) {
-      this.#log(`[desktop] warning: ${this.url} reports boot ${health.bootId}, expected ${this.childBootId}`);
+    if (health?.bootId && health.bootId !== bootId) {
+      this.#log(`[desktop] warning: ${this.url} reports boot ${health.bootId}, expected ${bootId}`);
     }
   }
 
-  #onExit(code, signal, settings) {
-    if (this.stdoutBuf) this.#onLine(this.stdoutBuf, true);
-    this.stdoutBuf = "";
+  #onExit(child, own, code, signal, settings, gen) {
+    // An unterminated fragment is logged but never read as a stop intent.
+    if (own.buf) this.#onLine(child, own, own.buf, false);
+    own.buf = "";
     this.#log(`[desktop] server exited code=${code} signal=${signal}`);
+    if (this.child !== child) return;
     this.child = null;
-    if (this.stopping) return this.#setState("stopped", { url: null, ownership: null });
-    if (this.stopIntent && code === 0 && !signal) {
+    if (this.stopping || gen !== this.generation) return this.#setState("stopped", { url: null, ownership: null });
+    if (own.stopIntent && code === 0 && !signal) {
       this.lastError = null;
       this.#log("[desktop] the server was stopped on request (ima2 stop); not restarting it");
       return this.#setState("stopped", { url: null, ownership: null, stoppedBy: "cli" });
@@ -290,10 +309,11 @@ export class ServerSupervisor extends EventEmitter {
       return this.#setState("error", { url: null, ownership: null });
     }
     this.#setState("starting", { url: null });
-    setTimeout(() => { if (!this.child && !this.stopping) this.#spawn(settings); }, 1_000);
+    setTimeout(() => this.#spawn(settings, gen), 1_000);
   }
 
   async stop() {
+    this.generation++;
     this.stopping = true;
     const child = this.child;
     if (!child) {

@@ -151,4 +151,54 @@ describe("ServerSupervisor", () => {
       await h.cleanup();
     }
   });
+
+  it("a stop during a pending prompt retires that startup: nothing is spawned later", async () => {
+    let answer!: (v: { approve: boolean }) => void;
+    const h = harness([NATIVE, NATIVE, STOPPED], { askTakeover: () => new Promise((r) => { answer = r; }) });
+    try {
+      const pending = h.sup.start(SETTINGS);
+      await tick();
+      await h.sup.stop();
+      answer({ approve: true });
+      await pending;
+      await tick();
+      assert.equal(h.children.length, 0);
+      assert.equal(h.sup.state, "stopped");
+    } finally {
+      await h.cleanup();
+    }
+  });
+
+  it("a previous child's delayed exit does not clear its replacement", async () => {
+    const h = harness([ABSENT]);
+    try {
+      const first = await running(h);
+      const stopping = h.sup.stop();
+      await tick();
+      // Exit without ending stdout: the supervisor waits up to 500 ms for the last chunk.
+      first.exitCode = 0;
+      first.emit("exit", 0, null);
+      await stopping;
+      await h.sup.start(SETTINGS);
+      const second = h.children[1]!;
+      await tick(700);
+      assert.equal((h.sup as unknown as { child: unknown }).child, second);
+      assert.equal(h.children.length, 2);
+    } finally {
+      await h.cleanup();
+    }
+  });
+
+  it("an unterminated stop-intent line at exit is not a stop intent", async () => {
+    const h = harness([ABSENT]);
+    try {
+      const c = await running(h);
+      c.stdout.write(`IMA2_STOP_INTENT ${c.env.IMA2_BOOT_ID}`);
+      exit(c, 0);
+      await tick(1300);
+      assert.equal(h.children.length, 2, "treated as an unrequested exit and respawned");
+    } finally {
+      await h.cleanup();
+    }
+  });
 });

@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { parseStatus, parseStop, runBundledCli } from "../desktop/lib/runtime-cli.mjs";
 import { desktopRuntimeEnv } from "../desktop/lib/runtime-env.mjs";
 
-const status = (liveness: string) => JSON.stringify({ schema: "ima2-status/1", liveness, runtime: null });
+const FULL = { manager: { state: "absent" }, serviceOwnership: "unmanaged", stoppable: false };
+const status = (liveness: string, extra: Record<string, unknown> = {}) => JSON.stringify({ schema: "ima2-status/1", liveness, runtime: liveness === "live" ? { pid: 5, url: "http://127.0.0.1:1" } : null, ...FULL, ...extra });
 
 describe("bundled CLI answers", () => {
   it("accepts a status only when its exit code matches its liveness", () => {
@@ -17,6 +18,13 @@ describe("bundled CLI answers", () => {
     assert.equal(parseStatus({ code: 0, stdout: "garbage", stderr: "" }).ok, false);
     assert.equal(parseStatus({ code: 0, stdout: JSON.stringify({ schema: "ima2-status/2", liveness: "live" }), stderr: "" }).ok, false);
     assert.match(parseStatus({ code: null, stdout: "", stderr: "", error: "timed out" }).reason, /timed out/);
+  });
+
+  it("rejects an incomplete answer instead of deciding from it", () => {
+    // Review finding: exit 3 with only schema + liveness must not authorise a spawn.
+    assert.equal(parseStatus({ code: 3, stdout: JSON.stringify({ schema: "ima2-status/1", liveness: "absent-proven" }), stderr: "" }).ok, false);
+    assert.equal(parseStatus({ code: 0, stdout: status("live", { runtime: { url: "x" } }), stderr: "" }).ok, false);
+    assert.equal(parseStatus({ code: 3, stdout: status("absent-proven", { manager: { state: "bound" } }), stderr: "" }).ok, false);
   });
 
   it("accepts a stop only when the report and exit code agree", () => {
@@ -50,7 +58,14 @@ describe("runBundledCli", () => {
     const a = desktopRuntimeEnv({ port: 1 }, { forServer: true, base: {} }) as Record<string, string>;
     const b = desktopRuntimeEnv({ port: 1 }, { forServer: true, base: {} }) as Record<string, string>;
     assert.equal(a.IMA2_DESKTOP, "1");
+    assert.equal(a.IMA2_STRICT_PORT, "1");
     assert.match(a.IMA2_BOOT_ID, /^[0-9a-f-]{36}$/);
     assert.notEqual(a.IMA2_BOOT_ID, b.IMA2_BOOT_ID);
+  });
+
+  it("reports a synchronous spawn failure instead of hanging", async () => {
+    const result = await runBundledCli({ rootDir: "/nowhere", args: [], env: {}, command: { bin: "x", env: {} }, spawnFn: (() => { throw new Error("EACCES"); }) as never });
+    assert.equal(result.code, null);
+    assert.match(result.error, /EACCES/);
   });
 });

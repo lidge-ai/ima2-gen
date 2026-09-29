@@ -17,6 +17,8 @@ export function desktopRuntimeEnv(settings, { forServer = false, base = process.
   if (forServer) {
     env.IMA2_DESKTOP = "1";
     env.IMA2_BOOT_ID = randomUUID();
+    // The port was just proven free; a server that races in must not push ours to another port.
+    env.IMA2_STRICT_PORT = "1";
   }
   return env;
 }

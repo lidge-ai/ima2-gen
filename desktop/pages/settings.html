@@ -18,7 +18,7 @@
         <div class="status"><span id="dot" class="dot"></span><span id="status-label">…</span></div>
       </div>
       <div class="row">
-        <label>Port<small>Server restarts when changed. Falls back to the next free port if busy.</small></label>
+        <label>Port<small>Server restarts when changed. A busy port is reported, never silently swapped.</small></label>
         <input id="port" type="number" min="1024" max="65535" step="1" />
       </div>
       <div class="row">
