@@ -51,3 +51,8 @@ transaction; the same requestId with the same payload fingerprint returns the ex
 different payload returns 409; and named tests for restart of queued and running jobs, two servers
 claiming one DB, cancellation, a missing reference file, SIGTERM drain timeout, and desktop
 quit/update.
+
+Posted: #338 https://github.com/lidge-ai/ima2-gen/issues/338#issuecomment-5894907057 (accept,
+contributor implements, contract above); #150
+https://github.com/lidge-ai/ima2-gen/issues/150#issuecomment-5894907458 (keep open, defer, premise
+updated). Follow-up from #339: #351 (job-wide OAuth deadline).

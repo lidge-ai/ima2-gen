@@ -11,6 +11,8 @@ ree9622:feat/oauth-rate-limit-backoff, head a5b7d70c.
    `npm run test:inventory`, `node --test tests/oauth-rate-limit-retry.test.ts
    tests/oauth-rate-limit-lane.test.ts tests/grok-upstream-retry.test.ts
    tests/structure-line-counts-contract.test.ts` plus any transport tests the reviewer names.
+   After the wp2 lesson (#350's temp-cleanup contract failed the first #340 gate), also run
+   `tests/test-temp-cleanup-contract.test.ts` and the full `npm test` locally before pushing.
 3. Fold the sol reviewer's blockers as small commits on the contributor branch.
 4. Push, wait for the PR fast gate, merge with a merge commit, comment.
 
@@ -39,3 +41,8 @@ planner and each render already get their own full generationTimeoutMs
 maxTotalWaitMs (120 s) of waiting, and rejected attempts return fast. A job-wide timeout signal
 is a separate OAuth-lane change, recorded as a follow-up. The budget doc comment is tightened so
 it only claims that waits stop at the deadline.
+
+Reflection (Wegener, same agent): ALIGNED. Gaps folded: the cancel test drops its real 20 ms timer
+and 5 s wall-clock assertion and instead aborts from an injected sleep, so it is deterministic;
+the job-wide deadline follow-up is opened as a GitHub issue after the merge (acceptance: one
+AbortSignal per OAuth job bounds planner, renders and waits by generationTimeoutMs).
