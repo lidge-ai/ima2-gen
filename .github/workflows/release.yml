@@ -27,6 +27,11 @@ on:
         description: 'Optional full SHA the caller decided on; the cut refuses to start if origin/main moved past it'
         required: false
         type: string
+      resume_version:
+        description: 'Resume an already-tagged X.Y.Z: skip the cut, finish dev, desktop, stable publish and Pages (needs dry_run=false)'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -36,8 +41,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # A resume only finishes a real release; a dry resume would silently do nothing.
+  refuse-dry-resume:
+    name: Refuse a resume that is not a real release
+    if: inputs.resume_version != '' && inputs.dry_run != 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "resume_version needs dry_run=false; a resume only finishes a real release"
+          exit 1
+
   cut:
     name: Cut the version commit and prove the preview build
+    if: inputs.resume_version == ''
     runs-on: ubuntu-latest
     # Envelopes candidate verification (45), candidate CI (45), preview publish
     # wait (100), and setup/cleanup margin. Child gates retain shorter deadlines.
@@ -183,7 +199,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         # package source gate (25) + Windows consumer (40) + publish margin.
-        run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 100
+        run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 100 "Publish refs/heads/preview"
       - name: Require the npm preview proof before tagging
         if: ${{ inputs.dry_run == 'false' }}
         run: >-
@@ -194,9 +210,11 @@ jobs:
   tag:
     name: Mint the stable tag and publish
     needs: cut
-    # == 'false', not != 'true': canary must never tag, push main/dev, or
-    # dispatch the stable publish (roadmap 030 audit blocker).
-    if: needs.cut.outputs.dry_run == 'false'
+    # Two ways in. A cut: needs.cut.outputs.dry_run == 'false' (== 'false', not
+    # != 'true': canary must never tag, push main/dev, or dispatch the stable
+    # publish). A resume: the cut is skipped, so !cancelled() keeps this job from
+    # being skipped with it, and the target step below proves the tag instead.
+    if: ${{ !cancelled() && inputs.dry_run == 'false' && (inputs.resume_version != '' || (needs.cut.result == 'success' && needs.cut.outputs.dry_run == 'false')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     # The approval gate sits here, before the atomic push, not on the stable
@@ -213,41 +231,71 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           fetch-depth: 0
-          ref: ${{ needs.cut.outputs.sha }}
+          ref: ${{ needs.cut.outputs.sha || format('refs/tags/v{0}', inputs.resume_version) }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.node-version'
           registry-url: 'https://registry.npmjs.org'
       - name: Fetch release branches and tags
         run: git fetch origin main dev preview --tags
+      # Every later step reads the version and SHA from here, never from the cut
+      # job directly, so a resume and a cut run the same tail.
+      - id: target
+        name: Resolve the release version and SHA
+        env:
+          RESUME_VERSION: ${{ inputs.resume_version }}
+          CUT_VERSION: ${{ needs.cut.outputs.version }}
+          CUT_SHA: ${{ needs.cut.outputs.sha }}
+        run: |
+          if [ -n "$RESUME_VERSION" ]; then
+            node scripts/release-cut.mjs resume-guard "$RESUME_VERSION"
+          else
+            echo "version=$CUT_VERSION" >> "$GITHUB_OUTPUT"
+            echo "sha=$CUT_SHA" >> "$GITHUB_OUTPUT"
+          fi
       - name: Refuse to tag if the remotes moved during preview verification
-        run: node scripts/release-cut.mjs assert-remotes-unmoved "${{ needs.cut.outputs.sha }}"
+        if: inputs.resume_version == ''
+        run: node scripts/release-cut.mjs assert-remotes-unmoved "${{ steps.target.outputs.sha }}"
       - name: Re-check the preview proof at tag time
+        if: inputs.resume_version == ''
         run: >-
           node scripts/release-cut.mjs assert-preview-proof
-          "${{ needs.cut.outputs.version }}"
-          "${{ needs.cut.outputs.sha }}"
-      - name: Create and atomically push main, dev, and the tag
+          "${{ steps.target.outputs.version }}"
+          "${{ steps.target.outputs.sha }}"
+      # dev is left out of the atomic push on purpose: integration keeps merging
+      # into dev during a release, and a moved dev must not reject main and the tag.
+      - name: Create and atomically push main and the tag
+        if: inputs.resume_version == ''
         env:
-          VERSION: ${{ needs.cut.outputs.version }}
-          SHA: ${{ needs.cut.outputs.sha }}
+          VERSION: ${{ steps.target.outputs.version }}
+          SHA: ${{ steps.target.outputs.sha }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "v$VERSION" "$SHA"
           git push --atomic origin \
             "$SHA:refs/heads/main" \
-            "$SHA:refs/heads/dev" \
             "refs/tags/v$VERSION:refs/tags/v$VERSION"
-      # D4: desktop assets build in parallel with the npm stable publish, so
-      # the tag job starts them instead of a hand-pushed tag after the fact.
-      # A pre-existing desktop-v tag must resolve to this SHA or the job
-      # fails: dispatching on an unverified tag could ship binaries for the
-      # wrong commit.
-      - name: Push the desktop release tag
+      # Fast-forward when dev has not moved, a merge commit when it has, nothing
+      # when dev already contains the release. Never a force push.
+      - name: Land the release on dev
         env:
-          VERSION: ${{ needs.cut.outputs.version }}
-          SHA: ${{ needs.cut.outputs.sha }}
+          VERSION: ${{ steps.target.outputs.version }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: node scripts/release-cut.mjs land-dev "$SHA" "$VERSION"
+      # desktop-v tags are restricted to repository admins (ruleset "Protect
+      # desktop release tags"): the tag starts a signed build, so a push-access
+      # actor must not be able to mint one. The workflow token cannot bypass that,
+      # and this org disables deploy keys, so scripts/release.mjs pushes the tag
+      # from the maintainer's machine as soon as vX.Y.Z lands. A user push fires
+      # desktop.yml's push trigger. Here the tag is only verified: a pre-existing
+      # desktop-v tag must resolve to this SHA, or binaries could ship for the
+      # wrong commit.
+      - id: desktop_tag
+        name: Check the desktop release tag
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+          SHA: ${{ steps.target.outputs.sha }}
         run: |
           git fetch origin --tags
           if git rev-parse -q --verify "refs/tags/desktop-v$VERSION" >/dev/null; then
@@ -256,47 +304,88 @@ jobs:
               echo "refs/tags/desktop-v$VERSION already exists at $EXISTING, expected the release SHA $SHA"
               exit 1
             fi
+            echo "present=true" >> "$GITHUB_OUTPUT"
           else
-            git push origin "$SHA:refs/tags/desktop-v$VERSION"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::desktop-v$VERSION is admin-only: scripts/release.mjs pushes it when a repository admin runs the release. Otherwise an admin runs: git push origin $SHA:refs/tags/desktop-v$VERSION"
           fi
+      # A tag that already existed (a resume, or release.mjs was faster) gets a
+      # build dispatched unless the desktop release is already public or a build
+      # for this tag is still running. desktop.yml cancels an in-flight run of
+      # the same ref, so dispatching over a healthy build would kill it.
       - name: Start the desktop release build
+        if: steps.desktop_tag.outputs.present == 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.target.outputs.version }}
         run: |
-          echo "re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v${{ needs.cut.outputs.version }} -f platform=all"
-          gh workflow run desktop.yml \
-            --ref "desktop-v${{ needs.cut.outputs.version }}" \
-            -f platform=all
+          echo "re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v$VERSION -f platform=all"
+          STATE=$(gh release view "desktop-v$VERSION" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
+          RUNNING=$(gh run list --workflow desktop.yml --branch "desktop-v$VERSION" --limit 30 --json status --jq '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo 0)
+          if [ "$STATE" = "false" ]; then
+            echo "desktop-v$VERSION is already published"
+          elif [ "$RUNNING" != "0" ]; then
+            echo "a desktop build for desktop-v$VERSION is still running"
+          else
+            gh workflow run desktop.yml \
+              --ref "desktop-v$VERSION" \
+              -f platform=all
+          fi
+      # A resume after the stable publish already landed must not spend a second
+      # npm-stable approval on a no-op. Every probe tolerates "not found".
+      - id: stable_state
+        name: Check whether the stable release already landed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.target.outputs.version }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          done=false
+          GITHEAD=$(npm view "ima2-gen@$VERSION" gitHead 2>/dev/null || true)
+          LATEST=$(npm view ima2-gen@latest version 2>/dev/null || true)
+          gh release view "v$VERSION" >/dev/null 2>&1 && HAS_GH=1 || HAS_GH=0
+          if [ "$GITHEAD" = "$SHA" ] && [ "$LATEST" = "$VERSION" ] && [ "$HAS_GH" = "1" ]; then
+            done=true
+          fi
+          echo "stable release landed: $done (gitHead=${GITHEAD:-none} latest=${LATEST:-none} github_release=$HAS_GH)"
+          echo "done=$done" >> "$GITHUB_OUTPUT"
       - id: stable_mark
         name: Record the publish run high-water mark
+        if: steps.stable_state.outputs.done != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: echo "id=$(node scripts/wait-publish-run.mjs latest-id)" >> "$GITHUB_OUTPUT"
       - name: Publish the stable release
+        if: steps.stable_state.outputs.done != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run publish.yml \
-            -f publish_ref="refs/tags/v${{ needs.cut.outputs.version }}" \
-            -f publish_sha=${{ needs.cut.outputs.sha }}
+            -f publish_ref="refs/tags/v${{ steps.target.outputs.version }}" \
+            -f publish_sha=${{ steps.target.outputs.sha }}
       - name: Wait for the stable publish to finish
+        if: steps.stable_state.outputs.done != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         # 80, not the 60-minute default: publish.yml's stable job is also
         # environment-gated, so this wait now covers a second approval. The
         # job timeout above is the real ceiling.
-        run: node scripts/wait-publish-run.mjs wait "${{ steps.stable_mark.outputs.id }}" "v${{ needs.cut.outputs.version }}" 80
+        run: >-
+          node scripts/wait-publish-run.mjs wait "${{ steps.stable_mark.outputs.id }}"
+          "v${{ steps.target.outputs.version }}" 80
+          "Publish refs/tags/v${{ steps.target.outputs.version }}"
       - name: Write the release summary
         run: |
           {
-            echo "### Release v${{ needs.cut.outputs.version }}"
-            echo "- sha: ${{ needs.cut.outputs.sha }}"
-            echo "- main, dev, preview, and the tag all point at that commit"
+            echo "### Release v${{ steps.target.outputs.version }}"
+            echo "- sha: ${{ steps.target.outputs.sha }}"
+            echo "- main and the tag point at that commit; dev contains it"
             echo "- npm preview and latest were published by publish.yml"
-            echo "- desktop build: desktop.yml dispatched on refs/tags/desktop-v${{ needs.cut.outputs.version }}"
-            echo "- re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v${{ needs.cut.outputs.version }} -f platform=all"
-            echo "- re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ needs.cut.outputs.sha }} -f release_version=${{ needs.cut.outputs.version }}"
+            echo "- desktop build: desktop.yml on refs/tags/desktop-v${{ steps.target.outputs.version }}"
+            echo "- re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v${{ steps.target.outputs.version }} -f platform=all"
+            echo "- re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ steps.target.outputs.sha }} -f release_version=${{ steps.target.outputs.version }}"
+            echo "- resume: npm run release -- resume ${{ steps.target.outputs.version }}"
           } >> "$GITHUB_STEP_SUMMARY"
       # D5: the Pages site rebuilds from the release inputs once npm stable
       # has landed. Failure here must not fail the release, so the dispatch
@@ -306,8 +395,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ needs.cut.outputs.sha }} -f release_version=${{ needs.cut.outputs.version }}"
+          echo "re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ steps.target.outputs.sha }} -f release_version=${{ steps.target.outputs.version }}"
           gh workflow run pages.yml \
             --ref main \
-            -f release_sha=${{ needs.cut.outputs.sha }} \
-            -f release_version=${{ needs.cut.outputs.version }}
+            -f release_sha=${{ steps.target.outputs.sha }} \
+            -f release_version=${{ steps.target.outputs.version }}

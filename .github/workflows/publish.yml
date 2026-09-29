@@ -326,8 +326,6 @@ jobs:
         run: |
           test -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
           echo "OIDC endpoint is available to the stable publish job"
-      - name: Recheck live release refs
-        run: node scripts/release-contract.mjs assert-remote-ref "$PUBLISH_REF" "$PUBLISH_SHA"
       - id: registry
         name: Guard immutable registry version
         run: >-
@@ -336,6 +334,12 @@ jobs:
           "${{ needs.prepare.outputs.npm_tag }}"
           "${{ needs.prepare.outputs.source_ref }}"
           "$PUBLISH_SHA"
+      # The refs only matter when this job is about to publish. An already
+      # published version is verified below instead of failing on a ref that
+      # moved after the release landed.
+      - name: Recheck live release refs
+        if: steps.registry.outputs.should_publish == 'true'
+        run: node scripts/release-contract.mjs assert-remote-ref "$PUBLISH_REF" "$PUBLISH_SHA"
       - name: Publish tested tarball
         if: steps.registry.outputs.should_publish == 'true'
         run: |
