@@ -244,3 +244,43 @@ Verifiers (run at P): `npm run typecheck` exit 0 and `actionlint` exit 0 on orig
 
 - Audit N5: the ruleset PUT is read-modify-write: GET the ruleset, resend name, target, enforcement, conditions, rules and the new bypass_actors.
 - Audit N4: anchors drift by a line or two (validateRemoteRefs 188, desktop push 260, InstallFooter script 75-122); names are authoritative.
+
+## wp1 audit fold-back (reviewer GO-WITH-FIXES, blockers=0)
+
+- R1 G2 literal: `RUNNING=$(gh run list --workflow desktop.yml --branch "desktop-v$VERSION" --limit 30 --json status --jq '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo 0)`; skip when `STATE = false` or `RUNNING != 0`. Shape test pins `--branch "desktop-v$VERSION"` and `select(.status != "completed")`.
+- R2 shape test on the `stable_state` block: `gitHead 2>/dev/null`, `HAS_GH=0`, `done=false` default, `>> "$GITHUB_OUTPUT"`.
+- R3 shape test: `id: target` precedes "Refuse to tag"; after it no tag-job step reads `needs.cut.outputs.version` or `needs.cut.outputs.sha` except the target step itself.
+- R4 refuse-dry-resume test pins the exact `if`.
+- R5 publish-preview recheck keeps no `should_publish` gate (doesNotMatch).
+- R6 resume dispatch test asserts no `gh pr list` / `rev-list --count` call.
+
+
+## B-phase amendment: D1 → D1' (GitHub refused both CI-side tag credentials)
+
+Observed in B (2026-09-29):
+- `gh repo deploy-key add … --allow-write` → HTTP 422 "Deploy keys are disabled for this repository";
+  `gh api orgs/lidge-ai` → `deploy_keys_enabled_for_repositories: false` (org-wide policy).
+- Ruleset PUT with `{actor_id:15368, actor_type:"Integration"}` → 422 "Actor GitHub Actions
+  integration must be part of the ruleset source or owner organization".
+- `structure/06-infra-operations.md` line 190 explains the creation restriction: without it any
+  push-access actor can mint the tag that spends the signing secrets. So the rule stays.
+
+Nothing was created: no deploy key, no secret, ruleset unchanged. The local key pair was deleted.
+
+D1': the tag job only checks `desktop-vX` (id `desktop_tag`, output `present`), never pushes it.
+`scripts/release.mjs` (run by an admin, the documented release path) polls
+`git ls-remote --tags origin refs/tags/vX refs/tags/desktop-vX` while it watches the run and
+pushes `git push origin <sha>:refs/tags/desktop-vX` once `vX` exists (`desktopTagAction`:
+wait/push/done/conflict). A user push fires desktop.yml's push trigger. The CI dispatch step runs
+only when the tag is present (resume, or release.mjs was faster) and keeps the STATE/RUNNING skip.
+Read/push failures are logged and retried; a conflict stops the watcher.
+Alternative left to the user: enable deploy keys for the org and move the push into CI.
+Criterion c-5 is re-scoped to "ruleset kept admin-only; no new credential needed", observed via gh api.
+
+
+D1' reflection (same architect, ALIGNED) folded: a GH013 rule rejection stops the push retries
+and names the admin requirement (`isRuleRejection`); the CI notice names the admin requirement;
+the stale deploy-key comment is gone. Risk kept on record: desktop-vX is pushed when vX lands,
+before the stable publish finishes, so a release that fails afterwards can leave a signed desktop
+*draft* for a version npm never shipped. Publication still needs desktop-production approval, and
+a resume completes the npm side.

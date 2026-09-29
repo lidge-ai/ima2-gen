@@ -49,12 +49,32 @@ and `--yes` to skip the confirmation prompts.
 
 Inside `release.yml` the cut reuses main's push CI when the version commit only
 changes `package.json`/`package-lock.json` (a dedicated candidate CI run is
-dispatched otherwise), publishes the preview, then the tag job pushes
-`main`/`dev`/`vX.Y.Z` atomically, pushes `desktop-vX.Y.Z` and starts the
-desktop build in parallel with the npm stable publish, and finally dispatches
-the Pages deploy. The approvals stay on purpose: `npm-stable` gates the tag
+dispatched otherwise), publishes the preview, then the tag job pushes `main` and
+`vX.Y.Z` atomically and lands the release on `dev` (a fast-forward, or a merge
+commit when PRs merged into dev during the release, so dev may keep moving). It
+then verifies `desktop-vX.Y.Z` and runs the npm stable publish, and finally
+dispatches the Pages deploy. The approvals stay on purpose: `npm-stable` gates the tag
 and the stable publish, and `desktop-production` gates the public desktop
 release.
+
+`desktop-v*` tags start a signed build, so the "Protect desktop release tags"
+ruleset lets only repository admins create them; the workflow token cannot. That
+is why `scripts/release.mjs` pushes `desktop-vX.Y.Z` itself, from the
+maintainer's machine, as soon as `vX.Y.Z` lands. The push starts the desktop
+build in parallel with the npm stable publish. Run the release as a repository
+admin; otherwise the script prints the `git push` command for an admin.
+
+If a release stops after the tag landed (an approval timed out, dev could not be
+merged, a publish or desktop step failed), finish it without a new version:
+
+```bash
+npm run release -- resume X.Y.Z --approve
+```
+
+Resume verifies that `vX.Y.Z` exists, that its `package.json` says `X.Y.Z` and
+that main contains it, then runs only what is still missing: landing on dev, the
+desktop tag and build, the stable publish (skipped when npm latest already has
+that commit and the GitHub release exists), and the Pages deploy.
 
 ## Devlog
 

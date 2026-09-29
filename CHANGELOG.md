@@ -5,7 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.24.0] - Unreleased
+## [Unreleased]
+
+### Changed
+
+- **Releases finish on their own** — a PR merged into dev during a release no longer fails it: the stable publish requires the tag to match and main, dev and preview to contain the release, and the tag job lands the release on dev by fast-forward or merge. `npm run release` pushes the admin-only `desktop-v` tag as soon as the release tag lands, which starts the desktop build.
+- **`npm run release -- resume X.Y.Z`** finishes an already-tagged release (dev landing, desktop tag and build, stable publish, Pages) and skips what already landed. `--yes` now answers every prompt.
+- Release waits only follow the publish run for their own ref and give a dispatch ten minutes to appear.
+
+## [3.24.0] - 2026-09-29
 
 ### Added
 
