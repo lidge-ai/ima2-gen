@@ -14,7 +14,9 @@
  *
  * Usage:
  *   node scripts/wait-publish-run.mjs latest-id
- *   node scripts/wait-publish-run.mjs wait <afterRunId> <label> [timeoutMinutes] [runTitle]
+ *   PUBLISH_RUN_TITLE="Publish refs/tags/vX.Y.Z" node scripts/wait-publish-run.mjs wait <afterRunId> <label> [timeoutMinutes]
+ *
+ * PUBLISH_RUN_TITLE (optional) is publish.yml's run-name for the dispatched ref.
  */
 import { execFileSync } from "node:child_process";
 
@@ -56,7 +58,7 @@ function latestId() {
 }
 
 async function waitFor(afterRunId, label, timeoutMinutes, title) {
-  if (!afterRunId) throw new Error("usage: wait-publish-run.mjs wait <afterRunId> <label> [timeoutMinutes] [runTitle]");
+  if (!afterRunId) throw new Error("usage: wait-publish-run.mjs wait <afterRunId> <label> [timeoutMinutes]");
   const discoveryDeadline = Date.now() + DISCOVERY_TIMEOUT_MS;
   const deadline = Date.now() + Number(timeoutMinutes) * 60 * 1000;
 
@@ -87,8 +89,8 @@ async function waitFor(afterRunId, label, timeoutMinutes, title) {
 async function main() {
   const [command, ...args] = process.argv.slice(2);
   if (command === "latest-id") return latestId();
-  if (command === "wait") return waitFor(args[0], args[1] || "the release", args[2] || "60", args[3] || "");
-  throw new Error("usage: wait-publish-run.mjs latest-id | wait <afterRunId> <label> [timeoutMinutes] [runTitle]");
+  if (command === "wait") return waitFor(args[0], args[1] || "the release", args[2] || "60", process.env.PUBLISH_RUN_TITLE || "");
+  throw new Error("usage: wait-publish-run.mjs latest-id | wait <afterRunId> <label> [timeoutMinutes]");
 }
 
 const isMain = process.argv[1] && process.argv[1].endsWith("wait-publish-run.mjs");

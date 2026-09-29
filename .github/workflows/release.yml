@@ -198,8 +198,9 @@ jobs:
         if: ${{ inputs.dry_run == 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          PUBLISH_RUN_TITLE: Publish refs/heads/preview
         # package source gate (25) + Windows consumer (40) + publish margin.
-        run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 100 "Publish refs/heads/preview"
+        run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 100
       - name: Require the npm preview proof before tagging
         if: ${{ inputs.dry_run == 'false' }}
         run: >-
@@ -368,13 +369,11 @@ jobs:
         if: steps.stable_state.outputs.done != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          PUBLISH_RUN_TITLE: Publish refs/tags/v${{ steps.target.outputs.version }}
         # 80, not the 60-minute default: publish.yml's stable job is also
         # environment-gated, so this wait now covers a second approval. The
         # job timeout above is the real ceiling.
-        run: >-
-          node scripts/wait-publish-run.mjs wait "${{ steps.stable_mark.outputs.id }}"
-          "v${{ steps.target.outputs.version }}" 80
-          "Publish refs/tags/v${{ steps.target.outputs.version }}"
+        run: node scripts/wait-publish-run.mjs wait "${{ steps.stable_mark.outputs.id }}" "v${{ steps.target.outputs.version }}" 80
       - name: Write the release summary
         run: |
           {

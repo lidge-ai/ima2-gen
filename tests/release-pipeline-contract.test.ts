@@ -1214,7 +1214,7 @@ describe("tag job dispatches (D4/D5)", () => {
       assert.match(stepBlock(job, name), /if: steps\.stable_state\.outputs\.done != 'true'/, name);
     }
     // The wait follows only the run for this ref, never a hand dispatch for another.
-    assert.match(stepBlock(job, "Wait for the stable publish to finish"), /"Publish refs\/tags\/v\$\{\{ steps\.target\.outputs\.version \}\}"/);
+    assert.match(stepBlock(job, "Wait for the stable publish to finish"), /PUBLISH_RUN_TITLE: Publish refs\/tags\/v\$\{\{ steps\.target\.outputs\.version \}\}/);
   });
 
   it("refuses a dry resume and keeps the cut out of a resume", () => {
@@ -1222,7 +1222,7 @@ describe("tag job dispatches (D4/D5)", () => {
     assert.match(workflow, /resume_version:\n\s+description: .+\n\s+required: false\n\s+default: ''\n\s+type: string/);
     assert.match(workflow, /refuse-dry-resume:[\s\S]{0,120}?if: inputs\.resume_version != '' && inputs\.dry_run != 'false'/);
     assert.match(workflow, /\n  cut:\n\s+name: [^\n]+\n\s+if: inputs\.resume_version == ''/);
-    assert.match(workflow, /100 "Publish refs\/heads\/preview"/);
+    assert.match(stepBlock(workflow, "Wait for the preview publish to finish"), /PUBLISH_RUN_TITLE: Publish refs\/heads\/preview/);
   });
 
   it("rechecks the stable refs only when publish-stable is about to publish", () => {
