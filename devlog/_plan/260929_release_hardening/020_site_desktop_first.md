@@ -96,3 +96,21 @@ The verifier `astro build` reads every component above (they are imported by the
 - N3: tray mock adds "Open Server Log"; items are `<ul><li>`, separators `aria-hidden`.
 - N6: `.nav-download` is hidden under 480px (mobile keeps the hero button, which is full width).
 
+
+## User steering (2026-09-29): leave the hero alone
+
+The user asked to keep the title area as it was and put the desktop content right after it.
+S1, S2 and S3 are withdrawn: Hero.astro and hero.eyebrow stay byte-identical to origin/dev.
+The download block (renamed DesktopDownload.astro) is the first element of the DesktopApp
+section, directly under its lede, and links "Other platforms and the npm CLI" to #install.
+S4, S5 (header Download pill to #desktop) and S6 stay.
+
+Architect reflection on the implementation: ALIGNED. Folded: the checked tray item is a
+menuitemcheckbox with aria-checked. Recorded exception: the tray mock and its status line stay in
+English on /ko because the shipped tray (desktop/lib/tray.mjs) is English-only; the mock shows what
+the user will actually see. Fallback (api.github.com blocked) is part of C.
+
+Audit (Kimi reviewer 01a0ecf8, VERDICT: PASS) folded: the update fact follows desktop/lib/updater.mjs
+updaterSupported (macOS arm64, Windows installer, Linux AppImage; .deb via the package manager);
+structure/06-infra-operations.md line 194 is stale on this point. The tray mock is a role="menu"
+with menuitem/menuitemcheckbox/separator children.

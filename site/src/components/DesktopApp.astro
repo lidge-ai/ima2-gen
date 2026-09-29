@@ -29,12 +29,14 @@ const tray: Array<string | null> = [
       </div>
       <figure class="tray-mock reveal" style="--i:5" aria-label={t(lang, 'desktop.tray.aria')}>
         <div class="tray-bar" aria-hidden="true"><span class="tray-icon"></span></div>
-        <ul class="tray-menu">
-          <li class="tray-status">{t(lang, 'desktop.tray.status')}</li>
-          <li class="tray-sep" aria-hidden="true"></li>
+        <ul class="tray-menu" role="menu" aria-label={t(lang, 'desktop.tray.aria')}>
+          <li class="tray-status" role="presentation">{t(lang, 'desktop.tray.status')}</li>
+          <li class="tray-sep" role="separator"></li>
           {tray.map((label) => label === null
-            ? <li class="tray-sep" aria-hidden="true"></li>
-            : <li class={label === 'Start at Login' ? 'is-checked' : undefined}>{label}</li>)}
+            ? <li class="tray-sep" role="separator"></li>
+            : label === 'Start at Login'
+              ? <li class="is-checked" role="menuitemcheckbox" aria-checked="true">{label}</li>
+              : <li role="menuitem">{label}</li>)}
         </ul>
       </figure>
     </div>

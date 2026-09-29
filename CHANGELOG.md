@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Releases finish on their own** — a PR merged into dev during a release no longer fails it: the stable publish requires the tag to match and main, dev and preview to contain the release, and the tag job lands the release on dev by fast-forward or merge. `npm run release` pushes the admin-only `desktop-v` tag as soon as the release tag lands, which starts the desktop build.
 - **`npm run release -- resume X.Y.Z`** finishes an already-tagged release (dev landing, desktop tag and build, stable publish, Pages) and skips what already landed. `--yes` now answers every prompt.
 - Release waits only follow the publish run for their own ref and give a dispatch ten minutes to appear.
+- **Site: the desktop app comes right after the hero** — a new "Desktop app" section under the unchanged hero offers a one-click download for the visitor's OS (resolved from the latest desktop release, with a releases-page fallback), explains what the app adds (bundled server, tray, CLI attach/takeover, macOS updates) with a tray menu built from the real labels, and the header gains a Download link. The download blocks share one mounter.
 
 ## [3.24.0] - 2026-09-29
 
