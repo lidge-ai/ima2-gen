@@ -67,7 +67,11 @@ export function getUiDistBuildStatus(root: string): UiDistBuildStatus {
   return { needsBuild: false, reason: "fresh" };
 }
 
-export function ensureFreshUiDist(root: string): EnsureFreshUiDistResult {
+/**
+ * `toStderr` keeps stdout clean for commands whose stdout is a JSON document
+ * (`ima2 start --json`): the notice and the build's own output go to stderr.
+ */
+export function ensureFreshUiDist(root: string, { toStderr = false }: { toStderr?: boolean } = {}): EnsureFreshUiDistResult {
   const status = getUiDistBuildStatus(root);
   if (!status.needsBuild) {
     if ("error" in status) return { ok: false, reason: status.reason, error: status.error };
@@ -75,9 +79,9 @@ export function ensureFreshUiDist(root: string): EnsureFreshUiDistResult {
   }
 
   const reason = status.reason === "missing" ? "missing" : "stale";
-  console.log(`\n  ui/dist ${reason} — running 'npm run build' first...\n`);
+  (toStderr ? console.error : console.log)(`\n  ui/dist ${reason} — running 'npm run build' first...\n`);
   try {
-    execSync(`${resolveBin("npm")} run build`, { stdio: "inherit", cwd: root });
+    execSync(`${resolveBin("npm")} run build`, { stdio: toStderr ? ["inherit", 2, 2] : "inherit", cwd: root });
     return { ok: true, built: true, reason };
   } catch {
     return { ok: false, reason: "build-failed", error: "Build failed. Try: cd ui && npm install && npm run build" };

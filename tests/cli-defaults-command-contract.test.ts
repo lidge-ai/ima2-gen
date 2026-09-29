@@ -37,7 +37,8 @@ describe("CLI defaults command contract", () => {
   });
 
   it("top-level CLI dispatch lets defaults and capabilities show their own help", () => {
-    const src = readSource("bin/ima2.ts");
+    // The help text lives in bin/lib/helpText.ts; dispatch stays in bin/ima2.ts.
+    const src = readSource("bin/ima2.ts") + readSource("bin/lib/helpText.ts");
 
     assert.match(src, /defaults <sub> Inspect\/change model defaults/);
     assert.match(src, /capabilities\s+Agent capability metadata/);

@@ -51,7 +51,7 @@ function logTail(file: string, lines = 20): string {
   }
 }
 
-export async function startRuntime({ port, dev }: { port: number; dev: boolean }): Promise<StartReport> {
+export async function startRuntime({ port, dev, json = false }: { port: number; dev: boolean; json?: boolean }): Promise<StartReport> {
   const logFile = serverLogFile(config.storage.configDir);
   const resolved = await resolveRuntime({ advertiseFile: config.storage.advertiseFile, port });
   const base = { logFile, port, pid: null, url: null, launcher: null };
@@ -64,7 +64,7 @@ export async function startRuntime({ port, dev }: { port: number; dev: boolean }
     return buildStartReport({ ...base, outcome: "refused",
       message: `Not starting: ${resolved.reason ?? "something answers but cannot be identified"}. Free the port or pick another with --port.` });
   }
-  const ui = ensureFreshUiDist(ROOT);
+  const ui = ensureFreshUiDist(ROOT, { toStderr: json });
   if (!ui.ok) return buildStartReport({ ...base, outcome: "failed", message: ui.error ?? "UI build is missing" });
   return launch({ port, dev, logFile });
 }
@@ -106,7 +106,7 @@ async function waitForBoot(child: ChildProcess, url: string, bootId: string): Pr
 }
 
 /** Stop what runs now (only if the CLI may), then start in the background. */
-export async function restartRuntime({ port, dev }: { port: number; dev: boolean }): Promise<StartReport> {
+export async function restartRuntime({ port, dev, json = false }: { port: number; dev: boolean; json?: boolean }): Promise<StartReport> {
   const resolved = await resolveRuntime({ advertiseFile: config.storage.advertiseFile, port });
   const refuse = (message: string) => buildStartReport({ outcome: "refused", logFile: serverLogFile(config.storage.configDir), port, pid: resolved.runtime?.pid ?? null, url: resolved.runtime?.url ?? null, launcher: resolved.runtime?.launcher ?? null, message });
   if (resolved.status === "live" && resolved.runtime) {
@@ -117,7 +117,7 @@ export async function restartRuntime({ port, dev }: { port: number; dev: boolean
       ...(r.bootId ? { expectBoot: r.bootId } : r.startedAt ? { expectStarted: r.startedAt } : {}) });
     if (!stopped.ok) return refuse(`Could not stop the running server: ${stopped.message}`);
   }
-  return startRuntime({ port, dev });
+  return startRuntime({ port, dev, json });
 }
 
 export async function start(args: string[] = [], mode: "start" | "restart" = "start"): Promise<void> {
@@ -137,7 +137,7 @@ export async function start(args: string[] = [], mode: "start" | "restart" = "st
     return;
   }
   const dev = args.includes("--dev");
-  const report = mode === "restart" ? await restartRuntime({ port, dev }) : await startRuntime({ port, dev });
+  const report = mode === "restart" ? await restartRuntime({ port, dev, json }) : await startRuntime({ port, dev, json });
   if (json) process.stdout.write(`${JSON.stringify(report)}\n`);
   else say(`\n  ${report.message.replace(/\n/g, "\n  ")}\n`);
   process.exitCode = report.ok ? 0 : 1;

@@ -154,3 +154,40 @@ test("a desktop server beside a dormant service registration is not refused", as
     await done(f);
   }
 });
+
+test("another pid answering at the advertised address is refused, not reported as down", async () => {
+  const f = await fixture();
+  try {
+    const report = await run(f, {}, { pid: 1 });
+    assert.equal(report.outcome, "refused");
+    assert.equal(report.code, "advertise-stale");
+    assert.equal(report.runtimeDown, false);
+    assert.equal(report.ok, false);
+  } finally {
+    await done(f);
+  }
+});
+
+test("--force never overrides unknown service ownership", async () => {
+  const f = await fixture();
+  try {
+    const report = await run(f, { force: true, inspect: () => ({ state: "unknown", reason: "launchctl failed" }) });
+    assert.equal(report.code, "ownership-unknown");
+    assert.equal(f.child.exitCode, null);
+  } finally {
+    await done(f);
+  }
+});
+
+test("--service refuses a server the login service does not run", async () => {
+  const f = await fixture({ launcher: "foreground" });
+  try {
+    const report = await run(f, { service: true }, { launcher: "foreground" });
+    assert.equal(report.outcome, "refused");
+    assert.equal(report.code, "not-service-managed");
+    assert.ok(!f.calls.includes("/api/admin/stop"));
+    assert.equal(f.child.exitCode, null);
+  } finally {
+    await done(f);
+  }
+});

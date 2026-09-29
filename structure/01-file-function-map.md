@@ -79,8 +79,8 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 592 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 532 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `server.ts` | 601 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
+| `config.ts` | 534 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 95 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
@@ -93,7 +93,7 @@ routes/
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
 | `routes/history.ts` | 235 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
-| `routes/health.ts` | 151 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
+| `routes/health.ts` | 154 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
 | `routes/mcpConnections.ts` | 164 | MCP provider list/status/connect/callback/refresh/disconnect/model routes; truthful state-to-HTTP mapping and secret-free responses |
 | `routes/storage.ts` | 48 | Gallery storage status and generated-folder open action |
 | `routes/metadata.ts` | 81 | `/api/metadata/read` for embedded XMP image metadata extraction |
@@ -115,7 +115,7 @@ routes/
 | `lib/jobs/terminalStore.ts` | 79 | Terminal snapshot disk read/write/reap and per-ID admission cleanup; no inflight import |
 | `ui/src/lib/eventChannel.ts` | 224 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
-| `bin/ima2.ts` | 594 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/ima2.ts` | 497 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 419 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 171 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
@@ -222,7 +222,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/providers/adapters/openaiOperations.ts` | 366 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
 | `lib/providers/adapters/openaiExecution.ts` | 142 | Typed four-surface OpenAI owner, classic retry and native callback/result mapping |
 | `lib/providerOptions.ts` | 179 | Per-provider option assembly; rejects catalog-only Comfy video workflows on the classic image path |
-| `lib/runtimeContext.ts` | 232 | Per-request runtime context plumbing for routes and lib helpers |
+| `lib/runtimeContext.ts` | 241 | Per-request runtime context plumbing for routes and lib helpers |
 | `lib/errInfo.ts` | 73 | Error info shape and helpers shared across routes/lib |
 | `lib/oauthNormalize.ts` | 51 | Upstream OAuth response field normalization |
 | `lib/openDirectory.ts` | 60 | Cross-platform open of the generated directory (used by `/api/storage/open-generated-dir`) |

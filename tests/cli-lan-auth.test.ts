@@ -37,7 +37,7 @@ before(async () => {
   emit("package.json", '{"type":"module","version":"fixture"}');
   const sources = [
     ...["client", "output", "error-hints", "args", "argsExplicit", "sse", "mcpJob", "characterResolve", "videoMcp",
-      "files", "modelResolver", "model-aliases", "recover-output", "serviceTemplates"].map((n) => `bin/lib/${n}`),
+      "files", "modelResolver", "model-aliases", "recover-output", "serviceTemplates", "serviceManager"].map((n) => `bin/lib/${n}`),
     ...["ping", "models", "defaults", "capabilities", "gen", "video", "upscale", "service", "prompt", "tools"].map((n) => `bin/commands/${n}`),
     ...["eventsPolicy", "jobStatus", "errInfo", "pngInfo", "sizeNudge", "backgroundPresets", "videoClientTimeouts", "oauthLegacyModels"].map((n) => `lib/${n}`),
     "lib/contracts/discovery", "lib/mcp/sanitizer", "lib/errors/providerMap", "lib/responsesErrors",

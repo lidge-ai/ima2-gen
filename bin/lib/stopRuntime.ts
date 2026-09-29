@@ -87,7 +87,8 @@ export async function stopRuntime(opts: StopOptions): Promise<StopReport> {
   if (changed) return report("refused", t, `Refusing to stop: ${changed}.`, { code: "identity-changed" });
   if (t.health && t.health.pid !== pid) {
     cleanup(opts.advertiseFile, pid);
-    return report("not-running", t, `A different server answers where pid ${pid} was advertised. Refusing to signal a process the advertise file cannot vouch for; cleaned the stale file.`, { code: "advertise-stale" });
+    // Something still answers at the advertised address, so this is not a stop.
+    return report("refused", t, `A different server (pid ${String(t.health.pid)}) answers where pid ${pid} was advertised. Refusing to signal a process the advertise file cannot vouch for; cleaned the stale file. Stop that server from its own CLI.`, { code: "advertise-stale" });
   }
   return stopVerified(t);
 }
@@ -95,8 +96,13 @@ export async function stopRuntime(opts: StopOptions): Promise<StopReport> {
 async function stopVerified(t: Target): Promise<StopReport> {
   const { opts } = t;
   const ownership = serviceOwnership({ pid: t.pid, launcher: t.launcher }, (opts.inspect ?? inspectManager)());
-  if (ownership === "unknown" && !opts.force) {
+  // --force skips the graceful stop and the managed-service refusal, never this one:
+  // an unanswerable manager may restart whatever gets killed.
+  if (ownership === "unknown") {
     return report("refused", t, "Cannot tell whether the login service manages this server (the service manager could not be asked, or it runs a different pid). Check 'ima2 service status'.", { code: "ownership-unknown" });
+  }
+  if (opts.service && ownership !== "managed") {
+    return report("refused", t, `--service was given, but the login service does not run pid ${t.pid}. Use plain 'ima2 stop'.`, { code: "not-service-managed" });
   }
   if (ownership === "managed") {
     if (opts.service) return stopViaManager(t);
