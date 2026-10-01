@@ -461,12 +461,10 @@
     "afterBlocks": "본문 프롬프트 뒤",
     "hint": "Ctrl + Enter로 생성",
     "dropHere": "놓아서 참조 이미지로 추가 ({max}장까지)",
-    "rejectNotMedia": "이미지, 오디오, mp4 파일만 첨부할 수 있습니다",
-    "rejectAudioNeedsVideoModel": "오디오는 비디오 모델을 선택한 뒤에 쓸 수 있습니다",
-    "rejectAudioNeeds15": "오디오는 grok-imagine-video-1.5에서만 지원합니다",
+    "rejectNotMedia": "이미지와 mp4 파일만 첨부할 수 있습니다",
+    "rejectAudioUploadUnsupported": "여기서는 오디오 파일 업로드를 사용할 수 없습니다. 비디오 설정의 프리셋 보이스를 쓰거나 프롬프트에 음악/효과음을 설명하세요",
     "rejectVideoNeedsBase": "영상 입력은 grok-imagine-video에서만 지원합니다",
     "rejectVideoSingleOnly": "영상은 한 번에 하나만 쓸 수 있습니다",
-    "audioUsePresetVoice": "오디오 파일 업로드는 xAI가 파트너 계정에만 허용합니다. 비디오 설정의 프리셋 보이스를 사용하세요",
     "videoUseCliForEdit": "영상 편집과 연장은 ima2 video edit / ima2 video extend 명령으로 실행합니다"
   },
   "canvas": {

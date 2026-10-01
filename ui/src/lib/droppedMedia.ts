@@ -1,6 +1,6 @@
 // What the composer can accept depends on the mode the user is in, and the rules are
-// not obvious: audio only reaches grok-imagine-video-1.5, video only reaches
-// grok-imagine-video, and neither reaches the image lanes at all.
+// not obvious: video only reaches grok-imagine-video, while uploaded audio clips
+// are not actionable in the composer because xAI gates that capability upstream.
 //
 // This module exists because three surfaces (PromptComposer, Canvas, ImageNode) each
 // filtered dropped files with their own `type.startsWith("image/")` check. Every one of
@@ -11,14 +11,12 @@
 
 export type DropRejection =
   | "not-media"
-  | "audio-needs-video-model"
-  | "audio-needs-15"
+  | "audio-upload-unsupported"
   | "video-needs-base"
   | "video-single-only";
 
 export interface SortedDrop {
   images: File[];
-  audios: File[];
   videos: File[];
   rejected: Array<{ file: File; reason: DropRejection }>;
 }
@@ -29,12 +27,6 @@ export interface DropContext {
 }
 
 const VIDEO_MODEL_BASE = "grok-imagine-video";
-const VIDEO_MODEL_15 = "grok-imagine-video-1.5";
-const VIDEO_15_ALIASES = new Set([
-  VIDEO_MODEL_15,
-  "grok-imagine-video-1.5-preview",
-  "grok-imagine-video-1.5-2026-05-30",
-]);
 
 function isAudio(file: File): boolean {
   return file.type.startsWith("audio/");
@@ -55,9 +47,8 @@ function isVideo(file: File): boolean {
  * a key string shown to the user.
  */
 export function sortDroppedByKind(files: File[], context: DropContext): SortedDrop {
-  const sorted: SortedDrop = { images: [], audios: [], videos: [], rejected: [] };
+  const sorted: SortedDrop = { images: [], videos: [], rejected: [] };
   const model = context.videoModelSelected;
-  const is15 = typeof model === "string" && VIDEO_15_ALIASES.has(model);
   const isBase = model === VIDEO_MODEL_BASE;
 
   for (const file of files) {
@@ -66,12 +57,10 @@ export function sortDroppedByKind(files: File[], context: DropContext): SortedDr
       continue;
     }
     if (isAudio(file)) {
-      // Preset voices are the supported path; an uploaded clip is gated to trusted
-      // partners upstream. Both still require 1.5, which is the only model that
-      // declares audio as an input modality.
-      if (!model) sorted.rejected.push({ file, reason: "audio-needs-video-model" });
-      else if (!is15) sorted.rejected.push({ file, reason: "audio-needs-15" });
-      else sorted.audios.push(file);
+      // Uploaded clips appear to be supported by the 1.5 model spec, but xAI gates them
+      // to trusted partner accounts. Do not accept them as attachments until the request
+      // pipeline can actually consume them; point users to preset voices instead.
+      sorted.rejected.push({ file, reason: "audio-upload-unsupported" });
       continue;
     }
     if (isVideo(file)) {
@@ -96,7 +85,6 @@ export function sortDroppedByKind(files: File[], context: DropContext): SortedDr
  */
 export function composerAcceptAttr(context: DropContext): string {
   const model = context.videoModelSelected;
-  if (typeof model === "string" && VIDEO_15_ALIASES.has(model)) return "image/*,audio/*";
   if (model === VIDEO_MODEL_BASE) return "image/*,video/mp4";
   return "image/*";
 }

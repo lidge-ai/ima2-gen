@@ -461,12 +461,10 @@
     "afterBlocks": "主提示後",
     "hint": "Ctrl+Enter 生成",
     "dropHere": "拖曳到附件作為參考（最多 {max}）",
-    "rejectNotMedia": "僅支援附加圖片、音訊和 mp4 檔案",
-    "rejectAudioNeedsVideoModel": "音訊需要先選擇影片模型",
-    "rejectAudioNeeds15": "僅 grok-imagine-video-1.5 支援音訊",
+    "rejectNotMedia": "僅支援附加圖片和 mp4 檔案",
+    "rejectAudioUploadUnsupported": "此處暫不支援上傳音訊檔案。請在影片設定中使用預設語音，或在提示詞中描述音樂/音效",
     "rejectVideoNeedsBase": "僅 grok-imagine-video 支援影片輸入",
     "rejectVideoSingleOnly": "一次只能使用一個來源影片",
-    "audioUsePresetVoice": "xAI 僅對合作夥伴帳號開放音訊上傳，請在影片設定中使用預設語音",
     "videoUseCliForEdit": "影片編輯與延長請使用 ima2 video edit / ima2 video extend"
   },
   "canvas": {
