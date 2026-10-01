@@ -122,13 +122,13 @@
     "@types/better-sqlite3": "^9.6.0",
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.1",
-    "eslint": "10.10.0",
+    "eslint": "10.11.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.12.0",
     "node-gyp": "13.0.2",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.70.0",
+    "typescript-eslint": "8.70.1",
     "yaml": "2.9.1"
   }
 }
