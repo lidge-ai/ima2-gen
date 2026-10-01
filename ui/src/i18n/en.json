@@ -1268,7 +1268,18 @@
     "voiceSection": "Voice",
     "voiceLimit": "Up to {max}. Refer to them as <AUDIO_0> in the prompt",
     "voiceNeeds15": "Voices are supported only on grok-imagine-video-1.5",
-    "voiceCustomPlaceholder": "Custom voice id (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "Custom voice ID (/v1/custom-voices)",
+    "soundIntentTitle": "Sound intent",
+    "soundIntentHelp": "Adds music/sound direction to the prompt without uploading audio files.",
+    "soundIntent": {
+      "noMusic": "No music",
+      "softBgm": "Soft BGM",
+      "tenseMusic": "Tense music",
+      "roomTone": "Room tone",
+      "sfx": "Sound effects",
+      "noDialogue": "No dialogue",
+      "clear": "Clear sound intent"
+    }
   },
   "sidebar": {
     "appName": "Image Generator",

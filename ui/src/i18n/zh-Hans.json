@@ -1266,9 +1266,20 @@
       "reference": "仅作参考"
     },
     "voiceSection": "语音",
-    "voiceLimit": "最多 {max} 个。在提示词中以 <AUDIO_0> 指代",
-    "voiceNeeds15": "仅 grok-imagine-video-1.5 支持语音",
-    "voiceCustomPlaceholder": "自定义语音 ID (/v1/custom-voices)"
+    "voiceLimit": "最多 {max} 个。请在提示词中用 <AUDIO_0> 引用",
+    "voiceNeeds15": "语音仅在 grok-imagine-video-1.5 支持",
+    "voiceCustomPlaceholder": "自定义语音 ID (/v1/custom-voices)",
+    "soundIntentTitle": "声音意图",
+    "soundIntentHelp": "无需上传音频文件，即可向提示词添加音乐/音效指令。",
+    "soundIntent": {
+      "noMusic": "无背景音乐",
+      "softBgm": "柔和 BGM",
+      "tenseMusic": "紧张音乐",
+      "roomTone": "环境声/房间底噪",
+      "sfx": "突出音效",
+      "noDialogue": "无对白",
+      "clear": "清除声音意图"
+    }
   },
   "sidebar": {
     "appName": "图像生成器",

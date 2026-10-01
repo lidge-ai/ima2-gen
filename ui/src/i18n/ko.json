@@ -1268,7 +1268,18 @@
     "voiceSection": "보이스",
     "voiceLimit": "최대 {max}개. 프롬프트에서 <AUDIO_0>처럼 지칭하세요",
     "voiceNeeds15": "보이스는 grok-imagine-video-1.5에서만 지원합니다",
-    "voiceCustomPlaceholder": "커스텀 보이스 ID (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "커스텀 보이스 ID (/v1/custom-voices)",
+    "soundIntentTitle": "사운드 의도",
+    "soundIntentHelp": "오디오 파일 업로드 없이 프롬프트에 음악/효과음 지시를 추가합니다.",
+    "soundIntent": {
+      "noMusic": "배경음악 없음",
+      "softBgm": "잔잔한 BGM",
+      "tenseMusic": "긴장감 있는 음악",
+      "roomTone": "현장음/룸톤",
+      "sfx": "효과음 강조",
+      "noDialogue": "대사 없음",
+      "clear": "사운드 지시 해제"
+    }
   },
   "sidebar": {
     "appName": "이미지 생성기",
