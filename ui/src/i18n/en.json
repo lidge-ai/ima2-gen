@@ -506,12 +506,10 @@
     "afterBlocks": "After main prompt",
     "hint": "Ctrl + Enter to generate",
     "dropHere": "Drop to attach as reference (up to {max})",
-    "rejectNotMedia": "Only image, audio, and mp4 files can be attached",
-    "rejectAudioNeedsVideoModel": "Audio needs a video model selected first",
-    "rejectAudioNeeds15": "Audio is supported only on grok-imagine-video-1.5",
+    "rejectNotMedia": "Only images and mp4 files can be attached",
+    "rejectAudioUploadUnsupported": "Audio file uploads are not available here. Use a preset voice in video settings, or describe music/sound in the prompt",
     "rejectVideoNeedsBase": "Video input is supported only on grok-imagine-video",
     "rejectVideoSingleOnly": "Only one source video can be used at a time",
-    "audioUsePresetVoice": "xAI limits uploaded audio clips to partner accounts. Use a preset voice in the video settings",
     "videoUseCliForEdit": "Video editing and extension run through ima2 video edit / ima2 video extend"
   },
   "canvas": {
@@ -1315,7 +1313,18 @@
     "voiceSection": "Voice",
     "voiceLimit": "Up to {max}. Refer to them as <AUDIO_0> in the prompt",
     "voiceNeeds15": "Voices are supported only on grok-imagine-video-1.5",
-    "voiceCustomPlaceholder": "Custom voice id (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "Custom voice ID (/v1/custom-voices)",
+    "soundIntentTitle": "Sound intent",
+    "soundIntentHelp": "Adds music/sound direction to the prompt without uploading audio files.",
+    "soundIntent": {
+      "noMusic": "No music",
+      "softBgm": "Soft BGM",
+      "tenseMusic": "Tense music",
+      "roomTone": "Room tone",
+      "sfx": "Sound effects",
+      "noDialogue": "No dialogue",
+      "clear": "Clear sound intent"
+    }
   },
   "sidebar": {
     "appName": "Image Generator",
