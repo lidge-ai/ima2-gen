@@ -78,8 +78,7 @@ export interface SortedDrop {
 
 export type DropRejection =
   | "not-media"          // 지원하지 않는 MIME
-  | "audio-needs-video-model"   // 오디오인데 비디오 모델 미선택
-  | "audio-needs-15"     // 오디오인데 base 모델 선택됨
+  | "audio-upload-unsupported"  // 오디오 업로드는 composer에서 실제 생성 입력으로 쓸 수 없음
   | "video-needs-base"   // 영상인데 1.5 선택됨
   | "video-single-only"; // 영상 2개 이상
 ```
@@ -190,8 +189,8 @@ base 모델에서 보이스 섹션은 **숨기지 않고 비활성화**하고, �
 
 ```
 prompt.dropHereVideo, prompt.dropHereAudio
-prompt.rejectNotMedia, prompt.rejectAudioNeedsVideoModel,
-prompt.rejectAudioNeeds15, prompt.rejectVideoNeedsBase, prompt.rejectVideoSingleOnly
+prompt.rejectNotMedia, prompt.rejectAudioUploadUnsupported,
+prompt.rejectVideoNeedsBase, prompt.rejectVideoSingleOnly
 video.voiceSection, video.voiceLimit, video.voiceNeeds15, video.voiceCustomPlaceholder
 video.sourceVideo, video.modeEdit, video.modeExtend, video.extendDurationLabel
 ```
@@ -202,8 +201,8 @@ video.sourceVideo, video.modeEdit, video.modeExtend, video.extendDurationLabel
 
 ```
 - image/png 은 images 로
-- audio/mpeg 은 비디오 1.5 선택 시 audios, base 선택 시 rejected(audio-needs-15)
-- audio/mpeg 은 이미지 모드에서 rejected(audio-needs-video-model)
+- audio/mpeg 은 모든 composer 모드에서 rejected(audio-upload-unsupported)
+- composer file picker는 실제 업로드/생성 입력으로 이어지지 않는 audio/* 를 제안하지 않음
 - video/mp4 은 base 선택 시 videos, 1.5 선택 시 rejected(video-needs-base)
 - video 2개는 첫 개만 videos, 나머지 rejected(video-single-only)
 - application/pdf 는 rejected(not-media)

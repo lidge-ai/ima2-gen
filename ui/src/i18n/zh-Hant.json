@@ -506,12 +506,10 @@
     "afterBlocks": "主提示後",
     "hint": "Ctrl+Enter 生成",
     "dropHere": "拖曳到附件作為參考（最多 {max}）",
-    "rejectNotMedia": "僅支援附加圖片、音訊和 mp4 檔案",
-    "rejectAudioNeedsVideoModel": "音訊需要先選擇影片模型",
-    "rejectAudioNeeds15": "僅 grok-imagine-video-1.5 支援音訊",
+    "rejectNotMedia": "此處可附加圖片。影片編輯或延長請使用 ima2 video edit / ima2 video extend。",
+    "rejectAudioUploadUnsupported": "此處不支援上傳音訊檔案。請在支援語音的影片模型中選擇預設語音，或在提示詞中描述音樂和音效。",
     "rejectVideoNeedsBase": "僅 grok-imagine-video 支援影片輸入",
     "rejectVideoSingleOnly": "一次只能使用一個來源影片",
-    "audioUsePresetVoice": "xAI 僅對合作夥伴帳號開放音訊上傳，請在影片設定中使用預設語音",
     "videoUseCliForEdit": "影片編輯與延長請使用 ima2 video edit / ima2 video extend"
   },
   "canvas": {
@@ -1313,9 +1311,20 @@
       "reference": "僅作參考"
     },
     "voiceSection": "語音",
-    "voiceLimit": "最多 {max} 個。在提示詞中以 <AUDIO_0> 指稱",
-    "voiceNeeds15": "僅 grok-imagine-video-1.5 支援語音",
-    "voiceCustomPlaceholder": "自訂語音 ID (/v1/custom-voices)"
+    "voiceLimit": "最多 {max} 個。請在提示詞中用 <AUDIO_0> 引用",
+    "voiceNeeds15": "語音僅在 grok-imagine-video-1.5 支援",
+    "voiceCustomPlaceholder": "自訂語音 ID (/v1/custom-voices)",
+    "soundIntentTitle": "聲音指令",
+    "soundIntentHelp": "選擇一項指令加入提示詞。選擇另一項會取代目前指令。切換模型後仍會保留，直到手動移除。不會上傳音訊檔案。",
+    "soundIntent": {
+      "noMusic": "無背景音樂",
+      "softBgm": "柔和 BGM",
+      "tenseMusic": "緊張音樂",
+      "roomTone": "環境聲/房間底噪",
+      "sfx": "突出音效",
+      "noDialogue": "無對白",
+      "clear": "清除聲音指令"
+    }
   },
   "sidebar": {
     "appName": "影像生成器",

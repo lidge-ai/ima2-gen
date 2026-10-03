@@ -6,6 +6,7 @@ import { OptionGroup } from "./OptionGroup";
 import { Chip, ChipRow, Select } from "./controls";
 import { DurationSlider } from "./controls/DurationSlider";
 import { VoicePicker } from "./VoicePicker";
+import { SoundIntentPicker } from "./SoundIntentPicker";
 import { deriveVideoModeUI, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, maxVideoDurationUI, supportsVideoResolutionUI } from "../lib/imageModels";
 import { ACTIVE_VIDEO_PROMPT_GUIDANCE, continuitySummary } from "../lib/videoContinuity";
 import { getPresetById } from "../lib/presets";
@@ -147,6 +148,7 @@ export function VideoControlsPanel() {
         </div>
       ) : null}
       <VoicePicker />
+      <SoundIntentPicker />
       {cameraPresets.length > 0 && (
         <ChipRow ariaLabel={t("video.selectedCameraPresets")}>
           {cameraPresets.map((preset) => (

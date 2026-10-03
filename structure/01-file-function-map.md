@@ -426,6 +426,8 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `GalleryImageTile.tsx` | 67 | Per-image gallery thumbnail and selection state |
 | `CardNewsGalleryTile.tsx` | 58 | Card-news set tile in the gallery |
 | `HistoryStrip.tsx` / `HistoryStripLayoutToggle.tsx` | n/a | Inline history strip with rail/grid layout toggle |
+| `ui/src/components/VideoControlsPanel.tsx` | 223 | Video model/options, voice controls and sound-intent prompt chips |
+| `ui/src/components/SoundIntentPicker.tsx` | 66 | Localized sound-intent selection using persisted ordinary prompt chips |
 | `PromptComposer.tsx` | 498 | Prompt input, reference handling, style-sheet entry, save-to-library, and provider-gated NovelAI Positive prompt pane |
 | `NegativePromptField.tsx` | 58 | Self-gated NovelAI Undesired content pane shared by Classic, Home, and mobile compose surfaces |
 | `home/HomePromptComposer.tsx` | 153 | Home composer with the same provider-gated NovelAI dual-pane contract |

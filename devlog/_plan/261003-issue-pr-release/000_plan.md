@@ -63,3 +63,13 @@ Initial full-suite failures exposed missing generated runtime JS, required clean
 Next direction: wp2 OAuth deadline from020 with API preservation and explicit remaining test fixtures. Post-merge dev CI37130901715, desktop37130901665, Agy37130901684 and CodeQL37130901676 were observed queued/running at be63eb0e; they remain mandatory before the next merge/release and are not claimed passed here. Source dependency slice itself is verified and merged.
 
 wp1 post-merge follow-through (2026-10-04 KST): CI37130901715 on be63eb0e (push,attempt1) completed SUCCESS with all eight jobs: changes, Ubuntu frontend E2E, Ubuntu Node22/npm11, Ubuntu Node24/npm12, Windows Node22/npm11, Windows Node24/npm12, macOS native installation, aggregateci. Agy37130901684, CodeQL37130901676 and desktop37130901665 also completed SUCCESS. Original #360–363 were closed as superseded after full carry, with source SHA/author attribution and #369 links.
+
+## wp2 closeout
+
+Issue351 implementation merged through PR370 as b016b222903a5f63394a903cedfe93a1915ee6c9. Exact head85453a4f passed PR Fast Gate37135612992 (pull_request,attempt1: changes/backend/frontend/aggregate all SUCCESS), CodeQL37135613000 and the latest screenshot gate. No unresolved review threads after merge. Merge tree is byte-identical to reviewed85453a4f.
+
+Final local canonical suite:4135 total,4132pass,3skip,0fail; typechecks, lint0errors, runtime builds, inventory and line-count gates passed. New prepared-budget fixture14 cases plus provider-boundary87 passed; independent implementation re-review PASS with0 blockers. Full-test and realHTTPQA receipts bind to clean85453a4f: success200,504timeout with one upstream call on repeat jobs,400invalidinput/no upstream,202admission/409duplicate/499cancellation, owned-state teardown. No paid provider calls. No hard interruption of local persistence or physical upstream cancellation is claimed.
+
+C discovered and fixed early-transient-error retries resetting the budget: an observed60ms failure previously ended at160ms despite100ms configuration. Prepared OAuth operations now share a monotonic deadline across retries/concurrent calls and preserve classic capture/API behavior. Remaining-budget tests went RED before the fix. Evidence022 is the first snapshot;024/025 record the verified correction. Existing source/identity assertions were updated only where the intentional deadline wrapper changed structure, with real propagation/callback tests retained.
+
+Next direction: wp3 consumes030/031 and the pre-reviewed rendered-fixture amendment. Post-merge CI37136569670, Agy37136569632, desktop37136569669 and CodeQL37136569699 were observed running on b016b222 and remain tracked before the next merge/release; they are not claimed passed at this closeout.

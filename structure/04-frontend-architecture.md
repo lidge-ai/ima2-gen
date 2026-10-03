@@ -176,6 +176,12 @@ graph TD
 
 Settings are a workspace replacement, not a modal overlay. `SettingsButton` lives next to the `ima2-gen` title in the sidebar. The compact image model selector also lives in this header as a fast switcher, while Settings shows the same choice with full model names. `SettingsWorkspace` keeps the outer shell fixed so the header and `X` close button do not scroll away; only the section index and content pane scroll. Selecting an item jumps the center document to that section instead of replacing the content panel. `SettingsWorkspace` closes with `X` or Escape and returns to the previous canvas path without mutating generation state.
 
+## Video sound intent and composer media
+
+`VideoControlsPanel.tsx` mounts `SoundIntentPicker` after voice controls. Sound presets are ordinary persisted `insertedPrompts` with stable `video-sound-intent:` IDs and canonical prompt text placed after the main prompt. Selecting another replaces only the managed sound chip; toggle, Clear and normal chip removal preserve unrelated prompts. Chip names are localized when inserted and retain that insertion-time name. Model changes and reload preserve these prompt chips; runtime continuity lineage is not a persisted sound-setting contract. The picker is hidden in Node mode because node video generation uses each node’s own prompt instead of global composer chips; returning to classic mode retains the stored selection.
+
+`droppedMedia.ts` and `useComposerDrop.ts` reject audio files with actionable localized feedback in every composer mode. Images still enter reference admission; base-model MP4 drops retain CLI editing/extension guidance and are not attached or submitted as video references. This UI contract does not remove backend/CLI audio capabilities. The four-locale rendered fixture tests real component/store prompt construction, decoded mixed drops, persistence, keyboard interaction and narrow layouts with isolated synthetic transports; it does not claim successful provider generation.
+
 ## Major Areas
 
 | Area | Main files | Responsibility |
@@ -186,6 +192,7 @@ Settings are a workspace replacement, not a modal overlay. `SettingsButton` live
 | Agent workspace | `components/agent/*`, `lib/agentApi.ts`, `hooks/useAgentWorkspaceLayout.ts` | Agent Mode conversational image workspace: sessions, turns, durable composer run status, durable queue panel, right-sidebar controls (`/api/agent/*`, no CLI) |
 | Assets workspace | `components/assets/AssetsWorkspace.tsx`, `AssetsFolderTree.tsx`, `AssetsGrid.tsx` | Workspace-only asset catalog with folder navigation, kind/tag/search filters, virtualized grid, and cursor paging |
 | Raster-to-vector UI | `assetgen/VectorizePanel.tsx`, `canvas-mode/CanvasExportMenu.tsx`, `canvas-mode/useCanvasModeSession.ts`, `ui/src/lib/api-assets.ts` | Assets/AssetGen trace stored rasters directly. Canvas renders its composition to PNG, persists a hidden Canvas version, then opens the same preset/tuning modal. “SVG (embedded raster)” remains distinct from “Trace to SVG (vector)”. |
+| Video sound intent | `VideoControlsPanel.tsx`, `SoundIntentPicker.tsx`, `ui/src/lib/videoSoundIntent.ts` | Exclusive prompt-intent chip selection with localized insertion labels; no new backend parameter or audio upload |
 | Right panel | `RightPanel.tsx`, `SizePicker.tsx`, `CostEstimate.tsx`, `GenerationRequestLogPanel.tsx` | Quality, size, format, moderation, count; dev log tab for `GET /api/generation-requests` (#95) |
 | Prompt Builder | `RightPanel.tsx`, `components/prompt-builder/*`, `settings/PromptBuilderSettings.tsx`, `promptBuilderStore.ts` | Conversational prompt refinement with persisted backend/model, backend-scoped model catalogs, deterministic Auto order, explicit-backend errors, and a badge sourced from the successful response's answering backend. |
 | History | `HistoryStrip.tsx`, `GalleryModal.tsx`, `ResultActions.tsx`, `ResultMetadataModal.tsx` | Saved image browsing, favorite, restore, drag-out, metadata-restore, and per-result metadata inspector (#108) |

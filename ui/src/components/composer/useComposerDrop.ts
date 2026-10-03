@@ -20,8 +20,7 @@ type DropHandlers = {
  */
 function rejectionMessage(reason: DropRejection, t: (key: string) => string): string {
   switch (reason) {
-    case "audio-needs-video-model": return t("prompt.rejectAudioNeedsVideoModel");
-    case "audio-needs-15": return t("prompt.rejectAudioNeeds15");
+    case "audio-upload-unsupported": return t("prompt.rejectAudioUploadUnsupported");
     case "video-needs-base": return t("prompt.rejectVideoNeedsBase");
     case "video-single-only": return t("prompt.rejectVideoSingleOnly");
     case "not-media": return t("prompt.rejectNotMedia");
@@ -37,11 +36,6 @@ export function useComposerDrop({ onImages }: DropHandlers) {
     if (files.length === 0) return;
     const sorted = sortDroppedByKind(files, { videoModelSelected });
     if (sorted.images.length > 0) onImages(sorted.images);
-    if (sorted.audios.length > 0) {
-      // xAI gates uploaded clips to trusted partners, so the supported path is the preset
-      // voice picker. Saying so now beats failing after the user waits for a generation.
-      showToast(t("prompt.audioUsePresetVoice"), true);
-    }
     if (sorted.videos.length > 0) {
       // Editing and extending exist as routes but have no composer entry point yet.
       showToast(t("prompt.videoUseCliForEdit"), true);

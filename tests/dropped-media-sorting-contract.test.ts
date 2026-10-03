@@ -26,21 +26,16 @@ test("images are accepted in every mode", () => {
   }
 });
 
-test("audio reaches only grok-imagine-video-1.5, and says why otherwise", () => {
-  // 1.5 is the only model declaring audio as an input modality; the base model answers
-  // 400 "reference_audios is not supported for this model."
-  assert.equal(sortDroppedByKind([mp3()], { videoModelSelected: "grok-imagine-video-1.5" }).audios.length, 1);
-  for (const alias of ["grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"]) {
-    assert.equal(sortDroppedByKind([mp3()], { videoModelSelected: alias }).audios.length, 1, alias);
+test("audio uploads are rejected with an actionable explanation", () => {
+  // Preset voices and prompt-described sound are supported; uploaded audio clips are not
+  // wired into generation because xAI gates them upstream. The picker should not offer
+  // audio/* as if it were actionable, and drops should still get an explicit outcome.
+  for (const model of [false as const, "grok-imagine-video", "grok-imagine-video-1.5", "grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"]) {
+    const sorted = sortDroppedByKind([mp3()], { videoModelSelected: model });
+    assert.equal(sorted.rejected[0]?.reason, "audio-upload-unsupported", String(model));
+    assert.equal(sorted.images.length + sorted.videos.length, 0);
+    assert.equal(composerAcceptAttr({ videoModelSelected: model }).includes("audio"), false);
   }
-  assert.equal(
-    sortDroppedByKind([mp3()], { videoModelSelected: "grok-imagine-video" }).rejected[0]?.reason,
-    "audio-needs-15",
-  );
-  assert.equal(
-    sortDroppedByKind([mp3()], { videoModelSelected: false }).rejected[0]?.reason,
-    "audio-needs-video-model",
-  );
 });
 
 test("video reaches only the base model, one at a time", () => {
@@ -71,13 +66,15 @@ test("anything else is rejected with a reason rather than dropped silently", () 
 test("a mixed drop sorts every file and leaves none unaccounted for", () => {
   const files = [png(), mp3(), mp4(), file("a.pdf", "application/pdf")];
   const sorted = sortDroppedByKind(files, { videoModelSelected: "grok-imagine-video-1.5" });
-  const total = sorted.images.length + sorted.audios.length + sorted.videos.length + sorted.rejected.length;
+  const total = sorted.images.length + sorted.videos.length + sorted.rejected.length;
   assert.equal(total, files.length, "every dropped file must land in exactly one bucket");
 });
 
 test("the file picker offers exactly what the drop handler accepts", () => {
   assert.equal(composerAcceptAttr({ videoModelSelected: false }), "image/*");
-  assert.equal(composerAcceptAttr({ videoModelSelected: "grok-imagine-video-1.5" }), "image/*,audio/*");
+  for (const model of ["grok-imagine-video-1.5", "grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"]) {
+    assert.equal(composerAcceptAttr({ videoModelSelected: model }), "image/*");
+  }
   assert.equal(composerAcceptAttr({ videoModelSelected: "grok-imagine-video" }), "image/*,video/mp4");
 });
 
@@ -86,8 +83,7 @@ test("every rejection reason has a message in all four locales", () => {
   // the locale files are JSON and cannot be typed. This is that check.
   const reasons: DropRejection[] = [
     "not-media",
-    "audio-needs-video-model",
-    "audio-needs-15",
+    "audio-upload-unsupported",
     "video-needs-base",
     "video-single-only",
   ];
@@ -104,7 +100,7 @@ test("every rejection reason has a message in all four locales", () => {
     for (const key of keys) {
       assert.ok(bundle.prompt?.[key], locale + " is missing prompt." + key);
     }
-    for (const key of ["audioUsePresetVoice", "videoUseCliForEdit"]) {
+    for (const key of ["videoUseCliForEdit"]) {
       assert.ok(bundle.prompt?.[key], locale + " is missing prompt." + key);
     }
   }

@@ -506,12 +506,10 @@
     "afterBlocks": "본문 프롬프트 뒤",
     "hint": "Ctrl + Enter로 생성",
     "dropHere": "놓아서 참조 이미지로 추가 ({max}장까지)",
-    "rejectNotMedia": "이미지, 오디오, mp4 파일만 첨부할 수 있습니다",
-    "rejectAudioNeedsVideoModel": "오디오는 비디오 모델을 선택한 뒤에 쓸 수 있습니다",
-    "rejectAudioNeeds15": "오디오는 grok-imagine-video-1.5에서만 지원합니다",
+    "rejectNotMedia": "이미지를 첨부할 수 있습니다. 영상 편집·연장은 ima2 video edit / ima2 video extend 명령을 쓰세요.",
+    "rejectAudioUploadUnsupported": "여기서는 오디오 파일을 업로드할 수 없습니다. 보이스 지원 영상 모델에서 프리셋 보이스를 고르거나, 프롬프트에 음악과 효과음을 설명하세요.",
     "rejectVideoNeedsBase": "영상 입력은 grok-imagine-video에서만 지원합니다",
     "rejectVideoSingleOnly": "영상은 한 번에 하나만 쓸 수 있습니다",
-    "audioUsePresetVoice": "오디오 파일 업로드는 xAI가 파트너 계정에만 허용합니다. 비디오 설정의 프리셋 보이스를 사용하세요",
     "videoUseCliForEdit": "영상 편집과 연장은 ima2 video edit / ima2 video extend 명령으로 실행합니다"
   },
   "canvas": {
@@ -1315,7 +1313,18 @@
     "voiceSection": "보이스",
     "voiceLimit": "최대 {max}개. 프롬프트에서 <AUDIO_0>처럼 지칭하세요",
     "voiceNeeds15": "보이스는 grok-imagine-video-1.5에서만 지원합니다",
-    "voiceCustomPlaceholder": "커스텀 보이스 ID (/v1/custom-voices)"
+    "voiceCustomPlaceholder": "커스텀 보이스 ID (/v1/custom-voices)",
+    "soundIntentTitle": "사운드 지시",
+    "soundIntentHelp": "프롬프트에 넣을 지시를 하나 고르세요. 다른 지시를 고르면 기존 지시를 바꿉니다. 모델을 바꿔도 직접 지울 때까지 유지됩니다. 오디오 파일은 업로드하지 않습니다.",
+    "soundIntent": {
+      "noMusic": "배경음악 없음",
+      "softBgm": "잔잔한 BGM",
+      "tenseMusic": "긴장감 있는 음악",
+      "roomTone": "현장음/룸톤",
+      "sfx": "효과음 강조",
+      "noDialogue": "대사 없음",
+      "clear": "사운드 지시 해제"
+    }
   },
   "sidebar": {
     "appName": "이미지 생성기",

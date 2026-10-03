@@ -40,6 +40,11 @@ const REQUIRED_KEYS = [
 // No files are excluded: local non-i18n variables named `t` in InFlightList.tsx and canvas/lib
 // math helpers are never CallExpression callees; every current t(...) call is translation-bound.
 const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
+  // VIDEO_SOUND_INTENT_PRESETS labelKey literals in ui/src/lib/videoSoundIntent.ts.
+  ["ui/src/components/SoundIntentPicker.tsx :: preset.labelKey", [
+    "video.soundIntent.noMusic", "video.soundIntent.softBgm", "video.soundIntent.tenseMusic",
+    "video.soundIntent.roomTone", "video.soundIntent.sfx", "video.soundIntent.noDialogue",
+  ]],
   // Finite return paths in lib/comfyDisplay.ts; exact call sites stay audited.
   ["ui/src/components/GenProviderModelSelect.tsx :: comfyDisplayMessageKey(comfyDisplay, laneSnapshot)", comfyDisplayKeys()],
   ["ui/src/components/ProviderReadinessPopup.tsx :: comfyDisplayMessageKey(comfyDisplay, laneCatalog)", comfyDisplayKeys()],
