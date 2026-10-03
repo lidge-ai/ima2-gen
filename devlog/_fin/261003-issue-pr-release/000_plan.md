@@ -107,3 +107,10 @@ No selected implementation or publication work remains. Next work is limited to
 those explicitly deferred designs and time-bound exception revalidation. The unit
 is archived after its publication evidence closes; this archive does not mark
 unrelated active plans complete.
+
+
+Post-publication follow-up: the documentation-only dev merge subsequently exposed
+shared-DB initialization in HTTP test fixtures. The bounded test-only Check repair,
+RED/GREEN path-isolation evidence and canonical full-suite result are recorded in
+[043_post-publication-ci.md](043_post-publication-ci.md). Published 3.26.2 runtime
+artifacts are unchanged; final repair CI evidence belongs to its PR and session receipts.

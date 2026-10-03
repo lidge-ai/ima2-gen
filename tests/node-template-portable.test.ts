@@ -1,12 +1,48 @@
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { config } from "../config.ts";
-import { createTestRuntimeContext } from "../lib/runtimeContext.ts";
-import { buildApp } from "../server.ts";
-import { nodeTemplateSeeds } from "../lib/nodeTemplateSeeds.ts";
-import { nodeTemplateStore } from "../lib/nodeTemplateStore.ts";
-import {
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+
+const TEST_DIR = mkdtempSync(join(tmpdir(), "ima2-node-template-portable-"));
+const savedEnv = new Map(Object.entries(process.env).filter(([key]) => key.startsWith("IMA2_") || key === "DOTENV_CONFIG_PATH"));
+let stopQueueWorker: (() => void) | undefined;
+let closeDb: (() => void) | undefined;
+after(() => {
+  try { stopQueueWorker?.(); }
+  finally {
+    try { closeDb?.(); }
+    finally {
+      try { rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
+      finally {
+        for (const key of Object.keys(process.env)) {
+          if (key.startsWith("IMA2_") || key === "DOTENV_CONFIG_PATH") delete process.env[key];
+        }
+        for (const [key, value] of savedEnv) process.env[key] = value;
+      }
+    }
+  }
+});
+
+// Config is captured at import time, including through validation/logger imports.
+for (const key of savedEnv.keys()) delete process.env[key];
+Object.assign(process.env, {
+  IMA2_CONFIG_DIR: TEST_DIR,
+  IMA2_DB_PATH: join(TEST_DIR, "sessions.db"),
+  DOTENV_CONFIG_PATH: join(TEST_DIR, "empty.env"),
+});
+writeFileSync(join(TEST_DIR, "config.json"), "{}");
+writeFileSync(join(TEST_DIR, "empty.env"), "");
+
+const { config } = await import("../config.js");
+({ closeDb } = await import("../lib/db.js"));
+({ stopAgentQueueWorker: stopQueueWorker } = await import("../lib/agentQueueWorker.js"));
+const { createTestRuntimeContext } = await import("../lib/runtimeContext.js");
+const { buildApp } = await import("../server.ts");
+const { nodeTemplateSeeds } = await import("../lib/nodeTemplateSeeds.ts");
+const { nodeTemplateStore } = await import("../lib/nodeTemplateStore.ts");
+const {
   TEMPLATE_FILE_KIND,
   TemplateFileError,
   buildTemplateFile,
@@ -15,10 +51,12 @@ import {
   templateFileLimits,
   templateFileName,
   uniqueTemplateName,
-} from "../lib/nodeTemplateFile.ts";
+} = await import("../lib/nodeTemplateFile.ts");
 
 async function listen(): Promise<{ base: string; close: () => Promise<void> }> {
-  const server = createServer(buildApp(createTestRuntimeContext({ config })));
+  const app = buildApp(createTestRuntimeContext({ config }));
+  const server = createServer(app);
+  server.once("close", app.locals.disposeLocalLanAccess);
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   const port = typeof address === "object" && address ? address.port : 0;
