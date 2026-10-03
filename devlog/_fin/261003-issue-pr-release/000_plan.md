@@ -85,3 +85,25 @@ Local canonical suite:4139 total,4136pass,3skip,0fail. Clean-head rendered suite
 Measured label clipping was fixed only in the picker; a real Node exposure defect was fixed without changing Node generation or stored chips. The new finite translation expression was registered with six exact keys and all dictionary gates retained. Evidence033/034 records the implementation and limits.
 
 Next direction: wp4 safety guard, exact-head safety/promotion gates, publication and installed-artifact proof. Post-merge CI37141296063, Agy37141296073, desktop37141296069 and CodeQL37141296053 on bacf9e95 were observed running and must be confirmed before the next merge/release.
+
+
+## wp4 closeout
+
+Version 3.26.2 is published from `48620f62b64a265b7e80f2089c4e0eab5d70fe6a`.
+Safety PR372 and promotion PR373 passed their exact-head gates; dev and main
+post-merge CI passed. Release, preview, stable, all five desktop builds, protected
+publication, all four update-manifest mirrors, Pages and the installed published
+UI smoke completed successfully. Full commands, SHAs, run IDs, artifact identity,
+independent review and platform limits are recorded in [042_release-evidence.md](042_release-evidence.md).
+
+The whole-job deadline, sound-intent carry, dependency updates and dry-run guard
+are shipped; issue351 is closed. Root raw audit is still not clean: the single
+unreachable braces exception expires on 2026-10-17. Durable job recovery (#338)
+and adapter RFC (#150) remain separate designs. No local desktop update or paid
+provider generation is claimed. The failed static version-string probe was an
+invalid oracle for the dynamic site banner; deployed HTML artifact equality passed.
+
+No selected implementation or publication work remains. Next work is limited to
+those explicitly deferred designs and time-bound exception revalidation. The unit
+is archived after its publication evidence closes; this archive does not mark
+unrelated active plans complete.

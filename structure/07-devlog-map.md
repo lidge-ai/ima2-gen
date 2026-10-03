@@ -1,6 +1,6 @@
 ---
 created: 2026-06-08
-updated: 2026-09-22
+updated: 2026-10-04
 tags: [ima2-gen, structure-docs, devlog, roadmap]
 ---
 
@@ -51,6 +51,7 @@ When an initiative is fully shipped and merged, its plan folder moves to `_fin/`
 
 | Archive | Description |
 |---------|-------------|
+| `261003-issue-pr-release` | Issue #351 deadline, dependency/sound-intent PR carries, dry-run safety, and verified npm/desktop/Pages 3.26.2 publication; #338/#150 remain deferred |
 | `260908_post_314_cleanup` | Post-3.14.0 cleanup: hygiene residuals, dependabot closure, NovelAI V5 battery quota lane (#193), adapter-owned execution (#150), and the v3.15.0 release (2026-09-08, b96a11ed) |
 | `260905_production_readiness` | WP00–WP13 production-readiness round: provider execution contracts, selection consistency, job lifecycle, LAN security, diagnostics, installers, and the v3.14.0 release (2026-09-06, #219, 36aa6fce) |
 | `260825_novelai_provider_lane` | NovelAI (`nai`) image provider lane — tenth core lane; ZIP-archive responses, persistent-token auth, text-to-image only |
