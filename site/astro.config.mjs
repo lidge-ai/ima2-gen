@@ -1,10 +1,9 @@
 import { defineConfig } from 'astro/config';
 
-// GitHub Pages base path. Repo: lidge-ai/ima2-gen → /ima2-gen/
-// If a custom domain (CNAME) is added, switch base to '/'.
+// Served from the custom domain ima2gen.com (GitHub Pages CNAME), so the base is the root.
 export default defineConfig({
-  site: 'https://lidge-ai.github.io',
-  base: '/ima2-gen/',
+  site: 'https://ima2gen.com',
+  base: '/',
   trailingSlash: 'never',
   i18n: {
     defaultLocale: 'en',

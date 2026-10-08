@@ -95,7 +95,7 @@ export function installApplicationMenu(actions, updateState) {
       role: "help",
       submenu: [
         { label: "ima2-gen on GitHub", click: () => actions.openUrl("https://github.com/lidge-ai/ima2-gen") },
-        { label: "Documentation", click: () => actions.openUrl("https://lidge-ai.github.io/ima2-gen/") },
+        { label: "Documentation", click: () => actions.openUrl("https://ima2gen.com/") },
       ],
     },
   ];
