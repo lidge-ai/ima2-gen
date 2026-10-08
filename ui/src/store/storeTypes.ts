@@ -73,6 +73,7 @@ export type PersistedInFlight = {
   composerPrompt?: string;
   composerInsertedPrompts?: InsertedPrompt[];
   phase?: string;
+  providerTaskId?: string;
   sessionId?: string | null;
   parentNodeId?: string | null;
   clientNodeId?: string | null;
@@ -514,10 +515,8 @@ export type AppState = PresetState & ReferenceTraySlice & {
   /**
    * Selected comfy VIDEO workflow id.
    *
-   * Kept apart from videoModelSelected because that field is normalized through
-   * normalizeVideoModelValue, which only recognizes Grok ids and rewrites
-   * anything else. Widening it would change what every consumer of that
-   * normalizer means by "video model".
+   * Kept apart from static videoModelSelected: user workflow IDs are runtime catalog values,
+   * while hosted video selections are recognized with both provider and exact model ID.
    */
   comfyVideoWorkflow?: string | null;
   mcpMediaKind?: "image" | "video";

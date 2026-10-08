@@ -16,6 +16,7 @@ import {
 import type { AppConfig } from "./runtimeContext.js";
 import { deriveProviderIds, deriveSupportedImageModels, getProviderSurfaceSupport } from "./providers/derive.js";
 import { PROVIDER_SURFACES } from "./providers/surfaceSupport.js";
+import { API88_VIDEO_SPECS } from "./api88/videoSpecs.js";
 
 type CapabilitySource = "local" | "server";
 
@@ -128,6 +129,9 @@ export function buildIma2Capabilities({
       },
       videoModels: {
         supported: ["grok-imagine-video", "grok-imagine-video-1.5"],
+        byProvider: {
+          "88api": { supported: Object.keys(API88_VIDEO_SPECS), specs: API88_VIDEO_SPECS },
+        },
         aliases: {
           "grok-imagine-video-1.5-preview": "grok-imagine-video-1.5",
           "grok-imagine-video-1.5-2026-05-30": "grok-imagine-video-1.5",

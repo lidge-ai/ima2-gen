@@ -281,7 +281,7 @@ export const useAppStore = create<AppState>((set, get, store) => ({
   activeReferenceLimit: () => effectiveReferenceLimit({
     provider: get().provider,
     serverLimit: get().referenceLimit,
-    videoModelSelected: Boolean(get().videoModelSelected),
+    videoModelSelected: get().videoModelSelected,
     mcpProvider: get().mcpProvider ?? null,
   }),
   providerUrlReference: null,

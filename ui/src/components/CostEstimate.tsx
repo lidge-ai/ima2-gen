@@ -15,7 +15,9 @@ export function CostEstimate() {
   const imageToolModel = useAppStore((s) => s.imageToolModel);
   const free = provider === "oauth" || provider === "grok" || provider === "agy";
   const cost = estimateCost(quality, size, provider, imageModel);
-  const label = provider === "api" && imageToolModel
+  // 88API publishes its own price table whose currency unit is unconfirmed, so an
+  // OpenAI-based estimate would be misleading there.
+  const label = (provider === "api" && imageToolModel) || provider === "88api"
     ? t("imageToolModel.costUnavailable")
     : free
     ? t("cost.free")

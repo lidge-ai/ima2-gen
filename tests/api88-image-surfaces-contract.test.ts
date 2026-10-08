@@ -55,16 +55,19 @@ for (const surface of ["classic", "node", "edit", "multimode"] as const) {
   });
 }
 
-test("seven visible rows, lane hints, hidden-model restoration and wp2 video lock", () => {
+test("seven visible image rows and independent video selection", () => {
   const rows = getImageModelOptionsForProvider("88api"); assert.equal(rows.length, 7);
   for (const row of rows) { assert.equal(row.providerHint, "88api"); assert.equal(row.value.startsWith("grok-"), false); }
   assert.equal(reconcileCoreSelection({ provider: "88api", imageModel: "grok-imagine-image" }).imageModel, "gpt-image-2");
   assert.equal(reconcileCoreSelection({ provider: "88api", imageModel: "gemini-nano-banana-2.1" }).provider, "88api");
-  assert.equal(reconcileCoreSelection({ provider: "88api", videoModelSelected: "grok-imagine-video-1.5" }).videoModelSelected, false);
+  assert.equal(reconcileCoreSelection({ provider: "88api", videoModelSelected: "grok-imagine-video-1.5" }).videoModelSelected, "grok-imagine-video-1.5");
 });
 
-test("video route refuses 88api before Grok model and credential resolution", () => {
+test("video route dispatches 88api before Grok model and credential resolution", () => {
   const source = readFileSync(new URL("../routes/video.ts", import.meta.url), "utf8");
-  const guard = source.indexOf('if (provider === "88api") return fail(400, "API88_VIDEO_NOT_READY"');
-  assert.ok(guard >= 0); assert.ok(guard < source.indexOf("const isComfy = provider"));
+  const guard = source.indexOf('if (req.body?.provider === "88api")');
+  assert.ok(guard >= 0);
+  assert.ok(guard < source.indexOf("normalizeGrokVideoModel(rawModel"));
+  assert.ok(guard < source.indexOf("await resolveGrokCredential"));
+  assert.doesNotMatch(source, /API88_VIDEO_NOT_READY/);
 });

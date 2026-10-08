@@ -1,6 +1,7 @@
 import type { ImageModel, Provider, VideoModel } from "../types";
 import { CORE_PROVIDER_IDS, IMAGE_MODEL_IDS, isCoreProviderId, PROVIDER_MODELS } from "../generated/providers";
 import { DEFAULT_IMAGE_MODEL, normalizeVideoModelValue } from "./imageModels";
+import { isApi88VideoModel } from "./api88Video";
 import { isApi88ImageModel } from "./imageModels";
 
 export interface CoreSelectionState {
@@ -58,7 +59,8 @@ function workflow(value: unknown): string | null {
 }
 
 function inferProvider(model: unknown, video: unknown): Provider {
-  if (normalizeVideoModelValue(video)) return "grok";
+  if (normalizeVideoModelValue(video, "grok")) return "grok";
+  if (isApi88VideoModel(video)) return "88api";
   for (const provider of ["grok", "agy", "atlascloud", "88api", "minimax", "nai"] as const) {
     if (staticImage(provider, model)) return provider;
   }
@@ -86,8 +88,7 @@ export function reconcileCoreSelection(input: CoreSelectionInput): CoreSelection
   return {
     provider,
     imageModel: staticImage(provider, imageModel) ? imageModel : defaults[provider],
-    videoModelSelected: provider === "grok" || provider === "grok-api"
-      ? normalizeVideoModelValue(input.videoModelSelected) : false,
+    videoModelSelected: normalizeVideoModelValue(input.videoModelSelected, provider),
     comfyWorkflow: null,
     comfyVideoWorkflow: null,
   };
@@ -150,7 +151,7 @@ export function filterCoreSelectionMemory(value: unknown): CoreSelectionMemory {
     const image = provider === "comfy" ? workflow(row.image)
       : staticImage(provider, row.image) ? row.image : null;
     const video = provider === "comfy" ? workflow(row.video)
-      : provider === "grok" || provider === "grok-api" ? normalizeVideoModelValue(row.video) : false;
+      : normalizeVideoModelValue(row.video, provider);
     out[provider] = { kind: row.kind, ...(image ? { image } : {}), ...(video ? { video } : {}) };
   }
   return out;

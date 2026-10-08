@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { continueFromItem } from "../../lib/continueFromItem";
 import { DEFAULT_IMAGE_MODEL } from "../../lib/imageModels";
+import { loadCoreSelectionMemory } from "../../store/coreSelectionPersistence";
 import { useI18n } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
 import { SavePromptPopover } from "../SavePromptPopover";
@@ -16,6 +17,8 @@ export function PromptComposerToolbar({ canAddMore, onAttach }: PromptComposerTo
   const prompt = useAppStore((s) => s.prompt);
   const currentImage = useAppStore((s) => s.currentImage);
   const videoModelSelected = useAppStore((s) => s.videoModelSelected);
+  const provider = useAppStore((s) => s.provider);
+  const imageModel = useAppStore((s) => s.imageModel);
   const selectVideoModel = useAppStore((s) => s.selectVideoModel);
   const setImageModel = useAppStore((s) => s.setImageModel);
   const promptMode = useAppStore((s) => s.promptMode);
@@ -57,9 +60,11 @@ export function PromptComposerToolbar({ canAddMore, onAttach }: PromptComposerTo
           className={`composer__tool${videoModelSelected ? " composer__tool--on" : ""}`}
           onClick={() => {
             if (videoModelSelected) {
-              setImageModel(DEFAULT_IMAGE_MODEL);
+              setImageModel(provider === "88api" ? imageModel : DEFAULT_IMAGE_MODEL);
             } else {
-              selectVideoModel("grok-imagine-video-1.5");
+              selectVideoModel(provider === "88api"
+                ? loadCoreSelectionMemory()["88api"]?.video ?? "grok-imagine-video-1.5"
+                : "grok-imagine-video-1.5");
             }
           }}
           title={t("prompt.videoToggleTitle")}
@@ -102,7 +107,7 @@ export function PromptComposerToolbar({ canAddMore, onAttach }: PromptComposerTo
           )}
         </div>
       </div>
-      <div className="composer__storyboard-row">
+      {provider !== "88api" && <div className="composer__storyboard-row">
         <button
           type="button"
           className={`composer__tool composer__tool--storyboard${storyboardActive ? " composer__tool--on" : ""}`}
@@ -112,7 +117,7 @@ export function PromptComposerToolbar({ canAddMore, onAttach }: PromptComposerTo
         >
           {t("prompt.storyboard")}
         </button>
-      </div>
+      </div>}
     </>
   );
 }

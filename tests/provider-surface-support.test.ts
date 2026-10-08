@@ -24,7 +24,7 @@ const expected: Record<CoreProviderId, MatrixRow> = {
   oauth: oauthImages, api: responses,
   grok: { ...standard, video: image },
   "grok-api": { ...standard, video: image },
-  agy: standard, "gemini-api": standard, atlascloud: standard, "88api": standard, minimax: standard,
+  agy: standard, "gemini-api": standard, atlascloud: standard, "88api": { ...standard, video: image }, minimax: standard,
   nai: {
     generate: [true, false, false, false, "static"], edit: absent,
     multimode: [true, false, false, false, "static"],

@@ -1,5 +1,6 @@
 import { isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
+import type { VideoResolutionUI } from "../types";
 import { isCoreProviderId } from "../generated/providers";
 import type {
   Count,
@@ -249,7 +250,8 @@ export function loadVideoDefaults(): VideoDefaults {
     return {
       model: normalizeVideoModelValue(p.model),
       duration: typeof p.duration === "number" ? p.duration : 5,
-      resolution: p.resolution === "480p" || p.resolution === "720p" || p.resolution === "1080p" ? p.resolution : "480p",
+      resolution: ["480p", "720p", "1080p", "768p", "2k", "4k"].includes(String(p.resolution))
+        ? p.resolution as VideoResolutionUI : "480p",
       aspectRatio: typeof p.aspectRatio === "string" ? p.aspectRatio : "auto",
       singleRefMode: p.singleRefMode === "reference-to-video" ? "reference-to-video" : "image-to-video",
     };

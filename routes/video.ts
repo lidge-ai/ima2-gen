@@ -12,6 +12,7 @@ import { isGenerationCanceledError, makeGenerationCanceledError } from "../lib/g
 import { logEvent, logError } from "../lib/logger.js";
 import { parseBackgroundPreset, backgroundPromptSuffix, backgroundPlannerConstraint } from "../lib/backgroundPresets.js";
 import { invalidateHistoryIndex } from "../lib/historyIndex.js";
+import { handleApi88Video, registerApi88ResumeRoute, type Api88VideoRouteDependencies } from "./videoApi88.js";
 import { generateVideoViaGrok, type GrokVideoEvent } from "../lib/grokVideoAdapter.js";
 import { resolveGrokCredential, type GrokLane } from "../lib/grokRuntime.js";
 import { generateVideoViaComfy, type ComfyQueueInfo } from "../lib/comfyImageAdapter.js";
@@ -131,9 +132,14 @@ async function trimStoryboardLeadIn(buffer: Buffer, requestId: string): Promise<
   }
 }
 
-export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
+export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext, api88Dependencies: Api88VideoRouteDependencies = {}) {
   const ctx = requireRuntimeContext(ctxRaw);
+  registerApi88ResumeRoute(app, ctx, api88Dependencies);
   app.post("/api/video/generate", async (req: Request, res: Response) => {
+    if (req.body?.provider === "88api") {
+      await handleApi88Video(req, res, ctx, false, api88Dependencies);
+      return;
+    }
     const requestId =
       typeof req.body?.requestId === "string"
         ? req.body.requestId
@@ -172,7 +178,6 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
     try {
       const { prompt, provider = "grok", model: rawModel } = req.body || {};
-      if (provider === "88api") return fail(400, "API88_VIDEO_NOT_READY", "88API video execution is available after wp3");
       const presetIds = normalizePresetIds(req.body?.presetIds);
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
       const backgroundParse = parseBackgroundPreset(req.body?.backgroundPreset);

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import type { Provider } from "../types";
 import {
   getImageModelOptionsForProvider,
-  VIDEO_MODEL_OPTIONS,
   resolveCoreModelValue,
   COMFY_VIDEO_VALUE_PREFIX,
   VIDEO_VALUE_PREFIX,
 } from "../lib/imageModels";
+import { coreVideoGroup, canSelectCoreVideo } from "../lib/api88VideoSelection";
 import { api88PickerModels, api88PickerItem } from "../lib/api88Picker";
 import { REASONING_EFFORT_OPTIONS, type ReasoningEffort } from "../lib/reasoning";
 import { Select, type SelectGroup } from "./controls/Select";
@@ -287,6 +287,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
       return;
     }
     if (value.startsWith(VIDEO_PREFIX)) {
+      if (!canSelectCoreVideo(current.provider, value.slice(VIDEO_PREFIX.length), currentSnapshot)) return;
       selectVideoModel(value.slice(VIDEO_PREFIX.length));
       return;
     }
@@ -368,8 +369,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     // route through selectVideoModel, which normalizes to a Grok id, so
     // offering them under another lane would silently switch the provider.
     // Comfy has its own group and its own prefix for exactly that reason.
-    const laneVideoCount = laneCatalog[provider]?.models.video.length ?? 0;
-    const providerSupportsVideo = (provider === "grok" || provider === "grok-api") && laneVideoCount > 0;
+    const videoGroup = coreVideoGroup(provider, laneSnapshot, t);
     modelGroups.push({
       label: t("mcp.imageModels"),
       // Comfy models are registered workflows, so they come from the live
@@ -402,15 +402,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
         })),
       });
     }
-    if (providerSupportsVideo || (videoModel && (provider === "grok" || provider === "grok-api"))) {
-      modelGroups.push({
-        label: t("mcp.videoModels"),
-        items: VIDEO_MODEL_OPTIONS.map((option) => ({
-          value: `${VIDEO_PREFIX}${option.value}`,
-          label: option.shortLabel,
-        })),
-      });
-    }
+    if (videoGroup) modelGroups.push(videoGroup);
     if (isGptFamily) {
       modelGroups.push({
         label: t("sidebar.reasoningLabel"),

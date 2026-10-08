@@ -171,7 +171,9 @@ export function GenerationControlsPanel() {
     { value: "nano-banana-2" as const, label: "Nano", sub: "Banana 2" },
     { value: "nano-banana-pro" as const, label: "Nano", sub: "Banana Pro" },
   ];
-  const providerCompat = isGrok
+  const providerCompat = provider === "88api"
+    ? { title: t("settings.api88.title"), body: t("settings.api88.compatibility") }
+    : isGrok
     ? { title: t("provider.grokCompatTitle"), body: t("provider.grokCompatBody") }
     : isAgyOnly
       ? { title: t("provider.agyCompatTitle"), body: t("provider.agyCompatBody") }
@@ -183,7 +185,7 @@ export function GenerationControlsPanel() {
 
   const handleModeSwitch = (mode: "image" | "video") => {
     if (mode === "video") {
-      selectVideoModel("grok-imagine-video");
+      selectVideoModel(provider === "88api" ? undefined : "grok-imagine-video");
     } else {
       setImageModel(imageModel);
     }
@@ -216,7 +218,7 @@ export function GenerationControlsPanel() {
         <summary>{providerCompat.title}</summary>
         <p>{providerCompat.body}</p>
       </details>
-      {isGrok && (
+      {(isGrok || provider === "88api") && (
         <div className="option-group grok-mode-toggle">
           <div className="option-row">
             <button

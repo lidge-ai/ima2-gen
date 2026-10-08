@@ -1,11 +1,12 @@
 import { normalizeImageQuality } from "../lib/imageModels";
-import { saveGenerationDefaultsPatch } from "./storePersistence";
+import { saveGenerationDefaultsPatch, saveVideoDefaults } from "./storePersistence";
 import type { ImageModel, Provider } from "../types";
 import { isCoreProviderId } from "../generated/providers";
 import {
   providerForImageModel, reconcileCoreSelection, rememberCoreSelection, selectCoreProvider,
   type CoreSelectionState,
 } from "../lib/coreSelection";
+import { API88_DEFAULT_VIDEO_MODEL, api88VideoAxes, api88UiVideoSpec } from "../lib/api88Video";
 import { GROK_VIDEO_MODEL_15, normalizeVideoModelValue } from "../lib/imageModels";
 import {
   loadCoreSelectionMemory, persistCoreSelection, saveCoreSelectionMemory,
@@ -58,12 +59,20 @@ export function setCoreImageSelection(model: ImageModel, set: StoreSet, get: Sto
 
 export function setCoreVideoSelection(model: string | undefined, set: StoreSet, get: StoreGet): void {
   const current = currentSelection(get);
-  const next = reconcileCoreSelection({
-    provider: current.provider === "grok-api" ? "grok-api" : "grok",
-    imageModel: current.imageModel,
-    videoModelSelected: normalizeVideoModelValue(model) || GROK_VIDEO_MODEL_15,
-  });
+  const provider = current.provider === "88api" ? "88api"
+    : current.provider === "grok-api" ? "grok-api" : "grok";
+  const fallback = provider === "88api" ? API88_DEFAULT_VIDEO_MODEL : GROK_VIDEO_MODEL_15;
+  const next = reconcileCoreSelection({ provider, imageModel: current.imageModel,
+    videoModelSelected: normalizeVideoModelValue(model, provider) || fallback });
   commitSelection(current, next, set);
+  if (provider === "88api") {
+    const axes = api88VideoAxes(get(), get().activeVideoRefCount() > 0);
+    set({ videoDuration: axes.duration, videoResolution: axes.resolution, videoAspectRatio: axes.aspectRatio });
+    saveVideoDefaults(axes);
+    const imageMode = api88UiVideoSpec(next.videoModelSelected)?.imageMode;
+    if (imageMode === "source") get().setVideoSingleRefMode("image-to-video");
+    if (imageMode === "reference") get().setVideoSingleRefMode("reference-to-video");
+  }
 }
 
 export function setCoreComfyWorkflowSelection(id: string | null, set: StoreSet, get: StoreGet): void {

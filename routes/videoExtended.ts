@@ -75,6 +75,13 @@ function videoLane(body: unknown): GrokLane {
   return (body as { provider?: unknown } | null)?.provider === "grok-api" ? "grok-api" : "grok";
 }
 
+function rejectApi88Extended(req: Request, res: Response): boolean {
+  if (req.body?.provider !== "88api") return false;
+  res.status(400).json({ error: "88API video edit, extend and analysis are unsupported",
+    code: "API88_VIDEO_OPTION_UNSUPPORTED", status: 400 });
+  return true;
+}
+
 function routeError(message: string, status = 400): Error & { status: number } {
   return Object.assign(new Error(message), { status });
 }
@@ -218,6 +225,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
 
   // --- Video Edit (V2V) ---
   app.post("/api/video/edit", async (req: Request, res: Response) => {
+    if (rejectApi88Extended(req, res)) return;
     try {
       const { prompt: rawPrompt, videoUrl, model = "grok-imagine-video" } = req.body ?? {};
       const prompt = requirePrompt(rawPrompt);
@@ -251,6 +259,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
 
   // --- Last-frame image-to-video extension ---
   app.post("/api/video/extend", async (req: Request, res: Response) => {
+    if (rejectApi88Extended(req, res)) return;
     const requestId = normalizeBodyRequestId(req.body?.requestId, req.id);
     const canceledResponse = () => {
       // A canceled job gets no error event from this handler (abortJob already
@@ -348,6 +357,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
 
   // --- Provider-native legacy extension ---
   app.post("/api/video/extend/native", async (req: Request, res: Response) => {
+    if (rejectApi88Extended(req, res)) return;
     try {
       const { prompt: rawPrompt, videoUrl, duration = 6, model = "grok-imagine-video" } = req.body ?? {};
       const prompt = requirePrompt(rawPrompt);
@@ -440,6 +450,7 @@ export function registerVideoExtendedRoutes(app: Express, ctxRaw: RouteRuntimeCo
 
   // --- Video Analysis (configured Grok planner vision model) ---
   app.post("/api/video/analyze", async (req: Request, res: Response) => {
+    if (rejectApi88Extended(req, res)) return;
     try {
       const signal = requestSignal(req, res, envDeadline("IMA2_VIDEO_ANALYZE_TIMEOUT_MS", 2 * 60_000));
       const { videoUrl } = req.body ?? {};

@@ -3,6 +3,8 @@ import { isVideoItem, extractLastFrame } from "./videoMedia";
 import { buildVideoContinuityFromItem, buildContinuityPromptChip } from "./videoContinuity";
 import type { GenerateItem, VideoContinuityLineage } from "../types";
 
+import { t } from "../i18n";
+
 export type ContinueableItem = Pick<GenerateItem, "image"> & {
   url?: string;
   filename?: string;
@@ -24,6 +26,10 @@ export async function continueFromItem(item: ContinueableItem): Promise<Continue
   const store = useAppStore.getState();
   const isVideo = isVideoItem(item as Pick<GenerateItem, "filename" | "url" | "image">);
   const hasPrompt = Boolean(item.prompt);
+  if (isVideo && store.provider === "88api") {
+    store.showToast(t("video.api88ContinuationUnsupported"), true);
+    return { ok: false, isVideo, hasPrompt };
+  }
 
   store.clearReferences();
   store.setPrompt(hasPrompt && !isVideo ? (item.prompt as string) : "");
@@ -56,7 +62,7 @@ export async function continueFromItemAsUrl(
   item: ContinueableItem & { providerUrl?: string | null },
 ): Promise<ContinueResult> {
   const result = await continueFromItem(item);
-  if (item.providerUrl) {
+  if (result.ok && item.providerUrl) {
     useAppStore.getState().setProviderUrlReference(item.providerUrl);
   }
   return result;

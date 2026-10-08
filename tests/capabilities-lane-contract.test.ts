@@ -7,6 +7,13 @@ const { buildIma2Capabilities } = await tsImport(
 ) as typeof import("../lib/capabilities.ts");
 
 const EXPECTED_SURFACES = {
+  "88api": {
+    generate: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+    edit: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+    multimode: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+    node: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+    video: { supported: true, references: true, mask: false, streaming: false, catalogAccess: "static" },
+  },
   nai: {
     generate: { supported: true, references: false, mask: false, streaming: false, catalogAccess: "static" },
     edit: { supported: false, references: false, mask: false, streaming: false, catalogAccess: "static" },

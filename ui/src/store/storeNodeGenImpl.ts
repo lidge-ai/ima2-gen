@@ -144,7 +144,7 @@ export async function runGenerateNodeInPlaceImpl(
   const variantRefLimit = effectiveReferenceLimit({
     provider: nodeProvider,
     serverLimit: s.referenceLimit,
-    videoModelSelected: Boolean(s.videoModelSelected),
+    videoModelSelected: s.videoModelSelected,
     mcpProvider: s.mcpProvider ?? null,
   });
   const nodeRefs = mergeRunReferences(node.data.referenceImages ?? [], elementResolution.referenceDataUrls, variantRefLimit);

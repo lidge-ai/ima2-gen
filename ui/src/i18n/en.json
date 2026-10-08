@@ -1306,6 +1306,7 @@
     "plannerUpdateFailed": "Could not update the planner model. The previous setting was restored.",
     "durationClampedToModel": "This model allows up to {seconds}s for reference-to-video",
     "continuationFallbackT2V": "The continuation frame could not be extracted. Generation will continue as text-to-video.",
+    "api88ContinuationUnsupported": "88API video continuation is not supported. Start a new video with a prompt or an image reference.",
     "singleRefTitle": "One reference",
     "singleRefHelp": "Use this image as the opening frame, or only as a guide. Two or more are always guides.",
     "singleRef": {
@@ -1485,7 +1486,7 @@
       "sourceDefault": "Using the default URL",
       "loadFailed": "Could not load the 88API URL",
       "saveFailed": "Could not save the URL. Enter a valid HTTPS URL.",
-      "compatibility": "GPT images use the Images API; Gemini images use chat completions. Masks, transparent backgrounds and video execution are unavailable in this phase."
+      "compatibility": "GPT images use the Images API; Gemini images use chat completions. Video generation is available with a separate video key. Masks, transparent backgrounds and video edit, extension and analysis are unsupported."
     },
     "apiKeys": {
       "accordionTitle": "API Keys",

@@ -18,10 +18,10 @@ function context() {
 const deps = { detectAgyInstalled: async () => false, listComfyWorkflows: async () => [], probeComfyOrigins: async () => new Map() };
 test.afterEach(() => { globalThis.fetch = originalFetch; });
 
-test("registry has 10 image and 25 exact video IDs and image-only surfaces", () => {
+test("registry has 10 image and 25 exact video IDs and all five surfaces", () => {
   const manifest = getProvider("88api");
   assert.equal(manifest.vendor, "88api"); assert.equal(manifest.errorPrefix, "API88_");
-  assert.deepEqual([...manifest.surfaces], ["generate", "edit", "multimode", "node"]);
+  assert.deepEqual([...manifest.surfaces], ["generate", "edit", "multimode", "node", "video"]);
   assert.equal(manifest.models.filter((row) => row.kind === "image").length, 10);
   assert.deepEqual(manifest.models.filter((row) => row.kind === "video").map((row) => row.id), [
     "gemini-omni-flash", "grok-imagine-video", "grok-imagine-video-1.5",
@@ -94,10 +94,10 @@ for (const credentials of [{}, { api88ImageKey: "image" }, { api88VideoKey: "vid
     assert.deepEqual(lane.defaults, { image: "gpt-image-2", video: "grok-imagine-video-1.5" });
     for (const row of lane.models.image) assert.equal(row.executable, Boolean(ctx.api88ImageKey));
     for (const row of lane.models.video) {
-      assert.equal(row.executable, false);
-      assert.equal(row.lockReason, ctx.api88VideoKey ? "API88_VIDEO_NOT_READY" : "API88_VIDEO_KEY_MISSING");
+      assert.equal(row.executable, Boolean(ctx.api88VideoKey));
+      assert.equal(row.lockReason, ctx.api88VideoKey ? undefined : "API88_VIDEO_KEY_MISSING");
     }
-    assert.equal(lane.surfaces?.video.supported, false);
+    assert.equal(lane.surfaces?.video.supported, true);
   });
 }
 

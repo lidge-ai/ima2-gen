@@ -1306,6 +1306,7 @@
     "plannerUpdateFailed": "无法更新规划器模型。之前的设置已恢复。",
     "durationClampedToModel": "该模型的参考生成视频最长为 {seconds} 秒",
     "continuationFallbackT2V": "无法提取连续帧。生成将继续以文本到视频的形式进行。",
+    "api88ContinuationUnsupported": "88API 暂不支持视频续接。请使用提示词或参考图片生成新视频。",
     "singleRefTitle": "单张参考的用法",
     "singleRefHelp": "选择将该图片作为首帧，还是仅作参考。两张及以上始终作为参考。",
     "singleRef": {
@@ -1485,7 +1486,7 @@
       "sourceDefault": "使用默认 URL",
       "loadFailed": "无法加载 88API URL",
       "saveFailed": "无法保存 URL。请输入有效的 HTTPS URL。",
-      "compatibility": "GPT 图像使用 Images API，Gemini 图像使用 chat completions。本阶段不支持蒙版、透明背景和视频执行。"
+      "compatibility": "GPT 图像使用 Images API，Gemini 图像使用 chat completions。视频生成需要独立的视频密钥。不支持蒙版、透明背景以及视频编辑、延长和分析。"
     },
     "apiKeys": {
       "accordionTitle": "API 密钥",

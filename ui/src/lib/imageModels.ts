@@ -1,4 +1,5 @@
 import type { ImageModel, OpenAIImageModel, GeminiImageModel, AtlasCloudImageModel, MinimaxImageModel, NaiImageModel, Provider, UnsupportedImageModel, VideoModel } from "../types";
+import { api88VideoOptions, isApi88VideoModel } from "./api88Video";
 import { PROVIDER_MODELS } from "../generated/providers";
 import type { ImageToolModel, Quality } from "../types";
 
@@ -203,18 +204,24 @@ export const VIDEO_MODEL_OPTIONS: Array<{ value: VideoModel; shortLabel: string;
   { value: GROK_VIDEO_MODEL_15, shortLabel: "grokv1.5", fullLabelKey: "settings.videoModel.grokImagine15" },
 ];
 
-export function isVideoModelValue(v: unknown): v is VideoModel {
-  return v === GROK_VIDEO_MODEL_BASE
-    || v === GROK_VIDEO_MODEL_15
-    || v === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS
-    || v === GROK_VIDEO_MODEL_15_DATED_ALIAS;
+export function isVideoModelValue(v: unknown, provider?: string): v is VideoModel {
+  if (provider === "88api") return isApi88VideoModel(v);
+  const native = v === GROK_VIDEO_MODEL_BASE || v === GROK_VIDEO_MODEL_15
+    || v === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS || v === GROK_VIDEO_MODEL_15_DATED_ALIAS;
+  if (provider !== undefined) return (provider === "grok" || provider === "grok-api") && native;
+  return native || isApi88VideoModel(v);
 }
 
-export function normalizeVideoModelValue(v: unknown): VideoModel | false {
-  if (!isVideoModelValue(v)) return false;
+export function normalizeVideoModelValue(v: unknown, provider?: string): VideoModel | false {
+  if (!isVideoModelValue(v, provider)) return false;
+  if (provider === "88api") return v;
   return v === GROK_VIDEO_MODEL_15_PREVIEW_ALIAS || v === GROK_VIDEO_MODEL_15_DATED_ALIAS
-    ? GROK_VIDEO_MODEL_15
-    : v;
+    ? GROK_VIDEO_MODEL_15 : v;
+}
+
+export function getVideoModelOptionsForProvider(provider: string): Array<{ value: VideoModel; shortLabel: string }> {
+  if (provider === "88api") return api88VideoOptions();
+  return provider === "grok" || provider === "grok-api" ? VIDEO_MODEL_OPTIONS : [];
 }
 
 /**
@@ -227,7 +234,7 @@ export function normalizeVideoModelValue(v: unknown): VideoModel | false {
  */
 export function maxVideoDurationUI(model: string | false, mode: string): number {
   if (mode !== "reference-to-video") return MAX_VIDEO_DURATION_UI;
-  const normalized = normalizeVideoModelValue(model);
+  const normalized = normalizeVideoModelValue(model, "grok");
   if (!normalized) return MAX_VIDEO_DURATION_UI;
   return normalized === GROK_VIDEO_MODEL_15 ? MAX_REF2V_DURATION_15_UI : MAX_REF2V_DURATION_BASE_UI;
 }
@@ -290,10 +297,10 @@ export function resolveCoreModelValue(input: {
   if (provider === "comfy") {
     return comfyVideoWorkflow ? `${COMFY_VIDEO_VALUE_PREFIX}${comfyVideoWorkflow}` : comfyWorkflow ?? "";
   }
-  // Grok video rows are the only ones `video:` values are rendered for, because
-  // selectVideoModel normalizes to a Grok id and would drag the provider along.
-  if (provider === "grok" || provider === "grok-api") {
-    return videoModel ? `${VIDEO_VALUE_PREFIX}${videoModel}` : imageModel;
+  // Hosted video rows are scoped to their lane, including overlapping Grok IDs.
+  if (provider === "grok" || provider === "grok-api" || provider === "88api") {
+    const selected = normalizeVideoModelValue(videoModel, provider);
+    return selected ? `${VIDEO_VALUE_PREFIX}${selected}` : imageModel;
   }
   return imageModel;
 }

@@ -4,27 +4,33 @@ import { detectImageMimeFromB64 } from "../refs.js";
 export async function downloadApi88Bytes(url: string, signal: AbortSignal, maxBytes: number): Promise<Buffer> {
   if (!/^https:\/\//.test(url)) throw api88Error("API88_DOWNLOAD_FAILED", "88API result URL must use HTTPS", 502);
   try {
+    signal.throwIfAborted();
     const response = await fetch(url, { signal, redirect: "follow", credentials: "omit" });
-    if (!response.ok || !response.body) throw api88Error("API88_DOWNLOAD_FAILED", `88API result download failed (HTTP ${response.status})`, 502);
+    if (!response.ok || !response.body) throw api88Error("API88_DOWNLOAD_FAILED", `88API result download HTTP ${response.status}`, 502);
     if (Number(response.headers.get("content-length")) > maxBytes) {
       await response.body.cancel();
       throw api88Error("API88_DOWNLOAD_TOO_LARGE", "88API result exceeds the download limit", 502);
     }
     const reader = response.body.getReader();
+    const abort = () => { void reader.cancel().catch(() => {}); };
+    signal.addEventListener("abort", abort, { once: true });
     const chunks: Uint8Array[] = [];
     let total = 0;
     try {
       while (true) {
+        signal.throwIfAborted();
         const chunk = await reader.read();
+        signal.throwIfAborted();
         if (chunk.done) break;
         total += chunk.value.byteLength;
-        if (total > maxBytes) {
-          await reader.cancel();
-          throw api88Error("API88_DOWNLOAD_TOO_LARGE", "88API result exceeds the download limit", 502);
-        }
+        if (total > maxBytes) throw api88Error("API88_DOWNLOAD_TOO_LARGE", "88API result exceeds the download limit", 502);
         chunks.push(chunk.value);
       }
-    } finally { reader.releaseLock(); }
+    } finally {
+      signal.removeEventListener("abort", abort);
+      await reader.cancel().catch(() => {});
+      reader.releaseLock();
+    }
     return Buffer.concat(chunks);
   } catch (error) {
     if (signal.aborted) throw signal.reason;

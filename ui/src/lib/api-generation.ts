@@ -274,7 +274,7 @@ export function putPromptBuilderConfig(
 
 export type VideoGenerateRequest = {
   prompt: string;
-  provider?: "grok" | "grok-api" | "comfy";
+  provider?: "grok" | "grok-api" | "comfy" | "88api";
   model?: string;
   mode?: "text-to-video" | "image-to-video" | "reference-to-video";
   sourceImage?: string;
@@ -282,6 +282,12 @@ export type VideoGenerateRequest = {
   sourceFilename?: string;
   referenceImages?: string[];
   referenceFilenames?: string[];
+  firstFrame?: string;
+  lastFrame?: string;
+  videoMode?: "frames" | "reference";
+  generateAudio?: boolean;
+  referenceVideos?: Array<{ url: string; duration: number }>;
+  referenceAudioUrls?: Array<{ url: string; duration: number }>;
   continueFromVideo?: string;
   continuityLineage?: import("../types").VideoContinuityLineage | null;
   duration?: number;
@@ -301,6 +307,9 @@ export type VideoGenerateDone = {
   filename: string;
   url: string;
   mediaType: "video";
+  provider?: "grok" | "grok-api" | "comfy" | "88api";
+  model?: string;
+  providerTaskId?: string;
   revisedPrompt?: string | null;
   elapsed?: number;
   video?: Record<string, unknown>;
@@ -322,7 +331,7 @@ export async function postVideoGenerateStream(
   payload: VideoGenerateRequest,
   handlers: {
     onPlanning?: () => void;
-    onSubmitted?: (d: { xaiVideoRequestId?: string }) => void;
+    onSubmitted?: (d: { xaiVideoRequestId?: string; providerTaskId?: string }) => void;
     onProgress?: (d: { progress?: number | null; stalled?: boolean }) => void;
   } = {},
   options: { signal?: AbortSignal } = {},
@@ -344,7 +353,7 @@ export async function postVideoGenerateStream(
     const unsub = subscribe(requestId, null, (event, data) => {
       if (settled) return;
       if (event === "planning") handlers.onPlanning?.();
-      else if (event === "submitted") handlers.onSubmitted?.(data as { xaiVideoRequestId?: string });
+      else if (event === "submitted") handlers.onSubmitted?.(data as { xaiVideoRequestId?: string; providerTaskId?: string });
       else if (event === "progress") handlers.onProgress?.(data as { progress?: number | null; stalled?: boolean });
       else if (event === "done") {
         finish(() => resolve(data as unknown as VideoGenerateDone));

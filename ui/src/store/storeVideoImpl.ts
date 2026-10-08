@@ -24,6 +24,8 @@ import { buildNodeErrorInfo } from "../lib/nodeErrorInfo";
 import { compilePresets, type PresetProvider } from "../../../lib/presetCompiler.js";
 import { getAllPresets } from "../lib/presets";
 
+import { API88_DEFAULT_VIDEO_MODEL, api88VideoAxes, api88AnimateFields } from "../lib/api88Video";
+
 type StoreSet = (p: Partial<AppState>) => void;
 type StoreGet = () => AppState;
 
@@ -39,13 +41,23 @@ function selectedElementIds(state: AppState): string[] {
  * workflow selected in the UI still submitted a Grok generation. Lanes that
  * cannot do video keep folding to grok, which is the historical behavior.
  */
-function videoLaneFields(state: AppState): { provider: "grok" | "grok-api" | "comfy"; model?: string } {
+export function videoLaneFields(state: AppState): { provider: "grok" | "grok-api" | "comfy" | "88api"; model?: string } {
   if (state.provider === "comfy" && state.comfyVideoWorkflow) {
     return { provider: "comfy", model: state.comfyVideoWorkflow };
+  }
+  if (state.provider === "88api") {
+    return { provider: "88api", model: state.videoModelSelected || API88_DEFAULT_VIDEO_MODEL };
   }
   const provider = state.provider === "grok-api" ? "grok-api" : "grok";
   const model = typeof state.videoModelSelected === "string" ? state.videoModelSelected : undefined;
   return model ? { provider, model } : { provider };
+}
+
+function api88RequestOverrides(state: AppState, hasImages: boolean): Record<string, unknown> {
+  if (state.provider !== "88api") return {};
+  return { ...api88VideoAxes(state, hasImages), referenceAudios: undefined,
+    topic: undefined, storyboard: undefined, continueFromVideo: undefined,
+    continuityLineage: undefined, elementIds: undefined };
 }
 
 function toPresetProvider(provider: AppState["provider"]): PresetProvider {
@@ -87,6 +99,10 @@ export async function runVideoGenerateImpl(
       (n) => n.data.serverNodeId === node.data.parentServerNodeId,
     );
     if (parentNode?.data.imageUrl) {
+      if (get().provider === "88api" && isVideoUrl(parentNode.data.imageUrl)) {
+        get().showToast(t("video.api88ContinuationUnsupported"), true);
+        return;
+      }
       if (isVideoUrl(parentNode.data.imageUrl)) {
         try {
           // This caller knows the generated filename (it derives `continueFromVideo`
@@ -170,12 +186,18 @@ export async function runVideoGenerateImpl(
       sessionId: requestSessionId,
       clientNodeId: nodeId ?? null,
       ...(providerUrl ? { providerUrl } : {}),
+      ...api88RequestOverrides(get(), refs.length > 0 || Boolean(parentSourceFilename || parentVideoFrameRef || providerUrl)),
     };
     const result = await postVideoGenerateStream(
       payload,
       {
         onPlanning: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "planning" } : f) }),
-        onSubmitted: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "streaming" } : f) }),
+        onSubmitted: ({ providerTaskId }) => {
+          const inFlight = get().inFlight.map((f) => f.id === flightId
+            ? { ...f, phase: "streaming", ...(providerTaskId ? { providerTaskId } : {}) } : f);
+          saveInFlight(inFlight);
+          set({ inFlight });
+        },
         onProgress: ({ progress }) => set({ videoProgress: progress ?? null }),
       },
       { signal: controller.signal },
@@ -200,7 +222,8 @@ export async function runVideoGenerateImpl(
                   elapsed: result.elapsed ?? undefined,
                   // The server reports the model it actually ran; prefer that over the
                   // requested one so a provider fallback is visible rather than hidden.
-                  model: result.effectiveModel ?? result.requestedModel ?? node.data.model ?? null,
+                  model: result.effectiveModel ?? result.requestedModel ?? result.model ?? node.data.model ?? null,
+                  provider: result.provider ?? videoLaneFields(get()).provider,
                   videoContinuity: result.videoContinuity ?? parentVideoContinuity,
                   video: {
                     ...(result.video as Record<string, unknown> ?? {}),
@@ -220,6 +243,9 @@ export async function runVideoGenerateImpl(
         filename: result.filename,
         url: result.url,
         mediaType: "video",
+        provider: result.provider ?? videoLaneFields(get()).provider,
+        model: result.effectiveModel ?? result.requestedModel ?? result.model ?? null,
+        providerUrl: result.providerUrl ?? null,
         prompt,
         elapsed: result.elapsed,
         video: result.video as Record<string, unknown> ?? {},
@@ -328,12 +354,19 @@ export async function animateImageImpl(
       duration: 5,
       resolution: "480p",
       aspectRatio: "auto",
+      ...api88RequestOverrides(get(), true),
+      ...api88AnimateFields(get()),
     };
     const result = await postVideoGenerateStream(
       payload,
       {
         onPlanning: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "planning" } : f) }),
-        onSubmitted: () => set({ inFlight: get().inFlight.map((f) => f.id === flightId ? { ...f, phase: "streaming" } : f) }),
+        onSubmitted: ({ providerTaskId }) => {
+          const inFlight = get().inFlight.map((f) => f.id === flightId
+            ? { ...f, phase: "streaming", ...(providerTaskId ? { providerTaskId } : {}) } : f);
+          saveInFlight(inFlight);
+          set({ inFlight });
+        },
         onProgress: ({ progress }) => set({ videoProgress: progress ?? null }),
       },
       { signal: controller.signal },
@@ -343,6 +376,9 @@ export async function animateImageImpl(
       filename: result.filename,
       url: result.url,
       mediaType: "video",
+      provider: result.provider ?? videoLaneFields(get()).provider,
+      model: result.effectiveModel ?? result.requestedModel ?? result.model ?? null,
+      providerUrl: result.providerUrl ?? null,
       prompt: finalPrompt,
       elapsed: result.elapsed,
       video: result.video as Record<string, unknown> ?? {},

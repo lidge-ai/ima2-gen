@@ -232,6 +232,37 @@ export function updateJobAdmission(requestId: string | null | undefined, { promp
   }
 }
 
+export function mergeJobMeta(requestId: string, patch: Record<string, unknown>): boolean {
+  return getDb().transaction(() => {
+    const job = getJob(requestId);
+    if (!job) return false;
+    const meta = normalizeMeta({ ...job.meta, ...patch });
+    const result = getDb().prepare(`UPDATE inflight SET meta = ?, session_id = ?,
+      parent_node_id = ?, client_node_id = ? WHERE request_id = ?`)
+      .run(JSON.stringify(meta), stringOrNull(meta.sessionId), stringOrNull(meta.parentNodeId),
+        stringOrNull(meta.clientNodeId), requestId);
+    return result.changes === 1;
+  })();
+}
+
+export function mergeStoppedJobMeta(
+  requestId: string, patch: { providerTaskId: string; api88Origin: string },
+): boolean {
+  ensureTerminalJobsRestored();
+  const next = getDb().transaction(() => {
+    const cutoff = Date.now() - config.inflight.terminalTtlMs;
+    const memory = terminalJobs.get(requestId);
+    const job = memory && memory.finishedAt > cutoff ? memory : readTerminalJob(requestId, cutoff);
+    if (!job || (job.status !== "canceled" && job.errorCode !== "JOB_TRACKING_TIMEOUT")) return null;
+    const updated = { ...job, meta: normalizeMeta({ ...job.meta, ...patch }) };
+    writeTerminalJob(updated);
+    return updated;
+  })();
+  if (!next) return false;
+  terminalJobs.set(requestId, next);
+  return true;
+}
+
 interface FinishJobOptions {
   canceled?: boolean | undefined;
   status?: string | undefined;

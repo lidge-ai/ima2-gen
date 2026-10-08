@@ -12,6 +12,8 @@ import { ACTIVE_VIDEO_PROMPT_GUIDANCE, continuitySummary } from "../lib/videoCon
 import { getPresetById } from "../lib/presets";
 import type { VideoResolutionUI } from "../types";
 
+import { Api88VideoControls } from "./Api88VideoControls";
+
 interface PlannerConfig { model: string; options: string[]; }
 
 const RES_ITEMS = [
@@ -27,7 +29,7 @@ const VIDEO_MODELS: Array<{ value: string; label: string; sub: string }> = [
   { value: GROK_VIDEO_MODEL_15, label: "Grok V1.5", sub: "HD" },
 ];
 
-export function VideoControlsPanel() {
+function GrokVideoControlsPanel() {
   const { t } = useI18n();
   const videoModelSelected = useAppStore((s) => s.videoModelSelected);
   const selectVideoModel = useAppStore((s) => s.selectVideoModel);
@@ -219,4 +221,9 @@ export function VideoControlsPanel() {
       </details>
     </div>
   );
+}
+
+export function VideoControlsPanel() {
+  const provider = useAppStore((state) => state.provider);
+  return provider === "88api" ? <Api88VideoControls /> : <GrokVideoControlsPanel />;
 }

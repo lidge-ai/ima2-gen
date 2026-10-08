@@ -112,7 +112,9 @@ test("extracted toolbar preserves controls, state, and storyboard contracts", ()
   assert.match(toolbar, /<WebSearchToggle variant="compact" \/>/);
   assert.match(toolbar, /<SavePromptPopover/);
   assert.match(toolbar, /continueFromItem\(currentImage\)/);
-  assert.match(toolbar, /setImageModel\(DEFAULT_IMAGE_MODEL\)/);
+  // Leaving video returns to the default image model, except on 88API where the
+  // lane keeps its own image choice instead of jumping to another provider.
+  assert.match(toolbar, /setImageModel\(provider === "88api" \? imageModel : DEFAULT_IMAGE_MODEL\)/);
 });
 
 test("mention ownership remains in PromptComposer", () => {

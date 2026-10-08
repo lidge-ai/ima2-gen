@@ -22,7 +22,7 @@ export type MinimaxImageModel = Extract<ImageModelId, `image-${string}`>;
 export type NaiImageModel = Extract<ImageModelId, `nai-diffusion-${string}`>;
 export type ImageModel = ImageModelId;
 export type VideoModel = VideoModelId;
-export type VideoResolutionUI = "480p" | "720p" | "1080p";
+export type VideoResolutionUI = "480p" | "720p" | "1080p" | "768p" | "2k" | "4k";
 export type UnsupportedImageModel = UnsupportedImageModelId;
 export type Count = number;
 

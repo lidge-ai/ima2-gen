@@ -243,7 +243,9 @@ export const PROVIDER_REFERENCE_LIMITS = {
     "image": 10,
     "edit": 10
   },
-  "88api": {},
+  "88api": {
+    "video": 30
+  },
   "minimax": {
     "image": 1,
     "edit": 1
@@ -310,7 +312,7 @@ export const PROVIDER_SURFACE_SUPPORT = {
     "edit": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
     "multimode": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
     "node": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
-    "video": {"supported":false,"references":false,"mask":false,"streaming":false,"catalogAccess":"static"}
+    "video": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"}
   },
   "minimax": {
     "generate": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},

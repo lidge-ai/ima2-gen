@@ -10,6 +10,8 @@
 import type { Provider } from "../types";
 import { isCoreProviderId, PROVIDER_REFERENCE_LIMITS, PROVIDER_SURFACE_SUPPORT } from "../generated/providers";
 
+import { api88UiVideoSpec } from "./api88Video";
+
 export const GROK_FAMILY_IMAGE_REF_LIMIT = PROVIDER_REFERENCE_LIMITS.grok.image;
 export const MINIMAX_IMAGE_REF_LIMIT = PROVIDER_REFERENCE_LIMITS.minimax.image;
 export const GROK_VIDEO_REF_LIMIT = PROVIDER_REFERENCE_LIMITS.grok.video;
@@ -28,11 +30,18 @@ function laneLimit(provider: Provider, mode: "image" | "video"): number | undefi
 export function effectiveReferenceLimit(input: {
   provider: Provider;
   serverLimit: number;
-  videoModelSelected: boolean;
+  videoModelSelected: boolean | string;
   mcpProvider: string | null;
 }): number {
   if (input.mcpProvider) return MCP_REFERENCE_LIMIT;
-  if (input.videoModelSelected) return Math.min(input.serverLimit, GROK_VIDEO_REF_LIMIT);
+  if (input.videoModelSelected) {
+    if (input.provider === "88api") {
+      const spec = api88UiVideoSpec(input.videoModelSelected);
+      return spec ? Math.min(input.serverLimit, spec.imageLimit) : 0;
+    }
+    const limit = laneLimit(input.provider, "video");
+    return Math.min(input.serverLimit, limit ?? GROK_VIDEO_REF_LIMIT);
+  }
   // An absent numeric cap is not the same as an unsupported reference input.
   if (isCoreProviderId(input.provider) && !PROVIDER_SURFACE_SUPPORT[input.provider].generate.references) return 0;
   const lane = laneLimit(input.provider, "image");

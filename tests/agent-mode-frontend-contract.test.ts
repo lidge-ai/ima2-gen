@@ -19,7 +19,7 @@ describe("Agent Mode frontend shell contract", () => {
     const persistence = readSource("ui/src/store/storePersistence.ts");
 
     assert.match(agentTypes, /resolution\?: "480p" \| "720p" \| "1080p"/);
-    assert.match(videoTypes, /VideoResolutionUI = "480p" \| "720p" \| "1080p"/);
+    assert.match(videoTypes, /VideoResolutionUI = "480p" \| "720p" \| "1080p" \| "768p" \| "2k" \| "4k"/);
     assert.match(videoTypes, /"grok-imagine-video-1\.5"/);
     assert.match(imageModels, /GROK_VIDEO_MODEL_15 = "grok-imagine-video-1\.5"/);
     assert.match(imageModels, /GROK_VIDEO_MODEL_15_PREVIEW_ALIAS/);
@@ -35,7 +35,7 @@ describe("Agent Mode frontend shell contract", () => {
     assert.match(panel, /onChange=\{handleResolutionChange\}/);
     assert.match(panel, /setResolution\("720p"\)/);
     assert.match(persistence, /normalizeVideoModelValue\(p\.model\)/);
-    assert.match(persistence, /p\.resolution === "1080p"/);
+    assert.match(persistence, /\["480p", "720p", "1080p", "768p", "2k", "4k"\]\.includes/);
   });
 
   it("exposes Agent mode as a default-on product gate", () => {

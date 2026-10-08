@@ -68,7 +68,7 @@ describe("core provider registry parity", () => {
       grok: 5, "grok-api": 5, agy: 3, "gemini-api": 3, atlascloud: 10, minimax: 1, comfy: 4,
     });
     // 15 -> 400 "Too many reference images: 15. Maximum allowed is 14." on both models.
-    assert.deepEqual(referenceLimits("video"), { grok: 14, "grok-api": 14 });
+    assert.deepEqual(referenceLimits("video"), { grok: 14, "grok-api": 14, "88api": 30 });
     assert.deepEqual(ELEMENT_CAPACITY_DEFAULTS, {
       gpt: { image: { maxTotalRefs: 6, maxRefsPerElement: 6 }, edit: { maxTotalRefs: 6, maxRefsPerElement: 6 }, video: { maxTotalRefs: 1, maxRefsPerElement: 6 } },
       gemini: { image: { maxTotalRefs: 6, maxRefsPerElement: 6 }, edit: { maxTotalRefs: 6, maxRefsPerElement: 6 }, video: { maxTotalRefs: 3, maxRefsPerElement: 6 } },

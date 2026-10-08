@@ -1306,6 +1306,7 @@
     "plannerUpdateFailed": "플래너 모델을 변경하지 못해 이전 설정으로 되돌렸습니다.",
     "durationClampedToModel": "이 모델의 reference-to-video 최대 길이는 {seconds}초입니다",
     "continuationFallbackT2V": "이어갈 영상의 마지막 프레임을 추출하지 못했습니다. 텍스트-비디오 방식으로 계속 생성합니다.",
+    "api88ContinuationUnsupported": "88API는 영상 이어 만들기를 지원하지 않습니다. 프롬프트나 참고 이미지로 새 영상을 만들어 주세요.",
     "singleRefTitle": "참조 1장 사용법",
     "singleRefHelp": "이 이미지를 첫 프레임으로 쓸지, 참고만 할지 고릅니다. 2장부터는 항상 참고로 쓰입니다.",
     "singleRef": {
@@ -1485,7 +1486,7 @@
       "sourceDefault": "기본 URL 사용 중",
       "loadFailed": "88API URL을 불러오지 못했습니다",
       "saveFailed": "URL을 저장하지 못했습니다. 올바른 HTTPS URL을 입력하세요.",
-      "compatibility": "GPT 이미지는 Images API, Gemini 이미지는 chat completions를 사용합니다. 이 단계에서는 마스크, 투명 배경, 영상 실행을 지원하지 않습니다."
+      "compatibility": "GPT 이미지는 Images API, Gemini 이미지는 chat completions를 사용합니다. 영상 생성에는 별도의 영상 키가 필요합니다. 마스크, 투명 배경, 영상 편집·연장·분석은 지원하지 않습니다."
     },
     "apiKeys": {
       "accordionTitle": "API Keys",
