@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Express, Request, Response } from "express";
-import { mkdtempSync, rmSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, readdirSync, mkdirSync, writeFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -22,6 +22,7 @@ const { buildApi88VideoBody } = await import("../lib/api88/videoBody.ts");
 const { closeDb } = await import("../lib/db.ts");
 const { API88_VIDEO_SPECS } = await import("../lib/api88/videoSpecs.ts");
 const { api88VideoModelsForContext } = await import("../lib/api88/videoCatalogProjection.ts");
+const { api88VideoLedgerPath, findApi88VideoTask, beginApi88VideoTask, recordApi88VideoTask, listApi88VideoTasks } = await import("../lib/api88/videoLedger.ts");
 const originalFetch = globalThis.fetch;
 const bytes = Buffer.from("000000186674797069736f6d0000020069736f6d6d703432", "hex");
 const artifact = "https://cdn.example/video.mp4?sig=A%2FB&keep=1";
@@ -249,4 +250,143 @@ test("extended operations reject 88api before any upstream fetch", async () => {
     assert.equal(res.state.statusCode, 400);
     assert.equal(res.state.jsonBody?.code, "API88_VIDEO_OPTION_UNSUPPORTED");
   }
+});
+
+test("terminal failure followed by the same requestId returns 409 without another upstream call", async () => {
+  const local = fixture(); const id = "ledger-terminal-failure";
+  const calls: string[] = [];
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    calls.push(`${init?.method} ${String(url)}`);
+    if (init?.method === "POST") {
+      assert.equal(String(url), "https://api.example/v1/videos");
+      assert.equal((await findApi88VideoTask(context(), id))?.phase, "submitting");
+      return Response.json({ id: "ledger-failed-task" });
+    }
+    assert.equal(String(url), "https://api.example/v1/videos/ledger-failed-task");
+    return Response.json({ status: "failed" });
+  }) as typeof fetch;
+  const body = { requestId: id, provider: "88api", model: "SD2.5 720P", prompt: "A cube" };
+  await local.handlers.get("/api/video/generate")!({ id, body } as Request, response().res);
+  assert.equal(listTerminalJobs()[0].errorCode, "API88_VIDEO_FAILED");
+  assert.equal((await findApi88VideoTask(context(), id))?.phase, "failed");
+  const count = calls.length;
+  for (const async of [true, false]) {
+    const res = response();
+    await local.handlers.get("/api/video/generate")!({ id, body: { ...body, async } } as Request, res.res);
+    assert.equal(res.state.statusCode, 409);
+    assert.equal(res.state.jsonBody?.code, "API88_VIDEO_ALREADY_SUBMITTED");
+    assert.equal(res.state.jsonBody?.providerTaskId, "ledger-failed-task");
+    assert.equal(calls.length, count);
+  }
+  assert.equal(calls.filter((call) => call.startsWith("POST")).length, 1);
+});
+
+test("uncertain submit is durable and refuses re-entry even after clearing terminal state", async () => {
+  const local = fixture(); const id = "ledger-uncertain"; let posts = 0;
+  const prompt = `private-ledger-prompt-${"x".repeat(400)}`;
+  const reference = "https://cdn.example/private-ledger-reference.png";
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(String(url), "https://api.example/v1/videos");
+    assert.equal(init?.method, "POST"); posts += 1;
+    throw new Error("video-key image-key must not enter the ledger");
+  }) as typeof fetch;
+  const body = { requestId: id, provider: "88api", model: "SD2.5 720P", prompt, referenceImages: [reference] };
+  await local.handlers.get("/api/video/generate")!({ id, body } as Request, response().res);
+  const entry = await findApi88VideoTask(context(), id);
+  assert.equal(entry?.phase, "uncertain");
+  assert.equal(entry?.error, "API88_VIDEO_SUBMIT_UNCERTAIN");
+  _resetForTests();
+  const res = response();
+  await local.handlers.get("/api/video/generate")!({ id, body: { ...body, async: true } } as Request, res.res);
+  assert.equal(res.state.statusCode, 409);
+  assert.equal(res.state.jsonBody?.code, "API88_VIDEO_ALREADY_SUBMITTED");
+  assert.equal(posts, 1);
+  const file = readFileSync(api88VideoLedgerPath(context()), "utf8");
+  for (const secret of ["video-key", "image-key", prompt, reference]) assert.equal(file.includes(secret), false);
+});
+
+test("taskId-only resume survives terminal loss and uses the recorded origin after configuration changes", async () => {
+  const id = "ledger-recover"; const taskId = "ledger-task/a b";
+  const local = fixture(); const calls: string[] = [];
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    const target = String(url); calls.push(`${init?.method} ${target}`);
+    if (init?.method === "POST") {
+      assert.equal(target, "https://api.example/v1/videos"); return Response.json({ id: taskId });
+    }
+    assert.equal(target, `https://api.example/v1/videos/${encodeURIComponent(taskId)}`);
+    return Response.json({ status: "unknown" });
+  }) as typeof fetch;
+  await local.handlers.get("/api/video/generate")!({ id, body: {
+    requestId: id, provider: "88api", model: "SD2.5 720P", prompt: "A cube",
+  } } as Request, response().res);
+  assert.equal(listTerminalJobs()[0].errorCode, "API88_VIDEO_STATUS_UNKNOWN");
+  _resetForTests(); // Simulate losing both inflight and TTL-limited terminal history.
+  assert.equal(listTerminalJobs().length, 0);
+  const resumed = app(); const ctx = context();
+  ctx.config.api88Provider.baseUrl = "https://changed.example";
+  registerVideoRoutes(resumed.express, ctx, { now: () => 0, sleep: async () => {}, thumbnail: async () => {} });
+  const count = calls.length;
+  globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    const target = String(url); calls.push(`${init?.method ?? "GET"} ${target}`);
+    assert.notEqual(init?.method, "POST");
+    if (target === artifact) return new Response(bytes);
+    assert.equal(target, `https://api.example/v1/videos/${encodeURIComponent(taskId)}`);
+    assert.equal(new Headers(init?.headers).get("authorization"), "Bearer video-key");
+    return Response.json({ status: "completed", url: artifact });
+  }) as typeof fetch;
+  const res = response();
+  await resumed.handlers.get("/api/video/88api/resume")!({ id: "ledger-resume", body: { taskId } } as Request, res.res);
+  assert.deepEqual(events(res.state.chunks).map((event) => event.name), ["submitted", "done"]);
+  const done = events(res.state.chunks).at(-1)!.data;
+  assert.equal(done.model, "SD2.5 720P");
+  assert.equal(done.providerTaskId, taskId);
+  assert.equal(calls.slice(count).every((call) => call.startsWith("GET")), true);
+  assert.equal((await findApi88VideoTask(ctx, taskId, true))?.phase, "completed");
+  const listing = response();
+  await resumed.handlers.get("/api/video/88api/tasks")!({} as Request, listing.res);
+  const tasks = listing.state.jsonBody?.tasks as Array<Record<string, unknown>>;
+  assert.equal(tasks[0].taskId, taskId);
+  assert.equal(tasks[0].requestId, id);
+  assert.ok(tasks.length <= 50);
+  assert.equal(JSON.stringify(tasks).includes("video-key"), false);
+});
+
+test("ledger path respects IMA2_CONFIG_DIR and concurrent reservations allow one durable attempt", async () => {
+  const ctx = { config: { ...config, storage: { ...config.storage, configDir: join(root, "ledger-lock") } } };
+  assert.equal(api88VideoLedgerPath(context()), join(root, "88api-video-tasks.jsonl"));
+  assert.equal(api88VideoLedgerPath(ctx), join(root, "ledger-lock", "88api-video-tasks.jsonl"));
+  const attempts = await Promise.allSettled([
+    beginApi88VideoTask(ctx, "same", "SD2.5 720P", "https://api.example/v1/"),
+    beginApi88VideoTask(ctx, "same", "SD2.5 720P", "https://api.example/v1/"),
+  ]);
+  assert.equal(attempts.filter((result) => result.status === "fulfilled").length, 1);
+  const rejected = attempts.find((result) => result.status === "rejected") as PromiseRejectedResult;
+  assert.equal(rejected.reason.code, "API88_VIDEO_ALREADY_SUBMITTED");
+  const path = api88VideoLedgerPath(ctx);
+  const before = readFileSync(path, "utf8");
+  assert.equal(before.trim().split("\n").length, 1);
+  if (process.platform !== "win32") assert.equal(statSync(path).mode & 0o777, 0o600);
+  await recordApi88VideoTask(ctx, { requestId: "same", model: "SD2.5 720P", origin: "https://api.example",
+    phase: "submitted", taskId: "task-id" });
+  const after = readFileSync(path, "utf8");
+  assert.ok(after.startsWith(before), "updating phase must append, never replace earlier records");
+  await assert.rejects(beginApi88VideoTask(ctx, "same", "SD2.5 720P", "https://api.example"),
+    (error: unknown) => (error as { providerTaskId: string }).providerTaskId === "task-id");
+});
+
+test("fresh index lists 50 recent tasks and still refuses IDs older than its 2000-line tail", async () => {
+  const ctx = { config: { ...config, storage: { ...config.storage, configDir: join(root, "ledger-history") } } };
+  mkdirSync(ctx.config.storage.configDir);
+  const rows = Array.from({ length: 2101 }, (_, i) => ({ requestId: `request-${i}`, taskId: `task-${i}`,
+    phase: "failed", model: "SD2.5 720P", origin: "https://api.example", createdAt: i, updatedAt: i,
+    error: "API88_VIDEO_TIMEOUT" }));
+  writeFileSync(api88VideoLedgerPath(ctx), rows.map((row) => JSON.stringify(row)).join("\n") + "\n", { mode: 0o600 });
+  const recent = await listApi88VideoTasks(ctx);
+  assert.equal(recent.length, 50);
+  assert.equal(recent[0].requestId, "request-2100");
+  assert.equal(recent.at(-1)?.requestId, "request-2051");
+  assert.equal((await findApi88VideoTask(ctx, "task-0", true))?.model, "SD2.5 720P");
+  await assert.rejects(beginApi88VideoTask(ctx, "request-0", "SD2.5 720P", "https://api.example"),
+    (error: unknown) => (error as { code: string }).code === "API88_VIDEO_ALREADY_SUBMITTED");
+  assert.equal(readFileSync(api88VideoLedgerPath(ctx), "utf8").trim().split("\n").length, 2101);
 });

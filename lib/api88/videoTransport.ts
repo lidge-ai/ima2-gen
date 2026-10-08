@@ -14,6 +14,7 @@ export interface Api88VideoEvent {
   status?: string;
 }
 export interface Api88VideoOptions {
+  origin?: string | undefined;
   signal?: AbortSignal | undefined;
   sleep?: ((ms: number, signal: AbortSignal) => Promise<void>) | undefined;
   now?: (() => number) | undefined;
@@ -45,7 +46,7 @@ function runFor(ctx: VideoContext, options: Api88VideoOptions): Run {
   const now = options.now ?? Date.now;
   const timeout = ctx.config.api88Provider.videoTimeoutMs;
   const signal = AbortSignal.any([...(options.signal ? [options.signal] : []), AbortSignal.timeout(timeout)]);
-  return { origin: api88Origin(ctx.config.api88Provider.baseUrl), headers: { Authorization: `Bearer ${key}` },
+  return { origin: api88Origin(options.origin ?? ctx.config.api88Provider.baseUrl), headers: { Authorization: `Bearer ${key}` },
     deadline: now() + timeout, signal, options, now, config: ctx.config.api88Provider };
 }
 function check(run: Run, taskId?: string): void {

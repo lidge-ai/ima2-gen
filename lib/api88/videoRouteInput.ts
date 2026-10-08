@@ -4,10 +4,12 @@ import { safeGeneratedFilePath } from "../videoFrameExtract.js";
 import { parseBackgroundPreset, backgroundPromptSuffix } from "../backgroundPresets.js";
 import { API88_DEFAULT_VIDEO_MODEL, api88VideoSpec } from "./videoSpecs.js";
 import { buildApi88VideoBody, api88ImageReference, type Api88VideoInput, type Api88ReferenceMedia } from "./videoBody.js";
+import { findApi88VideoTask } from "./videoLedger.js";
 
 type Body = Record<string, unknown>;
 export interface Api88PreparedVideo {
   model: string; prompt: string; input?: Api88VideoInput; taskId?: string;
+  origin?: string; ledgerRequestId?: string;
   video: Record<string, unknown>;
 }
 function invalid(message: string): never {
@@ -109,17 +111,24 @@ function modeFor(body: Body, input: Api88VideoInput): string {
   if (mode === "reference-to-video" && spec.family === "grok") return invalid("88API Grok accepts only an opening image");
   return mode;
 }
+async function prepareResume(ctx: RuntimeContext, body: Body): Promise<Api88PreparedVideo> {
+  if (body.prompt !== undefined && typeof body.prompt !== "string") return invalid("Resume prompt must be a string");
+  const taskId = optionalString(body, "taskId") ?? invalid("Resume requires taskId");
+  if (taskId.length > 512) return invalid("taskId too long");
+  const known = await findApi88VideoTask(ctx, taskId, true);
+  const explicit = optionalString(body, "model");
+  const model = explicit ?? known?.model ?? invalid("Unknown taskId requires an explicit model");
+  api88VideoSpec(model);
+  if (known && explicit && explicit !== known.model) return invalid("Resume model does not match the recorded task");
+  return { model, taskId, prompt: typeof body.prompt === "string" ? body.prompt : "",
+    ...(known ? { origin: known.origin, ledgerRequestId: known.requestId } : {}),
+    video: { mode: "resumed", duration: null, resolution: null, aspectRatio: null, refsCount: null } };
+}
 export async function prepareApi88Video(ctx: RuntimeContext, body: Body, resume: boolean): Promise<Api88PreparedVideo> {
   rejectOptions(body);
-  const model = optionalString(body, "model") ?? (resume ? invalid("Resume requires a model") : API88_DEFAULT_VIDEO_MODEL);
+  if (resume) return prepareResume(ctx, body);
+  const model = optionalString(body, "model") ?? API88_DEFAULT_VIDEO_MODEL;
   const spec = api88VideoSpec(model);
-  if (resume) {
-    if (body.prompt !== undefined && typeof body.prompt !== "string") return invalid("Resume prompt must be a string");
-    const taskId = optionalString(body, "taskId") ?? invalid("Resume requires taskId");
-    if (taskId.length > 512) return invalid("taskId too long");
-    return { model, taskId, prompt: typeof body.prompt === "string" ? body.prompt : "",
-      video: { mode: "resumed", duration: null, resolution: null, aspectRatio: null, refsCount: null } };
-  }
   const images = await references(ctx, body, model);
   const input: Api88VideoInput = {
     model, prompt: promptFor(body), images,
