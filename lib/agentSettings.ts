@@ -83,10 +83,11 @@ function cleanString(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 120) : fallback;
 }
 
-// 88API ids are sent byte-exact; an id that does not match exactly is rejected
-// downstream (API88_MODEL_UNSUPPORTED) instead of being repaired here.
+// 88API ids are sent byte-exact; an id that does not match exactly (including an
+// overlong one) is rejected downstream (API88_MODEL_UNSUPPORTED) instead of being
+// repaired or replaced here. An empty value means "unspecified", as on every lane.
 function exactString(value: unknown, fallback: string): string {
-  return typeof value === "string" && value.length > 0 && value.length <= 200 ? value : fallback;
+  return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
 function cleanSize(value: unknown, fallback: string): string {

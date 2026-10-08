@@ -106,7 +106,7 @@ routes/
 | `routes/cardNews.ts` | 213 | Dev-gated card-news templates, sets, drafts, jobs, regenerate, export (only registered when `config.features.cardNews`) |
 | `routes/generationRequestLog.ts` | 19 | `GET /api/generation-requests` — ring buffer of last 200 generation attempts (#95) |
 | `lib/generationRequestLog.ts` | 44 | In-memory generation request log store |
-| `routes/agent.ts` | 331 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
+| `routes/agent.ts` | 339 | Agent Mode API — sessions, turns, durable queue, compact, manifest, tools (`/api/agent/*`); backed by `lib/agent*.ts`; no CLI wrapper |
 | `routes/promptBuilder.ts` | 107 | `POST /api/prompt-builder/chat` plus `GET/PUT /api/prompt-builder/config`; chat uses `lib/promptBuilder/*`, config persists the backend/model pair, and `ima2 prompt build` wraps chat |
 | `routes/events.ts` | 154 | `GET /api/events` — SSE multiplexing endpoint; single persistent stream for all async job progress; ring replay + `replay-gap` + heartbeat; serializes `jobSeq` and the job envelope |
 | `lib/eventBus.ts` | 152 | Global pub/sub event bus with ring buffer (2000), monotonic `seq`, per-job `jobSeq` (LRU-bounded), `replaySince`, `hasReplayGap` |
@@ -349,7 +349,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentTypes.ts` | 185 | Shared Agent Mode types |
 | `lib/agentStore.ts` | 456 | SQLite session/turn persistence |
 | `lib/agentStoreRows.ts` | 137 | Row mapping helpers for agent store |
-| `lib/agentSettings.ts` | 96 | Per-session generation settings |
+| `lib/agentSettings.ts` | 105 | Per-session generation settings |
 | `lib/agentRuntime.ts` | 440 | Turn execution, tool dispatch, generation delegation |
 | `lib/agentQueueStore.ts` | 367 | Durable async queue persistence |
 | `lib/agentQueueWorker.ts` | 226 | Background queue worker |
@@ -357,7 +357,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentToolManifest.ts` | 31 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 205 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 356 | Generation plan assembly |
-| `lib/agentImageVideoGen.ts` | 487 | Image/video generation caller for agent turns |
+| `lib/agentImageVideoGen.ts` | 490 | Image/video generation caller for agent turns |
 | `lib/agentQuestionResponder.ts` | 279 | `/question` responder |
 | `lib/promptBuilder/constants.ts` | 34 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
 | `lib/promptBuilder/router.ts` | 140 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |

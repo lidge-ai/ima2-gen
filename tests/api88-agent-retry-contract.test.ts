@@ -46,6 +46,8 @@ test("Agent rejects untrimmed or planner model ids on 88API before any POST", as
     globalThis.fetch = (async () => { posts++; return Response.json({}); }) as typeof fetch;
     assert.equal(normalizeAgentGenerationSettings({ provider: "88api", model: " gpt-image-2 " }).model, " gpt-image-2 ");
     assert.equal(normalizeAgentGenerationSettings({ provider: "88api", model: "SD2.5 720P" }).model, "SD2.5 720P");
+    const overlong = "x".repeat(300);
+    assert.equal(normalizeAgentGenerationSettings({ provider: "88api", model: overlong }).model, overlong);
     for (const model of [" gpt-image-2 ", "grok-4.6"]) {
       await assert.rejects(() => generateAgentImageWithRetry(ctx, "synthetic-session", "bird", "context", false, {
         provider: "88api", model, signal: null, sourceImagePolicy: "none",
@@ -55,4 +57,3 @@ test("Agent rejects untrimmed or planner model ids on 88API before any POST", as
     assert.equal(posts, 0, "an inexact or planner id must not reach 88API");
   } finally { db?.closeDb(); await isolation.close(); }
 });
-
