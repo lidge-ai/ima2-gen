@@ -24,7 +24,7 @@ const expected: Record<CoreProviderId, MatrixRow> = {
   oauth: oauthImages, api: responses,
   grok: { ...standard, video: image },
   "grok-api": { ...standard, video: image },
-  agy: standard, "gemini-api": standard, atlascloud: standard, minimax: standard,
+  agy: standard, "gemini-api": standard, atlascloud: standard, "88api": standard, minimax: standard,
   nai: {
     generate: [true, false, false, false, "static"], edit: absent,
     multimode: [true, false, false, false, "static"],
@@ -74,7 +74,7 @@ test("generation-only models survive supported-model derivation without edit sen
     referenceLimits: {}, elementTaxonomy: null, limits: { timeoutMs: 1 }, errorPrefix: null,
   };
   assert.deepEqual([...deriveSupportedImageModelsFrom([fixture], "text-only")], ["text-model"]);
-  assert.deepEqual([...deriveUnsupportedImageModelsFrom(REGISTRY)], []);
+  assert.deepEqual([...deriveUnsupportedImageModelsFrom(REGISTRY)], ["grok-imagine-edit"]);
   assert.equal(deriveSupportedImageModelsFrom(REGISTRY, "nai").size, 4);
 });
 
@@ -89,7 +89,7 @@ test("generated projection and reference limits retain lane boundaries", async (
     }
   }
   for (const [provider, limit] of [
-    ["nai", 0], ["oauth", 12], ["api", 12], ["atlascloud", 10], ["minimax", 1], ["comfy", 4],
+    ["nai", 0], ["oauth", 12], ["88api", 12], ["api", 12], ["atlascloud", 10], ["minimax", 1], ["comfy", 4],
   ] as const) {
     assert.equal(effectiveReferenceLimit({
       provider, serverLimit: 12, videoModelSelected: false, mcpProvider: null,

@@ -38,7 +38,7 @@ test("invalid provider inference is membership-based, including prototype keys",
 test("every fallback belongs to its real supported lane, with independent exact defaults", () => {
   const expected = { oauth: "gpt-6-luna", api: "gpt-5.6-luna", grok: "grok-imagine-image-2.0",
     "grok-api": "grok-imagine-image-2.0", agy: "nano-banana-2", "gemini-api": "nano-banana-pro",
-    atlascloud: "openai/gpt-image-2/text-to-image", minimax: "image-01", nai: "nai-diffusion-5-full" };
+    atlascloud: "openai/gpt-image-2/text-to-image", "88api": "gpt-image-2", minimax: "image-01", nai: "nai-diffusion-5-full" };
   for (const provider of CORE_PROVIDER_IDS) {
     const selected = reconcileCoreSelection({ provider, imageModel: "gpt-5.3-codex-spark" });
     if (provider === "comfy") continue;

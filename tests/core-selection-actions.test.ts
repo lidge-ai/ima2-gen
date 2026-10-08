@@ -464,7 +464,7 @@ test("image model options keep one lane-tagged value per row and stay in the gen
     // Lane lists must carry one row per value, honoring each row's declared
     // hint: shared catalog values (nano-banana-*) exist on both Gemini lanes,
     // so a first-match find on a merged list resolves the wrong lane's label.
-    for (const provider of ["agy", "gemini-api", "atlascloud", "minimax", "nai", "api", "oauth"] as const) {
+    for (const provider of ["agy", "gemini-api", "atlascloud", "88api", "minimax", "nai", "api", "oauth"] as const) {
       const rows = runtime.getImageModelOptionsForProvider(provider);
       assert.ok(rows.length > 0, `${provider} option list is empty`);
       assert.equal(

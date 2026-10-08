@@ -3,6 +3,8 @@ import type { Provider } from "../types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IMAGE_MODEL_OPTIONS, OPENAI_IMAGE_MODEL_OPTIONS, GROK_IMAGE_MODEL_OPTIONS, GEMINI_IMAGE_MODEL_OPTIONS, UNSUPPORTED_IMAGE_MODELS, VIDEO_MODEL_OPTIONS, isGeminiImageModel } from "../lib/imageModels";
+import { API88_IMAGE_MODEL_OPTIONS } from "../lib/imageModels";
+import { useLaneCatalog } from "../hooks/useLaneCatalog";
 import { REASONING_EFFORT_OPTIONS, type ReasoningEffort } from "../lib/reasoning";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
@@ -33,6 +35,10 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
   const selectVideoModel = useAppStore((s) => s.selectVideoModel);
   const reasoningEffort = useAppStore((s) => s.reasoningEffort);
   const setReasoningEffort = useAppStore((s) => s.setReasoningEffort);
+  const laneSnapshot = useLaneCatalog();
+  const api88Rows = laneSnapshot.catalog?.["88api"]?.models.image;
+  const modelAvailable = (option: (typeof IMAGE_MODEL_OPTIONS)[number]) => option.providerHint !== "88api"
+    || laneSnapshot.phase !== "ready" || Boolean(api88Rows?.some((entry) => entry.id === option.value && entry.executable !== false));
   const id = variant === "settings" ? "settings-image-model" : "sidebar-image-model";
   const modelOptions = IMAGE_MODEL_OPTIONS;
   const current = modelOptions.find((option) => option.value === imageModel && (!option.providerHint || option.providerHint === provider))
@@ -43,7 +49,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
 
 
   const getMenuItems = () => menuItemRefs.current.filter(
-    (item): item is HTMLButtonElement => item !== null,
+    (item): item is HTMLButtonElement => item !== null && !item.disabled,
   );
 
   const focusMenuItem = (index: number) => {
@@ -152,7 +158,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
   useEffect(() => {
     if (variant !== "sidebar" || !open) return;
 
-    const activeIndex = modelOptions.findIndex((option) => option.value === imageModel);
+    const activeIndex = getMenuItems().findIndex((item) => item.getAttribute("aria-checked") === "true");
     const frame = requestAnimationFrame(() => {
       focusMenuItem(activeIndex >= 0 ? activeIndex : 0);
     });
@@ -164,7 +170,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
     const triggerModel = videoModelSelected
       ? (VIDEO_MODEL_OPTIONS.find((o) => o.value === videoModelSelected)?.shortLabel ?? VIDEO_MODEL_OPTIONS[0].shortLabel)
       : current.shortLabel.split(" ")[0];
-    const triggerEffort = isGeminiImageModel(imageModel)
+    const triggerEffort = provider === "88api" ? "" : isGeminiImageModel(imageModel)
       ? current.shortLabel.split(" ")[1] || ""
       : currentReasoning.shortLabel;
 
@@ -276,6 +282,16 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
                   </button>
                 );
               })}
+              <div className="image-model-select__subsection-title">88API</div>
+              {API88_IMAGE_MODEL_OPTIONS.map((option, index) => (
+                <button key={`88api:${option.value}`} ref={(node) => {
+                  menuItemRefs.current[OPENAI_IMAGE_MODEL_OPTIONS.length + GROK_IMAGE_MODEL_OPTIONS.length + GEMINI_IMAGE_MODEL_OPTIONS.length + index] = node;
+                }} type="button" className={`image-model-select__item${provider === "88api" && option.value === imageModel ? " is-active" : ""}`}
+                  role="menuitemradio" aria-checked={provider === "88api" && option.value === imageModel}
+                  disabled={!modelAvailable(option)} tabIndex={-1} onClick={() => {
+                    setProvider("88api"); setImageModel(option.value); setOpen(false);
+                  }}><span>{option.shortLabel}</span><small>{t(option.fullLabelKey)}</small></button>
+              ))}
             </div>
             <div className="image-model-select__section" role="group" aria-label={t("sidebar.videoSectionLabel")}>
               <div className="image-model-select__section-title">{t("sidebar.videoSectionLabel")}</div>
@@ -300,7 +316,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
                 </button>
               ))}
             </div>
-            {!isGeminiImageModel(imageModel) && (
+            {(provider === "oauth" || provider === "api") && (
               <details className="image-model-select__section image-model-select__collapsible">
                 <summary className="image-model-select__section-title image-model-select__section-title--toggle">
                   {t("sidebar.reasoningLabel")}
@@ -349,6 +365,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
     agy: "settings.account.agyTitle",
     "gemini-api": "provider.geminiApiCompatTitle",
     atlascloud: "settings.apiKeys.atlascloud.label",
+    "88api": "settings.api88.title",
     minimax: "settings.apiKeys.minimax.label",
     nai: "settings.account.naiTitle",
   };
@@ -361,6 +378,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
         onChange={(value) => {
           const option = modelOptions.find((candidate) => optionItemValue(candidate) === value);
           if (!option) return;
+          if (!modelAvailable(option)) return;
           if (option.providerHint) setProvider(option.providerHint);
           setImageModel(option.value);
         }}
@@ -370,6 +388,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
             return {
               value: optionItemValue(option),
               label: t(option.fullLabelKey),
+              disabled: !modelAvailable(option),
               ...(laneKey ? { sub: t(laneKey) } : {}),
             };
           }),

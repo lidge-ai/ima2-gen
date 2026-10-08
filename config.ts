@@ -15,6 +15,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import { parsePublicOrigins } from "./lib/localAccessPolicy.js";
+import { buildApi88ProviderConfig } from "./lib/api88/config.js";
 export { SSE_STREAM_POLICY } from "./lib/eventsPolicy.js";
 import { deriveSupportedImageModels, deriveUnsupportedImageModels } from "./lib/providers/derive.js";
 import { migrateOAuthImageModel } from "./lib/oauthLegacyModels.js";
@@ -435,6 +436,7 @@ export const config = {
     videoTimeoutMs: pickInt(env.IMA2_GROK_VIDEO_TIMEOUT_MS, fileCfg.grokProvider?.videoTimeoutMs, 1_800_000),
     videoDownloadTimeoutMs: pickInt(env.IMA2_GROK_VIDEO_DOWNLOAD_TIMEOUT_MS, fileCfg.grokProvider?.videoDownloadTimeoutMs, 300_000),
   },
+  api88Provider: buildApi88ProviderConfig(env, fileCfg.api88Provider, { pickStr, pickPositiveInt }),
   // Direct MiniMax image-generation provider (text-to-image / image-to-image).
   // Region selects the global (.io) or China (.minimaxi.com) OpenAI-compatible
   // base URL; the regional fields are shared with the MiniMax text endpoints.

@@ -17,6 +17,7 @@ const PROVIDER_LABELS: Record<Provider, string> = {
   agy: "Antigravity",
   "gemini-api": "Gemini API",
   atlascloud: "Atlas Cloud",
+  "88api": "88API",
   minimax: "MiniMax",
   nai: "NovelAI",
   comfy: "ComfyUI",
@@ -65,7 +66,7 @@ export function HomePromptComposer({ providerAvailability }: HomePromptComposerP
       sub: providerValue === "comfy" ? availability.reason : availability.ok ? t("readiness.ready") : availability.reason,
       // ComfyUI is selectable even before a workflow is observed so the user
       // can reach its existing Settings manager and configure the local lane.
-      disabled: !availability.ok && providerValue !== "comfy",
+      disabled: !(availability.selectable ?? availability.ok) && providerValue !== "comfy",
     } satisfies SelectItem<Provider>;
   });
 

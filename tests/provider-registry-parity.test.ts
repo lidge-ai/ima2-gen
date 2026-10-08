@@ -11,7 +11,7 @@ import { collectCallArguments } from "./_executionImportEdges.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
-const CORE_IDS = ["oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai", "comfy"];
+const CORE_IDS = ["oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "nai", "comfy"];
 // GPT OAuth keeps only GPT-6; the API-key lane keeps its own GPT list.
 const OAUTH_MODELS = ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"];
 const API_MODELS = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra"];
@@ -19,7 +19,10 @@ const CLI_IMAGE_MODELS = [
   ...OAUTH_MODELS,
   ...API_MODELS.filter((id) => !OAUTH_MODELS.includes(id)),
   "grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality",
-  "nano-banana-2", "nano-banana-pro", "image-01", "image-01-live",
+  "nano-banana-2", "nano-banana-pro",
+  "gemini-3-pro-image", "gemini-3.1-flash-image", "gemini-3.1-flash-lite-image",
+  "gemini-nano-banana-2.1", "gpt-image-2", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "grok-imagine-edit",
+  "image-01", "image-01-live",
   "nai-diffusion-5-full", "nai-diffusion-5-curated", "nai-diffusion-4-5-full", "nai-diffusion-4-5-curated",
 ];
 
@@ -101,7 +104,7 @@ describe("core provider registry parity", () => {
 
     assert.deepEqual(
       maskRejectedLanes.sort(),
-      ["agy", "atlascloud", "comfy", "gemini-api", "grok", "grok-api", "minimax", "nai"],
+      ["88api", "agy", "atlascloud", "comfy", "gemini-api", "grok", "grok-api", "minimax", "nai"],
       "surface policy must preserve the existing mask rejection matrix",
     );
 

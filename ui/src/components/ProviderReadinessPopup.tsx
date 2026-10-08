@@ -1,5 +1,5 @@
 import { useI18n } from "../i18n";
-import { IMAGE_MODEL_OPTIONS } from "../lib/imageModels";
+import { getImageModelOptionsForProvider } from "../lib/imageModels";
 import { useAppStore } from "../store/useAppStore";
 import { useProviderAvailability } from "../hooks/useProviderAvailability";
 import { useModalFocus } from "../hooks/useModalFocus";
@@ -19,6 +19,7 @@ const PROVIDER_READINESS_LABELS: Record<string, string> = {
   agy: "Gemini",
   "gemini-api": "Gemini API",
   atlascloud: "Atlas Cloud",
+  "88api": "88API",
   minimax: "MiniMax",
   nai: "NovelAI",
   comfy: "ComfyUI",
@@ -39,7 +40,7 @@ export function ProviderReadinessPopup() {
   const availability = useProviderAvailability();
   const laneCatalog = useLaneCatalog();
   const isGrok = provider === "grok";
-  const imageModelOption = IMAGE_MODEL_OPTIONS.find((option) => option.value === imageModel);
+  const imageModelOption = getImageModelOptionsForProvider(provider).find((option) => option.value === imageModel);
   const modalRef = useModalFocus<HTMLDivElement>(open, close);
 
   if (!open) return null;
@@ -100,6 +101,8 @@ export function ProviderReadinessPopup() {
                 <dt>{t("readiness.grokApi")}</dt>
                 <dd>{t("readiness.grokApiBody")}</dd>
               </div>
+            ) : provider === "88api" ? (
+              <div><dt>{t("settings.api88.title")}</dt><dd>{t("settings.api88.compatibility")}</dd></div>
             ) : (
               <>
                 <div>

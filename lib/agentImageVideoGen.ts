@@ -13,6 +13,8 @@ import { generateViaResponses } from "./responsesImageAdapter.js";
 import { generateViaGrok, type GrokReferenceImage } from "./grokImageAdapter.js";
 import { generateViaAgy } from "./agyImageAdapter.js";
 import { generateViaAtlasCloud } from "./atlasCloudImageAdapter.js";
+import { generateViaApi88Image } from "./api88/imageTransport.js";
+import { api88Error } from "./api88/errors.js";
 import { generateViaMinimax } from "./minimaxImageAdapter.js";
 import { generateViaNai } from "./naiImageAdapter.js";
 import { DEFAULT_GROK_PLANNER_MODEL } from "../config.js";
@@ -54,6 +56,7 @@ export async function generateAgentImageWithRetry(
       const result = await generateAgentImage(ctx, sessionId, forcedPrompt, manifest, webSearchEnabled, options);
       if (result.image) return result;
     } catch (error) {
+      if (options.provider === "88api") throw error;
       lastError = error;
       if (!isTextOnlyResult(error)) throw error;
       if (attempt === 1) break;
@@ -119,6 +122,12 @@ async function generateAgentImage(
         ...(options.signal ? { signal: options.signal } : {}),
         references: await loadAgentCurrentImageReferences(ctx, sessionId, options.sourceImagePolicy ?? "none"),
       })
+    : activeProvider === "88api"
+    ? await generateViaApi88Image(`${manifest}\n\nUser request:\n${prompt}`, ctx, {
+        model: effectiveModel, size: providerOptions.size, requestId, signal: options.signal ?? undefined,
+        references: (await loadAgentCurrentImageReferences(ctx, sessionId, options.sourceImagePolicy ?? "none"))
+          .map((ref) => ({ b64: ref.b64, declaredMime: ref.declaredMime ?? null, detectedMime: ref.detectedMime ?? null })),
+      })
     : activeProvider === "minimax"
     ? await generateViaMinimax(`${manifest}\n\nUser request:\n${prompt}`, ctx, {
         model: effectiveModel,
@@ -167,7 +176,7 @@ async function generateAgentImage(
           signal: options.signal,
         },
       );
-  const format = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai"
+  const format = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai"
     ? imageFormatFromMime(("mime" in response ? response.mime : undefined) || detectImageMimeFromB64(response.b64) || "image/jpeg")
     : options.format ?? "png";
   if (!response.b64) {
@@ -277,6 +286,7 @@ export async function runAgentVideoGeneration(
   prompt: string,
   options: AgentRunOptions & { skipUserTurn?: boolean | undefined; assistantText?: string | null | undefined } = {},
 ) {
+  if (options.provider === "88api") throw api88Error("API88_VIDEO_NOT_READY", "88API Agent video execution is unsupported", 400);
   const session = getAgentSession(sessionId);
   if (!session) throw notFound(sessionId);
   if (!options.skipUserTurn) {

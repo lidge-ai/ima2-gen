@@ -28,6 +28,7 @@ const CORE_ENTRY_BY_ID: Record<Provider, CoreEntry> = {
   agy: { value: "agy", provider: "Gemini", method: "agy" },
   "gemini-api": { value: "gemini-api", provider: "Gemini", method: "API" },
   atlascloud: { value: "atlascloud", provider: "Atlas Cloud", method: "API" },
+  "88api": { value: "88api", provider: "88API", method: "API" },
   minimax: { value: "minimax", provider: "MiniMax", method: "API" },
   nai: { value: "nai", provider: "NovelAI", method: "API" },
   comfy: { value: "comfy", provider: "ComfyUI", method: "local" },
@@ -160,7 +161,7 @@ export function ProviderStatusSelect({ mcpProviders }: { mcpProviders: McpProvid
         setProvider(next);
         return;
       }
-      if (!state.ok) {
+      if (!(next === "88api" ? state.selectable : state.ok)) {
         setBlocked({ label: entry ? `${entry.provider} ${entry.method}` : next, reason: state.reason, hint: state.hint });
         return;
       }

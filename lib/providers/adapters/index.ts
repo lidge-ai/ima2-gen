@@ -9,6 +9,7 @@ import { createApiAdapter } from "./api.js";
 import { createGrokApiAdapter } from "./grok-api.js";
 import { createGeminiApiAdapter } from "./gemini-api.js";
 import { createAtlasCloudAdapter } from "./atlascloud.js";
+import { createApi88Adapter } from "./88api.js";
 import { createComfyAdapter } from "./comfy.js";
 import { createMinimaxAdapter } from "./minimax.js";
 import { createNaiAdapter } from "./nai.js";
@@ -22,6 +23,7 @@ const ADAPTER_FACTORIES: Partial<Record<CoreProviderId, AdapterFactory>> = {
   "gemini-api": createGeminiApiAdapter,
   minimax: createMinimaxAdapter,
   atlascloud: createAtlasCloudAdapter,
+  "88api": createApi88Adapter,
   comfy: createComfyAdapter,
   nai: createNaiAdapter,
 };

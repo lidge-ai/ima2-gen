@@ -146,7 +146,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
   it("non-API provider options ignore even stale invalid tool selections", async () => {
     const { resolveProviderOptions } = await import("../lib/providerOptions.ts");
     const { normalizeOAuthParams } = await import("../lib/oauthNormalize.ts");
-    for (const provider of ["oauth", "grok", "grok-api", "agy", "gemini-api", "minimax", "nai", "atlascloud"]) {
+    for (const provider of ["oauth", "grok", "grok-api", "agy", "gemini-api", "minimax", "nai", "atlascloud", "88api"]) {
       const options = resolveProviderOptions(null, { provider, rawImageToolModel: "stale-tool-model" });
       assert.equal(options.error, undefined);
       assert.equal(options.imageToolModel, undefined);

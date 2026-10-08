@@ -45,6 +45,8 @@ function contextWith(key: string | undefined): RuntimeContext {
     geminiApiKey: key,
     minimaxApiKey: key,
     atlasCloudApiKey: key,
+    api88ImageKey: key,
+    api88VideoKey: key,
     naiApiKey: key,
     comfyWorkflows: key ? [FIXTURE_COMFY_WORKFLOW] : [],
   } as unknown as RuntimeContext;
@@ -64,6 +66,7 @@ const EXPECTED_AUTH_REASON: Record<string, RegExp> = {
   "gemini-api": /Gemini API key or Vertex service account missing/,
   minimax: /MiniMax API key missing/,
   atlascloud: /Atlas Cloud API key missing/,
+  "88api": /88API image key missing/,
   comfy: /workflow/i,
   nai: /NovelAI API token missing/,
 };
@@ -211,7 +214,7 @@ for (const { name, credentials, expected } of [
 }
 
 test("legacy lanes own their execution", () => {
-  for (const lane of ["nai", "minimax", "atlascloud", "comfy"] as const) {
+  for (const lane of ["nai", "minimax", "atlascloud", "88api", "comfy"] as const) {
     assert.equal(typeof getProviderAdapter(withKey, lane)?.prepareImageExecution, "function", lane);
   }
   for (const lane of ["api", "grok-api", "gemini-api"] as const) {
@@ -229,4 +232,12 @@ test("api normalizes errors without a provider prefix", () => {
   assert.deepEqual(adapter.normalizeError("unknown failure"), {
     code: "UNKNOWN", message: "unknown failure", retryable: false,
   });
+});
+
+test("88API descriptor image auth never substitutes the video key", () => {
+  for (const [image, video, expected] of [[undefined, undefined, false], [undefined, "video", false],
+    ["image", undefined, true], ["image", "video", true], ["   ", "video", false]] as const) {
+    const ctx = { ...withoutKey, api88ImageKey: image, api88VideoKey: video } as RuntimeContext;
+    assert.equal(getProviderAdapter(ctx, "88api")?.validateAuth().ok, expected);
+  }
 });

@@ -281,7 +281,7 @@ if (executionTestProcess(import.meta.url)) {
 
   test("child environment excludes credentials and ambient loader options", () => {
     const env = executionChildEnv();
-    for (const name of ["HOME", "IMA2_CONFIG_DIR", "OPENAI_API_KEY", "XAI_API_KEY", "NODE_OPTIONS", "EXECUTION_TEST_FILE"]) {
+    for (const name of ["HOME", "IMA2_CONFIG_DIR", "OPENAI_API_KEY", "XAI_API_KEY", "IMA2_88API_IMAGE_KEY", "IMA2_88API_VIDEO_KEY", "IMA2_88API_BASE_URL", "NODE_OPTIONS", "EXECUTION_TEST_FILE"]) {
       assert.equal(env[name], undefined);
     }
   });

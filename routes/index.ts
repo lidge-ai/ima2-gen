@@ -43,6 +43,7 @@ import { registerMcpTempReferenceRoutes } from "./mcpTempReferences.js";
 import { registerMcpMultishotRoutes } from "./mcpMultishot.js";
 import { registerContractRoutes } from "./contracts.js";
 import { mountKeyRoutes } from "./keys.js";
+import { mountApi88ConfigRoutes } from "./api88Config.js";
 import { registerGenerationRequestLogRoutes } from "./generationRequestLog.js";
 import { type RouteRuntimeContext, requireRuntimeContext } from "../lib/runtimeContext.js";
 
@@ -92,5 +93,6 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   registerMcpMultishotRoutes(app, ctx);
   registerContractRoutes(app, ctx);
   mountKeyRoutes(app, ctx);
+  mountApi88ConfigRoutes(app, ctx);
   registerGenerationRequestLogRoutes(app, ctx);
 }

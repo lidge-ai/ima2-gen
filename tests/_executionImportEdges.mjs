@@ -8,7 +8,7 @@ export const EXECUTION_CALLERS = Object.freeze([
 const concreteOwners = new Set([
   "responsesImageAdapter", "grokImageAdapter", "grokMultimodeAdapter", "grokImageCore",
   "agyImageAdapter", "geminiApiImageAdapter", "atlasCloudImageAdapter",
-  "minimaxImageAdapter", "naiImageAdapter", "comfyImageAdapter",
+  "minimaxImageAdapter", "naiImageAdapter", "comfyImageAdapter", "api88/imageTransport",
 ].map((name) => `lib/${name}`));
 const publicOwner = "lib/providers/execution/index";
 const facadeOwner = "lib/responsesImageAdapter";
@@ -38,7 +38,7 @@ const googleEdges = new Map([
 const googleOwners = new Set(googleEdges.keys());
 const adapterExecutionOwners = new Set([
   "lib/providers/adapters/nai", "lib/providers/adapters/minimax",
-  "lib/providers/adapters/atlascloud", "lib/providers/adapters/comfy",
+  "lib/providers/adapters/atlascloud", "lib/providers/adapters/88api", "lib/providers/adapters/comfy",
 ]);
 const isLegacyOwner = (target) => /^lib\/providers\/execution\/legacy[^/]*$/.test(target);
 

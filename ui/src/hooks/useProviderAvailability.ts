@@ -9,11 +9,13 @@ import type { Provider } from "../types";
 import { useI18n } from "../i18n";
 import { useLaneCatalog } from "./useLaneCatalog";
 import { deriveComfyDisplay, comfyDisplayMessageKey } from "../lib/comfyDisplay";
+import { useAppStore } from "../store/useAppStore";
 
 export type ProviderAvailability = {
   ok: boolean;
   reason: string;
   hint?: string;
+  selectable?: boolean;
 };
 
 export function useProviderAvailability(): Record<Provider, ProviderAvailability> {
@@ -51,6 +53,12 @@ export function useProviderAvailability(): Record<Provider, ProviderAvailability
   const xaiKeyOk = keyStatus?.xai?.valid === true;
   const geminiKeyOk = keyStatus?.gemini?.valid === true || keyStatus?.vertex?.valid === true;
   const atlasCloudKeyOk = keyStatus?.atlascloud?.valid === true;
+  const api88ImageOk = keyStatus?.["api88-image"]?.valid === true;
+  const api88VideoOk = keyStatus?.["api88-video"]?.valid === true;
+  const selectedVideo = useAppStore((state) => state.videoModelSelected);
+  const selectedProvider = useAppStore((state) => state.provider);
+  const api88VideoSelected = selectedProvider === "88api" && Boolean(selectedVideo);
+  const api88Ok = api88VideoSelected ? api88VideoOk : api88ImageOk;
   const minimaxKeyOk = keyStatus?.minimax?.valid === true;
   const naiKeyOk = keyStatus?.nai?.valid === true;
   const laneCatalog = useLaneCatalog();
@@ -82,6 +90,11 @@ export function useProviderAvailability(): Record<Provider, ProviderAvailability
     atlascloud: {
       ok: atlasCloudKeyOk,
       reason: atlasCloudKeyOk ? "" : t("provider.atlasCloudApiKeyRequired"),
+    },
+    "88api": {
+      ok: api88Ok,
+      selectable: api88ImageOk || api88VideoOk,
+      reason: api88Ok ? "" : api88VideoSelected ? t("provider.api88VideoKeyRequired") : t("provider.api88ImageKeyRequired"),
     },
     minimax: {
       ok: minimaxKeyOk,

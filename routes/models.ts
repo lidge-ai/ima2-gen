@@ -5,6 +5,7 @@ import { ATLASCLOUD_TEXT_TO_IMAGE_MODEL } from "../lib/atlasCloudImageAdapter.js
 import { MINIMAX_TEXT_TO_IMAGE_MODEL } from "../lib/minimaxImageAdapter.js";
 import { NAI_DEFAULT_IMAGE_MODEL } from "../lib/naiImageAdapter.js";
 import { getProviderAdapter } from "../lib/providers/adapters/index.js";
+import { api88Lane } from "./modelsApi88.js";
 import {
   MAX_VIDEO_DURATION,
   MIN_VIDEO_DURATION,
@@ -314,6 +315,7 @@ async function buildCoreLanes(ctx: RuntimeContext, agyInstalled: boolean, deps: 
     agy: agyLane(agyInstalled),
     "gemini-api": geminiLane(ctx),
     atlascloud: atlasCloudLane(ctx),
+    "88api": await api88Lane(ctx),
     minimax: minimaxLane(ctx),
     nai: naiLane(ctx),
     comfy: await comfyLane(ctx, deps),

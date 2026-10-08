@@ -1,6 +1,7 @@
 import type { ImageModel, Provider, VideoModel } from "../types";
 import { CORE_PROVIDER_IDS, IMAGE_MODEL_IDS, isCoreProviderId, PROVIDER_MODELS } from "../generated/providers";
 import { DEFAULT_IMAGE_MODEL, normalizeVideoModelValue } from "./imageModels";
+import { isApi88ImageModel } from "./imageModels";
 
 export interface CoreSelectionState {
   provider: Provider;
@@ -32,6 +33,7 @@ const defaults: Record<Provider, ImageModel> = {
   grok: "grok-imagine-image-2.0", "grok-api": "grok-imagine-image-2.0",
   agy: "nano-banana-2", "gemini-api": "nano-banana-pro",
   atlascloud: "openai/gpt-image-2/text-to-image", minimax: "image-01",
+  "88api": "gpt-image-2",
   nai: "nai-diffusion-5-full", comfy: DEFAULT_IMAGE_MODEL,
 };
 
@@ -47,7 +49,8 @@ const LEGACY_OAUTH_MODELS: Readonly<Record<string, ImageModel>> = {
 
 function staticImage(provider: Provider, value: unknown): value is ImageModel {
   return typeof value === "string" && staticIds.has(value)
-    && (PROVIDER_MODELS[provider].image as readonly string[]).includes(value);
+    && (PROVIDER_MODELS[provider].image as readonly string[]).includes(value)
+    && (provider !== "88api" || isApi88ImageModel(value));
 }
 
 function workflow(value: unknown): string | null {
@@ -56,7 +59,7 @@ function workflow(value: unknown): string | null {
 
 function inferProvider(model: unknown, video: unknown): Provider {
   if (normalizeVideoModelValue(video)) return "grok";
-  for (const provider of ["grok", "agy", "atlascloud", "minimax", "nai"] as const) {
+  for (const provider of ["grok", "agy", "atlascloud", "88api", "minimax", "nai"] as const) {
     if (staticImage(provider, model)) return provider;
   }
   return "oauth";

@@ -8,6 +8,8 @@ import { ApiKeyInput } from "./ApiKeyInput";
 import { GeminiKeySection } from "./GeminiKeySection";
 import { useKeyStatus } from "../hooks/useKeyStatus";
 import { useQuotaData, CodexQuota, GrokQuota, NaiQuota } from "./settings/QuotaCard";
+import { Api88Settings } from "./Api88Settings";
+import { refreshLaneCatalog } from "../lib/laneCatalog";
 
 function OpenAIIcon() {
   return (
@@ -56,6 +58,7 @@ export function AccountSettings() {
   const agy = useAgyStatus();
   const { data, error } = useBilling();
   const { data: keyStatus, mutate: mutateKeys } = useKeyStatus();
+  const refreshApi88 = () => { void mutateKeys(); void refreshLaneCatalog(); };
   const quota = useQuotaData();
   const [keysOpen, setKeysOpen] = useState(false);
   const showApiKeyCard =
@@ -213,6 +216,7 @@ export function AccountSettings() {
                 configured={keyStatus.atlascloud?.configured ?? false}
                 onSaved={mutateKeys}
               />
+              <Api88Settings keyStatus={keyStatus} onSaved={refreshApi88} />
               <ApiKeyInput
                 provider="minimax"
                 label={t("settings.apiKeys.minimax.label")}

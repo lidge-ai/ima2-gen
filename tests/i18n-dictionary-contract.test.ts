@@ -94,7 +94,10 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
     "settings.imageModel.gpt6Astra",
     "settings.imageModel.grokImagineQuality", "settings.imageModel.grokImagine",
     "settings.imageModel.nanoBanana2", "settings.imageModel.nanoBanana2Api",
-    "settings.imageModel.nanoBananaPro", "settings.imageModel.gpt53CodexSpark",
+    "settings.imageModel.nanoBananaPro",
+    "settings.imageModel.api88Gpt2", "settings.imageModel.api88GptFlare", "settings.imageModel.api88GptSunburst",
+    "settings.imageModel.api88GeminiPro", "settings.imageModel.api88GeminiFlash", "settings.imageModel.api88GeminiLite",
+    "settings.imageModel.api88Banana21", "settings.imageModel.gpt53CodexSpark",
     "settings.imageModel.minimaxImage01", "settings.imageModel.minimaxImage01Live",
     "settings.imageModel.naiDiffusion5Full", "settings.imageModel.naiDiffusion5Curated",
     "settings.imageModel.naiDiffusion45Full", "settings.imageModel.naiDiffusion45Curated",
@@ -105,7 +108,7 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
   // laneLabelKeys literals in the same file — lane tags on hinted settings rows.
   ["ui/src/components/ImageModelSelect.tsx :: laneKey", [
     "settings.account.apiTitle", "settings.account.agyTitle", "provider.geminiApiCompatTitle",
-    "settings.apiKeys.atlascloud.label", "settings.apiKeys.minimax.label", "settings.account.naiTitle",
+    "settings.apiKeys.atlascloud.label", "settings.api88.title", "settings.apiKeys.minimax.label", "settings.account.naiTitle",
   ]],
   // RAIL_ITEMS labelKey literals in NavRail.tsx.
   ["ui/src/components/NavRail.tsx :: item.labelKey", [
@@ -119,6 +122,9 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
     "settings.imageModel.grokImagineQuality", "settings.imageModel.grokImagine",
     "settings.imageModel.nanoBanana2", "settings.imageModel.nanoBanana2Api",
     "settings.imageModel.nanoBananaPro",
+    "settings.imageModel.api88Gpt2", "settings.imageModel.api88GptFlare", "settings.imageModel.api88GptSunburst",
+    "settings.imageModel.api88GeminiPro", "settings.imageModel.api88GeminiFlash", "settings.imageModel.api88GeminiLite",
+    "settings.imageModel.api88Banana21",
     "settings.imageModel.minimaxImage01", "settings.imageModel.minimaxImage01Live",
     "settings.imageModel.naiDiffusion5Full", "settings.imageModel.naiDiffusion5Curated",
     "settings.imageModel.naiDiffusion45Full", "settings.imageModel.naiDiffusion45Curated",

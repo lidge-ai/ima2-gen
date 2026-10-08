@@ -18,7 +18,7 @@ const compiled = await build({ entryPoints: [resolve(root, "bin/lib/doctor-provi
       ? 'export const detectCodexAuth=()=>({proxyReady:false,authed:false,probe:"missing"});'
       : args.path.endsWith("authStatus.js")
       ? 'export const gptAuthStatus=()=>({provider:"gpt",loggedIn:false,health:"not_logged_in",reason:"no_session",refreshable:false,action:"ima2 login"});'
-      : 'export const config={comfy:{defaultUrl:"http://127.0.0.1:8188"},minimaxProvider:{region:"global_en",globalBaseUrl:"https://api.minimax.io/v1",cnBaseUrl:"https://api.minimax.chat/v1"},diagnostics:{keyTimeoutMs:5000}};' }));
+      : 'export const config={comfy:{defaultUrl:"http://127.0.0.1:8188"},minimaxProvider:{region:"global_en",globalBaseUrl:"https://api.minimax.io/v1",cnBaseUrl:"https://api.minimax.chat/v1"},api88Provider:{baseUrl:"https://doctor88.example/v1/"},diagnostics:{keyTimeoutMs:5000}};' }));
   } }],
 });
 const modules: Record<string, unknown> = { "node:fs": { existsSync: () => false, constants: {} },
@@ -40,7 +40,7 @@ describe("070 doctor provider contract", () => {
   it("lists every registry lane", () => {
     const lanes = expectedLaneIds();
     assert.deepEqual(lanes, listProviders().map((provider) => provider.id));
-    assert.equal(lanes.length, 10);
+    assert.equal(lanes.length, 11);
     const lines = buildProviderDoctorLines({});
     for (const lane of lanes) {
       assert.ok(lines.some((line) => line.lane === lane), `missing lane ${lane}`);
@@ -134,4 +134,31 @@ it("remote auth network and body-cleanup timeout cannot become credential-invali
     return new Response(new ReadableStream({ cancel() { cancelStarted = true; return new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true })); } }));
   }) as typeof fetch, { timeoutMs: 10 });
   assert.equal(timeout[0]!.code, "AUTH_TIMEOUT"); assert.equal(cancelStarted, true); assert.equal(signal?.aborted, true);
+});
+
+it("88API Doctor resolves both key kinds against the custom origin exactly once", async () => {
+  const provider = listProviders().find((entry) => entry.id === "88api")!;
+  assert.equal(provider.credentials.length, 2);
+  for (const credential of provider.credentials) {
+    assert.equal(credential.kind, "api-key");
+    if (credential.kind === "api-key") {
+      assert.equal(resolveValidateUrl(credential), "https://doctor88.example/v1/models");
+    }
+  }
+  const seen: Array<{ url: string; bearer: string }> = [];
+  const result = await verifyConfiguredKeys({ api88ImageKey: "synthetic-image", api88VideoKey: "synthetic-video" },
+    (async (input, init) => {
+      seen.push({ url: String(input), bearer: new Headers(init?.headers).get("Authorization")! });
+      assert.equal(init?.redirect, "error");
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch);
+  assert.deepEqual(seen, [
+    { url: "https://doctor88.example/v1/models", bearer: "Bearer synthetic-image" },
+    { url: "https://doctor88.example/v1/models", bearer: "Bearer synthetic-video" },
+  ]);
+  // The checker runs in a vm realm; build the projection in this realm for strict equality.
+  assert.deepEqual(Array.from(result, (line) => ({ lane: line.lane, code: line.code, text: line.text })), [
+    { lane: "88api", code: "AUTH_VERIFIED", text: "88api (api88-image): AUTH_VERIFIED" },
+    { lane: "88api", code: "AUTH_VERIFIED", text: "88api (api88-video): AUTH_VERIFIED" },
+  ]);
 });

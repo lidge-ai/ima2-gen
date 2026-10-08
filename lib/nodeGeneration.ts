@@ -277,7 +277,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         },
       } : undefined);
       let resultFormat = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" ? "jpeg" : format;
-      const maxAttempts = inputImageCount > 0 ? 1 : 2;
+      const maxAttempts = activeProvider === "88api" || inputImageCount > 0 ? 1 : 2;
       let lastErr: UpstreamErr | null = null;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
@@ -309,7 +309,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
             revisedPrompt = r.revisedPrompt || null;
             // nai belongs here, never in the jpeg initializer above: this
             // overwrite is what lets a straight_alpha PNG stay a PNG.
-            if (activeProvider === "grok" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai") {
+            if (activeProvider === "grok" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai") {
               resultFormat = imageFormatFromMime(("mime" in r ? r.mime : undefined) || detectImageMimeFromB64(r.b64) || "image/jpeg");
             }
             break;

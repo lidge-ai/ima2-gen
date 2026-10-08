@@ -1,6 +1,6 @@
-export type KeyProviderId = "openai" | "xai" | "gemini" | "atlascloud" | "minimax" | "nai";
+export type KeyProviderId = "openai" | "xai" | "gemini" | "atlascloud" | "api88-image" | "api88-video" | "minimax" | "nai";
 
-export type ProviderVendor = "openai" | "xai" | "google" | "atlascloud" | "minimax" | "novelai" | "comfy";
+export type ProviderVendor = "openai" | "xai" | "google" | "atlascloud" | "88api" | "minimax" | "novelai" | "comfy";
 export type ProviderModelKind = "image" | "video";
 export type ProviderReferenceMode = "image" | "edit" | "video";
 export type ProviderSurface = "generate" | "edit" | "multimode" | "node" | "video";
@@ -55,6 +55,7 @@ export interface CoreProviderModel {
   id: string;
   aliases?: readonly string[];
   kind: ProviderModelKind;
+  status?: "unverified";
   /**
    * Capabilities as the ACTIVE request path behaves, traced to the route that
    * serves the lane — not to dormant helpers. `mask` is true only when

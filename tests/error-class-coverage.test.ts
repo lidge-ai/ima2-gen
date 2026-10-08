@@ -31,7 +31,7 @@ function serverSourceFiles(): string[] {
 
 const ADAPTER_FILES = serverSourceFiles();
 
-const PROVIDER_CODE_PATTERN = /\b(?:MINIMAX|GEMINI_API|GROK|AGY|ATLASCLOUD|NAI)_[A-Z0-9_]+\b/g;
+const PROVIDER_CODE_PATTERN = /\b(?:MINIMAX|GEMINI_API|GROK|AGY|ATLASCLOUD|API88|NAI)_[A-Z0-9_]+\b/g;
 const LEXICAL_EXCEPTIONS = new Set([
   "AGY_OUTPUT_RESOLUTION",
   "AGY_PROCESS_POLICY",

@@ -115,7 +115,7 @@ describe("ima2 video CLI contracts", () => {
     assert.match(stdout, /--resolution <480p\|720p\|1080p>/);
     assert.match(stdout, /grok-imagine-video-1\.5/);
     assert.match(stdout, /preview alias accepted/);
-    assert.match(stdout, /--provider <grok\|grok-api\|comfy\|runway\|higgsfield>/);
+    assert.match(stdout, /--provider <grok\|grok-api\|88api\|comfy\|runway\|higgsfield>/);
     assert.match(stdout, /--start <generated-filename>/);
     assert.match(stdout, /--end <generated-filename>/);
     assert.match(stdout, /--video-ref <generated-filename>/);

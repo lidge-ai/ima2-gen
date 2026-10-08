@@ -26,6 +26,7 @@ import { createApiRequestBudget } from "./lib/apiRequestBudget.js";
 import { createLocalLanAccess, createLanApiGuard as tokenOnlyLanApiGuard } from "./lib/localLanAccess.js";
 import { createGeneratedMediaAccess } from "./lib/generatedMediaAccess.js";
 import { getServerPort, listenWithPortFallback } from "./lib/runtimePorts.js";
+import { refreshApi88Catalogs } from "./lib/api88/catalog.js";
 import { resolveBootId, resolveLauncher, writeAdvertiseAtomic } from "./lib/runtimeIdentity.js";
 import { shutdownServerAndMcp, startMcpRestoreAfterListen } from "./lib/mcp/shutdown.js";
 import type { RuntimeContext, RuntimeContextOverrides, ApiKeySource } from "./lib/runtimeContext.js";
@@ -130,6 +131,21 @@ async function loadAtlasCloudApiKey(): Promise<ApiKeyLoadResult> {
       const cfg = JSON.parse(await readFile(cfgPath, "utf-8")) as { atlasCloudApiKey?: string };
       if (cfg.atlasCloudApiKey) return { apiKey: cfg.atlasCloudApiKey, apiKeySource: "config" };
     } catch (err) { warnConfigReadFailed(cfgPath, err); }
+  }
+  return { apiKey: null, apiKeySource: "none" };
+}
+
+async function loadApi88Key(kind: "image" | "video"): Promise<ApiKeyLoadResult> {
+  const envKey = kind === "image" ? process.env.IMA2_88API_IMAGE_KEY : process.env.IMA2_88API_VIDEO_KEY;
+  if (envKey?.trim()) return { apiKey: envKey.trim(), apiKeySource: "env" };
+  const field = kind === "image" ? "api88ImageKey" : "api88VideoKey";
+  for (const path of [config.storage.configFile, join(rootDir, ".ima2", "config.json")]) {
+    if (!existsSync(path)) continue;
+    try {
+      const saved = JSON.parse(await readFile(path, "utf8")) as Record<string, unknown>;
+      const value = saved[field];
+      if (typeof value === "string" && value.trim()) return { apiKey: value.trim(), apiKeySource: "config" };
+    } catch (error) { warnConfigReadFailed(path, error); }
   }
   return { apiKey: null, apiKeySource: "none" };
 }
@@ -384,6 +400,9 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
   const loadedXaiKey = await loadXaiApiKey();
   const loadedGeminiKey = await loadGeminiApiKey();
   const loadedAtlasCloudKey = await loadAtlasCloudApiKey();
+  const [loadedApi88ImageKey, loadedApi88VideoKey] = await Promise.all([
+    loadApi88Key("image"), loadApi88Key("video"),
+  ]);
   const loadedMinimaxKey = await loadMinimaxApiKey();
   const loadedNaiKey = await loadNaiApiKey();
   const loadedVertexKey = await loadVertexKey();
@@ -429,6 +448,12 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     atlasCloudApiKey: loadedAtlasCloudKey.apiKey ?? undefined,
     atlasCloudApiKeySource: loadedAtlasCloudKey.apiKeySource as ApiKeySource,
     hasAtlasCloudApiKey: !!loadedAtlasCloudKey.apiKey,
+    api88ImageKey: loadedApi88ImageKey.apiKey ?? undefined,
+    api88ImageKeySource: loadedApi88ImageKey.apiKeySource as ApiKeySource,
+    hasApi88ImageKey: Boolean(loadedApi88ImageKey.apiKey),
+    api88VideoKey: loadedApi88VideoKey.apiKey ?? undefined,
+    api88VideoKeySource: loadedApi88VideoKey.apiKeySource as ApiKeySource,
+    hasApi88VideoKey: Boolean(loadedApi88VideoKey.apiKey),
     minimaxApiKey: loadedMinimaxKey.apiKey ?? undefined,
     minimaxApiKeySource: loadedMinimaxKey.apiKeySource as ApiKeySource,
     hasMinimaxApiKey: !!loadedMinimaxKey.apiKey,
@@ -463,6 +488,7 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
       initVertexAuth(loadedVertexKey.json);
     } catch { /* vertex init failure is non-fatal */ }
   }
+  await refreshApi88Catalogs(ctx);
   return ctx;
 }
 

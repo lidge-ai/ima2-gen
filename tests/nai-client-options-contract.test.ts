@@ -143,7 +143,7 @@ test("the payload sends overrides, never the resolved options", () => {
 
 test("the payload contributes nothing to a non-nai lane", () => {
   const loaded = { naiOptionOverrides: { steps: 40, straightAlpha: true }, negativePrompt: "blurry" };
-  for (const provider of ["oauth", "api", "grok", "gemini-api", "minimax", "comfy"]) {
+  for (const provider of ["oauth", "api", "grok", "gemini-api", "88api", "minimax", "comfy"]) {
     assert.deepEqual(naiPayloadFields(stateOf({ ...loaded, provider })), {}, provider);
   }
 });

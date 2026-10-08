@@ -209,7 +209,7 @@ export function SettingsWorkspace() {
                   <h4>{t("settings.imageModel.title")}</h4>
                   <p>{t("settings.imageModel.body")}</p>
                   <p className="settings-row__microcopy">
-                    {t("settings.imageModel.unsupportedHelp")}
+                    {provider === "88api" ? t("settings.api88.compatibility") : t("settings.imageModel.unsupportedHelp")}
                   </p>
                 </div>
                 <div className="settings-row__control">
@@ -217,7 +217,11 @@ export function SettingsWorkspace() {
                 </div>
               </article>
               <PromptBuilderSettings />
-              {provider === "grok" ? (
+              {provider === "88api" ? (
+                <article className="settings-row"><div className="settings-row__copy">
+                  <h4>{t("settings.api88.title")}</h4><p>{t("settings.api88.compatibility")}</p>
+                </div></article>
+              ) : provider === "grok" ? (
                 <>
                   <article className="settings-row">
                     <div className="settings-row__copy">

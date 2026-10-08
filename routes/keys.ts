@@ -2,14 +2,18 @@ import type { Express, Request, Response } from "express";
 import type { RuntimeContext } from "../lib/runtimeContext.js";
 import { initVertexAuth, clearVertexAuth } from "../lib/vertexAuth.js";
 import { updateConfigFileAtomic } from "../lib/configFileStore.js";
+import { invalidateApi88Catalogs, seedApi88Catalog, validateApi88Key } from "../lib/api88/catalog.js";
+import { api88Origin } from "../lib/api88/origin.js";
 
-type KeyProvider = "openai" | "xai" | "gemini" | "atlascloud" | "minimax" | "nai";
+type KeyProvider = "openai" | "xai" | "gemini" | "atlascloud" | "api88-image" | "api88-video" | "minimax" | "nai";
 
 const KEY_PREFIX_MAP: Record<KeyProvider, string[]> = {
   openai: ["sk-"],
   xai: ["xai-"],
   gemini: ["AI"],
   atlascloud: ["apikey-"],
+  "api88-image": [],
+  "api88-video": [],
   minimax: [],
   // NovelAI accepts a persistent API token or a session JWT and publishes no
   // prefix for either, so any format rule here would reject valid tokens.
@@ -21,6 +25,9 @@ const VALIDATE_URL_MAP: Record<KeyProvider, string> = {
   xai: "https://api.x.ai/v1/models",
   gemini: "https://generativelanguage.googleapis.com/v1beta/models",
   atlascloud: "https://api.atlascloud.ai/api/v1/models",
+  // Metadata fallback; actual validation resolves the configured 88API URL.
+  "api88-image": "https://api.88api.ai/v1/models",
+  "api88-video": "https://api.88api.ai/v1/models",
   // Fallback only. The MiniMax branch resolves a region-aware URL at call time
   // via resolveMinimaxValidateUrl so a cn_zh workspace validates against the CN host.
   minimax: "https://api.minimax.io/v1/models",
@@ -52,12 +59,15 @@ const CONFIG_KEY_MAP: Record<KeyProvider, string> = {
   xai: "xaiApiKey",
   gemini: "geminiApiKey",
   atlascloud: "atlasCloudApiKey",
+  "api88-image": "api88ImageKey",
+  "api88-video": "api88VideoKey",
   minimax: "minimaxApiKey",
   nai: "naiApiKey",
 };
 
 function isKeyProvider(v: string): v is KeyProvider {
-  return v === "openai" || v === "xai" || v === "gemini" || v === "atlascloud" || v === "minimax" || v === "nai";
+  return v === "openai" || v === "xai" || v === "gemini" || v === "atlascloud"
+    || v === "api88-image" || v === "api88-video" || v === "minimax" || v === "nai";
 }
 
 function maskKey(key: string): string {
@@ -70,6 +80,8 @@ function keySourceForProvider(ctx: RuntimeContext, provider: KeyProvider): { key
   if (provider === "xai") return { key: ctx.xaiApiKey, source: ctx.xaiApiKeySource || "none" };
   if (provider === "gemini") return { key: ctx.geminiApiKey, source: ctx.geminiApiKeySource || "none" };
   if (provider === "atlascloud") return { key: ctx.atlasCloudApiKey, source: ctx.atlasCloudApiKeySource || "none" };
+  if (provider === "api88-image") return { key: ctx.api88ImageKey, source: ctx.api88ImageKeySource || "none" };
+  if (provider === "api88-video") return { key: ctx.api88VideoKey, source: ctx.api88VideoKeySource || "none" };
   if (provider === "minimax") return { key: ctx.minimaxApiKey, source: ctx.minimaxApiKeySource || "none" };
   if (provider === "nai") return { key: ctx.naiApiKey, source: ctx.naiApiKeySource || "none" };
   return { key: undefined, source: "none" };
@@ -78,7 +90,7 @@ function keySourceForProvider(ctx: RuntimeContext, provider: KeyProvider): { key
 export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
   app.get("/api/keys/status", (_req: Request, res: Response) => {
     const status: Record<string, unknown> = {};
-    for (const provider of ["openai", "xai", "gemini", "atlascloud", "minimax", "nai"] as const) {
+    for (const provider of ["openai", "xai", "gemini", "atlascloud", "api88-image", "api88-video", "minimax", "nai"] as const) {
       const { key, source } = keySourceForProvider(ctx, provider);
       status[provider] = {
         configured: !!key,
@@ -207,11 +219,16 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       });
     }
 
+    let api88Ids: Set<string> | undefined;
+    let api88ValidationOrigin: string | undefined;
     // Validate against provider API
     try {
       const url = VALIDATE_URL_MAP[provider];
       const opts: RequestInit = { signal: AbortSignal.timeout(10_000) };
-      if (provider === "gemini") {
+      if (provider === "api88-image" || provider === "api88-video") {
+        api88ValidationOrigin = api88Origin(ctx.config.api88Provider.baseUrl);
+        api88Ids = await validateApi88Key(ctx, trimmed, api88ValidationOrigin);
+      } else if (provider === "gemini") {
         opts.headers = { "x-goog-api-key": trimmed };
         const validateRes = await fetch(url, opts);
         if (!validateRes.ok) throw new Error(`HTTP ${validateRes.status}`);
@@ -289,6 +306,16 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       ctx.hasNaiApiKey = true;
     }
 
+    if (provider === "api88-image") {
+      ctx.api88ImageKey = trimmed; ctx.api88ImageKeySource = "config"; ctx.hasApi88ImageKey = true;
+      invalidateApi88Catalogs(ctx, "image");
+      seedApi88Catalog(ctx, "image", trimmed, api88Ids!, api88ValidationOrigin!);
+    } else if (provider === "api88-video") {
+      ctx.api88VideoKey = trimmed; ctx.api88VideoKeySource = "config"; ctx.hasApi88VideoKey = true;
+      invalidateApi88Catalogs(ctx, "video");
+      seedApi88Catalog(ctx, "video", trimmed, api88Ids!, api88ValidationOrigin!);
+    }
+
     return res.json({ ok: true, provider, source: "config", valid: true });
   });
 
@@ -332,6 +359,14 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
       ctx.naiApiKey = undefined;
       ctx.naiApiKeySource = "none";
       ctx.hasNaiApiKey = false;
+    }
+
+    if (provider === "api88-image") {
+      ctx.api88ImageKey = undefined; ctx.api88ImageKeySource = "none"; ctx.hasApi88ImageKey = false;
+      invalidateApi88Catalogs(ctx, "image");
+    } else if (provider === "api88-video") {
+      ctx.api88VideoKey = undefined; ctx.api88VideoKeySource = "none"; ctx.hasApi88VideoKey = false;
+      invalidateApi88Catalogs(ctx, "video");
     }
 
     return res.json({ ok: true, provider, removed: true });

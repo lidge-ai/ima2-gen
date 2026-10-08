@@ -63,7 +63,7 @@ function prepareStore(seed: ComposerSeed) {
 function availability(): Record<Provider, ProviderAvailability> {
   const ready = { ok: true, reason: "Synthetic component fixture" };
   return { oauth: ready, api: ready, grok: ready, "grok-api": ready, agy: ready,
-    "gemini-api": ready, atlascloud: ready, minimax: ready, nai: ready, comfy: ready };
+    "gemini-api": ready, atlascloud: ready, "88api": ready, minimax: ready, nai: ready, comfy: ready };
 }
 
 function mount(seed: ComposerSeed) {

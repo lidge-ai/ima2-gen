@@ -1,6 +1,7 @@
 import type { RuntimeContext } from "./runtimeContext.js";
 import { normalizeImageToolModel } from "./oauthNormalize.js";
 import { ATLASCLOUD_TEXT_TO_IMAGE_MODEL } from "./atlasCloudImageAdapter.js";
+import { normalizeApi88ImageModel } from "./imageModels.js";
 import { API_FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, normalizeImageModel, normalizeReasoningEffort, normalizeGrokImageModel, normalizeGeminiApiModel, normalizeMinimaxImageModel, normalizeNaiImageModel, normalizeComfyWorkflowModel } from "./imageModels.js";
 
 export interface ProviderOptionsInput {
@@ -42,6 +43,13 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
       size: rawSize || "1024x1024",
       webSearchEnabled: false,
     };
+  }
+
+  if (provider === "88api") {
+    const checked = normalizeApi88ImageModel(rawModel ?? ctx?.config.api88Provider.defaultImageModel ?? "gpt-image-2");
+    if (checked.error !== undefined) return { error: checked.error, code: checked.code, status: checked.status };
+    return { provider: "88api" as const, model: checked.model, reasoningEffort: "none",
+      size: rawSize || "1024x1024", webSearchEnabled: false };
   }
 
   if (provider === "atlascloud") {

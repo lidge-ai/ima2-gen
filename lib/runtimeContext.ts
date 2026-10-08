@@ -63,6 +63,12 @@ export interface RuntimeContext {
   atlasCloudApiKey: string | undefined;
   atlasCloudApiKeySource: ApiKeySource;
   hasAtlasCloudApiKey: boolean;
+  api88ImageKey: string | undefined;
+  api88ImageKeySource: ApiKeySource;
+  hasApi88ImageKey: boolean;
+  api88VideoKey: string | undefined;
+  api88VideoKeySource: ApiKeySource;
+  hasApi88VideoKey: boolean;
   minimaxApiKey: string | undefined;
   minimaxApiKeySource: ApiKeySource;
   hasMinimaxApiKey: boolean;
@@ -157,6 +163,12 @@ export function requireRuntimeContext(ctx: RouteRuntimeContext | undefined): Run
   if (target.atlasCloudApiKey === undefined && !Object.prototype.hasOwnProperty.call(target, 'atlasCloudApiKey')) target.atlasCloudApiKey = undefined;
   if (target.hasAtlasCloudApiKey === undefined) target.hasAtlasCloudApiKey = false;
   if (target.atlasCloudApiKeySource === undefined) target.atlasCloudApiKeySource = undefined;
+  if (!Object.hasOwn(target, "api88ImageKey")) target.api88ImageKey = undefined;
+  if (target.hasApi88ImageKey === undefined) target.hasApi88ImageKey = Boolean(target.api88ImageKey?.trim());
+  if (target.api88ImageKeySource === undefined) target.api88ImageKeySource = undefined;
+  if (!Object.hasOwn(target, "api88VideoKey")) target.api88VideoKey = undefined;
+  if (target.hasApi88VideoKey === undefined) target.hasApi88VideoKey = Boolean(target.api88VideoKey?.trim());
+  if (target.api88VideoKeySource === undefined) target.api88VideoKeySource = undefined;
   if (target.minimaxApiKey === undefined && !Object.prototype.hasOwnProperty.call(target, 'minimaxApiKey')) target.minimaxApiKey = undefined;
   if (target.hasMinimaxApiKey === undefined) target.hasMinimaxApiKey = false;
   if (target.minimaxApiKeySource === undefined) target.minimaxApiKeySource = undefined;
@@ -226,6 +238,12 @@ export function createTestRuntimeContext(over: RuntimeContextOverrides = {}): Ru
     atlasCloudApiKey: undefined,
     atlasCloudApiKeySource: undefined,
     hasAtlasCloudApiKey: false,
+    api88ImageKey: undefined,
+    api88ImageKeySource: undefined,
+    hasApi88ImageKey: false,
+    api88VideoKey: undefined,
+    api88VideoKeySource: undefined,
+    hasApi88VideoKey: false,
     minimaxApiKey: undefined,
     minimaxApiKeySource: undefined,
     hasMinimaxApiKey: false,

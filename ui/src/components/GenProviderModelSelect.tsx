@@ -7,6 +7,7 @@ import {
   COMFY_VIDEO_VALUE_PREFIX,
   VIDEO_VALUE_PREFIX,
 } from "../lib/imageModels";
+import { api88PickerModels, api88PickerItem } from "../lib/api88Picker";
 import { REASONING_EFFORT_OPTIONS, type ReasoningEffort } from "../lib/reasoning";
 import { Select, type SelectGroup } from "./controls/Select";
 import { getMcpModelCatalog, useMcpProviders, type McpModelCapabilities, type McpModelCatalog } from "../lib/mcpProviders";
@@ -44,6 +45,7 @@ const CORE_PROVIDER_OPTIONS: ReadonlyArray<{ value: Provider; label: string }> =
   { value: "agy", label: "agy" },
   { value: "gemini-api", label: "Gem API" },
   { value: "atlascloud", label: "Atlas" },
+  { value: "88api", label: "88API" },
   { value: "minimax", label: "MiniMax" },
   { value: "nai", label: "NovelAI" },
   { value: "comfy", label: "ComfyUI" },
@@ -177,8 +179,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
   // This select is lane-scoped (onModelChange only sets the model): keep rows
   // for this lane so sibling-lane rows that share a model value (the Gemini
   // agy/api entries) can't shadow the right label or duplicate the list.
-  const coreModels = getImageModelOptionsForProvider(provider)
-    .filter((option) => option.providerHint === undefined || option.providerHint === provider);
+  const coreModels = api88PickerModels(provider, getImageModelOptionsForProvider(provider), laneSnapshot.phase, laneCatalog[provider]?.models.image);
   // An offline workflow stays listed but unselectable: removing it reads as
   // "my workflow disappeared", while leaving it live would start a generation
   // that is guaranteed to fail.
@@ -384,10 +385,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
           sub: entry.reason,
           ...(entry.disabled ? { disabled: true } : {}),
         }))
-        : coreModels.map((option) => ({
-          value: option.value,
-          label: option.shortLabel,
-        })),
+        : coreModels.map((option) => api88PickerItem(provider, option, laneCatalog[provider]?.models.image)),
     });
     if (provider === "comfy" && comfyVideoWorkflows.length > 0) {
       modelGroups.push({
@@ -404,7 +402,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
         })),
       });
     }
-    if (providerSupportsVideo || videoModel) {
+    if (providerSupportsVideo || (videoModel && (provider === "grok" || provider === "grok-api"))) {
       modelGroups.push({
         label: t("mcp.videoModels"),
         items: VIDEO_MODEL_OPTIONS.map((option) => ({
@@ -430,7 +428,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
           value: coreModelValue,
           label: coreModelValue.includes(":") ? coreModelValue.split(":").slice(1).join(":") : coreModelValue,
           title: t("mcp.unavailable"),
-          ...(provider === "comfy" ? { disabled: true } : {}),
+          ...(provider === "comfy" || provider === "88api" ? { disabled: true } : {}),
         }],
       });
     }

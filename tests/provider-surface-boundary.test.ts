@@ -110,6 +110,7 @@ async function withApp(fn: (fixture: Fixture) => Promise<void>, upstream?: FakeU
   };
   const ctx = runtime.createTestRuntimeContext({
     rootDir, apiKey: "sk-fixture-only", oauthReadyState: "ready", xaiApiKey,
+    api88ImageKey: "synthetic-image-only",
     oauthUrl: "http://oauth-fixture.invalid",
     grokAuthHomeDir: grokAuth.homeDir,
     config: { ...config, storage: { ...config.storage, generatedDir } },
@@ -159,6 +160,7 @@ describe("provider surface HTTP boundaries", { concurrency: false }, () => {
     ["agy", "AGY_MASK_UNSUPPORTED", "Agy"],
     ["gemini-api", "GEMINI_API_MASK_UNSUPPORTED", "Gemini API"],
     ["atlascloud", "ATLASCLOUD_MASK_UNSUPPORTED", "Atlas Cloud"],
+    ["88api", "API88_MASK_UNSUPPORTED", "88API"],
     ["minimax", "MINIMAX_MASK_UNSUPPORTED", "MiniMax"],
     ["nai", "NAI_MASK_UNSUPPORTED", "NovelAI"],
     ["comfy", "COMFY_MASK_UNSUPPORTED", "ComfyUI"],

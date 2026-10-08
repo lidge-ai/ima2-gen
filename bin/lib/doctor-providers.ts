@@ -7,6 +7,7 @@ import { detectCodexAuth } from "../../lib/codexDetect.js";
 import { gptAuthStatus } from "../../lib/authStatus.js";
 import { config as runtimeConfig } from "../../config.js";
 import { normalizeComfyOrigin } from "../../lib/comfyBridge.js";
+import { api88Origin } from "../../lib/api88/origin.js";
 import type { DoctorCheckLine } from "./doctor-checks.js";
 
 export type ProviderDoctorLine = DoctorCheckLine & { lane: string };
@@ -136,6 +137,9 @@ export function buildProviderDoctorLines(fileConfig: Record<string, unknown>): P
 }
 
 export function resolveValidateUrl(credential: Extract<ProviderCredential, { kind: "api-key" }>): string | undefined {
+  if (credential.keyVocabulary === "api88-image" || credential.keyVocabulary === "api88-video") {
+    return `${api88Origin(runtimeConfig.api88Provider.baseUrl)}/v1/models`;
+  }
   if (credential.keyVocabulary === "minimax") {
     const cfg = runtimeConfig.minimaxProvider;
     const base = cfg.region === "cn_zh" ? cfg.cnBaseUrl : cfg.globalBaseUrl;
@@ -168,7 +172,9 @@ export async function verifyConfiguredKeys(
       const headers: Record<string, string> = credential.keyVocabulary === "gemini"
         ? { "x-goog-api-key": value } : { Authorization: `Bearer ${value}` };
       const code = await verifyKey(url, headers, fetchImpl, options.timeoutMs ?? runtimeConfig.diagnostics.keyTimeoutMs);
-      lines.push({ lane: provider.id, code, kind: code === "AUTH_VERIFIED" ? "pass" : "fail", evidence: "remote-auth", text: `${provider.id}: ${code}` });
+      const label = credential.keyVocabulary === "api88-image" || credential.keyVocabulary === "api88-video"
+        ? `${provider.id} (${credential.keyVocabulary})` : provider.id;
+      lines.push({ lane: provider.id, code, kind: code === "AUTH_VERIFIED" ? "pass" : "fail", evidence: "remote-auth", text: `${label}: ${code}` });
     }
   }
   return lines;

@@ -14,7 +14,7 @@ import {
   MIN_VIDEO_DURATION,
 } from "./imageModels.js";
 import type { AppConfig } from "./runtimeContext.js";
-import { deriveProviderIds, getProviderSurfaceSupport } from "./providers/derive.js";
+import { deriveProviderIds, deriveSupportedImageModels, getProviderSurfaceSupport } from "./providers/derive.js";
 import { PROVIDER_SURFACES } from "./providers/surfaceSupport.js";
 
 type CapabilitySource = "local" | "server";
@@ -122,6 +122,7 @@ export function buildIma2Capabilities({
         grokSupported: ["grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality"],
         geminiSupported: ["nano-banana-2", "nano-banana-pro"],
         atlasCloudSupported: ["openai/gpt-image-2/text-to-image", "openai/gpt-image-2/edit"],
+        api88Supported: [...deriveSupportedImageModels("88api")],
         minimaxSupported: ["image-01", "image-01-live"],
         naiSupported: ["nai-diffusion-5-full", "nai-diffusion-5-curated", "nai-diffusion-4-5-full", "nai-diffusion-4-5-curated"],
       },

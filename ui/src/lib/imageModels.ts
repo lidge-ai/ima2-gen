@@ -45,6 +45,13 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   { value: "nano-banana-pro", shortLabel: "nbp api", fullLabelKey: "settings.imageModel.nanoBananaPro", providerHint: "gemini-api" },
   { value: "openai/gpt-image-2/text-to-image", shortLabel: "atlas", fullLabelKey: "settings.imageModel.atlasCloudGptImage2", providerHint: "atlascloud" },
   { value: "openai/gpt-image-2/edit", shortLabel: "atlas edit", fullLabelKey: "settings.imageModel.atlasCloudGptImage2Edit", providerHint: "atlascloud" },
+  { value: "gpt-image-2", shortLabel: "GPT Image 2", fullLabelKey: "settings.imageModel.api88Gpt2", providerHint: "88api" },
+  { value: "gpt-image-2.5-flare", shortLabel: "GPT Image 2.5 Flare", fullLabelKey: "settings.imageModel.api88GptFlare", providerHint: "88api" },
+  { value: "gpt-image-2.5-sunburst", shortLabel: "GPT Image 2.5 Sunburst", fullLabelKey: "settings.imageModel.api88GptSunburst", providerHint: "88api" },
+  { value: "gemini-3-pro-image", shortLabel: "Gemini 3 Pro", fullLabelKey: "settings.imageModel.api88GeminiPro", providerHint: "88api" },
+  { value: "gemini-3.1-flash-image", shortLabel: "Gemini 3.1 Flash", fullLabelKey: "settings.imageModel.api88GeminiFlash", providerHint: "88api" },
+  { value: "gemini-3.1-flash-lite-image", shortLabel: "Gemini 3.1 Flash Lite", fullLabelKey: "settings.imageModel.api88GeminiLite", providerHint: "88api" },
+  { value: "gemini-nano-banana-2.1", shortLabel: "Nano Banana 2.1", fullLabelKey: "settings.imageModel.api88Banana21", providerHint: "88api" },
   { value: "image-01", shortLabel: "minimax", fullLabelKey: "settings.imageModel.minimaxImage01", providerHint: "minimax" },
   { value: "image-01-live", shortLabel: "minimax live", fullLabelKey: "settings.imageModel.minimaxImage01Live", providerHint: "minimax" },
   { value: "nai-diffusion-5-full", shortLabel: "nai v5", fullLabelKey: "settings.imageModel.naiDiffusion5Full", providerHint: "nai" },
@@ -55,6 +62,11 @@ export const IMAGE_MODEL_OPTIONS: Array<{
 
 const GEMINI_MODEL_VALUES = new Set<string>(PROVIDER_MODELS["gemini-api"].image);
 const ATLASCLOUD_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.atlascloud.image);
+
+export const API88_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter((option) => option.providerHint === "88api");
+export function isApi88ImageModel(value: unknown): value is ImageModel {
+  return API88_IMAGE_MODEL_OPTIONS.some((option) => option.value === value);
+}
 const MINIMAX_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.minimax.image);
 const NAI_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.nai.image);
 
@@ -78,12 +90,12 @@ export const API_IMAGE_MODEL_OPTIONS = API_PICKER_ORDER
 export const OPENAI_IMAGE_MODEL_OPTIONS = OAUTH_IMAGE_MODEL_OPTIONS;
 
 export const GROK_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter((option) =>
-  option.value.startsWith("grok-"),
+  option.value.startsWith("grok-") && option.providerHint !== "88api",
 );
 
 export const GEMINI_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
   (option): option is { value: GeminiImageModel; shortLabel: string; fullLabelKey: string; providerHint?: Provider } =>
-    GEMINI_MODEL_VALUES.has(option.value),
+    GEMINI_MODEL_VALUES.has(option.value) && option.providerHint !== "88api",
 );
 
 export const ATLASCLOUD_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
@@ -142,6 +154,7 @@ export function getImageModelOptionsForProvider(provider: Provider) {
       (option) => !option.providerHint || option.providerHint === provider,
     );
   }
+  if (provider === "88api") return API88_IMAGE_MODEL_OPTIONS;
   if (provider === "atlascloud") return ATLASCLOUD_IMAGE_MODEL_OPTIONS;
   if (provider === "minimax") return MINIMAX_IMAGE_MODEL_OPTIONS;
   if (provider === "nai") return NAI_IMAGE_MODEL_OPTIONS;
@@ -156,6 +169,7 @@ export function getImageModelOptionsForProvider(provider: Provider) {
 
 export function getImageModelShortLabel(value: string | null | undefined, provider?: string | null): string | null {
   if (!value) return null;
+  if (provider === "88api") return API88_IMAGE_MODEL_OPTIONS.find((option) => option.value === value)?.shortLabel ?? value;
   if (GEMINI_MODEL_VALUES.has(value)) {
     const suffix = provider === "gemini-api" ? "gemini-api" : provider === "agy" ? "agy" : provider || "agy";
     return `${value} ${suffix}`;

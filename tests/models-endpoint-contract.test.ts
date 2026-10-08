@@ -145,6 +145,9 @@ async function withApp(
       },
       // The API-key lane keeps its own list, disjoint from GPT OAuth's GPT-6 ids.
       apiProvider: { defaultImageModel: "gpt-5.6-sol", validImageModels: new Set(["gpt-5.6-luna", "gpt-5.6-sol"]) },
+      api88Provider: { baseUrl: "https://api.88api.ai", baseUrlSource: "default",
+        defaultImageModel: "gpt-image-2", defaultVideoModel: "grok-imagine-video-1.5",
+        catalogTimeoutMs: 10_000, catalogTtlMs: 600_000 },
       grokProvider: {
         defaultImageModel: "grok-imagine-image-quality",
         defaultVideoModel: "grok-imagine-video-1.5",
@@ -176,7 +179,7 @@ test("GET /api/models returns every canonical lane with deterministic statuses a
     const body = await response.json() as ModelsBody;
     assert.equal(body.ok, true);
     assert.deepEqual(Object.keys(body.lanes), [
-      "oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai", "comfy", "runway", "higgsfield",
+      "oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "nai", "comfy", "runway", "higgsfield",
     ]);
 
     assert.equal(body.lanes.oauth.status, "ready");

@@ -73,7 +73,10 @@ export const KEY_TO_ENV: Record<string, string> = {
 };
 
 const REDACT_PATTERN = /token|secret|apikey|password/i;
-const ALWAYS_REDACT = new Set(["provider", "apiKey", "oauth.token", "oauth.refreshToken", "vertexServiceAccountJson"]);
+const ALWAYS_REDACT = new Set([
+  "provider", "apiKey", "oauth.token", "oauth.refreshToken", "vertexServiceAccountJson",
+  "api88ImageKey", "api88VideoKey",
+]);
 
 export function isSensitiveConfigKey(key: string): boolean {
   return ALWAYS_REDACT.has(key) || REDACT_PATTERN.test(key);

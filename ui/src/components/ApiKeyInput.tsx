@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import { useI18n } from "../i18n";
 
 type ApiKeyInputProps = {
-  provider: "openai" | "xai" | "gemini" | "atlascloud" | "minimax" | "nai";
+  provider: "openai" | "xai" | "gemini" | "atlascloud" | "api88-image" | "api88-video" | "minimax" | "nai";
   label: string;
   placeholder: string;
   maskedKey: string | null;

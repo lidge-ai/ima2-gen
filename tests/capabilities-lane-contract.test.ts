@@ -39,7 +39,7 @@ describe("capability lane contract", () => {
     assert.equal(built.source, "local");
     assert.equal("lanes" in built, false);
     assert.deepEqual(Object.keys(built.providerSurfaces), [
-      "oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai", "comfy",
+      "oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "nai", "comfy",
     ]);
     for (const [id, expected] of Object.entries(EXPECTED_SURFACES)) {
       assert.deepEqual(built.providerSurfaces[id], expected);

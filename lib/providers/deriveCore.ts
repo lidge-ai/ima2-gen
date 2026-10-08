@@ -26,8 +26,11 @@ export function deriveSupportedImageModelsFrom(registry: RegistryInput, provider
 }
 
 export function deriveUnsupportedImageModelsFrom(registry: RegistryInput): Set<string> {
+  const supported = new Set(registry.flatMap((provider) => provider.models.filter(
+    (model) => model.kind === "image" && model.supports.generate,
+  ).map((model) => model.id)));
   return new Set(registry.flatMap((provider) => provider.models.filter(
-    (model) => model.kind === "image" && !model.supports.generate,
+    (model) => model.kind === "image" && !model.supports.generate && !supported.has(model.id),
   ).map((model) => model.id)));
 }
 

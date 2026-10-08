@@ -7,7 +7,7 @@ import type { ExecutionSurface } from "./types.js";
 
 type AdmissionFailure = {
   status: 400 | 401;
-  code: "GROK_API_KEY_MISSING" | "GROK_AUTH_REQUIRED" | "NAI_REF_UNSUPPORTED";
+  code: "GROK_API_KEY_MISSING" | "GROK_AUTH_REQUIRED" | "NAI_REF_UNSUPPORTED" | "API88_IMAGE_KEY_MISSING";
   message: string;
 };
 
@@ -18,6 +18,10 @@ type AdmissionFailure = {
  * resolveGrokCredential at the actual request.
  */
 function directKeyFailure(ctx: RuntimeContext, provider: CoreProviderId): AdmissionFailure | null {
+  if (provider === "88api") {
+    if (ctx.api88ImageKey?.trim()) return null;
+    return { status: 401, code: "API88_IMAGE_KEY_MISSING", message: "88API image key missing" };
+  }
   if (provider === "grok-api") {
     if (typeof ctx.xaiApiKey === "string" && ctx.xaiApiKey.trim()) return null;
     return { status: 401, code: "GROK_API_KEY_MISSING",

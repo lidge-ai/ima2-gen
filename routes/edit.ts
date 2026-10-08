@@ -208,8 +208,8 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       if (getProviderSurfaceSupport(activeProvider ?? "", "edit")?.mask === false && rawMask) {
         finishStatus = "error";
         finishHttpStatus = 400;
-        const code = activeProvider === "agy" ? "AGY_MASK_UNSUPPORTED" : activeProvider === "gemini-api" ? "GEMINI_API_MASK_UNSUPPORTED" : activeProvider === "atlascloud" ? "ATLASCLOUD_MASK_UNSUPPORTED" : activeProvider === "minimax" ? "MINIMAX_MASK_UNSUPPORTED" : activeProvider === "nai" ? "NAI_MASK_UNSUPPORTED" : activeProvider === "comfy" ? "COMFY_MASK_UNSUPPORTED" : "GROK_MASK_UNSUPPORTED";
-        const label = activeProvider === "agy" ? "Agy" : activeProvider === "gemini-api" ? "Gemini API" : activeProvider === "atlascloud" ? "Atlas Cloud" : activeProvider === "minimax" ? "MiniMax" : activeProvider === "nai" ? "NovelAI" : activeProvider === "comfy" ? "ComfyUI" : "Grok";
+        const code = activeProvider === "88api" ? "API88_MASK_UNSUPPORTED" : activeProvider === "agy" ? "AGY_MASK_UNSUPPORTED" : activeProvider === "gemini-api" ? "GEMINI_API_MASK_UNSUPPORTED" : activeProvider === "atlascloud" ? "ATLASCLOUD_MASK_UNSUPPORTED" : activeProvider === "minimax" ? "MINIMAX_MASK_UNSUPPORTED" : activeProvider === "nai" ? "NAI_MASK_UNSUPPORTED" : activeProvider === "comfy" ? "COMFY_MASK_UNSUPPORTED" : "GROK_MASK_UNSUPPORTED";
+        const label = activeProvider === "88api" ? "88API" : activeProvider === "agy" ? "Agy" : activeProvider === "gemini-api" ? "Gemini API" : activeProvider === "atlascloud" ? "Atlas Cloud" : activeProvider === "minimax" ? "MiniMax" : activeProvider === "nai" ? "NovelAI" : activeProvider === "comfy" ? "ComfyUI" : "Grok";
         return res.status(400).json({ error: `${label} provider does not support mask editing`, code, ...errorEnvelopeFields({ code, status: 400 }) });
       }
       // The edit route always carries a source image, and lib/naiImageAdapter.ts
@@ -277,10 +277,10 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const elapsed = +((Date.now() - startTime) / 1000).toFixed(1);
       await mkdir(ctx.config.storage.generatedDir, { recursive: true });
       throwIfJobCanceled(requestId);
-      const editMime = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai"
+      const editMime = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai"
         ? (resultMimeFromProvider || detectImageMimeFromB64(resultB64) || "image/png")
         : "image/png";
-      const editExt = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai" ? imageFormatFromMime(editMime) : "png";
+      const editExt = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai" ? imageFormatFromMime(editMime) : "png";
       const providerBuffer = Buffer.from(resultB64, "base64");
       // Masks are guidance for GPT Image models; restore the source wherever the
       // mask is opaque so a masked edit cannot redraw the area the user kept.

@@ -11,6 +11,7 @@ export const CORE_PROVIDER_IDS = [
   "agy",
   "gemini-api",
   "atlascloud",
+  "88api",
   "minimax",
   "nai",
   "comfy"
@@ -89,6 +90,47 @@ export const PROVIDER_MODELS = {
     ],
     "video": []
   },
+  "88api": {
+    "image": [
+      "gemini-3-pro-image",
+      "gemini-3.1-flash-image",
+      "gemini-3.1-flash-lite-image",
+      "gemini-nano-banana-2.1",
+      "gpt-image-2",
+      "gpt-image-2.5-flare",
+      "gpt-image-2.5-sunburst",
+      "grok-imagine-edit",
+      "grok-imagine-image",
+      "grok-imagine-image-quality"
+    ],
+    "video": [
+      "gemini-omni-flash",
+      "grok-imagine-video",
+      "grok-imagine-video-1.5",
+      "kling-3.0-turbo-720p",
+      "kling-3.0-turbo-1080p",
+      "kling-3.0-turbo-2k",
+      "kling-3.0-turbo-4k",
+      "minimax-h3-768p",
+      "SD2.0 480P",
+      "SD2.0 720P",
+      "SD2.0 1080P",
+      "SD2.0 4k",
+      "SD2.5 480P",
+      "SD2.5 720P",
+      "SD2.5 1080P",
+      "Seedance-2.0-720p官方版",
+      "Seedance-2.0-fast-720p官方版",
+      "Seedance-2.5-720p官方版",
+      "seedance-2.0-mini-480p",
+      "seedance-2.0-mini-720p",
+      "veo-3.1",
+      "veo-3.1-fast",
+      "wan3.0-video-480p",
+      "wan3.0-video-720p",
+      "wan3.0-video-1080p"
+    ]
+  },
   "minimax": {
     "image": [
       "image-01",
@@ -127,6 +169,13 @@ export const IMAGE_MODEL_IDS = [
   "nano-banana-pro",
   "openai/gpt-image-2/text-to-image",
   "openai/gpt-image-2/edit",
+  "gemini-3-pro-image",
+  "gemini-3.1-flash-image",
+  "gemini-3.1-flash-lite-image",
+  "gemini-nano-banana-2.1",
+  "gpt-image-2",
+  "gpt-image-2.5-flare",
+  "gpt-image-2.5-sunburst",
   "image-01",
   "image-01-live",
   "nai-diffusion-5-full",
@@ -135,13 +184,38 @@ export const IMAGE_MODEL_IDS = [
   "nai-diffusion-4-5-curated"
 ] as const;
 export type ImageModelId = typeof IMAGE_MODEL_IDS[number];
-export const UNSUPPORTED_IMAGE_MODEL_IDS = [] as const;
+export const UNSUPPORTED_IMAGE_MODEL_IDS = [
+  "grok-imagine-edit"
+] as const;
 export type UnsupportedImageModelId = typeof UNSUPPORTED_IMAGE_MODEL_IDS[number];
 export const VIDEO_MODEL_IDS = [
   "grok-imagine-video",
   "grok-imagine-video-1.5",
   "grok-imagine-video-1.5-preview",
-  "grok-imagine-video-1.5-2026-05-30"
+  "grok-imagine-video-1.5-2026-05-30",
+  "gemini-omni-flash",
+  "kling-3.0-turbo-720p",
+  "kling-3.0-turbo-1080p",
+  "kling-3.0-turbo-2k",
+  "kling-3.0-turbo-4k",
+  "minimax-h3-768p",
+  "SD2.0 480P",
+  "SD2.0 720P",
+  "SD2.0 1080P",
+  "SD2.0 4k",
+  "SD2.5 480P",
+  "SD2.5 720P",
+  "SD2.5 1080P",
+  "Seedance-2.0-720p官方版",
+  "Seedance-2.0-fast-720p官方版",
+  "Seedance-2.5-720p官方版",
+  "seedance-2.0-mini-480p",
+  "seedance-2.0-mini-720p",
+  "veo-3.1",
+  "veo-3.1-fast",
+  "wan3.0-video-480p",
+  "wan3.0-video-720p",
+  "wan3.0-video-1080p"
 ] as const;
 export type VideoModelId = typeof VIDEO_MODEL_IDS[number];
 export const PROVIDER_REFERENCE_LIMITS = {
@@ -169,6 +243,7 @@ export const PROVIDER_REFERENCE_LIMITS = {
     "image": 10,
     "edit": 10
   },
+  "88api": {},
   "minimax": {
     "image": 1,
     "edit": 1
@@ -224,6 +299,13 @@ export const PROVIDER_SURFACE_SUPPORT = {
     "video": {"supported":false,"references":false,"mask":false,"streaming":false,"catalogAccess":"static"}
   },
   "atlascloud": {
+    "generate": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
+    "edit": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
+    "multimode": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
+    "node": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
+    "video": {"supported":false,"references":false,"mask":false,"streaming":false,"catalogAccess":"static"}
+  },
+  "88api": {
     "generate": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
     "edit": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},
     "multimode": {"supported":true,"references":true,"mask":false,"streaming":false,"catalogAccess":"static"},

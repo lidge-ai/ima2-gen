@@ -52,6 +52,16 @@ const GEMINI_API_FALLBACK_IMAGE_MODEL = "nano-banana-2";
 const VALID_GEMINI_API_MODELS = deriveModels("gemini-api", "image");
 const ATLASCLOUD_FALLBACK_IMAGE_MODEL = "openai/gpt-image-2/text-to-image";
 const VALID_ATLASCLOUD_IMAGE_MODELS = deriveModels("atlascloud", "image");
+const validApi88ImageModels = deriveSupportedImageModels("88api");
+const registeredApi88ImageModels = deriveModels("88api", "image");
+
+export function normalizeApi88ImageModel(rawModel: unknown) {
+  if (typeof rawModel === "string" && validApi88ImageModels.has(rawModel)) return { model: rawModel };
+  const unverified = typeof rawModel === "string" && registeredApi88ImageModels.has(rawModel);
+  return { error: unverified ? `88API model is unverified: ${rawModel}` : `Unknown 88API image model: ${String(rawModel)}`,
+    code: unverified ? "API88_MODEL_UNVERIFIED" : "API88_MODEL_UNSUPPORTED", status: 400 };
+}
+
 const MINIMAX_FALLBACK_IMAGE_MODEL = "image-01";
 const VALID_MINIMAX_IMAGE_MODELS = deriveModels("minimax", "image");
 const NAI_FALLBACK_IMAGE_MODEL = "nai-diffusion-5-full";

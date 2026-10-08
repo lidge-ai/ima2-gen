@@ -480,7 +480,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
           // straight_alpha returns a real RGBA PNG (measured 42.1% transparent
           // pixels), and forcing jpeg would flatten it during the toFormat()
           // re-encode in embedImageMetadata.
-          const providerReportsMime = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai" || activeProvider === "comfy";
+          const providerReportsMime = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai" || activeProvider === "comfy";
           // Lazily decoded: only alpha requests always need the byte check, and
           // the provider-mime path keeps its original short-circuit order.
           const detectMime = () => detectImageMimeFromB64(r.value.b64);

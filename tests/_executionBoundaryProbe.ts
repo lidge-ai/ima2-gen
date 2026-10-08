@@ -16,6 +16,7 @@ const transports = {
   "providers/adapters/agyOperations": ["generateViaAgy"],
   "providers/adapters/geminiOperations": ["generateViaGeminiApi"],
   atlasCloudImageAdapter: ["generateViaAtlasCloud"], minimaxImageAdapter: ["generateViaMinimax"],
+  "api88/imageTransport": ["generateViaApi88Image"],
   naiImageAdapter: ["generateViaNai"], comfyImageAdapter: ["generateViaComfy"],
 };
 
@@ -75,7 +76,7 @@ export async function openBoundaryProbe() {
     const { prepareImageExecution } = await import("../lib/providers/execution/index.ts");
     const { prepareLegacyImageExecution } = await import("../lib/providers/execution/legacy.ts");
     const ctx = createTestRuntimeContext({ rootDir: isolation.rootDir, config, xaiApiKey: "initial-invented-key",
-      grokAuthHomeDir: grokAuth.homeDir });
+      api88ImageKey: "synthetic-image-key", api88VideoKey: "synthetic-video-key", grokAuthHomeDir: grokAuth.homeDir });
     const source = (await sharp({ create: { width: 8, height: 8, channels: 3, background: "#654321" } }).png().toBuffer()).toString("base64");
     return { calls, single, sequence, callbackImage, partial, queue, ctx, source, grokBearer: grokAuth.bearer,
       prepareImageExecution, prepareLegacyImageExecution,
@@ -105,7 +106,7 @@ export function requestFor(surface: ExecutionSurface, provider: CoreProviderId, 
     prompt: "effective prompt with context", rawPrompt: "raw user prompt",
     references: [{ b64: "first-reference", declaredMime: "image/png", detectedMime: "image/png" },
       { b64: "second-reference", declaredMime: "image/webp", detectedMime: "image/webp" }],
-    options: { model: "grok-imagine-image-quality", quality: "high", size: "1536x1024", moderation: "low",
+    options: { model: provider === "88api" ? "gpt-image-2" : "grok-imagine-image-quality", quality: "high", size: "1536x1024", moderation: "low",
       mode: "direct" as const, reasoningEffort: "high", webSearchEnabled: false },
   };
   switch (surface) {
@@ -120,6 +121,16 @@ export function assertCall(call: Call, ctx: RuntimeContext, request: ImageExecut
   const { surface, provider } = request;
   const options = call.args.at(-1) as Record<string, unknown>;
   const responses = provider === "api" || provider === "oauth";
+  if (provider === "88api") {
+    assert.equal(call.args[0], request.prompt); assert.equal(call.args[1], ctx);
+    assert.equal(options.model, "gpt-image-2"); assert.equal(options.size, request.options.size);
+    assert.equal(options.signal, request.signal); assert.equal(options.requestId, request.requestId);
+    assert.equal(options.sourceImage, surface === "node" || surface === "edit" ? request.sourceImage : undefined);
+    assert.equal(options.providerUrl, surface === "classic" || surface === "multimode" ? request.providerUrl : undefined);
+    assert.equal(options.mask, surface === "edit" ? request.mask : undefined);
+    assert.equal("background" in options, false); assert.equal("quality" in options, false);
+    return;
+  }
   const rawLane = (surface === "node" || surface === "multimode") && ["atlascloud", "minimax", "nai"].includes(provider);
   const prompt = surface === "edit" && (responses || provider.startsWith("grok")) || rawLane ? "raw user prompt" : "effective prompt with context";
   const prefix = (surface === "edit" && !responses && !provider.startsWith("grok"))
@@ -172,6 +183,13 @@ export function assertReferenceOrder(call: Call, request: ImageExecutionRequest,
   const { surface, provider } = request;
   if (provider === "nai" || surface === "edit") return;
   const options = call.args.at(-1) as Record<string, unknown>;
+  if (provider === "88api") {
+    const references = options.references as Array<{ b64: string }>;
+    assert.deepEqual(references.map((ref) => ref.b64), surface === "node" && request.contextMode === "parent-only"
+      ? [] : ["first-reference", "second-reference"]);
+    if (surface === "node") assert.equal(options.sourceImage, request.sourceImage);
+    return;
+  }
   const responses = provider === "api" || provider === "oauth";
   const refs = (responses && call.name !== "editViaResponses" ? call.args[5] : options.references) as Array<{ b64: string; url?: string }> | undefined;
   if (surface === "node") {

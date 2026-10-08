@@ -288,6 +288,7 @@ describe("EN — element node lifecycle", () => {
     // Legacy lanes now own their node dispatch inside their adapter's prepareNode.
     const adapterOwners = {
       generateViaAtlasCloud: "lib/providers/adapters/atlascloud.ts",
+      generateViaApi88Image: "lib/providers/adapters/88api.ts",
       generateViaMinimax: "lib/providers/adapters/minimax.ts",
       generateViaNai: "lib/providers/adapters/nai.ts",
     };
@@ -298,6 +299,7 @@ describe("EN — element node lifecycle", () => {
       ["generateViaGeminiApi", 0, "input.prompt"],
       ["generateViaAgy", 0, "input.prompt"],
       ["generateViaAtlasCloud", 0, 'parentB64 ? `Edit this image: ${prompt}` : prompt'],
+      ["generateViaApi88Image", 0, "request.prompt"],
       ["generateViaMinimax", 0, 'parentB64 ? `Edit this image: ${prompt}` : prompt'],
       ["generateViaNai", 0, "prompt"],
     ]) {
@@ -307,7 +309,7 @@ describe("EN — element node lifecycle", () => {
         ? collectCallArguments(grokExecution, grokOwner, name, "executeGrokNode")
         : name === "generateViaGeminiApi" || name === "generateViaAgy"
         ? collectCallArguments(googleExecution, googleOwner, name, "runGoogleImage")
-        : collectCallArguments(read(adapterOwners[name]), adapterOwners[name], name, "prepareNode");
+        : collectCallArguments(read(adapterOwners[name]), adapterOwners[name], name, name === "generateViaApi88Image" ? "prepareSingle" : "prepareNode");
       assert.equal(calls.length, 1, `${name}: expected a live call expression`);
       assert.equal(calls[0][position], expected, `${name}: wrong prompt lane`);
     }

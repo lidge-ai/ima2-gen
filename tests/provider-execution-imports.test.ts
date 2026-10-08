@@ -45,7 +45,7 @@ test("every concrete owner and private legacy module is forbidden for every call
   const owners = [
     "responsesImageAdapter", "grokImageAdapter", "grokMultimodeAdapter", "grokImageCore",
     "agyImageAdapter", "geminiApiImageAdapter", "atlasCloudImageAdapter",
-    "minimaxImageAdapter", "naiImageAdapter", "comfyImageAdapter",
+    "minimaxImageAdapter", "naiImageAdapter", "comfyImageAdapter", "api88/imageTransport",
     "providers/execution/legacy", "providers/execution/legacyClassic",
     "providers/execution/legacyNode", "providers/execution/legacyEdit", "providers/execution/legacyMultimode",
     "providers/adapters/openaiExecution", "providers/adapters/openaiOperations", "responsesTransport",
@@ -53,7 +53,7 @@ test("every concrete owner and private legacy module is forbidden for every call
     "grokImagePlanner", "grokImageDownload", "grokImageDownloadPolicy",
     "providers/adapters/googleExecution", "providers/adapters/agyOperations", "providers/adapters/geminiOperations",
     "agyProcess", "agyArtifact",
-    "providers/adapters/nai", "providers/adapters/minimax", "providers/adapters/atlascloud", "providers/adapters/comfy",
+    "providers/adapters/nai", "providers/adapters/minimax", "providers/adapters/atlascloud", "providers/adapters/88api", "providers/adapters/comfy",
   ];
   for (const file of EXECUTION_CALLERS) for (const name of owners) for (const ext of ["js", "ts"]) {
     const prefix = file.startsWith("routes/") ? "../lib/" : "./";
@@ -97,7 +97,7 @@ const googleOwners = [
 
 const adapterExecutionOwners = [
   "lib/providers/adapters/nai.ts", "lib/providers/adapters/minimax.ts",
-  "lib/providers/adapters/atlascloud.ts", "lib/providers/adapters/comfy.ts",
+  "lib/providers/adapters/atlascloud.ts", "lib/providers/adapters/88api.ts", "lib/providers/adapters/comfy.ts",
 ];
 
 test("actual internal family, adapter and legacy owners contain no forbidden runtime edges", () => {

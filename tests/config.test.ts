@@ -89,7 +89,7 @@ test("config exposes default shape", () => {
   assert.equal(c.grokProvider.defaultImageModel, "grok-imagine-image-2.0");
   assert.equal(c.grokProvider.defaultVideoModel, "grok-imagine-video-1.5");
   assert.deepEqual(c.imageModels.valid.sort(), ["gpt-6-astra", "gpt-6-luna", "gpt-6-sol"]);
-  assert.deepEqual(c.imageModels.unsupported, []);
+  assert.deepEqual(c.imageModels.unsupported, ["grok-imagine-edit"]);
   assert.equal(c.features.cardNews, false);
   assert.equal(c.cardNewsPlanner.enabled, true);
   assert.equal(c.cardNewsPlanner.model, "gpt-6-luna");

@@ -25,6 +25,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   agy: "Antigravity Gemini CLI",
   "gemini-api": "Gemini API / Vertex",
   atlascloud: "Atlas Cloud API",
+  "88api": "88API",
   minimax: "MiniMax API",
   nai: "NovelAI API",
 };

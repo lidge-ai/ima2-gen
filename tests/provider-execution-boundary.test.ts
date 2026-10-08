@@ -6,14 +6,14 @@ import { executionTestProcess } from "./_executionTestProcess.ts";
 import { openBoundaryProbe, requestFor, assertCall, assertReferenceOrder, type BoundaryProbe } from "./_executionBoundaryProbe.ts";
 
 const lanes: Record<ExecutionSurface, readonly CoreProviderId[]> = {
-  classic: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai", "comfy"],
-  node: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai"],
-  edit: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "comfy"],
-  multimode: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai"],
+  classic: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "nai", "comfy"],
+  node: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "nai"],
+  edit: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "comfy"],
+  multimode: ["api", "oauth", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "88api", "minimax", "nai"],
 };
 const concrete: Partial<Record<CoreProviderId, string>> = {
   agy: "generateViaAgy", "gemini-api": "generateViaGeminiApi", atlascloud: "generateViaAtlasCloud",
-  minimax: "generateViaMinimax", nai: "generateViaNai", comfy: "generateViaComfy",
+  "88api": "generateViaApi88Image", minimax: "generateViaMinimax", nai: "generateViaNai", comfy: "generateViaComfy",
 };
 function expectedTransport(surface: ExecutionSurface, provider: CoreProviderId) {
   if (provider === "api" || provider === "oauth") return surface === "classic" ? "generateViaResponses"
@@ -44,7 +44,8 @@ if (executionTestProcess(import.meta.url)) {
           assert.equal(result.kind, "sequence");
           if (["api", "oauth", "grok", "grok-api"].includes(provider)) assert.equal(result.value, probe.sequence);
           else assert.deepEqual(result.value, {
-            images: [{ b64: "native-image", revisedPrompt: "native-revised" }], usage: { total_tokens: 17 }, webSearchCalls: 3,
+            images: [{ b64: "native-image", revisedPrompt: "native-revised", ...(provider === "88api" ? { mime: "image/webp" } : {}) }],
+            usage: { total_tokens: 17 }, webSearchCalls: 3,
           });
         } else {
           assert.equal(result.kind, "single");

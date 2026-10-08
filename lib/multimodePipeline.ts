@@ -306,10 +306,10 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         throwIfJobCanceled(requestId);
         // nai is here but NOT in mmFormat above: forcing jpeg would flatten
         // V5's straight_alpha transparency.
-        const resultMime = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai"
+        const resultMime = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai"
           ? (image.mime || detectImageMimeFromB64(image.b64) || mime)
           : mime;
-        const resultFormat = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" || activeProvider === "nai" ? imageFormatFromMime(resultMime) : mmFormat;
+        const resultFormat = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "88api" || activeProvider === "minimax" || activeProvider === "nai" ? imageFormatFromMime(resultMime) : mmFormat;
         const createdAt = Date.now();
         const baseName = buildFilename({
           model: (activeProvider === "grok" || activeProvider === "grok-api") ? resolveGrokQualityModel(imageModel, quality) : imageModel,

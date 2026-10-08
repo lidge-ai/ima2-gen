@@ -25,6 +25,8 @@ interface ResolvedNodeReferences {
 }
 
 function providerLimitFailure(provider: CoreProviderId, limit: number): ReferenceFailure {
+  if (provider === "88api") return { status: 400, code: "API88_REF_TOO_MANY",
+    message: `88API input exceeds the application reference limit ${limit}.` };
   if (provider === "atlascloud") {
     return { status: 400, code: "ATLASCLOUD_REF_TOO_MANY", message: `Atlas Cloud image editing supports up to ${limit} reference images.` };
   }
@@ -81,8 +83,8 @@ export async function resolveNodeReferences(
     : executionReferences.length;
   const reportedReferenceCount = contextMode === "parent-only" ? 0 : executionReferences.length;
   const inputImageCount = Number(Boolean(parentB64)) + activeReferenceCount;
-  const providerLimit = deriveReferenceLimit(provider, "edit");
-  if (cappedProvider(provider) && providerLimit !== undefined && inputImageCount > providerLimit) {
+  const providerLimit = provider === "88api" ? ctx.config.limits.maxRefCount : deriveReferenceLimit(provider, "edit");
+  if ((provider === "88api" || cappedProvider(provider)) && providerLimit !== undefined && inputImageCount > providerLimit) {
     return { executionReferences, activeReferenceCount, reportedReferenceCount, inputImageCount,
       failure: providerLimitFailure(provider, providerLimit) };
   }

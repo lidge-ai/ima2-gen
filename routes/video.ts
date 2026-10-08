@@ -172,6 +172,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
     try {
       const { prompt, provider = "grok", model: rawModel } = req.body || {};
+      if (provider === "88api") return fail(400, "API88_VIDEO_NOT_READY", "88API video execution is available after wp3");
       const presetIds = normalizePresetIds(req.body?.presetIds);
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
       const backgroundParse = parseBackgroundPreset(req.body?.backgroundPreset);
