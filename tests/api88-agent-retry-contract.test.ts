@@ -30,3 +30,29 @@ test("Agent preserves API88_EMPTY_RESULT and sends only one POST for a No image 
     assert.equal(posts, 1, "the generic Agent text-only retry must never resubmit 88API");
   } finally { db?.closeDb(); await isolation.close(); }
 });
+
+test("Agent rejects untrimmed or planner model ids on 88API before any POST", async () => {
+  const isolation = await isolateExecution();
+  let db: typeof import("../lib/db.ts") | undefined;
+  try {
+    const { config } = await import("../config.ts");
+    const { createTestRuntimeContext } = await import("../lib/runtimeContext.ts");
+    const { generateAgentImageWithRetry } = await import("../lib/agentImageVideoGen.ts");
+    const { normalizeAgentGenerationSettings } = await import("../lib/agentSettings.ts");
+    db = await import("../lib/db.ts");
+    const ctx = createTestRuntimeContext({ rootDir: isolation.rootDir, api88ImageKey: "synthetic-image",
+      config: { ...config, api88Provider: { ...config.api88Provider, baseUrl: "https://agent88.example" } } });
+    let posts = 0;
+    globalThis.fetch = (async () => { posts++; return Response.json({}); }) as typeof fetch;
+    assert.equal(normalizeAgentGenerationSettings({ provider: "88api", model: " gpt-image-2 " }).model, " gpt-image-2 ");
+    assert.equal(normalizeAgentGenerationSettings({ provider: "88api", model: "SD2.5 720P" }).model, "SD2.5 720P");
+    for (const model of [" gpt-image-2 ", "grok-4.6"]) {
+      await assert.rejects(() => generateAgentImageWithRetry(ctx, "synthetic-session", "bird", "context", false, {
+        provider: "88api", model, signal: null, sourceImagePolicy: "none",
+      }), (error: unknown) => typeof (error as { code?: string }).code === "string"
+        && (error as { code: string }).code.startsWith("API88_"));
+    }
+    assert.equal(posts, 0, "an inexact or planner id must not reach 88API");
+  } finally { db?.closeDb(); await isolation.close(); }
+});
+

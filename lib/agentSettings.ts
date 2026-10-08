@@ -52,7 +52,9 @@ export function normalizeAgentGenerationSettings(
   const provider = cleanEnum(input.provider, PROVIDERS, fallback.provider);
   return {
     provider,
-    model: modelForLane(provider, cleanString(input.model, fallback.model)),
+    model: modelForLane(provider, provider === "88api"
+      ? exactString(input.model, fallback.model)
+      : cleanString(input.model, fallback.model)),
     quality: cleanEnum(input.quality, QUALITIES, fallback.quality),
     size: cleanSize(input.size, fallback.size),
     format: cleanEnum(input.format, FORMATS, fallback.format),
@@ -79,6 +81,12 @@ function cleanEnum<T extends string>(value: unknown, allowed: Set<string>, fallb
 
 function cleanString(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 120) : fallback;
+}
+
+// 88API ids are sent byte-exact; an id that does not match exactly is rejected
+// downstream (API88_MODEL_UNSUPPORTED) instead of being repaired here.
+function exactString(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.length > 0 && value.length <= 200 ? value : fallback;
 }
 
 function cleanSize(value: unknown, fallback: string): string {

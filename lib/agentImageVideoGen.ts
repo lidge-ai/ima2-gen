@@ -80,7 +80,10 @@ async function generateAgentImage(
   options: AgentRunOptions,
 ) {
   const requestId = options.requestId ?? `agent_${ulid()}`;
-  const grokPlannerModel = isAgentGrokPlannerModel(options.model) ? options.model : undefined;
+  // The Grok planner id only means "use the lane default image model" on lanes that
+  // plan with Grok; on 88API an unknown id must be rejected, never swapped for a default.
+  const grokPlannerModel = options.provider !== "88api" && isAgentGrokPlannerModel(options.model)
+    ? options.model : undefined;
   // Agent Mode has no comfy dispatch in this unit. This surface has no response
   // object, so it throws the way its other provider failures do. Without it the
   // run reaches generateViaResponses and bills OAuth. Removed in wp7.

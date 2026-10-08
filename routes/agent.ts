@@ -142,7 +142,7 @@ export function registerAgentRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         size: cleanOption(body.size),
         format: cleanOption(body.format),
         moderation: cleanOption(body.moderation),
-        model: cleanOption(body.model),
+        model: cleanModelOption(body.provider, body.model),
         reasoningEffort: cleanOption(body.reasoningEffort),
         requestId: cleanOption(body.requestId),
       });
@@ -257,6 +257,13 @@ function cleanOption(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+// 88API model ids are opaque and byte-exact (spaces, case, CJK); trimming one
+// could turn an invalid id into a billable request for a different model.
+function cleanModelOption(provider: unknown, value: unknown) {
+  if (cleanOption(provider) !== "88api") return cleanOption(value);
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 function cleanPrompt(value: unknown) {
   const prompt = cleanOption(value);
   if (prompt) return prompt;
@@ -277,7 +284,8 @@ function normalizeQueueOptions(sessionId: string, body: AgentQueueBody) {
     size: cleanOption(body.size) ?? input.size ?? current.size,
     format: cleanOption(body.format) ?? input.format ?? current.format,
     moderation: cleanOption(body.moderation) ?? input.moderation ?? current.moderation,
-    model: cleanOption(body.model) ?? input.model ?? current.model,
+    model: cleanModelOption(cleanOption(body.provider) ?? input.provider ?? current.provider, body.model)
+      ?? input.model ?? current.model,
     reasoningEffort: cleanOption(body.reasoningEffort) ?? input.reasoningEffort ?? current.reasoningEffort,
     webSearchEnabled: typeof input.webSearchEnabled === "boolean" ? input.webSearchEnabled : current.webSearchEnabled,
     generationStrategy: input.generationStrategy ?? current.generationStrategy,
