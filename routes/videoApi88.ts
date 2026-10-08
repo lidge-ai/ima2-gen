@@ -119,7 +119,12 @@ async function save(job: Job, result: Api88VideoResult): Promise<Record<string, 
   const directory = job.ctx.config.storage.generatedDir;
   await mkdir(directory, { recursive: true });
   await persistVideoArtifact(directory, filename, result.videoBuffer, metadata);
-  try { assertActive(job); }
+  try {
+    // Record completion inside the cleanup guard and re-check cancellation after the
+    // write, so a cancel that lands during the ledger await leaves no artifact or done.
+    await record(job, "completed");
+    assertActive(job);
+  }
   catch (error) {
     await Promise.all([unlink(join(directory, filename)), unlink(join(directory, `${filename}.json`))]
       .map((operation) => operation.catch(() => {})));
@@ -127,7 +132,6 @@ async function save(job: Job, result: Api88VideoResult): Promise<Record<string, 
   }
   invalidateHistoryIndex();
   void (job.dependencies.thumbnail ?? generateVideoThumbnail)(join(job.ctx.config.storage.generatedDir, filename)).catch(() => {});
-  await record(job, "completed");
   finishJob(job.requestId, { meta: { filename, providerTaskId: result.providerTaskId } });
   job.finished = true;
   return { filename, url: `/generated/${encodeURIComponent(filename)}`, providerUrl: result.providerUrl,
