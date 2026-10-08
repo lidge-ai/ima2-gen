@@ -75,7 +75,7 @@ ima2 serve
 </table>
 
 <p align="center">
-  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <b>正體中文</b> · <a href="https://lidge-ai.github.io/ima2-gen/"><b>網站</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/docs"><b>文件 →</b></a>
+  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-CN.md">简体中文</a> · <b>正體中文</b> · <a href="https://ima2gen.com/"><b>網站</b></a> · <a href="https://ima2gen.com/docs"><b>文件 →</b></a>
 </p>
 
 `ima2-gen` 是本機優先的視覺生成執行環境與工作室，讓人和程式設計代理在多個供應商之間執行可重現的影像與影片工作流程。它在你的電腦上執行一個小型伺服器，把所有作品存放在 `~/.ima2/generated`，只和你連線的供應商通訊：OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI，以及已註冊的 ComfyUI 工作流程。Runway 與 Higgsfield 是獨立的 MCP 整合。提示詞與參考圖只會送往你為每個工作選擇的供應商。
@@ -90,7 +90,7 @@ ima2 serve
 2. 打開 DMG，把 **ima2** 拖進 **應用程式** 資料夾。
 3. 啟動 ima2，在歡迎畫面選擇一個供應商。
 
-檢查碼、更新與設定請見 [Mac 應用程式指南](https://lidge-ai.github.io/ima2-gen/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用 npm 或一行安裝。
+檢查碼、更新與設定請見 [Mac 應用程式指南](https://ima2gen.com/docs/desktop)。在 Intel Mac、Windows 或 Linux 上，請使用 npm 或一行安裝。
 
 ### npm
 
@@ -125,19 +125,19 @@ ima2 video "a cat playing piano" --duration 5 --resolution 720p
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://ima2gen.com/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://ima2gen.com/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://ima2gen.com/install-linux.sh | bash
 ```
 
 <details>
@@ -449,7 +449,7 @@ GPT OAuth 通道使用你的 ChatGPT 方案開放的 GPT-6 模型。請更新 im
 
 ## 文件
 
-- [開發者文件網站](https://lidge-ai.github.io/ima2-gen/docs) — 概覽、快速開始、架構、模式、供應商、CLI、設定與伺服器 API
+- [開發者文件網站](https://ima2gen.com/docs) — 概覽、快速開始、架構、模式、供應商、CLI、設定與伺服器 API
 - [CLI 參考](CLI.zh-TW.md) · [API 參考](API.zh-TW.md) · [Prompt Studio 手冊](PROMPT_STUDIO.zh-TW.md) · [FAQ](FAQ.zh-TW.md) · [找回舊影像](RECOVER_OLD_IMAGES.zh-TW.md)
 
 ## 開發

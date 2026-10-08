@@ -75,7 +75,7 @@ ima2 serve
 </table>
 
 <p align="center">
-  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <b>日本語</b> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="https://lidge-ai.github.io/ima2-gen/"><b>Web サイト</b></a> · <a href="https://lidge-ai.github.io/ima2-gen/docs"><b>ドキュメント →</b></a>
+  <a href="../README.md">English</a> · <a href="README.ko.md">한국어</a> · <b>日本語</b> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="https://ima2gen.com/"><b>Web サイト</b></a> · <a href="https://ima2gen.com/docs"><b>ドキュメント →</b></a>
 </p>
 
 `ima2-gen` は、人とコーディングエージェントが複数のプロバイダーで再現可能な画像・動画ワークフローを実行するための、ローカルファーストなビジュアル生成ランタイム兼スタジオです。自分のマシンで小さなサーバーを動かし、すべての成果物を `~/.ima2/generated` に保存し、接続したプロバイダーとだけ通信します。対応先は OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI、登録済みの ComfyUI ワークフローで、Runway と Higgsfield は別の MCP 連携です。プロンプトと参照画像は、ジョブごとに選んだプロバイダーにだけ送られます。
@@ -90,7 +90,7 @@ ima2 serve
 2. DMG を開き、**ima2** を **アプリケーション** フォルダへドラッグします。
 3. ima2 を起動し、ウェルカム画面でプロバイダーを選びます。
 
-チェックサム、アップデート、設定は [Mac アプリガイド](https://lidge-ai.github.io/ima2-gen/docs/desktop) にあります。Intel Mac、Windows、Linux では npm かワンライナーを使ってください。
+チェックサム、アップデート、設定は [Mac アプリガイド](https://ima2gen.com/docs/desktop) にあります。Intel Mac、Windows、Linux では npm かワンライナーを使ってください。
 
 ### npm
 
@@ -125,19 +125,19 @@ ima2 video "a cat playing piano" --duration 5 --resolution 720p
 **macOS**
 
 ```bash
-curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
+curl -fsSL https://ima2gen.com/install-mac.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://lidge-ai.github.io/ima2-gen/install-windows.ps1 | iex
+irm https://ima2gen.com/install-windows.ps1 | iex
 ```
 
 **Linux / WSL**
 
 ```bash
-curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
+curl -fsSL https://ima2gen.com/install-linux.sh | bash
 ```
 
 <details>
@@ -449,7 +449,7 @@ GPT OAuth レーンは ChatGPT のプランで使える GPT-6 モデルを使い
 
 ## ドキュメント
 
-- [開発者ドキュメントサイト](https://lidge-ai.github.io/ima2-gen/docs) — 概要、クイックスタート、アーキテクチャ、モード、プロバイダー、CLI、設定、サーバー API
+- [開発者ドキュメントサイト](https://ima2gen.com/docs) — 概要、クイックスタート、アーキテクチャ、モード、プロバイダー、CLI、設定、サーバー API
 - [CLI リファレンス](CLI.md) · [API リファレンス](API.md) · [Prompt Studio](PROMPT_STUDIO.md) · [FAQ](FAQ.md) · [以前の画像の復旧](RECOVER_OLD_IMAGES.md)
 
 ## 開発

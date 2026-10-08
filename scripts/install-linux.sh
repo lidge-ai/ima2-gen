@@ -2,7 +2,7 @@
 # ima2-gen one-click install (Linux / WSL)
 #
 # Usage:
-#   curl -fsSL https://lidge-ai.github.io/ima2-gen/install-linux.sh | bash
+#   curl -fsSL https://ima2gen.com/install-linux.sh | bash
 #   or
 #   bash install-linux.sh
 #
