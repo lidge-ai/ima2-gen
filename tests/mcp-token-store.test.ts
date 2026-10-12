@@ -180,6 +180,35 @@ test("OAuth provider keeps PKCE in memory, hides mismatched credentials, and ado
   assertCleanSecure(dir);
 });
 
+test("issuer re-stamp of the same client keeps tokens; a new client still clears them", (t) => {
+  const dir = tempDir(t);
+  writeTokenRecord(dir, "runway", {
+    schemaVersion: 1,
+    revision: 3,
+    binding: { ...current, updatedAt: "2026-07-17T00:00:00.000Z" },
+    clientInformation: { client_id: "legacy-client" },
+    tokens: { access_token: "kept-token", refresh_token: "kept-refresh" },
+  });
+  const provider = createServerOAuthProvider({
+    provider: "runway",
+    tokenDir: dir,
+    origin: current.redirectOrigin,
+    endpoint: current.endpoint,
+    oauthState: "state-marker",
+    isCurrent: () => true,
+  });
+  provider.saveClientInformation({ client_id: "legacy-client", issuer: "https://auth.runwayml.com/" });
+  const restamped = readTokenRecord(dir, "runway");
+  assert.equal(restamped?.clientInformation?.issuer, "https://auth.runwayml.com/");
+  assert.equal((restamped?.tokens as Record<string, unknown>).refresh_token, "kept-refresh");
+  assert.equal((provider.tokens() as Record<string, unknown> | undefined)?.access_token, "kept-token");
+
+  provider.saveClientInformation({ client_id: "registered-again", issuer: "https://auth.runwayml.com/" });
+  assert.equal(readTokenRecord(dir, "runway")?.tokens, undefined);
+  assert.equal(provider.tokens(), undefined);
+  assertCleanSecure(dir);
+});
+
 test("stale generation rejects credential persistence with a code-only error", (t) => {
   const dir = tempDir(t);
   const provider = createServerOAuthProvider({
