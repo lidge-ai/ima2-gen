@@ -190,7 +190,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/storageMigration.ts` | 311 | Legacy generated-folder scan and migration support |
 | `lib/runtimePorts.ts` | 106 | Port probing, fallback binding, and OAuth ready URL parsing |
 | `lib/mcp/tokenStore.ts` | 325 | Versioned 0600 MCP token records, endpoint/origin binding inspection, revision/tombstone CAS, and PID+nonce recovery lock |
-| `lib/mcp/oauthProvider.ts` | 150 | SDK OAuth provider, memory-only PKCE/state, bound credential persistence, scoped invalidation, and legacy binding migration |
+| `lib/mcp/oauthProvider.ts` | 164 | SDK OAuth provider, memory-only PKCE/state, bound credential persistence, scoped invalidation, and legacy binding migration |
 | `lib/mcp/connectionRuntime.ts` | 124 | MCP session/connection identity helpers, restore inspection, terminal/session-invalid error classification, and bounded concurrency |
 | `lib/mcp/connectionManager.ts` | 566 | Generation/epoch-safe connect, callback, refresh, disconnect, post-listen restore, budgeted auto-reconnect (3 consecutive drops without RPC), tool calls (with error content capture), and shutdown |
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
