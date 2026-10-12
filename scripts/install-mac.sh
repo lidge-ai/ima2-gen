@@ -2,7 +2,7 @@
 # ima2-gen one-click install (macOS)
 #
 # Usage:
-#   curl -fsSL https://lidge-ai.github.io/ima2-gen/install-mac.sh | bash
+#   curl -fsSL https://ima2gen.com/install-mac.sh | bash
 #   or
 #   bash install-mac.sh
 #
