@@ -41,6 +41,17 @@ function asRecord(value: OAuthClientInformationMixed | OAuthTokens): Record<stri
   return value as unknown as Record<string, unknown>;
 }
 
+/**
+ * SDK 1.31+ re-saves client information from earlier versions with an `issuer` stamp
+ * before saving refreshed tokens. Same credentials mean a re-stamp, not a new registration.
+ */
+function isSameClient(previous: Record<string, unknown> | undefined, next: Record<string, unknown>): boolean {
+  return previous !== undefined
+    && typeof next.client_id === "string"
+    && previous.client_id === next.client_id
+    && previous.client_secret === next.client_secret;
+}
+
 export function createServerOAuthProvider(options: {
   provider: string;
   tokenDir: string;
@@ -107,6 +118,9 @@ export function createServerOAuthProvider(options: {
       }
       persist((previous) => {
         const base = tokenBindingMatches(previous, current) && !previous.tombstone ? previous : {};
+        if (isSameClient(base.clientInformation, asRecord(info))) {
+          return { ...base, clientInformation: asRecord(info) };
+        }
         return {
           ...base,
           binding: makeTokenBinding(current),

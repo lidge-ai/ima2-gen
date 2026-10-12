@@ -1,16 +1,49 @@
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { createServer } from "node:http";
 import { mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { config } from "../config.js";
-import { createTestRuntimeContext } from "../lib/runtimeContext.js";
-import { registerCardNewsRoutes } from "../routes/cardNews.js";
-import { deleteAssetPermanent } from "../lib/assetLifecycle.js";
-import { downloadGrokImageUrl } from "../lib/grokImageCore.js";
-import { buildApp } from "../server.js";
+const TEST_DIR = mkdtempSync(join(tmpdir(), "ima2-backend-hardening-"));
+const savedEnv = new Map(Object.entries(process.env).filter(([key]) => key.startsWith("IMA2_") || key === "DOTENV_CONFIG_PATH"));
+let stopQueueWorker: (() => void) | undefined;
+let closeDb: (() => void) | undefined;
+after(() => {
+  try { stopQueueWorker?.(); }
+  finally {
+    try { closeDb?.(); }
+    finally {
+      try { rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
+      finally {
+        for (const key of Object.keys(process.env)) {
+          if (key.startsWith("IMA2_") || key === "DOTENV_CONFIG_PATH") delete process.env[key];
+        }
+        for (const [key, value] of savedEnv) process.env[key] = value;
+      }
+    }
+  }
+});
+
+// Config is captured at import time, including through validation/logger imports.
+for (const key of savedEnv.keys()) delete process.env[key];
+Object.assign(process.env, {
+  IMA2_CONFIG_DIR: TEST_DIR,
+  IMA2_DB_PATH: join(TEST_DIR, "sessions.db"),
+  DOTENV_CONFIG_PATH: join(TEST_DIR, "empty.env"),
+});
+writeFileSync(join(TEST_DIR, "config.json"), "{}");
+writeFileSync(join(TEST_DIR, "empty.env"), "");
+
+const { config } = await import("../config.js");
+({ closeDb } = await import("../lib/db.js"));
+({ stopAgentQueueWorker: stopQueueWorker } = await import("../lib/agentQueueWorker.js"));
+const { createTestRuntimeContext } = await import("../lib/runtimeContext.js");
+const { registerCardNewsRoutes } = await import("../routes/cardNews.js");
+const { deleteAssetPermanent } = await import("../lib/assetLifecycle.js");
+const { downloadGrokImageUrl } = await import("../lib/grokImageCore.js");
+const { buildApp } = await import("../server.js");
 
 async function listen(server: ReturnType<typeof createServer>): Promise<string> {
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => {
@@ -24,7 +57,7 @@ async function close(server: ReturnType<typeof createServer>): Promise<void> {
 }
 
 test("Card News traversal setId is rejected with 400 before any filesystem write", async () => {
-  const generatedDir = await mkdtemp(join(tmpdir(), "ima2-cardnews-traversal-"));
+  const generatedDir = await mkdtemp(join(TEST_DIR, "ima2-cardnews-traversal-"));
   const app = express();
   app.use(express.json());
   registerCardNewsRoutes(app, createTestRuntimeContext({
@@ -48,7 +81,7 @@ test("Card News traversal setId is rejected with 400 before any filesystem write
 });
 
 test("Card News rejects excessive cards and concurrency", async () => {
-  const generatedDir = await mkdtemp(join(tmpdir(), "ima2-cardnews-limits-"));
+  const generatedDir = await mkdtemp(join(TEST_DIR, "ima2-cardnews-limits-"));
   const app = express();
   app.use(express.json({ limit: "1mb" }));
   registerCardNewsRoutes(app, createTestRuntimeContext({ config: { ...config, storage: { ...config.storage, generatedDir } } }));
@@ -72,8 +105,8 @@ test("Card News rejects excessive cards and concurrency", async () => {
 });
 
 test("asset deletion rejects symlinks that resolve outside generated storage", async () => {
-  const generatedDir = await mkdtemp(join(tmpdir(), "ima2-assets-generated-"));
-  const outsideDir = await mkdtemp(join(tmpdir(), "ima2-assets-outside-"));
+  const generatedDir = await mkdtemp(join(TEST_DIR, "ima2-assets-generated-"));
+  const outsideDir = await mkdtemp(join(TEST_DIR, "ima2-assets-outside-"));
   const oldGeneratedDir = config.storage.generatedDir;
   config.storage.generatedDir = generatedDir;
   try {
@@ -117,6 +150,7 @@ test("Grok image download enforces byte limit for chunked responses", async () =
 test("server returns a final JSON 404", async () => {
   const app = buildApp(createTestRuntimeContext({ config }));
   const server = createServer(app);
+  server.once("close", app.locals.disposeLocalLanAccess);
   const base = await listen(server);
   try {
     const missing = await fetch(`${base}/__missing`);
