@@ -55,7 +55,7 @@ jobs:
               - 'ui/**'
               - 'desktop/**'
               - '.github/workflows/desktop.yml'
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.17.0'
       - id: policy
@@ -86,7 +86,7 @@ jobs:
         run: |
           echo "ELECTRON_CACHE=${RUNNER_TEMP}/eb-cache/electron" >> "$GITHUB_ENV"
           echo "ELECTRON_BUILDER_CACHE=${RUNNER_TEMP}/eb-cache/electron-builder" >> "$GITHUB_ENV"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.17.0'
           cache: npm
@@ -144,7 +144,7 @@ jobs:
 
       - name: Preserve macOS signing verification reports
         if: always() && matrix.target == 'mac' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v'))) && steps.mac_verify.outcome != 'skipped'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ima2-macos-signature-proof
           if-no-files-found: error
@@ -181,7 +181,7 @@ jobs:
         shell: bash
         run: ls -la desktop/dist | grep -Ev '\.(yml|yaml|blockmap)$|^total|builder-'
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ima2-desktop-${{ matrix.target }}-${{ matrix.arch }}
           if-no-files-found: error
@@ -227,27 +227,27 @@ jobs:
       # Every leg's output lands under desktop/dist/<platform>-<arch> except
       # macOS, which stays flat so prepare-release-assets keeps the same
       # layout for the proof-bound installers.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ima2-desktop-mac-arm64
           path: desktop/dist
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ima2-desktop-win-x64
           path: desktop/dist/win-x64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ima2-desktop-win-arm64
           path: desktop/dist/win-arm64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ima2-desktop-linux-x64
           path: desktop/dist/linux-x64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ima2-desktop-linux-arm64
           path: desktop/dist/linux-arm64
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ima2-macos-signature-proof
           path: desktop/dist/signature-proof
@@ -400,7 +400,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.17.0'
       - name: Mirror desktop update manifests into vX.Y.Z
