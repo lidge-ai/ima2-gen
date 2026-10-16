@@ -92,9 +92,9 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@neplex/vectorizer": "0.1.0",
-    "@openai/codex": "0.160.0",
+    "@openai/codex": "0.162.1",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^18.0.1",
     "electron-updater": "6.8.9",
@@ -104,7 +104,7 @@
     "sharp": "^0.35.3",
     "trash": "^10.1.1",
     "ulid": "^3.0.2",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "overrides": {
     "fast-uri": "3.1.7"
@@ -128,7 +128,7 @@
     "node-gyp": "13.1.0",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.71.0",
+    "typescript-eslint": "8.71.1",
     "yaml": "2.9.1"
   }
 }
