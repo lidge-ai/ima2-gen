@@ -189,7 +189,8 @@ describe("portable node template files (PR 256 WP4)", () => {
     try {
       const exported = await fetch(`${running.base}/api/node-templates/${created.id}/export`);
       assert.equal(exported.status, 200);
-      assert.match(exported.headers.get("content-disposition") ?? "", /attachment; filename="wp4-route-\d+\.ima2-template\.json"/);
+      // express 5.3 (content-disposition 2) leaves RFC 6266 token-safe names unquoted.
+      assert.match(exported.headers.get("content-disposition") ?? "", /^attachment; filename=("?)wp4-route-\d+\.ima2-template\.json\1$/);
       const text = await exported.text();
       for (const needle of [SECRET, "attacker.example", "srv-1", "/generated/"]) assert.ok(!text.includes(needle), needle);
       for (let round = 0; round < 2; round += 1) {
