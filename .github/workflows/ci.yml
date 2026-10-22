@@ -126,7 +126,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
           # npm's content-addressed cache is npm-version agnostic, so sharing it
@@ -250,7 +250,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -303,7 +303,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.17.0'
           cache: npm
@@ -363,7 +363,7 @@ jobs:
               throw new Error("E2E checkout does not match the requested full SHA");
             }
           '
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22.23.0'
           cache: npm
@@ -392,7 +392,7 @@ jobs:
         run: npm --prefix ui run test:e2e -- --reporter=line
       - name: Upload WP09 isolation and journey evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp09-journeys-${{ github.event.inputs.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           include-hidden-files: true
@@ -406,7 +406,7 @@ jobs:
           retention-days: 14
       - name: Upload composer evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp08-composer-${{ github.event.inputs.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -416,7 +416,7 @@ jobs:
           retention-days: 7
       - name: Upload WP08c evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp08c-provider-display-${{ github.event.inputs.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -426,7 +426,7 @@ jobs:
           retention-days: 14
       - name: Upload provider surface visual evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp01-provider-surface-visual
           path: ui/test-results/**/wp01-*.png
@@ -434,7 +434,7 @@ jobs:
           retention-days: 14
       - name: Upload selection evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp02-selection-evidence
           path: |
@@ -444,7 +444,7 @@ jobs:
           retention-days: 14
       - name: Upload execution error evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp03-error-evidence
           path: |
@@ -454,7 +454,7 @@ jobs:
           retention-days: 14
       - name: Upload e2e failure artifacts
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-failure-context
           path: ui/test-results/
@@ -462,7 +462,7 @@ jobs:
           retention-days: 7
       - name: Upload job tracking evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wp07-job-tracking-evidence
           path: |
