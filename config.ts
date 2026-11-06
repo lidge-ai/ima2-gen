@@ -404,6 +404,8 @@ export const config = {
     ),
     defaultSize: pickStr(env.IMA2_API_IMAGE_SIZE, fileCfg.apiProvider?.defaultSize, "1024x1024"),
     allowWebSearch: pickBool(env.IMA2_API_ALLOW_WEB_SEARCH, fileCfg.apiProvider?.allowWebSearch, true),
+    /** Send a hashed per-install `safety_identifier` with OpenAI API-key requests. */
+    safetyIdentifier: pickBool(env.IMA2_API_SAFETY_IDENTIFIER, fileCfg.apiProvider?.safetyIdentifier, true),
   },
   grokProvider: {
     plannerModel: pickStr(env.IMA2_GROK_PLANNER_MODEL, fileCfg.grokProvider?.plannerModel, DEFAULT_GROK_PLANNER_MODEL),
