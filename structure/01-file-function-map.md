@@ -369,15 +369,15 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 |---|---|---:|---|
 | App shell | `ui/src/App.tsx` | 243 | Initial hydration, polling, classic/node/card-news canvas switch, Canvas Mode workspace mount, prompt library overlay, mobile shell (dark-only since Phase 010) |
 | Entry | `ui/src/main.tsx` | 89 | React mount |
-| Types | `ui/src/types.ts` | 331 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
+| Types | `ui/src/types.ts` | 341 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
-| Store | `ui/src/store/useAppStore.ts` | 682 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
+| Store | `ui/src/store/useAppStore.ts` | 684 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
 | Persistence registry | `ui/src/store/persistenceRegistry.ts` | 98 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, and settings keys (theme keys removed in Phase 010); prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 417 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 16 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
 | API client | `ui/src/lib/api.ts` | 114 | Browser-side REST barrel re-export (`api-core`, `api-capabilities`, `api-inflight`, `api-generate`, …) |
 | Card-news API client | `ui/src/lib/cardNewsApi.ts` | 277 | Card-news templates, draft, jobs, regenerate, set/manifest helpers |
-| Node API client | `ui/src/lib/nodeApi.ts` | 177 | Node generation JSON/SSE client and node error status propagation |
+| Node API client | `ui/src/lib/nodeApi.ts` | 179 | Node generation JSON/SSE client and node error status propagation |
 | NovelAI options | `ui/src/lib/naiOptions.ts` | 137 | NovelAI option alphabets, compiled fallback, sparse-override coercion, and the fallback→server→override resolver |
 | Node graph helpers | `ui/src/lib/nodeGraph.ts` | 129 | Visual-edge parent derivation, incoming-edge conflict, and cycle-detection helpers (`wouldCreateCycle`, `graphHasCycle`) |
 | Node selection | `ui/src/lib/nodeSelection.ts` | 65 | Component-based selection toggling utilities |
@@ -394,7 +394,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 310 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 31 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 286 | UI-side image model labels and `resolveCoreModelValue` lane gating |
+| Image models | `ui/src/lib/imageModels.ts` | 304 | UI-side image model labels and `resolveCoreModelValue` lane gating |
 | Core selection policy | `ui/src/lib/coreSelection.ts` | 155 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
 | Core selection persistence | `ui/src/store/coreSelectionPersistence.ts` | 59 | Legacy active snapshot and bounded versioned lane-memory storage boundary |
 | Core selection actions | `ui/src/store/storeCoreSelectionImpl.ts` | 84 | One selection patch for provider/image/video/workflow choices, including explicit slot clearing |
