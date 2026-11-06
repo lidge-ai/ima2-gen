@@ -621,6 +621,13 @@ image must be sent, state before and after the edit list that the markup is
 temporary editing instructions only — interpret it, apply the edits, then
 remove every trace of it from the output.
 
+On the API key lane with a GPT Image 2.5 or 2.6 `--image-tool-model`, prefer a
+real markup layer: draw the marks on a transparent PNG at the edit image's exact
+size and pass it as `ima2 edit <file> --markup marks.png`. The model reads that
+layer as instructions rather than image content. Describe the change in the
+prompt and say the marks must not appear in the result. Markup cannot be combined
+with a mask.
+
 **Removal edits.** "Remove X" alone is weak. Pair the removal command with a
 positive description of what replaces it, then lock the rest: "Remove the
 sticky note. Show the continuous walnut desk surface where it was, matching

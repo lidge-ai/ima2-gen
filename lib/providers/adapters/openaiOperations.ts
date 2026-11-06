@@ -275,12 +275,14 @@ export async function editViaResponses(provider: string | undefined, prompt: str
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
   }
-  if (shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
+  // Markup exists only on the Image API, whatever the configured transport.
+  const markupOnImagesApi = Boolean(options.markup) && provider === "api" && Boolean(toolModel.imageToolModel);
+  if (markupOnImagesApi || shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
     const refs = (Array.isArray(options.references) ? options.references : []).map((ref) => refImage(ref).b64);
-    return singleImageResult(await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel, prompt: prompt ?? "",
+    return singleImageResult(await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel as string, prompt: prompt ?? "",
       quality, size, moderation, complexity: options.complexity,
       scope: "api-edit", background: options.background, images: [imageB64 ?? "", ...refs],
-      ...(options.mask ? { mask: options.mask } : {}) }));
+      ...(options.mask ? { mask: options.mask } : {}), ...(options.markup ? { markup: options.markup } : {}) }));
   }
   const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity), quality, size, moderation });
   const toolChoice = imageToolChoice(options.forceImageToolChoice ?? ctx.config?.oauth?.forceImageToolChoice !== false);

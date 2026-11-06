@@ -28,6 +28,7 @@ import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } 
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
 import { upstreamLabelFields } from "../lib/diagnosticLabel.js";
 import { getProviderSurfaceSupport } from "../lib/providers/derive.js";
+import { validateEditMarkup } from "../lib/markupEdit.js";
 import { preserveOutsideMask } from "../lib/maskedEditComposite.js";
 function validateModeration(ctx: RuntimeContext, moderation: unknown) {
   if (typeof moderation !== "string" || !ctx.config.oauth.validModeration.has(moderation)) {
@@ -235,6 +236,15 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         finishErrorCode = maskCheck.code;
         return res.status(400).json({ error: maskCheck.error, code: maskCheck.code, ...errorEnvelopeFields({ code: maskCheck.code, status: 400 }) });
       }
+      const markupCheck = await validateEditMarkup({
+        image: imageB64, markup: req.body?.markup, mask: rawMask, provider: activeProvider, imageToolModel,
+      });
+      if (markupCheck.error) {
+        finishStatus = "error";
+        finishHttpStatus = 400;
+        finishErrorCode = markupCheck.code;
+        return res.status(400).json({ error: markupCheck.error, code: markupCheck.code, ...errorEnvelopeFields({ code: markupCheck.code, status: 400 }) });
+      }
       const moderationCheck = validateModeration(ctx, moderation);
       if (moderationCheck.error) {
         finishStatus = "error";
@@ -259,12 +269,14 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         inputImageChars: typeof imageB64 === "string" ? imageB64.length : 0,
         maskPresent: Boolean(maskCheck.mask),
         maskBytes: maskCheck.maskBytes ?? 0,
+        markupPresent: Boolean(markupCheck.markup),
+        markupBytes: markupCheck.markupBytes,
       });
       const startTime = Date.now();
       const { value: r } = await (await prepareImageExecution(ctx, {
         surface: "edit", provider: activeProvider, requestId,
         signal: cancelController.signal, prompt, rawPrompt: prompt,
-        sourceImage: imageB64, mask: maskCheck.mask ?? null, references: [],
+        sourceImage: imageB64, mask: maskCheck.mask ?? null, markup: markupCheck.markup, references: [],
         options: { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
       })).execute();

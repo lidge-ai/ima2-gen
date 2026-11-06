@@ -124,7 +124,8 @@ async function executeOpenaiEdit(
     options.moderation, options.mode, ctx, requestId,
     { model: options.model, imageToolModel: options.imageToolModel, complexity: options.complexity, reasoningEffort: options.reasoningEffort,
       webSearchEnabled: options.webSearchEnabled,
-      ...(request.mask !== null ? { mask: request.mask } : {}), signal },
+      ...(request.mask !== null ? { mask: request.mask } : {}),
+      ...(request.markup ? { markup: request.markup } : {}), signal },
   );
   // Preserve native retry metadata; only Responses had these caller defaults.
   return { ...result, usage: result.usage ?? null, webSearchCalls: result.webSearchCalls ?? 0 };
