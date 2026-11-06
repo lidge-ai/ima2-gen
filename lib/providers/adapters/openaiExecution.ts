@@ -43,7 +43,7 @@ function prepareOpenaiClassic(
   _progress?: ExecutionProgress,
 ): PreparedImageExecution<"classic"> {
   const { provider: activeProvider, prompt: generationPrompt, requestId, background: backgroundParams } = request;
-  const { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
+  const { model: imageModel, imageToolModel, complexity, imageOutput, quality, size: effectiveSize, moderation,
     mode: normalizedPromptMode, reasoningEffort, webSearchEnabled } = request.options;
   // Scalars are captured at prepare; references and ctx stay live per attempt.
   // API keeps the caller signal live; OAuth uses the invocation deadline signal.
@@ -63,7 +63,7 @@ function prepareOpenaiClassic(
           normalizedPromptMode,
           ctx,
           {
-            model: imageModel, imageToolModel, complexity,
+            model: imageModel, imageToolModel, complexity, imageOutput,
             reasoningEffort,
             webSearchEnabled,
             signal: activeProvider === "api" ? request.signal : signal,

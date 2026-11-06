@@ -16,7 +16,7 @@ async function listImageFiles(baseDir: string) {
       const full = join(dir, entry.name);
       if (entry.isDirectory() && depth > 0) {
         await walk(full, depth - 1);
-      } else if (entry.isFile() && /\.(png|jpe?g|webp|mp4)$/i.test(entry.name) && !entry.name.endsWith(".thumb.jpg")) {
+      } else if (entry.isFile() && /\.(png|jpe?g|webp|gif|mp4)$/i.test(entry.name) && !entry.name.endsWith(".thumb.jpg")) {
         out.push({ full, rel: full.slice(baseDir.length + 1), name: entry.name });
       }
     }
@@ -62,6 +62,7 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
       quality: meta?.quality || null,
       size: meta?.size || null,
       format: meta?.format || name.split(".").pop(),
+      ...(meta?.animation && typeof meta.animation === "object" ? { animation: meta.animation } : {}),
       model: meta?.model || null,
       ...(meta?.provider === "api" && meta?.imageToolModel ? { imageToolModel: meta.imageToolModel } : {}),
       ...(meta?.provider === "api" && meta?.complexity ? { complexity: meta.complexity } : {}),
@@ -111,7 +112,7 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
 }
 
 async function readImageSidecar(full: string, rel: string) {
-  const sibling = full.replace(/\.(png|jpe?g|webp)$/i, ".json");
+  const sibling = full.replace(/\.(png|jpe?g|webp|gif)$/i, ".json");
   const candidates = new Set([`${full}.json`]);
   if (sibling !== full) candidates.add(sibling);
   for (const candidate of candidates) {

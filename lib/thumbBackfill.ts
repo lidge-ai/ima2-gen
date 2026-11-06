@@ -53,7 +53,7 @@ export async function backfillThumbnails(
       }
       if (!entry.isFile()) continue;
       if (entry.name.endsWith(".thumb.jpg")) continue;
-      if (!/\.(png|jpe?g|webp|mp4)$/i.test(entry.name)) continue;
+      if (!/\.(png|jpe?g|webp|gif|mp4)$/i.test(entry.name)) continue;
 
       result.total++;
       const kind = /\.mp4$/i.test(entry.name) ? "video" : "image";

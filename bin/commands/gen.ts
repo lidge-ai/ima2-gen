@@ -34,6 +34,9 @@ const SPEC = {
   flags: {
     "image-tool-model": { type: "string" },
     complexity: { type: "string" },
+    gif: { type: "boolean" },
+    frames: { type: "string" },
+    "frame-ms": { type: "string" },
     quality: { short: "q", type: "string", default: "low" },
     size: { short: "s", type: "string", default: "1024x1024" },
     "no-size-nudge": { type: "boolean" },
@@ -81,6 +84,9 @@ const HELP = `
                                             Core aliases: luna, astra, sol, terra, spark
         --image-tool-model <id>             API only: gpt-image-2.6-flare|gpt-image-2.6-sunburst|gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --complexity <level>                low|medium|high; API 2.6 image models only (default high)
+        --gif                               Animated GIF output (API lane + 2.6 image model)
+        --frames <2-16>                     GIF frame count (OpenAI default 9)
+        --frame-ms <20-2000>                GIF frame duration in ms (OpenAI default 200)
         --provider <${PROVIDER_VALUES.join("|")}>
                                             'auto' was removed; choose a lane explicitly
         --mode <auto|direct>                Core lanes only. Default: auto
@@ -202,6 +208,7 @@ function generatedFilename(value: string): boolean {
 function rejectUnsupportedMcpFlags(argv: string[], args: ParsedArgs): void {
   const forbidden: Array<[string, string[]]> = [
     ["--image-tool-model", ["--image-tool-model"]], ["--complexity", ["--complexity"]],
+    ["--gif", ["--gif"]], ["--frames", ["--frames"]], ["--frame-ms", ["--frame-ms"]],
     ["--quality", ["--quality", "-q"]], ["--size", ["--size", "-s"]],
     ["--no-save", ["--no-save"]], ["--force", ["--force"]], ["--stdin", ["--stdin"]],
     ["--mode", ["--mode"]], ["--moderation", ["--moderation"]], ["--bg", ["--bg"]],
@@ -320,6 +327,9 @@ async function requestCoreImage(
   if (args.bg) body.backgroundPreset = String(args.bg);
   if (args["image-tool-model"]) body.imageToolModel = args["image-tool-model"];
   if (args.complexity) body.complexity = args.complexity;
+  if (args.gif) body.format = "gif";
+  if (args.frames) body.frameCount = Number(args.frames);
+  if (args["frame-ms"]) body.frameDurationMs = Number(args["frame-ms"]);
   if (args["reasoning-effort"]) body.reasoningEffort = args["reasoning-effort"];
   if (args["no-web-search"]) body.webSearchEnabled = false;
   else if (args["web-search"]) body.webSearchEnabled = true;
@@ -361,10 +371,11 @@ async function runCoreImage(args: ParsedArgs, context: ImageContext): Promise<vo
   if (context.explicitOut && norm.images.length > 1) die(2, "--out only supports a single image; use --out-dir for n>1");
   const paths: string[] = [];
   for (let i = 0; i < norm.images.length; i += 1) {
+    const ext = /^data:image\/gif;/.test(String(norm.images[i]?.image ?? "")) ? "gif" : "png";
     let target: string;
     if (context.explicitOut) target = resolveOutTarget(context.explicitOut, context.outDir);
-    else if (context.outDir) target = `${context.outDir}/${defaultOutName(i, norm.images.length)}`;
-    else target = `${config.storage.generatedDir}/${defaultOutName(i, norm.images.length)}`;
+    else if (context.outDir) target = `${context.outDir}/${defaultOutName(i, norm.images.length, ext)}`;
+    else target = `${config.storage.generatedDir}/${defaultOutName(i, norm.images.length, ext)}`;
     const image = norm.images[i];
     if (!image) continue;
     await dataUriToFile(String(image.image), target);

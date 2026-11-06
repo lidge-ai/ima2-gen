@@ -384,6 +384,23 @@ no markup field. Validation happens before any upstream call:
 | `EDIT_MARKUP_NO_ALPHA` / `EDIT_MARKUP_NO_TRANSPARENCY` | no alpha channel / no transparent pixel (a flattened photo) |
 | `EDIT_MARKUP_TOO_LARGE` | over 50 MB, or either image over 16,777,216 pixels |
 
+### Animated GIF output
+
+`POST /api/generate` with `format: "gif"` (API lane, 2.6 `imageToolModel`) requests
+`output_format: "gif"` from `/v1/images/generations`, or from `/v1/images/edits` when
+references are attached. Optional `frameCount` (2–16) and `frameDurationMs` (20–2000) map
+to `frame_count` / `frame_duration_ms`; omitted ones use OpenAI's defaults (9, 200 ms).
+`size` is per frame. The upstream GIF bytes are saved unchanged as `.gif` (no XMP embed),
+the sidecar and history row carry `format: "gif"` and `animation: { frameCount?,
+frameDurationMs? }`, and the result image is a `data:image/gif` URL.
+
+| Code | When |
+|---|---|
+| `GIF_OUTPUT_UNSUPPORTED` | not the API lane with a 2.6 image model (GPT OAuth answers GIF requests with "GIF output is not enabled for this request") |
+| `INVALID_GIF_FRAME_COUNT` / `INVALID_GIF_FRAME_DURATION` | out of range or not an integer |
+| `GIF_OPTIONS_WITHOUT_GIF` | frame options with another format |
+| `IMAGE_FEATURE_NOT_ENABLED` | the organization/project lacks the GIF preview |
+
 API-key requests carry `safety_identifier`: a SHA-256 hash of a random per-install id
 stored in `<configDir>/install-id`. Disable it with `IMA2_API_SAFETY_IDENTIFIER=0` or
 `apiProvider.safetyIdentifier: false`. GPT OAuth requests never carry it.

@@ -16,6 +16,8 @@ export interface ExecutionOptions {
   imageToolModel?: string | undefined;
   /** Images 2.6 complexity; resolveProviderOptions drops it for every other model. */
   complexity?: string | undefined;
+  /** Non-still output (GIF) from lib/imageOutputFormats.ts; forces the Image API. */
+  imageOutput?: import("../../imageOutputFormats.js").ImageOutputSpec | null | undefined;
   quality: string;
   size: string;
   moderation: string;
