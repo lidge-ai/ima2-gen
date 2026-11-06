@@ -24,7 +24,7 @@ interface MakeErrorOptions {
   [key: string]: unknown;
 }
 
-interface ResponsesError extends Error {
+export interface ResponsesError extends Error {
   status: number;
   code: string;
   cause?: unknown | undefined;
@@ -33,7 +33,7 @@ interface ResponsesError extends Error {
 
 const RESPONSES_ERROR_MARKER = "ima2ResponsesError";
 
-function makeError(message: string, { status = 500, code = "RESPONSES_IMAGE_ERROR", cause, ...rest }: MakeErrorOptions = {}): ResponsesError {
+export function makeError(message: string, { status = 500, code = "RESPONSES_IMAGE_ERROR", cause, ...rest }: MakeErrorOptions = {}): ResponsesError {
   const err = new Error(message) as ResponsesError;
   err.status = status;
   err.code = code;
@@ -43,14 +43,14 @@ function makeError(message: string, { status = 500, code = "RESPONSES_IMAGE_ERRO
   return err;
 }
 
-interface UpstreamError {
+export interface UpstreamError {
   message: string;
   code: string | null;
   type: string | null;
   param: string | null;
 }
 
-function parseOpenAIErrorBody(text: string): UpstreamError | null {
+export function parseOpenAIErrorBody(text: string): UpstreamError | null {
   try {
     const parsed = JSON.parse(text);
     const error = parsed?.error || {};
@@ -65,7 +65,7 @@ function parseOpenAIErrorBody(text: string): UpstreamError | null {
   }
 }
 
-function normalizedCode(upstream: UpstreamError | null | undefined) {
+export function normalizedCode(upstream: UpstreamError | null | undefined) {
   // The in-process GPT OAuth client reports a missing or unrefreshable ChatGPT session this way.
   if (upstream?.code === "OAUTH_SESSION_REQUIRED") return "AUTH_CHATGPT_EXPIRED";
   const byCode = classifyUpstreamErrorCode(upstream?.code);
@@ -76,7 +76,7 @@ function normalizedCode(upstream: UpstreamError | null | undefined) {
   return byMessage !== "UNKNOWN" ? byMessage : "RESPONSES_IMAGE_ERROR";
 }
 
-function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, status: number) {
+export function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, status: number) {
   const code = normalizedCode(upstream);
   if (code === "AUTH_CHATGPT_EXPIRED") return "ChatGPT sign-in is missing or expired. Run `ima2 gpt login`.";
   if (code === "AUTH_API_KEY_INVALID") return "API key is invalid or unavailable.";
@@ -101,7 +101,7 @@ function rateLimitFieldsOf(ctx: RouteRuntimeContext, res: Response, upstream: Up
   return oauthRateLimitFields(res.status, raw, res.headers, maxDelayMs);
 }
 
-function apiAuthorizationHeader(apiKey: string | undefined) {
+export function apiAuthorizationHeader(apiKey: string | undefined) {
   const key = typeof apiKey === "string" ? apiKey.trim() : "";
   if (!key) {
     throw makeError("API key is required for API provider image generation", {
@@ -118,7 +118,7 @@ function apiAuthorizationHeader(apiKey: string | undefined) {
   return `Bearer ${key}`;
 }
 
-function isKnownResponsesError(value: unknown) {
+export function isKnownResponsesError(value: unknown) {
   return Boolean(
     value &&
     typeof value === "object" &&
@@ -177,7 +177,7 @@ function combineAbortSignals(signals: AbortSignal[]): AbortSignal {
 
 type TransportWait = <T>(run: () => Promise<T>) => Promise<T>;
 
-function transportLifetime(ctx: RouteRuntimeContext, provider: string | undefined, parent?: AbortSignal | null) {
+export function transportLifetime(ctx: RouteRuntimeContext, provider: string | undefined, parent?: AbortSignal | null) {
   if (provider !== "api") {
     const lifetime = createOAuthRequestDeadline(
       ctx.config?.oauth?.generationTimeoutMs ?? config.oauth.generationTimeoutMs, parent,
@@ -195,7 +195,7 @@ function transportLifetime(ctx: RouteRuntimeContext, provider: string | undefine
   };
 }
 
-function transportAbortError(error: unknown, signal: AbortSignal, provider?: string, parent?: AbortSignal | null) {
+export function transportAbortError(error: unknown, signal: AbortSignal, provider?: string, parent?: AbortSignal | null) {
   if (provider === "api") {
     return parent?.aborted
       ? makeError("Generation canceled", { status: 499, code: "GENERATION_CANCELED", cause: error })

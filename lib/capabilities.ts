@@ -119,6 +119,7 @@ export function buildIma2Capabilities({
         api: [...API_IMAGE_TOOL_MODELS],
         qualities: [...API_IMAGE_TOOL_QUALITIES],
         complexity: { models: [...API_IMAGE_26_MODELS], values: [...IMAGE_COMPLEXITIES] },
+        transport: ["images", "responses"].includes(appConfig.apiProvider.imageTransport) ? appConfig.apiProvider.imageTransport : "auto",
       },
       imageModels: {
         supported: toArray(appConfig.imageModels.valid),

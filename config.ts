@@ -406,6 +406,12 @@ export const config = {
     allowWebSearch: pickBool(env.IMA2_API_ALLOW_WEB_SEARCH, fileCfg.apiProvider?.allowWebSearch, true),
     /** Send a hashed per-install `safety_identifier` with OpenAI API-key requests. */
     safetyIdentifier: pickBool(env.IMA2_API_SAFETY_IDENTIFIER, fileCfg.apiProvider?.safetyIdentifier, true),
+    /**
+     * Transport for explicit API image models: "auto" sends Images 2.6 models to the
+     * Image API (/v1/images/*) and older ones through the Responses tool; "images" or
+     * "responses" forces one path. See lib/providers/adapters/openaiImagesApi.ts.
+     */
+    imageTransport: pickStr(env.IMA2_API_IMAGE_TRANSPORT, fileCfg.apiProvider?.imageTransport, "auto"),
   },
   grokProvider: {
     plannerModel: pickStr(env.IMA2_GROK_PLANNER_MODEL, fileCfg.grokProvider?.plannerModel, DEFAULT_GROK_PLANNER_MODEL),

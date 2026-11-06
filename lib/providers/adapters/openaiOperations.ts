@@ -28,6 +28,7 @@ import { postResponses } from "../../responsesTransport.js";
 import { runOAuthImageJob, type OAuthPlanImage } from "../../oauthImages.js";
 import { API_FALLBACK_IMAGE_MODEL, FALLBACK_IMAGE_MODEL, migrateOAuthImageModel } from "../../imageModels.js";
 import type { ReferenceRef, GenerateOptions } from "./openaiTypes.js";
+import { runImagesApi, shouldUseImagesApi, singleImageResult } from "./openaiImagesApi.js";
 
 function refImage(ref: ReferenceRef): OAuthPlanImage {
   const b64 = typeof ref === "string" ? ref : ref?.b64;
@@ -69,6 +70,12 @@ export async function generateViaResponses(provider: string | undefined, prompt:
   if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
+  }
+  if (shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
+    return singleImageResult(await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel, prompt: prompt ?? "",
+      quality, size, moderation, complexity: options.complexity,
+      scope: "api-generate", background: options.background, outputFormat: options.outputFormat,
+      images: references.map((ref) => refImage(ref).b64) }));
   }
   const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity),
     quality,
@@ -197,6 +204,12 @@ export async function generateMultimodeViaResponses(provider: string | undefined
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
   }
+  if (shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
+    const result = await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel, prompt: prompt ?? "",
+      quality, size, moderation, complexity: options.complexity,
+      scope: "api-multimode", n: maxImages, images: references.map((ref) => refImage(ref).b64) }, options.onFinalImage);
+    return { images: result.images, usage: result.usage, webSearchCalls: 0, text: null };
+  }
   const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity), quality, size, moderation, ...(options.partialImages ? { partial_images: options.partialImages } : {}) });
   const userText = buildMultimodeSequencePrompt(
     mode === "direct"
@@ -261,6 +274,13 @@ export async function editViaResponses(provider: string | undefined, prompt: str
   if (toolModel.error) throw Object.assign(new Error(toolModel.error), { code: toolModel.code, status: toolModel.status });
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
+  }
+  if (shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
+    const refs = (Array.isArray(options.references) ? options.references : []).map((ref) => refImage(ref).b64);
+    return singleImageResult(await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel, prompt: prompt ?? "",
+      quality, size, moderation, complexity: options.complexity,
+      scope: "api-edit", background: options.background, images: [imageB64 ?? "", ...refs],
+      ...(options.mask ? { mask: options.mask } : {}) }));
   }
   const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity), quality, size, moderation });
   const toolChoice = imageToolChoice(options.forceImageToolChoice ?? ctx.config?.oauth?.forceImageToolChoice !== false);
