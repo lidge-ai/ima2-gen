@@ -43,7 +43,7 @@ export type ImageExecutionRequest = ExecutionBase & (
       contextMode: "parent-plus-refs" | "parent-only";
       searchMode: "off" | "auto" | "on";
       partialImages: 0 | 2; nai: NaiRequestOptions }
-  | { surface: "edit"; sourceImage: string; mask: string | null }
+  | { surface: "edit"; sourceImage: string; mask: string | null; markup?: string | null | undefined }
   | { surface: "multimode"; providerUrl: string | null;
       maxImages: number; nai: NaiRequestOptions }
 );

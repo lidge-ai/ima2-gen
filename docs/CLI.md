@@ -69,6 +69,17 @@ ima2 gen "botanical illustration" --provider api --model gpt-5.4 --image-tool-mo
 ima2 gen "dense transit map poster" --provider api --image-tool-model gpt-image-2.6-sunburst --complexity high
 ```
 
+`edit --markup <file.png>` sends a markup-guided edit: a transparent PNG of marks
+(circles, arrows, sketches) at the edit image's exact size, describing where to change
+things while the prompt says what to change. It requires `--provider api` with a GPT
+Image 2.5/2.6 `--image-tool-model`, always goes through the Image API, and cannot be
+combined with a mask.
+
+```bash
+ima2 edit room.png --provider api --image-tool-model gpt-image-2.6-flare \
+  --markup circled-lamp.png -p "Remove the circled lamp. Do not draw the red circle."
+```
+
 ## Common flags
 
 These work on most client commands:

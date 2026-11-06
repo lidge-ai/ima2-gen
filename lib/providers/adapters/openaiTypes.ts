@@ -15,6 +15,8 @@ export interface GenerateOptions {
   maxImages?: number | undefined;
   references?: ReferenceRef[] | undefined;
   mask?: string | undefined;
+  /** Markup-guided edit layer (transparent PNG base64); Image API only. */
+  markup?: string | undefined;
   signal?: AbortSignal | null | undefined;
   forceImageToolChoice?: boolean | undefined;
   allowPromptOnlyOAuthFallback?: boolean | undefined;

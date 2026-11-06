@@ -367,6 +367,23 @@ output or SVG model selection, markup, complexity, or the model itself), the rou
 `IMAGE_FEATURE_NOT_ENABLED` with the upstream status and a message naming the feature.
 Such a failure is not retried.
 
+### Markup-guided edits
+
+`POST /api/edit` accepts optional `markup`: a transparent PNG (data URL or base64) of
+annotation marks at the edit image's exact width and height. OpenAI applies it to the first
+input image; the prompt describes the change. It is sent as `markup: { image_url }` on
+`/v1/images/edits` regardless of `IMA2_API_IMAGE_TRANSPORT`, because the Responses tool has
+no markup field. Validation happens before any upstream call:
+
+| Code | When |
+|---|---|
+| `EDIT_MARKUP_UNSUPPORTED` | not `provider: "api"` with a GPT Image 2.5/2.6 `imageToolModel` |
+| `EDIT_MARKUP_WITH_MASK` | `markup` and `mask` in the same request |
+| `INVALID_EDIT_MARKUP` / `INVALID_EDIT_MARKUP_PNG` | not base64 / not a PNG |
+| `EDIT_MARKUP_DIMENSION_MISMATCH` | size differs from the image after EXIF orientation |
+| `EDIT_MARKUP_NO_ALPHA` / `EDIT_MARKUP_NO_TRANSPARENCY` | no alpha channel / no transparent pixel (a flattened photo) |
+| `EDIT_MARKUP_TOO_LARGE` | over 50 MB, or either image over 16,777,216 pixels |
+
 API-key requests carry `safety_identifier`: a SHA-256 hash of a random per-install id
 stored in `<configDir>/install-id`. Disable it with `IMA2_API_SAFETY_IDENTIFIER=0` or
 `apiProvider.safetyIdentifier: false`. GPT OAuth requests never carry it.

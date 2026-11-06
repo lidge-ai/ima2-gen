@@ -48,6 +48,8 @@ export interface ImagesApiCall {
   images?: string[] | undefined;
   /** OpenAI mask contract: alpha 0 = editable. Same size as the first image. */
   mask?: string | undefined;
+  /** Markup layer for the first image (edits only; never combined with mask). */
+  markup?: string | undefined;
   /** Additional request fields owned by later features (gif, svg, markup). */
   extra?: Record<string, unknown> | undefined;
 }
@@ -78,6 +80,7 @@ export function imagesApiBody(call: ImagesApiCall): { kind: "generations" | "edi
       ...json,
       images: inputs.map((b64) => ({ image_url: dataUrl(b64) })),
       ...(call.mask ? { mask: { image_url: dataUrl(call.mask) } } : {}),
+      ...(call.markup ? { markup: { image_url: dataUrl(call.markup) } } : {}),
     },
   };
 }
