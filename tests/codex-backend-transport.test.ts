@@ -145,6 +145,21 @@ describe("native GPT OAuth transport", () => {
     assert.deepEqual(call.body, { prompt: "p", n: 1, moderation: "low", model: "gpt-image-2" });
   });
 
+  it("rejects API-only image options before forwarding JSON or multipart requests", async () => {
+    for (const [field, value] of [["imageToolModel", "gpt-image-2.6-flare"], ["model", "gpt-image-2.5-sunburst"], ["complexity", "high"], ["markup", "example"], ["output_format", "gif"], ["output_format", "svg"]]) {
+      for (const kind of ["generations", "edits"]) {
+        seen.length = 0;
+        const form = new FormData();
+        form.set("prompt", "p");
+        form.set(field!, value!);
+        const body = kind === "edits" ? form : JSON.stringify({ prompt: "p", [field!]: value });
+        const res = await transport.oauthFetch(native, `/v1/images/${kind}`, { method: "POST", body });
+        assert.equal(res.status, 400, `${kind} ${field}=${value}`);
+        assert.equal(seen.length, 0);
+      }
+    }
+  });
+
   it("lists the visible roster plus the renderer at the pinned client version", async () => {
     seen.length = 0;
     transport.resetCodexCaches();

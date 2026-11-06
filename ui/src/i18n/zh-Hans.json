@@ -827,6 +827,8 @@
     "geminiApiCompatBodyLong": "Google Gemini API 直接。支持 nano-banana-2 (Flash) 和 nano-banana-pro (Pro)，宽高比和分辨率控制范围为 512px 至 4K。",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI 通过响应 API 生成图像。支持质量、大小、格式、审核和网络搜索设置。",
+    "oauthImageHint": "图像模型由 ChatGPT 选择；GPT-6 Luna、Sol 和 Astra 选择的是规划模型。选择 Images 2.6 模型、复杂度、GIF 和 SVG 需要 OpenAI API 密钥。",
+    "oauthCompatBody": "ChatGPT OAuth 使用 Codex 后端进行规划和图像生成，部分设置可能由 ChatGPT 控制。",
     "naiApiKeyRequired": "NovelAI API 需要令牌"
   },
   "mcp": {
@@ -1443,7 +1445,7 @@
     },
     "imageModel": {
       "title": "图像模型",
-      "body": "选择供后代使用的图像模型。选择其他提供商（Grok、OpenAI API、Gemini 等）的模型会切换到该提供商。",
+      "body": "选择今后生成时使用的模型。选择其他提供商的模型会切换到该提供商。",
       "gpt54Mini": "GPT-5.4 迷你",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
@@ -1465,7 +1467,7 @@
       "minimaxImage01Live": "MiniMax image-01-live",
       "agy": "Antigravity (agy)",
       "gpt53CodexSpark": "GPT-5.3 Codex Spark — 不支持图像",
-      "unsupportedHelp": "Grok 模型使用 xAI OAuth 会话调用 xAI 的图像 API。 GPT 模型使用 OpenAI 响应图像生成。",
+      "unsupportedHelp": "Grok 模型使用 xAI Images API。GPT OAuth 使用 Codex 后端；OpenAI API 密钥使用 OpenAI API。",
       "naiDiffusion5Full": "NAI Diffusion V5 Full",
       "naiDiffusion5Curated": "NAI Diffusion V5 Curated",
       "naiDiffusion45Full": "NAI Diffusion V4.5 Full",

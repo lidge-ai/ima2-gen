@@ -214,9 +214,10 @@ export function GenerationControlsPanel() {
   return (
     <div className="right-panel-settings" role="tabpanel">
       <ProviderStatusSelect mcpProviders={mcpProviders} />
+      {provider === "oauth" && <p className="provider-helper">{t("provider.oauthImageHint")}</p>}
       <details className="provider-compat-details">
         <summary>{providerCompat.title}</summary>
-        <p>{providerCompat.body}</p>
+        <p>{provider === "oauth" ? t("provider.oauthCompatBody") : providerCompat.body}</p>
       </details>
       {isGrok && (
         <div className="option-group grok-mode-toggle">

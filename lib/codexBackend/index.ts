@@ -88,11 +88,14 @@ async function routeChat(init: RequestInit): Promise<Response> {
 async function routeImages(kind: "generations" | "edits", init: RequestInit): Promise<Response> {
   let body: Json | null;
   if (kind === "edits" && typeof FormData !== "undefined" && init.body instanceof FormData) {
+    const form = init.body;
+    if (hasApiOnlyImageOptions((key) => form.get(key))) return apiOnlyImageOptionsError();
     body = await editsFormToJson(init.body);
   } else {
     body = await readJsonBody(init);
   }
   if (!body) return errorResponse("Image requests need a JSON or multipart body.", 400, "invalid_request");
+  if (hasApiOnlyImageOptions((key) => body![key])) return apiOnlyImageOptionsError();
   const { stream: _stream, response_format: _format, ...rest } = body;
   const payload = { ...rest, model: typeof rest.model === "string" && rest.model ? rest.model : CODEX_IMAGE_MODEL };
   return codexUpstream(`/images/${kind}`, {
@@ -101,6 +104,17 @@ async function routeImages(kind: "generations" | "edits", init: RequestInit): Pr
     body: JSON.stringify(payload),
     ...(init.signal ? { signal: init.signal } : {}),
   });
+}
+
+function hasApiOnlyImageOptions(get: (key: string) => unknown): boolean {
+  const model = get("model");
+  return get("imageToolModel") != null || get("complexity") != null || get("markup") != null
+    || (typeof model === "string" && /^gpt-image-2\.[56]-/.test(model))
+    || ["gif", "svg"].includes(String(get("output_format")));
+}
+
+function apiOnlyImageOptionsError(): Response {
+  return errorResponse("Image model choice, complexity, markup, GIF and SVG require the OpenAI API-key lane.", 400, "API_IMAGE_OPTIONS_UNSUPPORTED");
 }
 
 async function routeModels(): Promise<Response> {
