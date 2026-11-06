@@ -1,4 +1,16 @@
 {
+  "imageOutput": {
+    "title": "輸出",
+    "still": "靜態圖片",
+    "gif": "動態 GIF",
+    "svg": "SVG",
+    "svgSub": "1 張",
+    "frames": "影格數",
+    "frameMs": "每格毫秒",
+    "range": "{min}–{max}，留空為預設",
+    "gifNote": "GIF 是依專案開放的 OpenAI 預覽功能。尺寸為單格尺寸，影格數 × 尺寸須在模型像素上限內。",
+    "svgNote": "SVG 僅產生 1 張且不使用參考圖。儲存前會移除指令碼與外部連結。"
+  },
   "imageToolModel": {
     "title": "API 影像模型",
     "default": "預設（上游選擇）",
@@ -1677,6 +1689,11 @@
       "title": "圖片請求需要更改",
       "body": "一個或多個生成參數無效。檢查下面的原始錯誤詳細信息，然後編輯提示或大小並重試。",
       "cta": "編輯輸入"
+    },
+    "imageFeatureNotEnabled": {
+      "title": "此 OpenAI 專案未啟用該功能",
+      "body": "OpenAI 尚未為此 API 金鑰所屬的組織或專案啟用該功能（GIF、SVG、標註編輯或所選模型）。請在 OpenAI 控制台檢查專案權限，或關閉該選項。",
+      "cta": "確定"
     },
     "apikeyDisabled": {
       "title": "API-按鍵模式不可用",

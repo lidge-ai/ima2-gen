@@ -203,7 +203,8 @@ export function mapHistoryItem(it: Awaited<ReturnType<typeof getHistory>>["items
     videoContinuity: it.videoContinuity ?? null,
     videoLineage: it.videoLineage ?? null,
     filename: it.filename,
-    thumb: it.thumb ?? (isVideo ? undefined : it.url),
+    // A GIF's JPEG thumbnail is its first frame; tiles show the original so it plays.
+    thumb: it.format === "gif" ? it.url : it.thumb ?? (isVideo ? undefined : it.url),
     prompt: it.prompt ?? undefined,
     userPrompt: it.userPrompt ?? null,
     revisedPrompt: it.revisedPrompt ?? null,

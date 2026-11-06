@@ -1,4 +1,16 @@
 {
+  "imageOutput": {
+    "title": "Output",
+    "still": "Still image",
+    "gif": "Animated GIF",
+    "svg": "SVG",
+    "svgSub": "1 image",
+    "frames": "Frames",
+    "frameMs": "Frame ms",
+    "range": "{min}–{max}, empty = default",
+    "gifNote": "GIF is an OpenAI preview enabled per project. Size is per frame; frames × size must fit the model's pixel budget.",
+    "svgNote": "SVG makes one image without references. ima2 removes scripts and external links before saving."
+  },
   "imageToolModel": {
     "title": "API image model",
     "default": "Default (upstream)",
@@ -1677,6 +1689,11 @@
       "title": "Image request needs changes",
       "body": "One or more generation parameters are invalid. Check the raw error details below, then edit the prompt or size and try again.",
       "cta": "Edit input"
+    },
+    "imageFeatureNotEnabled": {
+      "title": "Not enabled for this OpenAI project",
+      "body": "OpenAI has not enabled this feature (GIF, SVG, markup or the selected model) for your API key's organization or project. Check project access in the OpenAI dashboard, or switch the option off.",
+      "cta": "OK"
     },
     "apikeyDisabled": {
       "title": "API-key mode is unavailable",

@@ -16,6 +16,8 @@ export type ImageToolModel =
   | "gpt-image-2.5-sunburst" | "gpt-image-2.5-flare";
 /** Images 2.6 only; null/absent means the model default (high). */
 export type ImageComplexity = "low" | "medium" | "high";
+/** Images 2.6 API-lane output: a still in `format`, an animated GIF, or an SVG. */
+export type ImageOutputKind = "still" | "gif" | "svg";
 export type Format = "png" | "jpeg" | "webp";
 export type Moderation = "low" | "auto";
 export type OpenAIImageModel = Extract<ImageModelId, `gpt-${string}`>;
@@ -251,12 +253,15 @@ export type GenerateRequest = {
   prompt: string;
   quality: Quality;
   size: string;
-  format: Format;
+  /** gif/svg only on the API lane with a 2.6 image model (see imageOutputRequestFields). */
+  format: Format | "gif" | "svg";
   moderation: Moderation;
   provider: Provider;
   n: number;
   imageToolModel?: ImageToolModel;
   complexity?: ImageComplexity;
+  frameCount?: number;
+  frameDurationMs?: number;
   model?: string; // wire model id, including runtime Comfy workflow ids
   reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   image?: string;

@@ -47,6 +47,7 @@ export type ImaErrorCode =
   | "INVALID_REQUEST"
   | "INVALID_MODERATION"
   | "APIKEY_DISABLED"
+  | "IMAGE_FEATURE_NOT_ENABLED"
   | "AGY_GENERATION_FAILED"
   | "AGY_TIMEOUT"
   | "JOB_TRACKING_TIMEOUT"
@@ -127,6 +128,7 @@ export const errorCodes: Record<ImaErrorCode, ErrorSpec> = {
   INVALID_REQUEST: { surface: "card", cardKey: "errorCard.invalidRequest", cta: "dismiss" },
   INVALID_MODERATION: { surface: "toast", toastKey: "toast.generateFailed" },
   APIKEY_DISABLED: { surface: "card", cardKey: "errorCard.apikeyDisabled", cta: "dismiss" },
+  IMAGE_FEATURE_NOT_ENABLED: { surface: "card", cardKey: "errorCard.imageFeatureNotEnabled", cta: "dismiss" },
   AGY_GENERATION_FAILED: { surface: "card", cardKey: "errorCard.agyGenerationFailed", cta: "retry" },
   AGY_TIMEOUT: { surface: "card", cardKey: "errorCard.agyTimeout", cta: "retry" },
   JOB_TRACKING_TIMEOUT: { surface: "toast", toastKey: "toast.jobTrackingTimeout" },

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { OptionGroup } from "./OptionGroup";
+import { ImageOutputControls } from "./ImageOutputControls";
 import { SizePicker } from "./SizePicker";
 import { CountPicker } from "./CountPicker";
 import { CostEstimate } from "./CostEstimate";
@@ -385,6 +386,7 @@ export function GenerationControlsPanel() {
             />
           </div>
         )}
+        <ImageOutputControls />
         <OptionGroup<Quality>
           className={qualityItems.length > 3 ? "quality-options-expanded" : ""}
           title={t("quality.title")}

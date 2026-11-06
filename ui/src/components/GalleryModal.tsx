@@ -180,7 +180,7 @@ export function GalleryModal() {
             image: h.url,
             url: h.url,
             filename: h.filename,
-            thumb: h.thumb ?? (isVideo ? undefined : h.url),
+            thumb: h.format === "gif" ? h.url : h.thumb ?? (isVideo ? undefined : h.url),
             mediaType: h.mediaType,
             video: h.video ?? null,
             videoSeries: h.videoSeries ?? null,

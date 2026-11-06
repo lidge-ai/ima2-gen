@@ -1,4 +1,4 @@
-import type { ImageComplexity, ImageToolModel } from "../types";
+import type { ImageComplexity, ImageOutputKind, ImageToolModel } from "../types";
 import { normalizeImageQuality } from "../lib/imageModels";
 import type { Provider, Quality, SizePreset, Format, Moderation, ImageModel, Count } from "../types";
 import type { ReasoningEffort } from "../lib/reasoning";
@@ -364,6 +364,19 @@ export function setImageToolModelImpl(imageToolModel: ImageToolModel | null, set
 export function setComplexityImpl(complexity: ImageComplexity | null, set: StoreSet): void {
   saveGenerationDefaultsPatch({ complexity });
   set({ complexity });
+}
+
+export function setImageOutputImpl(
+  patch: { kind?: ImageOutputKind; gifFrameCount?: number | null; gifFrameDurationMs?: number | null },
+  set: StoreSet,
+): void {
+  const next = {
+    ...(patch.kind !== undefined ? { imageOutputKind: patch.kind } : {}),
+    ...(patch.gifFrameCount !== undefined ? { gifFrameCount: patch.gifFrameCount } : {}),
+    ...(patch.gifFrameDurationMs !== undefined ? { gifFrameDurationMs: patch.gifFrameDurationMs } : {}),
+  };
+  saveGenerationDefaultsPatch(next);
+  set(next);
 }
 
 export function setQualityImpl(quality: Quality, set: StoreSet, get: StoreGet): void {

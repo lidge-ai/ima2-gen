@@ -1,6 +1,6 @@
 import type { ImageModel, OpenAIImageModel, GeminiImageModel, AtlasCloudImageModel, MinimaxImageModel, NaiImageModel, Provider, UnsupportedImageModel, VideoModel } from "../types";
 import { PROVIDER_MODELS } from "../generated/providers";
-import type { ImageComplexity, ImageToolModel, Quality } from "../types";
+import type { ImageComplexity, ImageOutputKind, ImageToolModel, Quality } from "../types";
 
 export const API_IMAGE_TOOL_MODEL_OPTIONS = [
   { value: "gpt-image-2.6-flare", label: "GPT Image2.6 Flare" },
@@ -37,6 +37,30 @@ export function normalizeImageQuality(provider: unknown, imageToolModel: unknown
 }
 
 export const DEFAULT_IMAGE_MODEL: ImageModel = "gpt-6-luna";
+
+export const GIF_FRAME_COUNT_RANGE = { min: 2, max: 16, default: 9 } as const;
+export const GIF_FRAME_DURATION_RANGE = { min: 20, max: 2000, default: 200 } as const;
+
+export function isImageOutputKind(value: unknown): value is ImageOutputKind {
+  return value === "still" || value === "gif" || value === "svg";
+}
+
+/**
+ * Request fields for GIF/SVG output. They exist only on the API lane with a 2.6 model;
+ * anywhere else the stored choice falls back to a still image in the chosen format.
+ */
+export function imageOutputRequestFields(s: {
+  provider: unknown; imageToolModel: unknown; imageOutputKind: ImageOutputKind;
+  gifFrameCount: number | null; gifFrameDurationMs: number | null;
+}) {
+  if (s.provider !== "api" || !isImage26ToolModel(s.imageToolModel) || s.imageOutputKind === "still") return {};
+  if (s.imageOutputKind === "svg") return { format: "svg" as const, n: 1 };
+  return {
+    format: "gif" as const,
+    ...(s.gifFrameCount !== null ? { frameCount: s.gifFrameCount } : {}),
+    ...(s.gifFrameDurationMs !== null ? { frameDurationMs: s.gifFrameDurationMs } : {}),
+  };
+}
 export const IMAGE_MODEL_STORAGE_KEY = "ima2.imageModel";
 
 export const IMAGE_MODEL_OPTIONS: Array<{
