@@ -15,6 +15,8 @@ import { isImage26Model } from "../../oauthNormalize.js";
 import { postApiImages, type ApiImagesResult } from "../../imagesApiTransport.js";
 import type { RouteRuntimeContext } from "../../runtimeContext.js";
 import type { FinalImageHandler } from "../../responsesParse.js";
+import { sanitizeSvg } from "../../svgSanitize.js";
+import { logEvent } from "../../logger.js";
 
 export type ApiImageTransport = "auto" | "images" | "responses";
 
@@ -92,6 +94,17 @@ export async function runImagesApi(call: ImagesApiCall, onFinalImage?: FinalImag
   });
   if (result.images.length === 0) {
     throw Object.assign(new Error("OpenAI Images API returned no image data"), { status: 422, code: "EMPTY_RESPONSE" });
+  }
+  if (call.outputFormat === "svg") {
+    // SVG arrives as base64 UTF-8 XML; everything downstream sees only sanitized markup.
+    result.images = result.images.map((image) => {
+      const clean = sanitizeSvg(Buffer.from(image.b64, "base64").toString("utf8"));
+      if (clean.removedElements || clean.removedAttributes) {
+        logEvent(call.scope, "svg_sanitized", { requestId: call.requestId,
+          removedElements: clean.removedElements, removedAttributes: clean.removedAttributes });
+      }
+      return { ...image, b64: Buffer.from(clean.svg, "utf8").toString("base64") };
+    });
   }
   if (onFinalImage) {
     for (const [index, image] of result.images.entries()) await onFinalImage(image, index);

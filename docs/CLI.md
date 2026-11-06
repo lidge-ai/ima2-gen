@@ -91,6 +91,11 @@ ima2 gen "a blue ball bouncing once, seamless loop" --provider api \
   --image-tool-model gpt-image-2.6-flare --gif --frames 6 --frame-ms 120 -s 512x512
 ```
 
+`gen --svg` asks a 2.6 image model for an SVG (one image, no references). The saved
+`.svg` is sanitized first. `--svg-model <id>` and `--svg-effort <level>` choose the SVG
+authoring model and its reasoning effort; send them only if your OpenAI project has SVG
+model selection. GPT OAuth cannot produce SVGs.
+
 ## Common flags
 
 These work on most client commands:
