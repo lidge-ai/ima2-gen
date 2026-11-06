@@ -10,6 +10,7 @@ export interface GenerateOptions {
   model?: string | undefined;
   imageToolModel?: string | undefined;
   complexity?: string | undefined;
+  imageOutput?: import("../../imageOutputFormats.js").ImageOutputSpec | null | undefined;
   partialImages?: number | undefined;
   reasoningEffort?: string | undefined;
   maxImages?: number | undefined;

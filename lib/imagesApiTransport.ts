@@ -55,6 +55,10 @@ const GATE_WORDING = /not enabled|not available|does not have access|no access|a
 export function gatedFeature(status: number, upstream: UpstreamError | null): string | null {
   if (!upstream?.param || !(upstream.param in GATED_PARAMS)) return null;
   if (status !== 403 && !(status === 400 && GATE_WORDING.test(upstream.message))) return null;
+  if (upstream.param === "output_format") {
+    if (/\bgif\b/i.test(upstream.message)) return "GIF output";
+    if (/\bsvg\b/i.test(upstream.message)) return "SVG output";
+  }
   return GATED_PARAMS[upstream.param] ?? null;
 }
 

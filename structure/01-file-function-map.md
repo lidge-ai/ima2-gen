@@ -116,7 +116,7 @@ routes/
 | `ui/src/lib/eventChannel.ts` | 239 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
 | `bin/ima2.ts` | 500 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
-| `bin/commands/gen.ts` | 422 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
+| `bin/commands/gen.ts` | 433 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 178 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
 | `bin/commands/multimode.ts` | 229 | CLI multimode SSE client with provider override, references, prompt mode, incremental image save, timeout recovery, web-search, reasoning-effort, and session options |
@@ -179,7 +179,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
 | `lib/generationErrors.ts` | 270 | Generation error normalization, retry classification, status mapping |
-| `lib/historyList.ts` | 224 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
+| `lib/historyList.ts` | 225 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
 | `lib/videoContinuity.ts` | 193 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 100 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
 | `lib/videoGenerationRequest.ts` | 166 | Shared generate-request contract: mode inference, mutually-exclusive source guard, and duration/resolution/aspect defaults for UI, CLI, agent, and route |
@@ -201,7 +201,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
 | `lib/oauthProxy/generators.ts` | 231 | OAuth Responses single-image generation and stable generator exports |
 | `lib/oauthProxy/multimodeGenerators.ts` | 307 | OAuth Responses multimode and edit generators, masked-edit guard |
-| `lib/generatePipeline.ts` | 733 | Classic admission/idempotency, shared execution facade, persistence, background-preset prompt shaping, and event publication |
+| `lib/generatePipeline.ts` | 743 | Classic admission/idempotency, shared execution facade, persistence, background-preset prompt shaping, and event publication |
 | `lib/backgroundPresets.ts` | 78 | Background preset contract for asset generation: enum parse, prompt suffixes, planner constraint |
 | `lib/multimodePipeline.ts` | 537 | Multimode streaming pipeline, persistence, cancellation, and partial timeout |
 | `lib/comparisonMatrix.ts` | 77 | Prompt-locked comparison axes: deterministic cartesian expansion, 9-cell cost cap, varying-axis labels |
@@ -219,8 +219,8 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/responsesImageAdapter.ts` | 6 | Compatibility re-exports of the three OpenAI operations; existing agent/sprite imports remain valid |
 | `lib/responsesTransport.ts` | 350 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
 | `lib/oauthRateLimit.ts` | 215 | GPT OAuth per-minute rate-limit classifier (usage caps excluded first), jittered abortable backoff and one per-job retry budget (count, total wait, generation deadline) |
-| `lib/providers/adapters/openaiTypes.ts` | 33 | Original positional-operation reference/options types, unchanged optional fields |
-| `lib/providers/adapters/openaiOperations.ts` | 389 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
+| `lib/providers/adapters/openaiTypes.ts` | 34 | Original positional-operation reference/options types, unchanged optional fields |
+| `lib/providers/adapters/openaiOperations.ts` | 392 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
 | `lib/providers/adapters/openaiExecution.ts` | 168 | Typed four-surface OpenAI owner, classic retry and native callback/result mapping |
 | `lib/providerOptions.ts` | 184 | Per-provider option assembly; rejects catalog-only Comfy video workflows on the classic image path |
 | `lib/runtimeContext.ts` | 241 | Per-request runtime context plumbing for routes and lib helpers |
@@ -242,7 +242,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/providers/types.ts` | 95 | Manifest/credential types, explicit model generation support, and provider surface records |
 | `lib/providers/derive.ts` | 97 | Registry-bound provider IDs, catalogs, reference limits and surface support |
 | `lib/providers/surfaceSupport.ts` | 31 | Pure application-surface projection, independent of readiness; static versus runtime catalogs |
-| `lib/providers/execution/types.ts` | 105 | Typed surface-discriminated requests, native single/sequence results and callbacks |
+| `lib/providers/execution/types.ts` | 107 | Typed surface-discriminated requests, native single/sequence results and callbacks |
 | `lib/providers/execution/admission.ts` | 53 | Missing direct-Grok key and unsupported NAI multimode-ref checks; no provider probing |
 | `lib/providers/execution/index.ts` | 36 | Public prepare/execute facade with current direct-key presence checks |
 | `lib/providers/execution/legacy.ts` | 31 | Four-surface Atlas/MiniMax/NAI/Comfy dispatcher; OpenAI/Grok/Google excluded |

@@ -34,6 +34,7 @@ import { normalizeBodyRequestId, validateBoundedCount, validateGenerationPrompt 
 import { getElementById } from "./assetsStore.js";
 import { compileElements, ELEMENT_CAPACITY_DEFAULTS, type ElementDefinition, type ExistingReferenceInput } from "./elementCompiler.js";
 import { deriveReferenceLimit, getProviderSurfaceSupport } from "./providers/derive.js";
+import { resolveImageOutput } from "./imageOutputFormats.js";
 import {
   claimIdempotencyKey,
   completeIdempotencyKey,
@@ -189,6 +190,14 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
       const activeProvider = providerOptions.provider;
+      const outputCheck = resolveImageOutput({
+        format, provider: activeProvider, imageToolModel,
+        frameCount: req.body?.frameCount, frameDurationMs: req.body?.frameDurationMs,
+      });
+      if (outputCheck.error !== undefined) {
+        return fail(outputCheck.status, { error: outputCheck.error, code: outputCheck.code });
+      }
+      const imageOutput = outputCheck.output;
       // Resolved AFTER provider resolution on purpose: the raw request `provider`
       // defaults to "auto", so only `activeProvider` names the lane that will
       // actually run. Atlas Cloud and GPT OAuth (the Codex Images API since the
@@ -400,7 +409,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         webSearchEnabled,
       });
       const startTime = Date.now();
-      const mimeMap: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" };
+      const mimeMap: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif" };
       const providerForcesJpeg = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax";
       // An alpha-bearing result must never be persisted through a lossy opaque
       // format: embedImageMetadata re-encodes with sharp.toFormat(), so a JPEG
@@ -414,7 +423,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         surface: "classic", provider: activeProvider, requestId,
         signal: cancelController.signal, prompt: generationPrompt, rawPrompt: prompt,
         references: refCheck.refDetails, providerUrl: incomingProviderUrl,
-        options: { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
+        options: { model: imageModel, imageToolModel, complexity, imageOutput, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
         background: backgroundParams,
         backgroundConstraint: backgroundPreset ? backgroundPlannerConstraint(backgroundPreset) : undefined,
@@ -558,6 +567,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
             quality,
             size: effectiveSize,
             format: resultFormat,
+            ...(imageOutput ? { animation: imageOutput.meta } : {}),
             moderation,
             model: activeProvider === "grok" ? resolveGrokQualityModel(imageModel, quality) : imageModel,
             ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),

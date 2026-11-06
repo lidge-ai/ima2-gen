@@ -71,10 +71,13 @@ export async function generateViaResponses(provider: string | undefined, prompt:
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
   }
-  if (shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
-    return singleImageResult(await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel, prompt: prompt ?? "",
+  // GIF output exists only on the Image API, whatever the configured transport.
+  const outputOnImagesApi = Boolean(options.imageOutput) && provider === "api" && Boolean(toolModel.imageToolModel);
+  if (outputOnImagesApi || shouldUseImagesApi(ctx, provider, toolModel.imageToolModel)) {
+    return singleImageResult(await runImagesApi({ ctx, requestId, signal: options.signal, model: toolModel.imageToolModel as string, prompt: prompt ?? "",
       quality, size, moderation, complexity: options.complexity,
-      scope: "api-generate", background: options.background, outputFormat: options.outputFormat,
+      scope: "api-generate", background: options.background,
+      outputFormat: options.imageOutput?.format ?? options.outputFormat, extra: options.imageOutput?.fields,
       images: references.map((ref) => refImage(ref).b64) }));
   }
   const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity),

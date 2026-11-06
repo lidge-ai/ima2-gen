@@ -80,6 +80,17 @@ ima2 edit room.png --provider api --image-tool-model gpt-image-2.6-flare \
   --markup circled-lamp.png -p "Remove the circled lamp. Do not draw the red circle."
 ```
 
+`gen --gif [--frames 2-16] [--frame-ms 20-2000]` asks a 2.6 image model for an animated
+GIF (OpenAI defaults: 9 frames, 200 ms). `--size` is the per-frame size; frames × size ×
+count must fit the model's pixel budget. The file is saved as `.gif`. GIF output is an
+OpenAI preview that is enabled per organization/project; without it the command fails with
+`IMAGE_FEATURE_NOT_ENABLED`. GPT OAuth cannot produce GIFs.
+
+```bash
+ima2 gen "a blue ball bouncing once, seamless loop" --provider api \
+  --image-tool-model gpt-image-2.6-flare --gif --frames 6 --frame-ms 120 -s 512x512
+```
+
 ## Common flags
 
 These work on most client commands:
