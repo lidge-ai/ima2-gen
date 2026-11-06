@@ -35,6 +35,9 @@ const SPEC = {
     "image-tool-model": { type: "string" },
     complexity: { type: "string" },
     gif: { type: "boolean" },
+    svg: { type: "boolean" },
+    "svg-model": { type: "string" },
+    "svg-effort": { type: "string" },
     frames: { type: "string" },
     "frame-ms": { type: "string" },
     quality: { short: "q", type: "string", default: "low" },
@@ -87,6 +90,9 @@ const HELP = `
         --gif                               Animated GIF output (API lane + 2.6 image model)
         --frames <2-16>                     GIF frame count (OpenAI default 9)
         --frame-ms <20-2000>                GIF frame duration in ms (OpenAI default 200)
+        --svg                               SVG output (API lane + 2.6 image model, one image, no refs)
+        --svg-model <id>                    SVG authoring model (needs SVG model selection access)
+        --svg-effort <none|minimal|low|medium|high|xhigh|max>  Authoring reasoning effort
         --provider <${PROVIDER_VALUES.join("|")}>
                                             'auto' was removed; choose a lane explicitly
         --mode <auto|direct>                Core lanes only. Default: auto
@@ -209,6 +215,7 @@ function rejectUnsupportedMcpFlags(argv: string[], args: ParsedArgs): void {
   const forbidden: Array<[string, string[]]> = [
     ["--image-tool-model", ["--image-tool-model"]], ["--complexity", ["--complexity"]],
     ["--gif", ["--gif"]], ["--frames", ["--frames"]], ["--frame-ms", ["--frame-ms"]],
+    ["--svg", ["--svg"]], ["--svg-model", ["--svg-model"]], ["--svg-effort", ["--svg-effort"]],
     ["--quality", ["--quality", "-q"]], ["--size", ["--size", "-s"]],
     ["--no-save", ["--no-save"]], ["--force", ["--force"]], ["--stdin", ["--stdin"]],
     ["--mode", ["--mode"]], ["--moderation", ["--moderation"]], ["--bg", ["--bg"]],
@@ -328,6 +335,9 @@ async function requestCoreImage(
   if (args["image-tool-model"]) body.imageToolModel = args["image-tool-model"];
   if (args.complexity) body.complexity = args.complexity;
   if (args.gif) body.format = "gif";
+  if (args.svg) body.format = "svg";
+  if (args["svg-model"]) body.svgModel = args["svg-model"];
+  if (args["svg-effort"]) body.svgReasoningEffort = args["svg-effort"];
   if (args.frames) body.frameCount = Number(args.frames);
   if (args["frame-ms"]) body.frameDurationMs = Number(args["frame-ms"]);
   if (args["reasoning-effort"]) body.reasoningEffort = args["reasoning-effort"];
@@ -371,7 +381,8 @@ async function runCoreImage(args: ParsedArgs, context: ImageContext): Promise<vo
   if (context.explicitOut && norm.images.length > 1) die(2, "--out only supports a single image; use --out-dir for n>1");
   const paths: string[] = [];
   for (let i = 0; i < norm.images.length; i += 1) {
-    const ext = /^data:image\/gif;/.test(String(norm.images[i]?.image ?? "")) ? "gif" : "png";
+    const mime = /^data:image\/([a-z+]+);/.exec(String(norm.images[i]?.image ?? ""))?.[1];
+    const ext = mime === "gif" ? "gif" : mime === "svg+xml" ? "svg" : "png";
     let target: string;
     if (context.explicitOut) target = resolveOutTarget(context.explicitOut, context.outDir);
     else if (context.outDir) target = `${context.outDir}/${defaultOutName(i, norm.images.length, ext)}`;

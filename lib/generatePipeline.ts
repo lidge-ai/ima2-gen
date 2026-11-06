@@ -193,6 +193,8 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       const outputCheck = resolveImageOutput({
         format, provider: activeProvider, imageToolModel,
         frameCount: req.body?.frameCount, frameDurationMs: req.body?.frameDurationMs,
+        n, referenceCount: Array.isArray(references) ? references.length : 0,
+        svgModel: req.body?.svgModel, svgReasoningEffort: req.body?.svgReasoningEffort,
       });
       if (outputCheck.error !== undefined) {
         return fail(outputCheck.status, { error: outputCheck.error, code: outputCheck.code });
@@ -409,7 +411,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         webSearchEnabled,
       });
       const startTime = Date.now();
-      const mimeMap: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif" };
+      const mimeMap: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", svg: "image/svg+xml" };
       const providerForcesJpeg = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax";
       // An alpha-bearing result must never be persisted through a lossy opaque
       // format: embedImageMetadata re-encodes with sharp.toFormat(), so a JPEG
@@ -568,6 +570,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
             size: effectiveSize,
             format: resultFormat,
             ...(imageOutput ? { animation: imageOutput.meta } : {}),
+            ...((r.value as { svgUsage?: unknown }).svgUsage ? { svgUsage: (r.value as { svgUsage?: unknown }).svgUsage } : {}),
             moderation,
             model: activeProvider === "grok" ? resolveGrokQualityModel(imageModel, quality) : imageModel,
             ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),

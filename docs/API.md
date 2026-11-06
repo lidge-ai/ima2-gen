@@ -401,6 +401,36 @@ frameDurationMs? }`, and the result image is a `data:image/gif` URL.
 | `GIF_OPTIONS_WITHOUT_GIF` | frame options with another format |
 | `IMAGE_FEATURE_NOT_ENABLED` | the organization/project lacks the GIF preview |
 
+### SVG output
+
+`POST /api/generate` with `format: "svg"` (API lane, 2.6 `imageToolModel`, `n: 1`, no
+references) requests `output_format: "svg"` from `/v1/images/generations`. OpenAI renders a
+raster reference (`quality` and `complexity` apply) and an authoring model writes the SVG.
+Optional `svgModel` and `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`)
+become `svg: { model, reasoning: { effort } }`; they are sent only when given, because OpenAI
+accepts `svg.model` only for projects with SVG model selection.
+
+The returned XML is sanitized before anything is stored or returned (`lib/svgSanitize.ts`):
+DOCTYPE subsets and processing instructions are dropped; `script`, `foreignObject`,
+`iframe`, `object`, `embed`, animation elements and non-raster `<image>` are removed; event
+handlers, `src`, and any `href` other than `#fragment` or a raster `data:image` URL are
+stripped; CSS `url()` other than `#fragment` and `@import` are neutralized. A response that is
+not a standalone `<svg>` document fails with `SVG_OUTPUT_INVALID` (422, not retried).
+`/generated/*.svg` is also served with `Content-Security-Policy: default-src 'none'`.
+The file is saved as `.svg` with a rasterized `.svg.thumb.jpg`; the sidecar keeps
+`svgUsage` (authoring-model tokens, billed separately from image tokens).
+
+| Code | When |
+|---|---|
+| `SVG_OUTPUT_UNSUPPORTED` | not the API lane with a 2.6 image model |
+| `SVG_COUNT_UNSUPPORTED` / `SVG_EDIT_UNSUPPORTED` | `n` other than 1 / reference images attached |
+| `INVALID_SVG_MODEL` / `INVALID_SVG_REASONING_EFFORT` / `SVG_REASONING_REQUIRES_MODEL` | bad authoring options |
+| `SVG_OPTIONS_WITHOUT_SVG` | SVG options with another format |
+| `IMAGE_FEATURE_NOT_ENABLED` | the project lacks SVG output or SVG model selection |
+
+A transparent background preset combined with `format: "svg"` is rejected today by the
+existing `TRANSPARENT_FORMAT_CONFLICT` check.
+
 API-key requests carry `safety_identifier`: a SHA-256 hash of a random per-install id
 stored in `<configDir>/install-id`. Disable it with `IMA2_API_SAFETY_IDENTIFIER=0` or
 `apiProvider.safetyIdentifier: false`. GPT OAuth requests never carry it.

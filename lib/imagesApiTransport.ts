@@ -50,7 +50,7 @@ const GATED_PARAMS: Record<string, string> = {
   complexity: "the complexity setting",
   model: "this image model",
 };
-const GATE_WORDING = /not enabled|not available|does not have access|no access|access to|requires access|preview|not supported for this (?:organization|project)/i;
+const GATE_WORDING = /not enabled|not available|\baccess\b|preview|not supported for this (?:organization|project)/i;
 
 export function gatedFeature(status: number, upstream: UpstreamError | null): string | null {
   if (!upstream?.param || !(upstream.param in GATED_PARAMS)) return null;
