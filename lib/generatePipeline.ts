@@ -174,6 +174,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         provider,
         rawModel,
         rawImageToolModel,
+        rawComplexity: req.body?.complexity,
         rawReasoningEffort,
         rawSize: size,
         rawWebSearchEnabled,
@@ -183,6 +184,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       }
       const imageModel = providerOptions.model;
       const imageToolModel = providerOptions.imageToolModel;
+      const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
@@ -343,7 +345,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
           clientNodeId,
           quality,
           model: imageModel,
-          ...(imageToolModel ? { imageToolModel } : {}),
+          ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
           size: effectiveSize,
           n: count,
           refsCount: providerRefCount,
@@ -382,7 +384,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         provider: activeProvider,
         quality,
         model: imageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         size: effectiveSize,
         moderation,
         n: count,
@@ -412,7 +414,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         surface: "classic", provider: activeProvider, requestId,
         signal: cancelController.signal, prompt: generationPrompt, rawPrompt: prompt,
         references: refCheck.refDetails, providerUrl: incomingProviderUrl,
-        options: { model: imageModel, imageToolModel, quality, size: effectiveSize, moderation,
+        options: { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
         background: backgroundParams,
         backgroundConstraint: backgroundPreset ? backgroundPlannerConstraint(backgroundPreset) : undefined,
@@ -558,7 +560,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
             format: resultFormat,
             moderation,
             model: activeProvider === "grok" ? resolveGrokQualityModel(imageModel, quality) : imageModel,
-            ...(imageToolModel ? { imageToolModel } : {}),
+            ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
             reasoningEffort,
             provider: activeProvider,
             createdAt,
@@ -660,7 +662,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
         size: effectiveSize,
         moderation,
         model: imageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         warnings: qualityWarnings,
         revisedPrompt: firstRevised,
         promptMode: normalizedPromptMode,

@@ -53,15 +53,20 @@ With `--json`, stdout carries exactly one document and human text goes to stderr
 ## API image tool selection
 
 `gen`, `edit`, `multimode`, and `node generate` accept
-`--image-tool-model gpt-image-2.5-sunburst|gpt-image-2.5-flare` with `--provider api`.
+`--image-tool-model gpt-image-2.6-flare|gpt-image-2.6-sunburst|gpt-image-2.5-sunburst|gpt-image-2.5-flare`
+with `--provider api`.
 This is separate from `--model`, which continues to choose the outer GPT reasoning
 model. Omission preserves upstream selection and existing defaults. Only an explicit
-API 2.5 selection enables `--quality xhigh|max`; other scopes normalize these values
+API 2.5/2.6 selection enables `--quality xhigh|max`; other scopes normalize these values
 to medium. Non-API core providers ignore the tool model; MCP generation rejects the
 core-only flag.
 
+With a 2.6 tool model, `--complexity low|medium|high` sets how much goes into the
+scene (default `high`). It is ignored for 2.5 and non-API lanes.
+
 ```bash
 ima2 gen "botanical illustration" --provider api --model gpt-5.4 --image-tool-model gpt-image-2.5-sunburst --quality xhigh
+ima2 gen "dense transit map poster" --provider api --image-tool-model gpt-image-2.6-sunburst --complexity high
 ```
 
 ## Common flags

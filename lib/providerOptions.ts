@@ -1,5 +1,5 @@
 import type { RuntimeContext } from "./runtimeContext.js";
-import { normalizeImageToolModel } from "./oauthNormalize.js";
+import { normalizeImageComplexity, normalizeImageToolModel } from "./oauthNormalize.js";
 import { ATLASCLOUD_TEXT_TO_IMAGE_MODEL } from "./atlasCloudImageAdapter.js";
 import { API_FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, normalizeImageModel, normalizeReasoningEffort, normalizeGrokImageModel, normalizeGeminiApiModel, normalizeMinimaxImageModel, normalizeNaiImageModel, normalizeComfyWorkflowModel } from "./imageModels.js";
 
@@ -7,6 +7,7 @@ export interface ProviderOptionsInput {
   provider?: string | undefined;
   rawModel?: string | undefined;
   rawImageToolModel?: unknown;
+  rawComplexity?: unknown;
   rawReasoningEffort?: string | undefined;
   rawSize?: string | undefined;
   rawWebSearchEnabled?: unknown;
@@ -17,6 +18,7 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   provider = "oauth",
   rawModel,
   rawImageToolModel,
+  rawComplexity,
   rawReasoningEffort,
   rawSize = "1024x1024",
   rawWebSearchEnabled = true,
@@ -142,6 +144,8 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   const activeProvider = provider === "api" ? "api" : "oauth";
   const toolModelCheck = normalizeImageToolModel(activeProvider, rawImageToolModel);
   if (toolModelCheck.error !== undefined) return { error: toolModelCheck.error, code: toolModelCheck.code, status: toolModelCheck.status };
+  const complexityCheck = normalizeImageComplexity(activeProvider, toolModelCheck.imageToolModel, rawComplexity);
+  if (complexityCheck.error !== undefined) return { error: complexityCheck.error, code: complexityCheck.code, status: complexityCheck.status };
   const apiConfig: { defaultImageModel?: string; defaultReasoningEffort?: string; defaultSize?: string; allowWebSearch?: boolean } = ctx?.config?.apiProvider || {};
   const modelInput = activeProvider === "api"
     ? (rawModel || apiConfig.defaultImageModel || API_FALLBACK_IMAGE_MODEL)
@@ -170,6 +174,7 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
   return {
     provider: activeProvider as "api" | "oauth",
     imageToolModel: toolModelCheck.imageToolModel,
+    complexity: complexityCheck.complexity,
     model: modelCheck.model,
     reasoningEffort: effort,
     size,

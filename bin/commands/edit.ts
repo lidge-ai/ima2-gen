@@ -19,6 +19,7 @@ const SPEC = {
   flags: {
     prompt:  { short: "p", type: "string" },
     "image-tool-model": { type: "string" },
+    complexity: { type: "string" },
     quality: { short: "q", type: "string", default: "low" },
     size:    { short: "s", type: "string", default: "1024x1024" },
     out:     { short: "o", type: "string" },
@@ -50,7 +51,8 @@ const HELP = `
         --json
         --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-6-luna
                                       Aliases: luna, astra, sol, terra, spark
-        --image-tool-model <id>       API only: gpt-image-2.5-sunburst|gpt-image-2.5-flare
+        --image-tool-model <id>       API only: gpt-image-2.6-flare|gpt-image-2.6-sunburst|gpt-image-2.5-sunburst|gpt-image-2.5-flare
+        --complexity <level>          low|medium|high; API 2.6 image models only (default high)
         --provider <${PROVIDER_VALUES.join("|")}>
                                       Provider (oauth = GPT OAuth; grok = xAI Grok; agy/gemini-api = Gemini)
         --mode <auto|direct>       Prompt handling mode. Default: auto
@@ -122,6 +124,7 @@ export default async function editCmd(argv: string[]) {
       requestId,
     };
     if (args["image-tool-model"]) editBody.imageToolModel = args["image-tool-model"];
+    if (args.complexity) editBody.complexity = args.complexity;
     if (args["reasoning-effort"]) editBody.reasoningEffort = args["reasoning-effort"];
     if (args.provider) editBody.provider = args.provider;
     if (args["no-web-search"]) editBody.webSearchEnabled = false;

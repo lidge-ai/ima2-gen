@@ -67,6 +67,7 @@ export function buildIma2MetadataPayload(metaInput: unknown = {}, context: Metad
     moderation: stringOrNull(meta.moderation, 40),
     model: stringOrNull(meta.model, 80),
     ...(meta.provider === "api" && meta.imageToolModel ? { imageToolModel: stringOrNull(meta.imageToolModel, 80) } : {}),
+    ...(meta.provider === "api" && meta.complexity ? { complexity: stringOrNull(meta.complexity, 20) } : {}),
     reasoningEffort: stringOrNull(meta.reasoningEffort, 40),
     elapsed: numberOrNull(meta.elapsed),
     provider: stringOrNull(meta.provider, 40),
