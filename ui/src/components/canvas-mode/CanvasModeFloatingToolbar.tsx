@@ -1,3 +1,5 @@
+import { isImageToolModel } from "../../lib/imageModels";
+import { useAppStore } from "../../store/useAppStore";
 import { CanvasToolbar } from "./CanvasToolbar";
 import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import type { useCanvasBackgroundCleanup } from "./useCanvasBackgroundCleanup";
@@ -14,6 +16,7 @@ interface CanvasModeFloatingToolbarProps {
     isApplying: boolean;
     isExporting: boolean;
     isEditingWithMask: boolean;
+    isEditingWithMarkup: boolean;
     isTransparencyRunning: boolean;
     canRevertAnnotations: boolean;
   };
@@ -23,6 +26,7 @@ interface CanvasModeFloatingToolbarProps {
     handleExportCanvas: (format?: CanvasExportFormat) => Promise<void>;
     handleTraceCanvas: () => Promise<void>;
     handleEditWithMask: () => Promise<void>;
+    handleEditWithMarkup: () => Promise<void>;
     handleGptTransparency: () => Promise<void>;
     setExportBackground: (mode: CanvasExportBackground) => void;
     setExportMatteColor: (color: HexColor) => void;
@@ -36,6 +40,8 @@ export function CanvasModeFloatingToolbar({
   canvasState,
   actions,
 }: CanvasModeFloatingToolbarProps) {
+  const provider = useAppStore((s) => s.provider);
+  const imageToolModel = useAppStore((s) => s.imageToolModel);
   return (
     <CanvasToolbar
       activeTool={annotations.activeTool}
@@ -62,6 +68,10 @@ export function CanvasModeFloatingToolbar({
       onEditWithMask={() => void actions.handleEditWithMask()}
       canEditWithMask={annotations.boxes.length > 0}
       isEditingWithMask={canvasState.isEditingWithMask}
+      onEditWithMarkup={provider === "api" && isImageToolModel(imageToolModel)
+        ? () => void actions.handleEditWithMarkup() : undefined}
+      canEditWithMarkup={annotations.paths.length > 0 || annotations.boxes.length > 0}
+      isEditingWithMarkup={canvasState.isEditingWithMarkup}
       onGptTransparency={() => void actions.handleGptTransparency()}
       isTransparencyRunning={canvasState.isTransparencyRunning}
       isApplying={canvasState.isApplying}

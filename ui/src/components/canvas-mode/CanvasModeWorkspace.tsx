@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   useCallback,
-  type DragEvent as ReactDragEvent,
   type MouseEvent,
   type WheelEvent,
 } from "react";
@@ -39,13 +38,13 @@ import type { CanvasModeWorkspaceProps } from "./canvasModeTypes";
 import { useCanvasBackgroundCleanup } from "./useCanvasBackgroundCleanup";
 import { useCanvasModePointerHandlers } from "./useCanvasModePointerHandlers";
 import { useCanvasModeShortcuts } from "./useCanvasModeShortcuts";
+import { useCanvasImageDrop } from "./useCanvasImageDrop";
 import { useCanvasModeSession } from "./useCanvasModeSession";
 
 export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
   const currentImage = useAppStore((s) => s.currentImage);
   const history = useAppStore((s) => s.history);
-  const importLocalImageToHistory = useAppStore((s) => s.importLocalImageToHistory);
-  const [dropActive, setDropActive] = useState(false);
+  const { dropActive, handleCenterDragOver, handleCenterDragLeave, handleCenterDrop } = useCanvasImageDrop();
   const multimodeSequence = useAppStore((s) => {
     const id = s.multimodePreviewFlightId;
     return id ? s.multimodeSequences[id] ?? null : null;
@@ -99,6 +98,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
   const [isApplying, setIsApplying] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isEditingWithMask, setIsEditingWithMask] = useState(false);
+  const [isEditingWithMarkup, setIsEditingWithMarkup] = useState(false);
   const [isTransparencyRunning, setIsTransparencyRunning] = useState(false);
   const annotations = useCanvasAnnotations();
 
@@ -251,32 +251,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
     setCanvasPan(canvasPanX - event.deltaX, canvasPanY - event.deltaY);
   };
 
-  const handleCenterDragOver = useCallback((e: ReactDragEvent<HTMLElement>) => {
-    if (!Array.from(e.dataTransfer.types).includes("Files")) return;
-    e.preventDefault();
-    setDropActive((prev) => (prev ? prev : true));
-  }, []);
-
-  const handleCenterDragLeave = useCallback((e: ReactDragEvent<HTMLElement>) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    setDropActive(false);
-  }, []);
-
-  const handleCenterDrop = useCallback(
-    async (e: ReactDragEvent<HTMLElement>) => {
-      if (!Array.from(e.dataTransfer.types).includes("Files")) return;
-      e.preventDefault();
-      setDropActive(false);
-      const files = Array.from(e.dataTransfer.files).filter((f) =>
-        /^image\/(png|jpeg|webp)$/.test(f.type),
-      );
-      if (files.length === 0) return;
-      await importLocalImageToHistory(files[0]);
-    },
-    [importLocalImageToHistory],
-  );
-
-  const { handleApplyCanvas, handleRevertAnnotations, handleCloseCanvas, handleExportCanvas, handleTraceCanvas, handleEditWithMask, handleGptTransparency } = useCanvasModeSession({
+  const { handleApplyCanvas, handleRevertAnnotations, handleCloseCanvas, handleExportCanvas, handleTraceCanvas, handleEditWithMask, handleEditWithMarkup, handleGptTransparency } = useCanvasModeSession({
     imageElementRef,
     currentImage,
     canvasDisplayImage,
@@ -301,6 +276,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
     setIsApplying,
     setIsExporting,
     setIsEditingWithMask,
+    setIsEditingWithMarkup,
     setIsTransparencyRunning,
     applyMergedCanvasImage,
     addGeneratedHistoryItem,
@@ -480,6 +456,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
                 isApplying,
                 isExporting,
                 isEditingWithMask,
+                isEditingWithMarkup,
                 isTransparencyRunning,
                 canRevertAnnotations: Boolean(canvasVersionItem?.annotationsBaked),
               }}
@@ -489,6 +466,7 @@ export function CanvasModeWorkspace(_props: CanvasModeWorkspaceProps) {
                 handleExportCanvas,
                 handleTraceCanvas,
                 handleEditWithMask,
+                handleEditWithMarkup,
                 handleGptTransparency,
                 setExportBackground,
                 setExportMatteColor,
