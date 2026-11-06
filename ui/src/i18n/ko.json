@@ -1,4 +1,16 @@
 {
+  "imageOutput": {
+    "title": "출력",
+    "still": "정지 이미지",
+    "gif": "움직이는 GIF",
+    "svg": "SVG",
+    "svgSub": "1장",
+    "frames": "프레임 수",
+    "frameMs": "프레임 ms",
+    "range": "{min}–{max}, 비우면 기본값",
+    "gifNote": "GIF는 프로젝트별로 열리는 OpenAI 프리뷰 기능입니다. 크기는 프레임당 크기이며, 프레임 수 × 크기가 모델의 픽셀 한도 안에 있어야 합니다.",
+    "svgNote": "SVG는 참조 이미지 없이 1장만 만듭니다. 저장 전에 스크립트와 외부 링크를 제거합니다."
+  },
   "imageToolModel": {
     "title": "API 이미지 모델",
     "default": "기본값 (서버 선택)",
@@ -1686,6 +1698,11 @@
       "title": "이미지 요청을 수정해야 해요",
       "body": "생성 요청의 일부 값이 올바르지 않습니다. 아래 원본 오류를 확인한 뒤 프롬프트나 크기를 수정해 다시 시도해 주세요.",
       "cta": "입력 수정"
+    },
+    "imageFeatureNotEnabled": {
+      "title": "이 OpenAI 프로젝트에서 사용할 수 없어요",
+      "body": "OpenAI가 이 API 키의 조직 또는 프로젝트에 이 기능(GIF, SVG, 마크업 또는 선택한 모델)을 열지 않았습니다. OpenAI 대시보드에서 프로젝트 권한을 확인하거나 옵션을 꺼 주세요.",
+      "cta": "확인"
     },
     "apikeyDisabled": {
       "title": "API-Key 모드를 사용할 수 없어요",

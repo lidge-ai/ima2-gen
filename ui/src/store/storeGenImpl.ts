@@ -1,4 +1,4 @@
-import { complexityRequestField } from "../lib/imageModels";
+import { complexityRequestField, imageOutputRequestFields } from "../lib/imageModels";
 import type {
   GenerateItem,
   GenerateResponse,
@@ -326,6 +326,8 @@ export async function runGenerateImpl(
       model: coreImageRequestModel(s),
       ...(s.provider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
       ...complexityRequestField(s.provider, s.imageToolModel, s.complexity),
+      // After format and n on purpose: GIF/SVG override the still format, SVG forces one image.
+      ...imageOutputRequestFields(s),
       reasoningEffort: s.reasoningEffort,
       storyboard: s.storyboardActive || undefined,
       webSearchEnabled: s.webSearchEnabled,

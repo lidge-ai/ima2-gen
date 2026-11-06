@@ -1,4 +1,16 @@
 {
+  "imageOutput": {
+    "title": "输出",
+    "still": "静态图片",
+    "gif": "动态 GIF",
+    "svg": "SVG",
+    "svgSub": "1 张",
+    "frames": "帧数",
+    "frameMs": "每帧毫秒",
+    "range": "{min}–{max}，留空为默认",
+    "gifNote": "GIF 是按项目开放的 OpenAI 预览功能。尺寸为单帧尺寸，帧数 × 尺寸须在模型像素上限内。",
+    "svgNote": "SVG 仅生成 1 张且不使用参考图。保存前会移除脚本和外部链接。"
+  },
   "imageToolModel": {
     "title": "API 图像模型",
     "default": "默认（上游选择）",
@@ -1686,6 +1698,11 @@
       "title": "图片请求需要更改",
       "body": "一个或多个生成参数无效。检查下面的原始错误详细信息，然后编辑提示或大小并重试。",
       "cta": "编辑输入"
+    },
+    "imageFeatureNotEnabled": {
+      "title": "此 OpenAI 项目未启用该功能",
+      "body": "OpenAI 尚未为此 API 密钥所属的组织或项目启用该功能（GIF、SVG、标注编辑或所选模型）。请在 OpenAI 控制台检查项目权限，或关闭该选项。",
+      "cta": "确定"
     },
     "apikeyDisabled": {
       "title": "API-按键模式不可用",

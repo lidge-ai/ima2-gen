@@ -1,4 +1,4 @@
-import type { ImageComplexity, ImageToolModel } from "../types";
+import type { ImageComplexity, ImageOutputKind, ImageToolModel } from "../types";
 import type { Node as FlowNode, Edge as FlowEdge } from "@xyflow/react";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import type {
@@ -220,6 +220,9 @@ export type GenerationDefaults = Partial<{
   mcpParameters: Record<string, McpPresetValue>;
   imageToolModel: ImageToolModel | null;
   complexity: ImageComplexity | null;
+  imageOutputKind: ImageOutputKind;
+  gifFrameCount: number | null;
+  gifFrameDurationMs: number | null;
   quality: Quality;
   sizePreset: SizePreset;
   customW: number;
@@ -332,6 +335,9 @@ export type AppState = PresetState & ReferenceTraySlice & {
   provider: Provider;
   imageToolModel: ImageToolModel | null;
   complexity: ImageComplexity | null;
+  imageOutputKind: ImageOutputKind;
+  gifFrameCount: number | null;
+  gifFrameDurationMs: number | null;
   quality: Quality;
   sizePreset: SizePreset;
   customW: number;
@@ -530,6 +536,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   mcpCharacterElementId?: string | null;
   setImageToolModel: (model: ImageToolModel | null) => void;
   setComplexity: (complexity: ImageComplexity | null) => void;
+  setImageOutput: (patch: { kind?: ImageOutputKind; gifFrameCount?: number | null; gifFrameDurationMs?: number | null }) => void;
   setQuality: (q: Quality) => void;
   setSizePreset: (s: SizePreset) => void;
   setCustomSize: (w: number, h: number) => void;

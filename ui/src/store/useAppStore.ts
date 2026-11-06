@@ -115,7 +115,7 @@ import {
   useImageAsReferenceImpl,
 } from "./storeReferenceImpl";
 import {
-  setProviderImpl, setImageToolModelImpl, setComplexityImpl, setQualityImpl, setSizePresetImpl, setCustomSizeImpl,
+  setProviderImpl, setImageToolModelImpl, setComplexityImpl, setImageOutputImpl, setQualityImpl, setSizePresetImpl, setCustomSizeImpl,
   setGrokAspectRatioImpl, setGrokResolutionImpl, setFormatImpl, setModerationImpl,
   setImageModelImpl, selectVideoModelImpl, setComfyWorkflowImpl, setComfyVideoWorkflowImpl, activeVideoRefCountImpl,
   setReasoningEffortImpl, setWebSearchEnabledImpl, setCountImpl,
@@ -247,6 +247,9 @@ export const useAppStore = create<AppState>((set, get, store) => ({
   ...initialSelection,
   imageToolModel: storedGenerationDefaults.imageToolModel ?? null,
   complexity: storedGenerationDefaults.complexity ?? null,
+  imageOutputKind: storedGenerationDefaults.imageOutputKind ?? "still",
+  gifFrameCount: storedGenerationDefaults.gifFrameCount ?? null,
+  gifFrameDurationMs: storedGenerationDefaults.gifFrameDurationMs ?? null,
   quality: storedGenerationDefaults.quality ?? "medium",
   sizePreset: storedGenerationDefaults.sizePreset ?? "1024x1024",
   customW: storedGenerationDefaults.customW ?? 1920,
@@ -534,6 +537,7 @@ addChildNodeAt: (parentClientId, position, sourceHandle) => addChildNodeAtImpl(p
   setProvider: (provider) => setProviderImpl(provider, set, get),
   setImageToolModel: (model) => setImageToolModelImpl(model, set, get),
   setComplexity: (complexity) => setComplexityImpl(complexity, set),
+  setImageOutput: (patch) => setImageOutputImpl(patch, set),
   setQuality: (quality) => setQualityImpl(quality, set, get),
   setSizePreset: (sizePreset) => setSizePresetImpl(sizePreset, set),
   setCustomSize: (w, h) => setCustomSizeImpl(w, h, set, get),

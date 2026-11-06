@@ -53,6 +53,7 @@ const EXPECTED: Record<ImaErrorCode, NodeRetryAction> = {
   INVALID_REQUEST: "fix-input",
   INVALID_MODERATION: "fix-input",
   APIKEY_DISABLED: "auth",
+  IMAGE_FEATURE_NOT_ENABLED: "fix-input",
   AGY_GENERATION_FAILED: "retry",
   AGY_TIMEOUT: "retry",
   JOB_TRACKING_TIMEOUT: "fix-input",

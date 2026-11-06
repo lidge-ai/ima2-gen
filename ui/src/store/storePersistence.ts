@@ -1,4 +1,4 @@
-import { isImageComplexity, isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
+import { GIF_FRAME_COUNT_RANGE, GIF_FRAME_DURATION_RANGE, isImageComplexity, isImageOutputKind, isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import { isCoreProviderId } from "../generated/providers";
 import type {
@@ -341,6 +341,10 @@ export function isFormat(value: unknown): value is Format {
   return value === "png" || value === "jpeg" || value === "webp";
 }
 
+function boundedIntOrNull(value: unknown, range: { min: number; max: number }): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= range.min && value <= range.max ? value : null;
+}
+
 export function isModeration(value: unknown): value is Moderation {
   return value === "low" || value === "auto";
 }
@@ -398,6 +402,9 @@ export function loadGenerationDefaults(): GenerationDefaults {
       out.imageToolModel = parsed.provider === "api" && isImageToolModel(parsed.imageToolModel) ? parsed.imageToolModel : null;
     }
     if ("complexity" in parsed) out.complexity = isImageComplexity(parsed.complexity) ? parsed.complexity : null;
+    if ("imageOutputKind" in parsed) out.imageOutputKind = isImageOutputKind(parsed.imageOutputKind) ? parsed.imageOutputKind : "still";
+    if ("gifFrameCount" in parsed) out.gifFrameCount = boundedIntOrNull(parsed.gifFrameCount, GIF_FRAME_COUNT_RANGE);
+    if ("gifFrameDurationMs" in parsed) out.gifFrameDurationMs = boundedIntOrNull(parsed.gifFrameDurationMs, GIF_FRAME_DURATION_RANGE);
     if (isQuality(parsed.quality)) out.quality = normalizeImageQuality(parsed.provider, out.imageToolModel, parsed.quality);
     if (isSizePreset(parsed.sizePreset)) out.sizePreset = parsed.sizePreset;
     if (typeof parsed.customW === "number" && Number.isFinite(parsed.customW)) {

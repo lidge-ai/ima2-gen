@@ -366,3 +366,38 @@
 .foil-hover:focus-visible::after {
   opacity: 0.42;
 }
+
+/* Images 2.6 output (GIF/SVG) controls in the generation panel. */
+.image-output__frames {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.image-output__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.image-output__label {
+  font-size: 11px;
+  color: var(--text-dim, #a1a1aa);
+}
+
+.image-output__field input[aria-invalid="true"] {
+  border-color: var(--red, #ef4444);
+}
+
+.image-output__hint,
+.image-output__note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim, #a1a1aa);
+}
+
+.image-output__note {
+  margin-bottom: 12px;
+}
