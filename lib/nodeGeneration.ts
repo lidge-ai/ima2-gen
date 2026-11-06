@@ -93,6 +93,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         provider,
         rawModel,
         rawImageToolModel,
+        rawComplexity: body.complexity,
         rawReasoningEffort,
         rawSize: size,
         rawWebSearchEnabled: body.webSearchEnabled,
@@ -109,6 +110,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
       }
       const imageModel = providerOptions.model;
       const imageToolModel = providerOptions.imageToolModel;
+      const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
@@ -231,7 +233,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         clientNodeId,
         quality,
         model: effectiveImageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         size: effectiveSize,
         moderation,
         refs: resolvedReferences.reportedReferenceCount,
@@ -265,7 +267,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         signal: cancelController.signal, prompt: generationPrompt, rawPrompt: prompt,
         references: refsForRequest, sourceImage: parentB64, contextMode, searchMode,
         partialImages: emitProgress ? 2 : 0,
-        options: { model: effectiveImageModel, imageToolModel, quality, size: effectiveSize, moderation,
+        options: { model: effectiveImageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
         nai: activeProvider === "nai" ? readNaiOptions(req.body) : {},
       }, emitProgress ? {
@@ -289,7 +291,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
             parentNodeId,
             clientNodeId,
             model: effectiveImageModel,
-            ...(imageToolModel ? { imageToolModel } : {}),
+            ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
             moderation,
             quality,
             size: effectiveSize,
@@ -377,7 +379,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         promptMode: normalizedPromptMode,
         options: { quality, size: effectiveSize, format: resultFormat, moderation },
         model: effectiveImageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         reasoningEffort,
         createdAt: Date.now(),
         createdAtIso: new Date().toISOString(),
@@ -428,7 +430,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         webSearchEnabled,
         provider: activeProvider,
         model: effectiveImageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         reasoningEffort,
         size: effectiveSize,
         format: resultFormat,

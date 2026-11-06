@@ -14,6 +14,8 @@ export type ExecutionReference = Pick<
 export interface ExecutionOptions {
   model: string;
   imageToolModel?: string | undefined;
+  /** Images 2.6 complexity; resolveProviderOptions drops it for every other model. */
+  complexity?: string | undefined;
   quality: string;
   size: string;
   moderation: string;

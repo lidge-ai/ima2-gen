@@ -34,6 +34,7 @@ export interface NodeGenerateBody extends Partial<NaiRequestOptions> {
   searchMode?: string;
   model?: string;
   imageToolModel?: unknown;
+  complexity?: unknown;
   reasoningEffort?: string;
   provider?: string;
   webSearchEnabled?: boolean;

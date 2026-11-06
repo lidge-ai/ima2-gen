@@ -43,7 +43,7 @@ function prepareOpenaiClassic(
   _progress?: ExecutionProgress,
 ): PreparedImageExecution<"classic"> {
   const { provider: activeProvider, prompt: generationPrompt, requestId, background: backgroundParams } = request;
-  const { model: imageModel, imageToolModel, quality, size: effectiveSize, moderation,
+  const { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
     mode: normalizedPromptMode, reasoningEffort, webSearchEnabled } = request.options;
   // Scalars are captured at prepare; references and ctx stay live per attempt.
   // API keeps the caller signal live; OAuth uses the invocation deadline signal.
@@ -63,7 +63,7 @@ function prepareOpenaiClassic(
           normalizedPromptMode,
           ctx,
           {
-            model: imageModel, imageToolModel,
+            model: imageModel, imageToolModel, complexity,
             reasoningEffort,
             webSearchEnabled,
             signal: activeProvider === "api" ? request.signal : signal,
@@ -101,15 +101,15 @@ async function executeOpenaiNode(
 ): Promise<SingleImageExecutionResult> {
   const { provider, sourceImage: parentB64, prompt: generationPrompt,
     references, requestId, signal, searchMode, options } = request;
-  const { model, imageToolModel, size, quality, moderation, mode, reasoningEffort, webSearchEnabled } = options;
+  const { model, imageToolModel, complexity, size, quality, moderation, mode, reasoningEffort, webSearchEnabled } = options;
   const refsForRequest = request.contextMode === "parent-only" ? [] : references;
   return parentB64
     ? await editViaResponses(provider, generationPrompt, parentB64, quality, size, moderation, mode, ctx, requestId, {
-        model, imageToolModel, references: refsForRequest, searchMode, reasoningEffort, webSearchEnabled, signal,
+        model, imageToolModel, complexity, references: refsForRequest, searchMode, reasoningEffort, webSearchEnabled, signal,
       })
     : await generateViaResponses(provider, generationPrompt, quality, size, moderation,
         refsForRequest, requestId, mode, ctx, {
-          model, imageToolModel, reasoningEffort, webSearchEnabled, signal,
+          model, imageToolModel, complexity, reasoningEffort, webSearchEnabled, signal,
           partialImages: request.partialImages,
           onPartialImage: progress?.onPartialImage ?? null,
         });
@@ -122,7 +122,7 @@ async function executeOpenaiEdit(
   const result = await editViaResponses(
     provider, rawPrompt, sourceImage, options.quality, options.size,
     options.moderation, options.mode, ctx, requestId,
-    { model: options.model, imageToolModel: options.imageToolModel, reasoningEffort: options.reasoningEffort,
+    { model: options.model, imageToolModel: options.imageToolModel, complexity: options.complexity, reasoningEffort: options.reasoningEffort,
       webSearchEnabled: options.webSearchEnabled,
       ...(request.mask !== null ? { mask: request.mask } : {}), signal },
   );
@@ -138,7 +138,7 @@ async function executeOpenaiMultimode(
   return generateMultimodeViaResponses(
     provider, prompt, options.quality, options.size, options.moderation,
     references, requestId, options.mode, ctx,
-    { model: options.model, imageToolModel: options.imageToolModel, maxImages, reasoningEffort: options.reasoningEffort,
+    { model: options.model, imageToolModel: options.imageToolModel, complexity: options.complexity, maxImages, reasoningEffort: options.reasoningEffort,
       webSearchEnabled: options.webSearchEnabled,
       ...(progress.onPartialImage !== undefined ? { onPartialImage: progress.onPartialImage } : {}),
       ...(progress.onFinalImage !== undefined ? { onFinalImage: progress.onFinalImage } : {}), signal },

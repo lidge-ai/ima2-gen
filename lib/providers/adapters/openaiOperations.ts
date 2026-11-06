@@ -2,6 +2,7 @@ import { compressReferenceB64ForOAuth } from "../../referenceImageCompress.js";
 import { detectImageMimeFromB64 } from "../../refs.js";
 import { type RouteRuntimeContext, requireRuntimeContext } from "../../runtimeContext.js";
 import {
+  apiImageToolFields,
   imageToolChoice,
   imageToolChoiceKind,
   tools,
@@ -69,7 +70,7 @@ export async function generateViaResponses(provider: string | undefined, prompt:
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
   }
-  const requestTools = tools(webSearchEnabled, { ...(toolModel.imageToolModel ? { model: toolModel.imageToolModel } : {}),
+  const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity),
     quality,
     size,
     moderation,
@@ -196,7 +197,7 @@ export async function generateMultimodeViaResponses(provider: string | undefined
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
   }
-  const requestTools = tools(webSearchEnabled, { ...(toolModel.imageToolModel ? { model: toolModel.imageToolModel } : {}), quality, size, moderation, ...(options.partialImages ? { partial_images: options.partialImages } : {}) });
+  const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity), quality, size, moderation, ...(options.partialImages ? { partial_images: options.partialImages } : {}) });
   const userText = buildMultimodeSequencePrompt(
     mode === "direct"
       ? `${prompt}${DIRECT_PROMPT_FIDELITY_SUFFIX}`
@@ -261,7 +262,7 @@ export async function editViaResponses(provider: string | undefined, prompt: str
   if (quality === "xhigh" || quality === "max") {
     quality = normalizeOAuthParams({ provider, quality, imageToolModel: toolModel.imageToolModel }).quality;
   }
-  const requestTools = tools(webSearchEnabled, { ...(toolModel.imageToolModel ? { model: toolModel.imageToolModel } : {}), quality, size, moderation });
+  const requestTools = tools(webSearchEnabled, { ...apiImageToolFields(toolModel.imageToolModel, options.complexity), quality, size, moderation });
   const toolChoice = imageToolChoice(options.forceImageToolChoice ?? ctx.config?.oauth?.forceImageToolChoice !== false);
   const toolChoiceKind = imageToolChoiceKind(toolChoice);
   const imageForRequest = await compressReferenceB64ForOAuth(imageB64, {

@@ -133,6 +133,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         provider,
         rawModel,
         rawImageToolModel,
+        rawComplexity: req.body?.complexity,
         rawReasoningEffort,
         rawSize: size,
         rawWebSearchEnabled,
@@ -145,6 +146,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       }
       const imageModel = providerOptions.model;
       const imageToolModel = providerOptions.imageToolModel;
+      const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
@@ -174,7 +176,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           sessionId,
           quality,
           model: imageModel,
-          ...(imageToolModel ? { imageToolModel } : {}),
+          ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
           size: effectiveSize,
         },
       });
@@ -247,7 +249,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         provider: activeProvider,
         quality,
         model: imageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         size: effectiveSize,
         moderation,
         sessionId,
@@ -263,7 +265,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         surface: "edit", provider: activeProvider, requestId,
         signal: cancelController.signal, prompt, rawPrompt: prompt,
         sourceImage: imageB64, mask: maskCheck.mask ?? null, references: [],
-        options: { model: imageModel, imageToolModel, quality, size: effectiveSize, moderation,
+        options: { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
       })).execute();
       const resultB64 = r.b64;
@@ -342,7 +344,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         size: effectiveSize,
         moderation,
         model: imageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         reasoningEffort,
         elapsed,
         format: editExt,
@@ -379,7 +381,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         usage,
         provider: activeProvider,
         model: activeProvider === "grok" ? resolveGrokQualityModel(imageModel, quality) : imageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         moderation,
         warnings: qualityWarnings,
         revisedPrompt: revisedPrompt || null,

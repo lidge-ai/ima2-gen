@@ -9,7 +9,7 @@ import { imagesJson, plannerSse } from "./_oauthNativeFixture.ts";
 
 const BASE = { prompt: "Image tool selection fixture", model: "gpt-5.4", quality: "high",
   size: "1024x1024", webSearchEnabled: false, sizeNudge: false };
-const MODELS = ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare"];
+const MODELS = ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare", "gpt-image-2.6-flare", "gpt-image-2.6-sunburst"];
 const SURFACES = ["classic", "edit", "node", "multimode"] as const;
 
 if (executionTestProcess(import.meta.url)) describe("API image tool model contract", { concurrency: false }, () => {
@@ -39,7 +39,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
 
   for (const surface of SURFACES) for (const [index, imageToolModel] of MODELS.entries()) {
     it(`${surface} serializes ${imageToolModel} without replacing the reasoning model`, async () => {
-      const quality = index === 0 ? "xhigh" : "max";
+      const quality = index % 2 === 0 ? "xhigh" : "max";
       await harness.run(surface, { upstream: success }, async (f) => {
         const response = await f.post({ ...BASE, provider: "api", imageToolModel, quality,
           ...(surface === "edit" ? { image: source } : {}),
@@ -73,6 +73,64 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
       });
     });
   }
+
+  for (const surface of SURFACES) {
+    it(`${surface} sends complexity only with a 2.6 image model and records it`, async () => {
+      for (const [imageToolModel, expected] of [["gpt-image-2.6-flare", "low"], ["gpt-image-2.5-flare", undefined]] as const) {
+        await harness.run(surface, { upstream: success }, async (f) => {
+          const response = await f.post({ ...BASE, provider: "api", imageToolModel, complexity: "low",
+            ...(surface === "edit" ? { image: source } : {}),
+            ...(surface === "multimode" ? { async: true, maxImages: 1 } : {}) });
+          assert.equal(response.status, surface === "multimode" ? 202 : 200);
+          const result = surface === "multimode" ? (await f.waitTerminal()).data : await response.json();
+          await f.waitSettled();
+          assert.equal(f.calls.length, 1);
+          const body = JSON.parse(f.calls[0]!.body);
+          assert.equal(body.tools[0].complexity, expected);
+          assert.equal("input_fidelity" in body.tools[0], false);
+          assert.equal(result.complexity, expected);
+          const image = surface === "multimode" ? f.events.find((event) => event.event === "image")!.data : result;
+          const saved = JSON.parse(await readFile(join(f.generatedDir, `${image.filename}.json`), "utf8"));
+          assert.equal(saved.complexity, expected);
+        });
+      }
+    });
+
+    it(`${surface} rejects an invalid complexity before upstream`, async () => {
+      await harness.run(surface, { upstream: () => { throw new Error("Unexpected upstream"); } }, async (f) => {
+        for (const complexity of ["extreme", 3, {}]) {
+          const response = await f.post({ ...BASE, provider: "api", imageToolModel: "gpt-image-2.6-sunburst", complexity,
+            ...(surface === "multimode" ? { async: true } : {}),
+            ...(surface === "edit" ? { image: source } : {}) });
+          assert.equal(response.status, 400);
+          const result = await response.json();
+          assert.equal(result.code ?? result.error?.code, "INVALID_IMAGE_COMPLEXITY");
+        }
+        await f.waitSettled();
+        assert.equal(f.calls.length, 0);
+      });
+    });
+  }
+
+  it("API requests carry a stable hashed safety_identifier; OAuth requests do not", async () => {
+    await harness.run("classic", { upstream: (call) => (new URL(call.url).host === "api.openai.com" ? success() : oauthSuccess(call)) }, async (f) => {
+      for (const provider of ["api", "api", "oauth"] as const) {
+        const response = await f.post({ ...BASE, provider });
+        assert.equal(response.status, 200);
+        await f.waitSettled();
+      }
+      const apiBodies = f.calls.filter((call) => new URL(call.url).host === "api.openai.com").map((call) => JSON.parse(call.body));
+      assert.equal(apiBodies.length, 2);
+      assert.match(apiBodies[0].safety_identifier, /^[0-9a-f]{64}$/);
+      assert.equal(apiBodies[1].safety_identifier, apiBodies[0].safety_identifier);
+      assert.equal("user" in apiBodies[0], false);
+      for (const call of f.calls.filter((c) => new URL(c.url).host !== "api.openai.com")) {
+        if (call.url.endsWith("/v1/images/generations") || call.url.endsWith("/v1/responses")) {
+          assert.equal(call.body.includes("safety_identifier"), false);
+        }
+      }
+    });
+  });
 
   for (const surface of SURFACES) {
     it(`${surface} rejects invalid API image tool models before upstream`, async () => {
@@ -158,8 +216,9 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
     const { buildIma2Capabilities } = await import("../lib/capabilities.ts");
     const result = buildIma2Capabilities({ packageVersion: "fixture", source: "local" });
     assert.deepEqual(result.valid.imageToolModels, {
-      api: ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare"],
+      api: ["gpt-image-2.6-sunburst", "gpt-image-2.6-flare", "gpt-image-2.5-sunburst", "gpt-image-2.5-flare"],
       qualities: ["low", "medium", "high", "xhigh", "max"],
+      complexity: { models: ["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"], values: ["low", "medium", "high"] },
     });
     assert.deepEqual(result.valid.quality, ["low", "medium", "high"]);
   });

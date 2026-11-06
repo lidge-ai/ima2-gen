@@ -118,6 +118,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
     let routeEffectiveSize = "1024x1024";
     let routeModeration = "low";
     let routeImageToolModel: string | undefined;
+    let routeComplexity: string | undefined;
   let routeImageModel: string | null = null;
     let routeWebSearchEnabled = true;
     let routePromptMode: "auto" | "direct" = "auto";
@@ -174,6 +175,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         provider,
         rawModel,
         rawImageToolModel,
+        rawComplexity: req.body?.complexity,
         rawReasoningEffort,
         rawSize: size,
         rawWebSearchEnabled,
@@ -191,6 +193,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       }
       const imageModel = providerOptions.model;
       const imageToolModel = providerOptions.imageToolModel;
+      const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;
       const effectiveSize = providerOptions.size;
       const webSearchEnabled = providerOptions.webSearchEnabled;
@@ -251,7 +254,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           kind: "multimode",
           quality,
           model: imageModel,
-          ...(imageToolModel ? { imageToolModel } : {}),
+          ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
           size: effectiveSize,
           maxImages,
           refsCount: referencePayload.refsCount,
@@ -295,6 +298,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       routeModeration = moderation;
       routeImageModel = imageModel ?? null;
       routeImageToolModel = imageToolModel;
+      routeComplexity = complexity;
       routeWebSearchEnabled = webSearchEnabled ?? false;
       routePromptMode = normalizedPromptMode;
       routeQualityWarnings = qualityWarnings;
@@ -341,7 +345,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           format: resultFormat,
           moderation,
           model: activeProvider === "grok" ? resolveGrokQualityModel(imageModel, quality) : imageModel,
-          ...(imageToolModel ? { imageToolModel } : {}),
+          ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
           provider: activeProvider,
           createdAt,
           usage: latestUsage,
@@ -382,7 +386,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         surface: "multimode", provider: activeProvider, requestId,
         signal: cancelController.signal, prompt: generationPrompt, rawPrompt: prompt,
         references: refCheck.refDetails, providerUrl: incomingProviderUrl, maxImages,
-        options: { model: imageModel, imageToolModel, quality, size: effectiveSize, moderation,
+        options: { model: imageModel, imageToolModel, complexity, quality, size: effectiveSize, moderation,
           mode: normalizedPromptMode, reasoningEffort, webSearchEnabled },
         nai: activeProvider === "nai" ? readNaiOptions(req.body) : {},
       }, {
@@ -447,7 +451,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
         size: effectiveSize,
         moderation,
         model: imageModel,
-        ...(imageToolModel ? { imageToolModel } : {}),
+        ...(imageToolModel ? { imageToolModel } : {}), ...(complexity ? { complexity } : {}),
         usage: latestUsage,
         webSearchCalls: latestWebSearchCalls,
         webSearchEnabled,
@@ -499,6 +503,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           moderation: routeModeration,
           model: routeImageModel,
           ...(routeImageToolModel ? { imageToolModel: routeImageToolModel } : {}),
+          ...(routeComplexity ? { complexity: routeComplexity } : {}),
           usage: latestUsage,
           webSearchCalls: latestWebSearchCalls,
           webSearchEnabled: routeWebSearchEnabled,

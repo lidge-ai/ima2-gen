@@ -9,6 +9,7 @@ export interface GenerateOptions {
   onFinalImage?: FinalImageHandler | null | undefined;
   model?: string | undefined;
   imageToolModel?: string | undefined;
+  complexity?: string | undefined;
   partialImages?: number | undefined;
   reasoningEffort?: string | undefined;
   maxImages?: number | undefined;
