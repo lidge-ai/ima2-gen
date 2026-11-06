@@ -339,6 +339,10 @@ Only an explicit API 2.5 selection enables quality `xhigh` and `max`; elsewhere 
 values normalize to `medium` with `QUALITY_DEFAULTED`. Sidecars, history, generation
 results and existing XMP embedding paths retain the selected `imageToolModel`.
 Edit continues to preserve upstream bytes and uses sidecar metadata.
+
+API-key requests carry `safety_identifier`: a SHA-256 hash of a random per-install id
+stored in `<configDir>/install-id`. Disable it with `IMA2_API_SAFETY_IDENTIFIER=0` or
+`apiProvider.safetyIdentifier: false`. GPT OAuth requests never carry it.
 `GET /api/capabilities` advertises the API-only tool model/quality allowlist separately
 from the outer models in `/api/models`.
 

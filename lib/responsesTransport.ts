@@ -15,6 +15,7 @@ import {
 import { waitForOAuthReady } from "./oauthProxy.js";
 import { oauthFetch } from "./codexBackend/index.js";
 import { oauthRateLimitFields, oauthRateLimitRetryConfig } from "./oauthRateLimit.js";
+import { apiSafetyFields } from "./safetyIdentifier.js";
 
 interface MakeErrorOptions {
   status?: number | undefined;
@@ -239,11 +240,14 @@ async function readResponses(res: Response, args: PostResponsesArgs, wait: Trans
 export async function postResponses(args: PostResponsesArgs): Promise<ParsedResponsesResult> {
   const { ctx, provider, payload, signal = null } = args;
   const { url, headers } = await getEndpoint(ctx, provider, signal);
+  const body = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? { ...payload, ...apiSafetyFields(provider, ctx.config) }
+    : payload;
   const lifetime = transportLifetime(ctx, provider, signal);
   try {
     const res = await lifetime.wait(() => requestResponses(ctx, url, {
       method: "POST", headers: headers as Record<string, string>,
-      signal: lifetime.signal, body: JSON.stringify(payload),
+      signal: lifetime.signal, body: JSON.stringify(body),
     }));
     return await readResponses(res, args, lifetime.wait);
   } catch (e) {

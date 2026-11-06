@@ -119,7 +119,11 @@ if (executionTestProcess(import.meta.url)) describe("WP04 real Responses transpo
       const call = f.calls[0]!;
       assert.equal(call.headers.get("authorization"), provider === "api" ? "Bearer fixture-current-key" : null);
       assert.equal(call.headers.get("content-type"), "application/json"); assert.equal(call.headers.get("accept"), "text/event-stream");
-      assert.deepEqual(JSON.parse(call.body), { model: "fixture-model", stream: true });
+      // The API lane adds the hashed per-install safety_identifier; OAuth never sends it.
+      const { safety_identifier: safetyIdentifier, ...body } = JSON.parse(call.body);
+      assert.deepEqual(body, { model: "fixture-model", stream: true });
+      if (provider === "api") assert.match(safetyIdentifier, /^[0-9a-f]{64}$/);
+      else assert.equal(safetyIdentifier, undefined);
     });
   });
 
