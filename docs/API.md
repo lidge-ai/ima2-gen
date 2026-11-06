@@ -60,8 +60,9 @@ and shares the app API request budget. Respect `Retry-After` on 429; a full
 
 Image generation supports OAuth, API-key, Grok, and Gemini (`agy` and `gemini-api`) providers.
 
-- `provider: "oauth"` calls ChatGPT's Codex backend from the server: a GPT-6 model plans the prompt and `gpt-image-2` renders it.
-- `provider: "api"` uses the OpenAI Responses API with the hosted `image_generation` tool.
+- `provider: "oauth"` calls ChatGPT's Codex backend from the server. GPT-6 Luna, Sol, and Astra select the planning model; ChatGPT chooses the image model. The renderer requests `gpt-image-2`, but that identifier does not verify which model served the image.
+- `provider: "api"` uses the OpenAI Responses API with the hosted `image_generation` tool, or the Images API for supported image-model options as described below.
+
 - `provider: "grok"` calls `https://api.x.ai` directly with the xAI OAuth session in `~/.progrok/auth.json`. Classic, Node and multimode image generation honor `webSearchEnabled: false` (Node also honors `searchMode: "off"`): this skips `/v1/responses` search, not the configured planner's forced `generate_image` call. Planner default is `grok-4.3`; `grok-4.6` and `grok-4.5` remain selectable overrides. References select `/v1/images/edits` instead of `/v1/images/generations`. Agent's omitted-option search default is unchanged.
 - `provider: "agy"` spawns the Antigravity CLI (`agy -p`) to generate images via Google Gemini's `default_api:generate_image` tool. Model is `nano-banana-2`. Output is fixed at 1024×1024 JPEG. Max 3 reference images (i2i). No web search, quality, size, or mask controls. Multimode returns a single image. Video is unsupported (`AGY_VIDEO_UNSUPPORTED`).
 - `provider: "grok-api"` uses a direct xAI API key with the same image search/planner/image semantics. Missing or blank image credentials are refused with `GROK_API_KEY_MISSING` before admission, never changed to the OAuth lane. Video remains a separate path. Configure the key in Settings or `XAI_API_KEY`.
@@ -71,6 +72,10 @@ Image generation supports OAuth, API-key, Grok, and Gemini (`agy` and `gemini-ap
 - If `provider: "api"` is requested without an API key, routes fail before upstream with `401` and `API_KEY_REQUIRED`.
 - Grok generation maps `size` to xAI `aspect_ratio` and `resolution`; it does not send an OpenAI-style `size` field upstream. Grok edit uses xAI `/v1/images/edits`; Grok mask edit remains unsupported and returns `GROK_MASK_UNSUPPORTED`.
 - Mask edits are mask/selection guided edits. The model may redraw outside the mask, so the edit route restores source pixels wherever the mask is opaque before saving (`features.preserveOutsideMask`, env `IMA2_PRESERVE_OUTSIDE_MASK`, default on; the sidecar records `maskOutsidePreserved: true`). The output keeps the source dimensions. When the provider returns a different aspect ratio, the result is stretched to the source size before compositing, so the edited area may look stretched or squeezed. Transparent source pixels in the kept area stay transparent. Composites run one at a time and refuse sources above 4096 × 4096 pixels. If compositing fails or the source is above that bound, the provider result is saved unchanged and `maskOutsidePreserved` is omitted.
+
+### ChatGPT OAuth and Images 2.6
+
+In ima2's Codex OAuth integration there is no verified way to select Images 2.5/2.6 Flare or Sunburst, or to use Images 2.6 complexity, markup, GIF, or SVG. These controls are available only on the OpenAI API-key lane in ima2 (subject to API access). ChatGPT itself may offer features that the Codex OAuth endpoints do not expose to ima2. See the [research note](../devlog/_plan/261106_images26-oauth-research/000_research.md) for the evidence and limits.
 
 Grok video generation uses `POST /api/video/generate` (SSE). See the Video
 Generation section below for the full endpoint specification.

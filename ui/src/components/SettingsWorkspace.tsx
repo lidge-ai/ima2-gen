@@ -208,6 +208,7 @@ export function SettingsWorkspace() {
                 <div className="settings-row__copy">
                   <h4>{t("settings.imageModel.title")}</h4>
                   <p>{t("settings.imageModel.body")}</p>
+                  {provider === "oauth" && <p className="settings-row__microcopy">{t("provider.oauthImageHint")}</p>}
                   <p className="settings-row__microcopy">
                     {t("settings.imageModel.unsupportedHelp")}
                   </p>

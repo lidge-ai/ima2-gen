@@ -392,8 +392,8 @@ RGBA PNGs with all four corners at alpha 0 and 42-56% fully transparent
 pixels, including genuine PARTIAL alpha on glass and leaf veins. Saved as PNG;
 JPEG is refused because it cannot carry alpha.
 
-Mechanics worth knowing: ChatGPT-session models pin the image tool to the
-`gpt-image-2-codex` variant, which rejects a FORCED `background: "transparent"`
+Mechanics worth knowing: the previously observed ChatGPT-session image path
+reported `gpt-image-2-codex` and rejected a FORCED `background: "transparent"`
 with a 400. ima2 therefore sends `background: "auto"` and puts the cutout
 intent in the prompt, which is what actually produces the alpha. You do not
 need to hand-write that suffix — `--bg transparent` adds it.
@@ -757,9 +757,15 @@ ima2 models --kind video --json
 `{"ok":true,"kinds":{"image":[],"video":[]}}`. It requires the server; an
 unreachable server returns `SERVER_UNREACHABLE` and exits 3.
 
+For GPT OAuth, GPT-6 Luna, Sol, and Astra select the planning model; ChatGPT
+chooses the image model. Images 2.6 model choice, complexity, markup, GIF, and
+SVG require the OpenAI API-key lane in ima2 (subject to API access). ChatGPT's
+own UI may offer features not verified on the Codex OAuth endpoints. See
+`devlog/_plan/261106_images26-oauth-research/000_research.md` for evidence.
+
 Persist the server-side model defaults shared by GPT OAuth and API provider paths:
 
-The built-in GPT OAuth image default is `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier); Grok image and video code
+The built-in GPT OAuth planning default is `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier); Grok image and video code
 defaults are `grok-imagine-image-quality` and `grok-imagine-video` respectively.
 For video, set `grok-imagine-video-1.5` as your default and leave the base model
 for edit and extension, which are the only things 1.5 cannot do.

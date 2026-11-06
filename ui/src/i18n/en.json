@@ -848,6 +848,8 @@
     "geminiApiCompatBodyLong": "Google Gemini API direct. Supports nano-banana-2 (Flash) and nano-banana-pro (Pro), with aspect ratio and resolution control from 512px to 4K.",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI image generation via Responses API. Supports quality, size, format, moderation, and web search settings.",
+    "oauthImageHint": "ChatGPT chooses the image model; GPT-6 Luna, Sol, and Astra choose the planning model. Images 2.6 model choice, complexity, GIF, and SVG require the OpenAI API-key lane.",
+    "oauthCompatBody": "ChatGPT OAuth uses the Codex backend for planning and image generation. Some settings may be controlled by ChatGPT.",
     "naiApiKeyRequired": "NovelAI API token required"
   },
   "mcp": {
@@ -1464,7 +1466,7 @@
     },
     "imageModel": {
       "title": "Image model",
-      "body": "Choose the image model used for future generations. Picking a model from another provider (Grok, OpenAI API, Gemini, and more) switches to it.",
+      "body": "Choose the model used for future generations. Picking a model from another provider switches to it.",
       "gpt54Mini": "GPT-5.4 Mini",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
@@ -1486,7 +1488,7 @@
       "minimaxImage01Live": "MiniMax image-01-live",
       "agy": "Antigravity (agy)",
       "gpt53CodexSpark": "GPT-5.3 Codex Spark — unsupported for images",
-      "unsupportedHelp": "Grok models call xAI's Images API with your xAI OAuth session. GPT models use OpenAI Responses image generation.",
+      "unsupportedHelp": "Grok models use xAI's Images API. GPT OAuth uses the Codex backend; the OpenAI API-key lane uses OpenAI APIs.",
       "naiDiffusion5Full": "NAI Diffusion V5 Full",
       "naiDiffusion5Curated": "NAI Diffusion V5 Curated",
       "naiDiffusion45Full": "NAI Diffusion V4.5 Full",

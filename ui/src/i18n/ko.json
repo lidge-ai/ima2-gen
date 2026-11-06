@@ -848,6 +848,8 @@
     "geminiApiCompatBodyLong": "Google Gemini API 직접 호출. nano-banana-2(Flash), nano-banana-pro(Pro)를 지원하며 512px부터 4K까지 종횡비와 해상도를 조절할 수 있습니다.",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI Responses API를 통한 이미지 생성. 품질, 크기, 형식, 모더레이션, 웹 검색 설정 지원.",
+    "oauthImageHint": "이미지 모델은 ChatGPT가 선택하고 GPT-6 Luna, Sol, Astra는 프롬프트 계획 모델을 선택합니다. Images 2.6 모델 선택, 복잡도, GIF와 SVG는 OpenAI API 키가 필요합니다.",
+    "oauthCompatBody": "ChatGPT OAuth는 Codex 백엔드에서 계획과 이미지 생성을 수행합니다. 일부 설정은 ChatGPT가 결정할 수 있습니다.",
     "naiApiKeyRequired": "NovelAI API 토큰 필요"
   },
   "mcp": {
@@ -1464,7 +1466,7 @@
     },
     "imageModel": {
       "title": "이미지 모델",
-      "body": "앞으로 이미지 생성에 쓸 모델을 골라요. 다른 공급자의 모델(Grok, OpenAI API, Gemini 등)을 고르면 그 공급자로 바뀌어요.",
+      "body": "앞으로 생성에 사용할 모델을 선택하세요. 다른 공급자의 모델을 선택하면 해당 공급자로 전환됩니다.",
       "gpt54Mini": "GPT-5.4 Mini",
       "gpt54": "GPT-5.4",
       "gpt55": "GPT-5.5",
@@ -1486,7 +1488,7 @@
       "minimaxImage01Live": "MiniMax image-01-live",
       "agy": "Antigravity (agy)",
       "gpt53CodexSpark": "GPT-5.3 Codex Spark — 이미지 생성 미지원",
-      "unsupportedHelp": "Grok 모델은 xAI OAuth 세션으로 xAI Images API를 호출합니다. GPT 모델은 OpenAI Responses 이미지 생성을 사용합니다.",
+      "unsupportedHelp": "Grok 모델은 xAI Images API를 사용합니다. GPT OAuth는 Codex 백엔드를, OpenAI API 키는 OpenAI API를 사용합니다.",
       "naiDiffusion5Full": "NAI Diffusion V5 Full",
       "naiDiffusion5Curated": "NAI Diffusion V5 Curated",
       "naiDiffusion45Full": "NAI Diffusion V4.5 Full",
