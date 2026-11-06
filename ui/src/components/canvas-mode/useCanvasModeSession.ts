@@ -1,3 +1,4 @@
+import { complexityRequestField } from "../../lib/imageModels";
 import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import { useCallback, type RefObject } from "react";
 import {
@@ -102,6 +103,7 @@ export function useCanvasModeSession({
   t,
 }: UseCanvasModeSessionArgs) {
   const imageToolModel = useAppStore((s) => s.imageToolModel);
+  const complexity = useAppStore((s) => s.complexity);
   const saveCanvasVersionAndUseReference = useCallback(async (): Promise<GenerateItem | null> => {
     if (!imageElementRef.current || !currentImage) return null;
     const source = canvasSourceImageRef.current ?? currentImage;
@@ -336,6 +338,7 @@ export function useCanvasModeSession({
         n: 1,
         model: imageModel,
         ...(provider === "api" && imageToolModel ? { imageToolModel } : {}),
+        ...complexityRequestField(provider, imageToolModel, complexity),
         reasoningEffort,
         mode: promptMode,
         webSearchEnabled,

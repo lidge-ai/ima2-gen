@@ -1,4 +1,4 @@
-import { normalizeImageQuality } from "../lib/imageModels";
+import { complexityRequestField, normalizeImageQuality } from "../lib/imageModels";
 import type { ClientNodeId } from "../lib/graph";
 import { postNodeGenerateStream } from "../lib/api";
 import {
@@ -220,6 +220,7 @@ export async function runGenerateNodeInPlaceImpl(
       provider: nodeProvider,
       model: nodeModel,
       ...(nodeProvider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
+      ...complexityRequestField(nodeProvider, s.imageToolModel, s.complexity),
       reasoningEffort: s.reasoningEffort,
       storyboard: s.storyboardActive || undefined,
       requestId: flightId,

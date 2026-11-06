@@ -1,4 +1,4 @@
-import type { ImageToolModel } from "../types";
+import type { ImageComplexity, ImageToolModel } from "../types";
 import type { Node as FlowNode, Edge as FlowEdge } from "@xyflow/react";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import type {
@@ -219,6 +219,7 @@ export type GenerationDefaults = Partial<{
   mcpRatio: string | null;
   mcpParameters: Record<string, McpPresetValue>;
   imageToolModel: ImageToolModel | null;
+  complexity: ImageComplexity | null;
   quality: Quality;
   sizePreset: SizePreset;
   customW: number;
@@ -330,6 +331,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   deleteAssetFolder: (id: string) => Promise<boolean>;
   provider: Provider;
   imageToolModel: ImageToolModel | null;
+  complexity: ImageComplexity | null;
   quality: Quality;
   sizePreset: SizePreset;
   customW: number;
@@ -527,6 +529,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   mcpReferenceSelection?: McpReferenceSelection;
   mcpCharacterElementId?: string | null;
   setImageToolModel: (model: ImageToolModel | null) => void;
+  setComplexity: (complexity: ImageComplexity | null) => void;
   setQuality: (q: Quality) => void;
   setSizePreset: (s: SizePreset) => void;
   setCustomSize: (w: number, h: number) => void;

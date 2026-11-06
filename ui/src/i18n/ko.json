@@ -2,7 +2,14 @@
   "imageToolModel": {
     "title": "API 이미지 모델",
     "default": "기본값 (서버 선택)",
-    "costUnavailable": "예상 비용 미제공"
+    "costUnavailable": "예상 비용 미제공",
+    "complexityTitle": "복잡도",
+    "complexityDefault": "기본값 (높음)",
+    "complexity": {
+      "low": "낮음 · 빠른 수정",
+      "medium": "보통",
+      "high": "높음 · 복잡한 레이아웃"
+    }
   },
   "lan": {
     "brand": "ima2",

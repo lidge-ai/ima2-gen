@@ -2,7 +2,14 @@
   "imageToolModel": {
     "title": "API image model",
     "default": "Default (upstream)",
-    "costUnavailable": "Estimate unavailable"
+    "costUnavailable": "Estimate unavailable",
+    "complexityTitle": "Complexity",
+    "complexityDefault": "Default (high)",
+    "complexity": {
+      "low": "Low · quick edits",
+      "medium": "Medium",
+      "high": "High · dense layouts"
+    }
   },
   "lan": {
     "brand": "ima2",

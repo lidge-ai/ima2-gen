@@ -11,7 +11,11 @@ export type SettingsSection = "providers" | "workspace" | "general";
 export type HistoryStripLayout = "rail" | "horizontal" | "sidebar";
 export type Provider = CoreProviderId;
 export type Quality = "low" | "medium" | "high" | "xhigh" | "max";
-export type ImageToolModel = "gpt-image-2.5-sunburst" | "gpt-image-2.5-flare";
+export type ImageToolModel =
+  | "gpt-image-2.6-flare" | "gpt-image-2.6-sunburst"
+  | "gpt-image-2.5-sunburst" | "gpt-image-2.5-flare";
+/** Images 2.6 only; null/absent means the model default (high). */
+export type ImageComplexity = "low" | "medium" | "high";
 export type Format = "png" | "jpeg" | "webp";
 export type Moderation = "low" | "auto";
 export type OpenAIImageModel = Extract<ImageModelId, `gpt-${string}`>;
@@ -116,6 +120,7 @@ export type GenerateItem = {
   moderation?: string;
   model?: string | null;
   imageToolModel?: ImageToolModel | null;
+  complexity?: ImageComplexity | null;
   /**
    * Background preset the image was generated with. "transparent" means the
    * file carries a real alpha channel, so it needs a checkerboard preview and
@@ -182,6 +187,7 @@ export type EmbeddedGenerationMetadata = {
   moderation?: string | null;
   model?: string | null;
   imageToolModel?: ImageToolModel | null;
+  complexity?: ImageComplexity | null;
   provider?: string | null;
   providerUrl?: string | null;
   sessionId?: string | null;
@@ -210,6 +216,7 @@ export type GenerateSingleResponse = {
   moderation?: string;
   model?: string | null;
   imageToolModel?: ImageToolModel | null;
+  complexity?: ImageComplexity | null;
   revisedPrompt?: string | null;
   promptMode?: "auto" | "direct";
   providerUrl?: string | null;
@@ -229,6 +236,7 @@ export type GenerateMultiResponse = {
   moderation?: string;
   model?: string | null;
   imageToolModel?: ImageToolModel | null;
+  complexity?: ImageComplexity | null;
   revisedPrompt?: string | null;
   promptMode?: "auto" | "direct";
 };
@@ -248,6 +256,7 @@ export type GenerateRequest = {
   provider: Provider;
   n: number;
   imageToolModel?: ImageToolModel;
+  complexity?: ImageComplexity;
   model?: string; // wire model id, including runtime Comfy workflow ids
   reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   image?: string;
@@ -294,6 +303,7 @@ export type MultimodeGenerateResponse = {
   moderation?: string;
   model?: string | null;
   imageToolModel?: ImageToolModel | null;
+  complexity?: ImageComplexity | null;
   webSearchCalls?: number;
   promptMode?: "auto" | "direct";
   extraIgnored?: number;
