@@ -15,6 +15,7 @@ const PASSTHROUGH_CODES = new Set([
   "API_KEY_REQUIRED",
   "INVALID_REQUEST",
   "OAUTH_UPSTREAM_ERROR",
+  "IMAGE_FEATURE_NOT_ENABLED",
 ]);
 
 const SAFETY_CODES = new Set(["SAFETY_REFUSAL", "MODERATION_REFUSED", "moderation_blocked"]);
@@ -109,6 +110,9 @@ export function errorCodeFrom(err: UpstreamErr | null | undefined): string {
   if (!err) return "UNKNOWN";
   const appCode = err.code as string;
   if (RESPONSE_DIAGNOSTIC_CODES.has(appCode) || appCode === "EMPTY_RESPONSE") return appCode;
+  // The Image API transport already recognized an org/project feature gate; the
+  // upstream type (invalid_request_error) must not flatten it into INVALID_REQUEST.
+  if (appCode === "IMAGE_FEATURE_NOT_ENABLED") return appCode;
   const upstreamCode = classifyUpstreamErrorCode(err.upstreamCode);
   if (upstreamCode !== "UNKNOWN") return upstreamCode;
   const upstreamType = classifyUpstreamErrorCode(err.upstreamType);

@@ -25,6 +25,11 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
     { type: "response.output_item.done", item: { type: "image_generation_call", result: source } },
     { type: "response.completed", response: {} },
   ]);
+  const IMAGES_API = "https://api.openai.com/v1/images/";
+  const isImagesApi = (call: { url: string }) => call.url.startsWith(IMAGES_API);
+  // 2.6 tool models go to the Image API by default; everything else stays on Responses.
+  const apiSuccess = (call: { url: string }) => (isImagesApi(call) ? imagesJson(source) : success());
+  const is26 = (model: string) => model.startsWith("gpt-image-2.6-");
   // GPT OAuth plans with GPT-6 on /v1/responses and renders with gpt-image-2 on /v1/images/*.
   const oauthSuccess = (call: { url: string }) => (
     call.url.endsWith("/v1/responses") ? plannerSse(["fixture plan"]) : imagesJson(source)
@@ -40,7 +45,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
   for (const surface of SURFACES) for (const [index, imageToolModel] of MODELS.entries()) {
     it(`${surface} serializes ${imageToolModel} without replacing the reasoning model`, async () => {
       const quality = index % 2 === 0 ? "xhigh" : "max";
-      await harness.run(surface, { upstream: success }, async (f) => {
+      await harness.run(surface, { upstream: apiSuccess }, async (f) => {
         const response = await f.post({ ...BASE, provider: "api", imageToolModel, quality,
           ...(surface === "edit" ? { image: source } : {}),
           ...(surface === "multimode" ? { async: true, maxImages: 1 } : {}) });
@@ -48,11 +53,23 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
         const result = surface === "multimode" ? (await f.waitTerminal()).data : await response.json();
         await f.waitSettled();
         assert.equal(f.calls.length, 1);
-        assert.equal(f.calls[0]!.url, "https://api.openai.com/v1/responses");
         const body = JSON.parse(f.calls[0]!.body);
-        assert.equal(body.model, "gpt-5.4");
-        assert.deepEqual(body.tools, [{ type: "image_generation", model: imageToolModel,
-          quality, size: "1024x1024", moderation: "low" }]);
+        if (is26(imageToolModel)) {
+          const kind = surface === "edit" ? "edits" : "generations";
+          assert.equal(f.calls[0]!.url, `${IMAGES_API}${kind}`);
+          assert.equal(f.calls[0]!.headers.get("authorization")?.startsWith("Bearer "), true);
+          const { prompt, safety_identifier: safetyIdentifier, images, ...fields } = body;
+          assert.equal(typeof prompt, "string");
+          assert.match(safetyIdentifier, /^[0-9a-f]{64}$/);
+          assert.deepEqual(fields, { model: imageToolModel, quality, size: "1024x1024", moderation: "low" });
+          if (kind === "edits") assert.match(images[0].image_url, /^data:image\/png;base64,/);
+          else assert.equal(images, undefined);
+        } else {
+          assert.equal(f.calls[0]!.url, "https://api.openai.com/v1/responses");
+          assert.equal(body.model, "gpt-5.4");
+          assert.deepEqual(body.tools, [{ type: "image_generation", model: imageToolModel,
+            quality, size: "1024x1024", moderation: "low" }]);
+        }
         assert.equal(result.imageToolModel, imageToolModel);
         const image = surface === "multimode" ? f.events.find((event) => event.event === "image")!.data : result;
         const saved = JSON.parse(await readFile(join(f.generatedDir, `${image.filename}.json`), "utf8"));
@@ -77,7 +94,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
   for (const surface of SURFACES) {
     it(`${surface} sends complexity only with a 2.6 image model and records it`, async () => {
       for (const [imageToolModel, expected] of [["gpt-image-2.6-flare", "low"], ["gpt-image-2.5-flare", undefined]] as const) {
-        await harness.run(surface, { upstream: success }, async (f) => {
+        await harness.run(surface, { upstream: apiSuccess }, async (f) => {
           const response = await f.post({ ...BASE, provider: "api", imageToolModel, complexity: "low",
             ...(surface === "edit" ? { image: source } : {}),
             ...(surface === "multimode" ? { async: true, maxImages: 1 } : {}) });
@@ -86,8 +103,9 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
           await f.waitSettled();
           assert.equal(f.calls.length, 1);
           const body = JSON.parse(f.calls[0]!.body);
-          assert.equal(body.tools[0].complexity, expected);
-          assert.equal("input_fidelity" in body.tools[0], false);
+          const fields = isImagesApi(f.calls[0]!) ? body : body.tools[0];
+          assert.equal(fields.complexity, expected);
+          assert.equal("input_fidelity" in fields, false);
           assert.equal(result.complexity, expected);
           const image = surface === "multimode" ? f.events.find((event) => event.event === "image")!.data : result;
           const saved = JSON.parse(await readFile(join(f.generatedDir, `${image.filename}.json`), "utf8"));
@@ -111,6 +129,54 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
       });
     });
   }
+
+  it("IMA2_API_IMAGE_TRANSPORT=responses keeps 2.6 on the Responses tool; =images moves 2.5 to the Image API", async () => {
+    for (const [transport, imageToolModel, images] of [["responses", "gpt-image-2.6-sunburst", false], ["images", "gpt-image-2.5-flare", true]] as const) {
+      await harness.run("classic", { upstream: apiSuccess }, async (f) => {
+        const apiProvider = f.ctx.config.apiProvider as { imageTransport?: string };
+        const previous = apiProvider.imageTransport;
+        apiProvider.imageTransport = transport;
+        try {
+          const response = await f.post({ ...BASE, provider: "api", imageToolModel, complexity: "medium" });
+          assert.equal(response.status, 200);
+          await f.waitSettled();
+        } finally {
+          apiProvider.imageTransport = previous;
+        }
+        assert.equal(isImagesApi(f.calls[0]!), images);
+        const body = JSON.parse(f.calls[0]!.body);
+        if (images) assert.equal(body.complexity, undefined); // 2.5 never takes complexity
+        else assert.equal(body.tools[0].complexity, "medium");
+      });
+    }
+  });
+
+  it("multimode asks the Image API for n images and saves each", async () => {
+    await harness.run("multimode", { upstream: () => new Response(JSON.stringify({ data: [{ b64_json: source }, { b64_json: source }] }),
+      { status: 200, headers: { "content-type": "application/json" } }) }, async (f) => {
+      const response = await f.post({ ...BASE, provider: "api", imageToolModel: "gpt-image-2.6-flare", async: true, maxImages: 2 });
+      assert.equal(response.status, 202);
+      await f.waitTerminal();
+      await f.waitSettled();
+      assert.equal(JSON.parse(f.calls[0]!.body).n, 2);
+      assert.equal(f.events.filter((event) => event.event === "image").length, 2);
+    });
+  });
+
+  it("an org/project gate on a 2.6 field surfaces IMAGE_FEATURE_NOT_ENABLED", async () => {
+    const gated = () => new Response(JSON.stringify({ error: {
+      message: "Complexity is not enabled for this organization.", type: "invalid_request_error", param: "complexity", code: null } }),
+    { status: 400, headers: { "content-type": "application/json" } });
+    await harness.run("classic", { upstream: gated }, async (f) => {
+      const response = await f.post({ ...BASE, provider: "api", imageToolModel: "gpt-image-2.6-flare", complexity: "low" });
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(response.status, 400);
+      assert.equal(result.code ?? result.error?.code, "IMAGE_FEATURE_NOT_ENABLED");
+      assert.match(JSON.stringify(result), /has not enabled the complexity setting/);
+      assert.equal(f.calls.length, 1); // a gate is not retried
+    });
+  });
 
   it("API requests carry a stable hashed safety_identifier; OAuth requests do not", async () => {
     await harness.run("classic", { upstream: (call) => (new URL(call.url).host === "api.openai.com" ? success() : oauthSuccess(call)) }, async (f) => {
@@ -219,6 +285,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
       api: ["gpt-image-2.6-sunburst", "gpt-image-2.6-flare", "gpt-image-2.5-sunburst", "gpt-image-2.5-flare"],
       qualities: ["low", "medium", "high", "xhigh", "max"],
       complexity: { models: ["gpt-image-2.6-sunburst", "gpt-image-2.6-flare"], values: ["low", "medium", "high"] },
+      transport: "auto",
     });
     assert.deepEqual(result.valid.quality, ["low", "medium", "high"]);
   });

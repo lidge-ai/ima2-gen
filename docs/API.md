@@ -347,6 +347,26 @@ into the scene and is independent of `quality`. Any other value returns
 model, or a non-API provider is dropped. The applied value is echoed in results and kept
 in sidecars and history.
 
+### Image API transport for API image models
+
+Images 2.6 documents its models and new fields on the OpenAI Image API
+(`POST /v1/images/generations`, `POST /v1/images/edits`). With a 2.6 `imageToolModel`, the
+API-key lane calls that API directly instead of the Responses `image_generation` tool.
+Requests with input images (edit source, references) use `/v1/images/edits` with JSON
+`images: [{ image_url }]` and, for masked edits, `mask: { image_url }`; multimode sends
+`n = maxImages`. On this path the prompt goes straight to the image model, so the outer
+`model`, reasoning effort and web search do not apply.
+
+`IMA2_API_IMAGE_TRANSPORT` (`apiProvider.imageTransport`) chooses the path: `auto`
+(default; 2.6 → Image API, 2.5 → Responses), `images` (every explicit API image model →
+Image API) or `responses` (always the Responses tool). `GET /api/capabilities` reports it
+as `valid.imageToolModels.transport`.
+
+When OpenAI rejects a field that it gates per organization or project (GIF output, SVG
+output or SVG model selection, markup, complexity, or the model itself), the route returns
+`IMAGE_FEATURE_NOT_ENABLED` with the upstream status and a message naming the feature.
+Such a failure is not retried.
+
 API-key requests carry `safety_identifier`: a SHA-256 hash of a random per-install id
 stored in `<configDir>/install-id`. Disable it with `IMA2_API_SAFETY_IDENTIFIER=0` or
 `apiProvider.safetyIdentifier: false`. GPT OAuth requests never carry it.
