@@ -1,4 +1,4 @@
-import type { ImageToolModel } from "../types";
+import type { ImageComplexity, ImageToolModel } from "../types";
 import { fetchApi } from "./api-core";
 import type { ImageModel, Provider } from "../types";
 import { subscribe, ensureConnected, armStreamTimeout } from "./eventChannel";
@@ -16,6 +16,7 @@ export type NodeGenerateRequest = {
   moderation: "low" | "auto";
   model?: ImageModel;
   imageToolModel?: ImageToolModel;
+  complexity?: ImageComplexity;
   reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
   provider?: Provider;
   mode?: "auto" | "direct";
@@ -63,6 +64,7 @@ export type NodeGenerateResponse = {
   moderation?: string;
   model?: string | null;
   imageToolModel?: ImageToolModel | null;
+  complexity?: ImageComplexity | null;
   size?: string | null;
   refsCount?: number;
   contextMode?: "parent-plus-refs" | "parent-only" | "ancestry";

@@ -2,7 +2,14 @@
   "imageToolModel": {
     "title": "API 图像模型",
     "default": "默认（上游选择）",
-    "costUnavailable": "暂无费用估算"
+    "costUnavailable": "暂无费用估算",
+    "complexityTitle": "复杂度",
+    "complexityDefault": "默认（高）",
+    "complexity": {
+      "low": "低 · 快速编辑",
+      "medium": "中",
+      "high": "高 · 复杂布局"
+    }
   },
   "lan": {
     "brand": "ima2",

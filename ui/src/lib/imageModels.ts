@@ -1,14 +1,32 @@
 import type { ImageModel, OpenAIImageModel, GeminiImageModel, AtlasCloudImageModel, MinimaxImageModel, NaiImageModel, Provider, UnsupportedImageModel, VideoModel } from "../types";
 import { PROVIDER_MODELS } from "../generated/providers";
-import type { ImageToolModel, Quality } from "../types";
+import type { ImageComplexity, ImageToolModel, Quality } from "../types";
 
 export const API_IMAGE_TOOL_MODEL_OPTIONS = [
+  { value: "gpt-image-2.6-flare", label: "GPT Image2.6 Flare" },
+  { value: "gpt-image-2.6-sunburst", label: "GPT Image2.6 Sunburst" },
   { value: "gpt-image-2.5-sunburst", label: "GPT Image2.5 Sunburst" },
   { value: "gpt-image-2.5-flare", label: "GPT Image2.5 Flare" },
 ] as const;
 
 export function isImageToolModel(value: unknown): value is ImageToolModel {
   return API_IMAGE_TOOL_MODEL_OPTIONS.some((option) => option.value === value);
+}
+
+export const IMAGE_COMPLEXITY_VALUES: readonly ImageComplexity[] = ["low", "medium", "high"];
+
+export function isImageComplexity(value: unknown): value is ImageComplexity {
+  return IMAGE_COMPLEXITY_VALUES.some((level) => level === value);
+}
+
+/** Images 2.6 models take complexity, markup edits, SVG and GIF output. */
+export function isImage26ToolModel(value: unknown): boolean {
+  return value === "gpt-image-2.6-flare" || value === "gpt-image-2.6-sunburst";
+}
+
+/** The complexity request field, present only where the server will honor it. */
+export function complexityRequestField(provider: unknown, imageToolModel: unknown, complexity: ImageComplexity | null | undefined) {
+  return provider === "api" && complexity && isImage26ToolModel(imageToolModel) ? { complexity } : {};
 }
 
 export function normalizeImageQuality(provider: unknown, imageToolModel: unknown, quality: Quality): Quality {

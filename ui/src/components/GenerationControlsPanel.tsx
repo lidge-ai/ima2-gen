@@ -1,6 +1,6 @@
 import { Select } from "./controls/Select";
-import { API_IMAGE_TOOL_MODEL_OPTIONS } from "../lib/imageModels";
-import type { ImageToolModel } from "../types";
+import { API_IMAGE_TOOL_MODEL_OPTIONS, IMAGE_COMPLEXITY_VALUES, isImage26ToolModel } from "../lib/imageModels";
+import type { ImageComplexity, ImageToolModel } from "../types";
 import { useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
@@ -90,6 +90,8 @@ export function GenerationControlsPanel() {
   const provider = useAppStore((s) => s.provider);
   const imageToolModel = useAppStore((s) => s.imageToolModel);
   const setImageToolModel = useAppStore((s) => s.setImageToolModel);
+  const complexity = useAppStore((s) => s.complexity);
+  const setComplexity = useAppStore((s) => s.setComplexity);
   const quality = useAppStore((s) => s.quality);
   const setQuality = useAppStore((s) => s.setQuality);
   const format = useAppStore((s) => s.format);
@@ -364,6 +366,21 @@ export function GenerationControlsPanel() {
               items={[{ value: "", label: t("imageToolModel.default") }, ...API_IMAGE_TOOL_MODEL_OPTIONS]}
               value={imageToolModel ?? ""}
               onChange={(value) => setImageToolModel(value || null)}
+              portal
+            />
+          </div>
+        )}
+        {provider === "api" && isImage26ToolModel(imageToolModel) && (
+          <div className="option-group">
+            <div className="section-title">{t("imageToolModel.complexityTitle")}</div>
+            <Select<ImageComplexity | "">
+              ariaLabel={t("imageToolModel.complexityTitle")}
+              items={[
+                { value: "", label: t("imageToolModel.complexityDefault") },
+                ...IMAGE_COMPLEXITY_VALUES.map((value) => ({ value, label: t(`imageToolModel.complexity.${value}`) })),
+              ]}
+              value={complexity ?? ""}
+              onChange={(value) => setComplexity(value || null)}
               portal
             />
           </div>

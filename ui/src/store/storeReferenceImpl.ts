@@ -3,7 +3,7 @@ import { readImageMetadata } from "../lib/api";
 import { readFileAsDataURL } from "../lib/image";
 import { compressToBase64, isHeic, hasAlphaChannel } from "../lib/compress";
 import { parseRequestedCustomSide } from "../lib/size";
-import { isImageModel, isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
+import { isImageComplexity, isImageModel, isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
 import { t } from "../i18n";
 import {
   saveImageModel,
@@ -39,6 +39,7 @@ function applyMetadataToState(
   const prompt = metadata.userPrompt || metadata.prompt;
   if (typeof prompt === "string") patch.prompt = prompt;
   patch.imageToolModel = state.provider === "api" && isImageToolModel(metadata.imageToolModel) ? metadata.imageToolModel : null;
+  patch.complexity = isImageComplexity(metadata.complexity) ? metadata.complexity : null;
   patch.quality = normalizeImageQuality(state.provider, patch.imageToolModel,
     isQuality(metadata.quality) ? metadata.quality : state.quality);
   if (isFormat(metadata.format)) patch.format = metadata.format;
@@ -195,7 +196,7 @@ export function applyMetadataRestoreImpl(set: StoreSet, get: StoreGet): void {
   const pending = get().metadataRestore;
   if (!pending) return;
   const patch = applyMetadataToState(get(), pending.metadata);
-  saveGenerationDefaultsPatch({ imageToolModel: patch.imageToolModel, quality: patch.quality });
+  saveGenerationDefaultsPatch({ imageToolModel: patch.imageToolModel, complexity: patch.complexity, quality: patch.quality });
   if (patch.imageModel) saveImageModel(patch.imageModel);
   if (pending.targetNodeId && typeof patch.prompt === "string") {
     const prompt = patch.prompt;

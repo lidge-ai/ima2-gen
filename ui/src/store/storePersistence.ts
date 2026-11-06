@@ -1,4 +1,4 @@
-import { isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
+import { isImageComplexity, isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
 import type { CanvasExportBackground, HexColor } from "../types/canvas";
 import { isCoreProviderId } from "../generated/providers";
 import type {
@@ -397,6 +397,7 @@ export function loadGenerationDefaults(): GenerationDefaults {
     if ("imageToolModel" in parsed) {
       out.imageToolModel = parsed.provider === "api" && isImageToolModel(parsed.imageToolModel) ? parsed.imageToolModel : null;
     }
+    if ("complexity" in parsed) out.complexity = isImageComplexity(parsed.complexity) ? parsed.complexity : null;
     if (isQuality(parsed.quality)) out.quality = normalizeImageQuality(parsed.provider, out.imageToolModel, parsed.quality);
     if (isSizePreset(parsed.sizePreset)) out.sizePreset = parsed.sizePreset;
     if (typeof parsed.customW === "number" && Number.isFinite(parsed.customW)) {

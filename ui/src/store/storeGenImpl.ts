@@ -1,3 +1,4 @@
+import { complexityRequestField } from "../lib/imageModels";
 import type {
   GenerateItem,
   GenerateResponse,
@@ -113,6 +114,7 @@ export async function generateMultimodeImpl(
       maxImages: requested,
       model: coreImageRequestModel(s),
       ...(s.provider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
+      ...complexityRequestField(s.provider, s.imageToolModel, s.complexity),
       reasoningEffort: s.reasoningEffort,
       webSearchEnabled: s.webSearchEnabled,
       requestId: flightId,
@@ -186,6 +188,7 @@ export async function generateMultimodeImpl(
       size: res.size,
       model: res.model ?? null,
       imageToolModel: res.imageToolModel ?? null,
+      complexity: res.complexity ?? null,
     }));
     for (const item of items) {
       await addHistory(item, set, get, { autoSelectStartedAt });
@@ -322,6 +325,7 @@ export async function runGenerateImpl(
       n: s.provider === "nai" ? 1 : s.count,
       model: coreImageRequestModel(s),
       ...(s.provider === "api" && s.imageToolModel ? { imageToolModel: s.imageToolModel } : {}),
+      ...complexityRequestField(s.provider, s.imageToolModel, s.complexity),
       reasoningEffort: s.reasoningEffort,
       storyboard: s.storyboardActive || undefined,
       webSearchEnabled: s.webSearchEnabled,
@@ -359,6 +363,7 @@ export async function runGenerateImpl(
           size: res.size,
           model: res.model ?? null,
           imageToolModel: res.imageToolModel ?? null,
+          complexity: res.complexity ?? null,
           createdAt: img.createdAt ?? Date.now(),
         };
         await addHistory(item, set, get, { autoSelectStartedAt });
@@ -384,6 +389,7 @@ export async function runGenerateImpl(
           size: res.size,
           model: res.model ?? null,
           imageToolModel: res.imageToolModel ?? null,
+          complexity: res.complexity ?? null,
           createdAt: first.createdAt ?? Date.now(),
         };
       } else {
@@ -403,6 +409,7 @@ export async function runGenerateImpl(
           size: res.size,
           model: res.model ?? null,
           imageToolModel: res.imageToolModel ?? null,
+          complexity: res.complexity ?? null,
           createdAt: res.createdAt ?? Date.now(),
         };
       }
