@@ -1,3 +1,4 @@
+import { editWithMarkup } from "./canvasMarkupEdit";
 import { complexityRequestField } from "../../lib/imageModels";
 import type { useCanvasAnnotations } from "../../hooks/useCanvasAnnotations";
 import { useCallback, type RefObject } from "react";
@@ -33,7 +34,7 @@ import {
   withSourcePrompt,
 } from "./canvasModeHelpers";
 
-interface UseCanvasModeSessionArgs {
+export interface UseCanvasModeSessionArgs {
   imageElementRef: RefObject<HTMLImageElement | null>;
   currentImage: GenerateItem | null;
   canvasDisplayImage: GenerateItem | null;
@@ -58,6 +59,7 @@ interface UseCanvasModeSessionArgs {
   setIsApplying: (value: boolean) => void;
   setIsExporting: (value: boolean) => void;
   setIsEditingWithMask: (value: boolean) => void;
+  setIsEditingWithMarkup: (value: boolean) => void;
   setIsTransparencyRunning: (value: boolean) => void;
   applyMergedCanvasImage: (item: GenerateItem) => void;
   addGeneratedHistoryItem: (item: GenerateItem) => Promise<void> | void;
@@ -93,6 +95,7 @@ export function useCanvasModeSession({
   setIsApplying,
   setIsExporting,
   setIsEditingWithMask,
+  setIsEditingWithMarkup,
   setIsTransparencyRunning,
   applyMergedCanvasImage,
   addGeneratedHistoryItem,
@@ -357,6 +360,13 @@ export function useCanvasModeSession({
     }
   };
 
+  const handleEditWithMarkup = () => editWithMarkup({
+    imageElementRef, currentImage, canvasDisplayImage, canvasSourceImageRef, lastCleanDataUrlRef,
+    annotations, quality, format, moderation, provider, imageModel, imageToolModel, complexity,
+    reasoningEffort, promptMode, webSearchEnabled, getResolvedSize, setIsEditingWithMarkup,
+    saveCanvasVersionAndUseReference, addGeneratedHistoryItem, showToast, t,
+  });
+
   /**
    * One-click GPT i2i background transparency. Uses the validated prompt-nudge
    * path (forced background:"transparent" is rejected by the OAuth
@@ -426,6 +436,7 @@ export function useCanvasModeSession({
     handleExportCanvas,
     handleTraceCanvas,
     handleEditWithMask,
+    handleEditWithMarkup,
     handleGptTransparency,
   };
 }

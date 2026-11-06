@@ -171,7 +171,7 @@ export async function postMultimodeGenerateStream(
   });
 }
 
-export function postEdit(payload: GenerateRequest & { mask?: string }): Promise<GenerateResponse> {
+export function postEdit(payload: GenerateRequest & { mask?: string; markup?: string }): Promise<GenerateResponse> {
   return jsonFetch<GenerateResponse>("/api/edit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
