@@ -7,7 +7,7 @@ const edit = readFileSync("bin/commands/edit.ts", "utf-8");
 
 test("CLI generation defaults save into configured generatedDir, not cwd", () => {
   assert.match(gen, /import \{ config \} from "\.\.\/\.\.\/config\.js"/);
-  assert.match(gen, /target = `\$\{config\.storage\.generatedDir\}\/\$\{defaultOutName\(i,\s*norm\.images\.length\)\}`/);
+  assert.match(gen, /target = `\$\{config\.storage\.generatedDir\}\/\$\{defaultOutName\(i,\s*norm\.images\.length(?:,\s*ext)?\)\}`/);
   assert.doesNotMatch(gen, /else \{\s*target = defaultOutName\(i,\s*norm\.images\.length\);\s*\}/);
 });
 
