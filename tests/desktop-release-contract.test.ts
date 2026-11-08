@@ -76,7 +76,7 @@ describe("multiplatform desktop release contract", () => {
     // directories.app points at the repository root, so the root manifest is the
     // packaged app: it owns both the runtime dependency and the shipped version.
     assert.equal(read("desktop/electron-builder.yml").directories.app, "..");
-    assert.equal(json("package.json").dependencies["electron-updater"], "6.8.9");
+    assert.equal(json("package.json").dependencies["electron-updater"], "6.8.11");
     assert.equal(json("desktop/package.json").dependencies?.["electron-updater"], undefined);
     for (const script of ["dist", "dist:mac", "dist:win", "dist:linux"]) {
       assert.match(json("desktop/package.json").scripts[script], /--publish never/);

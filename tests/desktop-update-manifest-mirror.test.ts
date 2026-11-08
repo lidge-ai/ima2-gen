@@ -20,7 +20,7 @@ const MAC = [
   "",
 ].join("\n");
 
-// electron-updater 6.8.9 GitHubProvider.resolveFiles + util.newUrlFromBase.
+// electron-updater 6.8.11 GitHubProvider.resolveFiles + util.newUrlFromBase.
 function providerUrl(tag: string, fileUrl: string): string {
   return new URL("/lidge-ai/ima2-gen/releases/download/" + tag + "/" + fileUrl.replace(/ /g, "-"), "https://github.com").href;
 }

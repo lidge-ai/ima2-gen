@@ -191,7 +191,7 @@ able to approve. Configure a tag ruleset restricting `desktop-v*` creation befor
 first live release; without it any actor with push access can mint the tag that
 spends the repository signing secrets.
 
-`electron-updater@6.8.9` is active only in a packaged `darwin/arm64` app, an NSIS
+`electron-updater@6.8.11` is active only in a packaged `darwin/arm64` app, an NSIS
 Windows install or a Linux AppImage. It checks once after the local server starts and
 every six hours while Auto-update is on. `desktop/lib/update-state.mjs` reduces its events
 into one snapshot (idle, checking, current, available, downloading, downloaded, installing,
