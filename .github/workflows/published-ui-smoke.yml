@@ -34,7 +34,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
           registry-url: https://registry.npmjs.org
@@ -131,7 +131,7 @@ jobs:
         run: GITHUB_SHA="$PRODUCT_SHA" node --test tests/package-install-smoke.mjs
       - name: Retain original UI and acquisition evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: installed-ui-${{ env.ARTIFACT_KIND }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
