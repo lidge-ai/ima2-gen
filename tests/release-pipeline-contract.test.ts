@@ -1127,11 +1127,13 @@ describe("tag job dispatches (D4/D5)", () => {
       const later = commit("later.txt", "dev moved\n", "later integration");
       git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
       git(work, "checkout", "-q", "--detach", release);
+      git(work, "tag", "v3.26.4", release);
       const pushed = spawnSync("git", [
         "push", "--atomic", "origin", `${release}:refs/heads/dev`,
         "refs/tags/v3.26.4:refs/tags/v3.26.4",
       ], { cwd: work, encoding: "utf8" });
       assert.notEqual(pushed.status, 0, "the moved dev ref must reject the non-fast-forward update");
+      assert.match(pushed.stderr, /non-fast-forward|fetch first|failed to push some refs/);
       assert.equal(git(work, "ls-remote", origin, "refs/tags/v3.26.4"), "", "atomic rejection must not create the tag");
       assert.equal(git(work, "ls-remote", origin, "refs/heads/dev").split(/\s+/)[0], later);
     } finally {
