@@ -94,7 +94,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
     "@neplex/vectorizer": "0.1.0",
-    "@openai/codex": "0.164.0",
+    "@openai/codex": "0.167.0",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^18.0.1",
     "electron-updater": "6.8.11",
