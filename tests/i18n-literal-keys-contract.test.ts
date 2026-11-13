@@ -11,6 +11,10 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+function labelKeyPrefix(path: string): string {
+  return path.replaceAll("\\", "/").endsWith("components/agent/agentRunProgress.ts") ? "agent." : "";
+}
+
 function literalKeys(path: string): string[] {
   const source = ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true,
     path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
@@ -21,14 +25,19 @@ function literalKeys(path: string): string[] {
     if (ts.isPropertyAssignment(node) && node.name.getText(source) === "labelKey"
       && ts.isStringLiteral(node.initializer)) {
       // Agent progress labels are relative to the agent namespace at their call site.
-      const prefix = path.endsWith("components/agent/agentRunProgress.ts") ? "agent." : "";
-      keys.push(prefix + node.initializer.text);
+      keys.push(labelKeyPrefix(path) + node.initializer.text);
     }
     ts.forEachChild(node, visit);
   }
   visit(source);
   return keys;
 }
+
+test("agent progress label prefix handles both path separators", () => {
+  assert.equal(labelKeyPrefix("ui/src/components/agent/agentRunProgress.ts"), "agent.");
+  assert.equal(labelKeyPrefix("ui\\src\\components\\agent\\agentRunProgress.ts"), "agent.");
+  assert.equal(labelKeyPrefix("ui/src/components/other.ts"), "");
+});
 
 test("literal translation keys exist in every locale", () => {
   const keys = new Set(sourceFiles("ui/src").flatMap(literalKeys));
