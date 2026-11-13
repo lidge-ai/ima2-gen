@@ -1,14 +1,17 @@
 name: Release
 
 # Replaces scripts/release.sh. The cut runs here end to end:
-#   baseline -> version commit -> main -> preview -> preview publish proof
-#   -> stable tag (main+tag atomically, then land on dev) -> stable publish
+#   dev baseline -> version commit -> dev preview proof -> stable tag -> stable publish
 #
 # publish.yml still owns publishing and stays the only holder of id-token: write. It is
 # reached by workflow_dispatch rather than by the pushes below, because a GITHUB_TOKEN
 # push emits no workflow event — without that dispatch a CI-minted tag would strand an
 # unpublished version, the exact failure release.sh:99 warned about.
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [dev]
   workflow_dispatch:
     inputs:
       bump:
@@ -24,7 +27,7 @@ on:
         type: choice
         options: ['true', 'canary', 'false']
       expected_sha:
-        description: 'Optional full SHA the caller decided on; the cut refuses to start if origin/main moved past it'
+        description: 'Optional full SHA the caller decided on; the cut refuses to start if origin/dev moved past it'
         required: false
         type: string
       resume_version:
@@ -36,11 +39,33 @@ on:
 permissions:
   contents: read
 
+env:
+  EFFECTIVE_DRY_RUN: ${{ github.event_name == 'workflow_run' && 'false' || inputs.dry_run }}
+  EFFECTIVE_BUMP: ${{ github.event_name == 'workflow_run' && 'patch' || inputs.bump }}
+  EXPECTED_RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.expected_sha }}
+
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
+  resolve:
+    name: Resolve whether current dev needs a release
+    if: inputs.resume_version == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      needed: ${{ steps.need.outputs.needed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+        with:
+          fetch-depth: 0
+          ref: dev
+      - name: Fetch dev and tags
+        run: git fetch origin dev --tags
+      - id: need
+        run: node scripts/release-cut.mjs release-needed
+
   # A resume only finishes a real release; a dry resume would silently do nothing.
   refuse-dry-resume:
     name: Refuse a resume that is not a real release
@@ -53,7 +78,13 @@ jobs:
 
   cut:
     name: Cut the version commit and prove the preview build
-    if: inputs.resume_version == ''
+    needs: resolve
+    if: >-
+      ${{ inputs.resume_version == '' && needs.resolve.result == 'success' && needs.resolve.outputs.needed == 'true' &&
+        (github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'dev' &&
+            github.event.workflow_run.head_repository.full_name == github.repository)) }}
     runs-on: ubuntu-latest
     # Envelopes candidate verification (45), candidate CI (45), preview publish
     # wait (100), and setup/cleanup margin. Child gates retain shorter deadlines.
@@ -64,12 +95,13 @@ jobs:
     outputs:
       version: ${{ steps.commit.outputs.version }}
       sha: ${{ steps.commit.outputs.sha }}
-      dry_run: ${{ inputs.dry_run }}
+      dry_run: ${{ env.EFFECTIVE_DRY_RUN }}
+      needed: ${{ needs.resolve.outputs.needed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           fetch-depth: 0
-          ref: main
+          ref: dev
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.node-version'
@@ -79,18 +111,18 @@ jobs:
           NPM_VERSION=$(node -p "require('./package.json').packageManager.split('@').pop()")
           npm install -g "npm@$NPM_VERSION"
           test "$(npm -v)" = "$NPM_VERSION"
-      - name: Fetch release branches and tags
-        run: git fetch origin main dev preview --tags
+      - name: Fetch dev and tags
+        run: git fetch origin dev --tags
       - name: Assert the release baseline
         run: node scripts/release-cut.mjs preflight
       - name: Refuse to cut from a moved baseline
-        if: ${{ inputs.expected_sha != '' }}
+        if: ${{ env.EXPECTED_RELEASE_SHA != '' }}
         env:
-          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_SHA: ${{ env.EXPECTED_RELEASE_SHA }}
         run: |
-          ACTUAL=$(git rev-parse origin/main)
+          ACTUAL=$(git rev-parse origin/dev)
           if [ "$EXPECTED_SHA" != "$ACTUAL" ]; then
-            echo "expected_sha $EXPECTED_SHA but origin/main is $ACTUAL"
+            echo "expected_sha $EXPECTED_SHA but origin/dev is $ACTUAL"
             exit 1
           fi
       - name: Assert the pinned release toolchain
@@ -100,10 +132,10 @@ jobs:
       - id: commit
         name: Create the version commit
         env:
-          BUMP: ${{ inputs.bump }}
+          BUMP: ${{ env.EFFECTIVE_BUMP }}
         run: node scripts/release-cut.mjs commit "$BUMP"
       # release.sh verified BEFORE promoting anything. publish.yml runs the same gate, but
-      # only after the push — by then a bad commit is already on main. Verify first so a
+      # only after the push — by then a bad commit is already on dev. Verify first so a
       # failing release leaves the remote untouched.
       - name: Verify the release candidate before promoting it
         run: npm run verify:release
@@ -111,7 +143,7 @@ jobs:
       - name: Refuse a candidate whose verification changed tracked output
         run: node scripts/release-cut.mjs assert-clean
       # D2: a version-only commit (package.json + lockfile bump) adds no code
-      # delta, so the parent commit's main push CI already proves this tree.
+      # delta, so the parent commit's dev push CI already proves this tree.
       # Only then is reusing that run even considered.
       - id: versiononly
         name: Check that the version commit only changes version files
@@ -120,10 +152,10 @@ jobs:
           "$(git rev-parse ${{ steps.commit.outputs.sha }}^)"
           "${{ steps.commit.outputs.sha }}"
       - id: reuse
-        name: Reuse the main push CI for the parent commit
+        name: Reuse the dev push CI for the parent commit
         # Canary must still exercise the candidate CI gate end to end, so the
         # reuse path stays off in canary mode even for version-only bumps.
-        if: ${{ inputs.dry_run != 'canary' && steps.versiononly.outputs.version_only == 'true' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN != 'canary' && steps.versiononly.outputs.version_only == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         # 30, not 45: a fallback after a full wait still has to fit the candidate
@@ -131,10 +163,10 @@ jobs:
         run: node scripts/wait-ci-gate.mjs reuse-push "$(git rev-parse ${{ steps.commit.outputs.sha }}^)" 30
         timeout-minutes: 35
       # Exact-SHA CI gate (roadmap 030): the candidate must exist on the remote
-      # before CI can check it out, but main/preview must not move before the gate
+      # before CI can check it out, but dev must not move before the gate
       # passes — so the candidate rides a dedicated ref that nothing else reads.
       - name: Publish the candidate to its own ref
-        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           CANDIDATE_SHA: ${{ steps.commit.outputs.sha }}
         run: |
@@ -143,19 +175,19 @@ jobs:
             "$CANDIDATE_SHA:refs/heads/release-candidate"
       - id: ci_mark
         name: Record the CI run high-water mark
-        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: echo "id=$(node scripts/wait-ci-gate.mjs latest-id)" >> "$GITHUB_OUTPUT"
       - name: Dispatch CI for the exact candidate SHA
-        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
           gh workflow run ci.yml --ref release-candidate
           -f sha=${{ steps.commit.outputs.sha }}
       - name: Wait for the candidate CI gate
-        if: ${{ inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
@@ -164,7 +196,7 @@ jobs:
           "${{ steps.commit.outputs.sha }}"
           45
       - name: Clean up the candidate ref
-        if: ${{ always() && inputs.dry_run != 'true' && steps.reuse.outputs.reusable != 'true' }}
+        if: ${{ always() && env.EFFECTIVE_DRY_RUN != 'true' && steps.reuse.outputs.reusable != 'true' }}
         env:
           CANDIDATE_SHA: ${{ steps.commit.outputs.sha }}
         run: |
@@ -174,37 +206,34 @@ jobs:
           if [ -n "$CANDIDATE_SHA" ] && [ "$CURRENT" = "$CANDIDATE_SHA" ]; then
             git push origin :refs/heads/release-candidate
           fi
-      - name: Push the version commit to main
-        if: ${{ inputs.dry_run == 'false' }}
-        run: git push origin "HEAD:refs/heads/main"
-      - name: Promote the exact SHA to preview
-        if: ${{ inputs.dry_run == 'false' }}
-        run: git push origin "${{ steps.commit.outputs.sha }}:refs/heads/preview"
+      - name: Push the version commit to dev
+        if: ${{ env.EFFECTIVE_DRY_RUN == 'false' }}
+        run: git push origin "HEAD:refs/heads/dev"
       - id: preview_mark
         name: Record the publish run high-water mark
-        if: ${{ inputs.dry_run == 'false' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN == 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: echo "id=$(node scripts/wait-publish-run.mjs latest-id)" >> "$GITHUB_OUTPUT"
       - name: Publish the preview candidate
-        if: ${{ inputs.dry_run == 'false' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN == 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run publish.yml \
-            --ref preview \
-            -f publish_ref=refs/heads/preview \
+            --ref dev \
+            -f publish_ref=refs/heads/dev \
             -f publish_sha=${{ steps.commit.outputs.sha }}
       - name: Wait for the preview publish to finish
-        if: ${{ inputs.dry_run == 'false' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN == 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PUBLISH_RUN_TITLE: Publish refs/heads/preview
+          PUBLISH_RUN_TITLE: Publish refs/heads/dev
         # package source gate (25) + Windows consumer (40) + the registry proof
         # window (up to 51 minutes when npm is slow to show the version).
         run: node scripts/wait-publish-run.mjs wait "${{ steps.preview_mark.outputs.id }}" "preview@${{ steps.commit.outputs.sha }}" 130
       - name: Require the npm preview proof before tagging
-        if: ${{ inputs.dry_run == 'false' }}
+        if: ${{ env.EFFECTIVE_DRY_RUN == 'false' }}
         run: >-
           node scripts/release-cut.mjs assert-preview-proof
           "${{ steps.commit.outputs.version }}"
@@ -217,7 +246,7 @@ jobs:
     # != 'true': canary must never tag, push main/dev, or dispatch the stable
     # publish). A resume: the cut is skipped, so !cancelled() keeps this job from
     # being skipped with it, and the target step below proves the tag instead.
-    if: ${{ !cancelled() && inputs.dry_run == 'false' && (inputs.resume_version != '' || (needs.cut.result == 'success' && needs.cut.outputs.dry_run == 'false')) }}
+    if: ${{ !cancelled() && (github.event_name == 'workflow_run' || inputs.dry_run == 'false') && (inputs.resume_version != '' || (needs.cut.result == 'success' && needs.cut.outputs.dry_run == 'false' && needs.cut.outputs.needed == 'true')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 150
     # The approval gate sits here, before the atomic push, not on the stable
@@ -234,14 +263,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           fetch-depth: 0
-          # A resume checks out main: the release tag may not exist yet.
-          ref: ${{ needs.cut.outputs.sha || 'main' }}
+          # A resume checks out dev: the release tag may not exist yet.
+          ref: ${{ needs.cut.outputs.sha || 'dev' }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.node-version'
           registry-url: 'https://registry.npmjs.org'
-      - name: Fetch release branches and tags
-        run: git fetch origin main dev preview --tags
+      - name: Fetch dev and tags
+        run: git fetch origin dev --tags
       # Every later step reads the version and SHA from here, never from the cut
       # job directly, so a resume and a cut run the same tail.
       - id: target
@@ -266,9 +295,8 @@ jobs:
           node scripts/release-cut.mjs assert-preview-proof
           "${{ steps.target.outputs.version }}"
           "${{ steps.target.outputs.sha }}"
-      # dev is left out of the atomic push on purpose: integration keeps merging
-      # into dev during a release, and a moved dev must not reject main and the tag.
-      - name: Create and atomically push main and the tag
+      # The cut requires dev to stay at this SHA from its first push until the tag.
+      - name: Create and atomically push dev and the tag
         if: inputs.resume_version == ''
         env:
           VERSION: ${{ steps.target.outputs.version }}
@@ -278,7 +306,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "v$VERSION" "$SHA"
           git push --atomic origin \
-            "$SHA:refs/heads/main" \
+            "$SHA:refs/heads/dev" \
             "refs/tags/v$VERSION:refs/tags/v$VERSION"
       # A resume may finish a cut that stopped after main and the preview proof
       # but before the tag (npm was slow to show the preview). resume-guard found
@@ -293,13 +321,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "v$VERSION" "$SHA"
           git push origin "refs/tags/v$VERSION:refs/tags/v$VERSION"
-      # Fast-forward when dev has not moved, a merge commit when it has, nothing
-      # when dev already contains the release. Never a force push.
-      - name: Land the release on dev
-        env:
-          VERSION: ${{ steps.target.outputs.version }}
-          SHA: ${{ steps.target.outputs.sha }}
-        run: node scripts/release-cut.mjs land-dev "$SHA" "$VERSION"
       # desktop-v tags are restricted to repository admins (ruleset "Protect
       # desktop release tags"): the tag starts a signed build, so a push-access
       # actor must not be able to mint one. The workflow token cannot bypass that,
@@ -378,10 +399,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         # --ref runs publish.yml on the tag itself, so GITHUB_SHA is the release
-        # commit even when main has moved past it (a resume after a promotion).
+        # commit even when dev has moved past it (a resume after later integration).
         run: |
           gh workflow run publish.yml \
-            --ref "v${{ steps.target.outputs.version }}" \
+            --ref dev \
             -f publish_ref="refs/tags/v${{ steps.target.outputs.version }}" \
             -f publish_sha=${{ steps.target.outputs.sha }}
       - name: Wait for the stable publish to finish
@@ -398,11 +419,11 @@ jobs:
           {
             echo "### Release v${{ steps.target.outputs.version }}"
             echo "- sha: ${{ steps.target.outputs.sha }}"
-            echo "- main and the tag point at that commit; dev contains it"
+            echo "- dev and the tag point at that commit"
             echo "- npm preview and latest were published by publish.yml"
             echo "- desktop build: desktop.yml on refs/tags/desktop-v${{ steps.target.outputs.version }}"
             echo "- re-dispatch desktop: gh workflow run desktop.yml --ref desktop-v${{ steps.target.outputs.version }} -f platform=all"
-            echo "- re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ steps.target.outputs.sha }} -f release_version=${{ steps.target.outputs.version }}"
+            echo "- re-dispatch pages: gh workflow run pages.yml --ref dev -f release_sha=${{ steps.target.outputs.sha }} -f release_version=${{ steps.target.outputs.version }}"
             echo "- resume: npm run release -- resume ${{ steps.target.outputs.version }}"
           } >> "$GITHUB_STEP_SUMMARY"
       # D5: the Pages site rebuilds from the release inputs once npm stable
@@ -413,8 +434,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "re-dispatch pages: gh workflow run pages.yml --ref main -f release_sha=${{ steps.target.outputs.sha }} -f release_version=${{ steps.target.outputs.version }}"
+          echo "re-dispatch pages: gh workflow run pages.yml --ref dev -f release_sha=${{ steps.target.outputs.sha }} -f release_version=${{ steps.target.outputs.version }}"
           gh workflow run pages.yml \
-            --ref main \
+            --ref dev \
             -f release_sha=${{ steps.target.outputs.sha }} \
             -f release_version=${{ steps.target.outputs.version }}

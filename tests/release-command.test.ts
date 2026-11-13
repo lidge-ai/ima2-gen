@@ -20,9 +20,9 @@ const MAIN_SHA = "b".repeat(40);
 
 describe("release.mjs arg parsing", () => {
   it("accepts a bump plus any non-conflicting switches", () => {
-    const { bump, flags } = parseArgs(["minor", "--promote", "--approve", "--yes"]);
+    const { bump, flags } = parseArgs(["minor", "--approve", "--yes"]);
     assert.equal(bump, "minor");
-    assert.deepEqual([...flags].sort(), ["--approve", "--promote", "--yes"]);
+    assert.deepEqual([...flags].sort(), ["--approve", "--yes"]);
   });
 
   it("rejects a missing or unknown bump", () => {
@@ -30,8 +30,9 @@ describe("release.mjs arg parsing", () => {
     assert.throws(() => parseArgs(["beta"]), /first argument must be one of/);
   });
 
-  it("rejects unknown flags", () => {
+  it("rejects unknown and retired promotion flags", () => {
     assert.throws(() => parseArgs(["patch", "--force"]), /unknown flag: --force/);
+    assert.throws(() => parseArgs(["patch", "--promote"]), /unknown flag: --promote/);
   });
 
   it("rejects conflicting --dry-run and --canary", () => {
@@ -84,10 +85,10 @@ describe("release.mjs own-run filter", () => {
     const publish = { ...base, workflow: "publish.yml" };
     const desktop = { ...base, workflow: "desktop.yml" };
     // release.yml dispatches publish.yml on the default branch; run-name names the ref.
-    const stable = { headBranch: "main", event: "workflow_dispatch", displayTitle: "Publish refs/tags/v3.24.0" };
+    const stable = { headBranch: "dev", event: "workflow_dispatch", displayTitle: "Publish refs/tags/v3.24.0" };
     assert.equal(isOwnRun({ databaseId: 101, ...stable }, publish), true);
     assert.equal(isOwnRun({ databaseId: 100, ...stable }, publish), false);
-    assert.equal(isOwnRun({ databaseId: 101, ...stable, displayTitle: "Publish refs/heads/preview" }, publish), false);
+    assert.equal(isOwnRun({ databaseId: 101, ...stable, displayTitle: "Publish refs/heads/dev" }, publish), false);
     assert.equal(isOwnRun({ databaseId: 101, ...stable, displayTitle: "Publish refs/tags/v3.23.9" }, publish), false);
     assert.equal(isOwnRun({ databaseId: 101, ...stable, event: "push" }, publish), false);
     assert.equal(isOwnRun({ databaseId: 102, headBranch: "desktop-v3.24.0", event: "workflow_dispatch" }, desktop), true);
@@ -116,10 +117,9 @@ function scriptedRunner(responses: Array<{ needles: string[]; out: string }>) {
 
 const BASE_RESPONSES = [
   { needles: ["gh", "auth", "status"], out: "Logged in" },
-  { needles: ["git", "fetch", "origin", "main", "dev"], out: "" },
-  { needles: ["git", "rev-list", "--count", "origin/main..origin/dev"], out: "0" },
-  { needles: ["git", "rev-parse", "origin/main"], out: MAIN_SHA },
-  { needles: ["git", "show", "origin/main:package.json"], out: JSON.stringify({ version: "3.23.1" }) },
+  { needles: ["git", "fetch", "origin", "dev"], out: "" },
+  { needles: ["git", "rev-parse", "origin/dev"], out: MAIN_SHA },
+  { needles: ["git", "show", "origin/dev:package.json"], out: JSON.stringify({ version: "3.23.1" }) },
   { needles: ["gh", "run", "list", "release.yml", "workflow_dispatch"], out: "PLACEHOLDER-LIST" },
   { needles: ["gh", "workflow", "run", "release.yml"], out: "" },
   {
@@ -129,154 +129,30 @@ const BASE_RESPONSES = [
 ];
 
 // Stop at dispatch: this fixture proves promotion/SHA plumbing, not publication.
-function promotionRunner(openPr: boolean) {
-  const promotedSha = "c".repeat(40);
-  const dispatchBoundary = new Error("injected dispatch boundary");
-  const { run: scripted, calls } = scriptedRunner([
-    { needles: ["git", "rev-list", "--count"], out: "3" },
-    { needles: ["gh", "pr", "list"], out: openPr ? '[{"number":999}]' : "[]" },
-    { needles: ["gh", "pr", "create"], out: "https://example.test/pull/999" },
-    { needles: ["git", "fetch", "origin", "main"], out: "" },
-    { needles: ["gh", "run", "list"], out: "[]" },
-    ...BASE_RESPONSES,
-  ]);
-  let merged = false;
-  const run = (bin: string, args: string[]) => {
-    if (bin === "gh" && args[0] === "workflow") {
-      calls.push([bin, args]);
-      throw dispatchBoundary;
-    }
-    if (bin === "gh" && args[0] === "pr" && args[1] === "merge") {
-      calls.push([bin, args]);
-      merged = true;
-      return "";
-    }
-    if (bin === "git" && ["ls-remote", "rev-parse"].includes(args[0])) {
-      calls.push([bin, args]);
-      return merged ? promotedSha : MAIN_SHA;
-    }
-    return scripted(bin, args);
-  };
-  return { run, calls, promotedSha, dispatchBoundary };
-}
-
-for (const openPr of [true, false]) {
-  it(`refuses dry-run promotion before PR lookup (open PR: ${openPr})`, async () => {
-    const { run, calls } = promotionRunner(openPr);
-    const log: string[] = [];
-    await assert.rejects(runRelease(["patch", "--promote", "--dry-run", "--approve", "--yes"], {
-      run, sleep: () => Promise.resolve(), log: (line: string) => log.push(line),
-      ask: () => { throw new Error("--yes must not prompt"); },
-    }), (error: { code?: number }) => error.code === 2);
-    assert.ok(log.some((line) => line.includes("Dry-run requires dev to be promoted already")));
-    assert.deepEqual(calls, [
-      ["gh", ["auth", "status"]],
-      ["git", ["fetch", "origin", "main", "dev", "--tags"]],
-      ["git", ["rev-list", "--count", "origin/main..origin/dev"]],
-    ]); // No PR lookup/create/merge, dispatch, approval, or push was attempted.
-  });
-}
-
-for (const mode of ["false", "canary"]) {
-  it(`promotes before dispatching dry_run=${mode} with updated main SHA`, async () => {
-    const { run, calls, promotedSha, dispatchBoundary } = promotionRunner(true);
-    const flags = ["patch", "--promote", "--yes", ...(mode === "canary" ? ["--canary"] : [])];
-    await assert.rejects(runRelease(flags, {
-      run, sleep: () => Promise.resolve(), log: () => {},
-      ask: () => { throw new Error("--yes must not prompt"); },
-    }), (error: unknown) => error === dispatchBoundary);
-    assert.deepEqual(calls.filter(([, args]) => args[0] === "pr" && args[1] === "merge"), [
-      ["gh", ["pr", "merge", "999", "--merge"]],
-    ]);
-    assert.deepEqual(calls.at(-1), ["gh", [
-      "workflow", "run", "release.yml", "-f", "bump=patch",
-      "-f", "dry_run=" + mode, "-f", "expected_sha=" + promotedSha,
-    ]]);
-    assert.ok(calls.some(([, args]) => args.join(" ") === "fetch origin main"));
-  });
-}
-
-describe("release.mjs dispatch flow (injected runner)", () => {
-  it("stops with exit code 2 when dev is ahead and --promote is absent", async () => {
-    const log: string[] = [];
-    const responses = BASE_RESPONSES.map((r) =>
-      r.needles.includes("--count") ? { needles: r.needles, out: "3" } : r,
-    );
-    const { run, calls } = scriptedRunner(responses);
-    const deps = {
-      run,
-      sleep: () => Promise.resolve(),
-      log: (line: string) => log.push(line),
-      ask: () => Promise.resolve(true),
-    };
-    await assert.rejects(runRelease(["patch"], deps), (error: { code?: number }) => error.code === 2);
-    assert.ok(log.some((line) => line.includes("--promote")));
-    assert.ok(!calls.some(([, args]) => args[0] === "workflow"));
-  });
-
-  for (const promoteFlags of [[], ["--promote", "--approve"]]) {
-    it(`dispatches only dry_run=true on aligned main (${promoteFlags.join(" ") || "no promotion flags"})`, async () => {
-      const log: string[] = [];
-      const responses = BASE_RESPONSES.map((response) =>
-        response.out === "PLACEHOLDER-LIST"
-          ? { needles: response.needles, out: "[]" } // high-water mark: nothing yet
-          : response,
-      );
-      const { run, calls } = scriptedRunner(responses);
-      // After the dispatch, the run list shows the new release run (id above the mark).
-      let listCalls = 0;
-      const runCounting = (bin: string, args: string[]) => {
-        if (bin === "gh" && args[0] === "run" && args[1] === "list") {
-          listCalls += 1;
-          if (listCalls === 2) {
-            calls.push([bin, args]);
-            return JSON.stringify([
-              { databaseId: 500, headBranch: "main", status: "completed", url: "https://example.test/run/500" },
-            ]);
-          }
-        }
-        return run(bin, args);
-      };
-      const code = await runRelease(["patch", "--dry-run", "--yes", ...promoteFlags], {
-        run: runCounting,
-        sleep: () => Promise.resolve(),
-        log: (line: string) => log.push(line),
-        ask: () => Promise.resolve(true),
-      });
-      assert.equal(code, 0);
-      const dispatch = calls.find(([, args]) => args[0] === "workflow");
-      assert.ok(dispatch);
-      assert.deepEqual(dispatch?.[1], [
-        "workflow", "run", "release.yml",
-        "-f", "bump=patch", "-f", "dry_run=true", "-f", "expected_sha=" + MAIN_SHA,
-      ]);
-      assert.ok(!calls.some(([, args]) => args[0] === "api"));
-      assert.ok(!calls.some(([, args]) => args[0] === "pr"));
-      assert.equal(calls.filter(([, args]) => args[0] === "workflow").length, 1);
-      // Dry runs never touch tags.
-      assert.ok(!calls.some(([, args]) => args[0] === "ls-remote" || args[0] === "push"));
-    });
-  }
-
-  it("--yes answers every prompt, even one the caller supplied", async () => {
+describe("release.mjs dev dispatch flow", () => {
+  it("dispatches the exact dev SHA on dev without promotion or a PR", async () => {
     const responses = BASE_RESPONSES.map((response) =>
-      response.out === "PLACEHOLDER-LIST" ? { needles: response.needles, out: "[]" } : response,
-    );
-    const { run } = scriptedRunner(responses);
+      response.out === "PLACEHOLDER-LIST" ? { needles: response.needles, out: "[]" } : response);
+    const { run, calls } = scriptedRunner(responses);
     let listCalls = 0;
     const runCounting = (bin: string, args: string[]) => {
       if (bin === "gh" && args[0] === "run" && args[1] === "list" && ++listCalls === 2) {
+        calls.push([bin, args]);
         return JSON.stringify([{ databaseId: 500, status: "completed", url: "https://example.test/run/500" }]);
       }
       return run(bin, args);
     };
     const code = await runRelease(["patch", "--dry-run", "--yes"], {
-      run: runCounting,
-      sleep: () => Promise.resolve(),
-      log: () => {},
+      run: runCounting, sleep: () => Promise.resolve(), log: () => {},
       ask: () => { throw new Error("--yes must not prompt"); },
     });
     assert.equal(code, 0);
+    const dispatch = calls.find(([, args]) => args[0] === "workflow");
+    assert.deepEqual(dispatch?.[1], [
+      "workflow", "run", "release.yml", "--ref", "dev",
+      "-f", "bump=patch", "-f", "dry_run=true", "-f", "expected_sha=" + MAIN_SHA,
+    ]);
+    assert.ok(!calls.some(([, args]) => ["pr", "push", "ls-remote", "rev-list"].includes(args[0])));
   });
 });
 
@@ -290,7 +166,7 @@ describe("release.mjs resume", () => {
     assert.throws(() => parseArgs(["resume"]), /stable X\.Y\.Z/);
     assert.throws(() => parseArgs(["resume", "3.24"]), /stable X\.Y\.Z/);
     assert.throws(() => parseArgs(["resume", "3.24.1-preview.1"]), /stable X\.Y\.Z/);
-    for (const flag of ["--promote", "--dry-run", "--canary"]) {
+    for (const flag of ["--dry-run", "--canary"]) {
       assert.throws(() => parseArgs(["resume", "3.24.1", flag]), /resume does not take/);
     }
   });
@@ -335,7 +211,7 @@ describe("release.mjs resume", () => {
       log: () => {},
     });
     assert.equal(code, 0);
-    assert.ok(calls.includes("gh workflow run release.yml -f bump=patch -f dry_run=false -f resume_version=3.24.1"));
+    assert.ok(calls.includes("gh workflow run release.yml --ref dev -f bump=patch -f dry_run=false -f resume_version=3.24.1"));
     assert.deepEqual(calls.filter((c) => c.startsWith("git push")), ["git push origin " + SHA + ":refs/tags/desktop-v3.24.1"]);
     // No promotion in a resume.
     assert.ok(!calls.some((c) => c.includes("pr list") || c.includes("rev-list --count")));

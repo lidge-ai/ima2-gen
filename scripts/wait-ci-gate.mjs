@@ -44,7 +44,7 @@ export function pickRun(runs, afterRunId, candidateSha) {
 
 /**
  * D2 (release pipeline simplify): when the version commit only bumps version
- * files, the parent commit's main push CI already proves the tree, so the cut
+ * files, the parent commit's dev push CI already proves the tree, so the cut
  * reuses it instead of dispatching a candidate run. That reuse has to be
  * conservative in both directions: only failure of the parent run is red (the
  * tree it proves is broken), while cancelled/skipped/missing evidence falls
@@ -53,22 +53,22 @@ export function pickRun(runs, afterRunId, candidateSha) {
  */
 export function classifyPushRun(run, jobs) {
   if (!run) {
-    return { reusable: false, red: false, reason: "no ci.yml push run on main for the parent SHA" };
+    return { reusable: false, red: false, reason: "no ci.yml push run on dev for the parent SHA" };
   }
   if (run.event !== "push") {
     return { reusable: false, red: false, reason: `ci.yml run ${run.databaseId} is a ${run.event}, not a push` };
   }
-  if (run.headBranch !== "main") {
-    return { reusable: false, red: false, reason: `ci.yml run ${run.databaseId} is on ${run.headBranch}, not main` };
+  if (run.headBranch !== "dev") {
+    return { reusable: false, red: false, reason: `ci.yml run ${run.databaseId} is on ${run.headBranch}, not dev` };
   }
   if (run.conclusion === "failure") {
-    return { reusable: false, red: true, reason: `main CI is red for ${run.headSha}` };
+    return { reusable: false, red: true, reason: `dev CI is red for ${run.headSha}` };
   }
   if (run.conclusion !== "success") {
     return {
       reusable: false,
       red: false,
-      reason: `main CI run ${run.databaseId} concluded ${run.conclusion ?? run.status}; falling back to the candidate CI`,
+      reason: `dev CI run ${run.databaseId} concluded ${run.conclusion ?? run.status}; falling back to the candidate CI`,
     };
   }
   const list = Array.isArray(jobs) ? jobs : [];
@@ -85,7 +85,7 @@ export function classifyPushRun(run, jobs) {
       return {
         reusable: false,
         red: false,
-        reason: `main CI run ${run.databaseId} has no ${family.label} job; falling back to the candidate CI`,
+        reason: `dev CI run ${run.databaseId} has no ${family.label} job; falling back to the candidate CI`,
       };
     }
     const bad = matched.find((job) => job.conclusion !== "success");
@@ -93,11 +93,11 @@ export function classifyPushRun(run, jobs) {
       return {
         reusable: false,
         red: false,
-        reason: `main CI job "${bad.name}" concluded ${bad.conclusion ?? "incomplete"}; falling back to the candidate CI`,
+        reason: `dev CI job "${bad.name}" concluded ${bad.conclusion ?? "incomplete"}; falling back to the candidate CI`,
       };
     }
   }
-  return { reusable: true, red: false, reason: `main CI run ${run.databaseId} succeeded for ${run.headSha}` };
+  return { reusable: true, red: false, reason: `dev CI run ${run.databaseId} succeeded for ${run.headSha}` };
 }
 
 function emitReuse(verdict) {
@@ -139,7 +139,7 @@ function listPushRuns() {
     gh([
       "run", "list",
       "--workflow", "ci.yml",
-      "--branch", "main",
+      "--branch", "dev",
       "--event", "push",
       "--limit", "20",
       "--json", "databaseId,event,headBranch,headSha,status,conclusion",
@@ -205,7 +205,7 @@ function viewJobsOrNull(runId) {
 function newestPushRun(runs, baseSha) {
   return runs
     .filter((candidate) =>
-      candidate.event === "push" && candidate.headBranch === "main" && candidate.headSha === baseSha)
+      candidate.event === "push" && candidate.headBranch === "dev" && candidate.headSha === baseSha)
     .sort((a, b) => Number(b.databaseId) - Number(a.databaseId))[0];
 }
 
@@ -215,7 +215,7 @@ function fallback(reason) {
 
 /**
  * Waits only for a run that exists. A parent commit with no push run at all
- * (for example main still at the previous release commit, which a GITHUB_TOKEN
+ * (for example dev still at the previous release commit, which a GITHUB_TOKEN
  * push created without CI) falls back after the discovery window instead of
  * burning the whole wait. The newest matching run wins, so a rerun in progress
  * is waited for rather than an older attempt's conclusion being reused.
@@ -229,11 +229,11 @@ async function reusePush(baseSha, timeoutMinutes) {
     const runs = listPushRunsOrNull();
     const match = runs ? newestPushRun(runs, baseSha) : null;
     if (match?.status === "completed") { run = match; break; }
-    if (!match && Date.now() > discoveryDeadline) return fallback("no ci.yml push run on main for " + baseSha);
-    if (Date.now() > deadline) return fallback("main CI for " + baseSha + " did not finish within " + timeoutMinutes + "m");
+    if (!match && Date.now() > discoveryDeadline) return fallback("no ci.yml push run on dev for " + baseSha);
+    if (Date.now() > deadline) return fallback("dev CI for " + baseSha + " did not finish within " + timeoutMinutes + "m");
     await sleep(POLL_MS);
   }
-  console.log("ci gate: classifying main push run " + run.databaseId + " (headSha " + run.headSha + ")");
+  console.log("ci gate: classifying dev push run " + run.databaseId + " (headSha " + run.headSha + ")");
   let view = null;
   while (!view && Date.now() <= deadline) {
     view = viewJobsOrNull(run.databaseId);

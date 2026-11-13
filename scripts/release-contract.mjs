@@ -16,7 +16,7 @@ const SLSA_BUILD_TYPE = "https://slsa-framework.github.io/github-actions-buildty
 const GITHUB_HOSTED_BUILDER = "https://github.com/actions/runner/github-hosted";
 // release.yml dispatches publish.yml, and a dispatched run always executes on
 // the default branch regardless of which ref it publishes.
-const DISPATCH_HOST_REF = "refs/heads/main";
+const DISPATCH_HOST_REF = "refs/heads/dev";
 const STABLE_VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 function commandName(name) {
@@ -71,7 +71,7 @@ function assertReleaseToolchain() {
  * real values through PUBLISH_REF/PUBLISH_SHA.
  *
  * This only decides WHICH ref is inspected. classifyPublish still accepts nothing but
- * refs/heads/preview or a v* tag matching package.json, and validateRemoteRefs still
+ * refs/heads/dev or a v* tag matching package.json, and validateRemoteRefs still
  * requires the live remotes to agree, so an override cannot publish something new.
  */
 function publishRef() {
@@ -152,7 +152,7 @@ export function classifyPublish(input) {
   } = input;
   if (eventName !== "push") throw new Error(`unsupported publish event ${eventName}`);
 
-  if (ref === "refs/heads/preview") {
+  if (ref === "refs/heads/dev") {
     const stableTag = `v${packageVersion}`;
     if (tagsAtHead.includes(stableTag) && latestVersion === packageVersion && latestGitHead === sha) {
       return { shouldPublish: false, shouldVerify: false, channel: "preview", npmTag: "preview", version: packageVersion };
@@ -186,10 +186,10 @@ export function classifyPublish(input) {
 }
 
 /** Release branches a stable tag must be reachable from. */
-export const STABLE_BRANCHES = ["main", "dev", "preview"];
+export const STABLE_BRANCHES = ["dev"];
 
 /**
- * A preview publish ships whatever preview points at, so preview must equal the SHA.
+ * A dev-source preview publish requires dev to equal the published SHA.
  * A stable publish ships an immutable tag: the tag must equal the SHA, while the
  * release branches only have to contain it. Integration keeps merging into dev during
  * a release (v3.23.2 failed on exactly that), and containment is what protects merged
@@ -198,8 +198,8 @@ export const STABLE_BRANCHES = ["main", "dev", "preview"];
  * @param {{ ref: string, sha: string, refs: Record<string, string>, contains?: (ancestor: string, descendant: string) => boolean }} check
  */
 export function validateRemoteRefs({ ref, sha, refs, contains }) {
-  if (ref === "refs/heads/preview") {
-    if (refs.preview !== sha) throw new Error(`remote preview is ${refs.preview || "missing"}, expected ${sha}`);
+  if (ref === "refs/heads/dev") {
+    if (refs.dev !== sha) throw new Error(`remote dev is ${refs.dev || "missing"}, expected ${sha}`);
     return;
   }
   if (!ref.startsWith("refs/tags/")) throw new Error(`unsupported publish ref ${ref}`);
@@ -258,7 +258,7 @@ export function validateProvenance(statement, expected) {
   // npm records the ref the workflow RAN on, which is only the publish target
   // for a push. release.yml reaches publish.yml by workflow_dispatch (a
   // GITHUB_TOKEN push emits no event), and a dispatch always runs on the
-  // default branch — so demanding refs/heads/preview here can never pass.
+  // default branch — so demanding refs/heads/dev here can never pass.
   // The publish target is already pinned by `source commit` above; the ref is
   // narrowed to the refs this repository may publish from rather than dropped.
   const eventName = github?.event_name;
@@ -426,16 +426,14 @@ async function verifyPreviewProof(packageVersion, sha) {
   return verifyRegistryEventually({
     version: preview.version,
     npmTag: "preview",
-    ref: "refs/heads/preview",
+    ref: "refs/heads/dev",
     sha,
   });
 }
 
 function remoteRefMap(ref) {
   const refs = {
-    main: run("git", ["rev-parse", "origin/main"]).stdout.trim(),
     dev: run("git", ["rev-parse", "origin/dev"]).stdout.trim(),
-    preview: run("git", ["rev-parse", "origin/preview"]).stdout.trim(),
   };
   if (ref.startsWith("refs/tags/")) {
     const tag = ref.slice("refs/tags/".length);
@@ -449,7 +447,7 @@ function gitContains(ancestor, descendant) {
 }
 
 function assertRemoteRefCommand(ref, sha) {
-  run("git", ["fetch", "origin", "main", "dev", "preview", "--tags"]);
+  run("git", ["fetch", "origin", "dev", "--tags"]);
   validateRemoteRefs({ ref, sha, refs: remoteRefMap(ref), contains: gitContains });
   console.log(`[release-contract] live refs verified for ${ref}@${sha}`);
 }
@@ -475,7 +473,7 @@ async function prepareCommand() {
     validateRemoteRefs({ ref, sha, refs: remoteRefMap(ref), contains: gitContains });
     await verifyPreviewProof(manifest.version, sha);
   } else {
-    run("git", ["merge-base", "--is-ancestor", "origin/main", sha]);
+    run("git", ["merge-base", "--is-ancestor", "origin/dev", sha]);
   }
   writeOutput({
     should_publish: String(plan.shouldPublish),

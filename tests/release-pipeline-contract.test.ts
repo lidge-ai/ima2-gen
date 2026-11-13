@@ -24,7 +24,7 @@ import {
 import { gypfileNames, validateBundleParity, validateInstallPolicy } from "../scripts/check-install-policy.mjs";
 import { npmInvocation } from "../scripts/npm-subprocess.mjs";
 import { assertActionPinned, assertAllActionsPinned } from "./_actionPins.mjs";
-import { assertUnitProvenance, isVersionOnlyDiff, REQUIRED_UNITS } from "../scripts/release-cut.mjs";
+import { assertUnitProvenance, isVersionOnlyDiff, REQUIRED_UNITS, shouldSkipCut } from "../scripts/release-cut.mjs";
 import { parse } from "yaml";
 
 const SHA = "a".repeat(40);
@@ -34,9 +34,9 @@ function repoRoot() {
 }
 
 describe("release channel contract", () => {
-  it("accepts only preview branch pushes and matching stable tag pushes", () => {
+  it("accepts only dev-source dispatch and matching stable tag pushes", () => {
     const preview = classifyPublish({
-      eventName: "push", ref: "refs/heads/preview", sha: SHA,
+      eventName: "push", ref: "refs/heads/dev", sha: SHA,
       packageVersion: "2.0.13", latestVersion: "2.0.13", latestGitHead: SHA,
       runId: "123", runAttempt: "1", date: new Date("2026-07-10T00:00:00Z"),
     });
@@ -62,8 +62,8 @@ describe("release channel contract", () => {
       }),
       /must be newer/,
     );
-    assert.throws(() => classifyPublish({ eventName: "workflow_dispatch", ref: "refs/heads/main" }), /unsupported publish event/);
-    assert.throws(() => classifyPublish({ eventName: "push", ref: "refs/heads/main" }), /unsupported publish ref/);
+    assert.throws(() => classifyPublish({ eventName: "workflow_dispatch", ref: "refs/heads/dev" }), /unsupported publish event/);
+    assert.throws(() => classifyPublish({ eventName: "push", ref: "refs/heads/preview" }), /unsupported publish ref/);
     assert.throws(
       () => classifyPublish({ eventName: "push", ref: "refs/tags/v2.0.15", packageVersion: "2.0.14" }),
       /does not match/,
@@ -80,7 +80,7 @@ describe("release channel contract", () => {
 
   it("skips a stable-tagged SHA synced back to preview", () => {
     const plan = classifyPublish({
-      eventName: "push", ref: "refs/heads/preview", sha: SHA,
+      eventName: "push", ref: "refs/heads/dev", sha: SHA,
       packageVersion: "2.0.14", latestVersion: "2.0.14", latestGitHead: SHA,
       tagsAtHead: ["v2.0.14"], runId: "1", runAttempt: "1",
     });
@@ -90,10 +90,10 @@ describe("release channel contract", () => {
 
   it("requires the stable tag to equal the SHA and the release branches to contain it", () => {
     const LATER = "c".repeat(40);
-    const refs = { main: SHA, dev: LATER, preview: SHA, "v2.0.14": SHA };
+    const refs = { dev: LATER, "v2.0.14": SHA };
     // dev kept receiving merges during the release (v3.23.2): a descendant is fine.
     const containsAll = (ancestor: string, descendant: string) => ancestor === SHA && [SHA, LATER].includes(descendant);
-    assert.deepEqual(STABLE_BRANCHES, ["main", "dev", "preview"]);
+    assert.deepEqual(STABLE_BRANCHES, ["dev"]);
     assert.doesNotThrow(() => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs, contains: containsAll }));
     // A dev that lost the release commit would orphan it.
     assert.throws(
@@ -106,20 +106,20 @@ describe("release channel contract", () => {
       /remote v2\.0\.14 is c+, expected a+/,
     );
     assert.throws(
-      () => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs: { ...refs, preview: "" }, contains: containsAll }),
-      /remote preview is missing/,
+      () => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs: { ...refs, dev: "" }, contains: containsAll }),
+      /remote dev is missing/,
     );
     // Without a predicate a stable check must refuse rather than pass.
     assert.throws(() => validateRemoteRefs({ ref: "refs/tags/v2.0.14", sha: SHA, refs }), /contains\(\) predicate/);
   });
 
   it("keeps a preview publish exact", () => {
-    assert.doesNotThrow(() => validateRemoteRefs({ ref: "refs/heads/preview", sha: SHA, refs: { preview: SHA } }));
+    assert.doesNotThrow(() => validateRemoteRefs({ ref: "refs/heads/dev", sha: SHA, refs: { dev: SHA } }));
     assert.throws(
-      () => validateRemoteRefs({ ref: "refs/heads/preview", sha: SHA, refs: { preview: "b".repeat(40) }, contains: () => true }),
-      /remote preview is b+, expected a+/,
+      () => validateRemoteRefs({ ref: "refs/heads/dev", sha: SHA, refs: { dev: "b".repeat(40) }, contains: () => true }),
+      /remote dev is b+, expected a+/,
     );
-    assert.throws(() => validateRemoteRefs({ ref: "refs/heads/main", sha: SHA, refs: {} }), /unsupported publish ref/);
+    assert.throws(() => validateRemoteRefs({ ref: "refs/heads/preview", sha: SHA, refs: {} }), /unsupported publish ref/);
   });
 });
 
@@ -187,7 +187,7 @@ describe("release artifact and provenance contract", () => {
   it("accepts the dispatch host ref only for a dispatched publish", () => {
     // release.yml reaches publish.yml by workflow_dispatch, and a dispatched run
     // always executes on the default branch. npm therefore records
-    // refs/heads/main even when the published target is preview or a tag.
+    // refs/heads/dev even when the published target is a dev preview or a tag.
     const dispatched: any = {
       _type: "https://in-toto.io/Statement/v1",
       predicateType: "https://slsa.dev/provenance/v1",
@@ -195,7 +195,7 @@ describe("release artifact and provenance contract", () => {
       predicate: {
         buildDefinition: {
           buildType: "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
-          externalParameters: { workflow: { repository: "https://github.com/lidge-ai/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/heads/main" } },
+          externalParameters: { workflow: { repository: "https://github.com/lidge-ai/ima2-gen", path: ".github/workflows/publish.yml", ref: "refs/heads/dev" } },
           internalParameters: { github: { event_name: "workflow_dispatch" } },
           resolvedDependencies: [{ digest: { gitCommit: SHA } }],
         },
@@ -205,7 +205,7 @@ describe("release artifact and provenance contract", () => {
         },
       },
     };
-    const expected = { ref: "refs/heads/preview", sha: SHA, sha512: "digest", version: "2.0.14", runId: "1", runAttempt: "1" };
+    const expected = { ref: "refs/heads/dev", sha: SHA, sha512: "digest", version: "2.0.14", runId: "1", runAttempt: "1" };
     assert.deepEqual(validateProvenance(dispatched, expected).runId, "1");
 
     // The relaxation is scoped to the default branch. Any other ref still fails,
@@ -214,7 +214,7 @@ describe("release artifact and provenance contract", () => {
     assert.throws(() => validateProvenance(dispatched, expected), /source ref mismatch/);
 
     // A push must still match the publish target exactly: no host-ref fallback.
-    dispatched.predicate.buildDefinition.externalParameters.workflow.ref = "refs/heads/main";
+    dispatched.predicate.buildDefinition.externalParameters.workflow.ref = "refs/heads/preview";
     dispatched.predicate.buildDefinition.internalParameters.github.event_name = "push";
     assert.throws(() => validateProvenance(dispatched, expected), /source ref mismatch/);
 
@@ -339,12 +339,12 @@ describe("package install policy contract", () => {
     const workflow = readFileSync(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
     // workflow_dispatch is how release.yml reaches this workflow, because a GITHUB_TOKEN
     // push emits no event. It cannot widen what may be published: the ref is still
-    // classified, and classifyPublish accepts only preview or a matching v* tag.
+    // classified, and classifyPublish accepts only a dispatched dev preview or matching v* tag.
     assert.match(workflow, /workflow_dispatch:/);
     assert.match(workflow, /publish_ref:/);
     assert.match(workflow, /publish_sha:/);
     assert.doesNotMatch(workflow, /(?:^|\n)on:[\s\S]{0,400}?(?:^|\n)\s{2}release:\s*(?:\n|$)/);
-    assert.match(workflow, /branches:\s*\[preview\]/);
+    assert.doesNotMatch(workflow, /branches:\s*\[(preview|dev|main)\]/);
     assert.match(workflow, /tags:\s*\['v\*'\]/);
     // Three, not two: the old single publish job is now publish-preview and
     // publish-stable so each channel can carry its own approval environment.
@@ -450,7 +450,7 @@ describe("package install policy contract", () => {
     const release = readFileSync(new URL("../.github/workflows/release.yml", import.meta.url), "utf8");
     const preflightIndex = release.indexOf("release-cut.mjs preflight");
     const commitIndex = release.indexOf("release-cut.mjs commit");
-    const previewIndex = release.indexOf("refs/heads/preview");
+    const previewIndex = release.indexOf("refs/heads/dev");
     const proofIndex = release.indexOf("assert-preview-proof");
     const tagIndex = release.indexOf("git tag");
     assert.ok(preflightIndex >= 0 && preflightIndex < commitIndex, "the baseline guard must precede the version commit");
@@ -475,7 +475,7 @@ describe("package install policy contract", () => {
     // Guards release.sh had before it promoted anything must survive the move to CI.
     assert.match(release, /npm run verify:release/, "the candidate must be verified before it is pushed");
     const verifyIndex = release.indexOf("npm run verify:release");
-    assert.ok(verifyIndex < release.indexOf('git push origin "HEAD:refs/heads/main"'), "verification must precede the main push");
+    assert.ok(verifyIndex < release.indexOf('git push origin "HEAD:refs/heads/dev"'), "verification must precede the dev push");
     assert.match(release, /release-cut\.mjs assert-clean/);
     assert.match(release, /release-contract\.mjs assert-toolchain/);
     assert.match(release, /release-cut\.mjs assert-remotes-unmoved/);
@@ -489,12 +489,8 @@ describe("package install policy contract", () => {
 
   it("refuses a cut whose baseline, version, or preview proof is not releasable", async () => {
     const { assertBaseline, assertCuttable, assertPreviewProof } = await import("../scripts/release-cut.mjs");
-    const yes = () => true;
-
-    assert.deepEqual(assertBaseline({ head: "a", main: "a", dev: "a", preview: "a", contains: yes }), []);
-    assert.match(assertBaseline({ head: "a", main: "b", dev: "a", preview: "a", contains: yes }).join(), /origin\/main is b/);
-    // A main that does not contain dev would orphan merged work behind the tag.
-    assert.match(assertBaseline({ head: "a", main: "a", dev: "z", preview: "a", contains: () => false }).join(), /does not contain origin\/dev/);
+    assert.deepEqual(assertBaseline({ head: "a", dev: "a" }), []);
+    assert.match(assertBaseline({ head: "a", dev: "b" }).join(), /origin\/dev is b/);
 
     assert.deepEqual(assertCuttable({ version: "3.0.6", publishedVersion: null, remoteTag: "" }), []);
     assert.match(assertCuttable({ version: "3.0.6", publishedVersion: "3.0.6", remoteTag: "" }).join(), /already published/);
@@ -509,11 +505,8 @@ describe("package install policy contract", () => {
     assert.equal(assertPreviewProof({ ...proven, previewVersion: null, previewGitHead: null }).length, 2);
 
     const { assertRemotesUnmoved } = await import("../scripts/release-cut.mjs");
-    assert.deepEqual(assertRemotesUnmoved({ sha: "abc", main: "abc", preview: "abc" }), []);
-    // Someone merging to main while the preview build was being proven must block the tag,
-    // because the tag would then certify a SHA that main no longer points at.
-    assert.match(assertRemotesUnmoved({ sha: "abc", main: "def", preview: "abc" }).join(), /origin\/main moved to def/);
-    assert.match(assertRemotesUnmoved({ sha: "abc", main: "abc", preview: "def" }).join(), /origin\/preview is def/);
+    assert.deepEqual(assertRemotesUnmoved({ sha: "abc", dev: "abc" }), []);
+    assert.match(assertRemotesUnmoved({ sha: "abc", dev: "def" }).join(), /origin\/dev moved to def/);
   });
 
   it("waits on the run it dispatched, not on a concurrent one", async () => {
@@ -538,7 +531,7 @@ describe("package install policy contract", () => {
     const { pickRun } = await import("../scripts/wait-publish-run.mjs");
     const runs = [
       // A hand dispatch for another ref landed first, above the mark.
-      { databaseId: 201, event: "workflow_dispatch", displayTitle: "Publish refs/heads/preview" },
+      { databaseId: 201, event: "workflow_dispatch", displayTitle: "Publish refs/heads/dev" },
       { databaseId: 202, event: "workflow_dispatch", displayTitle: "Publish refs/tags/v3.24.1" },
     ];
     assert.equal(pickRun(runs, 200, "Publish refs/tags/v3.24.1")?.databaseId, 202);
@@ -547,19 +540,9 @@ describe("package install policy contract", () => {
     assert.equal(pickRun(runs, 200)?.databaseId, 201);
   });
 
-  it("lands the release on dev by fast-forward, merge, or not at all", async () => {
-    const { planDevLanding } = await import("../scripts/release-cut.mjs");
-    assert.equal(planDevLanding({ devContainsSha: true, shaContainsDev: true }), "noop");
-    assert.equal(planDevLanding({ devContainsSha: true, shaContainsDev: false }), "noop");
-    // dev has not moved since the cut: the release commit sits right on top of it.
-    assert.equal(planDevLanding({ devContainsSha: false, shaContainsDev: true }), "fast-forward");
-    // A PR merged into dev during the release.
-    assert.equal(planDevLanding({ devContainsSha: false, shaContainsDev: false }), "merge");
-  });
-
   it("resumes only a version whose tag, package version and main agree", async () => {
     const { assertResumable } = await import("../scripts/release-cut.mjs");
-    const ok = { version: "3.24.1", sha: SHA, packageVersion: "3.24.1", mainContainsSha: true };
+    const ok = { version: "3.24.1", sha: SHA, packageVersion: "3.24.1", devContainsSha: true };
     assert.deepEqual(assertResumable(ok), []);
     assert.match(assertResumable({ ...ok, sha: "" }).join(), /tag v3\.24\.1 does not exist/);
     // A missing tag reports only that; nothing else about it can be known.
@@ -567,7 +550,7 @@ describe("package install policy contract", () => {
     assert.match(assertResumable({ ...ok, sha: "abc123" }).join(), /does not exist/);
     assert.match(assertResumable({ ...ok, packageVersion: "3.24.0" }).join(), /package\.json at v3\.24\.1 is 3\.24\.0/);
     assert.match(assertResumable({ ...ok, packageVersion: null }).join(), /\(unreadable\)/);
-    assert.match(assertResumable({ ...ok, mainContainsSha: false }).join(), /origin\/main does not contain v3\.24\.1/);
+    assert.match(assertResumable({ ...ok, devContainsSha: false }).join(), /origin\/dev does not contain v3\.24\.1/);
     assert.match(assertResumable({ ...ok, version: "3.24" }).join(), /stable X\.Y\.Z/);
   });
 
@@ -576,7 +559,7 @@ describe("package install policy contract", () => {
     assert.equal(releaseCommitSubject("3.24.1"), "[agent] chore: release v3.24.1");
     // v3.24.1: main and preview reached the version commit, npm was slow, the tag never came.
     const untagged = {
-      version: "3.24.1", sha: SHA, packageVersion: "3.24.1", mainContainsSha: true, tagged: false,
+      version: "3.24.1", sha: SHA, packageVersion: "3.24.1", devContainsSha: true, tagged: false,
       previewVersion: "3.24.1-preview.260929.36573790959.1", previewGitHead: SHA,
     };
     assert.deepEqual(assertResumable(untagged), []);
@@ -589,73 +572,6 @@ describe("package install policy contract", () => {
     // The commit that cut() creates carries exactly the subject resume-guard looks for.
     const source = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
     assert.match(source, /git\(\["commit", "-m", releaseCommitSubject\(version\)\]\)/);
-  });
-
-  it("land-dev really fast-forwards, merges, skips, and stops on a conflict", () => {
-    const script = join(repoRoot(), "scripts/release-cut.mjs");
-    const root = mkdtempSync(join(tmpdir(), "ima2-land-dev-"));
-    try {
-      const git = (cwd: string, ...args: string[]) =>
-        execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-      const origin = join(root, "origin.git");
-      const work = join(root, "work");
-      git(root, "init", "-q", "--bare", "-b", "main", origin);
-      git(root, "clone", "-q", origin, work);
-      git(work, "config", "user.name", "test");
-      git(work, "config", "user.email", "test@example.test");
-      const commit = (file: string, body: string, message: string) => {
-        writeFileSync(join(work, file), body);
-        git(work, "add", file);
-        git(work, "commit", "-q", "-m", message);
-        return git(work, "rev-parse", "HEAD");
-      };
-      const landDev = (sha: string) =>
-        spawnSync(process.execPath, [script, "land-dev", sha, "9.9.9"], { cwd: work, encoding: "utf8" });
-      const originDev = () => git(work, "ls-remote", origin, "refs/heads/dev").split(/\s+/)[0];
-      const isAncestor = (a: string, d: string) =>
-        spawnSync("git", ["merge-base", "--is-ancestor", a, d], { cwd: work }).status === 0;
-
-      commit("package.json", '{"version":"9.9.8"}\n', "base");
-      git(work, "push", "-q", "origin", "HEAD:refs/heads/main", "HEAD:refs/heads/dev");
-
-      // dev did not move: the release commit fast-forwards it.
-      const release = commit("package.json", '{"version":"9.9.9"}\n', "release 9.9.9");
-      let result = landDev(release);
-      assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /fast-forward/);
-      assert.equal(originDev(), release);
-
-      // dev already contains the release: nothing to do.
-      result = landDev(release);
-      assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /noop/);
-
-      // A PR merged into dev during the next release: merge, never force.
-      git(work, "checkout", "-q", "-b", "feature", release);
-      const feature = commit("feature.txt", "feature\n", "feature");
-      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
-      git(work, "checkout", "-q", "--detach", release);
-      const next = commit("package.json", '{"version":"9.9.10"}\n', "release 9.9.10");
-      result = landDev(next);
-      assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /merge/);
-      const merged = originDev();
-      assert.ok(isAncestor(next, merged) && isAncestor(feature, merged), "dev keeps both the feature and the release");
-      assert.match(git(work, "log", "-1", "--format=%s", merged), /land release v9\.9\.9 on dev/);
-
-      // A conflicting dev change stops with the resume hint and leaves dev alone.
-      git(work, "checkout", "-q", "--detach", merged);
-      const conflicting = commit("package.json", '{"version":"dev-edit"}\n', "dev edits package.json");
-      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
-      git(work, "checkout", "-q", "--detach", next);
-      const clash = commit("package.json", '{"version":"9.9.11"}\n', "release 9.9.11");
-      result = landDev(clash);
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /conflicts[\s\S]*npm run release -- resume 9\.9\.9/);
-      assert.equal(originDev(), conflicting);
-    } finally {
-      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    }
   });
 
   it("keeps build caches out of the index so verification cannot dirty the release", () => {
@@ -718,8 +634,8 @@ describe("package install policy contract", () => {
     assert.match(workflow, /\[ "\$CURRENT" = "\$CANDIDATE_SHA" \]/);
     // The CI gate must run before main moves.
     const gateIndex = workflow.indexOf("Dispatch CI for the exact candidate SHA");
-    const mainPushIndex = workflow.indexOf("Push the version commit to main");
-    assert.ok(gateIndex > -1 && mainPushIndex > -1 && gateIndex < mainPushIndex);
+    const devPushIndex = workflow.indexOf("Push the version commit to dev");
+    assert.ok(gateIndex > -1 && devPushIndex > -1 && gateIndex < devPushIndex);
   });
 
   it("every candidate job checks out and guards the dispatched SHA before package execution", () => {
@@ -731,7 +647,7 @@ describe("package install policy contract", () => {
     // pushed range. There is no pull_request trigger — the PR contract is the
     // PR fast gate alone.
     assert.equal(ci.on.pull_request, undefined);
-    assert.deepEqual(ci.on.push.branches, ["main", "dev", "preview"]);
+    assert.deepEqual(ci.on.push.branches, ["dev"]);
     for (const name of ["test", "windows", "macos-install", "e2e"]) {
       const steps = ci.jobs[name].steps;
       const checkout = steps.filter((s: any) => s.uses?.startsWith("actions/checkout@"));
@@ -1062,7 +978,7 @@ describe("version-only reuse classification (D2)", () => {
     const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
     assert.match(
       workflow,
-      /if: \$\{\{ inputs\.dry_run != 'canary' && steps\.versiononly\.outputs\.version_only == 'true' \}\}/,
+      /if: \$\{\{ env\.EFFECTIVE_DRY_RUN != 'canary' && steps\.versiononly\.outputs\.version_only == 'true' \}\}/,
       "canary must still exercise the candidate CI gate",
     );
     const candidateNames = [
@@ -1080,16 +996,16 @@ describe("version-only reuse classification (D2)", () => {
       assert.match(
         stepBlock,
         /steps\.reuse\.outputs\.reusable != 'true'/,
-        `${name} must be skipped when the main push CI was reused`,
+        `${name} must be skipped when the dev push CI was reused`,
       );
-      assert.match(stepBlock, /inputs\.dry_run != 'true'/, `${name} keeps its dry_run guard`);
+      assert.match(stepBlock, /env\.EFFECTIVE_DRY_RUN != 'true'/, `${name} keeps its dry_run guard`);
     }
   });
 
-  it("classifies a main push run reusable only when it is green with every family run", async () => {
+  it("classifies a dev push run reusable only when it is green with every family run", async () => {
     const { classifyPushRun } = await import("../scripts/wait-ci-gate.mjs");
     const sha = "e".repeat(40);
-    const run = { databaseId: 9, event: "push", headBranch: "main", headSha: sha, status: "completed", conclusion: "success" };
+    const run = { databaseId: 9, event: "push", headBranch: "dev", headSha: sha, status: "completed", conclusion: "success" };
     const jobs = [
       { name: "ci", conclusion: "success" },
       { name: "test (ubuntu-latest, node 22.23.0, npm 11.18.0)", conclusion: "success" },
@@ -1110,10 +1026,10 @@ describe("version-only reuse classification (D2)", () => {
       assert.match(verdict.reason, new RegExp(event));
     }
 
-    // A run on any branch but main is not the main push CI.
-    const branch = classifyPushRun({ ...run, headBranch: "dev" }, jobs);
+    // A run on any branch but dev is not the dev push CI.
+    const branch = classifyPushRun({ ...run, headBranch: "main" }, jobs);
     assert.equal(branch.reusable, false);
-    assert.match(branch.reason, /not main/);
+    assert.match(branch.reason, /not dev/);
 
     // A skipped e2e job means the push CI never exercised the suite.
     const skipped = classifyPushRun(run, jobs.map((j) => j.name.startsWith("frontend e2e") ? { ...j, conclusion: "skipped" } : j));
@@ -1133,7 +1049,7 @@ describe("version-only reuse classification (D2)", () => {
 
     // Failure is red: the parent tree itself is broken.
     const red = classifyPushRun({ ...run, conclusion: "failure" }, jobs);
-    assert.deepEqual(red, { reusable: false, red: true, reason: `main CI is red for ${sha}` });
+    assert.deepEqual(red, { reusable: false, red: true, reason: `dev CI is red for ${sha}` });
 
     // Cancelled/skipped/incomplete run -> fallback, never red.
     for (const conclusion of ["cancelled", "skipped", null]) {
@@ -1160,20 +1076,15 @@ describe("tag job dispatches (D4/D5)", () => {
   };
   const tagJob = (workflow: string) => workflow.slice(workflow.indexOf("\n  tag:\n"));
 
-  it("pushes main and the tag atomically, then lands the release on dev", () => {
+  it("pushes dev and the tag atomically and resumes with a tag only", () => {
     const workflow = releaseYml();
     const job = tagJob(workflow);
-    const atomic = stepBlock(job, "Create and atomically push main and the tag");
-    // A dev that moved during the release must not reject main and the tag.
-    assert.doesNotMatch(atomic, /refs\/heads\/dev/);
+    const atomic = stepBlock(job, "Create and atomically push dev and the tag");
     assert.match(atomic, /git push --atomic origin/);
-    assert.match(atomic, /refs\/heads\/main/);
+    assert.match(atomic, /refs\/heads\/dev/);
     assert.match(atomic, /if: inputs\.resume_version == ''/);
-    const land = stepBlock(job, "Land the release on dev");
-    assert.match(land, /release-cut\.mjs land-dev "\$SHA" "\$VERSION"/);
-    assert.doesNotMatch(land, /if:/, "a resume lands dev too");
-    assert.ok(job.indexOf("Create and atomically push main and the tag") < job.indexOf("Land the release on dev"));
-    assert.ok(job.indexOf("Land the release on dev") < job.indexOf("Check the desktop release tag"));
+    assert.doesNotMatch(job, /land-dev/);
+    assert.ok(job.indexOf("Create and atomically push dev and the tag") < job.indexOf("Check the desktop release tag"));
     const cut = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
     assert.doesNotMatch(cut, /--force/, "dev is never force-pushed");
   });
@@ -1183,16 +1094,54 @@ describe("tag job dispatches (D4/D5)", () => {
     const target = stepBlock(job, "Resolve the release version and SHA");
     assert.match(job, /- id: target\n\s+name: Resolve the release version and SHA/);
     assert.match(target, /release-cut\.mjs resume-guard "\$RESUME_VERSION"/);
-    assert.ok(job.indexOf("Fetch release branches and tags") < job.indexOf("Resolve the release version and SHA"), "resume-guard needs origin/main");
+    assert.ok(job.indexOf("Fetch dev and tags") < job.indexOf("Resolve the release version and SHA"), "resume-guard needs origin/dev");
     assert.ok(job.indexOf("Resolve the release version and SHA") < job.indexOf("Refuse to tag if the remotes moved"));
     // After the target step nothing reads the cut outputs, or a resume would see empty values.
     const afterTarget = job.slice(job.indexOf("Resolve the release version and SHA") + target.length);
     assert.doesNotMatch(afterTarget, /needs\.cut\.outputs/);
-    // A resume checks out main, because the release tag may not exist yet.
-    assert.match(job, /ref: \$\{\{ needs\.cut\.outputs\.sha \|\| 'main' \}\}/);
+    // A resume checks out dev, because the release tag may not exist yet.
+    assert.match(job, /ref: \$\{\{ needs\.cut\.outputs\.sha \|\| 'dev' \}\}/);
   });
 
-  it("mints a missing release tag in a resume before landing dev", () => {
+  it("rejects tag creation when dev moves after preview proof", () => {
+    const root = mkdtempSync(join(tmpdir(), "ima2-dev-tag-atomic-"));
+    try {
+      const git = (cwd: string, ...args: string[]) =>
+        execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+      const origin = join(root, "origin.git");
+      const work = join(root, "work");
+      git(root, "init", "-q", "--bare", "-b", "dev", origin);
+      git(root, "clone", "-q", origin, work);
+      git(work, "config", "user.name", "test");
+      git(work, "config", "user.email", "test@example.test");
+      const commit = (file: string, body: string, message: string) => {
+        writeFileSync(join(work, file), body);
+        git(work, "add", file);
+        git(work, "commit", "-q", "-m", message);
+        return git(work, "rev-parse", "HEAD");
+      };
+      commit("package.json", '{"version":"3.26.3"}\n', "base");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
+      const release = commit("package.json", '{"version":"3.26.4"}\n', "release 3.26.4");
+      git(work, "push", "-q", "origin", `${release}:refs/heads/dev`);
+      const later = commit("later.txt", "dev moved\n", "later integration");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
+      git(work, "checkout", "-q", "--detach", release);
+      git(work, "tag", "v3.26.4", release);
+      const pushed = spawnSync("git", [
+        "push", "--atomic", "origin", `${release}:refs/heads/dev`,
+        "refs/tags/v3.26.4:refs/tags/v3.26.4",
+      ], { cwd: work, encoding: "utf8" });
+      assert.notEqual(pushed.status, 0, "the moved dev ref must reject the non-fast-forward update");
+      assert.match(pushed.stderr, /non-fast-forward|fetch first|failed to push some refs/);
+      assert.equal(git(work, "ls-remote", origin, "refs/tags/v3.26.4"), "", "atomic rejection must not create the tag");
+      assert.equal(git(work, "ls-remote", origin, "refs/heads/dev").split(/\s+/)[0], later);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+
+  it("mints a missing release tag in a resume without moving dev", () => {
     const job = tagJob(releaseYml());
     const mint = stepBlock(job, "Create the missing release tag");
     assert.match(mint, /if: steps\.target\.outputs\.mint_tag == 'true'/);
@@ -1200,7 +1149,7 @@ describe("tag job dispatches (D4/D5)", () => {
     assert.match(mint, /git push origin "refs\/tags\/v\$VERSION:refs\/tags\/v\$VERSION"/);
     assert.doesNotMatch(mint, /refs\/heads\//, "minting touches no branch");
     assert.ok(job.indexOf("Resolve the release version and SHA") < job.indexOf("Create the missing release tag"));
-    assert.ok(job.indexOf("Create the missing release tag") < job.indexOf("Land the release on dev"));
+    assert.ok(job.indexOf("Create the missing release tag") < job.indexOf("Check the desktop release tag"));
     const cut = readFileSync(join(repoRoot(), "scripts/release-cut.mjs"), "utf8");
     assert.match(cut, /emit\(\{ version, sha, mint_tag: String\(!tagged\) \}\)/);
     // Every normal release depends on this: the cut branch of the target step never
@@ -1267,8 +1216,11 @@ describe("tag job dispatches (D4/D5)", () => {
     const job = tagJob(releaseYml());
     // Dispatching on the tag makes GITHUB_SHA the release commit even after main moved on
     // (v3.24.1's resume failed the package smoke on exactly that).
-    assert.match(stepBlock(job, "Publish the stable release"), /--ref "v\$\{\{ steps\.target\.outputs\.version \}\}"/);
-    assert.match(stepBlock(releaseYml(), "Publish the preview candidate"), /--ref preview/);
+    const stableDispatch = stepBlock(job, "Publish the stable release");
+    assert.match(stableDispatch, /--ref dev/);
+    assert.match(stableDispatch, /publish_ref="refs\/tags\/v\$\{\{ steps\.target\.outputs\.version \}\}"/);
+    assert.match(stableDispatch, /publish_sha=\$\{\{ steps\.target\.outputs\.sha \}\}/);
+    assert.match(stepBlock(releaseYml(), "Publish the preview candidate"), /--ref dev/);
     const smoke = readFileSync(join(repoRoot(), "tests/package-install-smoke.mjs"), "utf8");
     assert.match(smoke, /const sourceSha = process\.env\.PUBLISH_SHA \|\| process\.env\.GITHUB_SHA;/);
     assert.doesNotMatch(smoke, /gitHead, process\.env\.GITHUB_SHA/);
@@ -1291,8 +1243,8 @@ describe("tag job dispatches (D4/D5)", () => {
     const workflow = releaseYml();
     assert.match(workflow, /resume_version:\n\s+description: .+\n\s+required: false\n\s+default: ''\n\s+type: string/);
     assert.match(workflow, /refuse-dry-resume:[\s\S]{0,120}?if: inputs\.resume_version != '' && inputs\.dry_run != 'false'/);
-    assert.match(workflow, /\n  cut:\n\s+name: [^\n]+\n\s+if: inputs\.resume_version == ''/);
-    assert.match(stepBlock(workflow, "Wait for the preview publish to finish"), /PUBLISH_RUN_TITLE: Publish refs\/heads\/preview/);
+    assert.match(workflow, /\n  cut:\n\s+name: [^\n]+\n\s+needs: resolve\n\s+if: >-/);
+    assert.match(stepBlock(workflow, "Wait for the preview publish to finish"), /PUBLISH_RUN_TITLE: Publish refs\/heads\/dev/);
   });
 
   it("rechecks the stable refs only when publish-stable is about to publish", () => {
@@ -1314,7 +1266,7 @@ describe("tag job dispatches (D4/D5)", () => {
     assert.ok(summaryIndex < pagesIndex, "summary precedes the Pages dispatch");
     const pagesBlock = workflow.slice(pagesIndex);
     assert.match(pagesBlock, /gh workflow run pages\.yml/);
-    assert.match(pagesBlock, /--ref main/);
+    assert.match(pagesBlock, /--ref dev/);
     assert.match(pagesBlock, /-f release_sha=/);
     assert.match(pagesBlock, /-f release_version=/);
     assert.match(pagesBlock, /continue-on-error: true/);
@@ -1323,5 +1275,30 @@ describe("tag job dispatches (D4/D5)", () => {
     assert.match(summaryBlock, /desktop-v/);
     assert.match(summaryBlock, /re-dispatch desktop:/);
     assert.match(summaryBlock, /re-dispatch pages:/);
+  });
+});
+
+describe("dev trigger release contract", () => {
+  it("cuts equal-version work but skips published, release-subject, and older heads", () => {
+    const base = { dev: SHA, packageVersion: "3.26.3", latestVersion: "3.26.3", latestGitHead: "b".repeat(40), subject: "feat: new work" };
+    assert.equal(shouldSkipCut(base), false, "the cut performs the bump for new equal-version work");
+    assert.equal(shouldSkipCut({ ...base, latestGitHead: SHA }), true);
+    assert.equal(shouldSkipCut({ ...base, packageVersion: "3.26.4", subject: "[agent] chore: release v3.26.4" }), true);
+    assert.equal(shouldSkipCut({ ...base, packageVersion: "3.26.2" }), true);
+  });
+
+  it("resolves no-op before cut and normalizes automatic patch/real-release inputs", () => {
+    const workflow = readFileSync(join(repoRoot(), ".github/workflows/release.yml"), "utf8");
+    assert.match(workflow, /workflow_run:\n\s+workflows: \[CI\]/);
+    assert.match(workflow, /github.event.workflow_run.event == 'push'/);
+    assert.match(workflow, /github.event.workflow_run.head_repository.full_name == github.repository/);
+    assert.match(workflow, /EFFECTIVE_DRY_RUN: .*workflow_run.*'false'/);
+    assert.match(workflow, /EFFECTIVE_BUMP: .*workflow_run.*'patch'/);
+    const resolve = workflow.slice(workflow.indexOf("\n  resolve:"), workflow.indexOf("\n  cut:"));
+    assert.match(resolve, /release-cut.mjs release-needed/);
+    assert.doesNotMatch(resolve, /npm ci|verify:release/);
+    assert.match(workflow, /needs.resolve.outputs.needed == 'true'/);
+    assert.match(workflow, /inputs.resume_version != ''/);
+    assert.match(workflow, /needs.cut.outputs.needed == 'true'/);
   });
 });
