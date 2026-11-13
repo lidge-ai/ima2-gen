@@ -84,6 +84,7 @@
     }
   },
   "toast": {
+    "forkFailed": "이 이미지에서 이어서 작업하지 못했어요.",
     "localImportSuccess": "이미지가 갤러리에 추가됐어요",
     "localImportFailed": "이미지 가져오기 실패",
     "localImportInvalid": "PNG, JPEG, WebP만 지원해요",
@@ -494,6 +495,7 @@
     "close": "닫기"
   },
   "prompt": {
+    "refOverProviderLimit": "이 제공업체는 참조 이미지를 최대 {max}개까지 지원합니다. 생성하려면 {excess}개를 제거하세요.",
     "label": "프롬프트",
     "refCount": "참조 {count}/{max}",
     "trayAria": "참조 트레이, {count}/{max}",
@@ -2144,7 +2146,12 @@
     "saveError": "변환에 실패했습니다",
     "stats": "패스 {paths}개 · {size}"
   },
+  "mobile": {
+    "cardNewsBanner": "카드뉴스는 데스크톱에 맞게 설계되었어요. 원활한 사용을 위해 데스크톱 브라우저를 이용해 주세요.",
+    "dismiss": "닫기"
+  },
   "chain": {
+    "saveAsElement": "요소로 저장",
     "ariaLabel": "빠른 작업",
     "animate": "영상으로",
     "edit": "캔버스에서 편집",

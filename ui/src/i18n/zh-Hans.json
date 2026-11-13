@@ -84,6 +84,7 @@
     }
   },
   "toast": {
+    "forkFailed": "无法从此图片继续。",
     "localImportSuccess": "图像已添加到图库",
     "localImportFailed": "导入图片失败",
     "localImportInvalid": "仅支持 PNG、JPEG 或 WebP",
@@ -494,6 +495,7 @@
     "close": "关闭"
   },
   "prompt": {
+    "refOverProviderLimit": "此服务商最多支持 {max} 张参考图片。请移除 {excess} 张后再生成。",
     "label": "提示词",
     "refCount": "参考 {count}/{max}",
     "trayAria": "参考托盘，{max} 的 {count}",
@@ -2144,7 +2146,12 @@
     "saveError": "转换失败",
     "stats": "{paths} 条路径 · {size}"
   },
+  "mobile": {
+    "cardNewsBanner": "卡片新闻主要为桌面端设计。建议使用桌面浏览器以获得更好的体验。",
+    "dismiss": "关闭"
+  },
   "chain": {
+    "saveAsElement": "保存为元素",
     "ariaLabel": "快速行动",
     "animate": "动画",
     "edit": "在画布中编辑",

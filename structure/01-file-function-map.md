@@ -309,7 +309,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/maskedEditComposite.ts` | 98 | Masked-edit pixel lock: restores source pixels wherever the edit mask is opaque (`features.preserveOutsideMask`); RGBA blend, 4096² cap, one composite at a time |
 | `lib/multimodeHelpers.ts` | 48 | Shared multimode generation helpers |
 | `lib/nodeHelpers.ts` | 135 | Node workflow graph and payload helpers |
-| `lib/vectorizeImage.ts` | 179 | Raster-to-SVG tracing (VTracer) with named presets, size/dimension guards, and SVG optimization |
+| `lib/vectorizeImage.ts` | 195 | Raster-to-SVG tracing (VTracer) with named presets, size/dimension guards, and SVG optimization |
 | `lib/nodeTemplateSeeds.ts` | 84 | Built-in node workflow template seed definitions |
 | `lib/nodeTemplateStore.ts` | 127 | Node workflow template persistence and lookup |
 | `lib/nodeTemplateFile.ts` | 320 | Portable template file format: allowlist graph rebuild, strict import parsing, fixed error codes, download and duplicate names |

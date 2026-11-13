@@ -84,6 +84,7 @@
     }
   },
   "toast": {
+    "forkFailed": "無法從此圖片繼續。",
     "localImportSuccess": "圖像已新增至圖庫",
     "localImportFailed": "匯入圖片失敗",
     "localImportInvalid": "僅支援 PNG、JPEG 或 WebP",
@@ -494,6 +495,7 @@
     "close": "關閉"
   },
   "prompt": {
+    "refOverProviderLimit": "此服務商最多支援 {max} 張參考圖片。請移除 {excess} 張後再產生。",
     "label": "提示詞",
     "refCount": "參考 {count}/{max}",
     "trayAria": "參考托盤，{max} 的 {count}",
@@ -2144,7 +2146,12 @@
     "saveError": "轉換失敗",
     "stats": "{paths} 條路徑 · {size}"
   },
+  "mobile": {
+    "cardNewsBanner": "卡片新聞主要為桌面版設計。建議使用桌面瀏覽器以獲得更好的體驗。",
+    "dismiss": "關閉"
+  },
   "chain": {
+    "saveAsElement": "儲存為元素",
     "ariaLabel": "快速行動",
     "animate": "動畫",
     "edit": "在畫布中編輯",

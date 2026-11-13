@@ -84,6 +84,7 @@
     }
   },
   "toast": {
+    "forkFailed": "Could not continue from this image.",
     "localImportSuccess": "Image added to gallery",
     "localImportFailed": "Failed to import image",
     "localImportInvalid": "Only PNG, JPEG, or WebP is supported",
@@ -494,6 +495,7 @@
     "close": "Close"
   },
   "prompt": {
+    "refOverProviderLimit": "This provider accepts up to {max} reference images. Remove {excess} to generate.",
     "label": "Prompt",
     "refCount": "Refs {count}/{max}",
     "trayAria": "Reference tray, {count} of {max}",
@@ -2144,7 +2146,12 @@
     "saveError": "Tracing failed",
     "stats": "{paths} paths · {size}"
   },
+  "mobile": {
+    "cardNewsBanner": "Card news is designed for desktop. For the best experience, use a desktop browser.",
+    "dismiss": "Dismiss"
+  },
   "chain": {
+    "saveAsElement": "Save as element",
     "ariaLabel": "Quick actions",
     "animate": "Animate",
     "edit": "Edit in canvas",
