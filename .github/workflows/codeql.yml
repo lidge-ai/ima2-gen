@@ -8,9 +8,9 @@ on:
         required: false
         type: string
   push:
-    branches: [main, dev]
+    branches: [dev]
   pull_request:
-    branches: [main, dev]
+    branches: [dev]
   schedule:
     - cron: "17 4 * * 1"
 

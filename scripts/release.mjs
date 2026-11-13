@@ -11,10 +11,10 @@
  * --approve — approves the environments this release created.
  *
  * Usage: node scripts/release.mjs <patch|minor|major> [--dry-run|--canary]
- *          [--promote] [--approve] [--yes]
+ *          [--approve] [--yes]
  *        node scripts/release.mjs resume <X.Y.Z> [--approve] [--yes]
  *
- * `resume` finishes an already-tagged version (dev landing, desktop tag and build,
+ * `resume` finishes an already-tagged version (desktop tag and build,
  * stable publish, Pages) through release.yml's resume_version input.
  */
 import { execFileSync } from "node:child_process";
@@ -22,16 +22,16 @@ import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 
 const BUMPS = ["patch", "minor", "major"];
-const SWITCHES = ["--dry-run", "--canary", "--promote", "--approve", "--yes"];
+const SWITCHES = ["--dry-run", "--canary", "--approve", "--yes"];
 // Only these two release environments may ever be approved from here; anything
 // else pending on these runs is not ours to touch.
 const RELEASE_ENVS = ["npm-stable", "desktop-production"];
 const USAGE =
   "Usage: node scripts/release.mjs <patch|minor|major> " +
-  "[--dry-run|--canary] [--promote] [--approve] [--yes]\n" +
+  "[--dry-run|--canary] [--approve] [--yes]\n" +
   "       node scripts/release.mjs resume <X.Y.Z> [--approve] [--yes]";
 // Switches that only make sense when cutting a new version.
-const CUT_ONLY = ["--dry-run", "--canary", "--promote"];
+const CUT_ONLY = ["--dry-run", "--canary"];
 
 class ExitError extends Error {
   constructor(code) {
@@ -101,7 +101,7 @@ export function selectPendingApprovals(pending, allowedEnvs = RELEASE_ENVS) {
 }
 
 // release.yml dispatches publish.yml on the default branch (the ref it publishes
-// is an input, so headBranch reads "main"); publish.yml's run-name carries that
+// is an input, so headBranch reads "dev"); publish.yml's run-name carries that
 // ref, so only the stable run for refs/tags/v<version> matches — a recovery or
 // preview dispatch in the same window does not. desktop.yml is dispatched on
 // the desktop-v<version> tag ref. Run ids are repository-wide and increase
@@ -203,59 +203,6 @@ async function confirm(question) {
   } finally {
     rl.close();
   }
-}
-
-async function waitMainMove(ctx, before) {
-  const deadline = Date.now() + 5 * 60 * 1000;
-  while (Date.now() < deadline) {
-    const sha = ctx.run("git", ["ls-remote", "origin", "main"]).split(/\s+/)[0];
-    if (sha && sha !== before) return sha;
-    await ctx.sleep(5000);
-  }
-  throw new Error("origin/main did not move within 5 minutes of merging the promotion PR");
-}
-
-async function createPromotionPr(ctx) {
-  const out = ctx.run("gh", [
-    "pr", "create", "--base", "main", "--head", "dev",
-    "--title", "release: promote dev to main",
-    "--body", "Promotion PR opened by scripts/release.mjs --promote; merging it moves origin/main to dev so release.yml can cut from it.",
-  ]);
-  const match = /\/pull\/(\d+)/.exec(out);
-  if (!match) throw new Error("could not parse PR number from: " + out);
-  return Number(match[1]);
-}
-
-async function ensurePromoted(ctx) {
-  ctx.log(ctx.run("gh", ["auth", "status"]));
-  ctx.run("git", ["fetch", "origin", "main", "dev", "--tags"]);
-  const ahead = Number(ctx.run("git", ["rev-list", "--count", "origin/main..origin/dev"]));
-  if (ahead === 0) return;
-  if (ctx.flags.has("--dry-run")) {
-    ctx.log("Dry-run requires dev to be promoted already; refusing to create or merge a promotion PR.");
-    throw new ExitError(2);
-  }
-  if (!ctx.flags.has("--promote")) {
-    ctx.log("origin/dev is " + ahead + " commit(s) ahead of origin/main.");
-    ctx.log("Promote first:  npm run release -- " + ctx.bump + " --promote");
-    throw new ExitError(2);
-  }
-  ctx.log("origin/dev is " + ahead + " commit(s) ahead of origin/main; promoting.");
-  const before = ctx.run("git", ["ls-remote", "origin", "main"]).split(/\s+/)[0];
-  const open = JSON.parse(ctx.run("gh", [
-    "pr", "list", "--head", "dev", "--base", "main", "--state", "open", "--json", "number,title",
-  ]));
-  let number = open[0]?.number;
-  if (number) {
-    ctx.log("Using open promotion PR #" + number + ".");
-  } else {
-    number = await createPromotionPr(ctx);
-    ctx.log("Opened promotion PR #" + number + ".");
-  }
-  if (!(await ctx.ask("Merge PR #" + number + " (dev -> main)?"))) throw new ExitError(0);
-  ctx.run("gh", ["pr", "merge", String(number), "--merge"]);
-  ctx.log("origin/main moved to " + (await waitMainMove(ctx, before)) + ".");
-  ctx.run("git", ["fetch", "origin", "main"]);
 }
 
 function runListArgs(workflow, extra = []) {
@@ -395,6 +342,7 @@ async function runResume(ctx) {
   if (!(await ctx.ask("Resume the release of v" + ctx.version + " now?"))) throw new ExitError(0);
   ctx.run("gh", [
     "workflow", "run", "release.yml",
+    "--ref", "dev",
     "-f", "bump=patch", "-f", "dry_run=false", "-f", "resume_version=" + ctx.version,
   ]);
   if ((await watchDispatched(ctx)) !== "success") return 1;
@@ -418,10 +366,11 @@ export async function runRelease(argv, deps = {}) {
     return runResume(ctx);
   }
   const { bump } = parsed;
-  await ensurePromoted(ctx);
-  const sha = ctx.run("git", ["rev-parse", "origin/main"]);
+  ctx.log(ctx.run("gh", ["auth", "status"]));
+  ctx.run("git", ["fetch", "origin", "dev", "--tags"]);
+  const sha = ctx.run("git", ["rev-parse", "origin/dev"]);
   const version = bumpVersion(
-    JSON.parse(ctx.run("git", ["show", "origin/main:package.json"])).version,
+    JSON.parse(ctx.run("git", ["show", "origin/dev:package.json"])).version,
     bump,
   );
   ctx.afterId = highWaterMark(ctx);
@@ -431,6 +380,7 @@ export async function runRelease(argv, deps = {}) {
   if (!(await ctx.ask("Dispatch release now?"))) throw new ExitError(0);
   ctx.run("gh", [
     "workflow", "run", "release.yml",
+    "--ref", "dev",
     "-f", "bump=" + bump, "-f", "dry_run=" + dry, "-f", "expected_sha=" + sha,
   ]);
   const conclusion = await watchDispatched(ctx);

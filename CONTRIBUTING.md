@@ -20,8 +20,8 @@ Pull requests run one minimal contract: the `PR fast gate` check
 filter skips both for docs/devlog-only PRs). Keep it
 fast; do not add Windows or macOS legs to it.
 
-Cross-platform validation is post-merge. Pushes to `dev` (and `main` /
-`preview`) run the full `CI` workflow — Ubuntu, Windows, and macOS jobs —
+Cross-platform validation is post-merge. Pushes to `dev` run the full
+`CI` workflow — Ubuntu, Windows, and macOS jobs —
 plus the `Agy artifact filesystem check` matrix and the unsigned macOS
 desktop build. A job-level changes filter skips these on pushes that touch
 no relevant path, so docs-only merges still land green. The aggregate `ci`
@@ -33,62 +33,56 @@ requests because it is the pre-merge security scan.
 
 ## Releasing (maintainers)
 
-One command runs the whole release from a maintainer machine with `gh` signed in:
+`dev` is the only long-lived source and release branch. A successful push-event
+`CI` run on `dev` triggers `release.yml` automatically with `bump=patch`.
+The workflow resolves the current dev head before installing dependencies and
+skips an already published, release-subject, or strictly older head. Automatic
+runs must match the current dev SHA; a queued stale run cannot release newer or
+older work. Ordinary dev pushes do not trigger `publish.yml` directly.
+
+Maintainers can run the same exact-SHA path manually with `gh` signed in:
 
 ```bash
-npm run release -- patch --promote --approve   # or minor / major
+npm run release -- patch --approve --yes   # or minor / major
 ```
 
-`scripts/release.mjs` merges the dev -> main promotion PR (`--promote`),
-dispatches `release.yml` pinned to that main SHA, watches it, approves the
-`npm-stable` and `desktop-production` deployments of this release
-(`--approve`; without it the script prints the approve commands), and keeps
-watching until the desktop release is published. Add `--yes` to skip the
-confirmation prompts.
+`scripts/release.mjs` fetches `origin/dev`, dispatches `release.yml --ref dev`
+with `expected_sha`, watches this run, approves only its `npm-stable` and
+`desktop-production` deployments with `--approve`, and keeps watching until
+the desktop release is published. `--dry-run` verifies without moving dev,
+tags, or packages. `--canary` also creates and cleans up a leased candidate ref
+so the exact-candidate CI path is exercised. The retired `--promote` flag and
+all dev-to-main promotion PRs are gone.
 
-`--dry-run` dispatches hosted validation on already-promoted main without
-publishing branches, tags, or packages. It refuses when dev needs promotion,
-even with `--promote`. `--canary` creates a candidate ref, dispatches its CI,
-and cleans up that ref afterward without publishing the release. Combining
-`--canary` with `--promote` performs real dev -> main promotion first.
+The cut verifies the version commit before moving dev. A version-only commit
+may reuse a complete green dev push CI; otherwise a leased candidate ref proves
+exact-SHA CI. Dev then advances to the version commit so the dispatched preview
+can require `refs/heads/dev == publish_sha`. After preview proof and the
+`npm-stable` approval, one atomic push reasserts dev and creates `vX.Y.Z`.
+Dev is frozen between the version push and stable tag. Stable publication still
+verifies the tested tarball, npm gitHead, immutable versions, integrity and
+Sigstore provenance before creating the GitHub Release and deploying Pages.
 
-Inside `release.yml` the cut reuses main's push CI when the version commit only
-changes `package.json`/`package-lock.json` (a dedicated candidate CI run is
-dispatched otherwise), publishes the preview, then the tag job pushes `main` and
-`vX.Y.Z` atomically and lands the release on `dev` (a fast-forward, or a merge
-commit when PRs merged into dev during the release, so dev may keep moving). It
-then verifies `desktop-vX.Y.Z` and runs the npm stable publish, and finally
-dispatches the Pages deploy. The approvals stay on purpose: `npm-stable` gates the tag
-and the stable publish, and `desktop-production` gates the public desktop
-release.
-
-`desktop-v*` tags start a signed build, so the "Protect desktop release tags"
-ruleset lets only repository admins create them; the workflow token cannot. That
-is why `scripts/release.mjs` pushes `desktop-vX.Y.Z` itself, from the
-maintainer's machine, as soon as `vX.Y.Z` lands. The push starts the desktop
-build in parallel with the npm stable publish. Run the release as a repository
-admin; otherwise the script prints the `git push` command for an admin.
-
-If a release stops after the tag landed (an approval timed out, dev could not be
-merged, a publish or desktop step failed), finish it without a new version:
+If dev moves before the tag, the cut fails closed. Finish the existing release
+without cutting another version:
 
 ```bash
-npm run release -- resume X.Y.Z --approve
+npm run release -- resume X.Y.Z --approve --yes
 ```
 
-Resume verifies that `vX.Y.Z` exists, that its `package.json` says `X.Y.Z` and
-that main contains it, then runs only what is still missing: landing on dev, the
-desktop tag and build, the stable publish (skipped when npm latest already has
-that commit and the GitHub release exists), and the Pages deploy.
+Resume bypasses the no-op resolver, finds the release tag or exact release-subject
+commit on dev, requires dev to contain that SHA, and mints only a missing tag before
+finishing stable publish, desktop and Pages. An untagged resume also requires the
+npm preview gitHead proof. Run it before another cut replaces that preview proof.
 
-Resume also finishes a cut that stopped before the tag, for example when npm was
-slow to show the preview package. Without `vX.Y.Z` it takes the
-`[agent] chore: release vX.Y.Z` commit on main, requires the npm preview to prove
-that exact commit, and mints the tag first. Resuming this way needs release.yml
-from main, so promote dev to main first if the resume fix is not there yet.
-Run it before any newer cut publishes its preview: the next preview replaces
-the proof and the untagged resume then refuses.
+`desktop-v*` tags remain admin-only. The workflow token cannot create them, so
+`scripts/release.mjs` pushes `desktop-vX.Y.Z` at the exact stable commit from
+the maintainer machine and approves `desktop-production`. Never point that tag
+at another commit.
 
+Repository migration retargets every open PR to dev, makes dev the default
+branch, narrows branch deletion protection to dev, and only then deletes the
+remote `main` and `preview` branches. Dependabot also targets dev.
 ## Devlog
 
 Implementation work belongs in a numbered unit under
