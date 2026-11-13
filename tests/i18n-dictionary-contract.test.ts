@@ -270,15 +270,6 @@ const KNOWN_MISSING = new Set<string>([
   "cardNews.roles.core",
   "cardNews.roles.tip1",
   "cardNews.roles.tip2",
-  // CHAINING_ACTIONS exposes saveAsElement without a matching dictionary leaf.
-  "chain.saveAsElement",
-  // CardNewsWorkspace.tsx references these mobile banner literals directly.
-  "mobile.cardNewsBanner",
-  "mobile.dismiss",
-  // ReferenceTray.tsx references this provider-limit copy directly.
-  "prompt.refOverProviderLimit",
-  // resultChaining.ts uses this missing fork-failure toast literal.
-  "toast.forkFailed",
 ]);
 
 function reasoningKeys(): readonly string[] {
