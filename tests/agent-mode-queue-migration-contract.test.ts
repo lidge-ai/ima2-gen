@@ -30,6 +30,49 @@ after(() => {
 });
 
 describe("Agent queue migration contract", () => {
+  it("holds a write lock throughout migration and permits a second connection to migrate", () => {
+    const path = join(TEST_DIR, "concurrent.db");
+    const first = new Database(path);
+    const second = new Database(path, { timeout: 0 });
+    const originalExec = first.exec.bind(first);
+    let checkedLock = false;
+    first.exec = (sql: string) => {
+      if (!checkedLock) {
+        checkedLock = true;
+        assert.throws(() => second.transaction(() => {}).immediate(), { code: "SQLITE_BUSY" });
+      }
+      return originalExec(sql);
+    };
+    try {
+      db.migrate(first);
+      assert.equal(checkedLock, true);
+      assert.doesNotThrow(() => db.migrate(second));
+      const columns = second.prepare("PRAGMA table_info(sessions)").all() as Array<{ name: string }>;
+      for (const name of ["graph_version", "style_sheet", "style_sheet_enabled"]) {
+        assert.ok(columns.some((column) => column.name === name), `${name} should exist`);
+      }
+    } finally {
+      first.close();
+      second.close();
+    }
+  });
+
+  it("does not change an already migrated schema or its data", () => {
+    const database = new Database(join(TEST_DIR, "idempotent.db"));
+    try {
+      db.migrate(database);
+      database.prepare("INSERT INTO sessions (id, created_at, updated_at) VALUES (?, ?, ?)").run("kept", 1, 1);
+      const schema = database.prepare("SELECT type, name, sql FROM sqlite_master ORDER BY type, name").all();
+      const version = database.pragma("schema_version", { simple: true });
+      db.migrate(database);
+      assert.deepEqual(database.prepare("SELECT type, name, sql FROM sqlite_master ORDER BY type, name").all(), schema);
+      assert.equal(database.pragma("schema_version", { simple: true }), version);
+      assert.ok(database.prepare("SELECT id FROM sessions WHERE id = ?").get("kept"));
+    } finally {
+      database.close();
+    }
+  });
+
   it("adds planner queue columns to existing user databases", () => {
     const database = db.getDb();
     const columns = (database

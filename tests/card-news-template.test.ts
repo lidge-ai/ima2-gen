@@ -1,20 +1,31 @@
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import express from "express";
-import { createCardNewsDraft } from "../lib/cardNewsPlanner.ts";
-import { generateCardNewsSet } from "../lib/cardNewsGenerator.ts";
-import { listHistoryRows } from "../lib/historyList.ts";
-import { readCardNewsSetPlan } from "../lib/cardNewsManifestStore.ts";
-import {
+const testDir = mkdtempSync(join(tmpdir(), "ima2-card-news-db-"));
+process.env.IMA2_CONFIG_DIR = testDir;
+process.env.IMA2_DB_PATH = join(testDir, "sessions.db");
+
+const { createCardNewsDraft } = await import("../lib/cardNewsPlanner.ts");
+const { generateCardNewsSet } = await import("../lib/cardNewsGenerator.ts");
+const { listHistoryRows } = await import("../lib/historyList.ts");
+const { readCardNewsSetPlan } = await import("../lib/cardNewsManifestStore.ts");
+const {
   createCardNewsJob,
   getCardNewsJob,
   retryCardNewsJob,
   updateCardNewsJobCard,
-} from "../lib/cardNewsJobStore.ts";
-import { configureRoutes } from "../routes/index.ts";
+} = await import("../lib/cardNewsJobStore.ts");
+const { configureRoutes } = await import("../routes/index.ts");
+const { closeDb, getDbPath } = await import("../lib/db.ts");
+
+after(async () => {
+  closeDb();
+  await rm(testDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
 
 const rootDir = process.cwd();
 const PNG_B64 = Buffer.from("generated-card").toString("base64");
@@ -305,6 +316,7 @@ describe("Card News template contract", () => {
   });
 
   it("registers Card News routes only behind the feature flag", async () => {
+    assert.equal(getDbPath(), join(testDir, "sessions.db"));
     const disabledApp = express();
     disabledApp.use(express.json());
     configureRoutes(disabledApp, makeCtx("/tmp/ima2-card-news-disabled", false));

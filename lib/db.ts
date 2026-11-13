@@ -16,13 +16,19 @@ export function getDb() {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
   db = new Database(dbPath);
+  db.pragma("busy_timeout = 5000");
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   migrate(db);
   return db;
 }
 
-function migrate(database: Database.Database) {
+export function migrate(database: Database.Database) {
+  database.pragma("busy_timeout = 5000");
+  database.transaction(() => migrateSchema(database)).immediate();
+}
+
+function migrateSchema(database: Database.Database) {
   database.exec(`
     CREATE TABLE IF NOT EXISTS _meta (
       key   TEXT PRIMARY KEY,
