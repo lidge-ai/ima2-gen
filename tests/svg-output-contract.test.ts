@@ -103,6 +103,32 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
     });
   });
 
+  it("returns the Image API missing-parameter reason without leaking the request", async () => {
+    const invalid = () => json({ error: { message: "SVG generation requires 'svg.model'.",
+      type: "invalid_request_error", param: "svg.model", code: "missing_required_parameter" } }, 400);
+    await harness.run("classic", { upstream: invalid }, async (f) => {
+      const response = await f.post(BASE);
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(response.status, 400);
+      assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
+      assert.match(JSON.stringify(result), /SVG generation requires 'svg.model'\./);
+      assert.doesNotMatch(JSON.stringify(result), /Flat vector fox logo/);
+    });
+  });
+
+  it("does not expose arbitrary upstream messages or unsafe parameter values", async () => {
+    const invalid = () => json({ error: { message: "prompt: private scene sk-secret123456789",
+      type: "invalid_request_error", param: "sk-secret123456789", code: "invalid_value" } }, 400);
+    await harness.run("classic", { upstream: invalid }, async (f) => {
+      const response = await f.post(BASE);
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
+      assert.doesNotMatch(JSON.stringify(result), /private scene|sk-secret/);
+    });
+  });
+
   it("markup that is not an SVG document fails as SVG_OUTPUT_INVALID without a retry", async () => {
     const notSvg = () => json({ data: [{ b64_json: Buffer.from("<html>nope</html>").toString("base64") }] });
     await harness.run("classic", { upstream: notSvg }, async (f) => {

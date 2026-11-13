@@ -62,6 +62,20 @@ export function gatedFeature(status: number, upstream: UpstreamError | null): st
   return GATED_PARAMS[upstream.param] ?? null;
 }
 
+// Only reproduce a known parameter-only reason: arbitrary upstream prose can echo
+// prompts, request bodies or credentials, which cannot be reliably scrubbed.
+function imageClientMessage(upstream: UpstreamError, status: number): string {
+  if (normalizedCode(upstream) === "INVALID_REQUEST" && upstream.type === "invalid_request_error") {
+    if (upstream.param === "svg.model" && upstream.message === "SVG generation requires 'svg.model'.") {
+      return upstream.message;
+    }
+    if (upstream.param && Object.hasOwn(GATED_PARAMS, upstream.param)) {
+      return `OpenAI rejected the image request parameter: ${upstream.param}.`;
+    }
+  }
+  return safeUpstreamClientMessage(upstream, status);
+}
+
 function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value ? value : null;
 }
@@ -83,7 +97,7 @@ async function readApiImages(res: Response, args: PostApiImagesArgs, wait: <T>(r
       });
     }
     if (res.status >= 400 && res.status < 500 && upstream?.message) {
-      throw makeError(safeUpstreamClientMessage(upstream, res.status), { ...detail, code: normalizedCode(upstream) });
+      throw makeError(imageClientMessage(upstream, res.status), { ...detail, code: normalizedCode(upstream) });
     }
     throw makeError(`OpenAI Images API returned ${res.status}`, detail);
   }
