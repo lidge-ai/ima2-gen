@@ -112,20 +112,34 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
       await f.waitSettled();
       assert.equal(response.status, 400);
       assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
-      assert.match(JSON.stringify(result), /SVG generation requires 'svg.model'\./);
+      assert.match(JSON.stringify(result), /OpenAI rejected the image request parameter: svg\.model \(required parameter missing\)/);
       assert.doesNotMatch(JSON.stringify(result), /Flat vector fox logo/);
     });
   });
 
-  it("does not expose arbitrary upstream messages or unsafe parameter values", async () => {
-    const invalid = () => json({ error: { message: "prompt: private scene sk-secret123456789",
-      type: "invalid_request_error", param: "sk-secret123456789", code: "invalid_value" } }, 400);
+  it("names arbitrary rejected parameter names without exposing upstream messages", async () => {
+    const invalid = () => json({ error: { message: "private scene", type: "invalid_request_error",
+      param: "size", code: "invalid_value" } }, 400);
     await harness.run("classic", { upstream: invalid }, async (f) => {
       const response = await f.post(BASE);
       const result = await response.json();
       await f.waitSettled();
       assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
-      assert.doesNotMatch(JSON.stringify(result), /private scene|sk-secret/);
+      assert.match(JSON.stringify(result), /OpenAI rejected the image request parameter: size/);
+      assert.doesNotMatch(JSON.stringify(result), /private scene|required parameter missing/);
+    });
+  });
+
+  it("falls back for unsafe parameter values without exposing them", async () => {
+    const invalid = () => json({ error: { message: "prompt: private scene sk-secret123456789",
+      type: "invalid_request_error", param: "size with spaces", code: "invalid_value" } }, 400);
+    await harness.run("classic", { upstream: invalid }, async (f) => {
+      const response = await f.post(BASE);
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
+      assert.match(JSON.stringify(result), /OpenAI rejected the image request parameters\./);
+      assert.doesNotMatch(JSON.stringify(result), /private scene|sk-secret|size with spaces|parameter: _redacted/);
     });
   });
 

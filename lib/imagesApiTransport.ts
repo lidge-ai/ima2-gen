@@ -62,16 +62,13 @@ export function gatedFeature(status: number, upstream: UpstreamError | null): st
   return GATED_PARAMS[upstream.param] ?? null;
 }
 
-// Only reproduce a known parameter-only reason: arbitrary upstream prose can echo
-// prompts, request bodies or credentials, which cannot be reliably scrubbed.
+// Parameter labels are filtered at parse time; never forward free-form upstream prose.
 function imageClientMessage(upstream: UpstreamError, status: number): string {
-  if (normalizedCode(upstream) === "INVALID_REQUEST" && upstream.type === "invalid_request_error") {
-    if (upstream.param === "svg.model" && upstream.message === "SVG generation requires 'svg.model'.") {
-      return upstream.message;
-    }
-    if (upstream.param && Object.hasOwn(GATED_PARAMS, upstream.param)) {
-      return `OpenAI rejected the image request parameter: ${upstream.param}.`;
-    }
+  const param = upstream.param;
+  if (status >= 400 && status < 500 && upstream.type === "invalid_request_error"
+      && param && param !== "_redacted" && /^[A-Za-z0-9_.[\]-]{1,64}$/.test(param)) {
+    const suffix = upstream.code === "missing_required_parameter" ? " (required parameter missing)" : "";
+    return `OpenAI rejected the image request parameter: ${param}${suffix}`;
   }
   return safeUpstreamClientMessage(upstream, status);
 }
