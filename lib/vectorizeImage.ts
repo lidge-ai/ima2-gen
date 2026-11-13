@@ -101,12 +101,13 @@ function hasOverride(options: VectorizeOptions): boolean {
 /**
  * Without overrides we pass the library's own Preset enum: measured on a 1254x1254
  * keyed asset, Preset.Photo produced 722 paths against Poster's 4993 at visually
- * indistinguishable quality, so it is the default for colour work.
+ * indistinguishable quality, so auto uses Photo while detailed uses Poster.
  */
 function resolveConfig(preset: VectorPreset, options: VectorizeOptions): Config | Preset {
   if (!hasOverride(options)) {
     if (preset === "mono") return Preset.Bw;
     if (preset === "flat") return baseConfig("flat");
+    if (preset === "detailed") return Preset.Poster;
     return Preset.Photo;
   }
   const config = baseConfig(preset);
@@ -168,6 +169,10 @@ export async function vectorizeImageBuffer(
       // must not discard an otherwise valid trace.
     }
   }
+
+  svg = svg.replace(/<svg\b[^>]*>/, (root) =>
+    /\sviewBox\s*=/.test(root) ? root : root.replace(/\s*\/?>$/, (end) => ` viewBox="0 0 ${width} ${height}"${end}`),
+  );
 
   const bytes = Buffer.byteLength(svg, "utf8");
   if (bytes > MAX_OUTPUT_BYTES) {

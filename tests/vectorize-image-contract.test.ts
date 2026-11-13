@@ -62,6 +62,27 @@ test("traces a flat raster into real vector paths", async () => {
   assert.ok(result.elapsedMs >= 0);
 });
 
+test("detailed tracing differs from auto for a soft-edged logo", async () => {
+  const source = await sharp(await flatPng(96)).blur(2).png().toBuffer();
+  const auto = await vectorizeImageBuffer(source, { preset: "auto" });
+  const detailed = await vectorizeImageBuffer(source, { preset: "detailed" });
+  assert.notEqual(detailed.svg, auto.svg);
+});
+
+test("root viewBox matches raster dimensions with and without optimization", async () => {
+  const source = await sharp({
+    create: { width: 80, height: 48, channels: 3, background: "#348765" },
+  }).png().toBuffer();
+  for (const optimize of [true, false]) {
+    const { svg } = await vectorizeImageBuffer(source, { optimize });
+    const root = svg.match(/<svg\b[^>]*>/)?.[0] ?? "";
+    assert.match(root, /\bviewBox="0 0 80 48"/);
+    assert.equal((root.match(/\bviewBox=/g) ?? []).length, 1);
+    assert.match(root, /\bwidth="80"/);
+    assert.match(root, /\bheight="48"/);
+  }
+});
+
 test("preserves alpha instead of painting an opaque background", async () => {
   const result = await vectorizeImageBuffer(await transparentPng());
   assert.ok(result.pathCount > 0);
