@@ -33,7 +33,7 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
       assert.equal(f.calls[0]!.url, "https://api.openai.com/v1/images/generations");
       const body = JSON.parse(f.calls[0]!.body);
       assert.equal(body.output_format, "svg");
-      assert.equal("svg" in body, false); // svg.model only when the caller names one
+      assert.deepEqual(body.svg, { model: "gpt-5.6-luna" });
       assert.equal("n" in body, false);
       assert.match(result.filename, /\.svg$/);
       assert.equal(result.image.startsWith("data:image/svg+xml;base64,"), true);
@@ -43,6 +43,7 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
       assert.equal(Buffer.from(result.image.split(",")[1], "base64").toString("utf8"), saved);
       const sidecar = JSON.parse(await readFile(join(f.generatedDir, `${result.filename}.json`), "utf8"));
       assert.equal(sidecar.format, "svg");
+      assert.equal(sidecar.animation.svgModel, "gpt-5.6-luna");
       assert.equal(sidecar.svgUsage.total_tokens, 30);
       const { listHistoryRows } = await import("../lib/historyList.ts");
       const row = (await listHistoryRows(f.generatedDir)).find((entry) => entry.filename === result.filename);
@@ -55,12 +56,12 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
     });
   });
 
-  it("sends svg.model and reasoning only when the caller names an authoring model", async () => {
+  it("sends an explicit svg.model and reasoning", async () => {
     await harness.run("classic", { upstream }, async (f) => {
-      const response = await f.post({ ...BASE, svgModel: "gpt-5.6-luna", svgReasoningEffort: "low" });
+      const response = await f.post({ ...BASE, svgModel: "custom-author", svgReasoningEffort: "low" });
       assert.equal(response.status, 200);
       await f.waitSettled();
-      assert.deepEqual(JSON.parse(f.calls[0]!.body).svg, { model: "gpt-5.6-luna", reasoning: { effort: "low" } });
+      assert.deepEqual(JSON.parse(f.calls[0]!.body).svg, { model: "custom-author", reasoning: { effort: "low" } });
     });
   });
 

@@ -7,6 +7,8 @@
  * and silently returns PNG for SVG requests.
  * https://developers.openai.com/api/reference/resources/images/methods/generate
  */
+import { config } from "../config.js";
+export { DEFAULT_SVG_MODEL } from "../config.js";
 import { isImage26Model } from "./oauthNormalize.js";
 
 export const GIF_FRAME_COUNT = { min: 2, max: 16, default: 9 } as const;
@@ -91,8 +93,8 @@ export function resolveImageOutput(input: OutputInput): OutputResult {
 
 /**
  * SVG: the Image API renders a raster reference (quality/complexity apply), then an
- * authoring model writes the SVG. `svg.model` is only accepted for organizations with
- * SVG model selection, so it is sent only when the caller names one.
+ * authoring model writes the SVG. The required `svg.model` defaults to the configured
+ * authoring model when the caller does not name one.
  */
 function resolveSvgOutput(input: OutputInput): OutputResult {
   if (input.provider !== "api" || !isImage26Model(input.imageToolModel)) {
@@ -117,11 +119,15 @@ function resolveSvgOutput(input: OutputInput): OutputResult {
   if (effort !== undefined && svgModel === undefined) {
     return fail("SVG_REASONING_REQUIRES_MODEL", "svgReasoningEffort needs svgModel (the Image API sets both in the svg object)");
   }
+  const effectiveModel = svgModel ?? config.apiProvider.defaultSvgModel;
+  if (typeof effectiveModel !== "string" || !/^[A-Za-z0-9._:-]{1,64}$/.test(effectiveModel)) {
+    return fail("INVALID_SVG_MODEL", "svgModel must be a model id");
+  }
   return {
     output: {
       format: "svg",
-      fields: typeof svgModel === "string" ? { svg: { model: svgModel, ...(effort ? { reasoning: { effort } } : {}) } } : {},
-      meta: { ...(typeof svgModel === "string" ? { svgModel } : {}), ...(effort ? { svgReasoningEffort: effort as string } : {}) },
+      fields: { svg: { model: effectiveModel, ...(effort ? { reasoning: { effort } } : {}) } },
+      meta: { svgModel: effectiveModel, ...(effort ? { svgReasoningEffort: effort as string } : {}) },
     },
   };
 }

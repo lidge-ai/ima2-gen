@@ -93,8 +93,8 @@ ima2 gen "a blue ball bouncing once, seamless loop" --provider api \
 
 `gen --svg` asks a 2.6 image model for an SVG (one image, no references). The saved
 `.svg` is sanitized first. `--svg-model <id>` and `--svg-effort <level>` choose the SVG
-authoring model and its reasoning effort; send them only if your OpenAI project has SVG
-model selection. GPT OAuth cannot produce SVGs.
+authoring model and its reasoning effort. The default model is `gpt-5.6-luna` (overridable
+with `IMA2_SVG_MODEL`); `--svg-effort` requires an explicit `--svg-model`. GPT OAuth cannot produce SVGs.
 
 ## Common flags
 
