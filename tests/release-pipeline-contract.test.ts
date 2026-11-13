@@ -1103,6 +1103,42 @@ describe("tag job dispatches (D4/D5)", () => {
     assert.match(job, /ref: \$\{\{ needs\.cut\.outputs\.sha \|\| 'dev' \}\}/);
   });
 
+  it("rejects tag creation when dev moves after preview proof", () => {
+    const root = mkdtempSync(join(tmpdir(), "ima2-dev-tag-atomic-"));
+    try {
+      const git = (cwd: string, ...args: string[]) =>
+        execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+      const origin = join(root, "origin.git");
+      const work = join(root, "work");
+      git(root, "init", "-q", "--bare", "-b", "dev", origin);
+      git(root, "clone", "-q", origin, work);
+      git(work, "config", "user.name", "test");
+      git(work, "config", "user.email", "test@example.test");
+      const commit = (file: string, body: string, message: string) => {
+        writeFileSync(join(work, file), body);
+        git(work, "add", file);
+        git(work, "commit", "-q", "-m", message);
+        return git(work, "rev-parse", "HEAD");
+      };
+      commit("package.json", '{"version":"3.26.3"}\n', "base");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
+      const release = commit("package.json", '{"version":"3.26.4"}\n', "release 3.26.4");
+      git(work, "push", "-q", "origin", `${release}:refs/heads/dev`);
+      const later = commit("later.txt", "dev moved\n", "later integration");
+      git(work, "push", "-q", "origin", "HEAD:refs/heads/dev");
+      git(work, "checkout", "-q", "--detach", release);
+      const pushed = spawnSync("git", [
+        "push", "--atomic", "origin", `${release}:refs/heads/dev`,
+        "refs/tags/v3.26.4:refs/tags/v3.26.4",
+      ], { cwd: work, encoding: "utf8" });
+      assert.notEqual(pushed.status, 0, "the moved dev ref must reject the non-fast-forward update");
+      assert.equal(git(work, "ls-remote", origin, "refs/tags/v3.26.4"), "", "atomic rejection must not create the tag");
+      assert.equal(git(work, "ls-remote", origin, "refs/heads/dev").split(/\s+/)[0], later);
+    } finally {
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+
   it("mints a missing release tag in a resume without moving dev", () => {
     const job = tagJob(releaseYml());
     const mint = stepBlock(job, "Create the missing release tag");
@@ -1178,7 +1214,10 @@ describe("tag job dispatches (D4/D5)", () => {
     const job = tagJob(releaseYml());
     // Dispatching on the tag makes GITHUB_SHA the release commit even after main moved on
     // (v3.24.1's resume failed the package smoke on exactly that).
-    assert.match(stepBlock(job, "Publish the stable release"), /--ref "v\$\{\{ steps\.target\.outputs\.version \}\}"/);
+    const stableDispatch = stepBlock(job, "Publish the stable release");
+    assert.match(stableDispatch, /--ref dev/);
+    assert.match(stableDispatch, /publish_ref="refs\/tags\/v\$\{\{ steps\.target\.outputs\.version \}\}"/);
+    assert.match(stableDispatch, /publish_sha=\$\{\{ steps\.target\.outputs\.sha \}\}/);
     assert.match(stepBlock(releaseYml(), "Publish the preview candidate"), /--ref dev/);
     const smoke = readFileSync(join(repoRoot(), "tests/package-install-smoke.mjs"), "utf8");
     assert.match(smoke, /const sourceSha = process\.env\.PUBLISH_SHA \|\| process\.env\.GITHUB_SHA;/);

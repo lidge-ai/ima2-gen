@@ -402,7 +402,7 @@ jobs:
         # commit even when dev has moved past it (a resume after later integration).
         run: |
           gh workflow run publish.yml \
-            --ref "v${{ steps.target.outputs.version }}" \
+            --ref dev \
             -f publish_ref="refs/tags/v${{ steps.target.outputs.version }}" \
             -f publish_sha=${{ steps.target.outputs.sha }}
       - name: Wait for the stable publish to finish
