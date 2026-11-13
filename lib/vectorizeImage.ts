@@ -99,16 +99,27 @@ function hasOverride(options: VectorizeOptions): boolean {
 }
 
 /**
- * Without overrides we pass the library's own Preset enum: measured on a 1254x1254
- * keyed asset, Preset.Photo produced 722 paths against Poster's 4993 at visually
- * indistinguishable quality, so auto uses Photo while detailed uses Poster.
+ * Auto uses Photo's tracing parameters with a lower corner threshold to preserve
+ * square edges and precision 8 for output. Detailed uses the library's Poster preset.
  */
 function resolveConfig(preset: VectorPreset, options: VectorizeOptions): Config | Preset {
   if (!hasOverride(options)) {
     if (preset === "mono") return Preset.Bw;
     if (preset === "flat") return baseConfig("flat");
     if (preset === "detailed") return Preset.Poster;
-    return Preset.Photo;
+    return {
+      colorMode: ColorMode.Color,
+      hierarchical: Hierarchical.Stacked,
+      filterSpeckle: 10,
+      colorPrecision: 8,
+      layerDifference: 48,
+      mode: PathSimplifyMode.Spline,
+      cornerThreshold: 60,
+      lengthThreshold: 4,
+      maxIterations: 10,
+      spliceThreshold: 45,
+      pathPrecision: 8,
+    };
   }
   const config = baseConfig(preset);
   if (options.colorPrecision !== undefined) config.colorPrecision = clamp(Math.round(options.colorPrecision), 1, 8);

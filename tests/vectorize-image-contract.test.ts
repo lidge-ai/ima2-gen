@@ -69,6 +69,19 @@ test("detailed tracing differs from auto for a soft-edged logo", async () => {
   assert.notEqual(detailed.svg, auto.svg);
 });
 
+test("auto preserves the square corners of an opaque background", async () => {
+  const source = await sharp({
+    create: { width: 160, height: 96, channels: 4, background: "#eeeeee" },
+  }).composite([{
+    input: { create: { width: 60, height: 40, channels: 4, background: "#14785a" } },
+    left: 50,
+    top: 28,
+  }]).blur(1).png().toBuffer();
+  const { svg } = await vectorizeImageBuffer(source, { preset: "auto" });
+  const firstPath = svg.match(/<path\b[^>]*>/)?.[0] ?? "";
+  assert.match(firstPath, /\bd="M0 0h160v96H0Z"/);
+});
+
 test("root viewBox matches raster dimensions with and without optimization", async () => {
   const source = await sharp({
     create: { width: 80, height: 48, channels: 3, background: "#348765" },
