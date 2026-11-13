@@ -91,7 +91,7 @@ const HELP = `
         --frames <2-16>                     GIF frame count (OpenAI default 9)
         --frame-ms <20-2000>                GIF frame duration in ms (OpenAI default 200)
         --svg                               SVG output (API lane + 2.6 image model, one image, no refs)
-        --svg-model <id>                    SVG authoring model (needs SVG model selection access)
+        --svg-model <id>                    SVG authoring model (default: gpt-5.6-luna; IMA2_SVG_MODEL overrides)
         --svg-effort <none|minimal|low|medium|high|xhigh|max>  Authoring reasoning effort
         --provider <${PROVIDER_VALUES.join("|")}>
                                             'auto' was removed; choose a lane explicitly

@@ -62,6 +62,17 @@ export function gatedFeature(status: number, upstream: UpstreamError | null): st
   return GATED_PARAMS[upstream.param] ?? null;
 }
 
+// Parameter labels are filtered at parse time; never forward free-form upstream prose.
+function imageClientMessage(upstream: UpstreamError, status: number): string {
+  const param = upstream.param;
+  if (status >= 400 && status < 500 && upstream.type === "invalid_request_error"
+      && param && param !== "_redacted" && /^[A-Za-z0-9_.[\]-]{1,64}$/.test(param)) {
+    const suffix = upstream.code === "missing_required_parameter" ? " (required parameter missing)" : "";
+    return `OpenAI rejected the image request parameter: ${param}${suffix}`;
+  }
+  return safeUpstreamClientMessage(upstream, status);
+}
+
 function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value ? value : null;
 }
@@ -83,7 +94,7 @@ async function readApiImages(res: Response, args: PostApiImagesArgs, wait: <T>(r
       });
     }
     if (res.status >= 400 && res.status < 500 && upstream?.message) {
-      throw makeError(safeUpstreamClientMessage(upstream, res.status), { ...detail, code: normalizedCode(upstream) });
+      throw makeError(imageClientMessage(upstream, res.status), { ...detail, code: normalizedCode(upstream) });
     }
     throw makeError(`OpenAI Images API returned ${res.status}`, detail);
   }

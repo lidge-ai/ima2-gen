@@ -411,9 +411,10 @@ frameDurationMs? }`, and the result image is a `data:image/gif` URL.
 `POST /api/generate` with `format: "svg"` (API lane, 2.6 `imageToolModel`, `n: 1`, no
 references) requests `output_format: "svg"` from `/v1/images/generations`. OpenAI renders a
 raster reference (`quality` and `complexity` apply) and an authoring model writes the SVG.
-Optional `svgModel` and `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`)
-become `svg: { model, reasoning: { effort } }`; they are sent only when given, because OpenAI
-accepts `svg.model` only for projects with SVG model selection.
+The required `svg.model` defaults to `gpt-5.6-luna`; set `IMA2_SVG_MODEL` or
+`apiProvider.defaultSvgModel` in config to override it, or pass `svgModel` per request.
+Optional `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`) requires an
+explicit `svgModel` and becomes `svg.reasoning.effort`.
 
 The returned XML is sanitized before anything is stored or returned (`lib/svgSanitize.ts`):
 DOCTYPE subsets and processing instructions are dropped; `script`, `foreignObject`,

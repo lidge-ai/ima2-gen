@@ -27,6 +27,7 @@ import {
 
 // 4.6 rewrites prompts in ways that read worse than 4.3 for this planner's job, which
 // is judged by the result rather than a benchmark. 4.6 stays selectable below.
+export const DEFAULT_SVG_MODEL = "gpt-5.6-luna";
 export const DEFAULT_GROK_PLANNER_MODEL = "grok-4.3";
 export const AGY_PROCESS_POLICY = Object.freeze({ timeoutMs: 360_000, terminateGraceMs: 1000, maxOutputBytes: 1_048_576 });
 export const AGY_ARTIFACT_POLICY = Object.freeze({ maxBytes: 52_428_800, chunkBytes: 65_536 });
@@ -390,6 +391,7 @@ export const config = {
     validReasoningEfforts: new Set(["none", "low", "medium", "high", "xhigh", "max"]),
   },
   apiProvider: {
+    defaultSvgModel: pickStr(env.IMA2_SVG_MODEL, fileCfg.apiProvider?.defaultSvgModel, DEFAULT_SVG_MODEL),
     /** The OpenAI API-key lane's own image models (GPT OAuth keeps only GPT-6). */
     validImageModels: deriveSupportedImageModels("api"),
     defaultImageModel: pickStr(

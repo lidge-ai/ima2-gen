@@ -33,7 +33,7 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
       assert.equal(f.calls[0]!.url, "https://api.openai.com/v1/images/generations");
       const body = JSON.parse(f.calls[0]!.body);
       assert.equal(body.output_format, "svg");
-      assert.equal("svg" in body, false); // svg.model only when the caller names one
+      assert.deepEqual(body.svg, { model: "gpt-5.6-luna" });
       assert.equal("n" in body, false);
       assert.match(result.filename, /\.svg$/);
       assert.equal(result.image.startsWith("data:image/svg+xml;base64,"), true);
@@ -43,6 +43,7 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
       assert.equal(Buffer.from(result.image.split(",")[1], "base64").toString("utf8"), saved);
       const sidecar = JSON.parse(await readFile(join(f.generatedDir, `${result.filename}.json`), "utf8"));
       assert.equal(sidecar.format, "svg");
+      assert.equal(sidecar.animation.svgModel, "gpt-5.6-luna");
       assert.equal(sidecar.svgUsage.total_tokens, 30);
       const { listHistoryRows } = await import("../lib/historyList.ts");
       const row = (await listHistoryRows(f.generatedDir)).find((entry) => entry.filename === result.filename);
@@ -55,12 +56,12 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
     });
   });
 
-  it("sends svg.model and reasoning only when the caller names an authoring model", async () => {
+  it("sends an explicit svg.model and reasoning", async () => {
     await harness.run("classic", { upstream }, async (f) => {
-      const response = await f.post({ ...BASE, svgModel: "gpt-5.6-luna", svgReasoningEffort: "low" });
+      const response = await f.post({ ...BASE, svgModel: "custom-author", svgReasoningEffort: "low" });
       assert.equal(response.status, 200);
       await f.waitSettled();
-      assert.deepEqual(JSON.parse(f.calls[0]!.body).svg, { model: "gpt-5.6-luna", reasoning: { effort: "low" } });
+      assert.deepEqual(JSON.parse(f.calls[0]!.body).svg, { model: "custom-author", reasoning: { effort: "low" } });
     });
   });
 
@@ -99,6 +100,46 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
       assert.equal(response.status, 400);
       assert.equal(result.code ?? result.error?.code, "IMAGE_FEATURE_NOT_ENABLED");
       assert.match(JSON.stringify(result), /has not enabled SVG output/);
+    });
+  });
+
+  it("returns the Image API missing-parameter reason without leaking the request", async () => {
+    const invalid = () => json({ error: { message: "SVG generation requires 'svg.model'.",
+      type: "invalid_request_error", param: "svg.model", code: "missing_required_parameter" } }, 400);
+    await harness.run("classic", { upstream: invalid }, async (f) => {
+      const response = await f.post(BASE);
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(response.status, 400);
+      assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
+      assert.match(JSON.stringify(result), /OpenAI rejected the image request parameter: svg\.model \(required parameter missing\)/);
+      assert.doesNotMatch(JSON.stringify(result), /Flat vector fox logo/);
+    });
+  });
+
+  it("names arbitrary rejected parameter names without exposing upstream messages", async () => {
+    const invalid = () => json({ error: { message: "private scene", type: "invalid_request_error",
+      param: "size", code: "invalid_value" } }, 400);
+    await harness.run("classic", { upstream: invalid }, async (f) => {
+      const response = await f.post(BASE);
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
+      assert.match(JSON.stringify(result), /OpenAI rejected the image request parameter: size/);
+      assert.doesNotMatch(JSON.stringify(result), /private scene|required parameter missing/);
+    });
+  });
+
+  it("falls back for unsafe parameter values without exposing them", async () => {
+    const invalid = () => json({ error: { message: "prompt: private scene sk-secret123456789",
+      type: "invalid_request_error", param: "size with spaces", code: "invalid_value" } }, 400);
+    await harness.run("classic", { upstream: invalid }, async (f) => {
+      const response = await f.post(BASE);
+      const result = await response.json();
+      await f.waitSettled();
+      assert.equal(result.code ?? result.error?.code, "INVALID_REQUEST");
+      assert.match(JSON.stringify(result), /OpenAI rejected the image request parameters\./);
+      assert.doesNotMatch(JSON.stringify(result), /private scene|sk-secret|size with spaces|parameter: _redacted/);
     });
   });
 
