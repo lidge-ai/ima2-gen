@@ -80,6 +80,18 @@ ima2 serve
 
 `ima2-gen` 是本機優先的視覺生成執行環境與工作室，讓人和程式設計代理在多個供應商之間執行可重現的影像與影片工作流程。它在你的電腦上執行一個小型伺服器，把所有作品存放在 `~/.ima2/generated`，只和你連線的供應商通訊：OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI，以及已註冊的 ComfyUI 工作流程。Runway 與 Higgsfield 是獨立的 MCP 整合。提示詞與參考圖只會送往你為每個工作選擇的供應商。
 
+## 贊助商
+
+<!-- sponsors:standard — one row per sponsor, in order of signing -->
+<table>
+<tbody>
+<tr>
+<td width="180"><a href="https://mozhenzhen.com/go/ima2-gen"><img src="../assets/sponsors/mozhenzhen.png" alt="Mozhenzhen" width="150"></a></td>
+<td>Partner Pick: Check Mozhenzhen before you buy AI. Compare prices across 2,000+ models and 350K+ listings, and check model authenticity with 100K verification reports covering 5,000+ API relays. Find free API credits and offers, too. Free to use, Mozhenzhen doesn't sell AI services, and rankings are data-driven.</td>
+</tr>
+</tbody>
+</table>
+
 ## 快速開始
 
 ### Mac 應用程式（Apple Silicon）

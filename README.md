@@ -81,6 +81,18 @@ See which lanes are ready, type a prompt, and pick up recent work without diggin
 
 `ima2-gen` is a local-first visual generation runtime and studio for people and coding agents, with reproducible image and video workflows across multiple providers. It runs a small server on your machine, keeps every image in `~/.ima2/generated`, and talks to the providers you connect: OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI and registered ComfyUI workflows. Runway and Higgsfield stay separate MCP-backed integrations. Prompts and references go only to the provider you pick for each job.
 
+## Sponsors
+
+<!-- sponsors:standard — one row per sponsor, in order of signing -->
+<table>
+<tbody>
+<tr>
+<td width="180"><a href="https://mozhenzhen.com/go/ima2-gen"><img src="assets/sponsors/mozhenzhen.png" alt="Mozhenzhen" width="150"></a></td>
+<td>Partner Pick: Check Mozhenzhen before you buy AI. Compare prices across 2,000+ models and 350K+ listings, and check model authenticity with 100K verification reports covering 5,000+ API relays. Find free API credits and offers, too. Free to use, Mozhenzhen doesn't sell AI services, and rankings are data-driven.</td>
+</tr>
+</tbody>
+</table>
+
 ## Quick start
 
 ### Mac app (Apple Silicon)

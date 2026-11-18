@@ -80,6 +80,18 @@ ima2 serve
 
 `ima2-gen`은 사람과 코딩 에이전트가 여러 프로바이더에서 재현 가능한 이미지·영상 워크플로를 돌리는 로컬 우선 비주얼 생성 런타임이자 스튜디오입니다. 내 컴퓨터에서 작은 서버를 띄우고, 모든 결과물을 `~/.ima2/generated`에 보관하며, 연결한 프로바이더와만 통신합니다. 지원하는 곳은 OpenAI OAuth/API, Grok OAuth/API, Antigravity CLI, Gemini API, AtlasCloud, MiniMax, NovelAI, 등록된 ComfyUI 워크플로이고, Runway와 Higgsfield는 별도 MCP 연동입니다. 프롬프트와 레퍼런스는 작업마다 고른 프로바이더에게만 전달됩니다.
 
+## 후원사
+
+<!-- sponsors:standard — one row per sponsor, in order of signing -->
+<table>
+<tbody>
+<tr>
+<td width="180"><a href="https://mozhenzhen.com/go/ima2-gen"><img src="../assets/sponsors/mozhenzhen.png" alt="Mozhenzhen" width="150"></a></td>
+<td>Partner Pick: Check Mozhenzhen before you buy AI. Compare prices across 2,000+ models and 350K+ listings, and check model authenticity with 100K verification reports covering 5,000+ API relays. Find free API credits and offers, too. Free to use, Mozhenzhen doesn't sell AI services, and rankings are data-driven.</td>
+</tr>
+</tbody>
+</table>
+
 ## 빠른 시작
 
 ### Mac 앱 (Apple Silicon)
