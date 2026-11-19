@@ -80,6 +80,18 @@ ima2 serve
 
 `ima2-gen` は、人とコーディングエージェントが複数のプロバイダーで再現可能な画像・動画ワークフローを実行するための、ローカルファーストなビジュアル生成ランタイム兼スタジオです。自分のマシンで小さなサーバーを動かし、すべての成果物を `~/.ima2/generated` に保存し、接続したプロバイダーとだけ通信します。対応先は OpenAI OAuth/API、Grok OAuth/API、Antigravity CLI、Gemini API、AtlasCloud、MiniMax、NovelAI、登録済みの ComfyUI ワークフローで、Runway と Higgsfield は別の MCP 連携です。プロンプトと参照画像は、ジョブごとに選んだプロバイダーにだけ送られます。
 
+## スポンサー
+
+<!-- sponsors:standard — one row per sponsor, in order of signing -->
+<table>
+<tbody>
+<tr>
+<td width="180"><a href="https://mozhenzhen.com/go/ima2-gen"><img src="../assets/sponsors/mozhenzhen.png" alt="Mozhenzhen" width="150"></a></td>
+<td>Partner Pick: Check Mozhenzhen before you buy AI. Compare prices across 2,000+ models and 350K+ listings, and check model authenticity with 100K verification reports covering 5,000+ API relays. Find free API credits and offers, too. Free to use, Mozhenzhen doesn't sell AI services, and rankings are data-driven.</td>
+</tr>
+</tbody>
+</table>
+
 ## クイックスタート
 
 ### Mac アプリ (Apple Silicon)
