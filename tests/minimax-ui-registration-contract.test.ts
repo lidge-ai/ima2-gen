@@ -36,7 +36,7 @@ test("a MiniMax model-requires-reference error reaches the user as its own toast
 
 test("minimax models are offered for the minimax provider only", () => {
   const values = MINIMAX_IMAGE_MODEL_OPTIONS.map((option) => option.value);
-  assert.deepEqual(values, ["image-01", "image-01-live"]);
+  assert.deepEqual(values, ["image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed"]);
 
   assert.deepEqual(
     getImageModelOptionsForProvider("minimax").map((option) => option.value),

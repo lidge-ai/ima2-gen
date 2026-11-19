@@ -1488,6 +1488,8 @@
       "atlasCloudGptImage2Edit": "Atlas Cloud GPT Image 2 Edit",
       "minimaxImage01": "MiniMax image-01",
       "minimaxImage01Live": "MiniMax image-01-live",
+      "minimaxH3": "MiniMax H3 Image",
+      "minimaxH3Highspeed": "MiniMax H3 Image Highspeed",
       "agy": "Antigravity (agy)",
       "gpt53CodexSpark": "GPT-5.3 Codex Spark — unsupported for images",
       "unsupportedHelp": "Grok models use xAI's Images API. GPT OAuth uses the Codex backend; the OpenAI API-key lane uses OpenAI APIs.",

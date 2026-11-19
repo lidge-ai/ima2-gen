@@ -407,3 +407,52 @@ test("minimax adapter rejects an oversized inline base64 payload", async () => {
     (err: any) => err?.code === "MINIMAX_IMAGE_DOWNLOAD_TOO_LARGE",
   );
 });
+
+test("H3 Highspeed uses the China endpoint and a ten-minute timeout", async (t) => {
+  const timeout = t.mock.method(AbortSignal, "timeout");
+  const ctx = minimaxCtx();
+  ctx.config.minimaxProvider.region = "cn_zh";
+  globalThis.fetch = async (input, init) => {
+    if (String(input) === "https://example.invalid/output.jpg") return new Response(JPEG_BYTES);
+    assert.equal(String(input), "https://api.minimax.cn/v1/images/generations");
+    assert.equal(init?.redirect, "error");
+    assert.deepEqual(JSON.parse(String(init?.body)), {
+      model: "MiniMax-H3-Image-Highspeed", prompt: "A red tile", aspect_ratio: "16:9", response_format: "url",
+    });
+    return Response.json({ data: [{ error: { code: "1027" } }, {
+      url: "https://example.invalid/output.jpg", revised_prompt: "A red ceramic tile",
+    }] });
+  };
+  const result = await generateViaMinimax("A red tile", ctx, { model: "MiniMax-H3-Image-Highspeed", size: "16:9" });
+  assert.equal(timeout.mock.calls[0]?.arguments[0], 600_000);
+  assert.equal(result.b64, JPEG_B64);
+  assert.equal(result.revisedPrompt, "A red ceramic tile");
+});
+
+test("H3 reports per-image failures and rejects reference inputs before submission", async () => {
+  let count = 0;
+  globalThis.fetch = async () => {
+    count++;
+    return Response.json({ data: [{ error: { code: "1027", message: "Output withheld" } }] });
+  };
+  const model = "MiniMax-H3-Image";
+  await assert.rejects(generateViaMinimax("tile", minimaxCtx(), { model }), { code: "MINIMAX_SAFETY_BLOCKED" });
+  await assert.rejects(generateViaMinimax("tile", minimaxCtx(), { model, references: [{ b64: PNG_B64 }] }), { code: "MINIMAX_BAD_REQUEST" });
+  assert.equal(count, 1);
+});
+
+test("agent H3 generation does not repeat an upstream no-image response", async () => {
+  const { generateAgentImageWithRetry } = await import("../lib/agentImageVideoGen.ts");
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ error: { message: "No image data (1000)" } }, { status: 500 });
+  };
+  await assert.rejects(
+    generateAgentImageWithRetry(minimaxCtx(), "fixture", "A tile", "", false, {
+      provider: "minimax", model: "MiniMax-H3-Image",
+    }),
+    { code: "MINIMAX_UPSTREAM_ERROR" },
+  );
+  assert.equal(calls, 1);
+});

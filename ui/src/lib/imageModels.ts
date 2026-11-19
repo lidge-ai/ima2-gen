@@ -89,6 +89,8 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   { value: "openai/gpt-image-2/edit", shortLabel: "atlas edit", fullLabelKey: "settings.imageModel.atlasCloudGptImage2Edit", providerHint: "atlascloud" },
   { value: "image-01", shortLabel: "minimax", fullLabelKey: "settings.imageModel.minimaxImage01", providerHint: "minimax" },
   { value: "image-01-live", shortLabel: "minimax live", fullLabelKey: "settings.imageModel.minimaxImage01Live", providerHint: "minimax" },
+  { value: "MiniMax-H3-Image", shortLabel: "H3", fullLabelKey: "settings.imageModel.minimaxH3", providerHint: "minimax" },
+  { value: "MiniMax-H3-Image-Highspeed", shortLabel: "H3 highspeed", fullLabelKey: "settings.imageModel.minimaxH3Highspeed", providerHint: "minimax" },
   { value: "nai-diffusion-5-full", shortLabel: "nai v5", fullLabelKey: "settings.imageModel.naiDiffusion5Full", providerHint: "nai" },
   { value: "nai-diffusion-5-curated", shortLabel: "nai v5 cur", fullLabelKey: "settings.imageModel.naiDiffusion5Curated", providerHint: "nai" },
   { value: "nai-diffusion-4-5-full", shortLabel: "nai v4.5", fullLabelKey: "settings.imageModel.naiDiffusion45Full", providerHint: "nai" },

@@ -1,16 +1,10 @@
 import { thrownFields } from "./errInfo.js";
 // lib/minimaxImageAdapter.ts — MiniMax image-generation adapter.
 //
-// Calls the MiniMax /v1/image_generation endpoint directly with a Bearer API
-// key. Supports text-to-image and image-to-image: when reference images are
-// attached they are mapped to the `subject_reference` array (character subject
-// type, data URL or public URL). Responses are returned as `url` or `base64`;
-// both shapes are parsed into a single base64 payload for the shared pipeline.
-//
-// Region selects the global (.io) or China (.minimaxi.com) OpenAI-compatible
-// base URL. The endpoint, models, request fields, output formats, and response
-// fields follow the MiniMax image-generation API reference.
+// Legacy models and H3 use distinct regional endpoints and response formats.
 
+import { Agent } from "undici";
+import { isMinimaxH3ImageModel } from "./imageModels.js";
 import type { RuntimeContext } from "./runtimeContext.js";
 import { detectImageMimeFromB64 } from "./refs.js";
 import { logEvent } from "./logger.js";
@@ -20,6 +14,14 @@ export const MINIMAX_TEXT_TO_IMAGE_MODEL = "image-01";
 export const MINIMAX_IMAGE_TO_IMAGE_MODEL = "image-01-live";
 
 const MINIMAX_TIMEOUT_MS = 120_000;
+// Node fetch otherwise times out after five minutes while waiting for headers.
+// The per-generation AbortSignal bounds the entire H3 operation instead.
+// The runtime accepts Undici's dispatch protocol. Node's bundled type definitions
+// can differ from the installed Agent in methods fetch does not call.
+const h3Transport = {
+  dispatcher: new Agent({ headersTimeout: 0, bodyTimeout: 0 }),
+  redirect: "error",
+} as unknown as RequestInit;
 
 // Mirrors lib/grokImageCore.ts: a provider URL is untrusted input, so the
 // download is capped instead of being buffered in full.
@@ -166,9 +168,12 @@ async function readJson(res: Response): Promise<MinimaxJson> {
   }
 }
 
-function resolveBaseUrl(ctx: RuntimeContext): string {
+function resolveBaseUrl(ctx: RuntimeContext, h3: boolean): string {
   const cfg = ctx.config.minimaxProvider;
-  return cfg.region === "cn_zh" ? cfg.cnBaseUrl : cfg.globalBaseUrl;
+  if (cfg.region !== "cn_zh") return cfg.globalBaseUrl;
+  // Keep configured proxy bases. Only the built-in legacy CN host changes for H3.
+  if (h3 && cfg.cnBaseUrl.replace(/\/$/, "") === "https://api.minimaxi.com/v1") return "https://api.minimax.cn/v1";
+  return cfg.cnBaseUrl;
 }
 
 // MiniMax accepts a WxH size string; map it to the closest supported
@@ -196,6 +201,40 @@ function sizeToAspectRatio(size?: string): string | null {
 function refToDataUrl(ref: MinimaxReference): string {
   const mime = ref.detectedMime || ref.declaredMime || detectImageMimeFromB64(ref.b64) || "image/png";
   return `data:${mime};base64,${ref.b64}`;
+}
+
+interface H3Image {
+  url?: string;
+  b64_json?: string;
+  revised_prompt?: string;
+  error?: { code?: string; message?: string };
+}
+
+async function readH3Result(res: Response, model: string, signal: AbortSignal): Promise<MinimaxImageResult> {
+  const text = await res.text();
+  let json: { data?: H3Image[]; error?: { message?: string } } | null = null;
+  try { json = JSON.parse(text); } catch { /* Fall back to the HTTP status. */ }
+  const items = Array.isArray(json?.data) ? json.data : [];
+  const image = items.find((item) => item && !item.error && (item.url || item.b64_json));
+  if (!res.ok || json?.error || !image) {
+    const itemError = items.find((item) => item?.error)?.error;
+    const detail = json?.error?.message || itemError?.message || "No image returned";
+    if (res.status === 422 || itemError?.code === "1026" || itemError?.code === "1027") {
+      throw minimaxError(detail, 422, "MINIMAX_SAFETY_BLOCKED");
+    }
+    if (res.status === 402 || itemError?.code === "1008") throw minimaxError(detail, 402, "MINIMAX_INSUFFICIENT_BALANCE");
+    if (res.status === 429) throw minimaxError(detail, 429, "MINIMAX_RATE_LIMITED");
+    if (res.status === 401) throw minimaxError(detail, 401, "MINIMAX_AUTH_FAILED");
+    if (res.status === 400 || res.status === 403) throw minimaxError(detail, res.status, "MINIMAX_BAD_REQUEST");
+    throw minimaxError(detail, 502, "MINIMAX_UPSTREAM_ERROR");
+  }
+  const payload = typeof image.b64_json === "string" && image.b64_json
+    ? { b64: image.b64_json, mime: validateMinimaxImageBytes(image.b64_json) }
+    : await downloadMinimaxImage(image.url!, signal);
+  return {
+    ...payload, revisedPrompt: image.revised_prompt ?? null, providerUrl: image.url ?? null,
+    effectiveModel: model, usage: null, webSearchCalls: 0,
+  };
 }
 
 export async function generateViaMinimax(
@@ -230,15 +269,21 @@ export async function generateViaMinimax(
       "MINIMAX_MODEL_REQUIRES_REFERENCE",
     );
   }
-  const baseUrl = resolveBaseUrl(ctx);
-  const url = `${baseUrl.replace(/\/$/, "")}/image_generation`;
+  const h3 = isMinimaxH3ImageModel(model);
+  if (h3 && references.length) {
+    throw minimaxError("MiniMax H3 accepts text prompts only. Remove the reference image.", 400, "MINIMAX_BAD_REQUEST");
+  }
+  const baseUrl = resolveBaseUrl(ctx, h3);
+  const url = `${baseUrl.replace(/\/$/, "")}/${h3 ? "images/generations" : "image_generation"}`;
 
   const body: Record<string, unknown> = {
     model,
     prompt,
     response_format: "url",
   };
-  const aspectRatio = sizeToAspectRatio(options.size);
+  const exactSize = h3 && options.size && /^\d+x\d+$/.test(options.size);
+  if (exactSize) body.size = options.size;
+  const aspectRatio = exactSize ? null : sizeToAspectRatio(options.size);
   if (aspectRatio) body.aspect_ratio = aspectRatio;
 
   if (references.length > 0) {
@@ -255,7 +300,8 @@ export async function generateViaMinimax(
     refs: references.length,
   });
 
-  const timeoutSignal = AbortSignal.timeout(ctx.config.minimaxProvider.generationTimeoutMs || MINIMAX_TIMEOUT_MS);
+  const configuredTimeout = ctx.config.minimaxProvider.generationTimeoutMs || MINIMAX_TIMEOUT_MS;
+  const timeoutSignal = AbortSignal.timeout(h3 ? Math.max(600_000, configuredTimeout) : configuredTimeout);
   const combinedSignal = options.signal
     ? AbortSignal.any([options.signal, timeoutSignal])
     : timeoutSignal;
@@ -268,9 +314,11 @@ export async function generateViaMinimax(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      ...(h3 ? h3Transport : {}),
       signal: combinedSignal,
     });
 
+    if (h3) return await readH3Result(res, model, combinedSignal);
     const json = await readJson(res);
     const statusCode = json?.base_resp?.status_code;
     const statusMsg = json?.base_resp?.status_msg;

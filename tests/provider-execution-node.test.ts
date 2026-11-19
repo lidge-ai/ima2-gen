@@ -295,6 +295,25 @@ if (executionTestProcess(import.meta.url)) describe("node execution: real route 
     });
   });
 
+  for (const fails of [false, true]) it(`MiniMax H3 node generation ${fails ? "fails without resubmitting" : "persists the returned image"}`, async () => {
+    await harness.run("node", { context: { minimaxApiKey: "fixture" }, upstream: (call) => {
+      assert.equal(call.method, "POST");
+      assert.equal(call.url, "https://api.minimax.io/v1/images/generations");
+      assert.deepEqual(JSON.parse(call.body), {
+        model: "MiniMax-H3-Image", prompt: BASE.prompt, size: BASE.size, response_format: "url",
+      });
+      return fails
+        ? Response.json({ error: { message: "Internal error (1000)", http_code: "500" } }, { status: 500 })
+        : Response.json({ data: [{ b64_json: red, revised_prompt: "A red tile" }] });
+    } }, async (fixture) => {
+      const response = await fixture.post({ ...BASE, provider: "minimax", model: "MiniMax-H3-Image" });
+      assert.equal(response.status, fails ? 502 : 200);
+      if (!fails) assert.equal((await response.json()).image, `data:image/png;base64,${red}`);
+      await fixture.waitSettled();
+      assert.equal(fixture.calls.length, 1);
+    });
+  });
+
   for (const provider of ["gemini-api", "minimax"]) it(`${provider} parent-only preserves its explicit reference policy and prompt lane`, async () => {
     await harness.run("node", { context: { geminiApiKey: "gemini-fixture", minimaxApiKey: "minimax-fixture" }, upstream: (call) => {
       const wire = JSON.parse(call.body);

@@ -19,7 +19,7 @@ const CLI_IMAGE_MODELS = [
   ...OAUTH_MODELS,
   ...API_MODELS.filter((id) => !OAUTH_MODELS.includes(id)),
   "grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality",
-  "nano-banana-2", "nano-banana-pro", "image-01", "image-01-live",
+  "nano-banana-2", "nano-banana-pro", "image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed",
   "nai-diffusion-5-full", "nai-diffusion-5-curated", "nai-diffusion-4-5-full", "nai-diffusion-4-5-curated",
 ];
 
@@ -48,7 +48,7 @@ describe("core provider registry parity", () => {
     assert.deepEqual(models("atlascloud", "image"), [
       "openai/gpt-image-2/text-to-image", "openai/gpt-image-2/edit",
     ]);
-    assert.deepEqual(models("minimax", "image"), ["image-01", "image-01-live"]);
+    assert.deepEqual(models("minimax", "image"), ["image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed"]);
     const cliModels = [...new Set(REGISTRY.flatMap((entry) => models(entry.id, "image")))].filter((id) => !id.includes("/"));
     assert.deepEqual(cliModels, CLI_IMAGE_MODELS);
     assert.deepEqual([...config.imageModels.valid], OAUTH_MODELS);

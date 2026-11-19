@@ -52,6 +52,10 @@ const GEMINI_API_FALLBACK_IMAGE_MODEL = "nano-banana-2";
 const VALID_GEMINI_API_MODELS = deriveModels("gemini-api", "image");
 const ATLASCLOUD_FALLBACK_IMAGE_MODEL = "openai/gpt-image-2/text-to-image";
 const VALID_ATLASCLOUD_IMAGE_MODELS = deriveModels("atlascloud", "image");
+export function isMinimaxH3ImageModel(model: unknown): boolean {
+  return model === "MiniMax-H3-Image" || model === "MiniMax-H3-Image-Highspeed";
+}
+
 const MINIMAX_FALLBACK_IMAGE_MODEL = "image-01";
 const VALID_MINIMAX_IMAGE_MODELS = deriveModels("minimax", "image");
 const NAI_FALLBACK_IMAGE_MODEL = "nai-diffusion-5-full";

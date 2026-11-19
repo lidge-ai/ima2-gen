@@ -92,7 +92,9 @@ export const PROVIDER_MODELS = {
   "minimax": {
     "image": [
       "image-01",
-      "image-01-live"
+      "image-01-live",
+      "MiniMax-H3-Image",
+      "MiniMax-H3-Image-Highspeed"
     ],
     "video": []
   },
@@ -129,6 +131,8 @@ export const IMAGE_MODEL_IDS = [
   "openai/gpt-image-2/edit",
   "image-01",
   "image-01-live",
+  "MiniMax-H3-Image",
+  "MiniMax-H3-Image-Highspeed",
   "nai-diffusion-5-full",
   "nai-diffusion-5-curated",
   "nai-diffusion-4-5-full",
