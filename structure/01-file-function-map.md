@@ -238,7 +238,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/naiOptions.ts` | 145 | NovelAI request-option normalizer shared by every request-driven dispatch, plus negative-prompt history provenance |
 | `lib/naiZip.ts` | 153 | Minimal ZIP reader for NovelAI responses: stored/deflate entries, ZIP64 and encryption refusal, 50MB entry cap |
 | `lib/providers/adapters/nai.ts` | 142 | NovelAI provider-registry adapter binding: capability declaration and `normalizeError` mapping |
-| `lib/providers/registry.ts` | 285 | Provider lane manifests: the single declaration every generated catalog, capability list, and CLI enum derives from |
+| `lib/providers/registry.ts` | 283 | Provider lane manifests: the single declaration every generated catalog, capability list, and CLI enum derives from |
 | `lib/providers/types.ts` | 95 | Manifest/credential types, explicit model generation support, and provider surface records |
 | `lib/providers/derive.ts` | 97 | Registry-bound provider IDs, catalogs, reference limits and surface support |
 | `lib/providers/surfaceSupport.ts` | 31 | Pure application-surface projection, independent of readiness; static versus runtime catalogs |
@@ -287,10 +287,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/generationCancel.ts` | 29 | Shared generation cancellation helpers |
 | `lib/generationInputValidation.ts` | 46 | Shared generation request input validation |
 | `lib/grokImageCore.ts` | 188 | Shared Grok image request and response handling |
-| `lib/grokImagePlanner.ts` | 371 | Actual Grok search/planner operations, payload builders and plan parser |
-| `lib/providers/adapters/grokExecution.ts` | 125 | Four-surface Grok/proxy and direct execution, captured keys and search forwarding |
-| `lib/providers/adapters/grokOperations.ts` | 109 | Actual generate/edit operations with scoped artifact-origin policy |
-| `lib/providers/adapters/grokMultimodeOperations.ts` | 127 | Ordered per-image planning and sparse original-index result identity |
+| `lib/grokImagePlanner.ts` | 372 | Actual Grok search/planner operations, payload builders and plan parser |
+| `lib/providers/adapters/grokExecution.ts` | 128 | Four-surface Grok/proxy and direct execution, captured keys and search forwarding |
+| `lib/providers/adapters/grokOperations.ts` | 114 | Actual generate/edit operations with scoped artifact-origin policy |
+| `lib/providers/adapters/grokMultimodeOperations.ts` | 131 | Ordered per-image planning and sparse original-index result identity |
 | `lib/grokImageDownloadPolicy.ts` | 128 | Conservative address policy, exact-origin exception and abort-aware pinned DNS resolution |
 | `lib/grokImageDownload.ts` | 153 | Grok redirect trust, overall deadline, bounded streamed image body and cleanup |
 | `lib/pinnedHttpGet.ts` | 173 | Shared validated-address GET lifecycle, public redirect handling and bounded text bodies |
@@ -357,7 +357,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentToolManifest.ts` | 31 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 205 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 356 | Generation plan assembly |
-| `lib/agentImageVideoGen.ts` | 480 | Image/video generation caller for agent turns |
+| `lib/agentImageVideoGen.ts` | 481 | Image/video generation caller for agent turns |
 | `lib/agentQuestionResponder.ts` | 281 | `/question` responder |
 | `lib/promptBuilder/constants.ts` | 34 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
 | `lib/promptBuilder/router.ts` | 140 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |
@@ -394,8 +394,8 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 312 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 31 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 325 | UI-side image model labels and `resolveCoreModelValue` lane gating |
-| Core selection policy | `ui/src/lib/coreSelection.ts` | 162 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
+| Image models | `ui/src/lib/imageModels.ts` | 324 | UI-side image model labels and `resolveCoreModelValue` lane gating |
+| Core selection policy | `ui/src/lib/coreSelection.ts` | 171 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
 | Core selection persistence | `ui/src/store/coreSelectionPersistence.ts` | 59 | Legacy active snapshot and bounded versioned lane-memory storage boundary |
 | Core selection actions | `ui/src/store/storeCoreSelectionImpl.ts` | 84 | One selection patch for provider/image/video/workflow choices, including explicit slot clearing |
 | Core generation mode | `ui/src/lib/coreGenerationMode.ts` | 30 | Shared derived image/multimode/video decision for dispatch and composer chrome; no preference writes |

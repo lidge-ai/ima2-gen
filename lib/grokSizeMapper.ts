@@ -1,6 +1,6 @@
 export type GrokImageSizeParams = {
   aspect_ratio?: string;
-  resolution?: "1k" | "2k";
+  resolution?: "1k" | "1.5k" | "2k";
 };
 
 const SUPPORTED_ASPECTS = [
@@ -70,7 +70,7 @@ export function mapSizeToGrokImageParams(size: string | null | undefined): GrokI
     const aspect = parts.slice(1, -1).join(":");
     return {
       aspect_ratio: SUPPORTED_ASPECTS.some((supported) => supported === aspect) ? aspect : "auto",
-      resolution: res === "2k" ? "2k" : "1k",
+      resolution: res === "2k" || res === "1.5k" ? res : "1k" as const,
     };
   }
 

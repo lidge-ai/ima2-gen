@@ -124,7 +124,7 @@ export function buildIma2Capabilities({
       imageModels: {
         supported: toArray(appConfig.imageModels.valid),
         unsupported: toArray(appConfig.imageModels.unsupported),
-        grokSupported: ["grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality"],
+        grokSupported: ["grok-imagine-image-2.0", "grok-imagine-image"],
         geminiSupported: ["nano-banana-2", "nano-banana-pro"],
         atlasCloudSupported: ["openai/gpt-image-2/text-to-image", "openai/gpt-image-2/edit"],
         minimaxSupported: [...deriveModels("minimax", "image")],

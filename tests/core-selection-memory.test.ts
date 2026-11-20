@@ -75,7 +75,7 @@ test("future-version memory survives explicit v1 saves and active legacy writes"
     const future = '{"version":99,"lanes":{"futureProvider":{}}}';
     storage.rows.set(key, future);
     api.saveCoreSelectionMemory({ comfy: { kind: "image", image: "wf-new" } });
-    api.persistCoreSelection(reconcileCoreSelection({ provider: "grok-api", imageModel: "grok-imagine-image-quality" }));
+    api.persistCoreSelection(reconcileCoreSelection({ provider: "grok-api", imageModel: "grok-imagine-image" }));
     assert.equal(storage.getItem(key), future);
     assert.equal(JSON.parse(storage.getItem(generationKey)!).provider, "grok-api");
   });
@@ -101,7 +101,7 @@ test("snapshot honors current legacy keys over memory and preserves raw workflow
     assert.deepEqual(api.loadCoreSelectionSnapshot(), { provider: "comfy", imageModel: "gpt-6-luna",
       comfyWorkflow: "wf-legacy", comfyVideoWorkflow: "wf-missing", videoModelSelected: false });
     storage.rows.set(generationKey, JSON.stringify({ provider: "grok-api" }));
-    storage.rows.set("ima2.imageModel", "grok-imagine-image-quality");
+    storage.rows.set("ima2.imageModel", "grok-imagine-image");
     storage.rows.set(videoKey, JSON.stringify({ model: "grok-imagine-video-1.5-preview" }));
     assert.equal(api.loadCoreSelectionSnapshot().provider, "grok-api");
     assert.equal(api.loadCoreSelectionSnapshot().videoModelSelected, "grok-imagine-video-1.5");

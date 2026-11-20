@@ -43,8 +43,7 @@ export const PROVIDER_MODELS = {
   "grok": {
     "image": [
       "grok-imagine-image-2.0",
-      "grok-imagine-image",
-      "grok-imagine-image-quality"
+      "grok-imagine-image"
     ],
     "video": [
       "grok-imagine-video",
@@ -56,8 +55,7 @@ export const PROVIDER_MODELS = {
   "grok-api": {
     "image": [
       "grok-imagine-image-2.0",
-      "grok-imagine-image",
-      "grok-imagine-image-quality"
+      "grok-imagine-image"
     ],
     "video": [
       "grok-imagine-video",
@@ -117,7 +115,6 @@ export const IMAGE_MODEL_IDS = [
   "gpt-6.2-astra",
   "grok-imagine-image-2.0",
   "grok-imagine-image",
-  "grok-imagine-image-quality",
   "nano-banana-2",
   "nano-banana-pro",
   "openai/gpt-image-2/text-to-image",

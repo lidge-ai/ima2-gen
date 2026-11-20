@@ -16,6 +16,7 @@ const ASPECT_RATIOS = [
 
 const RESOLUTIONS = [
   { value: "1k", label: "1K" },
+  { value: "1.5k", label: "1.5K" },
   { value: "2k", label: "2K" },
 ] as const;
 

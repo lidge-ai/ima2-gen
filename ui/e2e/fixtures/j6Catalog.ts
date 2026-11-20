@@ -31,8 +31,8 @@ function modelCatalog(state: J6CatalogState, composer = false): { ok: true; lane
   return { ok: true, lanes: {
     oauth: lane(["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"]),
     api: lane(["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"]),
-    grok: lane(["grok-imagine-image-2.0", "grok-imagine-image-quality"], ["grok-imagine-video-1.5"]),
-    "grok-api": lane(["grok-imagine-image-2.0", "grok-imagine-image-quality"], ["grok-imagine-video-1.5"]),
+    grok: lane(["grok-imagine-image-2.0", "grok-imagine-image"], ["grok-imagine-video-1.5"]),
+    "grok-api": lane(["grok-imagine-image-2.0", "grok-imagine-image"], ["grok-imagine-video-1.5"]),
     "gemini-api": lane(["nano-banana-pro", "nano-banana-2"]),
     ...(composer ? { nai: lane(["nai-diffusion-5-full"]), minimax: lane(["image-01"]) } : {}),
     comfy: { status: state.mode === "offline" ? "disconnected" : "ready", models },

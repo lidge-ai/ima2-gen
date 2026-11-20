@@ -49,9 +49,18 @@ const LEGACY_OPENAI_MODELS: Readonly<Record<string, ImageModel>> = {
 };
 
 export function migrateCoreImageModel(provider: Provider, value: unknown): unknown {
-  return (provider === "oauth" || provider === "api") && typeof value === "string"
-    ? LEGACY_OPENAI_MODELS[value] ?? value : value;
+  if (typeof value !== "string") return value;
+  if (provider === "oauth" || provider === "api") return LEGACY_OPENAI_MODELS[value] ?? value;
+  if (provider === "grok" || provider === "grok-api") return LEGACY_GROK_MODELS[value] ?? value;
+  return value;
 }
+
+/** Retired Grok image slugs (server: lib/grokImageQuality.ts) resolve to 2.0. */
+const LEGACY_GROK_MODELS: Readonly<Record<string, ImageModel>> = {
+  "grok-imagine-image-quality": "grok-imagine-image-2.0",
+  "grok-imagine-image-pro": "grok-imagine-image-2.0",
+};
+const isLegacyModelId = (value: string) => Object.hasOwn(LEGACY_OPENAI_MODELS, value) || Object.hasOwn(LEGACY_GROK_MODELS, value);
 
 function staticImage(provider: Provider, value: unknown): value is ImageModel {
   return typeof value === "string" && staticIds.has(value)
@@ -65,7 +74,7 @@ function workflow(value: unknown): string | null {
 function inferProvider(model: unknown, video: unknown): Provider {
   if (normalizeVideoModelValue(video)) return "grok";
   for (const provider of ["grok", "agy", "atlascloud", "minimax", "nai"] as const) {
-    if (staticImage(provider, model)) return provider;
+    if (staticImage(provider, migrateCoreImageModel(provider, model))) return provider;
   }
   return "oauth";
 }
@@ -81,7 +90,7 @@ export function reconcileCoreSelection(input: CoreSelectionInput): CoreSelection
         ? input.imageModel as ImageModel : DEFAULT_IMAGE_MODEL,
       videoModelSelected: false,
       comfyWorkflow: workflow(input.comfyWorkflow)
-        ?? (legacy && !staticIds.has(legacy) && !Object.hasOwn(LEGACY_OPENAI_MODELS, legacy) ? legacy : null),
+        ?? (legacy && !staticIds.has(legacy) && !isLegacyModelId(legacy) ? legacy : null),
       comfyVideoWorkflow: workflow(input.comfyVideoWorkflow),
     };
   }

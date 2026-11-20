@@ -74,7 +74,6 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   { value: "gpt-6.2-sol", shortLabel: "6.2s", fullLabelKey: "settings.imageModel.gpt62Sol" },
   { value: "gpt-6.2-astra", shortLabel: "6.2a", fullLabelKey: "settings.imageModel.gpt62Astra" },
   { value: "grok-imagine-image-2.0", shortLabel: "grok2", fullLabelKey: "settings.imageModel.grokImagine20" },
-  { value: "grok-imagine-image-quality", shortLabel: "grok+", fullLabelKey: "settings.imageModel.grokImagineQuality" },
   { value: "grok-imagine-image", shortLabel: "grok", fullLabelKey: "settings.imageModel.grokImagine" },
   { value: "nano-banana-2", shortLabel: "nb2 agy", fullLabelKey: "settings.imageModel.nanoBanana2", providerHint: "agy" },
   { value: "nano-banana-2", shortLabel: "nb2 api", fullLabelKey: "settings.imageModel.nanoBanana2Api", providerHint: "gemini-api" },

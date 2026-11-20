@@ -101,12 +101,12 @@ function selection(state: AppState) {
 test("actual app hydration keeps Grok API image/video lanes and video parameters without writes", async () => {
   await isolated(async (storage) => {
     storage.seed(GENERATION, { provider: "grok-api", prompt: "saved", count: 4, multimode: true });
-    storage.values.set(IMAGE, "grok-imagine-image-quality");
+    storage.values.set(IMAGE, "grok-imagine-image");
     storage.seed(VIDEO, { model: "grok-imagine-video-1.5-preview", duration: 9, resolution: "720p", aspectRatio: "16:9" });
     const { useAppStore } = await loadRuntime();
     const state = useAppStore.getState();
     assert.deepEqual(selection(state), {
-      provider: "grok-api", imageModel: "grok-imagine-image-quality",
+      provider: "grok-api", imageModel: "grok-imagine-image",
       videoModelSelected: "grok-imagine-video-1.5", comfyWorkflow: null, comfyVideoWorkflow: null,
     });
     assert.equal(state.assetGenProvider, "grok-api");
@@ -120,14 +120,14 @@ test("Grok API image click commits one legal selection, persists false video, th
   await isolated(async (storage) => {
     const runtime = await loadRuntime();
     const f = fixture(runtime, { provider: "grok-api", imageModel: "grok-imagine-image-2.0", videoModelSelected: "grok-imagine-video-1.5" });
-    runtime.setCoreImageSelection("grok-imagine-image-quality", f.set, f.get);
+    runtime.setCoreImageSelection("grok-imagine-image", f.set, f.get);
     assert.equal(f.patches.length, 1);
     assert.deepEqual(selection(f.get()), {
-      provider: "grok-api", imageModel: "grok-imagine-image-quality", videoModelSelected: false,
+      provider: "grok-api", imageModel: "grok-imagine-image", videoModelSelected: false,
       comfyWorkflow: null, comfyVideoWorkflow: null,
     });
     assert.equal(storage.json(GENERATION).provider, "grok-api");
-    assert.equal(storage.getItem(IMAGE), "grok-imagine-image-quality");
+    assert.equal(storage.getItem(IMAGE), "grok-imagine-image");
     assert.equal(storage.json(VIDEO).model, false);
     assert.deepEqual(selection((await loadRuntime()).useAppStore.getState()), selection(f.get()));
   });
@@ -135,14 +135,14 @@ test("Grok API image click commits one legal selection, persists false video, th
 
 test("malformed saved providers and JSON hydrate safely without repairing storage or clearing MCP", async () => {
   await isolated(async (storage) => {
-    storage.values.set(IMAGE, "grok-imagine-image-quality");
+    storage.values.set(IMAGE, "grok-imagine-image");
     storage.values.set(MEMORY, '{"version":1,"lanes":{"constructor":{"image":"bad","kind":"image"}}}');
     for (const provider of ["auto", "constructor", "__proto__", "toString"]) {
       storage.seed(GENERATION, { provider, mcpProvider: "fixture-mcp", mcpModel: "fixture-model", prompt: "saved" });
       const before = storage.getItem(GENERATION);
       const runtime = await loadRuntime();
       assert.equal(runtime.useAppStore.getState().provider, "grok");
-      assert.equal(runtime.useAppStore.getState().imageModel, "grok-imagine-image-quality");
+      assert.equal(runtime.useAppStore.getState().imageModel, "grok-imagine-image");
       assert.equal(storage.getItem(GENERATION), before);
       assert.deepEqual(storage.writes, []);
     }
@@ -183,7 +183,7 @@ test("NovelAI provider fallback and model action preserve count/multimode prefer
   await isolated(async (storage) => {
     storage.seed(GENERATION, { count: 4, multimode: true });
     const runtime = await loadRuntime();
-    const f = fixture(runtime, { provider: "grok-api", imageModel: "grok-imagine-image-quality" });
+    const f = fixture(runtime, { provider: "grok-api", imageModel: "grok-imagine-image" });
     runtime.setProviderImpl("nai", f.set, f.get);
     assert.equal(f.get().imageModel, "nai-diffusion-5-full");
     runtime.setImageModelImpl("nai-diffusion-5-curated", f.set, f.get);

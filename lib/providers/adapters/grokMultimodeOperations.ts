@@ -8,6 +8,8 @@ import {
   type GrokReferenceImage,
 } from "../../grokImageCore.js";
 import { planGrokImage } from "../../grokImagePlanner.js";
+import { resolveGrokImageRequest, withGrokImageQuality } from "../../grokImageQuality.js";
+import { GROK_FALLBACK_IMAGE_MODEL } from "../../imageModels.js";
 import { resolveGrokCredential, type GrokCredential } from "../../grokRuntime.js";
 import { logEvent } from "../../logger.js";
 import type { RouteRuntimeContext } from "../../runtimeContext.js";
@@ -47,10 +49,12 @@ export async function generateMultimodeViaGrok(
     references?: GrokReferenceImage[] | undefined;
     credential?: GrokCredential | undefined;
     webSearchEnabled?: boolean | undefined;
+    quality?: string | undefined;
     onFinalImage?: ((image: { b64: string; revisedPrompt?: string | undefined; mime?: string | undefined }, index: number) => void | Promise<void>) | undefined;
   } = {},
 ): Promise<GrokMultimodeResult> {
-  const model = options.model || ctx.config?.grokProvider?.defaultImageModel || "grok-imagine-image-quality";
+  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality);
+  const model = resolved.model;
   const maxGeneratedImages = Math.max(
     1,
     Math.trunc(Number(ctx.config?.limits?.maxGeneratedImages) || 24),
@@ -87,9 +91,9 @@ export async function generateMultimodeViaGrok(
     });
     totalWebSearchCalls += plan.webSearchCalls;
     const endpoint = references.length > 0 ? "/v1/images/edits" : "/v1/images/generations";
-    const payload = references.length > 0
+    const payload = withGrokImageQuality(references.length > 0
       ? imageEditPayload(model, plan.prompt, references, options.size)
-      : imagePayload(model, plan.prompt, options.size);
+      : imagePayload(model, plan.prompt, options.size), resolved);
 
     try {
       logEvent("grok", "multimode:item-start", {

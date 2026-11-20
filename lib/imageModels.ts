@@ -9,6 +9,7 @@ const VALID_API_IMAGE_MODELS = deriveSupportedImageModels("api");
 
 export { LEGACY_OPENAI_IMAGE_MODELS, migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
+import { migrateGrokImageModel, resolveGrokImageRequest } from "./grokImageQuality.js";
 const UNSUPPORTED_IMAGE_MODELS = deriveUnsupportedImageModels();
 const FALLBACK_REASONING_EFFORT = "none";
 const VALID_REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
@@ -29,9 +30,8 @@ export function coerceReasoningEffortForModel(model: string | undefined, effort:
   return MODELS_WITHOUT_NONE_EFFORT.has(model) ? "low" : effort;
 }
 
-// xAI's current flagship Imagine image model. The legacy "quality" knob used to
-// swap in grok-imagine-image-quality; 2.0 supersedes it for high-quality work,
-// so the knob now resolves here. An explicit user selection is never downgraded.
+// xAI's current flagship Imagine image model. The "high" quality knob selects it
+// (sent as quality medium, 2.0's highest); retired slugs migrate to it (grokImageQuality.ts).
 export const GROK_QUALITY_IMAGE_MODEL = "grok-imagine-image-2.0";
 const VALID_GROK_IMAGE_MODELS = deriveModels("grok", "image");
 
@@ -40,8 +40,7 @@ const VALID_GROK_IMAGE_MODELS = deriveModels("grok", "image");
  * Returns the caller's model untouched unless quality === "high".
  */
 export function resolveGrokQualityModel(model: string | undefined, quality: unknown): string {
-  if (quality !== "high") return model ?? GROK_FALLBACK_IMAGE_MODEL;
-  return GROK_QUALITY_IMAGE_MODEL;
+  return resolveGrokImageRequest(model ?? GROK_FALLBACK_IMAGE_MODEL, quality).model;
 }
 
 const GEMINI_API_FALLBACK_IMAGE_MODEL = "nano-banana-2";
@@ -117,10 +116,11 @@ export function normalizeImageModel(
   return { model };
 }
 
-export function normalizeGrokImageModel(rawModel: unknown) {
-  if (typeof rawModel !== "string" || rawModel.length === 0) {
+export function normalizeGrokImageModel(input: unknown) {
+  if (typeof input !== "string" || input.length === 0) {
     return { model: GROK_FALLBACK_IMAGE_MODEL };
   }
+  const rawModel = migrateGrokImageModel(input);
   if (!VALID_GROK_IMAGE_MODELS.has(rawModel)) {
     return {
       error: `Grok image model must be one of: ${[...VALID_GROK_IMAGE_MODELS].join(", ")}`,

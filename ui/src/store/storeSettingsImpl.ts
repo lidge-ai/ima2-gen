@@ -402,7 +402,7 @@ export function setGrokAspectRatioImpl(grokAspectRatio: string, set: StoreSet): 
   set({ grokAspectRatio });
 }
 
-export function setGrokResolutionImpl(grokResolution: "1k" | "2k", set: StoreSet): void {
+export function setGrokResolutionImpl(grokResolution: "1k" | "1.5k" | "2k", set: StoreSet): void {
   saveGenerationDefaultsPatch({ grokResolution });
   set({ grokResolution });
 }

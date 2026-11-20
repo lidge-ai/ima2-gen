@@ -162,10 +162,10 @@ async function checkTransport(t, context) {
       assert.equal(oauth.provider, "oauth");
       assert.equal(oauth.model, "gpt-5.6-sol");
       const grok = await captureTransport(context, kind, {
-        provider: "grok-api", imageModel: "grok-imagine-image-quality", comfyWorkflow: "wf-stray",
+        provider: "grok-api", imageModel: "grok-imagine-image", comfyWorkflow: "wf-stray",
       });
       assert.equal(grok.provider, "grok-api");
-      assert.equal(grok.model, "grok-imagine-image-quality");
+      assert.equal(grok.model, "grok-imagine-image");
     });
   }
   await t.test("NAI transport forces n=1 without changing count or override semantics", async () => {
@@ -191,7 +191,7 @@ async function checkDispatch(t, context) {
     ["NAI hidden multimode", { provider: "nai", imageModel: "nai-diffusion-5-full" }, "classic"],
     ["Grok API video", { provider: "grok-api", videoModelSelected: "grok-imagine-video-1.5" }, "video"],
     ["OAuth ignores stray video", { videoModelSelected: "grok-imagine-video", comfyVideoWorkflow: "wf-stray" }, "multimode"],
-    ["Grok API image", { provider: "grok-api", imageModel: "grok-imagine-image-quality" }, "multimode"],
+    ["Grok API image", { provider: "grok-api", imageModel: "grok-imagine-image" }, "multimode"],
     ["disabled multimode", { multimode: false }, "classic"],
     ...["auto", "unknown-provider", "constructor", "__proto__", "toString"].map((provider) =>
       [`unknown lane ${provider}`, { provider }, "classic"]),

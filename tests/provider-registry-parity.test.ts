@@ -18,7 +18,7 @@ const API_MODELS = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra
 const CLI_IMAGE_MODELS = [
   ...OAUTH_MODELS,
   ...API_MODELS.filter((id) => !OAUTH_MODELS.includes(id)),
-  "grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality",
+  "grok-imagine-image-2.0", "grok-imagine-image",
   "nano-banana-2", "nano-banana-pro", "image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed",
   "nai-diffusion-5-full", "nai-diffusion-5-curated", "nai-diffusion-4-5-full", "nai-diffusion-4-5-curated",
 ];
@@ -43,7 +43,7 @@ describe("core provider registry parity", () => {
     assert.deepEqual(REGISTRY.map((entry) => entry.id), CORE_IDS);
     assert.deepEqual(models("oauth", "image"), OAUTH_MODELS);
     assert.deepEqual(models("api", "image"), API_MODELS);
-    assert.deepEqual(models("grok", "image"), ["grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality"]);
+    assert.deepEqual(models("grok", "image"), ["grok-imagine-image-2.0", "grok-imagine-image"]);
     assert.deepEqual(models("gemini-api", "image"), ["nano-banana-2", "nano-banana-pro"]);
     assert.deepEqual(models("atlascloud", "image"), [
       "openai/gpt-image-2/text-to-image", "openai/gpt-image-2/edit",

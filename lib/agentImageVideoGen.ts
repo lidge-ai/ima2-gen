@@ -143,6 +143,7 @@ async function generateAgentImage(
     : activeProvider === "grok"
     ? await generateViaGrok(`${manifest}\n\nUser request:\n${prompt}`, ctx, {
         model: effectiveModel,
+        quality: options.quality,
         size: providerOptions.size,
         requestId,
         ...(options.signal ? { signal: options.signal } : {}),

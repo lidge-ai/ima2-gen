@@ -70,7 +70,6 @@ export const REGISTRY = [
     models: [
       { id: "grok-imagine-image-2.0", kind: "image", supports: EDIT },
       { id: "grok-imagine-image", kind: "image", supports: EDIT },
-      { id: "grok-imagine-image-quality", kind: "image", supports: EDIT },
       { id: "grok-imagine-video", kind: "video", supports: EDIT },
       { id: "grok-imagine-video-1.5", aliases: ["grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"], kind: "video", supports: EDIT },
     ],
@@ -98,7 +97,6 @@ export const REGISTRY = [
     models: [
       { id: "grok-imagine-image-2.0", kind: "image", supports: EDIT },
       { id: "grok-imagine-image", kind: "image", supports: EDIT },
-      { id: "grok-imagine-image-quality", kind: "image", supports: EDIT },
       { id: "grok-imagine-video", kind: "video", supports: EDIT },
       { id: "grok-imagine-video-1.5", aliases: ["grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"], kind: "video", supports: EDIT },
     ],

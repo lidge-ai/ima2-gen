@@ -16,9 +16,9 @@ test("Comfy restoration does not mistake legacy OpenAI models for workflows", ()
 });
 
 test("explicit core lane wins over conflicting persisted model and video", () => {
-  assert.deepEqual(reconcileCoreSelection({ provider: "grok-api", imageModel: "grok-imagine-image-quality",
+  assert.deepEqual(reconcileCoreSelection({ provider: "grok-api", imageModel: "grok-imagine-image",
     videoModelSelected: "grok-imagine-video-1.5-preview" }), {
-    provider: "grok-api", imageModel: "grok-imagine-image-quality", videoModelSelected: "grok-imagine-video-1.5",
+    provider: "grok-api", imageModel: "grok-imagine-image", videoModelSelected: "grok-imagine-video-1.5",
     comfyWorkflow: null, comfyVideoWorkflow: null,
   });
   assert.deepEqual(reconcileCoreSelection({ provider: "oauth", imageModel: "gpt-5.6-sol",
@@ -32,7 +32,7 @@ test("explicit core lane wins over conflicting persisted model and video", () =>
 
 test("invalid provider inference is membership-based, including prototype keys", () => {
   for (const provider of [undefined, null, "auto", "constructor", "__proto__", "toString", {}, []]) {
-    assert.equal(reconcileCoreSelection({ provider, imageModel: "grok-imagine-image-quality" }).provider, "grok");
+    assert.equal(reconcileCoreSelection({ provider, imageModel: "grok-imagine-image" }).provider, "grok");
     assert.equal(reconcileCoreSelection({ provider, imageModel: "not-a-model" }).provider, "oauth");
   }
   for (const [imageModel, provider] of [["nano-banana-pro", "agy"], ["image-01-live", "minimax"],
@@ -77,7 +77,7 @@ test("reconciliation is idempotent and never mutates inputs", () => {
 
 test("model family switches preserve compatible credential lanes", () => {
   for (const [provider, model, expected] of [
-    ["grok-api", "grok-imagine-image-quality", "grok-api"], ["grok-api", "gpt-6.2-sol", "oauth"],
+    ["grok-api", "grok-imagine-image", "grok-api"], ["grok-api", "gpt-6.2-sol", "oauth"],
     ["api", "gpt-6.2-sol", "api"], ["gemini-api", "nano-banana-2", "gemini-api"],
     ["comfy", "nai-diffusion-5-full", "nai"],
   ] as Array<[Provider, ImageModel, Provider]>) assert.equal(providerForImageModel(provider, model), expected);
@@ -111,9 +111,16 @@ test("memory allowlist rejects unknown keys and unsupported slots without invent
   assert.deepEqual(filterCoreSelectionMemory(JSON.parse('{"__proto__":{"kind":"image"},"missing":{"kind":"image"},"oauth":[]}')), {});
   assert.deepEqual(filterCoreSelectionMemory({
     oauth: { kind: "image", image: "gpt-5.3-codex-spark", video: "grok-imagine-video", token: "not-saved" },
-    "grok-api": { kind: "video", image: "grok-imagine-image-quality", video: "grok-imagine-video-1.5-preview" },
+    "grok-api": { kind: "video", image: "grok-imagine-image", video: "grok-imagine-video-1.5-preview" },
     comfy: { kind: "image", image: "wf-not-in-catalog", video: "  " },
     nai: { kind: "audio", image: "nai-diffusion-5-full" },
-  }), { oauth: { kind: "image" }, "grok-api": { kind: "video", image: "grok-imagine-image-quality", video: "grok-imagine-video-1.5" },
+  }), { oauth: { kind: "image" }, "grok-api": { kind: "video", image: "grok-imagine-image", video: "grok-imagine-video-1.5" },
     comfy: { kind: "image", image: "wf-not-in-catalog" } });
+});
+test("retired Grok image slugs restore as Grok 2.0 instead of switching lanes", () => {
+  for (const retired of ["grok-imagine-image-quality", "grok-imagine-image-pro"]) {
+    assert.deepEqual([reconcileCoreSelection({ provider: "grok-api", imageModel: retired }).imageModel,
+      reconcileCoreSelection({ imageModel: retired }).provider,
+      reconcileCoreSelection({ imageModel: retired }).imageModel], ["grok-imagine-image-2.0", "grok", "grok-imagine-image-2.0"]);
+  }
 });

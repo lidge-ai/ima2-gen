@@ -3,6 +3,7 @@ import { logEvent } from "./logger.js";
 import { SAFETY_INTENT_POLICY } from "./promptSafetyPolicy.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { mapSizeToGrokImageParams, type GrokImageSizeParams } from "./grokSizeMapper.js";
+import { XAI_IMAGE_2_MODEL, migrateGrokImageModel } from "./grokImageQuality.js";
 import { DEFAULT_GROK_PLANNER_MODEL } from "../config.js";
 import {
   grokError,
@@ -179,7 +180,7 @@ export function buildGrokPlannerPayload(
               },
               model: {
                 type: "string",
-                enum: ["grok-imagine-image-2.0", "grok-imagine-image", "grok-imagine-image-quality"],
+                enum: ["grok-imagine-image-2.0", "grok-imagine-image"],
                 description: "The xAI image model. The server may override this with the user's selected model.",
               },
             },
@@ -302,7 +303,7 @@ export async function planGrokImage(
     webSearchEnabled?: boolean | undefined;
   } = {},
 ): Promise<GrokImagePlan> {
-  const imageModel = options.model || ctx.config?.grokProvider?.defaultImageModel || "grok-imagine-image-quality";
+  const imageModel = migrateGrokImageModel(options.model || ctx.config?.grokProvider?.defaultImageModel || XAI_IMAGE_2_MODEL);
   const planner = getPlannerConfig(ctx);
   const plannerModel = options.plannerModel || planner.model;
   const sizeParams = mapSizeToGrokImageParams(options.size);
