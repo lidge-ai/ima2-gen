@@ -93,7 +93,8 @@ export class CodexAutoRedeem {
     let client: CodexResetClient;
     try { client = await deps.client(account).prepare(); }
     catch { this.ledger.abandon(id, this.owner); return; }
-    if (!this.ledger.sending(id, this.owner, true, creditSnapshot(fresh.credits))) return;
+    if (!this.ledger.sending(id, this.owner, true, creditSnapshot(fresh.credits),
+      { expiresAt: time(credit.expiresAt), now: () => deps.now?.() ?? Date.now() })) return;
     try {
       const result = await client.consume(id);
       if (result.outcome === "unknown") this.ledger.unknown(id);

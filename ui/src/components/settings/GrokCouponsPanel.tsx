@@ -12,11 +12,12 @@ export interface GrokCouponsTransport {
 }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const idOf = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
+const shortRef = (value: string) => value.length > 12 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 type Props = { transport: GrokCouponsTransport; t?: QuotaTranslate; onRefresh?: () => void };
 export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Props) {
   const [list, setList] = useState<Awaited<ReturnType<GrokCouponsTransport["list"]>> | null>(null);
   const [ops, setOps] = useState<ResetOperation[] | null>(null);
-  const [target, setTarget] = useState<{ id: string; accountRef: string } | null>(null);
+  const [target, setTarget] = useState<{ id: string; accountRef: string; accountLabel: string | null; validityEnd: number | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const inFlight = useRef(false);
@@ -33,7 +34,9 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
     try {
       const latest = await transport.list();
       if (!accountRef || latest.accountRef !== accountRef) { setList(latest); accountChanged(); return; }
-      setMessage(""); setTarget({ id, accountRef });
+      const coupon = latest.coupons.find(item => item.tokenId === id);
+      if (!coupon) { setList(latest); setMessage("unavailable"); return; }
+      setMessage(""); setTarget({ id, accountRef, accountLabel: latest.accountLabel, validityEnd: coupon.validityEnd });
     } catch { setMessage("unavailable"); }
     finally { setBusy(false); inFlight.current = false; }
   };
@@ -74,6 +77,8 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
     {target && <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="grok-confirm-title" className="quota-reset__dialog"
       onKeyDown={event => trapKey(event, () => { if (!busy) { setTarget(null); trigger.current?.focus(); } })}>
       <p id="grok-confirm-title">{t("settings.quota.grokCoupons.confirm")}</p>
+      <p>{t("settings.quota.grokCoupons.account")}: {target.accountLabel && <>{target.accountLabel} · </>}{shortRef(target.accountRef)}</p>
+      <p>{t("settings.quota.grokCoupons.title")}: {shortRef(target.id)} · {target.validityEnd === null ? "—" : t("settings.quota.grokCoupons.expires", { date: new Date(target.validityEnd * 1000).toLocaleString() })}</p>
       <button type="button" disabled={busy} ref={node => { node?.focus(); }} onClick={() => { setTarget(null); trigger.current?.focus(); }}>{t("settings.quota.redeem.cancel")}</button>
       <button type="button" disabled={busy} onClick={() => { void confirm(); }}>{t("settings.quota.redeem.action")}</button>
     </div></div>}

@@ -21,11 +21,20 @@ export class OperationLedger {
   private enabled(provider: string, key: string): boolean {
     return !!this.db.prepare("SELECT 1 FROM reset_settings WHERE provider=? AND enabled=1 AND ledger_key=?").get(provider, key);
   }
-  sending(id: string, owner: string, auto = false, creditSnapshot?: string[]): boolean {
+  sending(id: string, owner: string, auto = false, creditSnapshot?: string[], eligibility?: { expiresAt: number; now: () => number }): boolean {
     return this.db.transaction(() => {
       const row = this.get(id) as { provider: string; ledger_key: string; state: string; owner_id: string } | undefined;
       if (!row || row.state !== "claimed" || row.owner_id !== owner) return false;
-      if (auto && !this.enabled(row.provider, row.ledger_key)) { this.abandon(id, owner); return false; }
+      if (auto) {
+        const settings = this.db.prepare("SELECT lead_minutes FROM reset_settings WHERE provider=? AND enabled=1 AND ledger_key=?")
+          .get(row.provider, row.ledger_key) as { lead_minutes: number } | undefined;
+        const now = eligibility?.now();
+        if (!settings || !eligibility || !Number.isFinite(now) || !Number.isFinite(eligibility.expiresAt)
+          || !Number.isInteger(settings.lead_minutes) || settings.lead_minutes < 1 || settings.lead_minutes > 60
+          || eligibility.expiresAt <= now! || eligibility.expiresAt - now! > settings.lead_minutes * 60_000) {
+          this.abandon(id, owner); return false;
+        }
+      }
       return this.db.prepare("UPDATE reset_operations SET state='sending', updated_at=?, credit_snapshot=COALESCE(?, credit_snapshot) WHERE operation_id=? AND owner_id=? AND state='claimed'")
         .run(Date.now(), creditSnapshot === undefined ? null : JSON.stringify(creditSnapshot), id, owner).changes === 1;
     }).immediate();

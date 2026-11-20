@@ -23,6 +23,7 @@ export interface ResetCreditsTransport {
 export interface ResetSettings { enabled: boolean; leadMinutes: number; accountRef: string | null }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const operationId = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
+const shortRef = (value: string) => value.length > 12 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 const outcomeKeys: Record<string, string> = { reset: "success", nothing_to_reset: "nothingToReset",
   no_credit: "noCredit", already_redeemed: "alreadyRedeemed", unknown: "unknown", IDENTITY_CHANGED: "identityChanged" };
 
@@ -55,10 +56,10 @@ function creditRows(list: ResetList | null, t: QuotaTranslate) {
 
 type PanelProps = {
   transport: ResetCreditsTransport; t?: QuotaTranslate; onRefresh?: () => void;
-  accountRef?: string;
+  accountRef?: string; accountEmail?: string | null;
   availableCount?: number | null; applicableAvailableCount?: number | null;
 };
-export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, availableCount, applicableAvailableCount }: PanelProps) {
+export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, accountEmail, availableCount, applicableAvailableCount }: PanelProps) {
   const [settings, setSettings] = useState<ResetSettings | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [ops, setOps] = useState<ResetOperation[]>([]);
@@ -143,7 +144,7 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
     {dialog && <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title"
       className="quota-reset__dialog" onKeyDown={(event) => trapKey(event, () => { if (!busy) { setDialog(null); trigger.current?.focus(); } })}>
       <p id="reset-confirm-title">{t("settings.quota.redeem.confirm")}</p>
-      <p>{dialog}</p>
+      <p>{accountEmail && <>{accountEmail} · </>}{shortRef(dialog)}</p>
       <button type="button" disabled={busy} ref={(node) => { node?.focus(); }} onClick={() => { setDialog(null); trigger.current?.focus(); }}>{t("settings.quota.redeem.cancel")}</button>
       <button type="button" disabled={busy} onClick={() => { void confirm(); }}>{t("settings.quota.redeem.action")}</button>
     </div></div>}

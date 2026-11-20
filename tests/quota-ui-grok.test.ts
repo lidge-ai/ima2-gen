@@ -96,7 +96,7 @@ it("identifies the account and selected coupon in the Grok confirmation without 
   const accountRef = "abcdefgh12345678"; const tokenId = "couponAB12345678"; const validityEnd = 2000000000;
   const transport = { list: async () => ({ accountLabel: null, accountRef, coupons: [{ tokenId, validityEnd }] }),
     getOperations: async () => [], redeem: async () => { throw new Error("unexpected redemption"); } };
-  const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
+  const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport, t: (key: string, values?: { date?: string }) => `${key} ${values?.date ?? ""}` });
   await new Promise(resolve => setImmediate(resolve));
   (findNode(panel.tree(), n => n.props["data-coupon"] === tokenId)!.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
   await new Promise(resolve => setImmediate(resolve));
