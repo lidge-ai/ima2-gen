@@ -84,11 +84,11 @@ test("future-version memory survives explicit v1 saves and active legacy writes"
 test("whole-lane replacement keeps explicit slot deletion while preserving other lanes", async () => {
   await withStorage((api, storage) => {
     storage.rows.set(key, JSON.stringify({ version: 1, lanes: {
-      comfy: { kind: "video", image: "wf-a", video: "wf-v" }, api: { kind: "image", image: "gpt-5.6-terra" },
+      comfy: { kind: "video", image: "wf-a", video: "wf-v" }, api: { kind: "image", image: "gpt-6.1-terra" },
     } }));
     api.saveCoreSelectionMemory({ comfy: { kind: "image", image: "wf-a" } });
     assert.deepEqual(JSON.parse(storage.getItem(key)!), { version: 1, lanes: {
-      comfy: { kind: "image", image: "wf-a" }, api: { kind: "image", image: "gpt-5.6-terra" },
+      comfy: { kind: "image", image: "wf-a" }, api: { kind: "image", image: "gpt-6.1-terra" },
     } });
   });
 });
@@ -115,7 +115,7 @@ test("selection writes preserve unrelated generation/video preferences and never
       multimode: true, mcpProvider: "runway", mcpModel: "gen4", negativePrompt: "keep-negative" }));
     storage.rows.set(videoKey, JSON.stringify({ model: false, duration: 8, resolution: "720p", aspectRatio: "16:9" }));
     storage.rows.set("history", "immutable");
-    api.persistCoreSelection(reconcileCoreSelection({ provider: "api", imageModel: "gpt-5.6-sol" }));
+    api.persistCoreSelection(reconcileCoreSelection({ provider: "api", imageModel: "gpt-6.2-sol" }));
     const saved = JSON.parse(storage.getItem(generationKey)!);
     assert.equal(saved.provider, "api"); assert.equal(saved.prompt, "dirty draft");
     assert.equal(saved.count, 4); assert.equal(saved.multimode, true); assert.equal(saved.negativePrompt, "keep-negative");

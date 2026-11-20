@@ -22,7 +22,7 @@ const BUILD_HELP = `
 
   Examples:
     ima2 prompt build --message "make this prompt more cinematic" --json
-    ima2 prompt build --messages @conversation.json --model gpt-5.5
+    ima2 prompt build --messages @conversation.json --model gpt-6-luna
     echo '{"role":"user","content":"hi"}' | ima2 prompt build --messages -
 `;
 

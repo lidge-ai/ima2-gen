@@ -51,7 +51,7 @@ if (executionTestProcess(import.meta.url)) describe("GPT OAuth image lane contra
   for (const surface of ["classic", "node", "edit", "multimode"] as const) {
     it(`direct ${surface}: one render call, legacy model migrated, metadata persisted`, async () => {
       await harness.run(surface, { upstream: () => imagesJson(red) }, async (f) => {
-        const response = await f.post({ ...BASE, mode: "direct", model: "gpt-5.6-luna",
+        const response = await f.post({ ...BASE, mode: "direct", model: "gpt-6-luna",
           ...(surface === "edit" ? { image: blue } : { references: [green] }),
           ...(surface === "multimode" ? { async: true, maxImages: 1 } : {}) });
         assert.equal(response.status, surface === "multimode" ? 202 : 200);
@@ -77,13 +77,13 @@ if (executionTestProcess(import.meta.url)) describe("GPT OAuth image lane contra
     await harness.run("classic", { upstream: (call) => (
       endpointOf(call) === "/v1/responses" ? plannerSse(["a red square, studio light"]) : imagesJson(red)
     ) }, async (f) => {
-      const response = await f.post({ ...BASE, mode: "auto", model: "gpt-6-sol", webSearchEnabled: true });
+      const response = await f.post({ ...BASE, mode: "auto", model: "gpt-6.2-sol", webSearchEnabled: true });
       assert.equal(response.status, 200);
       const result = await response.json();
       await f.waitSettled();
       assert.deepEqual(f.calls.map(endpointOf), ["/v1/responses", "/v1/images/generations"]);
       const plan = JSON.parse(f.calls[0]!.body);
-      assert.equal(plan.model, "gpt-6-sol");
+      assert.equal(plan.model, "gpt-6.2-sol");
       assert.equal(plan.stream, true);
       assert.deepEqual(plan.reasoning, { effort: "medium" });
       assert.deepEqual(plan.tools.map((tool: { type: string; name?: string }) => tool.name ?? tool.type), ["web_search", "image_gen"]);

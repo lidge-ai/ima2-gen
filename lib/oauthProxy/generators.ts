@@ -1,3 +1,4 @@
+import { FALLBACK_IMAGE_MODEL } from "../imageModels.js";
 import type { GenerateOptions } from "../providers/adapters/openaiTypes.js";
 import type { UpstreamErr } from "../generationErrors.js";
 import { setJobPhase } from "../inflight.js";
@@ -37,7 +38,7 @@ export async function generateViaOAuth(
 ) {
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = options.model || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL;
   const webSearchEnabled = resolveWebSearchEnabled(options);
   const tools = buildImageTools(webSearchEnabled, {
     quality,

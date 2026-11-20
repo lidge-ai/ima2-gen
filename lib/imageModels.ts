@@ -2,13 +2,13 @@ import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { deriveModels, deriveSupportedImageModels, deriveUnsupportedImageModels } from "./providers/derive.js";
 
 export const FALLBACK_IMAGE_MODEL = "gpt-6-luna";
-/** The API-key lane keeps its own list; its fallback is never a GPT OAuth-only id. */
-export const API_FALLBACK_IMAGE_MODEL = "gpt-5.6-luna";
+/** Both OpenAI lanes share the same fallback. */
+export const API_FALLBACK_IMAGE_MODEL = "gpt-6-luna";
 const VALID_IMAGE_MODELS = deriveSupportedImageModels("oauth");
 const VALID_API_IMAGE_MODELS = deriveSupportedImageModels("api");
 
-export { LEGACY_OAUTH_IMAGE_MODELS, migrateOAuthImageModel } from "./oauthLegacyModels.js";
-import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
+export { LEGACY_OPENAI_IMAGE_MODELS, migrateOpenAIImageModel } from "./openaiLegacyModels.js";
+import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 const UNSUPPORTED_IMAGE_MODELS = deriveUnsupportedImageModels();
 const FALLBACK_REASONING_EFFORT = "none";
 const VALID_REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
@@ -18,14 +18,10 @@ export const GROK_FALLBACK_IMAGE_MODEL = "grok-imagine-image-2.0";
 /**
  * Models that reject `reasoning.effort: "none"` upstream.
  *
- * GPT-6 Astra accepts low/medium/high/xhigh/max but not "none", while this app's
- * own default effort is "none". Without a coercion here, simply selecting Astra
- * in the UI would fail the request before an image is ever generated. OpenAI's
- * migration guidance names "low" as the replacement for "none"/"minimal", so
- * that is what a "none" request becomes for these models. Every other model is
- * untouched, and an explicit effort is never downgraded.
+ * GPT-6.2 Sol and Astra require low or higher; see 001 §1.
+ * An explicit non-none effort is never downgraded.
  */
-const MODELS_WITHOUT_NONE_EFFORT = new Set(["gpt-6-astra"]);
+const MODELS_WITHOUT_NONE_EFFORT = new Set(["gpt-6.2-sol", "gpt-6.2-astra", "gpt-6-astra"]);
 
 /** Coerce only the unsupported pairing; any other model/effort passes through. */
 export function coerceReasoningEffortForModel(model: string | undefined, effort: string | undefined): string | undefined {
@@ -92,8 +88,8 @@ export function normalizeImageModel(
   const oauth = provider === "oauth";
   const laneFallback = oauth ? FALLBACK_IMAGE_MODEL : API_FALLBACK_IMAGE_MODEL;
   const fallback = oauth
-    ? migrateOAuthImageModel(configured?.default ?? FALLBACK_IMAGE_MODEL)
-    : runtimeConfig?.apiProvider?.defaultImageModel ?? API_FALLBACK_IMAGE_MODEL;
+    ? migrateOpenAIImageModel(configured?.default ?? FALLBACK_IMAGE_MODEL)
+    : migrateOpenAIImageModel(runtimeConfig?.apiProvider?.defaultImageModel ?? API_FALLBACK_IMAGE_MODEL);
   const valid = oauth ? (configured?.valid ?? VALID_IMAGE_MODELS) : VALID_API_IMAGE_MODELS;
   const unsupported = configured?.unsupported ?? UNSUPPORTED_IMAGE_MODELS;
 
@@ -101,7 +97,7 @@ export function normalizeImageModel(
     return { model: valid.has(fallback) ? fallback : laneFallback };
   }
 
-  const model = oauth ? migrateOAuthImageModel(rawModel) : rawModel;
+  const model = migrateOpenAIImageModel(rawModel);
   if (unsupported.has(model)) {
     return {
       error: `model does not support image generation: ${model}`,

@@ -9,8 +9,9 @@ export type AgentLlmModelOption = {
 
 export const AGENT_LLM_MODEL_OPTIONS: AgentLlmModelOption[] = [
   { value: "gpt-6-luna", shortLabel: "6l", fullLabel: "GPT-6 Luna", provider: "oauth" },
-  { value: "gpt-6-sol", shortLabel: "6s", fullLabel: "GPT-6 Sol", provider: "oauth" },
-  { value: "gpt-6-astra", shortLabel: "6a", fullLabel: "GPT-6 Astra", provider: "oauth" },
+  { value: "gpt-6.1-terra", shortLabel: "6.1t", fullLabel: "GPT-6.1 Terra", provider: "oauth" },
+  { value: "gpt-6.2-sol", shortLabel: "6.2s", fullLabel: "GPT-6.2 Sol", provider: "oauth" },
+  { value: "gpt-6.2-astra", shortLabel: "6.2a", fullLabel: "GPT-6.2 Astra", provider: "oauth" },
   { value: "grok-4.6", shortLabel: "4.6", fullLabel: "Grok 4.6", provider: "grok" },
   { value: "grok-4.5", shortLabel: "4.5", fullLabel: "Grok 4.5", provider: "grok" },
   { value: "grok-4.3", shortLabel: "4.3", fullLabel: "Grok 4.3", provider: "grok" },

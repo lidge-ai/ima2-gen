@@ -1,5 +1,5 @@
 import { config } from "../../config.js";
-import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
+import { migrateOpenAIImageModel } from "../../lib/openaiLegacyModels.js";
 import { parseArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import type { LaneInfo } from "../lib/modelResolver.js";
@@ -122,23 +122,21 @@ function printDefaults(payload: DefaultsPayload): void {
 }
 
 function validateModel(value: string): void {
-  if (!config.imageModels.valid.has(migrateOAuthImageModel(value)) && !config.apiProvider.validImageModels.has(value)) {
+  if (!config.imageModels.valid.has(migrateOpenAIImageModel(value)) && !config.apiProvider.validImageModels.has(migrateOpenAIImageModel(value))) {
     const choices = [...new Set([...config.imageModels.valid, ...config.apiProvider.validImageModels])];
     die(2, `model must be one of: ${choices.join(", ")}`);
   }
 }
 
 /**
- * GPT OAuth keeps only GPT-6 and the API-key lane its own list, so one `defaults set model` value
- * lands on each lane only in a form that lane serves: the OAuth default takes the GPT-6 tier of a
- * legacy id, and the API default changes only when the id is an API model.
+ * Both OpenAI lanes persist the migrated model id when setting a shared default.
  */
 function laneValue(key: string, value: string): string | undefined {
   if (key === "imageModels.default") {
-    const oauth = migrateOAuthImageModel(value);
+    const oauth = migrateOpenAIImageModel(value);
     return config.imageModels.valid.has(oauth) ? oauth : undefined;
   }
-  if (key === "apiProvider.defaultImageModel") return config.apiProvider.validImageModels.has(value) ? value : undefined;
+  if (key === "apiProvider.defaultImageModel") return config.apiProvider.validImageModels.has(migrateOpenAIImageModel(value)) ? migrateOpenAIImageModel(value) : undefined;
   return value;
 }
 

@@ -8,7 +8,7 @@ import { openRouteHarness, responsesSse } from "./_executionRouteHarness.ts";
 
 type Harness = Awaited<ReturnType<typeof openRouteHarness>>;
 const apiBody = {
-  provider: "api", prompt: "classic fixture", model: "gpt-5.4", quality: "high",
+  provider: "api", prompt: "classic fixture", model: "gpt-6.1-terra", quality: "high",
   size: "1536x1024", moderation: "low", reasoningEffort: "high",
   webSearchEnabled: false, mode: "direct", sizeNudge: false,
 };
@@ -73,7 +73,7 @@ if (executionTestProcess(import.meta.url)) {
         assert.equal(terminal.event, "done");
         assert.equal(fixture.calls.length, 1);
         const wire = JSON.parse(fixture.calls[0]!.body);
-        assert.equal(wire.model, "gpt-5.4");
+        assert.equal(wire.model, "gpt-6.1-terra");
         assert.deepEqual(wire.reasoning, { effort: "high" });
         assert.deepEqual(wire.tools, [{ type: "image_generation", quality: "high", size: "1536x1024", moderation: "low" }]);
         assert.deepEqual(wire.tool_choice, { type: "image_generation" });
@@ -88,7 +88,7 @@ if (executionTestProcess(import.meta.url)) {
         const meta = await sidecar(fixture.generatedDir, terminal.data.filename);
         for (const [key, value] of Object.entries({ kind: "classic", prompt: "classic fixture", userPrompt: "classic fixture",
           revisedPrompt: "fixture revised", promptMode: "direct", quality: "high", size: "1536x1024", format: "png",
-          moderation: "low", model: "gpt-5.4", reasoningEffort: "high", provider: "api", refsCount: 1,
+          moderation: "low", model: "gpt-6.1-terra", reasoningEffort: "high", provider: "api", refsCount: 1,
           webSearchCalls: 0, webSearchEnabled: false, sessionId: "fixture-session", clientNodeId: "fixture-node",
           composerPrompt: "composer original", requestId: fixture.requestId })) assert.equal(meta[key], value, key);
         assert.deepEqual(meta.usage, { total_tokens: 7 });

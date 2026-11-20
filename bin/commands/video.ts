@@ -152,7 +152,7 @@ const HELP = `
         --model <model|lane/model>      Bare IDs must be unique across lanes; Grok preview alias accepted
         --provider <${VIDEO_PROVIDER_VALUES.join("|")}>
                                         'auto' was removed; choose a lane explicitly
-        --planner-model <name>          Planner model override (e.g. grok-4.5, gpt-5.6-luna)
+        --planner-model <name>          Planner model override (e.g. grok-4.5)
         --storyboard                    Enable storyboard mode (maintains character/scene continuity)
         --topic <text>                  Series topic for prompt chain continuity
         --start <generated-filename>    MCP start frame

@@ -7,7 +7,7 @@ import { executionTestProcess } from "./_executionTestProcess.ts";
 import { openRouteHarness, responsesSse, type RouteCase, type RouteHarness, type UpstreamCall } from "./_executionRouteHarness.ts";
 import { bounded } from "./_executionTrackedWrites.ts";
 
-const OPTIONS = { model: "gpt-5.4", quality: "high", size: "1536x1024", moderation: "low",
+const OPTIONS = { model: "gpt-6.1-terra", quality: "high", size: "1536x1024", moderation: "low",
   mode: "direct" as const, reasoningEffort: "high", webSearchEnabled: false };
 const imageItem = (result: string, revised_prompt = "transport revised") => ({ type: "image_generation_call", result, revised_prompt });
 const final = (b64: string) => ({ type: "response.output_item.done", item: imageItem(b64) });
@@ -185,11 +185,11 @@ if (executionTestProcess(import.meta.url)) describe("WP04 real Responses transpo
       assert.equal(f.calls.length, 0);
       f.ctx.apiKey = "fixture-replaced-at-execute";
       request.prompt = "mutated effective"; request.rawPrompt = "mutated raw";
-      request.options.model = "gpt-5.6-luna"; request.options.quality = "medium"; request.references = [];
+      request.options.model = "gpt-6-luna"; request.options.quality = "medium"; request.references = [];
       await f.track(prepared.execute()); assert.equal(f.calls.length, 1);
       const call = f.calls[0]!, body = JSON.parse(call.body);
       assert.equal(call.headers.get("authorization"), "Bearer fixture-replaced-at-execute");
-      assert.equal(body.model, surface === "classic" ? "gpt-5.4" : "gpt-5.6-luna");
+      assert.equal(body.model, surface === "classic" ? "gpt-6.1-terra" : "gpt-6-luna");
       assert.equal(body.tools[0].quality, surface === "classic" ? "high" : "medium");
       const content = body.input[1].content, text = typeof content === "string" ? content : content.at(-1).text;
       assert.ok(text.includes(surface === "classic" ? "captured effective prompt" : surface === "edit" ? "mutated raw" : "mutated effective"));

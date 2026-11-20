@@ -27,7 +27,7 @@ async function settings(page: Page) {
 }
 
 test("API image tool selection persists, submits separately and resets on default/OAuth", async ({ browser }, info) => {
-  await withJ6(browser, info, { provider: "api", imageModel: "gpt-5.6-luna", expectedSubmissions: 2 },
+  await withJ6(browser, info, { provider: "api", imageModel: "gpt-6-luna", expectedSubmissions: 2 },
     async (page, capture, origin) => {
       await openCreate(page, origin);
       await settings(page);
@@ -50,7 +50,7 @@ test("API image tool selection persists, submits separately and resets on defaul
       await page.screenshot({ path: info.outputPath("wp02-image25-selected.png") });
       const api = await submit(page, capture, origin);
       expect(api.provider).toBe("api");
-      expect(api.model).toBe("gpt-5.6-luna");
+      expect(api.model).toBe("gpt-6-luna");
       expect(api.imageToolModel).toBe("gpt-image-2.5-flare");
       expect(api.quality).toBe("max");
       await chooseTool(page, "Default (upstream)");

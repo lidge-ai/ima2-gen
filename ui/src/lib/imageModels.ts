@@ -70,14 +70,9 @@ export const IMAGE_MODEL_OPTIONS: Array<{
   providerHint?: Provider;
 }> = [
   { value: "gpt-6-luna", shortLabel: "6l", fullLabelKey: "settings.imageModel.gpt6Luna" },
-  { value: "gpt-6-sol", shortLabel: "6s", fullLabelKey: "settings.imageModel.gpt6Sol" },
-  { value: "gpt-6-astra", shortLabel: "6a", fullLabelKey: "settings.imageModel.gpt6Astra" },
-  { value: "gpt-5.6-luna", shortLabel: "5.6l", fullLabelKey: "settings.imageModel.gpt56Luna", providerHint: "api" },
-  { value: "gpt-5.6-terra", shortLabel: "5.6t", fullLabelKey: "settings.imageModel.gpt56Terra", providerHint: "api" },
-  { value: "gpt-5.6-sol", shortLabel: "5.6s", fullLabelKey: "settings.imageModel.gpt56Sol", providerHint: "api" },
-  { value: "gpt-5.5", shortLabel: "5.5", fullLabelKey: "settings.imageModel.gpt55", providerHint: "api" },
-  { value: "gpt-5.4", shortLabel: "5.4", fullLabelKey: "settings.imageModel.gpt54", providerHint: "api" },
-  { value: "gpt-5.4-mini", shortLabel: "5.4m", fullLabelKey: "settings.imageModel.gpt54Mini", providerHint: "api" },
+  { value: "gpt-6.1-terra", shortLabel: "6.1t", fullLabelKey: "settings.imageModel.gpt61Terra" },
+  { value: "gpt-6.2-sol", shortLabel: "6.2s", fullLabelKey: "settings.imageModel.gpt62Sol" },
+  { value: "gpt-6.2-astra", shortLabel: "6.2a", fullLabelKey: "settings.imageModel.gpt62Astra" },
   { value: "grok-imagine-image-2.0", shortLabel: "grok2", fullLabelKey: "settings.imageModel.grokImagine20" },
   { value: "grok-imagine-image-quality", shortLabel: "grok+", fullLabelKey: "settings.imageModel.grokImagineQuality" },
   { value: "grok-imagine-image", shortLabel: "grok", fullLabelKey: "settings.imageModel.grokImagine" },
@@ -107,13 +102,13 @@ const API_MODEL_VALUES = new Set<string>(PROVIDER_MODELS.api.image);
 
 type OpenAIOption = { value: OpenAIImageModel; shortLabel: string; fullLabelKey: string; providerHint?: Provider };
 
-/** GPT OAuth (the default GPT lane): GPT-6 sol / luna / astra. */
+/** GPT OAuth and API share the GPT-6.x lineup. */
 export const OAUTH_IMAGE_MODEL_OPTIONS = IMAGE_MODEL_OPTIONS.filter(
   (option): option is OpenAIOption => OAUTH_MODEL_VALUES.has(option.value),
 );
 
 /** OpenAI API key lane: the models the OpenAI API serves, its own default first. */
-const API_PICKER_ORDER = ["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"];
+const API_PICKER_ORDER = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"];
 export const API_IMAGE_MODEL_OPTIONS = API_PICKER_ORDER
   .map((value) => IMAGE_MODEL_OPTIONS.find((option) => option.value === value))
   .filter((option): option is OpenAIOption => option !== undefined && API_MODEL_VALUES.has(option.value));
@@ -191,7 +186,7 @@ export function getImageModelOptionsForProvider(provider: Provider) {
   if (provider === "nai") return NAI_IMAGE_MODEL_OPTIONS;
   // Comfy has no static option rows: its models are workflows fetched from
   // /api/models at runtime. Falling through to the OpenAI list would show
-  // gpt-5.6-luna under a ComfyUI selection and send a model the lane cannot
+  // gpt-6-luna under a ComfyUI selection and send a model the lane cannot
   // execute.
   if (provider === "comfy") return [];
   if (provider === "api") return API_IMAGE_MODEL_OPTIONS;

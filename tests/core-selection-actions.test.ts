@@ -163,7 +163,7 @@ test("image clicks preserve compatible auth lanes and leave incompatible lanes",
   await isolated(async (storage) => {
     const runtime = await loadRuntime();
     const cases = [
-      ["grok-api", "gpt-5.6-sol", "oauth", "gpt-6-sol"], ["api", "gpt-5.6-sol", "api", "gpt-5.6-sol"],
+      ["grok-api", "gpt-6.2-sol", "oauth", "gpt-6.2-sol"], ["api", "gpt-6.2-sol", "api", "gpt-6.2-sol"],
       ["gemini-api", "nano-banana-2", "gemini-api", "nano-banana-2"],
       ["grok-api", "nai-diffusion-5-curated", "nai", "nai-diffusion-5-curated"],
     ] as const;
@@ -222,7 +222,7 @@ test("legacy Comfy workflow hydrates without rewrite; first visit never auto-sel
       comfyWorkflow: "wf-missing-from-catalog", comfyVideoWorkflow: null,
     });
     assert.deepEqual(storage.writes, []);
-    const f = fixture(runtime, { provider: "oauth", imageModel: "gpt-5.6-sol", comfyWorkflow: null });
+    const f = fixture(runtime, { provider: "oauth", imageModel: "gpt-6.2-sol", comfyWorkflow: null });
     runtime.setProviderImpl("comfy", f.set, f.get);
     assert.equal(f.get().comfyWorkflow, null);
     assert.equal(f.get().comfyVideoWorkflow, null);
@@ -324,7 +324,7 @@ test("all interactive wrappers clear MCP while making exactly one complete core 
     const runtime = await loadRuntime();
     const actions = [
       (f: ReturnType<typeof fixture>) => runtime.setProviderImpl("nai", f.set, f.get),
-      (f: ReturnType<typeof fixture>) => runtime.setImageModelImpl("gpt-5.6-sol", f.set, f.get),
+      (f: ReturnType<typeof fixture>) => runtime.setImageModelImpl("gpt-6.2-sol", f.set, f.get),
       (f: ReturnType<typeof fixture>) => runtime.selectVideoModelImpl(undefined, f.set, f.get),
       (f: ReturnType<typeof fixture>) => runtime.setComfyWorkflowImpl("image-A", f.set, f.get),
       (f: ReturnType<typeof fixture>) => runtime.setComfyVideoWorkflowImpl("video-V", f.set, f.get),
@@ -430,7 +430,7 @@ test("settings hinted rows route to their lane before the model click lands", as
     // ImageModelSelect's settings onChange commits providerHint first, then the
     // model value — a bare setImageModel lets inferProvider fall back to oauth.
     const cases = [
-      ["oauth", "gpt-6-luna", "api", "gpt-5.5"],
+      ["oauth", "gpt-6-luna", "api", "gpt-6-luna"],
       ["oauth", "gpt-6-luna", "gemini-api", "nano-banana-2"],
       ["oauth", "gpt-6-luna", "agy", "nano-banana-2"],
       ["gemini-api", "nano-banana-pro", "agy", "nano-banana-pro"],

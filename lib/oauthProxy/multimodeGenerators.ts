@@ -1,3 +1,4 @@
+import { FALLBACK_IMAGE_MODEL } from "../imageModels.js";
 import type { GenerateOptions } from "../providers/adapters/openaiTypes.js";
 import type { CodedError } from "../errInfo.js";
 import type { UpstreamErr } from "../generationErrors.js";
@@ -46,7 +47,7 @@ export async function generateMultimodeViaOAuth(
 ) {
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = options.model || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL;
   const maxGeneratedImages = Math.max(
     1,
     Math.trunc(Number(ctx.config?.limits?.maxGeneratedImages) || 24),
@@ -193,7 +194,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
     throw err;
   }
   const oauthUrl = getOAuthUrl(ctx);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = options.model || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL;
   const webSearchEnabled = resolveWebSearchEnabled(options);
   const textPrompt = buildEditTextPrompt(prompt, mode, { webSearchEnabled, size });
   const imageForRequest = await compressReferenceB64ForOAuth(imageB64, {

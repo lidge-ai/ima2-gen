@@ -197,7 +197,7 @@ export async function seedBrowser(page: Page, options: BrowserSeedOptions = {}):
   const provider = options.provider ?? "minimax";
   if (!options.imageModel && provider !== "minimax" && provider !== "oauth") throw new Error("E2E_SEED_MODEL_REQUIRED");
   const payload = JSON.stringify({ provider, dismissOnboarding: options.dismissOnboarding ?? false,
-    imageModel: options.imageModel ?? (provider === "minimax" ? "image-01" : "gpt-5.6-luna"),
+    imageModel: options.imageModel ?? (provider === "minimax" ? "image-01" : "gpt-6-luna"),
     generationDefaults: options.generationDefaults ?? {}, workspaceProfile: options.workspaceProfile ?? "default",
     locale: options.locale ?? "en", seedId: options.seedId ?? "initial" });
   const previous = seeded.get(page);

@@ -1,23 +1,11 @@
 import { config } from "../config.js";
 import type { AgentGenerationSettings } from "./agentTypes.js";
 import { deriveProviderIdSet } from "./providers/derive.js";
-import { API_FALLBACK_IMAGE_MODEL, FALLBACK_IMAGE_MODEL, migrateOAuthImageModel } from "./imageModels.js";
-import { deriveSupportedImageModels } from "./providers/derive.js";
+import { FALLBACK_IMAGE_MODEL, migrateOpenAIImageModel } from "./imageModels.js";
 
-const OAUTH_IMAGE_MODELS = deriveSupportedImageModels("oauth");
-const API_IMAGE_MODELS = deriveSupportedImageModels("api");
-
-/**
- * GPT OAuth keeps only GPT-6 and the API-key lane its own list, so an agent that switches lanes
- * without naming a model must not carry the other lane's id: a legacy OAuth id moves to its GPT-6
- * tier, and a GPT-6 id the API lane does not serve falls back to the API default.
- */
+/** Migrate saved OpenAI model selections on either OpenAI lane. */
 function modelForLane(provider: string, model: string): string {
-  if (provider === "oauth") return migrateOAuthImageModel(model);
-  if (provider === "api" && OAUTH_IMAGE_MODELS.has(model) && !API_IMAGE_MODELS.has(model)) {
-    return config.apiProvider?.defaultImageModel || API_FALLBACK_IMAGE_MODEL;
-  }
-  return model;
+  return provider === "oauth" || provider === "api" ? migrateOpenAIImageModel(model) : model;
 }
 
 const PROVIDERS = deriveProviderIdSet();

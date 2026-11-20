@@ -3,7 +3,7 @@ import { errInfo } from "./errInfo.js";
 import { parseJson, parseStream, safeDiagnosticLabel, type ResponseDiagnostics } from "./responsesParse.js";
 import type { RouteRuntimeContext } from "./runtimeContext.js";
 import { runOAuthImageJob } from "./oauthImages.js";
-import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
+import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 import {
   GENERATE_DEVELOPER_PROMPT,
   GENERATE_NO_SEARCH_DEVELOPER_PROMPT,
@@ -456,7 +456,7 @@ async function runOAuthLaneProbe(
 export async function runImageDoctorProbe(options: ImageDoctorProbeOptions = {}) {
   const provider = options.provider || "oauth";
   const requested = options.model || defaultConfig.imageModels?.default || "gpt-6-luna";
-  const model = provider === "oauth" ? migrateOAuthImageModel(requested) : requested;
+  const model = (provider === "oauth" || provider === "api") ? migrateOpenAIImageModel(requested) : requested;
   const size = options.size || "1024x1024";
   const quality = options.quality || "low";
   const moderation = options.moderation || "low";

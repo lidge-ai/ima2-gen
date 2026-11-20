@@ -125,7 +125,7 @@ async function unmount() {
 }
 
 function uiMode(mode: "node" | "classic") { useAppStore.getState().setUIMode(mode); }
-function imageMode() { useAppStore.getState().setImageModel("gpt-5.6-luna"); }
+function imageMode() { useAppStore.getState().setImageModel("gpt-6-luna"); }
 function videoMode() { useAppStore.getState().selectVideoModel("grok-imagine-video-1.5"); }
 export type SoundController = { mount: typeof mount; snapshot: typeof snapshot; settle: typeof settle;
   unmount: typeof unmount; uiMode: typeof uiMode; imageMode: typeof imageMode; videoMode: typeof videoMode };

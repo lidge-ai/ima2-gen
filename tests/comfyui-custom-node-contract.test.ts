@@ -48,9 +48,9 @@ describe("ComfyUI custom node contract", () => {
 
   it("matches current ima2 image model support", () => {
     const source = readSource(`${bridgeDir}/nodes.py`);
-    assert.match(source, /gpt-5\.5/);
-    assert.match(source, /gpt-5\.4/);
-    assert.match(source, /gpt-5\.4-mini/);
+    assert.match(source, /gpt-6-luna/);
+    assert.match(source, /gpt-6\.1-terra/);
+    assert.match(source, /gpt-6\.2-(?:sol|astra)/);
     assert.doesNotMatch(source, /gpt-5\.3-codex-spark/);
   });
 

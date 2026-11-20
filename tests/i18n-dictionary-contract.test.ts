@@ -89,9 +89,8 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
   // IMAGE_MODEL_OPTIONS, UNSUPPORTED_IMAGE_MODELS, VIDEO_MODEL_OPTIONS in imageModels.ts,
   // plus REASONING_EFFORT_OPTIONS in reasoning.ts.
   ["ui/src/components/ImageModelSelect.tsx :: option.fullLabelKey", [
-    "settings.imageModel.gpt54Mini", "settings.imageModel.gpt54", "settings.imageModel.gpt55",
-    "settings.imageModel.gpt56Sol", "settings.imageModel.gpt56Terra", "settings.imageModel.gpt56Luna",
-    "settings.imageModel.gpt6Astra",
+    "settings.imageModel.gpt6Luna", "settings.imageModel.gpt61Terra",
+    "settings.imageModel.gpt62Sol", "settings.imageModel.gpt62Astra",
     "settings.imageModel.grokImagineQuality", "settings.imageModel.grokImagine",
     "settings.imageModel.nanoBanana2", "settings.imageModel.nanoBanana2Api",
     "settings.imageModel.nanoBananaPro", "settings.imageModel.gpt53CodexSpark",
@@ -113,9 +112,8 @@ const DYNAMIC_T_IDENTIFIERS = new Map<string, readonly string[]>([
   ]],
   // IMAGE_MODEL_OPTIONS fullLabelKey literals in ui/src/lib/imageModels.ts.
   ["ui/src/components/ProviderReadinessPopup.tsx :: imageModelOption.fullLabelKey", [
-    "settings.imageModel.gpt54Mini", "settings.imageModel.gpt54", "settings.imageModel.gpt55",
-    "settings.imageModel.gpt56Sol", "settings.imageModel.gpt56Terra", "settings.imageModel.gpt56Luna",
-    "settings.imageModel.gpt6Astra",
+    "settings.imageModel.gpt6Luna", "settings.imageModel.gpt61Terra",
+    "settings.imageModel.gpt62Sol", "settings.imageModel.gpt62Astra",
     "settings.imageModel.grokImagineQuality", "settings.imageModel.grokImagine",
     "settings.imageModel.nanoBanana2", "settings.imageModel.nanoBanana2Api",
     "settings.imageModel.nanoBananaPro",

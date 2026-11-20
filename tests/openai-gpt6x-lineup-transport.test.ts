@@ -40,7 +40,7 @@ describe("OAuth transport with empty catalog", { concurrency: false }, () => {
   after(async () => {
     transport?.setCodexSessionStoreForTests(null);
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    rmSync(root, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     for (const [key, value] of Object.entries({ HOME: oldHome, USERPROFILE: oldProfile, CODEX_HOME: oldCodex, IMA2_CODEX_BASE_URL: oldUrl })) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }
@@ -59,5 +59,14 @@ describe("OAuth transport with empty catalog", { concurrency: false }, () => {
   });
   for (const model of ["gpt-6.1-terra", "gpt-6.2-astra"]) test(`6 lite fallback ${model}`, async () => assert.equal(await client.isLiteModel(model), true));
   test("6 client version floor", () => assert.ok(client.CODEX_CLIENT_VERSION_FLOOR.localeCompare("0.166.0", undefined, { numeric: true }) >= 0, `floor ${client.CODEX_CLIENT_VERSION_FLOOR} must be >= 0.166.0`));
+  for (const [model, effort] of [["gpt-6.1-terra", "none"], ["gpt-6.2-astra", "low"]]) {
+    test(`OAuth ${model} effort`, async () => {
+      seen = [];
+      const response = await transport.codexFetch("/v1/responses", { method: "POST", body: JSON.stringify({ model, input: "draw", reasoning: { effort: "none" }, stream: true }) });
+      await response.text();
+      assert.equal(seen[0]?.body.model, model);
+      assert.equal(seen[0]?.body.reasoning?.effort, effort);
+    });
+  }
 });
 

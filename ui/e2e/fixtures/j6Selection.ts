@@ -177,7 +177,7 @@ function seedEntries(seed: J6Seed): Array<{ name: string; value: string }> {
     "ima2.locale": seed.locale ?? "en", "ima2.onboardingDismissed": "1", "ima2.uiMode": seed.uiMode ?? "classic",
     "ima2.workspaceProfile": seed.profile ?? "default", "ima2.activeSessionId": "wp02-session",
     ...(seed.theme ? { "ima2.themeMode": seed.theme } : {}),
-    "ima2.imageModel": seed.imageModel ?? "gpt-5.6-luna",
+    "ima2.imageModel": seed.imageModel ?? "gpt-6-luna",
     "ima2.videoDefaults": JSON.stringify({ model: seed.videoModel ?? false }),
     "ima2.generationDefaults": JSON.stringify({ provider: seed.provider ?? "oauth", multimode: false,
       ...seed.generationDefaults }),

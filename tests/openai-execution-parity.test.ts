@@ -28,7 +28,7 @@ function wire(call: UpstreamCall, provider: "api" | "oauth") {
 }
 function directRequest(surface: "classic" | "node" | "edit" | "multimode", signal: AbortSignal, source: string): ImageExecutionRequest {
   const base = { provider: "api" as const, requestId: undefined, signal, prompt: "effective WP04", rawPrompt: "raw WP04",
-    references: [{ b64: source, detectedMime: "image/png", declaredMime: "image/png" }], options: { ...BASE, model: "gpt-5.4" } };
+    references: [{ b64: source, detectedMime: "image/png", declaredMime: "image/png" }], options: { ...BASE, model: "gpt-6.1-terra" } };
   switch (surface) {
     case "classic": return { ...base, surface, providerUrl: null, background: null, backgroundConstraint: undefined, nai: {}, comfy: {} };
     case "node": return { ...base, surface, sourceImage: null, contextMode: "parent-plus-refs", searchMode: "off", partialImages: 0, nai: {} };
@@ -54,7 +54,7 @@ async function color(url: string, channel: number) {
 // Stable names and test titles are intentional: main owns the later DUT mutations.
 export async function runApiNoFallbackCase(harness: RouteHarness) {
   await harness.run("classic", { upstream: (call) => { wire(call, "api"); return empty(); } }, async (f) => {
-    const response = await f.post({ ...BASE, provider: "api", model: "gpt-5.4" });
+    const response = await f.post({ ...BASE, provider: "api", model: "gpt-6.1-terra" });
     assert.equal(response.status, 422);
     assert.equal((await response.json()).code, "EMPTY_RESPONSE");
     await f.waitSettled();
@@ -114,7 +114,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
   // Images API, pinned in tests/oauth-image-lane-contract.test.ts. These cases keep the API-key lane.
   for (const provider of ["api"] as const) for (const surface of ["classic", "node", "edit", "multimode"] as const) {
     it(`O04-1/4 real ${provider} ${surface} route wire and persisted metadata`, async () => {
-      const model = provider === "api" ? "gpt-5.4" : "gpt-5.6-luna";
+      const model = provider === "api" ? "gpt-6.1-terra" : "gpt-6-luna";
       await harness.run(surface, { upstream: (call) => { wire(call, provider); return success(red); } }, async (f) => {
         const response = await f.post({ ...BASE, provider, model, webSearchEnabled: true,
           ...(surface === "edit" ? { image: blue } : { references: [green] }),
@@ -151,7 +151,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
       if (++attempts > 1) return success(red);
       return Response.json({ error: { code: status === 403 ? "moderation_blocked" : "invalid_request_error", message: "fixture only" } }, { status });
     } }, async (f) => {
-      const response = await f.post({ ...BASE, provider: "api", model: "gpt-5.4" });
+      const response = await f.post({ ...BASE, provider: "api", model: "gpt-6.1-terra" });
       assert.equal(response.status, status === 400 ? 400 : 200);
       assert.equal(f.calls.length, status === 400 ? 1 : 2);
       if (status === 400) assert.equal((await response.json()).code, "INVALID_REQUEST");
@@ -162,7 +162,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
     await harness.run("node", { upstream: (call) => { wire(call, "api"); return success(red); } }, async (f) => {
       const { saveNode } = await import("../lib/nodeStore.ts");
       await saveNode(f.ctx.rootDir, { nodeId: "n_wp04_parent", b64: blue, meta: { format: "png" }, generatedDir: f.generatedDir });
-      const response = await f.post({ ...BASE, provider: "api", model: "gpt-5.4", parentNodeId: "n_wp04_parent", references: [green], contextMode });
+      const response = await f.post({ ...BASE, provider: "api", model: "gpt-6.1-terra", parentNodeId: "n_wp04_parent", references: [green], contextMode });
       assert.equal(response.status, 200); await f.waitSettled(); assert.equal(f.calls.length, 1);
       const content = wire(f.calls[0]!, "api").input[1].content;
       assert.equal(content.length, contextMode === "parent-only" ? 2 : 3);
@@ -172,7 +172,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
   });
   it("O04-5 edit mask is PNG guidance and raw prompt, not a native mask parameter", async () => {
     await harness.run("edit", { upstream: (call) => { wire(call, "api"); return success(red); } }, async (f) => {
-      const response = await f.post({ ...BASE, provider: "api", model: "gpt-5.4", image: blue, mask });
+      const response = await f.post({ ...BASE, provider: "api", model: "gpt-6.1-terra", image: blue, mask });
       assert.equal(response.status, 200); await f.waitSettled();
       const body = wire(f.calls[0]!, "api"), content = body.input[1].content;
       await color(content[0].image_url, 2);
@@ -191,7 +191,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
       const body = wire(call, provider); assert.equal(body.tools[0].partial_images, 2);
       return responsesSse([{ type: "response.image_generation_call.partial_image", partial_image: blue, index: 7 }, finalFrame(red), completed]);
     } }, async (f) => {
-      assert.equal((await f.post({ ...BASE, provider, model: "gpt-5.4", async: true }, { Accept: "text/event-stream" })).status, 202);
+      assert.equal((await f.post({ ...BASE, provider, model: "gpt-6.1-terra", async: true }, { Accept: "text/event-stream" })).status, 202);
       assert.equal((await f.waitTerminal()).event, "done"); await f.waitSettled();
       assert.deepEqual(f.events.filter((e) => e.event === "partial").map((e) => e.data), [{ requestId: f.requestId, image: `data:image/png;base64,${blue}`, index: 7 }]);
       assert.ok(f.events.findIndex((e) => e.event === "partial") < f.events.findIndex((e) => e.event === "done"));
@@ -202,7 +202,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
     await harness.run("multimode", { upstream: (call) => {
       wire(call, provider); return responsesSse([finalFrame(red), finalFrame(red), finalFrame(blue), completed]);
     } }, async (f) => {
-      assert.equal((await f.post({ ...BASE, provider, model: "gpt-5.4", maxImages: 2, async: true })).status, 202);
+      assert.equal((await f.post({ ...BASE, provider, model: "gpt-6.1-terra", maxImages: 2, async: true })).status, 202);
       const terminal = await f.waitTerminal(); assert.equal(terminal.event, "done"); await f.waitSettled();
       const images = f.events.filter((e) => e.event === "image");
       assert.deepEqual(images.map((e) => e.data.sequenceIndex), [1, 2]);
@@ -231,7 +231,7 @@ if (executionTestProcess(import.meta.url)) describe("WP04 OpenAI real execution 
     } }, async (f) => {
       const originalConfig = f.ctx.config;
       f.ctx.config = { ...originalConfig, oauth: { ...originalConfig.oauth, generationTimeoutMs: callerCancel ? 5000 : 1000 } };
-      const work = f.trackWork(f.post({ ...BASE, provider: "api", model: "gpt-5.4", maxImages: 2, async: true }));
+      const work = f.trackWork(f.post({ ...BASE, provider: "api", model: "gpt-6.1-terra", maxImages: 2, async: true }));
       try {
         assert.equal((await work).status, 202);
         const image = await f.waitFor((e) => e.event === "image");

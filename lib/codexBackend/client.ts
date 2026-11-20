@@ -6,8 +6,8 @@ import { config } from "../../config.js";
 import { createCodexSessionStore, type CodexSession, type CodexSessionStore } from "./session.js";
 
 const CODEX_REGISTRY_URL = "https://registry.npmjs.org/@openai/codex/latest";
-/** Lowest Codex client version measured to list the GPT-6 models (2026-09-25). */
-export const CODEX_CLIENT_VERSION_FLOOR = "0.157.0";
+/** Lowest Codex client version measured to list gpt-6.2-* (2026-11-21). */
+export const CODEX_CLIENT_VERSION_FLOOR = "0.166.0";
 const VERSION_TTL_MS = 60 * 60 * 1000;
 const CATALOG_TTL_MS = 10 * 60 * 1000;
 const CATALOG_FAILURE_TTL_MS = 30 * 1000;
@@ -126,5 +126,5 @@ export async function codexCatalog(): Promise<CatalogModel[]> {
 export async function isLiteModel(model: unknown): Promise<boolean> {
   if (typeof model !== "string") return false;
   const entry = (await codexCatalog()).find((row) => row.slug === model);
-  return entry ? entry.lite : /^gpt-(6|5\.6)(-|$)/.test(model);
+  return entry ? entry.lite : /^gpt-(6(\.\d+)?|5\.6)(-|$)/.test(model);
 }

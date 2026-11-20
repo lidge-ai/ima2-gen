@@ -1,6 +1,6 @@
 import { canonicalizeImageModel } from "./model-aliases.js";
 import { deriveProviderIds } from "../../lib/providers/derive.js";
-import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
+import { migrateOpenAIImageModel } from "../../lib/openaiLegacyModels.js";
 import { listProviders } from "../../lib/mcp/providerRegistry.js";
 import type { CoreProviderId } from "../../lib/providers/registry.js";
 
@@ -48,7 +48,7 @@ function canonicalModel(kind: "image" | "video", model: string): string {
 
 /** GPT OAuth keeps only GPT-6; a saved or scripted legacy OAuth id resolves to its GPT-6 tier. */
 function laneModel(lane: string, kind: "image" | "video", model: string): string {
-  return kind === "image" && lane === "oauth" ? migrateOAuthImageModel(model) : model;
+  return kind === "image" && (lane === "oauth" || lane === "api") ? migrateOpenAIImageModel(model) : model;
 }
 
 function modelExists(info: LaneInfo | undefined, kind: "image" | "video", model: string): boolean {

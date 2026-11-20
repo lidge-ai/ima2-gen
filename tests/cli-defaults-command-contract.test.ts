@@ -75,14 +75,14 @@ describe("CLI image/video defaults behavior", () => {
     const configDir = mkdtempSync(join(tmpdir(), "ima2-defaults-model-"));
     const saved = () => JSON.parse(readFileSync(join(configDir, "config.json"), "utf8"));
     try {
-      // A legacy id: GPT OAuth takes its GPT-6 tier, the API-key lane keeps the id it serves.
+      // A legacy id migrates on both OpenAI lanes.
       assert.equal((await runCli(["defaults", "set", "model", "gpt-5.6-luna"], configDir)).code, 0);
       assert.equal(saved().imageModels.default, "gpt-6-luna");
-      assert.equal(saved().apiProvider.defaultImageModel, "gpt-5.6-luna");
-      // A GPT OAuth-only id never becomes the API-key default.
+      assert.equal(saved().apiProvider.defaultImageModel, "gpt-6-luna");
+      // A former OAuth id migrates on both lanes.
       assert.equal((await runCli(["defaults", "set", "model", "gpt-6-sol"], configDir)).code, 0);
-      assert.equal(saved().imageModels.default, "gpt-6-sol");
-      assert.equal(saved().apiProvider.defaultImageModel, "gpt-5.6-luna");
+      assert.equal(saved().imageModels.default, "gpt-6.2-sol");
+      assert.equal(saved().apiProvider.defaultImageModel, "gpt-6.2-sol");
       const bad = await runCli(["defaults", "set", "model", "gpt-9"], configDir);
       assert.equal(bad.code, 2);
     } finally {

@@ -9,18 +9,17 @@ import { coerceReasoningEffortForModel, normalizeImageModel, normalizeReasoningE
 import { resolveProviderOptions } from "../lib/providerOptions.ts";
 import { config } from "../config.ts";
 
-const GPT56_MODELS = ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"];
+const CURRENT_MODELS = ["gpt-6.2-sol", "gpt-6.1-terra", "gpt-6-luna"];
 
 function readSource(path: string) {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
 describe("gpt-5.6 rollout: validators", () => {
-  // GPT OAuth keeps only GPT-6 now; the API-key lane still serves every 5.6 slug.
-  it("accepts every GPT-5.6 slug on the API-key lane and migrates it on GPT OAuth", () => {
-    for (const model of GPT56_MODELS) {
-      assert.deepEqual(normalizeImageModel({}, model, "api"), { model });
-      assert.match(normalizeImageModel({}, model).model ?? "", /^gpt-6-(sol|luna)$/);
+  it("migrates GPT-5.6 slugs on both OpenAI lanes", () => {
+    const legacy = { "gpt-5.6-sol": "gpt-6.2-sol", "gpt-5.6-terra": "gpt-6.1-terra", "gpt-5.6-luna": "gpt-6-luna" };
+    for (const [old, model] of Object.entries(legacy)) {
+      for (const lane of ["api", "oauth"] as const) assert.deepEqual(normalizeImageModel({}, old, lane), { model });
     }
   });
 
@@ -28,10 +27,10 @@ describe("gpt-5.6 rollout: validators", () => {
     const result = normalizeImageModel({}, "gpt-5.6-nova");
     assert.equal(result.code, "INVALID_IMAGE_MODEL");
     assert.equal(result.status, 400);
-    assert.match(result.error ?? "", /gpt-6-luna, gpt-6-sol, gpt-6-astra/);
+    assert.match(result.error ?? "", /gpt-6-luna, gpt-6.1-terra, gpt-6.2-sol, gpt-6.2-astra/);
     const api = normalizeImageModel({}, "gpt-5.6-nova", "api");
     assert.equal(api.code, "INVALID_IMAGE_MODEL");
-    assert.match(api.error ?? "", /gpt-5\.6-sol, gpt-5\.6-terra, gpt-5\.6-luna/);
+    assert.match(api.error ?? "", /gpt-6-luna, gpt-6.1-terra, gpt-6.2-sol, gpt-6.2-astra/);
   });
 
   it("accepts max reasoning effort (previously rejected)", () => {
@@ -48,13 +47,13 @@ describe("gpt-5.6 rollout: validators", () => {
   it("uses luna as the product default on both GPT lanes", () => {
     assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
     assert.equal(config.imageModels.default, "gpt-6-luna");
-    assert.deepEqual(normalizeImageModel({}, undefined, "api"), { model: "gpt-5.6-luna" });
+    assert.deepEqual(normalizeImageModel({}, undefined, "api"), { model: "gpt-6-luna" });
   });
 });
 
 describe("gpt-5.6 rollout: runtime config", () => {
-  it("config advertises the GPT-6 trio on OAuth and max effort", () => {
-    assert.deepEqual([...config.imageModels.valid], ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"]);
+  it("config advertises the GPT-6.x lineup on OAuth and max effort", () => {
+    assert.deepEqual([...config.imageModels.valid], ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"]);
     assert.ok(config.imageModels.validReasoningEfforts.has("max"));
   });
 });
@@ -65,13 +64,13 @@ describe("gpt-5.6 rollout: runtime config", () => {
 // deliberately not taken, so these assertions pin both halves - Astra present,
 // defaults unmoved - to stop either drifting back in unnoticed.
 describe("gpt-6 astra: additive registration", () => {
-  const ASTRA = "gpt-6-astra";
+  const ASTRA = "gpt-6.2-astra";
 
   it("is selectable through validation, config and the generated UI catalog", () => {
     assert.deepEqual(normalizeImageModel({}, ASTRA), { model: ASTRA });
     assert.ok(config.imageModels.valid.has(ASTRA), "config valid set missing gpt-6-astra");
     const rejection = normalizeImageModel({}, "gpt-6-nova");
-    assert.match(rejection.error ?? "", /gpt-6-astra/);
+    assert.match(rejection.error ?? "", /gpt-6.2-astra/);
     assert.ok(readSource("ui/src/generated/providers.ts").includes(`"${ASTRA}"`));
   });
 
@@ -85,13 +84,13 @@ describe("gpt-6 astra: additive registration", () => {
     // the original attempt missed.
     assert.ok(readSource("integrations/comfyui/ima2_gen_bridge/nodes.py").includes(ASTRA));
     for (const locale of ["en", "ko", "zh-Hans", "zh-Hant"]) {
-      assert.ok(readSource(`ui/src/i18n/${locale}.json`).includes("gpt6Astra"), `${locale} missing gpt6Astra`);
+      assert.ok(readSource(`ui/src/i18n/${locale}.json`).includes("gpt62Astra"), `${locale} missing gpt62Astra`);
     }
   });
 
   it("leaves every default exactly where it was", () => {
     assert.equal(config.imageModels.default, "gpt-6-luna");
-    assert.equal(config.apiProvider.defaultImageModel, "gpt-5.6-luna");
+    assert.equal(config.apiProvider.defaultImageModel, "gpt-6-luna");
     assert.equal(config.imageModels.reasoningEffort, "medium");
     assert.equal(config.apiProvider.defaultReasoningEffort, "low");
     assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
@@ -106,7 +105,7 @@ describe("gpt-6 astra: additive registration", () => {
     for (const effort of ["low", "medium", "high", "xhigh", "max"]) {
       assert.equal(coerceReasoningEffortForModel(ASTRA, effort), effort, `${effort} must pass through untouched`);
     }
-    for (const model of [...GPT56_MODELS, "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"]) {
+    for (const model of ["gpt-6.1-terra", "gpt-6-luna", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"]) {
       assert.equal(coerceReasoningEffortForModel(model, "none"), "none", `${model} must keep none`);
     }
     assert.equal(coerceReasoningEffortForModel(undefined, "none"), "none");
@@ -123,7 +122,7 @@ describe("gpt-6 astra: additive registration", () => {
 });
 
 describe("gpt-5.6 rollout: surface contracts", () => {
-  it("CLI validators know the 5.6 slugs and max", () => {
+  it("CLI validators know the current slugs and max", () => {
     // gen.ts moved to catalog-driven validation (010 CLI strict routing):
     // the resolver validates models against GET /api/models, so gen.ts no
     // longer embeds a KNOWN_IMAGE_MODELS literal. Assert the resolver wiring
@@ -134,7 +133,7 @@ describe("gpt-5.6 rollout: surface contracts", () => {
     assert.match(genSrc, /none, low, medium, high, xhigh, max/);
     const editSrc = readSource("bin/commands/edit.ts");
     const generatedProviders = readSource("ui/src/generated/providers.ts");
-    for (const model of GPT56_MODELS) {
+    for (const model of CURRENT_MODELS) {
       assert.ok(generatedProviders.includes(`"${model}"`), `generated provider models missing ${model}`);
     }
     assert.match(editSrc, /none, low, medium, high, xhigh, max/);
@@ -143,9 +142,9 @@ describe("gpt-5.6 rollout: surface contracts", () => {
     }
   });
 
-  it("prompt builder accepts the 5.6 slugs", () => {
+  it("prompt builder accepts the current slugs", () => {
     const src = readSource("lib/promptBuilder/constants.ts");
-    for (const model of GPT56_MODELS) {
+    for (const model of CURRENT_MODELS) {
       assert.ok(src.includes(`"${model}"`), `prompt builder constants missing ${model}`);
     }
     const menu = readSource("ui/src/components/prompt-builder/PromptBuilderModelMenu.tsx");
@@ -153,15 +152,15 @@ describe("gpt-5.6 rollout: surface contracts", () => {
     assert.doesNotMatch(menu, /const MODELS|const MODEL_ITEMS/);
   });
 
-  it("UI unions and pickers carry the 5.6 slugs and max", () => {
+  it("UI unions and pickers carry the current slugs and max", () => {
     const types = readSource("ui/src/types.ts");
     const generatedProviders = readSource("ui/src/generated/providers.ts");
-    for (const model of GPT56_MODELS) {
+    for (const model of CURRENT_MODELS) {
       assert.ok(generatedProviders.includes(`"${model}"`), `generated ui types missing ${model}`);
     }
     assert.match(types, /"xhigh" \| "max"/);
     const imageModels = readSource("ui/src/lib/imageModels.ts");
-    for (const model of GPT56_MODELS) {
+    for (const model of CURRENT_MODELS) {
       assert.ok(imageModels.includes(`"${model}"`), `IMAGE_MODEL_OPTIONS missing ${model}`);
     }
     const reasoning = readSource("ui/src/lib/reasoning.ts");
@@ -172,7 +171,7 @@ describe("gpt-5.6 rollout: surface contracts", () => {
   it("i18n carries labels for the new options in both locales", () => {
     for (const path of ["ui/src/i18n/en.json", "ui/src/i18n/ko.json"]) {
       const src = readSource(path);
-      for (const key of ["gpt56Sol", "gpt56Terra", "gpt56Luna", "\"max\":"]) {
+      for (const key of ["gpt62Sol", "gpt61Terra", "gpt6Luna", "\"max\":"]) {
         assert.ok(src.includes(key), `${path} missing ${key}`);
       }
     }

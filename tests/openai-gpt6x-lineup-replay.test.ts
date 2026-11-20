@@ -30,4 +30,16 @@ describe("API replay route", { concurrency: false }, () => {
       assert.deepEqual({ model: body.model, effort: body.reasoning?.effort }, { model: "gpt-6.2-sol", effort: "low" });
     });
   });
+  for (const [model, effort] of [["gpt-6.1-terra", "none"], ["gpt-6.2-astra", "low"]]) {
+    test(`API ${model} effort`, async () => {
+      await harness.run("classic", { upstream }, async (fixture) => {
+        const response = await fixture.post({ provider: "api", model, reasoningEffort: "none", prompt: "draw", webSearchEnabled: false });
+        await response.text(); await fixture.waitSettled();
+        const request = fixture.calls.find((call) => call.url.endsWith("/v1/responses"));
+        assert.ok(request);
+        const body = JSON.parse(request.body);
+        assert.deepEqual({ model: body.model, effort: body.reasoning?.effort }, { model, effort });
+      });
+    });
+  }
 });

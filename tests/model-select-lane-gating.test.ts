@@ -124,11 +124,11 @@ describe("model select value: lane gating", () => {
 describe("comfy lane exit: stranded selection cleanup", () => {
   it("clears comfy-only selections when leaving the comfy lane", () => {
     const current = reconcileCoreSelection({
-      provider: "comfy", imageModel: "gpt-5.6-sol",
+      provider: "comfy", imageModel: "gpt-6.2-sol",
       comfyWorkflow: "wf-image", comfyVideoWorkflow: "wf-video",
     });
     assert.deepEqual(selectCoreProvider(current, "oauth"), {
-      provider: "oauth", imageModel: "gpt-6-sol", videoModelSelected: false,
+      provider: "oauth", imageModel: "gpt-6.2-sol", videoModelSelected: false,
       comfyWorkflow: null, comfyVideoWorkflow: null,
     });
     assert.equal(current.comfyWorkflow, "wf-image");

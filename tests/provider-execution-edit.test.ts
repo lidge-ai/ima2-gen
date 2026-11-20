@@ -34,7 +34,7 @@ if (executionTestProcess(import.meta.url)) describe("execution edit real routes"
     }, async (fixture) => {
       const response = await fixture.post({
         provider: "api", prompt: "Change blue to amber", image: source, mask: `data:image/png;base64,${mask}`,
-        model: "gpt-5.4", quality: "high", size: "1536x1024", moderation: "low",
+        model: "gpt-6.1-terra", quality: "high", size: "1536x1024", moderation: "low",
         mode: "direct", reasoningEffort: "high", webSearchEnabled: true,
       });
       const result = await response.json();
@@ -42,7 +42,7 @@ if (executionTestProcess(import.meta.url)) describe("execution edit real routes"
       assert.equal(response.status, 200);
       assert.equal(fixture.calls.length, 1);
       const wire = JSON.parse(fixture.calls[0]!.body);
-      assert.equal(wire.model, "gpt-5.4");
+      assert.equal(wire.model, "gpt-6.1-terra");
       assert.deepEqual(wire.reasoning, { effort: "high" });
       assert.deepEqual(wire.tools.map((tool: { type: string }) => tool.type), ["web_search", "image_generation"]);
       assert.equal(wire.tools[1].quality, "high");
@@ -67,14 +67,14 @@ if (executionTestProcess(import.meta.url)) describe("execution edit real routes"
       assert.equal(blended.info.channels, 3);
       for (const [index, expected] of [127, 102, 77].entries()) assert.ok(Math.abs(blended.data[index]! - expected) <= 2, `channel ${index}`);
       assert.equal(result.provider, "api");
-      assert.equal(result.model, "gpt-5.4");
+      assert.equal(result.model, "gpt-6.1-terra");
       assert.equal(result.revisedPrompt, "Amber edit fixture");
       assert.deepEqual(result.usage, { input_tokens: 11, output_tokens: 19, total_tokens: 30 });
       assert.equal(result.webSearchCalls, 2);
       assert.equal(result.providerUrl, null);
       assert.equal(result.promptMode, "direct");
       const sidecar = JSON.parse(await readFile(join(fixture.generatedDir, `${result.filename}.json`), "utf8"));
-      for (const [field, expected] of Object.entries({ kind: "edit", provider: "api", model: "gpt-5.4", quality: "high", size: "1536x1024", prompt: "Change blue to amber", userPrompt: "Change blue to amber", revisedPrompt: "Amber edit fixture", promptMode: "direct", reasoningEffort: "high", moderation: "low", webSearchCalls: 2, webSearchEnabled: true, format: "png", alphaVerified: false, alphaReason: "no-alpha-channel" })) {
+      for (const [field, expected] of Object.entries({ kind: "edit", provider: "api", model: "gpt-6.1-terra", quality: "high", size: "1536x1024", prompt: "Change blue to amber", userPrompt: "Change blue to amber", revisedPrompt: "Amber edit fixture", promptMode: "direct", reasoningEffort: "high", moderation: "low", webSearchCalls: 2, webSearchEnabled: true, format: "png", alphaVerified: false, alphaReason: "no-alpha-channel" })) {
         assert.deepEqual(sidecar[field], expected, field);
       }
       assert.equal(sidecar.requestId, fixture.requestId);
@@ -128,7 +128,7 @@ if (executionTestProcess(import.meta.url)) describe("execution edit real routes"
         ]);
       },
     }, async (fixture) => {
-      const response = await fixture.post({ provider: "api", prompt: "Empty edit", image: source, model: "gpt-5.4", webSearchEnabled: false });
+      const response = await fixture.post({ provider: "api", prompt: "Empty edit", image: source, model: "gpt-6.1-terra", webSearchEnabled: false });
       const result = await response.json();
       await fixture.waitSettled();
       assert.equal(response.status, 422);

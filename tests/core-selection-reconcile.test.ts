@@ -15,7 +15,7 @@ test("explicit core lane wins over conflicting persisted model and video", () =>
   });
   assert.deepEqual(reconcileCoreSelection({ provider: "oauth", imageModel: "gpt-5.6-sol",
     videoModelSelected: "grok-imagine-video", comfyWorkflow: "wf-a", comfyVideoWorkflow: "wf-v" }), {
-    provider: "oauth", imageModel: "gpt-6-sol", videoModelSelected: false,
+    provider: "oauth", imageModel: "gpt-6.2-sol", videoModelSelected: false,
     comfyWorkflow: null, comfyVideoWorkflow: null,
   });
   assert.equal(reconcileCoreSelection({ provider: "gemini-api", imageModel: "grok-imagine-image" }).imageModel,
@@ -32,11 +32,11 @@ test("invalid provider inference is membership-based, including prototype keys",
     assert.equal(reconcileCoreSelection({ imageModel }).provider, provider);
   }
   assert.equal(reconcileCoreSelection({ imageModel: "nai-diffusion-5-full", videoModelSelected: "grok-imagine-video" }).provider, "grok");
-  assert.equal(reconcileCoreSelection({ provider: "api", imageModel: "gpt-5.3-codex-spark" }).imageModel, "gpt-5.6-luna");
+  assert.equal(reconcileCoreSelection({ provider: "api", imageModel: "gpt-5.3-codex-spark" }).imageModel, "gpt-6-luna");
 });
 
 test("every fallback belongs to its real supported lane, with independent exact defaults", () => {
-  const expected = { oauth: "gpt-6-luna", api: "gpt-5.6-luna", grok: "grok-imagine-image-2.0",
+  const expected = { oauth: "gpt-6-luna", api: "gpt-6-luna", grok: "grok-imagine-image-2.0",
     "grok-api": "grok-imagine-image-2.0", agy: "nano-banana-2", "gemini-api": "nano-banana-pro",
     atlascloud: "openai/gpt-image-2/text-to-image", minimax: "image-01", nai: "nai-diffusion-5-full" };
   for (const provider of CORE_PROVIDER_IDS) {
@@ -54,7 +54,7 @@ test("Comfy migrates legacy runtime id without widening static selection or auto
   assert.deepEqual(value, { provider: "comfy", imageModel: "gpt-6-luna", videoModelSelected: false,
     comfyWorkflow: "wf-legacy", comfyVideoWorkflow: "wf-missing" });
   assert.equal(reconcileCoreSelection({ provider: "comfy", imageModel: "wf-legacy", comfyWorkflow: "wf-explicit" }).comfyWorkflow, "wf-explicit");
-  assert.equal(reconcileCoreSelection({ provider: "comfy", imageModel: "gpt-5.6-sol" }).comfyWorkflow, null);
+  assert.equal(reconcileCoreSelection({ provider: "comfy", imageModel: "gpt-6.2-sol" }).comfyWorkflow, null);
   assert.equal(reconcileCoreSelection({ provider: "comfy", imageModel: "  ", comfyWorkflow: [] }).comfyWorkflow, null);
 });
 
@@ -69,14 +69,14 @@ test("reconciliation is idempotent and never mutates inputs", () => {
 
 test("model family switches preserve compatible credential lanes", () => {
   for (const [provider, model, expected] of [
-    ["grok-api", "grok-imagine-image-quality", "grok-api"], ["grok-api", "gpt-5.6-sol", "oauth"],
-    ["api", "gpt-5.6-sol", "api"], ["gemini-api", "nano-banana-2", "gemini-api"],
+    ["grok-api", "grok-imagine-image-quality", "grok-api"], ["grok-api", "gpt-6.2-sol", "oauth"],
+    ["api", "gpt-6.2-sol", "api"], ["gemini-api", "nano-banana-2", "gemini-api"],
     ["comfy", "nai-diffusion-5-full", "nai"],
   ] as Array<[Provider, ImageModel, Provider]>) assert.equal(providerForImageModel(provider, model), expected);
 });
 
 test("provider switches restore remembered kind without exposing inactive workflow slots", () => {
-  const current = reconcileCoreSelection({ provider: "api", imageModel: "gpt-5.6-sol" });
+  const current = reconcileCoreSelection({ provider: "api", imageModel: "gpt-6.2-sol" });
   assert.equal(selectCoreProvider(current, "api", { kind: "image", image: "gpt-5.4" }), current);
   const comfy = selectCoreProvider(current, "comfy", { kind: "image", image: "wf-a", video: "wf-v" });
   assert.equal(comfy.comfyWorkflow, "wf-a");
@@ -89,12 +89,12 @@ test("provider switches restore remembered kind without exposing inactive workfl
 
 test("wire projection accepts optional AppState workflow and never supplies a hosted Comfy default", () => {
   for (const input of [
-    { provider: "comfy" as const, imageModel: "gpt-5.6-sol" as const },
-    { provider: "comfy" as const, imageModel: "gpt-5.6-sol" as const, comfyWorkflow: undefined },
-    { provider: "comfy" as const, imageModel: "gpt-5.6-sol" as const, comfyWorkflow: null },
+    { provider: "comfy" as const, imageModel: "gpt-6.2-sol" as const },
+    { provider: "comfy" as const, imageModel: "gpt-6.2-sol" as const, comfyWorkflow: undefined },
+    { provider: "comfy" as const, imageModel: "gpt-6.2-sol" as const, comfyWorkflow: null },
   ]) assert.equal(JSON.stringify({ model: coreImageRequestModel(input) }), "{}");
-  assert.equal(JSON.stringify({ model: coreImageRequestModel({ provider: "comfy", imageModel: "gpt-5.6-sol", comfyWorkflow: "wf-selected" }) }), '{"model":"wf-selected"}');
-  assert.equal(JSON.stringify({ model: coreImageRequestModel({ provider: "oauth", imageModel: "gpt-5.6-sol", comfyWorkflow: "wf-stray" }) }), '{"model":"gpt-5.6-sol"}');
+  assert.equal(JSON.stringify({ model: coreImageRequestModel({ provider: "comfy", imageModel: "gpt-6.2-sol", comfyWorkflow: "wf-selected" }) }), '{"model":"wf-selected"}');
+  assert.equal(JSON.stringify({ model: coreImageRequestModel({ provider: "oauth", imageModel: "gpt-6.2-sol", comfyWorkflow: "wf-stray" }) }), '{"model":"gpt-6.2-sol"}');
 });
 
 test("memory allowlist rejects unknown keys and unsupported slots without inventing defaults", () => {

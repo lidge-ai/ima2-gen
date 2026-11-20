@@ -29,8 +29,8 @@ function modelCatalog(state: J6CatalogState, composer = false): { ok: true; lane
   if (state.mode === "key-missing") return { ok: true, lanes: { oauth: lane(["gpt-6-luna"]), comfy: { status: "key-missing", models } } };
   if (state.mode === "disconnected") return { ok: true, lanes: { oauth: lane(["gpt-6-luna"]), comfy: { status: "disconnected", models } } };
   return { ok: true, lanes: {
-    oauth: lane(["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"]),
-    api: lane(["gpt-5.6-luna", "gpt-6-astra", "gpt-5.6-sol"]),
+    oauth: lane(["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"]),
+    api: lane(["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"]),
     grok: lane(["grok-imagine-image-2.0", "grok-imagine-image-quality"], ["grok-imagine-video-1.5"]),
     "grok-api": lane(["grok-imagine-image-2.0", "grok-imagine-image-quality"], ["grok-imagine-video-1.5"]),
     "gemini-api": lane(["nano-banana-pro", "nano-banana-2"]),
@@ -64,8 +64,8 @@ export function readFixtures(catalog: J6CatalogState, composer = false): Record<
     "/api/sessions": { sessions: [session] },
     "/api/sessions/wp02-session": { session },
     "/api/config/grok-planner": { model: "grok-4.3", options: ["grok-4.3"] },
-    "/api/prompt-builder/config": { backend: "auto", model: "gpt-5.6-luna",
-      options: { backends: ["auto"], models: { auto: ["gpt-5.6-luna"] }, autoOrder: [] },
+    "/api/prompt-builder/config": { backend: "auto", model: "gpt-6-luna",
+      options: { backends: ["auto"], models: { auto: ["gpt-6-luna"] }, autoOrder: [] },
       locked: { backend: true, model: true } },
     "/api/comfy/workflows": { ok: true, workflows: [] },
   };

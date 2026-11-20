@@ -139,7 +139,7 @@ test("WP02 Comfy video survives leave/return and bypasses saved multimode", asyn
 });
 
 for (const positive of [
-  { provider: "oauth", imageModel: "gpt-5.6-luna", label: "GPT", model: "6l" },
+  { provider: "oauth", imageModel: "gpt-6-luna", label: "GPT", model: "6l" },
   { provider: "grok-api", imageModel: "grok-imagine-image-quality", label: "xAI API", model: "grok+" },
 ]) {
   test(`WP02 ${positive.provider} Sequence renders and survives Comfy switch-return without submission`, async ({ browser }, info) => {
@@ -184,14 +184,14 @@ test("WP02 first visit to Comfy never auto-picks from a populated workflow catal
 });
 
 test("WP02 same-origin second page storage event updates first-page lane and label", async ({ browser }, info) => {
-  await withJ6(browser, info, { provider: "oauth", imageModel: "gpt-5.6-sol" }, async (page, capture, origin) => {
+  await withJ6(browser, info, { provider: "oauth", imageModel: "gpt-6.2-sol" }, async (page, capture, origin) => {
     await openCreate(page, origin);
-    await assertSelection(page, "GPT", "6s");
+    await assertSelection(page, "GPT", "6.2s");
     await page.locator(".composer__textarea:visible").fill("WP02 keep this dirty prompt");
     // Same guarded context, no re-seeding or direct calls to the store's sync action.
     const second = await page.context().newPage();
     await openCreate(second, origin);
-    await assertSelection(second, "GPT", "6s");
+    await assertSelection(second, "GPT", "6.2s");
     await second.evaluate(() => {
       localStorage.setItem("ima2.imageModel", "nano-banana-pro");
       localStorage.setItem("ima2.videoDefaults", JSON.stringify({ model: false }));

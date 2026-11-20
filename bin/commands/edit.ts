@@ -51,7 +51,7 @@ const HELP = `
     -o, --out <file>
         --json
         --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-6-luna
-                                      Aliases: luna, astra, sol, terra, spark
+                                      Aliases: luna, terra, sol, astra
         --image-tool-model <id>       API only: gpt-image-2.6-flare|gpt-image-2.6-sunburst|gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --complexity <level>          low|medium|high; API 2.6 image models only (default high)
         --markup <file.png>           Markup-guided edit: transparent PNG of marks at the image's size.
