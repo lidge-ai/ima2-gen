@@ -132,3 +132,29 @@ test("agent model selection preserves a compatible OpenAI provider", async () =>
     assert.equal((patch as { model: string }).model, chosen === "6.2s" ? "gpt-6.2-sol" : "gpt-6-luna");
   }
 });
+
+for (const [provider, legacy] of [["oauth", "gpt-6-sol"], ["api", "gpt-5.6-terra"]]) {
+  test(`edit accepts legacy ${provider} model before file access`, () => {
+    const dir = mkdtempSync(join(tmpdir(), "ima2-edit-legacy-"));
+    try {
+      const child = spawnSync(process.execPath, ["--import", "tsx", "bin/ima2.ts", "edit", join(dir, "missing.png"), "--prompt", "test", "--provider", provider, "--model", legacy, "--server", "http://127.0.0.1:1"], {
+        env: { PATH: process.env.PATH, HOME: dir, IMA2_CONFIG_DIR: dir, IMA2_DB_PATH: join(dir, "test.db"), IMA2_GENERATED_DIR: dir }, encoding: "utf8",
+      });
+      assert.doesNotMatch(child.stderr, /--model must be one of/);
+      assert.match(child.stderr, /ENOENT|missing\.png/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+}
+
+for (const [provider, legacy, expected] of [["oauth", "gpt-6-sol", "gpt-6.2-sol"], ["api", "gpt-5.6-terra", "gpt-6.1-terra"]]) {
+  test(`embedded metadata migrates ${provider} without mutation`, async () => {
+    const result = await build({ entryPoints: ["ui/src/store/storeReferenceImpl.ts"], bundle: true, write: false, platform: "node", format: "cjs", define: { "import.meta.env": "{}" } });
+    const module = { exports: {} as { applyMetadataRestoreImpl: (set: (patch: any) => void, get: () => any) => void } };
+    runInNewContext(result.outputFiles[0].text, { module, exports: module.exports, require: createRequire(import.meta.url), console, process, localStorage: new MemoryStorage() });
+    const metadata = { model: legacy, prompt: "draw" };
+    const state: any = { provider, quality: "low", customW: 1024, customH: 1024, metadataRestore: { metadata }, showToast() {} };
+    module.exports.applyMetadataRestoreImpl((patch) => Object.assign(state, patch), () => state);
+    assert.equal(state.imageModel, expected);
+    assert.equal(metadata.model, legacy);
+  });
+}
