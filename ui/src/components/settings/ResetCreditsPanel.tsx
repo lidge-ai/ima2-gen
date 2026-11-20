@@ -10,6 +10,7 @@ export interface ResetList {
   accountRef: string;
   credits: Array<{ id?: string; title?: string | null; status?: string | null; expiresAt?: string | null }>;
   availableCount?: number | null;
+  complete?: boolean;
 }
 export interface ResetCreditsTransport {
   getOperations(): Promise<ResetOperation[]>;
@@ -19,7 +20,7 @@ export interface ResetCreditsTransport {
   getSettings?(): Promise<ResetSettings>;
   saveSettings?(settings: ResetSettings): Promise<ResetSettings>;
 }
-export interface ResetSettings { enabled: boolean; leadMinutes: number }
+export interface ResetSettings { enabled: boolean; leadMinutes: number; accountRef: string | null }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const operationId = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
 const outcomeKeys: Record<string, string> = { reset: "success", nothing_to_reset: "nothingToReset",
@@ -79,9 +80,9 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
     .catch(() => { setOpsLoaded(false); setMessage("loadError"); }); }, [transport]);
   useEffect(() => { if (transport.getSettings) void transport.getSettings().then(setSettings).catch(() => setMessage("loadError")); }, [transport]);
   const saveSettings = async (next: ResetSettings) => {
-    if (!transport.saveSettings || settingsBusy || !Number.isInteger(next.leadMinutes) || next.leadMinutes < 1 || next.leadMinutes > 60) return;
+    if (!transport.saveSettings || !displayedRef.current || settingsBusy || !Number.isInteger(next.leadMinutes) || next.leadMinutes < 1 || next.leadMinutes > 60) return;
     setSettingsBusy(true);
-    try { setSettings(await transport.saveSettings(next)); } catch { setMessage("loadError"); } finally { setSettingsBusy(false); }
+    try { setSettings(await transport.saveSettings({ ...next, accountRef: displayedRef.current })); } catch (error) { if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("loadError"); } finally { setSettingsBusy(false); }
   };
   const confirm = async () => {
     if (inFlight.current || !dialog) return;
@@ -121,18 +122,20 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
       if (transport.list) void transport.list().then(setList).catch(() => setListError(true));
     }}>{t("settings.quota.resetCredits.list")}</button>
     {listError && <p role="alert" className="settings-row__microcopy">{t("settings.quota.resetCredits.loadError")}</p>}
+    {list?.complete === false && <p role="status" className="settings-row__microcopy">{t("settings.quota.resetCredits.partial")}</p>}
     {creditRows(list, t)}
     {settings && <fieldset disabled={settingsBusy}><legend>{t("settings.quota.autoRedeem.title")}</legend>
       <article className="settings-row">
         <div className="settings-row__copy"><h4>{t("settings.quota.autoRedeem.enable")}</h4>
-          <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.warning")}</p></div>
-        <div className="settings-row__control"><Toggle checked={settings.enabled} disabled={settingsBusy}
+          <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.warning")}</p>
+          <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.account", { account: settings.accountRef ?? "—" })}</p></div>
+        <div className="settings-row__control"><Toggle checked={settings.enabled && !!accountRef && settings.accountRef === accountRef} disabled={settingsBusy || !accountRef}
           ariaLabel={t("settings.quota.autoRedeem.enable")} onChange={enabled => { void saveSettings({ ...settings, enabled }); }} /></div>
       </article>
       <article className="settings-row">
         <div className="settings-row__copy"><label htmlFor="reset-lead-minutes">{t("settings.quota.autoRedeem.lead")}</label></div>
-        <div className="settings-row__control"><input id="reset-lead-minutes" className="custom-size-input" type="number" min={1} max={60} defaultValue={settings.leadMinutes} key={settings.leadMinutes}
-          onBlur={event => { const value = Number(event.target.value); if (Number.isInteger(value) && value >= 1 && value <= 60) void saveSettings({ ...settings, leadMinutes: value }); else event.target.value = String(settings.leadMinutes); }} /></div>
+        <div className="settings-row__control"><input id="reset-lead-minutes" className="custom-size-input" type="number" min={1} max={60} disabled={!accountRef || (settings.enabled && settings.accountRef !== accountRef)} defaultValue={settings.leadMinutes} key={settings.leadMinutes}
+          onBlur={event => { const value = Number(event.target.value); if (Number.isInteger(value) && value >= 1 && value <= 60) void saveSettings({ ...settings, enabled: settings.enabled && settings.accountRef === accountRef, leadMinutes: value }); else event.target.value = String(settings.leadMinutes); }} /></div>
       </article>
     </fieldset>}
     {operationRows(ops, busy, t, (id) => { void acknowledge(id); })}

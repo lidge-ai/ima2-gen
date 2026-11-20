@@ -32,16 +32,16 @@ async function fixture(fn: (f: { request: (method: string, body?: unknown, heade
   const address = server.address(); if (!address || typeof address === "string") throw new Error("missing address");
   const url = `http://127.0.0.1:${address.port}/api/quota/reset-settings`;
   const request = (method: string, body?: unknown, headers: Record<string, string> = {}) => fetch(url, { method,
-    headers: { "content-type": "application/json", ...headers }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    headers: { "content-type": "application/json", ...headers }, ...(body === undefined ? {} : { body: JSON.stringify(method === "PUT" && body && typeof body === "object" ? { accountRef: resetIdentity("codex", "fixture").accountRef, ...body } : body) }) });
   try { await fn({ request, calls: () => fake.calls.length }); }
   finally { await new Promise<void>(resolve => server.close(() => resolve())); db.close(); }
 }
 it("settings GET defaults disabled and PUT validates 1-60", async () => fixture(async f => {
-  assert.deepEqual(await (await f.request("GET")).json(), { enabled: false, leadMinutes: 10 });
+  assert.deepEqual(await (await f.request("GET")).json(), { enabled: false, leadMinutes: 10, accountRef: null });
   for (const leadMinutes of [0, 61, 1.5]) assert.equal((await f.request("PUT", { enabled: true, leadMinutes })).status, 400);
   for (const leadMinutes of [1, 60]) {
-    const response = await f.request("PUT", { enabled: false, leadMinutes }); assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { enabled: false, leadMinutes });
+    const response = await f.request("PUT", { enabled: false, leadMinutes, accountRef: resetIdentity("codex", "fixture").accountRef }); assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { enabled: false, leadMinutes, accountRef: resetIdentity("codex", "fixture").accountRef });
   }
   assert.equal(f.calls(), 0);
 }));

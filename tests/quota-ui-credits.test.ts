@@ -105,6 +105,18 @@ function mountPanel(component: Component, props: Record<string, unknown>) {
 }
 const Credits = loadComponent("CodexCredits", "CodexCredits");
 const Panel = loadComponent("ResetCreditsPanel", "ResetCreditsPanel");
+it("shows a partial list and the opt-in account while a different account is off", async () => {
+  const transport = { getOperations: async () => [], redeem: async () => {},
+    getSettings: async () => ({ enabled: true, leadMinutes: 10, accountRef: "account-a" }),
+    list: async () => ({ accountRef: "account-b", complete: false, credits: [{ title: "visible credit" }] }) };
+  const panel = mountPanel(Panel, { transport, accountRef: "account-b", t: (key: string, values?: { account?: string }) => values?.account ? `${key} ${values.account}` : key });
+  await Promise.resolve();
+  assert.equal(findNode(panel.tree(), n => n.type === "Toggle")?.props.checked, false);
+  assert.match(textContent(panel.tree()), /account-a/);
+  const button = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("resetCredits.list"));
+  assert.ok(button); (button.props.onClick as () => void)(); await Promise.resolve();
+  assert.match(textContent(panel.tree()), /resetCredits.partial/); assert.match(textContent(panel.tree()), /visible credit/);
+});
 function fakeTransport() {
   const calls: string[] = [];
   return { calls, getOperations: async () => { calls.push("GET"); return [{ operationId: "op-1", state: "unknown" }]; },

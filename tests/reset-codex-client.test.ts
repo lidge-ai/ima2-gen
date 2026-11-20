@@ -23,7 +23,7 @@ describe("Codex reset client behavior", () => {
     const fake = fakeResetTransport({ available_count: 1, total_earned_count: 2,
       credits: [{ id: "fixture", status: "available", title: "Reset", granted_at: "2026-11-01", expires_at: "2026-12-01" }] });
     const result = await new CodexResetClient(fake).list();
-    assert.deepEqual(result, { availableCount: 1, totalEarnedCount: 2,
+    assert.deepEqual(result, { availableCount: 1, totalEarnedCount: 2, complete: true,
       credits: [{ id: "fixture", status: "available", title: "Reset", grantedAt: "2026-11-01", expiresAt: "2026-12-01" }] });
     assert.equal(fake.calls.length, 1);
   });

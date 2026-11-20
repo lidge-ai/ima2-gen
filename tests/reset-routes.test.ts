@@ -28,7 +28,7 @@ after(() => { stopAgentQueueWorker(); closeDb(); rmSync(root, { recursive: true,
 
 async function fixture(lan = false) {
   const db = new Database(join(root, `fixture-${sequence++}.sqlite`)); migrate(db);
-  const transport = fakeResetTransport({ credits: [{ id: "one" }], available_count: 1 });
+  const transport = fakeResetTransport({ credits: [{ id: "one", granted_at: "2026-11-20", expires_at: "2026-12-20" }], available_count: 1 });
   let account = "a"; let usageReads = 0;
   const deps = { db, transport, accountId: () => account, usage: async () => { usageReads++; return { fresh: true }; } };
   const ctx = Object.assign(createTestRuntimeContext({ config: { ...config, server: { ...config.server,
@@ -74,7 +74,7 @@ describe("reset route safety contracts", () => {
     f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits }; };
     const token = await f.confirm("manual-fence");
     assert.equal((await f.request(redeemPath, { operationId: "manual-fence", confirmationToken: token })).status, 200);
-    writeResetSettings(f.db, { enabled: true, leadMinutes: 10 });
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
     await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
     credits = credits.slice(1); await watcher.tick(); assert.equal(consumeCalls(f).length, 2);

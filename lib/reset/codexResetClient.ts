@@ -6,10 +6,18 @@ export class CodexResetClient {
   constructor(private readonly transport: ResetTransport) {}
   async list() {
     const raw = object(await this.transport.send(LIST_URL, {}));
-    if (!raw || !Array.isArray(raw.credits)) throw new Error("INVALID_RESET_LIST");
-    return { availableCount: raw.available_count ?? null, totalEarnedCount: raw.total_earned_count ?? null,
-      credits: raw.credits.map(object).filter(Boolean).map(item => ({ id: item?.id, status: item?.status, title: item?.title,
-        grantedAt: item?.granted_at, expiresAt: item?.expires_at })) };
+    const entries = Array.isArray(raw?.credits) ? raw.credits : [];
+    const valid = entries.map(object).filter((item): item is Record<string, unknown> => {
+      if (!item) return false;
+      const date = (v: unknown) => (typeof v === "number" && Number.isFinite(v)) || (typeof v === "string" && Number.isFinite(Date.parse(v)));
+      return date(item.granted_at) && date(item.expires_at)
+        && [item.id, item.status, item.title].every(v => v == null || typeof v === "string");
+    });
+    return { availableCount: raw?.available_count ?? null, totalEarnedCount: raw?.total_earned_count ?? null,
+      complete: !!raw && Array.isArray(raw.credits) && valid.length === entries.length
+        && (raw.available_count === undefined || raw.available_count === valid.length),
+      credits: valid.map(item => ({ id: item.id, status: item.status, title: item.title,
+        grantedAt: item.granted_at, expiresAt: item.expires_at })) };
   }
   async prepare(): Promise<CodexResetClient> {
     return new CodexResetClient(this.transport.prepare ? await this.transport.prepare() : this.transport);

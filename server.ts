@@ -287,12 +287,13 @@ export function buildApp(ctx: RuntimeContext) {
     locals.disposeLocalLanAccess = () => { dispose(); disposeAccess(); };
   }));
   const resetDeps = (ctx as RuntimeContext & { resetDependencies?: ResetDependencies }).resetDependencies;
+  const accountId = async () => resetDeps ? await resetDeps.accountId() : (await codexSessionStore().get()).accountId;
   const watcher = new CodexAutoRedeem(resetDeps?.db ?? getDb(), {
-    accountId: async () => resetDeps ? await resetDeps.accountId() : (await codexSessionStore().get()).accountId,
+    accountId,
     client: account => new CodexResetClient(resetDeps?.transport ?? codexResetTransport(() => account)),
   });
   watcher.start();
-  app.use(quotaResetSettingsRouter(resetDeps?.db ?? getDb(), watcher));
+  app.use(quotaResetSettingsRouter(resetDeps?.db ?? getDb(), watcher, accountId));
   const disposeAccess = locals.disposeLocalLanAccess;
   locals.disposeLocalLanAccess = () => { watcher.stop(); disposeAccess(); };
   app.use(express.static(join(ctx.rootDir, "ui", "dist"), {

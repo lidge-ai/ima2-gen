@@ -103,6 +103,7 @@ function registerRedeem(router: Router, state: RouterState): void {
       if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
       if (confirmation.ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");
       const credits = await clientFor(identity.ledgerKey.slice("codex:".length)).list();
+      if (!credits.complete) return error(res, 409, "RESET_LIST_PARTIAL");
       ledger.claim({ operationId: id, provider: "codex", ledgerKey: identity.ledgerKey, ownerId: owner, creditSnapshot: creditSnapshot(credits.credits) });
       if (resetIdentity("codex", await deps.accountId()).ledgerKey !== identity.ledgerKey) {
         ledger.abandon(id, owner); return error(res, 409, "IDENTITY_CHANGED");
