@@ -36,3 +36,16 @@ it("allows native 1080p text- and image-to-video on 1.5 and Lite only", () => {
   const payload = buildVideoGenerationPayload(plan("text-to-video", "1080p"), { model: LITE });
   assert.deepEqual([payload.model, payload.resolution, "image" in payload], [LITE, "1080p", false]);
 });
+
+it("keeps a retired image id through normalization so it resolves to 2.0 at low", async () => {
+  const models = await import("../lib/imageModels.ts");
+  const { resolveGrokImageRequest } = await import("../lib/grokImageQuality.ts");
+  const normalized = models.normalizeGrokImageModel("grok-imagine-image-quality") as { model: string };
+  assert.deepEqual(resolveGrokImageRequest(normalized.model, undefined), { model: "grok-imagine-image-2.0", quality: "low" });
+});
+
+it("refuses voices on every Grok video model except 1.5 before planning", () => {
+  const check = models.validateGrokVideoInputs as (model: string, inputs: { referenceCount: number; voiceCount: number }) => { ok?: true; code?: string };
+  assert.equal(check("grok-imagine-video", { referenceCount: 0, voiceCount: 1 }).code, "GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL");
+  assert.equal(check("grok-imagine-video-1.5-preview", { referenceCount: 0, voiceCount: 1 }).ok, true);
+});

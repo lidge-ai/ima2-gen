@@ -15,3 +15,6 @@ Base: ad5c0cc9. The video route harness moved to tests/_videoRouteHarness.ts (un
 ## S5 voices + planner model (G5 static roster, G9)
 
 Base: 4b1f6c52. `node --experimental-test-module-mocks --import tsx --test tests/grok-voices-planner.test.ts`: 2 tests, 0 pass, 2 fail, exit 1. The capabilities roster had 26 ids (missing aurora and liora from the 28 live voices); grok-4.7 was absent from the Grok planner list (config), the prompt builder, the agent allowlist and the UI agent options. Deferred (R5 note): live `GET /v1/tts/voices` discovery with credential-scoped caching; the static roster stays non-authoritative and custom voice ids remain accepted.
+## PR #434 fresh review #1 fixes
+
+Base: 859bb6d6. `node --experimental-test-module-mocks --import tsx --test tests/grok-video-lite.test.ts tests/videoRoutePins.test.ts`: exit 1. Failing as intended: `normalizeGrokImageModel` rewrote a retired id to 2.0, so the resolver produced `auto` instead of `low`; `validateGrokVideoInputs` allowed a voice on the base model; the route sent a base-model voice request to search and the planner (upstream paths observed) before the payload check refused it.

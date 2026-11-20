@@ -81,4 +81,18 @@ for (const [label, extra] of [["continuation lineage", { continuityLineage: { en
     }
   });
 }
+test("a voice on the base video model is refused before any upstream call", async () => {
+  const paths: string[] = [];
+  await listen(makeProxy({ onPath: (path) => paths.push(path) }));
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-base-voice-"));
+  const { url } = await videoApp(generatedDir);
+  try {
+    const events = parseSse(await (await post(url, { prompt: "say hello", provider: "grok", model: "grok-imagine-video", referenceAudios: ["eve"], duration: 2, requestId: "req_base_voice" })).text());
+    assert.equal(events.find((e) => e.event === "error")?.data.code, "GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL");
+    assert.deepEqual(paths, []);
+  } finally {
+    await fixture.finishCase();
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+});
 }
