@@ -53,7 +53,8 @@ it("keeps reset controls out of the readiness and composer dependency graphs", (
 type ElementNode = { type: string; props: Record<string, unknown>; children: unknown[] };
 type Component = (props: Record<string, unknown>) => ElementNode;
 let currentMount: { states: unknown[]; cursor: number; effects: (() => void)[]; update: () => void } | undefined;
-function loadComponent(file: string, name: string): Component {
+function loadComponent(file: string, name: string): Component { return loadModule(file)[name]!; }
+function loadModule(file: string): Record<string, Component> {
   const source = readFileSync(`ui/src/components/settings/${file}.tsx`, "utf8");
   const compiled = transformSync(source, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
   const mod = { exports: {} as Record<string, Component> };
@@ -62,6 +63,7 @@ function loadComponent(file: string, name: string): Component {
   });
   const requireStub = (id: string): unknown => {
     if (id === "../controls") return { Toggle: "Toggle" };
+    if (id === "./QuotaDetails") return loadModule("QuotaDetails");
     if (id === "react/jsx-runtime") return { jsx, jsxs: jsx };
     if (id === "react") return {
       useState: (initial: unknown) => {
@@ -81,7 +83,7 @@ function loadComponent(file: string, name: string): Component {
     throw new Error(`unexpected dependency: ${id}`);
   };
   runInNewContext(compiled, { module: mod, exports: mod.exports, require: requireStub }, { timeout: 2000 });
-  return mod.exports[name]!;
+  return mod.exports;
 }
 function textContent(node: unknown): string {
   if (node === null || node === undefined || typeof node === "boolean") return "";
@@ -117,6 +119,45 @@ function mountPanel(component: Component, props: Record<string, unknown>) {
 }
 const Credits = loadComponent("CodexCredits", "CodexCredits");
 const Panel = loadComponent("ResetCreditsPanel", "ResetCreditsPanel");
+// What a person sees: hidden subtrees are skipped.
+function visibleText(node: unknown): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (Array.isArray(node)) return node.map(visibleText).join(" ");
+  if (typeof node !== "object") return String(node);
+  if ((node as ElementNode).props?.hidden === true) return "";
+  return (node as ElementNode).children.map(visibleText).join(" ");
+}
+const withParams = (key: string, params?: Record<string, string | number>) => params ? `${key}(${Object.values(params).join(",")})` : key;
+const disclosure = (tree: ElementNode) => findNode(tree, n => n.type === "button" && n.props["aria-expanded"] !== undefined);
+describe("quota details start folded", () => {
+  it("shows the credit balance but folds the credit details until expanded", () => {
+    const view = mountPanel(Credits, { balance: "12.5", locale: "en", resetCreditCount: 3, usableNow: 2, overage: true, t: withParams });
+    const header = disclosure(view.tree());
+    assert.ok(header); assert.equal(header.props["aria-expanded"], false);
+    assert.ok(findNode(view.tree(), n => n.props.id === header.props["aria-controls"]));
+    assert.match(visibleText(view.tree()), /12\.5/);
+    assert.doesNotMatch(visibleText(view.tree()), /settings\.quota\.credits\.overage|usableNow/);
+    (header.props.onClick as () => void)();
+    assert.equal(disclosure(view.tree())!.props["aria-expanded"], true);
+    assert.match(visibleText(view.tree()), /settings\.quota\.credits\.overage/);
+    assert.match(visibleText(view.tree()), /settings\.quota\.resetCredits\.usableNow\(2\)/);
+  });
+  it("folds reset credits behind a count and earliest-expiry summary", async () => {
+    const transport = { getOperations: async () => [], redeem: async () => {},
+      list: async () => ({ accountRef: "acct", complete: true, credits: [{ expiresAt: "2026-12-05T00:00:00Z" }, { expiresAt: "2026-12-01T00:00:00Z" }] }) };
+    const view = mountPanel(Panel, { transport, accountRef: "acct", availableCount: 2, applicableAvailableCount: 2, t: withParams });
+    await new Promise(resolve => setImmediate(resolve));
+    const earliest = new Date("2026-12-01T00:00:00Z").toLocaleDateString();
+    const header = disclosure(view.tree());
+    assert.ok(header); assert.equal(header.props["aria-expanded"], false);
+    assert.ok(visibleText(view.tree()).includes(`settings.quota.resetCredits.summaryExpiry(2,${earliest})`));
+    assert.doesNotMatch(visibleText(view.tree()), /settings\.quota\.redeem\.action|settings\.quota\.autoRedeem/);
+    (header.props.onClick as () => void)();
+    assert.equal(disclosure(view.tree())!.props["aria-expanded"], true);
+    assert.match(visibleText(view.tree()), /settings\.quota\.redeem\.action/);
+    assert.match(visibleText(view.tree()), /settings\.quota\.resetCredits\.list/);
+  });
+});
 it("shows a partial list and the opt-in account while a different account is off", async () => {
   const transport = { getOperations: async () => [], redeem: async () => {},
     getSettings: async () => ({ enabled: true, leadMinutes: 10, accountRef: "account-a" }),

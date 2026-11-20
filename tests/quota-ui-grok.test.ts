@@ -8,7 +8,8 @@ import { runInNewContext } from "node:vm";
 type ElementNode = { type: string; props: Record<string, unknown>; children: unknown[] };
 type Component = (props: Record<string, unknown>) => ElementNode;
 let currentMount: { states: unknown[]; cursor: number; effects: (() => unknown)[]; update: () => void } | undefined;
-function loadComponent(file: string, name: string): Component {
+function loadComponent(file: string, name: string): Component { return loadModule(file)[name]!; }
+function loadModule(file: string): Record<string, Component> {
   const source = readFileSync(`ui/src/components/settings/${file}.tsx`, "utf8");
   const compiled = transformSync(source, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
   const mod = { exports: {} as Record<string, Component> };
@@ -18,6 +19,7 @@ function loadComponent(file: string, name: string): Component {
   const requireStub = (id: string): unknown => {
     if (id === "../controls") return { Toggle: "Toggle" };
     if (id === "./ResetCreditsPanel") return { trapKey: () => {} };
+    if (id === "./QuotaDetails") return loadModule("QuotaDetails");
     if (id === "react/jsx-runtime") return { jsx, jsxs: jsx };
     if (id === "react") return {
       useState: (initial: unknown) => {
@@ -38,7 +40,7 @@ function loadComponent(file: string, name: string): Component {
     throw new Error(`unexpected dependency: ${id}`);
   };
   runInNewContext(compiled, { module: mod, exports: mod.exports, require: requireStub }, { timeout: 2000 });
-  return mod.exports[name]!;
+  return mod.exports;
 }
 function textContent(node: unknown): string {
   if (node === null || node === undefined || typeof node === "boolean") return "";
@@ -192,6 +194,38 @@ it("shows an account-bound fence and resumes it on request", async () => {
   assert.ok(button); (button.props.onClick as () => void)();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls, ["old", "account"]); assert.doesNotMatch(textContent(panel.tree()), /autoRedeem.paused/);
+});
+// What a person sees: hidden subtrees are skipped.
+function visibleText(node: unknown): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (Array.isArray(node)) return node.map(visibleText).join(" ");
+  if (typeof node !== "object") return String(node);
+  if ((node as ElementNode).props?.hidden === true) return "";
+  return (node as ElementNode).children.map(visibleText).join(" ");
+}
+const withParams = (key: string, params?: Record<string, string | number>) => params ? `${key}(${Object.values(params).join(",")})` : key;
+it("folds Grok coupons behind a count summary until expanded", async () => {
+  const transport = { getOperations: async () => [], redeem: async () => ({}),
+    list: async () => ({ accountLabel: "coupon@example.test", accountRef: "acct", coupons: [{ tokenId: "late", validityEnd: 2000000000 }, { tokenId: "early", validityEnd: 1900000000 }] }) };
+  const view = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport, t: withParams });
+  await new Promise(resolve => setImmediate(resolve));
+  const header = findNode(view.tree(), n => n.type === "button" && n.props["aria-expanded"] !== undefined);
+  assert.ok(header); assert.equal(header.props["aria-expanded"], false);
+  assert.ok(findNode(view.tree(), n => n.props.id === header.props["aria-controls"]));
+  const earliest = new Date(1900000000 * 1000).toLocaleDateString();
+  assert.ok(visibleText(view.tree()).includes(`settings.quota.grokCoupons.summaryExpiry(2,${earliest})`));
+  assert.doesNotMatch(visibleText(view.tree()), /settings\.quota\.redeem\.action|coupon@example\.test/);
+  (header.props.onClick as () => void)();
+  assert.equal(findNode(view.tree(), n => n.type === "button" && n.props["aria-expanded"] !== undefined)!.props["aria-expanded"], true);
+  assert.match(visibleText(view.tree()), /settings\.quota\.redeem\.action/);
+  assert.match(visibleText(view.tree()), /coupon@example\.test/);
+});
+it("flags an unresolved coupon operation in the folded summary", async () => {
+  const transport = { getOperations: async () => [{ operationId: "op", state: "unknown" }], redeem: async () => ({}),
+    list: async () => ({ accountLabel: null, accountRef: "acct", coupons: [] }) };
+  const view = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport, t: withParams });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(visibleText(view.tree()), /settings\.quota\.details\.attention/);
 });
 it("shows a fence created in the background while the panel stays open", async () => {
   let fenced = false; let poll: (() => void) | undefined; let stopped = 0;
