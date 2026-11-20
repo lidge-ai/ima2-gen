@@ -29,18 +29,17 @@ import {
 import { extractGeneratedVideoFrameB64 } from "../lib/videoFrameExtract.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
 import { hasVideoPins, readVideoPinRequest } from "../lib/grokVideoPins.js";
+import { resolveRouteVideoMode } from "../lib/videoRouteMode.js";
 import {
   normalizeGrokVideoModel,
   normalizeVideoResolution,
   normalizeVideoAspectRatio,
   normalizeVideoDuration,
-  deriveVideoMode,
   MAX_REF2V_REFERENCES,
   MAX_REFERENCE_AUDIOS,
   validateVideoResolutionForRequest,
   validateGrokVideoInputs, canonicalGrokVideoModel, GROK_VIDEO_MODEL_15,
   validateVideoDurationForRequest,
-  type VideoMode,
 } from "../lib/imageModels.js";
 import { errInfo, numberField, stringField, thrownFields } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
@@ -366,12 +365,6 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       }
       if (resolved.length > MAX_REF2V_REFERENCES) return fail(400, "GROK_VIDEO_REF_TOO_MANY", `at most ${MAX_REF2V_REFERENCES} reference images`);
       const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http") ? req.body.providerUrl : null;
-      // Which slot an image arrived in IS the caller's intent, and a bare count throws
-      // that away. A composer reference means "guide the video with this" even when
-      // there is only one of them; a node/continuity image means "start from this
-      // frame". Deriving from the count alone forced every single composer reference
-      // into image-to-video, so the one thing the tray is named for was unreachable.
-      // devlog/_plan/260820_grok15_multi_reference_video/030_single_ref_mode_choice.md
       const composerRefCount = resolved.filter((r) => r.source === "composer").length;
       const requestedMode = typeof req.body?.mode === "string" ? req.body.mode : null;
       // Shape only. Which voice ids exist is xAI's to answer, and its 400 names every
@@ -395,29 +388,9 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       // reach only the planner, so the bypass would drop them (plan R2-F4, R3-F1).
       const plannerOff = req.body?.planner === "off";
       if (plannerOff && (parentLineage || backgroundPreset)) return fail(400, "GROK_VIDEO_PLANNER_OFF_UNSUPPORTED", "planner off cannot carry continuation lineage or a background constraint");
-      const derivedMode: VideoMode = composerRefCount > 0
-        ? "reference-to-video"
-        // A voice alone selects reference-to-video upstream: "at least one reference of
-        // either kind selects the reference-to-video mode" (xAI OpenAPI,
-        // GenerateVideoRequest.reference_audios). Calling it text-to-video here would let
-        // a 15s base-model request through while xAI applies the 10s r2v ceiling, and the
-        // rejection would name a mode this request never asked for.
-        : referenceAudios.length > 0
-          ? "reference-to-video"
-          : deriveVideoMode(resolved.length);
-      // Frame pins make a reference-to-video request whose source is the pinned first
-      // frame (xAI guide; plan R4-F1), whatever mode the caller named. On 1.5 a provider
-      // URL beside a voice or composer reference is that pinned first frame too, so the
-      // r2v caps are checked before planning rather than by xAI after it (review #2).
-      const urlPinsR2v = Boolean(incomingProviderUrl) && derivedMode === "reference-to-video"
-        && !isComfy && canonicalGrokVideoModel(modelCheck.model) === GROK_VIDEO_MODEL_15;
-      const mode: VideoMode = hasVideoPins(pins) || urlPinsR2v
-        ? "reference-to-video"
-        : incomingProviderUrl
-        ? "image-to-video"
-        : (requestedMode === "reference-to-video" || requestedMode === "image-to-video" || requestedMode === "text-to-video")
-          ? requestedMode
-          : derivedMode;
+      // Mode rules (slot intent, voices, frame pins, provider URL): lib/videoRouteMode.ts.
+      const mode = resolveRouteVideoMode({ model: modelCheck.model, isComfy, composerRefCount, resolvedCount: resolved.length,
+        voiceCount: referenceAudios.length, providerUrl: incomingProviderUrl, requestedMode, pins });
       // An explicit reference-to-video with nothing to reference at all would ship empty
       // arrays and fail upstream with a less useful message. A voice counts as a
       // reference, so audio-only is legitimate and must not be rejected here.
