@@ -394,7 +394,7 @@ describe("prompt builder config routes", () => {
       assert.equal(body.backend, "oauth");
       assert.equal(body.model, "gpt-5.6-luna");
       assert.deepEqual(body.options.backends, [...PROMPT_BUILDER_BACKENDS]);
-      assert.deepEqual(body.options.models.grok, ["grok-4.3", "grok-4.6", "grok-4.5"]);
+      assert.deepEqual(body.options.models.grok, ["grok-4.3", "grok-4.7", "grok-4.6", "grok-4.5"]);
       assert.deepEqual(body.locked, { backend: false, model: false });
     });
   });

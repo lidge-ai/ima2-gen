@@ -418,7 +418,7 @@ describe("Agent Mode runtime contract", () => {
         return respond(call.url, { method: "GET", headers: call.headers, signal: call.signal });
       },
     });
-    for (const plannerModel of ["grok-4.6", "grok-4.5", "grok-4.3"]) {
+    for (const plannerModel of ["grok-4.7", "grok-4.6", "grok-4.5", "grok-4.3"]) {
       calls.length = 0;
       await withApp(async (baseUrl) => {
       const created = await createSession(baseUrl);
@@ -451,8 +451,8 @@ describe("Agent Mode runtime contract", () => {
       assert.match(calls.find((call) => call.url.endsWith("/v1/chat/completions"))?.body.messages[1].content[0].text, /English only/);
       });
     }
-    assert.equal(imageTransport.calls.length, 3);
-    assert.equal(imageTransport.resolutions.length, 3);
+    assert.equal(imageTransport.calls.length, 4);
+    assert.equal(imageTransport.resolutions.length, 4);
   });
 
   it("routes Agent 1080p I2V video through Grok Video 1.5 and records sidecar metadata", async () => {

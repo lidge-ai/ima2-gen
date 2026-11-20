@@ -36,7 +36,7 @@ import { type AgentRunOptions, forceImagePrompt, isTextOnlyResult, textOnlyError
 
 // Spelled out rather than derived from the default, so moving the default does not
 // silently drop a model agents are allowed to ask for.
-const AGENT_GROK_PLANNER_MODELS = new Set([DEFAULT_GROK_PLANNER_MODEL, "grok-4.6", "grok-4.5", "grok-4.3"]);
+const AGENT_GROK_PLANNER_MODELS = new Set([DEFAULT_GROK_PLANNER_MODEL, "grok-4.7", "grok-4.6", "grok-4.5", "grok-4.3"]);
 
 export async function generateAgentImageWithRetry(
   ctx: RuntimeContext,

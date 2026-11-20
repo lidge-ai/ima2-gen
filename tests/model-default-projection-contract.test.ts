@@ -30,7 +30,7 @@ describe("current model defaults: runtime contract", () => {
 
   it("keeps compatibility activation while centralizing Grok fallbacks", () => {
     const agentSource = readSource("lib/agentImageVideoGen.ts");
-    assert.match(agentSource, /DEFAULT_GROK_PLANNER_MODEL, "grok-4\.6", "grok-4\.5", "grok-4\.3"/);
+    assert.match(agentSource, /DEFAULT_GROK_PLANNER_MODEL, "grok-4\.7", "grok-4\.6", "grok-4\.5", "grok-4\.3"/);
 
     for (const path of [
       "lib/grokImageCore.ts",
@@ -72,7 +72,7 @@ describe("current model defaults: runtime contract", () => {
     );
     assert.deepEqual(
       AGENT_LLM_MODEL_OPTIONS.filter((option) => option.provider === "grok").map((option) => option.value),
-      ["grok-4.6", "grok-4.5", "grok-4.3"],
+      ["grok-4.6", "grok-4.7", "grok-4.5", "grok-4.3"],
     );
     assert.equal(getAgentLlmModelOption({ provider: "grok", model: "unknown" }).value, "grok-4.6");
     assert.equal(getAgentLlmModelOption({ provider: "grok", model: "grok-4.3" }).value, "grok-4.3");

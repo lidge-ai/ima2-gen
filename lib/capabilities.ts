@@ -182,7 +182,7 @@ export function buildIma2Capabilities({
             "ara", "eve", "leo", "rex", "sal", "carina", "zagan", "helix", "orion",
             "luna", "iris", "altair", "zenith", "perseus", "helios", "lux", "kepler",
             "rigel", "cosmo", "celeste", "ursa", "sirius", "lumen", "castor", "naksh",
-            "atlas",
+            "atlas", "aurora", "liora",
           ],
           presetsAreAuthoritative: false,
           // Named by the 400 itself: "Custom voice ids created via the /v1/custom-voices

@@ -43,6 +43,7 @@ export const LAN_SECURITY_POLICY = Object.freeze({
 });
 export const GROK_PLANNER_MODELS = [
   DEFAULT_GROK_PLANNER_MODEL,
+  "grok-4.7",
   "grok-4.6",
   "grok-4.5",
   "gpt-5.6-luna",

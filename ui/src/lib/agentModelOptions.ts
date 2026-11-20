@@ -12,7 +12,9 @@ export const AGENT_LLM_MODEL_OPTIONS: AgentLlmModelOption[] = [
   { value: "gpt-6.1-terra", shortLabel: "6.1t", fullLabel: "GPT-6.1 Terra", provider: "oauth" },
   { value: "gpt-6.2-sol", shortLabel: "6.2s", fullLabel: "GPT-6.2 Sol", provider: "oauth" },
   { value: "gpt-6.2-astra", shortLabel: "6.2a", fullLabel: "GPT-6.2 Astra", provider: "oauth" },
+  // grok-4.6 stays first: it is the fallback for an unknown saved Grok model.
   { value: "grok-4.6", shortLabel: "4.6", fullLabel: "Grok 4.6", provider: "grok" },
+  { value: "grok-4.7", shortLabel: "4.7", fullLabel: "Grok 4.7", provider: "grok" },
   { value: "grok-4.5", shortLabel: "4.5", fullLabel: "Grok 4.5", provider: "grok" },
   { value: "grok-4.3", shortLabel: "4.3", fullLabel: "Grok 4.3", provider: "grok" },
 ];
