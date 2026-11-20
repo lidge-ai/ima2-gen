@@ -95,4 +95,29 @@ test("a voice on the base video model is refused before any upstream call", asyn
     await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
+for (const [label, extra] of [["a voice", { referenceAudios: ["eve"] }], ["a composer reference", { referenceImages: [Buffer.from("ref").toString("base64")] }]] as const) {
+  test(`a provider URL with ${label} stays reference-to-video: 1080p refused before planning, 720p pins the URL`, async () => {
+    const paths: string[] = []; const starts: any[] = [];
+    await listen(makeProxy({ onPath: (path) => paths.push(path), captureStart: (body) => starts.push(body) }));
+    const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-provider-url-r2v-"));
+    const { url } = await videoApp(generatedDir);
+    const source = "https://provider.example/frame.png";
+    const body = (resolution: string) => ({ prompt: "say hello", provider: "grok", model: "grok-imagine-video-1.5", providerUrl: source, duration: 2, resolution, requestId: `req_url_r2v_${label.length}_${resolution}`, ...extra });
+    try {
+      const rejected = parseSse(await (await post(url, body("1080p"))).text());
+      assert.equal(rejected.find((e) => e.event === "error")?.data.code, "INVALID_VIDEO_RESOLUTION");
+      assert.deepEqual(paths, []);
+      const events = parseSse(await (await post(url, body("720p"))).text());
+      assert.ok(events.some((e) => e.event === "done"), "has done");
+      assert.equal(starts.length, 1);
+      assert.equal(starts[0].image?.url, source);
+      assert.equal(starts[0].resolution, "720p");
+      if ("referenceAudios" in extra) assert.deepEqual(starts[0].reference_audios, [{ voice_id: "eve" }]);
+      else assert.equal(starts[0].reference_images?.length, 1);
+    } finally {
+      await fixture.finishCase();
+      await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+}
 }
