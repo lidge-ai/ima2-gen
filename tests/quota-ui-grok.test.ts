@@ -7,7 +7,7 @@ import { transformSync } from "esbuild";
 import { runInNewContext } from "node:vm";
 type ElementNode = { type: string; props: Record<string, unknown>; children: unknown[] };
 type Component = (props: Record<string, unknown>) => ElementNode;
-let currentMount: { states: unknown[]; cursor: number; effects: (() => void)[]; update: () => void } | undefined;
+let currentMount: { states: unknown[]; cursor: number; effects: (() => unknown)[]; update: () => void } | undefined;
 function loadComponent(file: string, name: string): Component {
   const source = readFileSync(`ui/src/components/settings/${file}.tsx`, "utf8");
   const compiled = transformSync(source, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
@@ -27,7 +27,7 @@ function loadComponent(file: string, name: string): Component {
         return [mount.states[index], (value: unknown) => { mount.states[index] = value; mount.update(); }];
       },
       useCallback: (callback: unknown) => callback,
-      useEffect: (effect: () => void) => { currentMount!.effects.push(effect); },
+      useEffect: (effect: () => unknown) => { currentMount!.effects.push(effect); },
       useRef: (initial: unknown) => {
         const mount = currentMount!;
         const index = mount.cursor++;
@@ -62,15 +62,15 @@ function findNode(node: ElementNode, predicate: (node: ElementNode) => boolean):
 }
 function mountPanel(component: Component, props: Record<string, unknown>) {
   let tree: ElementNode;
-  const mount = { states: [] as unknown[], cursor: 0, effects: [] as (() => void)[], update: () => {
+  const mount = { states: [] as unknown[], cursor: 0, effects: [] as (() => unknown)[], update: () => {
     mount.cursor = 0;
     currentMount = mount;
     tree = component(props);
     currentMount = undefined;
   } };
   mount.update();
-  for (const effect of mount.effects.splice(0)) effect();
-  return { tree: () => tree! };
+  const cleanups = mount.effects.splice(0).map(effect => effect());
+  return { tree: () => tree!, unmount: () => { for (const cleanup of cleanups) if (typeof cleanup === "function") cleanup(); } };
 }
 
 for (const switchAt of ["open", "confirm"]) it(`rejects a changed Grok coupon account at ${switchAt}`, async () => {
@@ -192,6 +192,19 @@ it("shows an account-bound fence and resumes it on request", async () => {
   assert.ok(button); (button.props.onClick as () => void)();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls, ["old", "account"]); assert.doesNotMatch(textContent(panel.tree()), /autoRedeem.paused/);
+});
+it("shows a fence created in the background while the panel stays open", async () => {
+  let fenced = false; let poll: (() => void) | undefined; let stopped = 0;
+  const transport = { getOperations: async () => [], redeem: async () => {},
+    getFence: async () => ({ accountRef: "account", fence: fenced ? { fenced: true, operation_id: "auto", outcome: "reset", settled_at: 1, cause: "unconfirmed" } : { fenced: false } }) };
+  const fencePoller = (refresh: () => void) => { poll = refresh; return () => { stopped++; }; };
+  const panel = mountPanel(loadComponent("ResetCreditsPanel", "ResetCreditsPanel"), { transport, accountRef: "account", fencePoller });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.doesNotMatch(textContent(panel.tree()), /autoRedeem.paused/);
+  fenced = true; assert.ok(poll); poll();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(textContent(panel.tree()), /autoRedeem.paused/);
+  panel.unmount(); assert.equal(stopped, 1);
 });
 it("sends a target-bound Grok confirmation before redeem", async () => {
   const source = readFileSync("ui/src/components/settings/grokCouponsTransport.ts", "utf8");
