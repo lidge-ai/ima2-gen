@@ -552,7 +552,7 @@ describe("Agent Mode runtime contract", () => {
     assertAgentVideoSaved(session.id, generatedDir);
   });
 
-  it("routes Agent prompt-only 1080p video through Grok Video 1.5 canvas shim", async () => {
+  it("routes Agent prompt-only 1080p video natively through Grok Video 1.5", async () => {
     const generatedDir = join(TEST_DIR, `generated-video-t2v-${Date.now()}`);
     mkdirSync(generatedDir, { recursive: true });
     const session = createAgentSession({ title: "agent 1080p t2v" });
@@ -626,8 +626,8 @@ describe("Agent Mode runtime contract", () => {
     assert.deepEqual(downloads, { poll: 1, artifact: 1 });
     assert.equal(starts[0].model, "grok-imagine-video-1.5");
     assert.equal(starts[0].resolution, "1080p");
-    assert.ok(starts[0].image?.url?.startsWith("data:image/png;base64,"));
-    assert.match(starts[0].prompt, /blank white canvas.*technical placeholder/);
+    assert.equal("image" in starts[0], false);
+    assert.doesNotMatch(starts[0].prompt, /blank white canvas/);
     const sidecarName = readdirSync(generatedDir).find((name) => name.endsWith("_agent.mp4.json"));
     assert.ok(sidecarName);
     const sidecar = JSON.parse(readFileSync(join(generatedDir, sidecarName), "utf8"));

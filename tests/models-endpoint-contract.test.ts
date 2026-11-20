@@ -212,7 +212,7 @@ test("GET /api/models returns every canonical lane with deterministic statuses a
     // The API lane must list its own models (its default included), never the OAuth-only GPT-6 ids.
     assert.deepEqual(body.lanes.api.models.image.map((model) => model.id), ["gpt-5.6-luna", "gpt-5.6-sol"]);
     assert.deepEqual(body.lanes.grok.models.video.map((model) => model.id), [
-      "grok-imagine-video", "grok-imagine-video-1.5",
+      "grok-imagine-video", "grok-imagine-video-1.5", "grok-imagine-video-1.5-lite",
     ]);
     const grokVideo = body.lanes.grok.models.video[0];
     assert.deepEqual(

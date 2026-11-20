@@ -120,7 +120,7 @@ function validateCoreOptions(args: ParsedArgs, refs: string[], model: string, la
   // size is whatever its own graph says, so checking it against that table
   // would reject perfectly valid workflows by name alone.
   if (lane === "comfy") return { duration, resolution, aspectRatio };
-  const check = validateVideoResolutionForRequest(model, resolution as VideoResolution, mode, { allowTextCanvasShim: true });
+  const check = validateVideoResolutionForRequest(model, resolution as VideoResolution, mode);
   if (!("ok" in check)) die(2, check.error);
   return { duration, resolution, aspectRatio };
 }

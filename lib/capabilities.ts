@@ -131,13 +131,13 @@ export function buildIma2Capabilities({
         naiSupported: ["nai-diffusion-5-full", "nai-diffusion-5-curated", "nai-diffusion-4-5-full", "nai-diffusion-4-5-curated"],
       },
       videoModels: {
-        supported: ["grok-imagine-video", "grok-imagine-video-1.5"],
+        supported: ["grok-imagine-video", "grok-imagine-video-1.5", "grok-imagine-video-1.5-lite"],
         aliases: {
           "grok-imagine-video-1.5-preview": "grok-imagine-video-1.5",
           "grok-imagine-video-1.5-2026-05-30": "grok-imagine-video-1.5",
         },
         resolutions: ["480p", "720p", "1080p"],
-        resolutionNotes: { "1080p": "grok-imagine-video-1.5 text-to-video canvas shim or image-to-video; reference-to-video unsupported" },
+        resolutionNotes: { "1080p": "grok-imagine-video-1.5 or -1.5-lite text-to-video or image-to-video (Lite upscales 720p); reference-to-video unsupported" },
         aspectRatios: ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "auto"],
         durationRange: [1, 15],
         maxReferences: MAX_REF2V_REFERENCES,
@@ -152,7 +152,7 @@ export function buildIma2Capabilities({
             maxReferences: 0,
             durationRange: [MIN_VIDEO_DURATION, MAX_VIDEO_DURATION],
             resolutions: ["480p", "720p", "1080p"],
-            notes: "1080p on grok-imagine-video-1.5 goes through the white-canvas shim.",
+            notes: "1080p is native on grok-imagine-video-1.5 and -1.5-lite.",
           },
           "image-to-video": {
             maxReferences: 1,

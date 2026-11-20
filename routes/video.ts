@@ -37,6 +37,7 @@ import {
   MAX_REF2V_REFERENCES,
   MAX_REFERENCE_AUDIOS,
   validateVideoResolutionForRequest,
+  validateGrokVideoInputs,
   validateVideoDurationForRequest,
   type VideoMode,
 } from "../lib/imageModels.js";
@@ -382,6 +383,10 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       if (referenceAudios.length > MAX_REFERENCE_AUDIOS) {
         return fail(400, "GROK_VIDEO_AUDIO_TOO_MANY", `at most ${MAX_REFERENCE_AUDIOS} reference voices`);
       }
+      if (!isComfy) {
+        const inputCheck = validateGrokVideoInputs(modelCheck.model, { referenceCount: resolved.length, voiceCount: referenceAudios.length });
+        if (!("ok" in inputCheck)) return fail(inputCheck.status, inputCheck.code, inputCheck.error);
+      }
       const derivedMode: VideoMode = composerRefCount > 0
         ? "reference-to-video"
         // A voice alone selects reference-to-video upstream: "at least one reference of
@@ -404,9 +409,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
       }
       const duration = durationCheck.duration;
-      const resolutionModeCheck = validateVideoResolutionForRequest(modelCheck.model, resolutionCheck.resolution, mode, {
-        allowTextCanvasShim: true,
-      });
+      const resolutionModeCheck = validateVideoResolutionForRequest(modelCheck.model, resolutionCheck.resolution, mode);
       if (isNormalizeError(resolutionModeCheck)) return fail(resolutionModeCheck.status, resolutionModeCheck.code, resolutionModeCheck.error);
       // The r2v ceiling is per model, and the start call is deliberately never retried
       // (a retry could bill a second video), so a 400 we can predict must be answered

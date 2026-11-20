@@ -72,6 +72,7 @@ export const REGISTRY = [
       { id: "grok-imagine-image", kind: "image", supports: EDIT },
       { id: "grok-imagine-video", kind: "video", supports: EDIT },
       { id: "grok-imagine-video-1.5", aliases: ["grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"], kind: "video", supports: EDIT },
+      { id: "grok-imagine-video-1.5-lite", kind: "video", supports: EDIT },
     ],
     // image/edit 5: measured on grok-imagine-image-2.0 through the oauth proxy on
     // 2026-09-08 (6 -> 400 "This model supports at most 5 input image(s)"), and xAI's
@@ -99,6 +100,7 @@ export const REGISTRY = [
       { id: "grok-imagine-image", kind: "image", supports: EDIT },
       { id: "grok-imagine-video", kind: "video", supports: EDIT },
       { id: "grok-imagine-video-1.5", aliases: ["grok-imagine-video-1.5-preview", "grok-imagine-video-1.5-2026-05-30"], kind: "video", supports: EDIT },
+      { id: "grok-imagine-video-1.5-lite", kind: "video", supports: EDIT },
     ],
     // Same upstream as the grok lane, reached with a direct key instead of the proxy, so
     // the caps are taken to match. The 5 was measured on the proxy path only; if an edit

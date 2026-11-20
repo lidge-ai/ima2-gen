@@ -49,7 +49,8 @@ export const PROVIDER_MODELS = {
       "grok-imagine-video",
       "grok-imagine-video-1.5",
       "grok-imagine-video-1.5-preview",
-      "grok-imagine-video-1.5-2026-05-30"
+      "grok-imagine-video-1.5-2026-05-30",
+      "grok-imagine-video-1.5-lite"
     ]
   },
   "grok-api": {
@@ -61,7 +62,8 @@ export const PROVIDER_MODELS = {
       "grok-imagine-video",
       "grok-imagine-video-1.5",
       "grok-imagine-video-1.5-preview",
-      "grok-imagine-video-1.5-2026-05-30"
+      "grok-imagine-video-1.5-2026-05-30",
+      "grok-imagine-video-1.5-lite"
     ]
   },
   "agy": {
@@ -135,7 +137,8 @@ export const VIDEO_MODEL_IDS = [
   "grok-imagine-video",
   "grok-imagine-video-1.5",
   "grok-imagine-video-1.5-preview",
-  "grok-imagine-video-1.5-2026-05-30"
+  "grok-imagine-video-1.5-2026-05-30",
+  "grok-imagine-video-1.5-lite"
 ] as const;
 export type VideoModelId = typeof VIDEO_MODEL_IDS[number];
 export const PROVIDER_REFERENCE_LIMITS = {

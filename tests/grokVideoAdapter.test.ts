@@ -15,7 +15,6 @@ const { buildVideoGenerationPayload, buildGrokVideoPlannerPayload, downloadVideo
   parseGrokVideoPlanPrompt, normalizeVideoPoll, generateVideoViaGrok, startVideoRequest } = await import("../lib/grokVideoAdapter.js");
 const { buildGrokVideoPlannerSystemPrompt, formatDurationPacingGuidance } = await import("../lib/grokVideoPlannerPrompt.js");
 const { normalizeGrokVideoModel, VALID_GROK_VIDEO_MODELS } = await import("../lib/imageModels.js");
-const { parsePngInfo } = await import("../lib/pngInfo.js");
 const { DEFAULT_GROK_PLANNER_MODEL } = await import("../config.js");
 const config = fixture.config;
 /** Both lanes call xAI directly now; only the credential differs. */

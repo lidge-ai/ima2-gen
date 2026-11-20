@@ -1552,7 +1552,8 @@
     },
     "videoModel": {
       "grokImagine": "Grok Imagine Video",
-      "grokImagine15": "Grok Imagine Video 1.5"
+      "grokImagine15": "Grok Imagine Video 1.5",
+      "grokImagine15Lite": "Grok Imagine Video 1.5 Lite"
     },
     "reasoning": {
       "title": "Reasoning effort",

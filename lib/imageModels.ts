@@ -228,6 +228,8 @@ export function normalizeComfyWorkflowModel(rawModel: unknown) {
 export const GROK_VIDEO_MODEL_BASE = "grok-imagine-video";
 export const GROK_VIDEO_MODEL_15 = "grok-imagine-video-1.5";
 export const GROK_VIDEO_MODEL_15_PREVIEW_ALIAS = "grok-imagine-video-1.5-preview";
+// Released 2026-10-08: text/image-to-video only (no references, voices or frame pins).
+export const GROK_VIDEO_MODEL_15_LITE = "grok-imagine-video-1.5-lite";
 // GET /v1/video-generation-models lists this alongside -preview. Without it a legal
 // model id is rejected locally with INVALID_GROK_VIDEO_MODEL before the request ever
 // reaches xAI. Verified 2026-09-08: devlog/_plan/260908_xai_imagine_spec_resync.
@@ -276,6 +278,7 @@ export const MAX_REFERENCE_AUDIOS = 3;
 export type GrokVideoModel =
   | typeof GROK_VIDEO_MODEL_BASE
   | typeof GROK_VIDEO_MODEL_15
+  | typeof GROK_VIDEO_MODEL_15_LITE
   | typeof GROK_VIDEO_MODEL_15_PREVIEW_ALIAS
   | typeof GROK_VIDEO_MODEL_15_DATED_ALIAS;
 export type VideoResolution = "480p" | "720p" | "1080p";
@@ -378,33 +381,38 @@ export function normalizeVideoResolution(raw: unknown) {
   return { resolution: raw as VideoResolution };
 }
 
-export function usesGrokVideo15TextCanvasShim(model: string, mode: VideoMode): boolean {
-  return canonicalGrokVideoModel(model) === GROK_VIDEO_MODEL_15 && mode === "text-to-video";
-}
-
-export function validateVideoResolutionForRequest(
-  model: string,
-  resolution: VideoResolution,
-  mode: VideoMode,
-  options: { allowTextCanvasShim?: boolean } = {},
-) {
+/**
+ * Native 1080p exists for text- and image-to-video on grok-imagine-video-1.5 and
+ * -1.5-lite (Lite's 1080p is a 720p upscale billed at $0.14/s). Reference-to-video is
+ * capped at 720p and the base model has no 1080p. 1.5 text-to-video is native since
+ * 2026-11 (live probe), so the old white-canvas image-to-video shim is gone.
+ */
+export function validateVideoResolutionForRequest(model: string, resolution: VideoResolution, mode: VideoMode) {
   if (resolution !== "1080p") return { ok: true as const };
   // A non-Grok model reaches this function too: comfy passes its workflow id through the
   // same field. xAI's 1080p rule says nothing about a locally-run workflow, so refusing
   // one here would be this codebase inventing a limit rather than enforcing a real one.
   if (!isGrokVideoModel(model)) return { ok: true as const };
   const canonicalModel = canonicalGrokVideoModel(model);
-  if (canonicalModel === GROK_VIDEO_MODEL_15 && mode === "image-to-video") {
-    return { ok: true as const };
-  }
-  if (options.allowTextCanvasShim && usesGrokVideo15TextCanvasShim(canonicalModel, mode)) {
-    return { ok: true as const };
-  }
+  const native1080 = canonicalModel === GROK_VIDEO_MODEL_15 || canonicalModel === GROK_VIDEO_MODEL_15_LITE;
+  if (native1080 && (mode === "text-to-video" || mode === "image-to-video")) return { ok: true as const };
   return {
-    error: "1080p video resolution requires grok-imagine-video-1.5 text-to-video with the canvas shim or image-to-video",
+    error: "1080p video resolution requires grok-imagine-video-1.5 or -1.5-lite text-to-video or image-to-video",
     code: "INVALID_VIDEO_RESOLUTION" as const,
     status: 400 as const,
   };
+}
+
+/** Inputs a model cannot take are refused locally, before planning spends anything. */
+export function validateGrokVideoInputs(model: string, inputs: { referenceCount: number; voiceCount: number }) {
+  if (canonicalGrokVideoModel(model) !== GROK_VIDEO_MODEL_15_LITE) return { ok: true as const };
+  if (inputs.referenceCount > 0) {
+    return { error: `reference images are not supported by ${GROK_VIDEO_MODEL_15_LITE}`, code: "GROK_VIDEO_REF_UNSUPPORTED_MODEL" as const, status: 400 as const };
+  }
+  if (inputs.voiceCount > 0) {
+    return { error: `reference audio requires ${GROK_VIDEO_MODEL_15}`, code: "GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL" as const, status: 400 as const };
+  }
+  return { ok: true as const };
 }
 
 export function normalizeVideoAspectRatio(raw: unknown) {

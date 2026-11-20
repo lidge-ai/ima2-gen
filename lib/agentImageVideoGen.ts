@@ -342,9 +342,7 @@ export async function runAgentVideoGeneration(
   // downgrading the resolution — silently altering the request is the defect this
   // work-phase exists to remove. Same helper the HTTP route uses, so the two surfaces
   // cannot drift apart again.
-  const resolutionCheck = validateVideoResolutionForRequest(videoModel, videoParams.resolution, videoParams.mode, {
-    allowTextCanvasShim: true,
-  });
+  const resolutionCheck = validateVideoResolutionForRequest(videoModel, videoParams.resolution, videoParams.mode);
   if (!("ok" in resolutionCheck)) {
     throw Object.assign(new Error(resolutionCheck.error), {
       status: resolutionCheck.status,

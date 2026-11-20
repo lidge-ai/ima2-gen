@@ -5,18 +5,19 @@ import { grokError, searchGrokVisualContext } from "./grokImageAdapter.js";
 import type { GrokChatResponse } from "./grokImageCore.js";
 import { grokFetchWithRetry } from "./grokUpstreamRetry.js";
 import { detectImageMimeFromB64 } from "./refs.js";
-import { aspectToCanvas, generateWhiteCanvasB64 } from "./grokVideoCanvas.js";
 import { downloadVideo } from "./grokVideoDownload.js";
 import { buildGrokVideoPlannerSystemPrompt, composeFallbackVideoPrompt, formatDurationPacingGuidance, type VideoPlannerContext } from "./grokVideoPlannerPrompt.js";
 import type { VideoAspectRatio, VideoMode, VideoResolution } from "./imageModels.js";
 import {
   GROK_VIDEO_MODEL_15,
+  GROK_VIDEO_MODEL_15_LITE,
   GROK_VIDEO_MODEL_BASE,
   MAX_REF2V_REFERENCES,
   MAX_REFERENCE_AUDIOS,
   canonicalGrokVideoModel,
   validateVideoDurationForRequest,
   validateVideoResolutionForRequest,
+  validateGrokVideoInputs,
 } from "./imageModels.js";
 import { formatVideoContinuityForPlanner, type VideoContinuityLineage } from "./videoContinuity.js";
 import { DEFAULT_GROK_PLANNER_MODEL } from "../config.js";
@@ -201,7 +202,7 @@ export function buildGrokVideoPlannerPayload(
             type: "object",
             properties: {
               prompt: { type: "string", description: "Final video-generation prompt to send to xAI Videos API." },
-              model: { type: "string", enum: [GROK_VIDEO_MODEL_BASE, GROK_VIDEO_MODEL_15] },
+              model: { type: "string", enum: [GROK_VIDEO_MODEL_BASE, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_15_LITE] },
               mode: { type: "string", enum: ["text-to-video", "image-to-video", "reference-to-video"] },
               duration: { type: "number" },
               aspect_ratio: { type: "string" },
@@ -372,6 +373,8 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
 export function buildVideoGenerationPayload(plan: GrokVideoPlan, opts: { model: string; sourceImageUrl?: string | undefined; referenceImageUrls?: string[] | undefined; referenceAudios?: string[] | undefined }): Record<string, unknown> {
   const model = canonicalVideoModel(opts.model);
   const voices = opts.referenceAudios ?? [];
+  const inputCheck = validateGrokVideoInputs(model, { referenceCount: (opts.referenceImageUrls ?? []).length, voiceCount: voices.length });
+  if (!("ok" in inputCheck)) throw grokError(inputCheck.error, inputCheck.status, inputCheck.code);
   if (voices.length > 0) {
     // Preset voices exist only on 1.5. Attaching them to the base model earns a 400 from
     // xAI; dropping them earns a video without the voice the user asked for. Say no.
@@ -464,42 +467,9 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
         webSearchCalls: options.webSearchCalls ?? 1,
       }
     : await planGrokVideo(prompt, ctx, effective);
-  let xaiVideoRequestId: string;
-  let effectiveModel = model;
-
-  // grokv1.5 doesn't support T2V — inject a white canvas as source image to use I2V path
-  let effectivePayload: Record<string, unknown>;
-  if (model === GROK_VIDEO_MODEL_15 && plan.mode === "text-to-video" && !srcUrl && refUrls.length === 0) {
-    const { width, height } = aspectToCanvas(plan.aspectRatio, plan.resolution);
-    const whiteCanvas = await generateWhiteCanvasB64(width, height);
-    const canvasSrcUrl = `data:image/png;base64,${whiteCanvas}`;
-    effectivePayload = buildVideoGenerationPayload(
-      { ...plan, mode: "image-to-video", prompt: `[Technical note: the attached image is a blank white canvas used as a technical placeholder for text-to-video generation. It is NOT a meaningful source frame. Ignore it completely and generate a fresh scene from scratch.]\n\n${plan.prompt}` },
-      { model, sourceImageUrl: canvasSrcUrl, referenceImageUrls: [], ...(voices.length ? { referenceAudios: voices } : {}) },
-    );
-    logEvent("grok", "video:1.5-t2v-canvas", { requestId: options.requestId, width, height });
-  } else {
-    effectivePayload = buildVideoGenerationPayload(plan, { model, sourceImageUrl: srcUrl, referenceImageUrls: refUrls, ...(voices.length ? { referenceAudios: voices } : {}) });
-  }
-
-  try {
-    xaiVideoRequestId = await startVideoRequest(ctx, effectivePayload, effective);
-  } catch (caught: unknown) {
-    const e = thrownFields(caught);
-    // Fallback: if 1.5-preview still fails, retry with base model.
-    // Not when voices are attached: the base model rejects reference_audios outright, so
-    // the retry would only replace one 400 with a more confusing one. Dropping the voice
-    // to make the call succeed would hand back a video missing what was asked for.
-    if (model !== GROK_VIDEO_MODEL_BASE && e?.status === 400 && voices.length === 0) {
-      effectiveModel = GROK_VIDEO_MODEL_BASE;
-      const fallbackPayload = buildVideoGenerationPayload(plan, { model: effectiveModel, sourceImageUrl: srcUrl, referenceImageUrls: refUrls });
-      xaiVideoRequestId = await startVideoRequest(ctx, fallbackPayload, effective);
-      logEvent("grok", "video:fallback", { requestId: options.requestId, from: model, to: effectiveModel });
-    } else {
-      throw caught;
-    }
-  }
-  const modelFallback = effectiveModel === model ? null : { from: model, to: effectiveModel };
+  // Native 1.5 T2V; a start 400 is surfaced, never retried on another model (plan G4).
+  const xaiVideoRequestId = await startVideoRequest(ctx, buildVideoGenerationPayload(plan, { model, sourceImageUrl: srcUrl, referenceImageUrls: refUrls, ...(voices.length ? { referenceAudios: voices } : {}) }), effective);
+  const effectiveModel = model, modelFallback = null;
   options.onEvent?.({ phase: "submitted", xaiVideoRequestId, requestedModel: model, effectiveModel, modelFallback });
   logEvent("grok", "video:submitted", { requestId: options.requestId, xaiVideoRequestId, mode: plan.mode });
   const poll = await pollVideoUntilDone(ctx, xaiVideoRequestId, effective);
