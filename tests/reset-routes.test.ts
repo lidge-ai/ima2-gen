@@ -68,6 +68,31 @@ for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed"
 }
 
 describe("reset route safety contracts", () => {
+  it("revalidates a manual list delayed across an auto redemption", async () => withFixture(async f => {
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
+    let release!: () => void, started!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const entered = new Promise<void>(resolve => { started = resolve; });
+    let lists = 0;
+    f.transport.send = async (url, body) => {
+      f.transport.calls.push({ url, body });
+      if (url.endsWith("/consume")) { if (consumeCalls(f).length === 1) credits = credits.slice(1); return { code: "reset" }; }
+      const snapshot = [...credits];
+      if (++lists === 1) { started(); await gate; }
+      return { credits: snapshot, available_count: snapshot.length };
+    };
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
+    const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
+    const token = await f.confirm("manual-delayed");
+    const manual = f.request(redeemPath, { operationId: "manual-delayed", confirmationToken: token });
+    await entered; await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
+    release(); assert.equal((await manual).status, 200);
+    const row = f.db.prepare("SELECT credit_snapshot FROM reset_operations WHERE operation_id=?").get("manual-delayed") as { credit_snapshot: string };
+    assert.deepEqual(JSON.parse(row.credit_snapshot), ["2026-11-20T00:00:00Z|2026-11-21T00:06:00Z"]);
+    await watcher.tick();
+    assert.equal(consumeCalls(f).length, 2);
+  }));
   it("fences auto after manual success until a listed credit disappears", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
     let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
