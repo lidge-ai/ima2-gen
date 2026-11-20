@@ -53,6 +53,25 @@ describe("auto-redeem controls", () => {
 });
 
 describe("auto-redeem reservation and settings", () => {
+  it("adds the fence target column idempotently", () => {
+    const db = new Database(":memory:");
+    try {
+      migrateResetTables(db); migrateResetTables(db);
+      const names = (db.prepare("PRAGMA table_info(reset_operations)").all() as Array<{ name: string }>).map(c => c.name);
+      assert.equal(names.filter(name => name === "fence_target").length, 1);
+    } finally { db.close(); }
+  });
+  it("keeps an unattributed settled fence when a snapshot credit disappears", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
+    const now = Date.parse("2026-11-21T00:00:00Z"), grant = "2026-11-20T00:00:00Z";
+    f.a.prepare(`INSERT INTO reset_operations (operation_id, provider, ledger_key, state, owner_id, created_at, updated_at, outcome, credit_snapshot)
+      VALUES ('legacy', 'codex', 'codex:fixture-account', 'settled', 'owner', 0, 0, '{"outcome":"reset"}', ?)`)
+      .run(JSON.stringify([`${grant}|2026-11-21T00:04:00Z`, `${grant}|2026-11-21T00:05:00Z`]));
+    const fake = fakeResetTransport({ available_count: 1, credits: [{ granted_at: grant, expires_at: "2026-11-21T00:05:00Z" }], outcome: "reset" });
+    await new CodexAutoRedeem(f.a, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now }).tick();
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 0);
+    assert.ok((f.a.prepare("SELECT credit_snapshot FROM reset_operations WHERE operation_id='legacy'").get() as { credit_snapshot: string | null }).credit_snapshot);
+  }));
   for (const change of ["lead", "expiry", "binding"]) it(`abandons when ${change} changes during preparation`, async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
     let now = Date.parse("2026-11-21T00:00:00Z");
@@ -134,7 +153,7 @@ describe("auto-redeem reservation and settings", () => {
     await new CodexAutoRedeem(f.a, deps).tick(); assert.equal(sends(), 1);
     now += 2 * 60_000; credits = [b, c];
     await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 1);
-    credits = [c]; await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 2);
+    credits = [c]; await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 1);
   }));
   it("clears a fence when a consumed credit disappears before expiry", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
@@ -171,7 +190,7 @@ describe("auto-redeem reservation and settings", () => {
     await watcher.tick(); await watcher.tick();
     assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 1);
     credits = credits.slice(0, 1); await watcher.tick();
-    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 2);
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 1);
   }));
   for (const code of ["nothing_to_reset", "no_credit"]) it(`releases ${code} for a later retry`, async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });

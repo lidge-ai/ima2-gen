@@ -335,4 +335,17 @@ describe("reset route controls", () => {
     const token = await f.confirm("happy"); assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "happy" })).status, 200);
     assert.deepEqual(consumeCalls(f)[0]?.body, { redeem_request_id: "happy" }); assert.equal(consumeCalls(f).length, 1); assert.equal(f.usageReads(), 1);
   }));
+  it("attributes a manual fence to the nearest-expiring credit only", async () => withFixture(async f => {
+    const now = Date.parse("2026-11-21T00:00:00Z"), grant = "2026-11-20T00:00:00Z";
+    const a = { granted_at: grant, expires_at: "2026-11-21T00:05:00Z" }, b = { granted_at: grant, expires_at: "2026-11-21T00:06:00Z" };
+    let credits = [b, a];
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
+    assert.equal((await f.request(redeemPath, { operationId: "manual-fence", confirmationToken: await f.confirm("manual-fence") })).status, 200);
+    const row = f.db.prepare("SELECT fence_target FROM reset_operations WHERE operation_id='manual-fence'").get() as { fence_target: string | null };
+    assert.equal(row.fence_target, `${grant}|2026-11-21T00:05:00Z`);
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
+    const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
+    credits = [a]; await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
+    credits = [b]; await watcher.tick(); assert.equal(consumeCalls(f).length, 2);
+  }));
 });
