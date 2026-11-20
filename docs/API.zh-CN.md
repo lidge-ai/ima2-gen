@@ -214,7 +214,7 @@ CLI和遗留客户省略`async`并保持原始行为：每个请求SSE在同一�
 什么时候`storyboard`是`true`，服务器预先添加情节提要关键帧指令，以便图像
 几代人保持多镜头视频制作的角色和场景连续性。
 
-GPT OAuth 和 API key 通道均提供 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`，默认使用 `gpt-6-luna`（别名：`luna`、`terra`、`sol`、`astra`）。保存的旧 ID 会迁移到同一通道的对应级别，映射表见 `lib/openaiLegacyModels.ts`。
+GPT OAuth 和 API key 通道均提供 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`，默认使用 `gpt-6-luna`（CLI 别名：`luna`、`terra`、`sol`、`astra`；HTTP API 需要模型 ID）。保存的旧 ID 会迁移到同一通道的对应级别，映射表见 `lib/openaiLegacyModels.ts`。
 
 什么时候`provider`是`"grok"`，支持的型号有`grok-imagine-image`和
 `grok-imagine-image-quality`。服务器使用`grok-4.5`作为搜索/规划者

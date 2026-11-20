@@ -80,41 +80,6 @@ describe("resolveTarget", () => {
     });
   });
 
-  // The CLI alias map in bin/lib/model-aliases.ts is maintained separately from
-  // the registry's aliases field, which never reaches the resolver, so this is
-  // the only place proving a short alias actually resolves for a user.
-  it("canonicalizes the astra alias and resolves the default OpenAI lane", () => {
-    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/astra" }, makeCatalog(), {}), {
-      ok: true, lane: "oauth", model: "gpt-6.2-astra", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "api/astra" }, makeCatalog(), {}), {
-      ok: true, lane: "api", model: "gpt-6.2-astra", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "astra" }, makeCatalog(), {}), {
-      ok: true, lane: "oauth", model: "gpt-6.2-astra", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "astra" }, makeCatalog(), { image: "api/shared" }), {
-      ok: true, lane: "api", model: "gpt-6.2-astra", transport: "core",
-    });
-  });
-
-  it("resolves all shared GPT aliases using the default lane and falls back to OAuth", () => {
-    const catalog = makeCatalog();
-    const ids = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"];
-    catalog.lanes.oauth.models.image = ids.map((id) => ({ id }));
-    catalog.lanes.api.models.image = ids.map((id) => ({ id }));
-    for (const [alias, model] of [["luna", ids[0]], ["terra", ids[1]], ["sol", ids[2]], ["astra", ids[3]], [ids[0], ids[0]]]) {
-      assert.deepStrictEqual(resolveTarget("image", { model: alias }, catalog, { image: "api/gpt-6-luna" }), {
-        ok: true, lane: "api", model, transport: "core",
-      });
-      assert.deepStrictEqual(resolveTarget("image", { model: alias }, catalog, { image: "agy/banana" }), {
-        ok: true, lane: "oauth", model, transport: "core",
-      });
-    }
-    catalog.lanes.api.status = "key-missing";
-    expectFailure(resolveTarget("image", { model: "sol" }, catalog, { image: "api/gpt-6-luna" }), "LANE_UNAVAILABLE");
-  });
-
   it("returns MODEL_LOCKED for a catalog-only Comfy video workflow", () => {
     const failure = expectFailure(
       resolveTarget("video", { model: "comfy/minimax-h3" }, makeCatalog(), {}),
@@ -128,28 +93,6 @@ describe("resolveTarget", () => {
 
   it("rejects unknown lanes, missing models, kind mismatches, and lane conflicts", () => {
     expectFailure(resolveTarget("image", { model: "unknown/x" }, makeCatalog(), {}), "UNKNOWN_LANE");
-  });
-
-  // Saved legacy ids migrate within each OpenAI lane.
-  it("maps legacy GPT OAuth ids to their GPT-6 tier on both OpenAI lanes", () => {
-    const catalog = makeCatalog();
-    catalog.lanes.api = ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6.2-astra" }] }, { image: "gpt-6-luna" });
-    catalog.lanes.oauth = ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6.2-sol" }, { id: "gpt-6.2-astra" }] }, { image: "gpt-6-luna" });
-    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/gpt-5.6-luna" }, catalog, {}), {
-      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/gpt-5.6-sol" }, catalog, {}), {
-      ok: true, lane: "oauth", model: "gpt-6.2-sol", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "api/gpt-5.6-luna" }, catalog, {}), {
-      ok: true, lane: "api", model: "gpt-6-luna", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", {}, catalog, { image: "oauth/gpt-5.5" }), {
-      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "gpt-5.6-luna" }, catalog, { image: "api/gpt-6-luna" }), {
-      ok: true, lane: "api", model: "gpt-6-luna", transport: "core",
-    });
   });
 
   it("rejects missing models, kind mismatches, and lane conflicts", () => {

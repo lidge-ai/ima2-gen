@@ -451,7 +451,7 @@ Supported moderation values: `auto`, `low`.
 When `storyboard` is `true`, the server prepends storyboard keyframe instructions so image
 generations maintain character and scene continuity for multi-shot video production.
 
-GPT OAuth and API-key lanes offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`, defaulting to `gpt-6-luna` (aliases: `luna`, `terra`, `sol`, `astra`). Saved older IDs migrate to their corresponding tier on the same lane; see `lib/openaiLegacyModels.ts`.
+GPT OAuth and API-key lanes offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`, defaulting to `gpt-6-luna` (CLI aliases: `luna`, `terra`, `sol`, `astra`; the HTTP API requires model IDs). Saved older IDs migrate to their corresponding tier on the same lane; see `lib/openaiLegacyModels.ts`.
 
 When `provider` is `"nai"`, classic, multimode, and node generation accept the
 same 13 provider-native fields: `negativePrompt`, `sampler`, `noiseSchedule`,

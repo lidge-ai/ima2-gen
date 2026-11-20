@@ -3,6 +3,7 @@ import { CARD_NEWS_PLANNER_SCHEMA } from "./cardNewsPlannerSchema.js";
 import { logEvent } from "./logger.js";
 import { oauthFetch } from "./codexBackend/index.js";
 import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
+import { coerceReasoningEffortForModel } from "./imageModels.js";
 
 type PlannerError = Error & {
   code?: string | undefined;
@@ -142,7 +143,7 @@ export async function requestCardNewsPlannerJson(input: PlannerInput, options: P
   // A saved pre-GPT-6 planner id runs on its GPT-6 tier, like every other GPT OAuth caller.
   const model = migrateOpenAIImageModel(options.model || config.cardNewsPlanner.model);
   const timeoutMs = options.timeoutMs || config.cardNewsPlanner.timeoutMs;
-  const reasoningEffort = options.reasoningEffort || config.imageModels?.reasoningEffort || "medium";
+  const reasoningEffort = coerceReasoningEffortForModel(model, options.reasoningEffort || config.imageModels?.reasoningEffort || "medium");
   let text = "";
   let mode = "structured-output";
   try {
