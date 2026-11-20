@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { logWarn } from "../logger.js";
+import { loadGrokCredentials } from "../xaiAuth.js";
 import type { QuotaResult } from "./types.js";
 
 function grokTierFromLimit(val: number): string {
@@ -42,20 +43,6 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
       });
     }
   } catch { /* best-effort: auth.json is optional; fall back to the next source */ }
-  try {
-    // Same file lib/xaiAuth.ts owns; spelled out so quota keeps its narrow node:fs surface.
-    const auth = JSON.parse(readFileSync(join(homeDir, ".progrok", "auth.json"), "utf8")) as { accessToken?: string };
-    if (typeof auth.accessToken === "string" && auth.accessToken.trim()) {
-      candidates.push({
-        token: auth.accessToken,
-        source: "ima2:grok-auth-json",
-        email: null,
-        authMode: null,
-        issuer: null,
-        userId: null,
-      });
-    }
-  } catch { /* best-effort: Grok auth.json is optional; fall back to the next source */ }
   const seen = new Set<string>();
   return candidates.filter((candidate) => {
     if (seen.has(candidate.token)) return false;
@@ -109,7 +96,7 @@ export function inspectGrokWeeklyEligibility(homeDir = homedir(), grokBinary = "
   };
 }
 
-export function parseGrokCreditsResponse(value: unknown): { percent: number; periodEnd: string } | null {
+export function parseGrokCreditsResponse(value: unknown): { percent: number; periodEnd: string; productUsage?: Array<{ product: string; percent: number }>; prepaidBalance?: number } | null {
   if (!value || typeof value !== "object") return null;
   const config = (value as Record<string, unknown>).config;
   if (!config || typeof config !== "object") return null;
@@ -119,21 +106,30 @@ export function parseGrokCreditsResponse(value: unknown): { percent: number; per
   if (period.type !== "USAGE_PERIOD_TYPE_WEEKLY" || typeof period.end !== "string" || !Number.isFinite(Date.parse(period.end))) return null;
   const rawPercent = (config as Record<string, unknown>).creditUsagePercent;
   if (rawPercent !== undefined && (typeof rawPercent !== "number" || !Number.isFinite(rawPercent))) return null;
+  const data = config as Record<string, unknown>;
+  const products = Array.isArray(data.productUsage) ? data.productUsage.flatMap((item: unknown) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    return typeof row.product === "string" && typeof row.percent === "number" && Number.isFinite(row.percent)
+      ? [{ product: row.product, percent: row.percent }] : [];
+  }) : undefined;
   return {
     percent: Math.round(Math.min(100, Math.max(0, rawPercent as number | undefined ?? 0))),
     periodEnd: period.end,
+    ...(products ? { productUsage: products } : {}),
+    ...(typeof data.prepaidBalance === "number" && Number.isFinite(data.prepaidBalance) ? { prepaidBalance: data.prepaidBalance } : {}),
   };
 }
 
-async function fetchGrokWeeklyCredits(candidate: GrokTokenCandidate, clientVersion: string) {
+async function fetchGrokWeeklyCredits(candidate: GrokTokenCandidate, clientVersion: string | null) {
   try {
     const response = await fetch(GROK_CREDITS_URL, {
       headers: {
         Authorization: `Bearer ${candidate.token}`,
         "X-XAI-Token-Auth": "xai-grok-cli",
         "x-authenticateresponse": "authenticate-response",
-        "x-userid": candidate.userId!,
-        "x-grok-client-version": clientVersion,
+        ...(candidate.userId ? { "x-userid": candidate.userId } : {}),
+        ...(clientVersion ? { "x-grok-client-version": clientVersion } : {}),
         "x-grok-client-mode": "headless",
       },
       signal: AbortSignal.timeout(8000),
@@ -148,7 +144,16 @@ async function fetchGrokWeeklyCredits(candidate: GrokTokenCandidate, clientVersi
 
 export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok"): Promise<QuotaResult> {
   const candidates = readGrokTokenCandidates(homeDir);
-  if (!candidates.length) return { provider: "grok", authenticated: false, windows: [] };
+  const session = loadGrokCredentials(homeDir);
+  if (session?.accessToken) {
+    const weekly = await fetchGrokWeeklyCredits({ token: session.accessToken, source: "ima2-session", email: session.email ?? null,
+      authMode: null, issuer: null, userId: session.accountId ?? null }, null);
+    if (weekly) return { provider: "grok", source: "ima2-session", account: { email: session.email ?? null, plan: "SuperGrok" },
+      windows: [{ label: "weekly", percent: weekly.percent, resetsAt: weekly.periodEnd }],
+      ...(weekly.productUsage ? { productUsage: weekly.productUsage } : {}),
+      ...(weekly.prepaidBalance !== undefined ? { prepaidBalance: weekly.prepaidBalance } : {}) };
+  }
+  if (!candidates.length) return { provider: "grok", authenticated: Boolean(session?.accessToken), windows: [] };
   const clientVersion = readGrokClientVersion(homeDir, grokBinary);
   if (clientVersion) {
     for (const candidate of candidates.filter(isWeeklyCandidate)) {
@@ -156,8 +161,11 @@ export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok")
       if (weekly) {
         return {
           provider: "grok",
+          source: "grok-cli",
           account: { email: candidate.email, plan: "SuperGrok" },
           windows: [{ label: "weekly", percent: weekly.percent, resetsAt: weekly.periodEnd }],
+          ...(weekly.productUsage ? { productUsage: weekly.productUsage } : {}),
+          ...(weekly.prepaidBalance !== undefined ? { prepaidBalance: weekly.prepaidBalance } : {}),
         };
       }
     }

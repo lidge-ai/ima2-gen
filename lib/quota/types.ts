@@ -16,5 +16,8 @@ export interface QuotaResult {
   resetCredits?: { availableCount: number | null; applicableAvailableCount: number | null } | null;
   upsell?: { buyReset: boolean; viewUsage: boolean } | null;
   billing?: { usedUsd: number; limitUsd: number };
+  source?: "ima2-session" | "grok-cli";
+  productUsage?: Array<{ product: string; percent: number }>;
+  prepaidBalance?: number;
   nai?: { active: boolean; isNegative: boolean; anlasFixed: number; anlasPurchased: number; meter: "charge" | "missing" };
 }

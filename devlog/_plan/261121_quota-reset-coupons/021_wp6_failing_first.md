@@ -58,3 +58,7 @@ Command: `node --experimental-transform-types --test tests/quota-grok-weekly.tes
 ## S6b-A2 route baseline
 
 On a9d601d5, `node --experimental-transform-types --test tests/reset-grok-routes.test.ts` ran 10 tests: 1 pass, 9 fail, 0 skipped. The userinfo-unavailable control passes because the route is absent. Listing, confirmation/dispatch, changed identity, all three restart states, both invalid RPC replies and missing-coupon recovery fail because the Grok routes do not exist. The socket sentinel passed (0). Fixtures use only fake transports and a temporary database; no real RPC was sent. Several later assertions are necessarily unreached until the route exists.
+
+### S6b-B implementation verification and coverage gap
+
+The five reservation/settings tests added with the implementation were not run against the naive baseline; they are not failing-first evidence. Final focused run: `node --import tsx --test tests/quota-grok-weekly.test.ts tests/reset-auto-redeem.test.ts tests/billing-source.test.ts`: 20 passed, 0 failed, socket sentinels 0. These include settled target reservation, unknown after restart, disable before send, expired credit, and settings bounds. Missing requested behavioral evidence includes forced concurrent scheduler interleavings, revision mismatch and re-inspection, lead change rescheduling, route GET/PUT integration and disabled zero-fetch counting. This is not a completed acceptance record.
