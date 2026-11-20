@@ -21,6 +21,11 @@ async function fixture(fn: (ctx: { a: Database.Database; b: Database.Database; w
   finally { a.close(); b.close(); rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 }
 describe("auto-redeem behavior", () => {
+  it("observes disable from another connection after it was enabled", async () => fixture(async f => {
+    f.a.prepare("UPDATE reset_settings SET enabled=1 WHERE provider='codex'").run();
+    await f.watcher.tick(); f.a.prepare("UPDATE reset_settings SET enabled=0 WHERE provider='codex'").run();
+    await f.watcher.tick(); assert.equal(f.inspections(), 1);
+  }));
   it("observes enable from another connection within one tick after boot", async () => fixture(async f => {
     f.watcher.start(); f.a.prepare("UPDATE reset_settings SET enabled=1 WHERE provider='codex'").run();
     await f.watcher.tick(); assert.equal(f.inspections(), 1);

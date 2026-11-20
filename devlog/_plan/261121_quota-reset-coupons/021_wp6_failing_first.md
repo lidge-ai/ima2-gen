@@ -38,3 +38,19 @@ Base: 87cf2847bbee85ea89d580114425e470ad889d0c. This is **incomplete**: the new 
 ## Missing work
 
 Identity tests do not cover redirect response, timeout, precise deadline, RPC counts, mismatch or refresh/id-token cases. Route tests do not cover confirmation, redeem, reservation, restart, unknown or cross-account cases. Weekly tests do not cover ima2-session precedence or monthly fallback ordering. Auto-redeem tests do not cover credit selection, clock/lead timing, CAS disable/release, revision, scheduler races, restart, expiry, unknown or validation. The route test's later assertions are not reached at baseline. Full user-requested coverage and successful verifier condition are therefore NOT MET.
+
+## WP6 S6b-B additional baseline (32edc8a3)
+
+Command: `node --experimental-transform-types --test tests/quota-grok-weekly.test.ts tests/reset-auto-redeem.test.ts tests/billing-source.test.ts`: 15 tests, 9 pass, 6 fail; socket sentinels passed.
+
+| Test | Baseline |
+|---|---|
+| ima2 session preferred | FAIL: CLI bearer used first |
+| session failure falls back to CLI | FAIL: session not attempted |
+| product usage / prepaid balance | FAIL: dropped |
+| CLI source label | FAIL: absent |
+| observe disable from another connection | FAIL: cached flag skips initial inspection |
+| observe enable from another connection | FAIL: cached flag |
+| weekly percent / end control | PASS |
+| disabled ticks control | PASS |
+| billing-source tests (7) | PASS |
