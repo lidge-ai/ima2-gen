@@ -11,6 +11,7 @@ import { sentinelCount } from "./helpers/resetTestGuard.ts";
 import { CodexResetClient } from "../lib/reset/codexResetClient.ts";
 import { fakeResetTransport } from "./helpers/fakeResetTransport.ts";
 import { readResetSettings, writeResetSettings } from "../lib/reset/settings.ts";
+import { resetIdentity } from "../lib/reset/identity.ts";
 
 after(() => assert.equal(sentinelCount(), 0));
 async function fixture(fn: (ctx: { a: Database.Database; b: Database.Database; watcher: CodexAutoRedeem;
@@ -42,6 +43,27 @@ describe("auto-redeem controls", () => {
 });
 
 describe("auto-redeem reservation and settings", () => {
+  it("does not clear a fence from a partial list before a stale complete list", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
+    let response: unknown = { credits };
+    const fake = fakeResetTransport({});
+    fake.send = async (url, body) => { fake.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : response; };
+    const watcher = new CodexAutoRedeem(f.a, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now });
+    await watcher.tick();
+    response = { credits: [credits[1], null] }; await watcher.tick();
+    response = { credits }; await watcher.tick();
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 1);
+    assert.ok((f.a.prepare("SELECT credit_snapshot FROM reset_operations").get() as { credit_snapshot: string | null }).credit_snapshot);
+  }));
+  it("only inspects the account that opted in and resumes on return", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
+    let account = "b"; const fake = fakeResetTransport({ credits: [] });
+    const watcher = new CodexAutoRedeem(f.a, { accountId: async () => account, client: () => new CodexResetClient(fake) });
+    await watcher.tick(); assert.equal(fake.calls.length, 0);
+    account = "a"; await watcher.tick(); assert.equal(fake.calls.length, 1);
+  }));
   it("keeps a persisted fence when an unrelated snapshot credit expires", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
     let now = Date.parse("2026-11-21T00:00:00Z");

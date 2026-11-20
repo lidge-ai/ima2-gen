@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import Database from "better-sqlite3";
 import { sentinelCount } from "./helpers/resetTestGuard.ts";
 import { fakeResetTransport } from "./helpers/fakeResetTransport.ts";
+import { resetIdentity } from "../lib/reset/identity.ts";
 
 const root = mkdtempSync(join(tmpdir(), "ima2-reset-settings-"));
 process.env.IMA2_CONFIG_DIR = root;
@@ -48,6 +49,10 @@ it("settings PUT reconfigures watcher through buildApp", async () => fixture(asy
   assert.equal((await f.request("PUT", { enabled: true, leadMinutes: 10 })).status, 200);
   for (let i = 0; i < 20 && f.calls() === 0; i++) await new Promise<void>(resolve => setImmediate(resolve));
   assert.equal(f.calls(), 1);
+}));
+it("rejects a stale displayed account reference", async () => fixture(async f => {
+  const response = await f.request("PUT", { enabled: true, leadMinutes: 10, accountRef: resetIdentity("codex", "other").accountRef });
+  assert.equal(response.status, 409); assert.equal(f.calls(), 0);
 }));
 it("settings GET and PUT enforce LAN principal and origin protection", async () => fixture(async f => {
   for (const method of ["GET", "PUT"]) {

@@ -10,6 +10,15 @@ import { transformSync } from "esbuild";
 import { GrokResetClient } from "../lib/reset/grokResetClient.ts";
 after(() => assert.equal(sentinelCount(), 0));
 describe("Codex reset client behavior", () => {
+  it("marks malformed and inconsistent projections partial while retaining valid entries", async () => {
+    for (const body of [null, {}, { credits: [null] }, { credits: [{}] }, { credits: [], available_count: 1 }]) {
+      const result = await new CodexResetClient(fakeResetTransport(body)).list();
+      assert.equal(Reflect.get(result, "complete"), false);
+    }
+    const result = await new CodexResetClient(fakeResetTransport({ credits: [{ granted_at: "2026-11-01", expires_at: "2026-12-01" }, null] })).list();
+    assert.equal(result.credits.length, 1);
+    assert.equal(Reflect.get(result, "complete"), false);
+  });
   it("projects the list count and display fields", async () => {
     const fake = fakeResetTransport({ available_count: 1, total_earned_count: 2,
       credits: [{ id: "fixture", status: "available", title: "Reset", granted_at: "2026-11-01", expires_at: "2026-12-01" }] });
