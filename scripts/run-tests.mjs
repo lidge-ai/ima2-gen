@@ -18,5 +18,6 @@ if (files.length === 0) {
 
 const child = spawn(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "--test", ...files], {
   stdio: "inherit",
+  env: { ...process.env, IMA2_RESET_DISPATCH_DISABLED: "1" },
 });
 child.on("exit", (code) => process.exit(code ?? 1));
