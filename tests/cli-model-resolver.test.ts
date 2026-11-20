@@ -178,6 +178,19 @@ describe("resolveTarget", () => {
     assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared", "api/shared", "agy/shared"]);
   });
 
+  it("rejects a non-GPT image shared by OAuth and API as ambiguous", () => {
+    const failure = expectFailure(resolveTarget("image", { model: "shared" }, makeCatalog(), { image: "api/shared" }), "MODEL_AMBIGUOUS");
+    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared", "api/shared"]);
+  });
+
+  it("rejects a video shared by OAuth and API as ambiguous", () => {
+    const catalog = makeCatalog();
+    catalog.lanes.oauth.models.video.push({ id: "shared-video" });
+    catalog.lanes.api.models.video.push({ id: "shared-video" });
+    const failure = expectFailure(resolveTarget("video", { model: "shared-video" }, catalog, {}), "MODEL_AMBIGUOUS");
+    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared-video", "api/shared-video"]);
+  });
+
   it("rejects missing bare ids and bare kind mismatches within a provider", () => {
     expectFailure(resolveTarget("image", { model: "missing" }, makeCatalog(), {}), "MODEL_NOT_FOUND");
     expectFailure(
