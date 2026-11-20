@@ -119,6 +119,7 @@ function mountPanel(component: Component, props: Record<string, unknown>) {
 }
 const Credits = loadComponent("CodexCredits", "CodexCredits");
 const Panel = loadComponent("ResetCreditsPanel", "ResetCreditsPanel");
+const renderCredits = (props: Record<string, unknown>) => mountPanel(Credits, props).tree();
 // What a person sees: hidden subtrees are skipped.
 function visibleText(node: unknown): string {
   if (node === null || node === undefined || typeof node === "boolean") return "";
@@ -199,17 +200,17 @@ describe("quota UI credits and reset behavior", () => {
     assert.deepEqual(posts, []); assert.equal(refreshes, 1);
   });
   it("shows balance separately from the reset-credit count", () => {
-    const tree = Credits({ balance: "12.50", resetCreditCount: 3 });
+    const tree = renderCredits({ balance: "12.50", resetCreditCount: 3 });
     assert.match(textContent(tree), /12\.5/);
     assert.ok(findNode(tree, node => node.props["data-testid"] === "reset-credit-count"), "separate reset-credit count");
     assert.match(textContent(tree), /3/);
   });
   it("formats numeric balances for the UI locale and preserves the raw value", () => {
-    const tree = Credits({ balance: "62384.0276815000", resetCreditCount: 0, locale: "en" });
+    const tree = renderCredits({ balance: "62384.0276815000", resetCreditCount: 0, locale: "en" });
     const balance = findNode(tree, n => n.props["data-testid"] === "balance");
     assert.ok(balance); assert.equal(textContent(balance), "62,384.03");
     assert.equal(balance.props.title, "62384.0276815000");
-    assert.match(textContent(Credits({ balance: "not numeric", resetCreditCount: 0, locale: "ko" })), /not numeric/);
+    assert.match(textContent(renderCredits({ balance: "not numeric", resetCreditCount: 0, locale: "ko" })), /not numeric/);
   });
   it("disables redeem for zero or unknown usable credits but leaves listing available", async () => {
     const transport = { getOperations: async () => [], list: async () => ({ credits: [] }), redeem: async () => {} };
@@ -234,8 +235,8 @@ describe("quota UI credits and reset behavior", () => {
     }
   });
   it("distinguishes zero reset credits from an unknown count", () => {
-    const zero = textContent(Credits({ balance: "12.50", resetCreditCount: 0 }));
-    const unknown = textContent(Credits({ balance: "12.50", resetCreditCount: null }));
+    const zero = textContent(renderCredits({ balance: "12.50", resetCreditCount: 0 }));
+    const unknown = textContent(renderCredits({ balance: "12.50", resetCreditCount: null }));
     assert.notEqual(zero, unknown);
     assert.match(zero, /\b0\b/);
     assert.match(unknown, /—/);
@@ -243,7 +244,7 @@ describe("quota UI credits and reset behavior", () => {
   it("opens a confirmation dialog before any POST", async () => {
     const transport = fakeTransport();
     const mounted = mountPanel(Panel, { transport, accountRef: "displayed" });
-    const button = findNode(mounted.tree(), node => node.type === "button");
+    const button = findNode(mounted.tree(), node => node.type === "button" && textContent(node).includes("redeem.action"));
     assert.ok(button);
     (button.props.onClick as () => void)();
     await new Promise(resolve => setImmediate(resolve));

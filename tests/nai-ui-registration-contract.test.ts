@@ -212,7 +212,7 @@ function renderNaiQuota(props: NaiQuotaProps, locale = "en"): string {
     if (name === "../../i18n") return { useI18n: () => ({ t }) };
     if (name === "../../lib/api-core" || name === "../../lib/lanSession") return {};
     if (name === "../../hooks/useOAuthStatus") return { OAUTH_CHANGED_EVENT: "ima2:oauth-changed" };
-    if (["./SwitchAccountButton", "./useAccountSwitch", "./CodexCredits", "./ResetCreditsPanel", "./resetCreditsTransport"].includes(name)) {
+    if (["./SwitchAccountButton", "./useAccountSwitch", "./CodexCredits", "./ResetCreditsPanel", "./resetCreditsTransport", "./QuotaDetails"].includes(name)) {
       const localModule = { exports: {} };
       const path = `ui/src/components/settings/${name.slice(2)}.${["./useAccountSwitch", "./resetCreditsTransport"].includes(name) ? "ts" : "tsx"}`;
       const source = transformSync(read(path), { loader: "tsx", format: "cjs", jsx: "automatic" }).code;

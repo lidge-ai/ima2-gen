@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Toggle } from "../controls";
 import type { QuotaTranslate } from "./CodexCredits";
+import { quotaDetails, useQuotaDetails } from "./QuotaDetails";
 
 export interface ResetOperation {
   operationId?: string; operation_id?: string; state: string; unknownOrigin?: string; unknown_origin?: string | null;
@@ -110,6 +111,28 @@ function useResetSettings(transport: ResetCreditsTransport, displayedRef: Accoun
     finally { setSettingsBusy(false); }
   };
   return { settings, settingsBusy, saveSettings };
+}
+
+function earliestExpiry(credits: ResetList["credits"]): string | null {
+  const times = credits.map(credit => Date.parse(credit.expiresAt ?? "")).filter(Number.isFinite);
+  return times.length ? new Date(Math.min(...times)).toLocaleDateString() : null;
+}
+
+/** Read-only list for the folded summary; ignored if it belongs to another account. */
+function useEarliestExpiry(transport: ResetCreditsTransport, accountRef: string | undefined, displayedRef: AccountRef) {
+  const [earliest, setEarliest] = useState<string | null>(null);
+  useEffect(() => {
+    setEarliest(null);
+    if (!transport.list || !accountRef) return;
+    void transport.list().then(data => { if (data.accountRef === displayedRef.current) setEarliest(earliestExpiry(data.credits)); }).catch(() => {});
+  }, [transport, accountRef, displayedRef]);
+  return earliest;
+}
+
+function resetSummary(t: QuotaTranslate, count: number | null | undefined, earliest: string | null, attention: boolean) {
+  const shown = count ?? t("settings.quota.resetCredits.unknown");
+  const line = earliest ? t("settings.quota.resetCredits.summaryExpiry", { count: shown, date: earliest }) : t("settings.quota.resetCredits.summary", { count: shown });
+  return attention ? `${line} · ${t("settings.quota.details.attention")}` : line;
 }
 
 interface Flow {
@@ -224,11 +247,15 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   const { ops, opsLoaded, refreshOps } = useOperations(transport, setMessage);
   const { fence, refreshFence } = useFence(transport, accountRef, displayedRef, inFlight, fencePoller, setMessage);
   const { settings, settingsBusy, saveSettings } = useResetSettings(transport, displayedRef, accountChanged, setMessage);
+  const details = useQuotaDetails();
+  const earliest = useEarliestExpiry(transport, accountRef, displayedRef);
   const flow: Flow = { transport, displayedRef, inFlight, trigger, dialog, busy, onRefresh, setBusy, setMessage, setDialog,
     setList, setListError, accountChanged, refreshOps, refreshFence };
   const usableCount = applicableAvailableCount === undefined ? availableCount : applicableAvailableCount;
   const noUsableCredits = usableCount == null || usableCount <= 0;
+  const summary = resetSummary(t, availableCount, earliest, fence.fenced || ops.some(unresolved));
   return <div className="quota-reset">
+    {quotaDetails("quota-codex-reset-credits", details, t("settings.quota.resetCredits.count"), summary, <>
     <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => openRedeem(flow)}>
       {t("settings.quota.redeem.action")}</button>
     {noUsableCredits && <p className="settings-row__microcopy">{t(usableCount == null ? "settings.quota.redeem.creditUnknown" : "settings.quota.redeem.noCredit")}</p>}
@@ -239,6 +266,7 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
     {fenceNotice(fence, busy || !accountRef, t, () => { void releaseFence(flow, fence); })}
     {settings && settingsSection(settings, settingsBusy, accountRef, t, (next) => { void saveSettings(next); })}
     {operationRows(ops, busy, t, (id) => { void acknowledgeOperation(flow, id); })}
+    </>)}
     <div role="status" aria-live="polite">{message && t(message === "ackBlocked" ? "settings.quota.acknowledge.blocked" : `settings.quota.redeem.${message}`)}</div>
     {dialog && confirmDialog(flow, dialog, accountEmail, t)}
   </div>;

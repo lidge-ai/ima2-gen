@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { QuotaTranslate } from "./CodexCredits";
 import { trapKey } from "./ResetCreditsPanel";
 import type { ResetOperation } from "./ResetCreditsPanel";
+import { quotaDetails, useQuotaDetails } from "./QuotaDetails";
 
 interface Coupon { tokenId: string; validityEnd: number | null }
 export interface GrokCouponsTransport {
@@ -47,6 +48,16 @@ function couponRows(list: CouponList, disabled: boolean, t: QuotaTranslate, open
     </li>)}</ul></>;
 }
 
+function couponSummary(list: CouponList | null, ops: ResetOperation[] | null, t: QuotaTranslate): string {
+  const attention = ops?.some(unresolved) ? ` · ${t("settings.quota.details.attention")}` : "";
+  if (!list) return `—${attention}`;
+  const ends = list.coupons.map(coupon => coupon.validityEnd).filter((end): end is number => end !== null);
+  const count = list.coupons.length;
+  const line = ends.length ? t("settings.quota.grokCoupons.summaryExpiry", { count, date: new Date(Math.min(...ends) * 1000).toLocaleDateString() })
+    : t("settings.quota.grokCoupons.summary", { count });
+  return line + attention;
+}
+
 function operationRows(ops: ResetOperation[] | null, busy: boolean, t: QuotaTranslate, acknowledge: (id: string) => void) {
   return ops?.filter(unresolved).map(op => <div key={idOf(op)}><p>{idOf(op)} · {op.state}</p>
     {op.state === "unknown" && <><p>{t("settings.quota.acknowledge.explanation")}</p>
@@ -66,9 +77,6 @@ function confirmDialog(target: Target, busy: boolean, t: QuotaTranslate, close: 
   </div></div>;
 }
 
-const statusKey = (message: string) => message === "ackBlocked" ? "settings.quota.acknowledge.blocked"
-  : message === "unavailable" ? "settings.quota.grokCoupons.unavailable" : `settings.quota.redeem.${message}`;
-
 export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Props) {
   const [list, setList] = useState<CouponList | null>(null);
   const [ops, setOps] = useState<ResetOperation[] | null>(null);
@@ -76,6 +84,7 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const inFlight = useRef(false);
+  const details = useQuotaDetails();
   const trigger = useRef<HTMLButtonElement | null>(null);
   const refresh = useCallback(async (reportUnavailable = true) => {
     try { const [coupons, operations] = await Promise.all([transport.list(), transport.getOperations()]); setList(coupons); setOps(operations); }
@@ -104,11 +113,13 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
     catch { setMessage("ackBlocked"); }
     finally { setBusy(false); inFlight.current = false; }
   };
-  return <div className="quota-reset">
-    <p>{t("settings.quota.grokCoupons.title")}</p>
+  const body = <>
     {list && couponRows(list, busy || !ops || ops.some(unresolved), t, (button, id) => { trigger.current = button; void openCoupon(flow, id, list.accountRef); })}
     {operationRows(ops, busy, t, (id) => { void acknowledge(id); })}
-    <div role="status" aria-live="polite">{message && t(statusKey(message))}</div>
+  </>;
+  return <div className="quota-reset">
+    {quotaDetails("quota-grok-coupons", details, t("settings.quota.grokCoupons.title"), couponSummary(list, ops, t), body)}
+    <div role="status" aria-live="polite">{message && t(message === "ackBlocked" ? "settings.quota.acknowledge.blocked" : message === "unavailable" ? "settings.quota.grokCoupons.unavailable" : `settings.quota.redeem.${message}`)}</div>
     {target && confirmDialog(target, busy, t, close, () => { void confirm(); })}
   </div>;
 }
