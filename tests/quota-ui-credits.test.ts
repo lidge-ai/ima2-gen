@@ -158,6 +158,33 @@ describe("quota details start folded", () => {
     assert.match(visibleText(view.tree()), /settings\.quota\.redeem\.action/);
     assert.match(visibleText(view.tree()), /settings\.quota\.resetCredits\.list/);
   });
+  it("reads numeric expiry timestamps for the summary and the credit list", async () => {
+    const seconds = Date.parse("2026-12-03T00:00:00Z") / 1000;
+    const transport = { getOperations: async () => [], redeem: async () => {},
+      list: async () => ({ accountRef: "acct", complete: true, credits: [{ title: "credit", expiresAt: seconds }] }) };
+    const view = mountPanel(Panel, { transport, accountRef: "acct", availableCount: 1, t: withParams });
+    await new Promise(resolve => setImmediate(resolve));
+    const date = new Date(seconds * 1000).toLocaleDateString();
+    assert.ok(visibleText(view.tree()).includes(`settings.quota.resetCredits.summaryExpiry(1,${date})`));
+    (disclosure(view.tree())!.props.onClick as () => void)();
+    const list = findNode(view.tree(), n => n.type === "button" && textContent(n).includes("resetCredits.list"));
+    (list!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
+    assert.ok(visibleText(view.tree()).includes(`settings.quota.resetCredits.expires(${date})`));
+  });
+  it("refreshes the earliest-expiry summary after a redemption", async () => {
+    let credits = [{ expiresAt: "2026-12-01T00:00:00Z" }, { expiresAt: "2026-12-09T00:00:00Z" }];
+    const transport = { getOperations: async () => [], list: async () => ({ accountRef: "acct", complete: true, credits }),
+      redeem: async () => { credits = credits.slice(1); return { result: { outcome: "reset" } }; } };
+    const view = mountPanel(Panel, { transport, accountRef: "acct", availableCount: 2, t: withParams });
+    await new Promise(resolve => setImmediate(resolve));
+    (disclosure(view.tree())!.props.onClick as () => void)();
+    const open = findNode(view.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"));
+    (open!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
+    const dialog = findNode(view.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+    (findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
+    await new Promise(resolve => setImmediate(resolve)); await new Promise(resolve => setImmediate(resolve));
+    assert.ok(visibleText(view.tree()).includes(new Date("2026-12-09T00:00:00Z").toLocaleDateString()));
+  });
 });
 it("shows a partial list and the opt-in account while a different account is off", async () => {
   const transport = { getOperations: async () => [], redeem: async () => {},

@@ -104,3 +104,6 @@ Fix verification: focused reset/quota/billing suites 209/209. The existing route
 ## Quota details start folded (user request)
 
 Base: 410ef014. `node --import tsx --test tests/quota-ui-credits.test.ts tests/quota-ui-grok.test.ts` (reset test guard): 43 tests, 39 pass, 4 fail, exit 1; sentinel 0. Failing: credits, reset credits and Grok coupons each had no folded disclosure header (no button with aria-expanded), so details and redeem buttons were visible immediately; the folded summary did not flag an unresolved coupon operation. Assertions use visible text, skipping hidden subtrees, to match what a person sees. Synthetic transports only.
+## Final review #11 minor — expiry summary
+
+Base: 228da39c. `node --import tsx --test tests/quota-ui-credits.test.ts` (reset test guard): 25 tests, 23 pass, 2 fail, exit 1; sentinel 0. A numeric expiry (seconds) produced no summary date and was printed raw in the list; after a redemption the folded summary kept the consumed credit's earliest expiry because it was read only on mount. Synthetic transports only.
