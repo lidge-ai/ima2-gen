@@ -16,6 +16,7 @@ function loadComponent(file: string, name: string): Component {
     type, props, children: Array.isArray(props.children) ? props.children : [props.children],
   });
   const requireStub = (id: string): unknown => {
+    if (id === "../controls") return { Toggle: "Toggle" };
     if (id === "./ResetCreditsPanel") return { trapKey: () => {} };
     if (id === "react/jsx-runtime") return { jsx, jsxs: jsx };
     if (id === "react") return {
@@ -101,6 +102,9 @@ it("loads auto-redeem settings and exposes bounded lead minutes", async () => {
   const input = findNode(panel.tree(), n => n.type === "input" && n.props.type === "number");
   assert.ok(input); assert.equal(input.props.min, 1); assert.equal(input.props.max, 60);
   assert.match(textContent(panel.tree()), /autoRedeem.warning/);
+  assert.ok(findNode(panel.tree(), n => n.type === "Toggle"), "shared toggle");
+  assert.equal(input.props.className, "custom-size-input");
+  assert.ok(findNode(panel.tree(), n => n.props.className === "settings-row"));
 });
 it("sends a target-bound Grok confirmation before redeem", async () => {
   const source = readFileSync("ui/src/components/settings/grokCouponsTransport.ts", "utf8");

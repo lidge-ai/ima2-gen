@@ -49,6 +49,7 @@ function loadComponent(file: string, name: string): Component {
     type, props, children: Array.isArray(props.children) ? props.children : [props.children],
   });
   const requireStub = (id: string): unknown => {
+    if (id === "../controls") return { Toggle: "Toggle" };
     if (id === "react/jsx-runtime") return { jsx, jsxs: jsx };
     if (id === "react") return {
       useState: (initial: unknown) => {
@@ -113,9 +114,38 @@ function fakeTransport() {
 describe("quota UI credits and reset behavior", () => {
   it("shows balance separately from the reset-credit count", () => {
     const tree = Credits({ balance: "12.50", resetCreditCount: 3 });
-    assert.match(textContent(tree), /12\.50/);
+    assert.match(textContent(tree), /12\.5/);
     assert.ok(findNode(tree, node => node.props["data-testid"] === "reset-credit-count"), "separate reset-credit count");
     assert.match(textContent(tree), /3/);
+  });
+  it("formats numeric balances for the UI locale and preserves the raw value", () => {
+    const tree = Credits({ balance: "62384.0276815000", resetCreditCount: 0, locale: "en" });
+    const balance = findNode(tree, n => n.props["data-testid"] === "balance");
+    assert.ok(balance); assert.equal(textContent(balance), "62,384.03");
+    assert.equal(balance.props.title, "62384.0276815000");
+    assert.match(textContent(Credits({ balance: "not numeric", resetCreditCount: 0, locale: "ko" })), /not numeric/);
+  });
+  it("disables redeem for zero or unknown usable credits but leaves listing available", async () => {
+    const transport = { getOperations: async () => [], list: async () => ({ credits: [] }), redeem: async () => {} };
+    for (const counts of [{ availableCount: 0 }, { availableCount: null }, { availableCount: 2, applicableAvailableCount: 0 }, { availableCount: 2, applicableAvailableCount: null }]) {
+      const panel = mountPanel(Panel, { transport, ...counts }); await Promise.resolve();
+      const button = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"));
+      assert.equal(button?.props.disabled, true); assert.match(textContent(panel.tree()), /redeem.noCredit|redeem.creditUnknown/);
+      assert.equal(findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("resetCredits.list"))?.props.disabled, undefined);
+    }
+    for (const counts of [{ availableCount: 2 }, { availableCount: 0, applicableAvailableCount: 1 }]) {
+      const panel = mountPanel(Panel, { transport, ...counts }); await Promise.resolve();
+      assert.equal(findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"))?.props.disabled, false);
+    }
+  });
+  it("shows empty and error states after requesting the credit list", async () => {
+    for (const fail of [false, true]) {
+      const transport = { getOperations: async () => [], list: async () => { if (fail) throw new Error("offline"); return { credits: [] }; }, redeem: async () => {} };
+      const panel = mountPanel(Panel, { transport }); await Promise.resolve();
+      const button = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("resetCredits.list"));
+      (button!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
+      assert.match(textContent(panel.tree()), fail ? /resetCredits.loadError/ : /resetCredits.empty/);
+    }
   });
   it("distinguishes zero reset credits from an unknown count", () => {
     const zero = textContent(Credits({ balance: "12.50", resetCreditCount: 0 }));
@@ -174,7 +204,7 @@ describe("quota UI fake transport controls", () => {
 const requiredKeys = [
   "window.5h", "window.7d", "window.30d", "window.other",
   "credits.balance", "credits.unknown", "credits.unlimited",
-  "resetCredits.count", "resetCredits.unknown", "resetCredits.usableNow", "resetCredits.list", "resetCredits.expires",
+  "resetCredits.empty", "resetCredits.loadError", "redeem.creditUnknown", "resetCredits.count", "resetCredits.unknown", "resetCredits.usableNow", "resetCredits.list", "resetCredits.expires",
   "redeem.action", "redeem.confirm", "redeem.cancel", "redeem.redeeming", "redeem.success",
   "redeem.nothingToReset", "redeem.noCredit", "redeem.identityChanged", "redeem.unknown",
   "acknowledge.action", "acknowledge.explanation", "acknowledge.blocked",
