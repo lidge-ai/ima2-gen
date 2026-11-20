@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
-import { AGENT_LLM_MODEL_OPTIONS, getAgentLlmModelOption } from "../../lib/agentModelOptions";
+import { AGENT_LLM_MODEL_OPTIONS, agentModelProvider, getAgentLlmModelOption } from "../../lib/agentModelOptions";
 import { REASONING_EFFORT_OPTIONS } from "../../lib/reasoning";
 import type { AgentGenerationSettings } from "./agentTypes";
 import { ChevronRightIcon } from "./AgentIcons";
@@ -71,7 +71,7 @@ export function AgentModelSelector({ settings, onChange, onOpenModelTab }: Props
                 role="menuitemradio"
                 aria-checked={option.value === currentModel.value}
                 onClick={() => {
-                  onChange({ model: option.value, provider: option.provider });
+                  onChange({ model: option.value, provider: agentModelProvider(option, settings.provider) });
                   setOpen(false);
                 }}
               >

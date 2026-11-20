@@ -118,11 +118,14 @@ function promptBuilderBackend(raw: string): PromptBuilderBackend {
 const selectedPromptBuilderBackend = promptBuilderBackend(
   pickStr(env.IMA2_PROMPT_BUILDER_BACKEND, fileCfg.promptBuilder?.backend, "auto"),
 );
-const selectedPromptBuilderModel = pickStr(
+const rawPromptBuilderModel = pickStr(
   env.IMA2_PROMPT_BUILDER_MODEL,
   fileCfg.promptBuilder?.model,
   DEFAULT_PROMPT_BUILDER_MODELS[selectedPromptBuilderBackend],
 );
+const selectedPromptBuilderModel = selectedPromptBuilderBackend === "oauth" || selectedPromptBuilderBackend === "api"
+  ? migrateOpenAIImageModel(rawPromptBuilderModel)
+  : rawPromptBuilderModel;
 
 export function defaultLogLevelForEnv(runtimeEnv = env) {
   return runtimeEnv.IMA2_DEV === "1" ? "debug" : "info";

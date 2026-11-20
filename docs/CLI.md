@@ -262,6 +262,8 @@ documented multi-image editing limit.
 
 GPT OAuth and API-key image lanes both support `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, and `gpt-6.2-astra` (aliases `luna`, `terra`, `sol`, `astra`); the default is `gpt-6-luna`. Saved older IDs migrate to their tier on the same lane (see `lib/openaiLegacyModels.ts`).
 
+Bare GPT model IDs or aliases shared by OAuth and API use the configured CLI image default lane when it is OAuth or API; otherwise they use OAuth. Other shared model IDs remain ambiguous and require `--provider`.
+
 ```bash
 ima2 models --kind image
 ima2 defaults set image oauth/gpt-6-luna

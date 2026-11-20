@@ -99,14 +99,14 @@ test("startup migrates saved and environment Prompt Builder models only for Open
   try {
     for (const [backend, viaEnv, expected] of [["api", false, "gpt-6.2-sol"], ["oauth", false, "gpt-6.2-sol"], ["api", true, "gpt-6.2-sol"], ["oauth", true, "gpt-6.2-sol"], ["grok", false, "grok-4.3"]] as const) {
       writeFileSync(join(dir, "config.json"), JSON.stringify({ promptBuilder: { backend, model: "gpt-5.6-sol" } }));
-      const env = { ...process.env, IMA2_CONFIG_DIR: dir, IMA2_PROMPT_BUILDER_BACKEND: backend };
+      const env: NodeJS.ProcessEnv = { ...process.env, IMA2_CONFIG_DIR: dir, IMA2_PROMPT_BUILDER_BACKEND: backend };
       delete env.IMA2_PROMPT_BUILDER_MODEL;
       if (viaEnv) env.IMA2_PROMPT_BUILDER_MODEL = "gpt-5.6-sol";
       const child = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", "import {config} from './config.ts'; console.log(config.promptBuilder.model)"], { env, encoding: "utf8" });
       assert.equal(child.status, 0, child.stderr);
       assert.equal(child.stdout.trim(), expected, `${backend} env=${viaEnv}`);
     }
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 test("agent model selection preserves a compatible OpenAI provider", async () => {

@@ -80,7 +80,7 @@ routes/
 | File | Lines | Responsibility |
 |---|---:|---|
 | `server.ts` | 608 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 568 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `config.ts` | 571 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 97 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
@@ -129,7 +129,7 @@ routes/
 | `bin/commands/metadata.ts` | 51 | CLI image metadata read client |
 | `bin/commands/comfy.ts` | 330 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
 | `bin/commands/models.ts` | 101 | Human/JSON model catalog with lane/kind/id/label/lane status/model lock status/capabilities |
-| `bin/lib/modelResolver.ts` | 197 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
+| `bin/lib/modelResolver.ts` | 203 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
 | `bin/commands/cardnews.ts` | 251 | CLI dev-gated card-news client |
 | `bin/commands/config.ts` | 194 | CLI config get/set client |
 | `bin/commands/observability.ts` | 178 | Shared CLI handler for `storage`, `billing`, `providers`, `oauth`, and `inflight` aliases (`ima2.ts` routes those commands here) |

@@ -15,4 +15,3 @@ Builds on 001 §3 and wp1 (L exists on the API lane).
 
 - New SVG test fails on base, passes after change; existing SVG tests green.
 - Docs (docs/API*.md, docs/CLI*.md, docs/FAQ*.md SVG passages, skills/ima2/SKILL.md) state: API-key lane + Images 2.6 only; author default and how to override; effort works with the default author.
-

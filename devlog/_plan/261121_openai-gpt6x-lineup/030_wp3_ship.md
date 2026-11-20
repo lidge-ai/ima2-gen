@@ -6,4 +6,3 @@
 4. Fresh Terra review task (codex/gpt-6.1-terra, role review) over the PR diff; fix findings, re-review with continueFrom on the same reviewer; final pre-merge review by a new fresh Terra task.
 5. Merge only when: final fresh review PASS, all PR checks green, 0 blocker findings → `gh pr merge --merge`; report merge commit SHA. No release, tag, release.yml or npm run release.
 6. D: move this unit to `devlog/_fin/` only if the repo convention requires it at merge time (README hub row update).
-

@@ -140,6 +140,7 @@ function resolveBare(
   rawModel: string,
   provider: string | undefined,
   catalog: ModelCatalog,
+  defaults: CliDefaults,
 ): ResolveResult {
   const model = canonicalModel(kind, rawModel);
   const existsIn = (lane: Lane) => modelExists(catalog.lanes[lane], kind, laneModel(lane, kind, model));
@@ -147,6 +148,11 @@ function resolveBare(
     ? [provider as Lane]
     : LANES.filter(existsIn);
   const matches = lanes.filter(existsIn);
+  if (matches.length > 1 && matches.every((lane) => lane === "oauth" || lane === "api")) {
+    const defaultLane = parseNamespaced(defaults.image ?? "")?.lane;
+    const lane = matches.find((candidate) => candidate === defaultLane) ?? "oauth";
+    return resolveLaneModel(kind, lane, model, catalog);
+  }
   if (matches.length > 1) {
     return failure("MODEL_AMBIGUOUS", `${model} exists in multiple lanes; pass --provider <lane>`, {
       candidates: matches.map((lane) => `${lane}/${model}`),
@@ -181,7 +187,7 @@ export function resolveTarget(
   if (flags.model) {
     return parseNamespaced(flags.model)
       ? resolveNamespaced(kind, flags.model, provider ?? undefined, catalog)
-      : resolveBare(kind, flags.model, provider ?? undefined, catalog);
+      : resolveBare(kind, flags.model, provider ?? undefined, catalog, defaults);
   }
   if (provider) {
     const laneInfo = catalog.lanes[provider];

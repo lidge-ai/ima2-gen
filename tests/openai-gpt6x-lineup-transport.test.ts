@@ -69,4 +69,3 @@ describe("OAuth transport with empty catalog", { concurrency: false }, () => {
     });
   }
 });
-

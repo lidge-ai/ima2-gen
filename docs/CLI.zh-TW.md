@@ -115,6 +115,8 @@ Grok尺寸映射如下xAI的形象API， 不是OpenAI's `size`場地。ima2
 
 GPT OAuth 與 API key 圖片通道均支援 `gpt-6-luna`、`gpt-6.1-terra`、`gpt-6.2-sol`、`gpt-6.2-astra`（別名 `luna`、`terra`、`sol`、`astra`），預設使用 `gpt-6-luna`。已儲存的舊 ID 會遷移到同一通道的對應級別（見 `lib/openaiLegacyModels.ts`）。
 
+OAuth 與 API 共用的 GPT 模型 ID 或別名會使用 CLI 影像預設通道（若為 OAuth 或 API）；否則使用 OAuth。其他跨通道的模型仍需透過 `--provider` 指定。
+
 ```bash
 ima2 models --kind image
 ima2 defaults set image oauth/gpt-6-luna

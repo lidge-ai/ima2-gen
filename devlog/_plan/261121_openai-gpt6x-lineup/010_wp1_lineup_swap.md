@@ -108,4 +108,3 @@ Commit B (implementation): §1-§5 plus updates to existing tests that assert th
 - Commit A fails on base for reasons 1-9 (captured), passes after B.
 - Stale-id check at the end of wp1 and again in wp3: `rg -n -i "gpt-6-sol|gpt-6-astra|gpt-6\.1-sol|gpt-5\.[456]" --glob '!devlog/**' --glob '!CHANGELOG.md' --glob '!node_modules' --glob '!**/*.js'`. Allowed hits, by path: lib/openaiLegacyModels.ts and ui/src/lib/coreSelection.ts (legacy maps); lib/imageModels.ts (MODELS_WITHOUT_NONE_EFFORT); config.ts (GROK_PLANNER_MODELS, out of scope; DEFAULT_SVG_MODEL until wp2 decides); bin/commands/gen.ts and docs SVG author-model lines (wp2); doc sentences that name legacy ids as migrating (README*, docs/FAQ*, docs/CLI*, docs/API*, site, skills/ima2); tests that assert migration. Anything else is a miss.
 - Gates in 000 Verifier all exit 0.
-

@@ -53,7 +53,7 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(model, /getAgentLlmModelOption/);
     assert.match(model, /REASONING_EFFORT_OPTIONS/);
     assert.match(model, /reasoningEffort/);
-    assert.match(model, /provider: option\.provider/);
+    assert.match(model, /provider: agentModelProvider\(option, settings\.provider\)/);
     assert.match(model, /role="menuitemradio"/);
     assert.match(serverSettings, /reasoningEffort: "none"/);
     assert.match(uiSettings, /reasoningEffort: "none"/);
@@ -171,7 +171,7 @@ describe("Agent Mode right sidebar contract", () => {
     assert.match(model, /REASONING_EFFORT_OPTIONS/);
     assert.match(model, /image-model-select__trigger--pill/);
     assert.match(model, /image-model-select__menu/);
-    assert.match(model, /provider: option\.provider/);
+    assert.match(model, /provider: agentModelProvider\(option, settings\.provider\)/);
     assert.doesNotMatch(model, /<select value=\{settings\.provider\}/);
     assert.doesNotMatch(model, /<option value="grok">Grok<\/option>/);
     assert.doesNotMatch(model, /GROK_IMAGE_MODEL_OPTIONS|GEMINI_IMAGE_MODEL_OPTIONS|VIDEO_MODEL_OPTIONS/);

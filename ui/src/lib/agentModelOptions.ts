@@ -22,3 +22,7 @@ export function getAgentLlmModelOption(settings: { model: string; provider: Agen
     ?? AGENT_LLM_MODEL_OPTIONS.find((option) => option.provider === settings.provider)
     ?? AGENT_LLM_MODEL_OPTIONS[0];
 }
+
+export function agentModelProvider(option: AgentLlmModelOption, current: AgentLlmProvider): AgentLlmProvider {
+  return option.provider === "oauth" && (current === "oauth" || current === "api") ? current : option.provider;
+}

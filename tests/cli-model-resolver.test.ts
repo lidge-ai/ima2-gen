@@ -98,6 +98,23 @@ describe("resolveTarget", () => {
     });
   });
 
+  it("resolves all shared GPT aliases using the default lane and falls back to OAuth", () => {
+    const catalog = makeCatalog();
+    const ids = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"];
+    catalog.lanes.oauth.models.image = ids.map((id) => ({ id }));
+    catalog.lanes.api.models.image = ids.map((id) => ({ id }));
+    for (const [alias, model] of [["luna", ids[0]], ["terra", ids[1]], ["sol", ids[2]], ["astra", ids[3]], [ids[0], ids[0]]]) {
+      assert.deepStrictEqual(resolveTarget("image", { model: alias }, catalog, { image: "api/gpt-6-luna" }), {
+        ok: true, lane: "api", model, transport: "core",
+      });
+      assert.deepStrictEqual(resolveTarget("image", { model: alias }, catalog, { image: "agy/banana" }), {
+        ok: true, lane: "oauth", model, transport: "core",
+      });
+    }
+    catalog.lanes.api.status = "key-missing";
+    expectFailure(resolveTarget("image", { model: "sol" }, catalog, { image: "api/gpt-6-luna" }), "LANE_UNAVAILABLE");
+  });
+
   it("returns MODEL_LOCKED for a catalog-only Comfy video workflow", () => {
     const failure = expectFailure(
       resolveTarget("video", { model: "comfy/minimax-h3" }, makeCatalog(), {}),
