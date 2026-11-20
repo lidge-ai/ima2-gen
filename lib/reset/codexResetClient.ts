@@ -15,7 +15,8 @@ export class CodexResetClient {
     });
     return { availableCount: raw?.available_count ?? null, totalEarnedCount: raw?.total_earned_count ?? null,
       complete: !!raw && Array.isArray(raw.credits) && valid.length === entries.length
-        && (raw.available_count === undefined || raw.available_count === valid.length),
+        && typeof raw.available_count === "number" && Number.isInteger(raw.available_count)
+        && raw.available_count >= 0 && raw.available_count === valid.length,
       credits: valid.map(item => ({ id: item.id, status: item.status, title: item.title,
         grantedAt: item.granted_at, expiresAt: item.expires_at })) };
   }
