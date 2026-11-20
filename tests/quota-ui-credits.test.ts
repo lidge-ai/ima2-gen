@@ -113,6 +113,26 @@ function fakeTransport() {
 }
 
 describe("quota UI credits and reset behavior", () => {
+  for (const switchAt of ["open", "confirm"]) it(`rejects a changed Codex account at ${switchAt}`, async () => {
+    let current = "account-a"; let refreshes = 0;
+    const posts: string[] = [];
+    const transport = { getOperations: async () => [], list: async () => ({ accountRef: current, credits: [] }),
+      redeem: async () => { posts.push("confirmation", "consume"); } };
+    const panel = mountPanel(Panel, { transport, availableCount: 1, accountRef: "account-a", onRefresh: () => { refreshes++; } });
+    await Promise.resolve();
+    if (switchAt === "open") current = "account-b";
+    (findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
+    await new Promise(resolve => setImmediate(resolve));
+    if (switchAt === "confirm") {
+      const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+      current = "account-b";
+      (findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    assert.equal(findNode(panel.tree(), n => n.props.role === "dialog"), undefined);
+    assert.match(textContent(panel.tree()), /redeem.identityChanged/);
+    assert.deepEqual(posts, []); assert.equal(refreshes, 1);
+  });
   it("shows balance separately from the reset-credit count", () => {
     const tree = Credits({ balance: "12.50", resetCreditCount: 3 });
     assert.match(textContent(tree), /12\.5/);

@@ -73,6 +73,25 @@ function mountPanel(component: Component, props: Record<string, unknown>) {
   return { tree: () => tree! };
 }
 
+for (const switchAt of ["open", "confirm"]) it(`rejects a changed Grok coupon account at ${switchAt}`, async () => {
+  let current = "account-a"; let refreshes = 0;
+  const posts: string[] = [];
+  const transport = { list: async () => ({ accountLabel: current, accountRef: current, coupons: [{ tokenId: "token", validityEnd: null }] }),
+    getOperations: async () => [], redeem: async () => { posts.push("confirmation", "consume"); return {}; } };
+  const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport, onRefresh: () => { refreshes++; } });
+  await new Promise(resolve => setImmediate(resolve));
+  if (switchAt === "open") current = "account-b";
+  (findNode(panel.tree(), n => n.props["data-coupon"] === "token")!.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
+  await new Promise(resolve => setImmediate(resolve));
+  if (switchAt === "confirm") {
+    const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog); current = "account-b";
+    (findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  assert.equal(findNode(panel.tree(), n => n.props.role === "dialog"), undefined);
+  assert.match(textContent(panel.tree()), /redeem.identityChanged/);
+  assert.deepEqual(posts, []); assert.equal(refreshes, 1);
+});
 it("loads the coupon account and unresolved operations without redeeming", async () => {
   const calls: string[] = [];
   const transport = { list: async () => { calls.push("list"); return { accountLabel: "coupon@example.test", coupons: [{ tokenId: "token", validityEnd: 2000000000 }] }; },
