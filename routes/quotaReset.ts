@@ -102,16 +102,29 @@ function registerRedeem(router: Router, state: RouterState): void {
       if (!confirmation || confirmation.operationId !== id || confirmation.provider !== "codex" || req.body?.target != null) return error(res, 400, "INVALID_CONFIRMATION");
       if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
       if (confirmation.ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");
-      const credits = await clientFor(identity.ledgerKey.slice("codex:".length)).list();
-      if (!credits.complete) return error(res, 409, "RESET_LIST_PARTIAL");
-      ledger.claim({ operationId: id, provider: "codex", ledgerKey: identity.ledgerKey, ownerId: owner, creditSnapshot: creditSnapshot(credits.credits) });
+      let snapshot: string[] = [];
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const row = deps.db.prepare("SELECT revision FROM reset_accounts WHERE provider='codex' AND ledger_key=?")
+          .get(identity.ledgerKey) as { revision: number } | undefined;
+        const credits = await clientFor(identity.ledgerKey.slice("codex:".length)).list();
+        if (!credits.complete) return error(res, 409, "RESET_LIST_PARTIAL");
+        snapshot = creditSnapshot(credits.credits);
+        try {
+          ledger.claim({ operationId: id, provider: "codex", ledgerKey: identity.ledgerKey, ownerId: owner,
+            expectedRevision: row?.revision ?? 0, creditSnapshot: snapshot });
+          break;
+        } catch (claimError) {
+          if (!(claimError instanceof Error) || claimError.message !== "STALE_REVISION") throw claimError;
+          if (attempt === 1) return error(res, 409, "RESET_BUSY");
+        }
+      }
       if (resetIdentity("codex", await deps.accountId()).ledgerKey !== identity.ledgerKey) {
         ledger.abandon(id, owner); return error(res, 409, "IDENTITY_CHANGED");
       }
       let client: CodexResetClient;
       try { client = await clientFor(identity.ledgerKey.slice("codex:".length)).prepare(); }
       catch { ledger.abandon(id, owner); return error(res, 503, "DISPATCH_FAILED"); }
-      if (!ledger.sending(id, owner, false, creditSnapshot(credits.credits))) return error(res, 409, "OPERATION_FENCED");
+      if (!ledger.sending(id, owner, false, snapshot)) return error(res, 409, "OPERATION_FENCED");
       let result: Awaited<ReturnType<CodexResetClient["consume"]>>;
       try { result = await client.consume(id); } catch { ledger.unknown(id); return error(res, 503, "DISPATCH_FAILED"); }
       if (result.outcome === "unknown") ledger.unknown(id); else ledger.settle(id, JSON.stringify(result));

@@ -93,6 +93,34 @@ describe("reset route safety contracts", () => {
     await watcher.tick();
     assert.equal(consumeCalls(f).length, 2);
   }));
+  it("returns busy after two stale revisions without dispatching", async () => withFixture(async f => {
+    let lists = 0;
+    f.transport.send = async (url, body) => {
+      f.transport.calls.push({ url, body }); lists++;
+      f.db.prepare(`INSERT INTO reset_accounts VALUES ('codex', ?, 1)
+        ON CONFLICT(provider, ledger_key) DO UPDATE SET revision=revision+1`).run(resetIdentity("codex", "a").ledgerKey);
+      return { credits: [], available_count: 0 };
+    };
+    const token = await f.confirm("busy");
+    const response = await f.request(redeemPath, { operationId: "busy", confirmationToken: token });
+    assert.equal(response.status, 409);
+    assert.equal((await response.json() as { error: { code: string } }).error.code, "RESET_BUSY");
+    assert.equal(lists, 2); assert.equal(consumeCalls(f).length, 0);
+    assert.equal(f.db.prepare("SELECT * FROM reset_operations WHERE operation_id='busy'").get(), undefined);
+  }));
+  it("rejects an incomplete fresh list after a stale revision", async () => withFixture(async f => {
+    let lists = 0;
+    f.transport.send = async (url, body) => {
+      f.transport.calls.push({ url, body });
+      if (++lists === 1) f.db.prepare("INSERT INTO reset_accounts VALUES ('codex', ?, 1)").run(resetIdentity("codex", "a").ledgerKey);
+      return { credits: [], available_count: lists === 1 ? 0 : 1 };
+    };
+    const token = await f.confirm("partial-retry");
+    const response = await f.request(redeemPath, { operationId: "partial-retry", confirmationToken: token });
+    assert.equal(response.status, 409);
+    assert.equal((await response.json() as { error: { code: string } }).error.code, "RESET_LIST_PARTIAL");
+    assert.equal(lists, 2); assert.equal(consumeCalls(f).length, 0);
+  }));
   it("fences auto after manual success until a listed credit disappears", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
     let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
