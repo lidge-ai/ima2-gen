@@ -12,7 +12,8 @@ export interface AutoDependencies {
   now?(): number;
 }
 type Credit = { grantedAt?: unknown; expiresAt?: unknown; status?: unknown };
-const targetOf = (credit: Credit) => `${String(credit.grantedAt)}|${String(credit.expiresAt)}`;
+export const targetOf = (credit: Credit) => `${String(credit.grantedAt)}|${String(credit.expiresAt)}`;
+export const creditSnapshot = (credits: Credit[]) => [...new Set(credits.map(targetOf))];
 function time(value: unknown): number {
   if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
   return typeof value === "string" ? Date.parse(value) : NaN;
@@ -63,13 +64,14 @@ export class CodexAutoRedeem {
     this.db.prepare("INSERT OR IGNORE INTO reset_accounts VALUES ('codex', ?, 0)").run(key);
     const revision = (this.db.prepare("SELECT revision FROM reset_accounts WHERE provider='codex' AND ledger_key=?").get(key) as { revision: number }).revision;
     const list = await deps.client(account).list() as { credits: Credit[] };
+    if (this.hasFence(key, creditSnapshot(list.credits))) return;
     const reserved = new Set((this.db.prepare("SELECT target_key FROM reset_targets WHERE provider='codex' AND ledger_key=?").all(key) as Array<{ target_key: string }>).map(row => row.target_key));
     if (list.credits.some(item => reserved.has(targetOf(item)))) return;
     const credit = selectCredit(list.credits, deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
     if (!credit) return;
     const id = randomUUID();
     try { this.ledger.claim({ operationId: id, provider: "codex", ledgerKey: key, ownerId: this.owner,
-      expectedRevision: revision, auto: true, target: targetOf(credit) }); }
+      expectedRevision: revision, auto: true, target: targetOf(credit), creditSnapshot: creditSnapshot(list.credits) }); }
     catch (error) {
       if (error instanceof Error && error.message === "STALE_REVISION") await this.retryInspection(deps);
       return;
@@ -94,6 +96,27 @@ export class CodexAutoRedeem {
       if (result.outcome === "unknown") this.ledger.unknown(id);
       else this.ledger.settle(id, JSON.stringify(result), result.outcome === "nothing_to_reset" || result.outcome === "no_credit");
     } catch { this.ledger.unknown(id); }
+  }
+  private hasFence(key: string, snapshot: string[]): boolean {
+    const present = new Set(snapshot);
+    const rows = this.db.prepare(`SELECT operation_id, state, outcome, credit_snapshot FROM reset_operations
+      WHERE provider='codex' AND ledger_key=? AND credit_snapshot IS NOT NULL
+      AND state IN ('claimed','sending','unknown','acknowledged','settled')`)
+      .all(key) as Array<{ operation_id: string; state: string; outcome: string | null; credit_snapshot: string }>;
+    for (const row of rows) {
+      if (row.state === 'settled') {
+        try {
+          const outcome = (JSON.parse(row.outcome ?? '') as { outcome?: string }).outcome;
+          if (outcome === 'nothing_to_reset' || outcome === 'no_credit') continue;
+        } catch { return true; }
+      }
+      let previous: unknown;
+      try { previous = JSON.parse(row.credit_snapshot); } catch { return true; }
+      if (!Array.isArray(previous) || previous.some(pair => typeof pair !== 'string')) return true;
+      if (previous.every(pair => present.has(pair))) return true;
+      if (row.state !== 'claimed' && row.state !== 'sending') this.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(row.operation_id);
+    }
+    return false;
   }
   private async retryInspection(deps: AutoDependencies): Promise<void> {
     // A later tick re-inspects without allowing unbounded recursive retries.

@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-export interface Claim { operationId: string; provider: string; ledgerKey: string; ownerId: string; target?: string; expectedRevision?: number; auto?: boolean }
+export interface Claim { operationId: string; provider: string; ledgerKey: string; ownerId: string; target?: string; expectedRevision?: number; auto?: boolean; creditSnapshot?: string[] }
 export class OperationLedger {
   constructor(private readonly db: Database.Database) {}
   claim(input: Claim): void {
@@ -11,9 +11,9 @@ export class OperationLedger {
       if (!changed.changes) throw new Error("STALE_REVISION");
       if (input.auto && !this.enabled(input.provider)) throw new Error("AUTO_DISABLED");
       this.db.prepare(`INSERT INTO reset_operations
-        (operation_id, provider, ledger_key, target, state, owner_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 'claimed', ?, ?, ?)`).run(input.operationId, input.provider, input.ledgerKey,
-        input.target ?? null, input.ownerId, now, now);
+        (operation_id, provider, ledger_key, target, state, owner_id, created_at, updated_at, credit_snapshot)
+        VALUES (?, ?, ?, ?, 'claimed', ?, ?, ?, ?)`).run(input.operationId, input.provider, input.ledgerKey,
+        input.target ?? null, input.ownerId, now, now, input.creditSnapshot ? JSON.stringify(input.creditSnapshot) : null);
       if (input.target) this.db.prepare("INSERT INTO reset_targets VALUES (?, ?, ?, ?, ?)")
         .run(input.provider, input.ledgerKey, input.target, input.operationId, now);
     }).immediate();
@@ -74,4 +74,6 @@ export function migrateResetTables(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS reset_settings (provider TEXT PRIMARY KEY, enabled INTEGER NOT NULL,
       lead_minutes INTEGER NOT NULL, updated_at INTEGER NOT NULL);
   `);
+  const columns = db.prepare("PRAGMA table_info(reset_operations)").all() as Array<{ name: string }>;
+  if (!columns.some(column => column.name === "credit_snapshot")) db.exec("ALTER TABLE reset_operations ADD COLUMN credit_snapshot TEXT");
 }

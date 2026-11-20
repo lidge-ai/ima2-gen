@@ -101,7 +101,7 @@ describe("Grok coupon routes", () => {
     f.setSub(null); assert.notEqual((await f.request("/api/quota/grok/reset-coupons")).status, 200); assert.equal(f.calls.length, 0);
   }));
   for (const state of ["claimed", "sending", "unknown"]) it(`does not redispatch ${state} after restart`, async () => withFixture(async f => {
-    f.db.prepare("INSERT INTO reset_operations VALUES ('op', 'grok', 'grok:oidc:a', 'one', ?, NULL, NULL, 'old', NULL, NULL, NULL, 0, 0)").run(state);
+    f.db.prepare("INSERT INTO reset_operations VALUES ('op', 'grok', 'grok:oidc:a', 'one', ?, NULL, NULL, 'old', NULL, NULL, NULL, 0, 0, NULL)").run(state);
     await f.restart(); assert.equal((await f.request(path, { operationId: "op", target: "one" })).status, 200); assert.equal(sends(f).length, 0);
   }));
   for (const [name, bad] of [["missing trailer", { body: Uint8Array.from([0, 0, 0, 0, 0]), status: 200 }], ["nonzero status", response([], 7)]] as const) it(`records ${name} as unknown and blocks another attempt`, async () => withFixture(async f => {

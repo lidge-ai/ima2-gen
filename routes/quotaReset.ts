@@ -14,6 +14,7 @@ import { grokIdentity } from "../lib/reset/grokIdentity.js";
 import { discoverXaiOAuthEndpoints, getGrokAccessToken } from "../lib/xaiAuth.js";
 import { grokResetTransport } from "../lib/reset/transport.js";
 import { OperationLedger } from "../lib/reset/operationLedger.js";
+import { creditSnapshot } from "../lib/reset/codexAutoRedeem.js";
 export interface ResetDependencies {
   db: Database.Database; transport: ResetTransport;
   accountId(): string | Promise<string>; usage(): Promise<unknown>;
@@ -101,7 +102,8 @@ function registerRedeem(router: Router, state: RouterState): void {
       if (!confirmation || confirmation.operationId !== id || confirmation.provider !== "codex" || req.body?.target != null) return error(res, 400, "INVALID_CONFIRMATION");
       if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
       if (confirmation.ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");
-      ledger.claim({ operationId: id, provider: "codex", ledgerKey: identity.ledgerKey, ownerId: owner });
+      const credits = await clientFor(identity.ledgerKey.slice("codex:".length)).list();
+      ledger.claim({ operationId: id, provider: "codex", ledgerKey: identity.ledgerKey, ownerId: owner, creditSnapshot: creditSnapshot(credits.credits) });
       if (resetIdentity("codex", await deps.accountId()).ledgerKey !== identity.ledgerKey) {
         ledger.abandon(id, owner); return error(res, 409, "IDENTITY_CHANGED");
       }

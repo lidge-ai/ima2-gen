@@ -134,14 +134,14 @@ describe("reset route safety contracts", () => {
     assert.equal(consumeCalls(f).length, 1);
   }));
   it("loads unresolved operations scoped to the current identity after restart", async () => withFixture(async f => {
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL)");
     insert.run("own", "codex:a"); insert.run("other", "codex:b"); await f.restart();
     const data = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { operations: Array<{ operation_id: string }> };
     assert.deepEqual(data.operations.map(row => row.operation_id), ["own"]); assert.equal(consumeCalls(f).length, 0);
   }));
   it("acknowledges only unknown operations and refuses recovered operations with live owners", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL)");
     insert.run("claimed", "claimed", null);
     assert.equal((await f.request("/api/quota/reset-operations/claimed/acknowledge", {})).status, 409);
     f.db.prepare("UPDATE reset_operations SET state='abandoned' WHERE operation_id='claimed'").run();
@@ -151,7 +151,7 @@ describe("reset route safety contracts", () => {
   }));
   it("refuses recovered unknown acknowledgement while its owner is alive", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0)").run();
+    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL)").run();
     assert.equal((await f.request("/api/quota/reset-operations/recovered/acknowledge", {})).status, 409);
     assert.equal(consumeCalls(f).length, 0);
   }));

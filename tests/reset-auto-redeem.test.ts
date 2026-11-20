@@ -64,7 +64,7 @@ describe("auto-redeem reservation and settings", () => {
     const watcher = new CodexAutoRedeem(f.a, deps);
     await watcher.tick(); await watcher.tick();
     assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 1);
-    credits = credits.slice(1); await watcher.tick();
+    credits = credits.slice(0, 1); await watcher.tick();
     assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 2);
   }));
   for (const code of ["nothing_to_reset", "no_credit"]) it(`releases ${code} for a later retry`, async () => fixture(async f => {
