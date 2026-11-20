@@ -406,8 +406,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           ? "reference-to-video"
           : deriveVideoMode(resolved.length);
       // Frame pins make a reference-to-video request whose source is the pinned first
-      // frame (xAI guide; plan R4-F1), whatever mode the caller named.
-      const mode: VideoMode = hasVideoPins(pins)
+      // frame (xAI guide; plan R4-F1), whatever mode the caller named. On 1.5 a provider
+      // URL beside a voice or composer reference is that pinned first frame too, so the
+      // r2v caps are checked before planning rather than by xAI after it (review #2).
+      const urlPinsR2v = Boolean(incomingProviderUrl) && derivedMode === "reference-to-video"
+        && !isComfy && canonicalGrokVideoModel(modelCheck.model) === GROK_VIDEO_MODEL_15;
+      const mode: VideoMode = hasVideoPins(pins) || urlPinsR2v
         ? "reference-to-video"
         : incomingProviderUrl
         ? "image-to-video"
