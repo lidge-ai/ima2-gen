@@ -24,8 +24,6 @@ export async function receiptFixture() {
     await put("ui/dist/fonts/fixture.woff2", "fontbytes");
     // Complete first directory access during fixture setup, before build watchers.
     await readdir(join(root, "ui/public/fonts"));
-    // Recursive macOS watchers may receive the initial font creation after setup.
-    if (process.platform === "darwin") await new Promise(resolve => setTimeout(resolve, 200));
     return { root, dist: join(root, "ui/dist"), put, async close() {
       for (const [key, value] of saved) process.env[key] = value;
       await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
