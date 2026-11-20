@@ -46,7 +46,7 @@ test("API image tool selection persists, submits separately and resets on defaul
         })));
       expect(qualityWidths).toHaveLength(5);
       for (const width of qualityWidths) expect(width.content).toBeLessThanOrEqual(width.visible);
-      await expect(page.locator(MODEL_TRIGGER)).toContainText("5.6l");
+      await expect(page.locator(MODEL_TRIGGER)).toContainText("6l");
       await page.screenshot({ path: info.outputPath("wp02-image25-selected.png") });
       const api = await submit(page, capture, origin);
       expect(api.provider).toBe("api");
@@ -64,7 +64,7 @@ test("API image tool selection persists, submits separately and resets on defaul
       await page.reload();
       const oauth = await submit(page, capture, origin);
       expect(oauth.provider).toBe("oauth");
-      expect(oauth.model).toBe("gpt-6-luna"); // GPT OAuth runs the legacy id on its GPT-6 tier
+      expect(oauth.model).toBe("gpt-6-luna");
       expect(oauth).not.toHaveProperty("imageToolModel");
       expect(oauth.quality).toBe("medium");
       await selectOption(page, PROVIDER_TRIGGER, "GPT API");
