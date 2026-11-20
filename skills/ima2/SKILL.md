@@ -432,7 +432,13 @@ a preview: `sharp(file).metadata()` should report `channels: 4, hasAlpha: true`.
 
 ### Raster-to-Vector (SVG)
 
-`ima2 gen` always produces raster. When you need a REAL vector — a logo that
+`ima2 gen --svg` generates SVG on the OpenAI API-key lane with `gpt-image-2.6-flare`
+or `gpt-image-2.6-sunburst` (subject to access). The author model defaults to
+`gpt-5.6-luna`, live-verified with a funded key (PR #425); `gpt-6-luna` was not
+verified. Override with `IMA2_SVG_MODEL` or `--svg-model`; `--svg-effort` also
+works with the default author, with supported efforts depending on the model.
+
+For local tracing, when you need a REAL vector — a logo that
 scales, an icon for a design system, a brand-safe SVG asset — trace the raster
 afterwards. `flat vector style` in a prompt only produces a bitmap that LOOKS
 vector; it has no paths.

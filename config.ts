@@ -27,6 +27,7 @@ import {
 
 // 4.6 rewrites prompts in ways that read worse than 4.3 for this planner's job, which
 // is judged by the result rather than a benchmark. 4.6 stays selectable below.
+// gpt-5.6-luna was live-verified with a funded key (PR #425); gpt-6-luna was not; override with IMA2_SVG_MODEL/--svg-model.
 export const DEFAULT_SVG_MODEL = "gpt-5.6-luna";
 export const DEFAULT_GROK_PLANNER_MODEL = "grok-4.3";
 export const AGY_PROCESS_POLICY = Object.freeze({ timeoutMs: 360_000, terminateGraceMs: 1000, maxOutputBytes: 1_048_576 });

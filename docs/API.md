@@ -413,8 +413,10 @@ references) requests `output_format: "svg"` from `/v1/images/generations`. OpenA
 raster reference (`quality` and `complexity` apply) and an authoring model writes the SVG.
 The required `svg.model` defaults to `gpt-5.6-luna`; set `IMA2_SVG_MODEL` or
 `apiProvider.defaultSvgModel` in config to override it, or pass `svgModel` per request.
-Optional `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`) requires an
-explicit `svgModel` and becomes `svg.reasoning.effort`.
+The default was live-verified with a funded key (PR #425); `gpt-6-luna` was not verified.
+Optional `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`) applies to the
+effective author model, including the default, and becomes `svg.reasoning.effort`.
+Supported efforts depend on the selected author model.
 
 The returned XML is sanitized before anything is stored or returned (`lib/svgSanitize.ts`):
 DOCTYPE subsets and processing instructions are dropped; `script`, `foreignObject`,
@@ -430,7 +432,7 @@ The file is saved as `.svg` with a rasterized `.svg.thumb.jpg`; the sidecar keep
 |---|---|
 | `SVG_OUTPUT_UNSUPPORTED` | not the API lane with a 2.6 image model |
 | `SVG_COUNT_UNSUPPORTED` / `SVG_EDIT_UNSUPPORTED` | `n` other than 1 / reference images attached |
-| `INVALID_SVG_MODEL` / `INVALID_SVG_REASONING_EFFORT` / `SVG_REASONING_REQUIRES_MODEL` | bad authoring options |
+| `INVALID_SVG_MODEL` / `INVALID_SVG_REASONING_EFFORT` | bad authoring options |
 | `SVG_OPTIONS_WITHOUT_SVG` | SVG options with another format |
 | `IMAGE_FEATURE_NOT_ENABLED` | the project lacks SVG output or SVG model selection |
 

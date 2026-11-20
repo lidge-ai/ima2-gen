@@ -93,7 +93,6 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
     ["reference images", { references: ["REF"] }, "SVG_EDIT_UNSUPPORTED"],
     ["a malformed svgModel", { svgModel: "bad model!" }, "INVALID_SVG_MODEL"],
     ["an unknown reasoning effort", { svgModel: "gpt-5.6-luna", svgReasoningEffort: "ultra" }, "INVALID_SVG_REASONING_EFFORT"],
-    ["reasoning without a model", { svgReasoningEffort: "low" }, "SVG_REASONING_REQUIRES_MODEL"],
     ["SVG options on a PNG", { format: "png", svgModel: "gpt-5.6-luna" }, "SVG_OPTIONS_WITHOUT_SVG"],
   ];
   for (const [label, patch, code] of rejected) {
