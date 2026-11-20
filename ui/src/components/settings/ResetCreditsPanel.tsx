@@ -61,8 +61,17 @@ type PanelProps = {
   transport: ResetCreditsTransport; t?: QuotaTranslate; onRefresh?: () => void;
   accountRef?: string; accountEmail?: string | null;
   availableCount?: number | null; applicableAvailableCount?: number | null;
+  fencePoller?: FencePoller;
 };
-export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, accountEmail, availableCount, applicableAvailableCount }: PanelProps) {
+/** Starts periodic refreshes and returns a stop function. */
+export type FencePoller = (refresh: () => void) => () => void;
+const FENCE_POLL_MS = 30_000;
+const intervalFencePoller: FencePoller = (refresh) => {
+  if (typeof setInterval !== "function") return () => {};
+  const timer = setInterval(refresh, FENCE_POLL_MS);
+  return () => clearInterval(timer);
+};
+export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, accountEmail, availableCount, applicableAvailableCount, fencePoller = intervalFencePoller }: PanelProps) {
   const [settings, setSettings] = useState<ResetSettings | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [ops, setOps] = useState<ResetOperation[]>([]);
@@ -87,6 +96,8 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
     if (data.accountRef === displayedRef.current) setFence(data.fence);
   };
   useEffect(() => { setFence({ fenced: false }); void refreshFence().catch(() => setMessage("loadError")); }, [transport, accountRef]);
+  // Background auto-redeem can create a fence while this panel stays open.
+  useEffect(() => fencePoller(() => { if (!inFlight.current) void refreshFence().catch(() => {}); }), [transport, accountRef, fencePoller]);
   useEffect(() => { void transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
     .catch(() => { setOpsLoaded(false); setMessage("loadError"); }); }, [transport]);
   useEffect(() => { if (transport.getSettings) void transport.getSettings().then(setSettings).catch(() => setMessage("loadError")); }, [transport]);
