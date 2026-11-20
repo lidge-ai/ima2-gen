@@ -171,6 +171,20 @@ describe("quota details start folded", () => {
     (list!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
     assert.ok(visibleText(view.tree()).includes(`settings.quota.resetCredits.expires(${date})`));
   });
+  it("ignores an older summary response that arrives after a newer list", async () => {
+    const stale = { accountRef: "acct", complete: true, credits: [{ expiresAt: "2026-12-01T00:00:00Z" }] };
+    const fresh = { accountRef: "acct", complete: true, credits: [{ expiresAt: "2026-12-09T00:00:00Z" }] };
+    let releaseFirst!: () => void; let calls = 0;
+    const transport = { getOperations: async () => [], redeem: async () => {},
+      list: () => ++calls === 1 ? new Promise(resolve => { releaseFirst = () => resolve(stale); }) : Promise.resolve(fresh) };
+    const view = mountPanel(Panel, { transport, accountRef: "acct", availableCount: 1, t: withParams });
+    (disclosure(view.tree())!.props.onClick as () => void)();
+    (findNode(view.tree(), n => n.type === "button" && textContent(n).includes("resetCredits.list"))!.props.onClick as () => void)();
+    await new Promise(resolve => setImmediate(resolve));
+    releaseFirst(); await new Promise(resolve => setImmediate(resolve));
+    const summary = textContent(findNode(view.tree(), n => n.props.className === "quota-details__summary")!);
+    assert.ok(summary.includes(new Date("2026-12-09T00:00:00Z").toLocaleDateString()), summary);
+  });
   it("refreshes the earliest-expiry summary after a redemption", async () => {
     let credits = [{ expiresAt: "2026-12-01T00:00:00Z" }, { expiresAt: "2026-12-09T00:00:00Z" }];
     const transport = { getOperations: async () => [], list: async () => ({ accountRef: "acct", complete: true, credits }),

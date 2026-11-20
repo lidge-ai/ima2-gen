@@ -107,3 +107,6 @@ Base: 410ef014. `node --import tsx --test tests/quota-ui-credits.test.ts tests/q
 ## Final review #11 minor — expiry summary
 
 Base: 228da39c. `node --import tsx --test tests/quota-ui-credits.test.ts` (reset test guard): 25 tests, 23 pass, 2 fail, exit 1; sentinel 0. A numeric expiry (seconds) produced no summary date and was printed raw in the list; after a redemption the folded summary kept the consumed credit's earliest expiry because it was read only on mount. Synthetic transports only.
+## Final review #12 minor — out-of-order summary reads
+
+Base: 6ab8a286. `node --import tsx --test tests/quota-ui-credits.test.ts` (reset test guard): 26 tests, 25 pass, 1 fail, exit 1; sentinel 0. `ignores an older summary response that arrives after a newer list`: the slow mount-time list resolved after an explicit list and overwrote the summary with the stale earliest expiry (12/1 instead of 12/9). Synthetic transports only.
