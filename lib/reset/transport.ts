@@ -11,7 +11,7 @@ export function codexResetTransport(expectedAccount: () => string): ResetTranspo
     if (!session.accountId || session.accountId !== expectedAccount()) throw new Error("IDENTITY_CHANGED");
     const response = await fetch(url, { method: consuming ? "POST" : "GET",
       headers: authHeaders(session, consuming ? { "content-type": "application/json" } : undefined),
-      ...(consuming ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(consuming ? 10_000 : 8_000) });
+      ...(consuming ? { body: JSON.stringify(body), redirect: "manual" as const } : {}), signal: AbortSignal.timeout(consuming ? 10_000 : 8_000) });
     if (!response.ok) throw new Error(`RESET_HTTP_${response.status}`);
     const text = await response.text();
     if (Buffer.byteLength(text) > 262144) throw new Error("RESET_BODY_TOO_LARGE");

@@ -12,6 +12,7 @@ export interface AutoDependencies {
   now?(): number;
 }
 type Credit = { grantedAt?: unknown; expiresAt?: unknown; status?: unknown };
+const targetOf = (credit: Credit) => `${String(credit.grantedAt)}|${String(credit.expiresAt)}`;
 function time(value: unknown): number {
   if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
   return typeof value === "string" ? Date.parse(value) : NaN;
@@ -62,11 +63,12 @@ export class CodexAutoRedeem {
     this.db.prepare("INSERT OR IGNORE INTO reset_accounts VALUES ('codex', ?, 0)").run(key);
     const revision = (this.db.prepare("SELECT revision FROM reset_accounts WHERE provider='codex' AND ledger_key=?").get(key) as { revision: number }).revision;
     const list = await deps.client(account).list() as { credits: Credit[] };
-    const credit = selectCredit(list.credits, deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
+    const reserved = new Set((this.db.prepare("SELECT target_key FROM reset_targets WHERE provider='codex' AND ledger_key=?").all(key) as Array<{ target_key: string }>).map(row => row.target_key));
+    const credit = selectCredit(list.credits.filter(item => !reserved.has(targetOf(item))), deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
     if (!credit) return;
     const id = randomUUID();
     try { this.ledger.claim({ operationId: id, provider: "codex", ledgerKey: key, ownerId: this.owner,
-      expectedRevision: revision, auto: true, target: `${String(credit.grantedAt)}|${String(credit.expiresAt)}` }); }
+      expectedRevision: revision, auto: true, target: targetOf(credit) }); }
     catch (error) {
       if (error instanceof Error && error.message === "STALE_REVISION") await this.retryInspection(deps);
       return;
@@ -74,9 +76,14 @@ export class CodexAutoRedeem {
     try {
       if (resetIdentity("codex", await deps.accountId()).ledgerKey !== key) { this.ledger.abandon(id, this.owner); return; }
     } catch { this.ledger.abandon(id, this.owner); return; }
-    if (!selectCredit([credit], deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes)) {
-      this.ledger.abandon(id, this.owner); return;
+    let fresh: Awaited<ReturnType<CodexResetClient["list"]>>;
+    try { fresh = await deps.client(account).list(); }
+    catch { this.ledger.abandon(id, this.owner); return; }
+    if (!selectCredit(fresh.credits.filter(item => targetOf(item) === targetOf(credit)), deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes)) {
+      this.ledger.abandon(id, this.owner); await this.retryInspection(deps); return;
     }
+    try { if (resetIdentity("codex", await deps.accountId()).ledgerKey !== key) { this.ledger.abandon(id, this.owner); return; } }
+    catch { this.ledger.abandon(id, this.owner); return; }
     if (!this.ledger.sending(id, this.owner, true)) return;
     try {
       const result = await deps.client(account).consume(id);

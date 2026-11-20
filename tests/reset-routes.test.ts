@@ -42,7 +42,7 @@ async function fixture(lan = false) {
     method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", ...headers },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  const confirm = async (operationId: string, headers = {}) => (await (await request("/api/quota/reset-confirmations", { provider: "codex", operationId }, headers)).json() as { token: string }).token;
+  const confirm = async (operationId: string, headers = {}) => (await (await request("/api/quota/reset-confirmations", { provider: "codex", operationId, accountRef: resetIdentity("codex", account).accountRef }, headers)).json() as { token: string }).token;
   return { db, transport, request, confirm, setAccount: (id: string) => { account = id; }, usageReads: () => usageReads,
     restart: async () => { await running.close(); running = await start(); },
     close: async () => { await running.close(); db.close(); } };
@@ -54,11 +54,20 @@ async function withFixture(fn: (f: Awaited<ReturnType<typeof fixture>>) => Promi
 }
 
 describe("reset route safety contracts", () => {
+  it("records a consuming redirect failure as unknown and never resends", async () => withFixture(async f => {
+    const send = f.transport.send.bind(f.transport);
+    f.transport.send = async (url, body) => { if (url.endsWith("/consume")) { f.transport.calls.push({ url, body }); throw new Error("RESET_HTTP_307"); } return send(url, body); };
+    const token = await f.confirm("redirect");
+    await f.request(redeemPath, { operationId: "redirect", confirmationToken: token });
+    assert.equal((f.db.prepare("SELECT state FROM reset_operations WHERE operation_id='redirect'").get() as { state: string }).state, "unknown");
+    await f.request(redeemPath, { operationId: "redirect", confirmationToken: token }); assert.equal(consumeCalls(f).length, 1);
+  }));
   it("rejects confirmation when the displayed Codex account changed", async () => withFixture(async f => {
     const displayed = await (await f.request("/api/quota/codex/reset-credits")).json() as { accountRef: string };
     assert.ok(displayed.accountRef); f.setAccount("b");
     const response = await f.request("/api/quota/reset-confirmations", { provider: "codex", operationId: "changed", accountRef: displayed.accountRef });
-    assert.equal(response.status, 409); assert.equal((await response.json() as { error: { code: string } }).error.code, "IDENTITY_CHANGED");
+    assert.equal(response.status, 409); const body = await response.json() as { error: { code: string }; token?: string };
+    assert.equal(body.error.code, "IDENTITY_CHANGED"); assert.equal(body.token, undefined);
     assert.equal(consumeCalls(f).length, 0);
   }));
   it("lists reset credits as the DTO", async () => withFixture(async f => {

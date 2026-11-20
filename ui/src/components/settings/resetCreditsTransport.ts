@@ -10,9 +10,9 @@ export const resetCreditsTransport: ResetCreditsTransport = {
     return data.operations;
   },
   list: () => jsonFetch<ResetList>("/api/quota/codex/reset-credits"),
-  async redeem() {
+  async redeem(accountRef) {
     const operationId = crypto.randomUUID();
-    const confirmation = await post<{ token: string }>("/api/quota/reset-confirmations", { provider: "codex", operationId });
+    const confirmation = await post<{ token: string }>("/api/quota/reset-confirmations", { provider: "codex", operationId, accountRef });
     return post<{ result?: { outcome?: string }; outcome?: string }>("/api/quota/codex/reset-credits/redeem", {
       operationId, confirmationToken: confirmation.token,
     });

@@ -95,6 +95,17 @@ it("requires confirmation before redeeming the selected coupon", async () => {
   assert.deepEqual(calls, []);
   assert.ok(findNode(panel.tree(), n => n.props.role === "dialog"));
 });
+it("passes the displayed coupon account into confirmation", async () => {
+  const calls: string[] = [];
+  const transport = { list: async () => ({ accountLabel: "account", accountRef: "displayed-ref", coupons: [{ tokenId: "token", validityEnd: null }] }),
+    getOperations: async () => [], redeem: async (_id: string, accountRef: string) => { calls.push(accountRef); return {}; } };
+  const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
+  await new Promise(resolve => setImmediate(resolve));
+  (findNode(panel.tree(), n => n.props["data-coupon"] === "token")!.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
+  const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+  (findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
+  await new Promise(resolve => setImmediate(resolve)); assert.deepEqual(calls, ["displayed-ref"]);
+});
 it("loads auto-redeem settings and exposes bounded lead minutes", async () => {
   const transport = { getOperations: async () => [], redeem: async () => {}, getSettings: async () => ({ enabled: false, leadMinutes: 10 }), saveSettings: async () => {} };
   const panel = mountPanel(loadComponent("ResetCreditsPanel", "ResetCreditsPanel"), { transport });

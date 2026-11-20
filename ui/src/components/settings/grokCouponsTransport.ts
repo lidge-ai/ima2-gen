@@ -11,9 +11,9 @@ export const grokCouponsTransport: GrokCouponsTransport = {
     const data = await jsonFetch<{ operations: ResetOperation[] }>("/api/quota/reset-operations?provider=grok");
     return data.operations;
   },
-  async redeem(target) {
+  async redeem(target, accountRef) {
     const operationId = crypto.randomUUID();
-    const confirmation = await post<{ token: string }>("/api/quota/reset-confirmations", { provider: "grok", operationId, target });
+    const confirmation = await post<{ token: string }>("/api/quota/reset-confirmations", { provider: "grok", operationId, target, accountRef });
     return post("/api/quota/grok/reset-coupons/redeem", { operationId, target, confirmationToken: confirmation.token });
   },
   acknowledge: (id) => post(`/api/quota/reset-operations/${encodeURIComponent(id)}/acknowledge`, {}),

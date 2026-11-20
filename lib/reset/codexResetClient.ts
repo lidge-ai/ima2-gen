@@ -4,7 +4,7 @@ const LIST_URL = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits"
 const object = (value: unknown): Record<string, unknown> | null => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 export class CodexResetClient {
   constructor(private readonly transport: ResetTransport) {}
-  async list(): Promise<unknown> {
+  async list() {
     const raw = object(await this.transport.send(LIST_URL, {}));
     if (!raw || !Array.isArray(raw.credits)) throw new Error("INVALID_RESET_LIST");
     return { availableCount: raw.available_count ?? null, totalEarnedCount: raw.total_earned_count ?? null,

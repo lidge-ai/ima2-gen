@@ -108,6 +108,7 @@ const Panel = loadComponent("ResetCreditsPanel", "ResetCreditsPanel");
 function fakeTransport() {
   const calls: string[] = [];
   return { calls, getOperations: async () => { calls.push("GET"); return [{ operationId: "op-1", state: "unknown" }]; },
+    list: async () => ({ accountRef: "displayed", credits: [] }),
     redeem: async () => { calls.push("POST"); } };
 }
 
@@ -154,14 +155,28 @@ describe("quota UI credits and reset behavior", () => {
     assert.match(zero, /\b0\b/);
     assert.match(unknown, /—/);
   });
-  it("opens a confirmation dialog before any POST", () => {
+  it("opens a confirmation dialog before any POST", async () => {
     const transport = fakeTransport();
     const mounted = mountPanel(Panel, { transport });
     const button = findNode(mounted.tree(), node => node.type === "button");
     assert.ok(button);
     (button.props.onClick as () => void)();
+    await new Promise(resolve => setImmediate(resolve));
     assert.equal(transport.calls.filter(call => call === "POST").length, 0);
     assert.ok(findNode(mounted.tree(), node => node.props.role === "dialog"), "confirmation dialog");
+  });
+  it("sends the account reference shown in the confirmation dialog", async () => {
+    let account = "";
+    const transport = { getOperations: async () => [], list: async () => ({ accountRef: "displayed-ref", credits: [] }),
+      redeem: async (ref: string) => { account = ref; } };
+    const panel = mountPanel(Panel, { transport, availableCount: 1 }); await Promise.resolve();
+    const open = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"));
+    (open!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
+    const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+    assert.match(textContent(dialog), /displayed-ref/);
+    const confirm = findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"));
+    (confirm!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
+    assert.equal(account, "displayed-ref");
   });
   it("reloads an unresolved operation on remount without another POST", async () => {
     const transport = fakeTransport();

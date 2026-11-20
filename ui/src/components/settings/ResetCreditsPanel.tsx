@@ -7,13 +7,14 @@ export interface ResetOperation {
   operationId?: string; operation_id?: string; state: string; unknownOrigin?: string; unknown_origin?: string | null;
 }
 export interface ResetList {
+  accountRef: string;
   credits: Array<{ id?: string; title?: string | null; status?: string | null; expiresAt?: string | null }>;
   availableCount?: number | null;
 }
 export interface ResetCreditsTransport {
   getOperations(): Promise<ResetOperation[]>;
   list?(): Promise<ResetList>;
-  redeem(): Promise<void | { result?: { outcome?: string }; outcome?: string }>;
+  redeem(accountRef: string): Promise<void | { result?: { outcome?: string }; outcome?: string }>;
   acknowledge?(id: string): Promise<unknown>;
   getSettings?(): Promise<ResetSettings>;
   saveSettings?(settings: ResetSettings): Promise<ResetSettings>;
@@ -59,7 +60,7 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
   const [settings, setSettings] = useState<ResetSettings | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [ops, setOps] = useState<ResetOperation[]>([]);
-  const [dialog, setDialog] = useState(false);
+  const [dialog, setDialog] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [list, setList] = useState<ResetList | null>(null);
@@ -80,16 +81,16 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
     try { setSettings(await transport.saveSettings(next)); } catch { setMessage("loadError"); } finally { setSettingsBusy(false); }
   };
   const confirm = async () => {
-    if (inFlight.current) return;
+    if (inFlight.current || !dialog) return;
     inFlight.current = true;
     setBusy(true); setMessage("redeeming");
     try {
-      const result = await transport.redeem();
+      const result = await transport.redeem(dialog);
       setMessage(outcomeKeys[result?.result?.outcome ?? result?.outcome ?? "unknown"] ?? "unknown");
       onRefresh?.();
     } catch (error) {
       setMessage((error as { code?: string }).code === "IDENTITY_CHANGED" ? "identityChanged" : "unknown");
-    } finally { inFlight.current = false; setBusy(false); setDialog(false); void refreshOps(); trigger.current?.focus(); }
+    } finally { inFlight.current = false; setBusy(false); setDialog(null); void refreshOps(); trigger.current?.focus(); }
   };
   const acknowledge = async (id: string) => {
     if (!transport.acknowledge || busy) return;
@@ -98,7 +99,11 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
     catch { setMessage("ackBlocked"); } finally { setBusy(false); }
   };
   return <div className="quota-reset">
-    <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => setDialog(true)}>
+    <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => {
+      if (!transport.list) return;
+      setBusy(true); void transport.list().then(data => { setList(data); if (data.accountRef) setDialog(data.accountRef); else setListError(true); })
+        .catch(() => setListError(true)).finally(() => setBusy(false));
+    }}>
       {t("settings.quota.redeem.action")}</button>
     {noUsableCredits && <p className="settings-row__microcopy">{t(usableCount == null ? "settings.quota.redeem.creditUnknown" : "settings.quota.redeem.noCredit")}</p>}
     <button type="button" className="settings-action-btn" onClick={() => {
@@ -123,9 +128,10 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
     {operationRows(ops, busy, t, (id) => { void acknowledge(id); })}
     <div role="status" aria-live="polite">{message && t(message === "ackBlocked" ? "settings.quota.acknowledge.blocked" : `settings.quota.redeem.${message}`)}</div>
     {dialog && <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title"
-      className="quota-reset__dialog" onKeyDown={(event) => trapKey(event, () => { if (!busy) { setDialog(false); trigger.current?.focus(); } })}>
+      className="quota-reset__dialog" onKeyDown={(event) => trapKey(event, () => { if (!busy) { setDialog(null); trigger.current?.focus(); } })}>
       <p id="reset-confirm-title">{t("settings.quota.redeem.confirm")}</p>
-      <button type="button" disabled={busy} ref={(node) => { node?.focus(); }} onClick={() => { setDialog(false); trigger.current?.focus(); }}>{t("settings.quota.redeem.cancel")}</button>
+      <p>{dialog}</p>
+      <button type="button" disabled={busy} ref={(node) => { node?.focus(); }} onClick={() => { setDialog(null); trigger.current?.focus(); }}>{t("settings.quota.redeem.cancel")}</button>
       <button type="button" disabled={busy} onClick={() => { void confirm(); }}>{t("settings.quota.redeem.action")}</button>
     </div></div>}
   </div>;

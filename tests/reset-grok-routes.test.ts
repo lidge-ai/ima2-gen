@@ -16,6 +16,7 @@ const { migrate, closeDb } = await import("../lib/db.js");
 const { stopAgentQueueWorker } = await import("../lib/agentQueueWorker.js");
 const { createTestRuntimeContext } = await import("../lib/runtimeContext.js");
 const { buildApp } = await import("../server.js");
+const { resetIdentity } = await import("../lib/reset/identity.js");
 after(() => { stopAgentQueueWorker(); closeDb(); rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); assert.equal(sentinelCount(), 0); });
 const frame = (flag: number, data: number[]) => [flag, 0, 0, 0, data.length, ...data];
 const bytes = (s: string) => [...new TextEncoder().encode(s)];
@@ -42,7 +43,7 @@ async function fixture(lan = false) {
   };
   let running = await start();
   const request = (path: string, body?: unknown, headers: Record<string, string> = {}) => fetch(running.base + path, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", ...headers }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-  const confirm = async (operationId: string, target = "one") => (await (await request("/api/quota/reset-confirmations", { provider: "grok", operationId, target })).json() as { token: string }).token;
+  const confirm = async (operationId: string, target = "one") => (await (await request("/api/quota/reset-confirmations", { provider: "grok", operationId, target, accountRef: resetIdentity("grok", `grok:oidc:${sub}`).accountRef })).json() as { token: string }).token;
   return { db, calls, request, confirm, weekly: deps.usage, setSub: (v: string | null) => { sub = v; }, switchOnRead: (v: number) => { switchAt = v; }, setReply: (v: typeof reply) => { reply = v; }, setRedeemed: (v: typeof redeemed) => { redeemed = v; },
     restart: async () => { await running.close(); running = await start(); }, close: async () => { await running.close(); db.close(); } };
 }
@@ -54,7 +55,8 @@ describe("Grok coupon routes", () => {
     const displayed = await (await f.request("/api/quota/grok/reset-coupons")).json() as { accountRef: string };
     assert.ok(displayed.accountRef); f.setSub("b");
     const res = await f.request("/api/quota/reset-confirmations", { provider: "grok", operationId: "changed", target: "one", accountRef: displayed.accountRef });
-    assert.equal(res.status, 409); assert.equal((await res.json() as { error: { code: string } }).error.code, "IDENTITY_CHANGED");
+    assert.equal(res.status, 409); const body = await res.json() as { error: { code: string }; token?: string };
+    assert.equal(body.error.code, "IDENTITY_CHANGED"); assert.equal(body.token, undefined);
     assert.equal(sends(f).length, 0);
   }));
   it("lists session coupons with account label and validity end, independent of weekly CLI account", async () => withFixture(async f => {
@@ -89,7 +91,7 @@ describe("Grok coupon routes", () => {
       const health = await f.request("/api/health", undefined, tokenHeaders), origin = new URL(health.url).origin;
       const session = await f.request("/api/auth/lan/session", {}, { ...tokenHeaders, origin });
       const cookie = session.headers.get("set-cookie")?.split(";")[0] ?? "";
-      const confirmation = await f.request("/api/quota/reset-confirmations", { provider: "grok", operationId: "op", target: "one" }, tokenHeaders);
+      const confirmation = await f.request("/api/quota/reset-confirmations", { provider: "grok", operationId: "op", target: "one", accountRef: resetIdentity("grok", "grok:oidc:a").accountRef }, tokenHeaders);
       const { token } = await confirmation.json() as { token: string };
       assert.equal((await f.request(path, { operationId: "op", target: "one", confirmationToken: token }, { origin, cookie })).status, 403);
       assert.equal(sends(f).length, 0);
@@ -107,6 +109,13 @@ describe("Grok coupon routes", () => {
     await f.request(path, { operationId: "op", target: "one", confirmationToken: token });
     assert.equal((f.db.prepare("SELECT state FROM reset_operations WHERE operation_id='op'").get() as { state: string }).state, "unknown");
     const next = await f.confirm("next"); assert.equal((await f.request(path, { operationId: "next", target: "one", confirmationToken: next })).status, 409); assert.equal(sends(f).length, 1);
+  }));
+  for (const status of [307, 308]) it(`records HTTP ${status} as unknown and never resends`, async () => withFixture(async f => {
+    const token = await f.confirm("redirect"); f.setRedeemed({ ...response([]), status });
+    await f.request(path, { operationId: "redirect", target: "one", confirmationToken: token });
+    assert.equal((f.db.prepare("SELECT state FROM reset_operations WHERE operation_id='redirect'").get() as { state: string }).state, "unknown");
+    await f.request(path, { operationId: "redirect", target: "one", confirmationToken: token });
+    assert.equal(sends(f).length, 1);
   }));
   it("does not infer success from a missing coupon after an attempt", async () => withFixture(async f => {
     const token = await f.confirm("op"); f.setRedeemed({ body: new Uint8Array(), status: 200 });

@@ -143,7 +143,7 @@ describe("S6b-B2 scheduler interleavings", () => {
     assert.equal(ledger.sending("manual", "manual"), true); ledger.settle("manual", "{}");
     release(); await run; assert.equal(sends(fake.calls), 0); assert.equal(callbacks.length, 1);
     callbacks[0]!(); await new Promise<void>(resolve => setImmediate(resolve));
-    assert.equal(lists, 2); assert.equal(sends(fake.calls), 1);
+    assert.equal(lists, 3); assert.equal(sends(fake.calls), 1);
   }));
   it("second scheduler inspected before first settles and claims afterwards", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
@@ -158,7 +158,7 @@ describe("S6b-B2 scheduler interleavings", () => {
     const second = new CodexAutoRedeem(f.b, deps, cb => callbacks.push(cb));
     const pending = second.tick(); await started; await new CodexAutoRedeem(f.a, deps).tick();
     assert.equal(sends(fake.calls), 1); release(); await pending;
-    assert.equal(callbacks.length, 1); callbacks[0]!(); await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(callbacks.length, 0);
     assert.equal(sends(fake.calls), 1);
   }));
   it("restart inside lead window makes one attempt", async () => fixture(async f => {

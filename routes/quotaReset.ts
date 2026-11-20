@@ -66,18 +66,21 @@ type RouterState = { deps: ResetDependencies; clientFor: (account: string) => Co
 function registerConfirmations(router: Router, state: RouterState): void {
   const { deps, clientFor, confirmations } = state;
   router.get("/api/quota/codex/reset-credits", async (_req, res) => {
-    try { const account = await deps.accountId(); res.json(await clientFor(account).list()); } catch { error(res, 502, "RESET_LIST_FAILED"); }
+    try { const account = await deps.accountId(); res.json({ ...await clientFor(account).list(), accountRef: resetIdentity("codex", account).accountRef }); } catch { error(res, 502, "RESET_LIST_FAILED"); }
   });
   router.post("/api/quota/reset-confirmations", async (req, res) => {
     try {
+      if (typeof req.body?.accountRef !== "string" || !req.body.accountRef) return error(res, 400, "INVALID_REQUEST");
       if (req.body?.provider === "grok") {
         if (typeof req.body.operationId !== "string" || !req.body.operationId.trim() || typeof req.body.target !== "string" || !req.body.target.trim()) return error(res, 400, "INVALID_REQUEST");
         const session = await requireGrok(deps);
+        if (req.body.accountRef !== resetIdentity("grok", session.identity.ledgerKey).accountRef) return error(res, 409, "IDENTITY_CHANGED");
         const token = confirmations.issue({ provider: "grok", ledgerKey: session.identity.ledgerKey, operationId: req.body.operationId, target: req.body.target, principalId: principal(res) });
         return res.json({ token });
       }
       if (req.body?.provider !== "codex" || typeof req.body.operationId !== "string" || !req.body.operationId.trim() || req.body.target != null) return error(res, 400, "INVALID_REQUEST");
       const identity = resetIdentity("codex", await deps.accountId());
+      if (req.body.accountRef !== identity.accountRef) return error(res, 409, "IDENTITY_CHANGED");
       const token = confirmations.issue({ provider: "codex", ledgerKey: identity.ledgerKey,
         operationId: req.body.operationId, target: null, principalId: principal(res) });
       return res.json({ token });
@@ -141,7 +144,7 @@ function registerGrok(router: Router, state: RouterState): void {
     try {
       const session = await requireGrok(deps);
       const coupons = await new GrokResetClient(session.transport).list();
-      return res.json({ accountLabel: session.identity.email, coupons });
+      return res.json({ accountLabel: session.identity.email, accountRef: resetIdentity("grok", session.identity.ledgerKey).accountRef, coupons });
     } catch { return error(res, 502, "GROK_COUPONS_UNAVAILABLE"); }
   });
   router.post("/api/quota/grok/reset-coupons/redeem", async (req, res) => {

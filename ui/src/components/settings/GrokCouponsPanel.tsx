@@ -5,9 +5,9 @@ import type { ResetOperation } from "./ResetCreditsPanel";
 
 interface Coupon { tokenId: string; validityEnd: number | null }
 export interface GrokCouponsTransport {
-  list(): Promise<{ accountLabel: string | null; coupons: Coupon[] }>;
+  list(): Promise<{ accountLabel: string | null; accountRef: string; coupons: Coupon[] }>;
   getOperations(): Promise<ResetOperation[]>;
-  redeem(target: string): Promise<{ result?: { outcome?: string }; state?: string }>;
+  redeem(target: string, accountRef: string): Promise<{ result?: { outcome?: string }; state?: string }>;
   acknowledge?(id: string): Promise<unknown>;
 }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
@@ -16,7 +16,7 @@ type Props = { transport: GrokCouponsTransport; t?: QuotaTranslate; onRefresh?: 
 export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Props) {
   const [list, setList] = useState<Awaited<ReturnType<GrokCouponsTransport["list"]>> | null>(null);
   const [ops, setOps] = useState<ResetOperation[] | null>(null);
-  const [target, setTarget] = useState<string | null>(null);
+  const [target, setTarget] = useState<{ id: string; accountRef: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const inFlight = useRef(false);
@@ -30,7 +30,7 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
     if (!target || inFlight.current) return;
     inFlight.current = true; setBusy(true); setMessage("redeeming");
     try {
-      const response = await transport.redeem(target);
+      const response = await transport.redeem(target.id, target.accountRef);
       setMessage(response.result?.outcome === "success" ? "success" : "unknown");
       onRefresh?.();
     } catch (error) { setMessage((error as { code?: string }).code === "IDENTITY_CHANGED" ? "identityChanged" : "unknown"); }
@@ -50,7 +50,7 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
       <ul>{list.coupons.map(coupon => <li key={coupon.tokenId}>
         {coupon.validityEnd !== null && t("settings.quota.grokCoupons.expires", { date: new Date(coupon.validityEnd * 1000).toLocaleString() })}{" "}
         <button type="button" className="settings-action-btn" data-coupon={coupon.tokenId} disabled={busy || !ops || ops.some(unresolved)}
-          onClick={(event) => { trigger.current = event.currentTarget; setTarget(coupon.tokenId); }}>{t("settings.quota.redeem.action")}</button>
+          onClick={(event) => { trigger.current = event.currentTarget; setTarget({ id: coupon.tokenId, accountRef: list.accountRef }); }}>{t("settings.quota.redeem.action")}</button>
       </li>)}</ul></>}
     {ops?.filter(unresolved).map(op => <div key={idOf(op)}><p>{idOf(op)} · {op.state}</p>
       {op.state === "unknown" && <><p>{t("settings.quota.acknowledge.explanation")}</p>
