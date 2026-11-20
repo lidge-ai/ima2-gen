@@ -7,6 +7,14 @@ import {
 import { CORE_PROVIDER_IDS, IMAGE_MODEL_IDS, PROVIDER_MODELS } from "../ui/src/generated/providers.ts";
 import type { ImageModel, Provider } from "../ui/src/types.ts";
 
+test("Comfy restoration does not mistake legacy OpenAI models for workflows", () => {
+  const current = reconcileCoreSelection({ provider: "comfy", imageModel: "gpt-6.2-sol" }).comfyWorkflow;
+  for (const imageModel of ["gpt-6-sol", "gpt-6-astra", "gpt-6.1-sol", "gpt-5.6-sol",
+    "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"]) {
+    assert.equal(reconcileCoreSelection({ provider: "comfy", imageModel }).comfyWorkflow, current, imageModel);
+  }
+});
+
 test("explicit core lane wins over conflicting persisted model and video", () => {
   assert.deepEqual(reconcileCoreSelection({ provider: "grok-api", imageModel: "grok-imagine-image-quality",
     videoModelSelected: "grok-imagine-video-1.5-preview" }), {

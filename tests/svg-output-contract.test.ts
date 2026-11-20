@@ -23,6 +23,28 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
   const upstream = () => json({ data: [{ b64_json: Buffer.from(UPSTREAM_SVG).toString("base64") }], output_format: "svg",
     svg_usage: { model: "fixture-author", input_tokens: 10, output_tokens: 20, reasoning_tokens: 0, total_tokens: 30 } });
 
+  for (const [model, requested, expected, configured] of [
+    ["gpt-6.2-sol", "none", "low", false],
+    ["gpt-6.2-astra", "minimal", "low", true],
+    ["gpt-5.6-luna", "none", "none", false],
+  ] as const) {
+    it(`uses ${expected} effort for ${model} requested ${requested}`, async () => {
+      const { config } = await import("../config.ts");
+      const { resolveImageOutput } = await import("../lib/imageOutputFormats.ts");
+      const previous = config.apiProvider.defaultSvgModel;
+      try {
+        if (configured) config.apiProvider.defaultSvgModel = model;
+        const result = resolveImageOutput({ format: "svg", provider: "api", imageToolModel: "gpt-image-2.6-flare",
+          ...(configured ? {} : { svgModel: model }), svgReasoningEffort: requested });
+        assert.ok(result.output, JSON.stringify(result));
+        assert.deepEqual(result.output.fields.svg, { model, reasoning: { effort: expected } });
+        assert.equal(result.output.meta.svgReasoningEffort, expected);
+      } finally {
+        config.apiProvider.defaultSvgModel = previous;
+      }
+    });
+  }
+
   it("generates SVG through /v1/images/generations and saves sanitized markup as .svg", async () => {
     await harness.run("classic", { upstream }, async (f) => {
       const response = await f.post(BASE);
