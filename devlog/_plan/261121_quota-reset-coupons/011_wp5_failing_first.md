@@ -69,3 +69,31 @@ Direct ledger: 9 tests, 1 pass, 8 fail (five added); UI: 7 tests, 1 pass, 6 fail
 | npm test (temporary HOME, IMA2_CONFIG_DIR unset) | 1: 4254 tests, 4227 pass, 24 fail, 3 skipped; all 24 are failing-first tests from this work and S2 |
 
 NOT IMPLEMENTED: identity and confirmation baselines; quotaReset route registration and all buildApp route tests, including principal exposure, confirmation, replay, access control, identity switching, restart and acknowledgement; UI balance, zero/unknown counts, confirmation, remount behavior. The locale test establishes cross-locale parity over present keys and a small required subset, not an exhaustive product-key inventory. These gaps prevent COMPLETE status and require follow-up before implementation commit 3.
+
+## S2d (UI)
+
+Failing-first baseline only; the new components are deliberately incomplete and are not wired into the application. Direct `node --import tsx --test tests/quota-ui-credits.test.ts`: 12 tests, 2 pass, 10 fail, 0 skipped; socket sentinel 0. The transport is a local fake: the confirmation test observes one fake POST, and mount/remount use fake GETs only. No real consume call was made.
+
+| Test | Baseline result |
+|---|---|
+| shows unknown NovelAI charge without a numeric meter value | FAIL: no dash; numeric meter value 0 |
+| renders a known NovelAI charge | PASS |
+| shows balance separately from the reset-credit count | FAIL: count absent |
+| distinguishes zero reset credits from an unknown count | FAIL: identical output |
+| opens a confirmation dialog before any POST | FAIL: one fake POST on click |
+| reloads an unresolved operation on remount without another POST | FAIL: operation not displayed; two fake GETs and zero POSTs |
+| loads operations without dispatching a POST on mount | PASS |
+| defines every required quota label in en | FAIL: required keys missing |
+| defines every required quota label in ko | FAIL: required keys missing |
+| defines every required quota label in zh-Hans | FAIL: required keys missing |
+| defines every required quota label in zh-Hant | FAIL: required keys missing |
+| uses matching interpolation variables for every required key in all locales | FAIL: missing keys prevent comparison |
+
+| Verifier | Result |
+|---|---|
+| npm run typecheck | exit 0 |
+| npm run typecheck:tests | exit 0 |
+| npm run lint | exit 0; 93 warnings, 0 errors |
+| npm run test:inventory | exit 0 |
+
+The lightweight component harness simulates JSX, effects and state; it is not a browser or accessibility verification. Full suite and UI build: NOT RUN.
