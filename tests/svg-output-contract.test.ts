@@ -65,6 +65,27 @@ if (executionTestProcess(import.meta.url)) describe("SVG output contract", { con
     });
   });
 
+  it("applies SVG reasoning effort to the default author model", async () => {
+    const { config } = await import("../config.ts");
+    const { resolveImageOutput } = await import("../lib/imageOutputFormats.ts");
+    const result = resolveImageOutput({ format: "svg", provider: "api",
+      imageToolModel: "gpt-image-2.6-flare", svgReasoningEffort: "low" });
+    assert.ok(result.output, JSON.stringify(result));
+    assert.deepEqual(result.output?.fields.svg, { model: config.apiProvider.defaultSvgModel, reasoning: { effort: "low" } });
+    assert.equal(result.output?.meta.svgReasoningEffort, "low");
+  });
+
+  it("sends reasoning with the default author model", async () => {
+    await harness.run("classic", { upstream }, async (f) => {
+      const { config } = await import("../config.ts");
+      const response = await f.post({ ...BASE, svgReasoningEffort: "low" });
+      assert.equal(response.status, 200);
+      await f.waitSettled();
+      assert.deepEqual(JSON.parse(f.calls[0]!.body).svg,
+        { model: config.apiProvider.defaultSvgModel, reasoning: { effort: "low" } });
+    });
+  });
+
   const rejected: Array<[string, Record<string, unknown>, string]> = [
     ["GPT OAuth", { provider: "oauth", imageToolModel: undefined }, "SVG_OUTPUT_UNSUPPORTED"],
     ["a 2.5 model", { imageToolModel: "gpt-image-2.5-sunburst" }, "SVG_OUTPUT_UNSUPPORTED"],
