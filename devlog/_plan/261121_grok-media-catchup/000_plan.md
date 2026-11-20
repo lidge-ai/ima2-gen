@@ -81,3 +81,6 @@ Loop-spec: same HOTL goal, P amendment 2026-11-21 (user). Separate logical chang
 - R3-F1 test addition: `planner: "off"` + background constraint ⇒ 400 with zero upstream calls, as its own test next to the continuation test.
 - R4-F2: provenance of `last_frame` / `generate_audio` corrected above.
 - Prompt stays required on every request (R1-F4 product restriction), although the docs make it optional when frames are pinned.
+## R5 note (implementation, S1)
+
+Every image route normalizes quality before provider execution (`rawQuality = "medium"` in generate, edit, multimode and node; agent defaults to medium), so a request almost always carries an explicit quality. The resolver therefore maps the request's quality (low→low, medium→medium, high→medium, auto→auto) for a migrated retired id, and uses `low` only when a caller sends no quality at all. Retired ids are migrated to `grok-imagine-image-2.0` during model normalization so removing them from the registry never rejects a saved selection; the resolver also runs inside the adapters (generate, edit, multimode), which every surface reaches.

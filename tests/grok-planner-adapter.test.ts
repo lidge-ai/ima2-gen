@@ -19,6 +19,7 @@ afterEach(async () => {
 const {
   buildGrokPlannerPayload,
   buildGrokSearchPayload,
+  editViaGrok,
   generateViaGrok,
   parseGrokImagePlan,
 } = await import("../lib/grokImageAdapter.js");
@@ -341,4 +342,46 @@ describe("Grok planner adapter", () => {
     assert.equal(imageTransport.resolutions.length, 1);
   });
   }
+});
+
+describe("Grok image 2.0 quality and retired ids", () => {
+  function stubImages(calls: Array<{ url: string; body: any }>) {
+    globalThis.fetch = (async (url, init) => {
+      if (String(url).startsWith("https://cdn.x.ai/")) return new Response(Buffer.from("jpeg"), { headers: { "Content-Type": "image/jpeg" } });
+      calls.push({ url: String(url), body: JSON.parse(String(init?.body || "{}")) });
+      return Response.json({ data: [{ url: "https://cdn.x.ai/quality.png" }] });
+    }) as typeof fetch;
+    activateImageTransport();
+  }
+  const imageCall = (calls: Array<{ url: string; body: any }>) => calls.find(call => /\/v1\/images\/(generations|edits)$/.test(call.url))!.body;
+  for (const [quality, expected] of [[undefined, "low"], ["high", "medium"], ["medium", "medium"], ["auto", "auto"]] as const) {
+    it(`migrates a retired id to 2.0 with quality ${expected} for request quality ${quality ?? "(none)"}`, async () => {
+      const calls: Array<{ url: string; body: any }> = []; stubImages(calls);
+      await generateViaGrok("raw", ctx(), { model: "grok-imagine-image-quality", plannedPrompt: "planned", webSearchEnabled: false, ...(quality ? { quality } : {}) } as any);
+      assert.equal(imageCall(calls).model, "grok-imagine-image-2.0");
+      assert.equal(imageCall(calls).quality, expected);
+    });
+  }
+  it("migrates grok-imagine-image-pro like the quality slug", async () => {
+    const calls: Array<{ url: string; body: any }> = []; stubImages(calls);
+    await generateViaGrok("raw", ctx(), { model: "grok-imagine-image-pro", plannedPrompt: "planned", webSearchEnabled: false } as any);
+    assert.deepEqual([imageCall(calls).model, imageCall(calls).quality], ["grok-imagine-image-2.0", "low"]);
+  });
+  it("never sends quality for the base image model", async () => {
+    const calls: Array<{ url: string; body: any }> = []; stubImages(calls);
+    await generateViaGrok("raw", ctx(), { model: "grok-imagine-image", quality: "medium", plannedPrompt: "planned", webSearchEnabled: false } as any);
+    assert.equal(imageCall(calls).model, "grok-imagine-image");
+    assert.equal("quality" in imageCall(calls), false);
+  });
+  for (const [quality, expected] of [[undefined, "auto"], ["low", "low"], ["high", "medium"]] as const) {
+    it(`edits on 2.0 send quality ${expected} for request quality ${quality ?? "(none)"}`, async () => {
+      const calls: Array<{ url: string; body: any }> = []; stubImages(calls);
+      await editViaGrok("edit", "aGVsbG8=", ctx(), { model: "grok-imagine-image-2.0", ...(quality ? { quality } : {}) } as any);
+      assert.equal(imageCall(calls).quality, expected);
+    });
+  }
+  it("maps the 1.5k Grok size option", async () => {
+    const { mapSizeToGrokImageParams } = await import("../lib/grokSizeMapper.js");
+    assert.equal(mapSizeToGrokImageParams("grok:1:1:1.5k").resolution, "1.5k");
+  });
 });
