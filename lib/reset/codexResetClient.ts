@@ -11,10 +11,13 @@ export class CodexResetClient {
       credits: raw.credits.map(object).filter(Boolean).map(item => ({ id: item?.id, status: item?.status, title: item?.title,
         grantedAt: item?.granted_at, expiresAt: item?.expires_at })) };
   }
+  async prepare(): Promise<CodexResetClient> {
+    return new CodexResetClient(this.transport.prepare ? await this.transport.prepare() : this.transport);
+  }
   async consume(redeemRequestId: string): Promise<{ outcome: string; windowsReset?: unknown }> {
     try {
       const result = object(await dispatchReset(this.transport, CODEX_CONSUME_URL, { redeem_request_id: redeemRequestId }));
-      const outcome = result?.outcome;
+      const outcome = result?.code;
       if (typeof outcome !== "string" || !["reset", "nothing_to_reset", "no_credit", "already_redeemed"].includes(outcome)) return { outcome: "unknown" };
       return { outcome, ...(result?.windows_reset !== undefined ? { windowsReset: result.windows_reset } : {}) };
     } catch (error) {

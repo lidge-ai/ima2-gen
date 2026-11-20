@@ -153,7 +153,9 @@ export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok")
       ...(weekly.productUsage ? { productUsage: weekly.productUsage } : {}),
       ...(weekly.prepaidBalance !== undefined ? { prepaidBalance: weekly.prepaidBalance } : {}) };
   }
-  if (!candidates.length) return { provider: "grok", authenticated: Boolean(session?.accessToken), windows: [] };
+  if (!candidates.length && session?.accessToken) candidates.push({ token: session.accessToken, source: "ima2-session",
+    email: session.email ?? null, authMode: null, issuer: null, userId: session.accountId ?? null });
+  if (!candidates.length) return { provider: "grok", authenticated: false, windows: [] };
   const clientVersion = readGrokClientVersion(homeDir, grokBinary);
   if (clientVersion) {
     for (const candidate of candidates.filter(isWeeklyCandidate)) {

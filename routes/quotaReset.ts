@@ -105,9 +105,12 @@ function registerRedeem(router: Router, state: RouterState): void {
       if (resetIdentity("codex", await deps.accountId()).ledgerKey !== identity.ledgerKey) {
         ledger.abandon(id, owner); return error(res, 409, "IDENTITY_CHANGED");
       }
+      let client: CodexResetClient;
+      try { client = await clientFor(identity.ledgerKey.slice("codex:".length)).prepare(); }
+      catch { ledger.abandon(id, owner); return error(res, 503, "DISPATCH_FAILED"); }
       if (!ledger.sending(id, owner)) return error(res, 409, "OPERATION_FENCED");
       let result: Awaited<ReturnType<CodexResetClient["consume"]>>;
-      try { result = await clientFor(identity.ledgerKey.slice("codex:".length)).consume(id); } catch { ledger.unknown(id); return error(res, 503, "DISPATCH_FAILED"); }
+      try { result = await client.consume(id); } catch { ledger.unknown(id); return error(res, 503, "DISPATCH_FAILED"); }
       if (result.outcome === "unknown") ledger.unknown(id); else ledger.settle(id, JSON.stringify(result));
       if (resetIdentity("codex", await deps.accountId()).ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");
       return res.json({ operationId: id, result, usage: await deps.usage() });

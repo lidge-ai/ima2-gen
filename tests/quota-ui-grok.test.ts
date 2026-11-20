@@ -127,6 +127,23 @@ it("passes the displayed coupon account into confirmation", async () => {
   (findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
   await new Promise(resolve => setImmediate(resolve)); assert.deepEqual(calls, ["displayed-ref"]);
 });
+for (const [outcome, message] of [["reset", "success"], ["nothing_to_reset", "nothingToReset"],
+  ["no_credit", "noCredit"], ["already_redeemed", "alreadyRedeemed"], ["unknown", "unknown"]]) {
+  it(`shows the Codex ${outcome} message`, async () => {
+    const transport = { getOperations: async () => [], list: async () => ({ accountRef: "account", credits: [] }),
+      redeem: async () => ({ result: { outcome } }) };
+    const panel = mountPanel(loadComponent("ResetCreditsPanel", "ResetCreditsPanel"), { transport, accountRef: "account", availableCount: 1 });
+    await new Promise(resolve => setImmediate(resolve));
+    const open = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"));
+    assert.ok(open); (open.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
+    await new Promise(resolve => setImmediate(resolve));
+    const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+    const button = findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"));
+    assert.ok(button); (button.props.onClick as () => void)();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.match(textContent(panel.tree()), new RegExp(`redeem\\.${message}`));
+  });
+}
 it("loads auto-redeem settings and exposes bounded lead minutes", async () => {
   const transport = { getOperations: async () => [], redeem: async () => {}, getSettings: async () => ({ enabled: false, leadMinutes: 10 }), saveSettings: async () => {} };
   const panel = mountPanel(loadComponent("ResetCreditsPanel", "ResetCreditsPanel"), { transport });

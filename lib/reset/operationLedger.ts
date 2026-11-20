@@ -48,8 +48,11 @@ export class OperationLedger {
   unknown(id: string): void {
     this.db.prepare("UPDATE reset_operations SET state='unknown', unknown_origin='owner', updated_at=? WHERE operation_id=? AND state='sending'").run(Date.now(), id);
   }
-  settle(id: string, outcome: string): void {
-    this.db.prepare("UPDATE reset_operations SET state='settled', outcome=?, updated_at=? WHERE operation_id=? AND state='sending'").run(outcome, Date.now(), id);
+  settle(id: string, outcome: string, releaseTarget = false): void {
+    this.db.transaction(() => {
+      const changed = this.db.prepare("UPDATE reset_operations SET state='settled', outcome=?, updated_at=? WHERE operation_id=? AND state='sending'").run(outcome, Date.now(), id).changes;
+      if (changed && releaseTarget) this.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(id);
+    })();
   }
   get(id: string): unknown { return this.db.prepare("SELECT * FROM reset_operations WHERE operation_id=?").get(id); }
 }

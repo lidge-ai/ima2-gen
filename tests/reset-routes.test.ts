@@ -53,6 +53,17 @@ async function withFixture(fn: (f: Awaited<ReturnType<typeof fixture>>) => Promi
   const f = await fixture(lan); try { await fn(f); } finally { await f.close(); }
 }
 
+for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed", "future_code"]) {
+  it(`returns provider code ${code} to the UI`, async () => withFixture(async f => {
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return { code, windows_reset: ["weekly"] }; };
+    const token = await f.confirm(code);
+    const response = await f.request(redeemPath, { operationId: code, confirmationToken: token });
+    const body = await response.json() as { result: { outcome: string; windowsReset?: string[] } };
+    assert.equal(body.result.outcome, code === "future_code" ? "unknown" : code);
+    if (code !== "future_code") assert.deepEqual(body.result.windowsReset, ["weekly"]);
+  }));
+}
+
 describe("reset route safety contracts", () => {
   it("records a consuming redirect failure as unknown and never resends", async () => withFixture(async f => {
     const send = f.transport.send.bind(f.transport);

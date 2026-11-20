@@ -64,7 +64,8 @@ export class CodexAutoRedeem {
     const revision = (this.db.prepare("SELECT revision FROM reset_accounts WHERE provider='codex' AND ledger_key=?").get(key) as { revision: number }).revision;
     const list = await deps.client(account).list() as { credits: Credit[] };
     const reserved = new Set((this.db.prepare("SELECT target_key FROM reset_targets WHERE provider='codex' AND ledger_key=?").all(key) as Array<{ target_key: string }>).map(row => row.target_key));
-    const credit = selectCredit(list.credits.filter(item => !reserved.has(targetOf(item))), deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
+    if (list.credits.some(item => reserved.has(targetOf(item)))) return;
+    const credit = selectCredit(list.credits, deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
     if (!credit) return;
     const id = randomUUID();
     try { this.ledger.claim({ operationId: id, provider: "codex", ledgerKey: key, ownerId: this.owner,
@@ -84,10 +85,14 @@ export class CodexAutoRedeem {
     }
     try { if (resetIdentity("codex", await deps.accountId()).ledgerKey !== key) { this.ledger.abandon(id, this.owner); return; } }
     catch { this.ledger.abandon(id, this.owner); return; }
+    let client: CodexResetClient;
+    try { client = await deps.client(account).prepare(); }
+    catch { this.ledger.abandon(id, this.owner); return; }
     if (!this.ledger.sending(id, this.owner, true)) return;
     try {
-      const result = await deps.client(account).consume(id);
-      if (result.outcome === "unknown") this.ledger.unknown(id); else this.ledger.settle(id, JSON.stringify(result));
+      const result = await client.consume(id);
+      if (result.outcome === "unknown") this.ledger.unknown(id);
+      else this.ledger.settle(id, JSON.stringify(result), result.outcome === "nothing_to_reset" || result.outcome === "no_credit");
     } catch { this.ledger.unknown(id); }
   }
   private async retryInspection(deps: AutoDependencies): Promise<void> {
