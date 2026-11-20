@@ -445,26 +445,21 @@ const DONE_POLL = { status: "done", progress: 100, video: { url: "https://vidgen
     assert.equal((result as any).model, "grok-imagine-video-1.5");
   });
 
-  it("reports requested and effective model when 1.5 falls back for Ref2V", async () => {
+  it("surfaces a 1.5 start 400 without resubmitting on another model", async () => {
     const starts: any[] = [];
     const counts = installFetch({ pollSequence: [DONE_POLL], startResponse(body) {
         starts.push(body);
-        if (starts.length === 1) return jsonRes({ error: "`reference_images` is not supported for this model." }, 400);
-        return jsonRes({ request_id: "vid-1" });
+        return jsonRes({ error: "`reference_images` is not supported for this model." }, 400);
     } });
-    const result = await generateVideoViaGrok("clip", ctx(), {
+    await assert.rejects(generateVideoViaGrok("clip", ctx(), {
       model: "grok-imagine-video-1.5-preview",
       plannedPrompt: "reference motion",
       mode: "reference-to-video",
       referenceImages: ["A", "B"],
       duration: 10,
-    });
-    assert.equal(starts[0].model, "grok-imagine-video-1.5");
-    assert.equal(starts[1].model, "grok-imagine-video");
-    assert.equal(result.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(result.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(result.modelFallback, { from: "grok-imagine-video-1.5", to: "grok-imagine-video" });
-    assert.deepEqual(counts, { start: 2, poll: 1, artifact: 1 });
+    }), (e: any) => e.status === 400);
+    assert.deepEqual(starts.map((s) => s.model), ["grok-imagine-video-1.5"]);
+    assert.equal(counts.start, 1);
   });
 
   it("builds 1.5 I2V payload with 1080p", () => {
@@ -475,16 +470,17 @@ const DONE_POLL = { status: "done", progress: 100, video: { url: "https://vidgen
     assert.deepEqual(payload.image, { url: "data:image/png;base64,AAAA" });
   });
 
-  it("rejects raw 1080p payloads outside canonical 1.5 image-to-video", () => {
+  it("allows native 1080p text-to-video on 1.5 and rejects 1080p elsewhere", () => {
     const t2v: GrokVideoPlan = { prompt: "p", mode: "text-to-video", duration: 5, resolution: "1080p", aspectRatio: "auto", webSearchCalls: 0 };
     const i2v: GrokVideoPlan = { ...t2v, mode: "image-to-video" };
     const ref2v: GrokVideoPlan = { ...t2v, mode: "reference-to-video" };
-    assert.throws(() => buildVideoGenerationPayload(t2v, { model: "grok-imagine-video-1.5" }), (e: any) => e.code === "INVALID_VIDEO_RESOLUTION");
+    const native = buildVideoGenerationPayload(t2v, { model: "grok-imagine-video-1.5" });
+    assert.equal(native.resolution, "1080p"); assert.equal("image" in native, false);
     assert.throws(() => buildVideoGenerationPayload(i2v, { model: "grok-imagine-video", sourceImageUrl: "data:image/png;base64,AAAA" }), (e: any) => e.code === "INVALID_VIDEO_RESOLUTION");
     assert.throws(() => buildVideoGenerationPayload(ref2v, { model: "grok-imagine-video-1.5", referenceImageUrls: ["A", "B"] }), (e: any) => e.code === "INVALID_VIDEO_RESOLUTION");
   });
 
-  it("sends 1.5-preview 1080p T2V through an injected canvas I2V payload", async () => {
+  it("sends 1.5-preview 1080p T2V natively without a canvas", async () => {
     let startBody: any = null;
     installFetch({ pollSequence: [DONE_POLL], captureStart: (b) => (startBody = b) });
     const result = await generateVideoViaGrok("make a freeform clip", ctx(), {
@@ -497,9 +493,7 @@ const DONE_POLL = { status: "done", progress: 100, video: { url: "https://vidgen
     assert.equal(result.mode, "text-to-video");
     assert.equal(startBody.model, "grok-imagine-video-1.5");
     assert.equal(startBody.resolution, "1080p");
-    assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
-    const canvas = Buffer.from(startBody.image.url.replace(/^data:image\/png;base64,/, ""), "base64");
-    assert.deepEqual(parsePngInfo(canvas), { width: 1920, height: 1080, bitDepth: 8, colorType: 2 });
-    assert.match(startBody.prompt, /blank white canvas.*technical placeholder/);
+    assert.equal("image" in startBody, false);
+    assert.equal(startBody.prompt, "A freeform cinematic clip.");
   });
 }

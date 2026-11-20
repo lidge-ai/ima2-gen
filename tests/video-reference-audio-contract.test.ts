@@ -72,13 +72,8 @@ test("the planner is told how to address the voices", () => {
   assert.match(text, /<AUDIO_0>/);
 });
 
-test("a voiced request never falls back to the base model", () => {
-  // The fallback exists to rescue a failing 1.5 call, but the base model cannot take
-  // voices at all, so retrying there trades one 400 for a more confusing one.
+test("no Grok video request resubmits on another model after a 400", () => {
+  // A retry on a different model can spend on a model the user did not choose (plan G4).
   const source = readFileSync(new URL("../lib/grokVideoAdapter.ts", import.meta.url), "utf8");
-  assert.match(
-    source,
-    /e\?\.status === 400 && voices\.length === 0/,
-    "the base-model fallback must be disabled when preset voices are attached",
-  );
+  assert.doesNotMatch(source, /video:fallback|effectiveModel = GROK_VIDEO_MODEL_BASE/);
 });

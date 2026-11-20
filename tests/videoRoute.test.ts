@@ -277,42 +277,20 @@ test("/api/video/generate uses configured Grok Video 1.5 default when model is o
   }
 });
 
-test("/api/video/generate exposes fallback model metadata for 1.5 Ref2V", async () => {
+test("/api/video/generate surfaces a 1.5 Ref2V 400 without a base-model resubmission", async () => {
   const proxy = makeProxy({ failFirstGeneration: true });
   await listen(proxy);
-  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-route-fallback-"));
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-route-400-"));
   const { url } = await videoApp(generatedDir);
   try {
     const res = await fixture.fetchApp(`${url}/api/video/generate`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: "continue the character motion", provider: "grok", model: "grok-imagine-video-1.5-preview", referenceImages: ["A", "B"], duration: 10, resolution: "720p", requestId: "req_video_fallback", }),
+      body: JSON.stringify({ prompt: "continue the character motion", provider: "grok", model: "grok-imagine-video-1.5-preview", referenceImages: ["A", "B"], duration: 10, resolution: "720p", requestId: "req_video_400", }),
     });
     const events = parseSse(await res.text());
-    const fallback = { from: "grok-imagine-video-1.5", to: "grok-imagine-video" };
-    const submitted = events.find((e) => e.event === "submitted");
-    const done = events.find((e) => e.event === "done");
-    assert.ok(submitted, "has submitted");
-    assert.ok(done, "has done");
-    assert.equal(submitted.data.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(submitted.data.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(submitted.data.modelFallback, fallback);
-    assert.equal(done.data.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(done.data.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(done.data.modelFallback, fallback);
-    assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(done.data.video.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(done.data.video.modelFallback, fallback);
-    const files = await readdir(generatedDir);
-    const mp4 = files.find((f) => f.endsWith(".mp4"));
-    assert.ok(mp4, "mp4 written");
-    const sidecar = JSON.parse(await readFile(join(generatedDir, `${mp4}.json`), "utf8"));
-    assert.equal(sidecar.model, "grok-imagine-video");
-    assert.equal(sidecar.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(sidecar.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(sidecar.modelFallback, fallback);
-    assert.equal(sidecar.video.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(sidecar.video.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(sidecar.video.modelFallback, fallback);
+    assert.ok(events.some((e) => e.event === "error"), "has error");
+    assert.equal(events.some((e) => e.event === "done"), false);
+    assert.equal((await readdir(generatedDir)).some((f) => f.endsWith(".mp4")), false);
   } finally {
     await fixture.finishCase();
     await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
@@ -343,7 +321,7 @@ test("/api/video/generate accepts Grok Video 1.5 image-to-video 1080p", async ()
   }
 });
 
-test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas shim", async () => {
+test("/api/video/generate sends Grok Video 1.5 prompt-only 1080p natively", async () => {
   let startBody: any = null;
   const proxy = makeProxy({ captureStart: (body) => { startBody = body; } });
   await listen(proxy);
@@ -358,8 +336,8 @@ test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas sh
     assert.ok(done, "has done");
     assert.equal(startBody.model, "grok-imagine-video-1.5");
     assert.equal(startBody.resolution, "1080p");
-    assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
-    assert.match(startBody.prompt, /blank white canvas.*technical placeholder/);
+    assert.equal("image" in startBody, false);
+    assert.doesNotMatch(startBody.prompt, /blank white canvas/);
     assert.equal(done.data.video.resolution, "1080p");
     assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
   } finally {
