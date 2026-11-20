@@ -9,10 +9,27 @@ import { Confirmations } from "../lib/reset/confirmations.js";
 import { resetIdentity } from "../lib/reset/identity.js";
 import { CodexResetClient } from "../lib/reset/codexResetClient.js";
 import { codexResetTransport, type ResetTransport } from "../lib/reset/transport.js";
+import { GrokResetClient } from "../lib/reset/grokResetClient.js";
+import { grokIdentity } from "../lib/reset/grokIdentity.js";
+import { discoverXaiOAuthEndpoints, getGrokAccessToken } from "../lib/xaiAuth.js";
+import { grokResetTransport } from "../lib/reset/transport.js";
 import { OperationLedger } from "../lib/reset/operationLedger.js";
 export interface ResetDependencies {
   db: Database.Database; transport: ResetTransport;
   accountId(): string | Promise<string>; usage(): Promise<unknown>;
+  grokSession?(): Promise<GrokSession>;
+}
+type GrokSession = { bearer: string; identity: { ledgerKey: string; email: string | null } | null; transport: ResetTransport };
+async function productionGrokSession(): Promise<GrokSession> {
+  const bearer = await getGrokAccessToken();
+  const discovery = await discoverXaiOAuthEndpoints();
+  const identity = await grokIdentity(discovery.userinfoEndpoint ? { userinfo_endpoint: discovery.userinfoEndpoint } : {}, bearer, fetch);
+  return { bearer, identity, transport: grokResetTransport(bearer) };
+}
+async function requireGrok(deps: ResetDependencies): Promise<GrokSession & { identity: NonNullable<GrokSession["identity"]> }> {
+  const session = await (deps.grokSession ?? productionGrokSession)();
+  if (!session.identity) throw new Error("GROK_IDENTITY_UNAVAILABLE");
+  return session as GrokSession & { identity: NonNullable<GrokSession["identity"]> };
 }
 type Row = { operation_id: string; provider: string; ledger_key: string; state: string; owner_id: string; unknown_origin: string | null };
 const principal = (res: Response): string => `${res.locals.accessPrincipal.mode}:${res.locals.accessPrincipal.principalId}`;
@@ -39,6 +56,7 @@ export function quotaResetRouter(ctx: RuntimeContext, onDispose?: (dispose: () =
   const state = { deps, clientFor, confirmations, ledger, owner };
   registerConfirmations(router, state);
   registerRedeem(router, state);
+  registerGrok(router, state);
   registerOperations(router, state);
   return router;
 }
@@ -52,6 +70,12 @@ function registerConfirmations(router: Router, state: RouterState): void {
   });
   router.post("/api/quota/reset-confirmations", async (req, res) => {
     try {
+      if (req.body?.provider === "grok") {
+        if (typeof req.body.operationId !== "string" || !req.body.operationId.trim() || typeof req.body.target !== "string" || !req.body.target.trim()) return error(res, 400, "INVALID_REQUEST");
+        const session = await requireGrok(deps);
+        const token = confirmations.issue({ provider: "grok", ledgerKey: session.identity.ledgerKey, operationId: req.body.operationId, target: req.body.target, principalId: principal(res) });
+        return res.json({ token });
+      }
       if (req.body?.provider !== "codex" || typeof req.body.operationId !== "string" || !req.body.operationId.trim() || req.body.target != null) return error(res, 400, "INVALID_REQUEST");
       const identity = resetIdentity("codex", await deps.accountId());
       const token = confirmations.issue({ provider: "codex", ledgerKey: identity.ledgerKey,
@@ -91,20 +115,59 @@ function registerOperations(router: Router, state: RouterState): void {
   const { deps, ledger } = state;
   router.get("/api/quota/reset-operations", async (req, res) => {
     try {
-      if (req.query.provider !== "codex") return error(res, 400, "INVALID_PROVIDER");
-      const identity = resetIdentity("codex", await deps.accountId());
-      return res.json({ operations: deps.db.prepare("SELECT operation_id, provider, target, state, unknown_origin, outcome, acknowledged_at, note, created_at, updated_at FROM reset_operations WHERE provider=? AND ledger_key=? ORDER BY created_at DESC LIMIT 100").all("codex", identity.ledgerKey) });
+      const provider = req.query.provider;
+      if (provider !== "codex" && provider !== "grok") return error(res, 400, "INVALID_PROVIDER");
+      const identity = provider === "grok" ? (await requireGrok(deps)).identity : resetIdentity("codex", await deps.accountId());
+      return res.json({ operations: deps.db.prepare("SELECT operation_id, provider, target, state, unknown_origin, outcome, acknowledged_at, note, created_at, updated_at FROM reset_operations WHERE provider=? AND ledger_key=? ORDER BY created_at DESC LIMIT 100").all(provider, identity.ledgerKey) });
     } catch { return error(res, 401, "ACCOUNT_ID_REQUIRED"); }
   });
   router.post("/api/quota/reset-operations/:operationId/acknowledge", async (req, res) => {
     try {
-      const identity = resetIdentity("codex", await deps.accountId());
       const row = ledger.get(req.params.operationId) as Row | undefined;
-      if (!row || row.ledger_key !== identity.ledgerKey || row.provider !== "codex") return error(res, 404, "NOT_FOUND");
+      if (!row || (row.provider !== "codex" && row.provider !== "grok")) return error(res, 404, "NOT_FOUND");
+      const identity = row.provider === "grok" ? (await requireGrok(deps)).identity : resetIdentity("codex", await deps.accountId());
+      if (row.ledger_key !== identity.ledgerKey) return error(res, 404, "NOT_FOUND");
       if (row.state !== "unknown" || (row.unknown_origin === "recovered" && ownerAlive(deps.db, row.owner_id))) return error(res, 409, "OWNER_MAY_BE_RUNNING");
       const changed = deps.db.prepare("UPDATE reset_operations SET state='acknowledged', acknowledged_at=?, acknowledged_by=?, note=?, updated_at=? WHERE operation_id=? AND state='unknown'")
         .run(Date.now(), principal(res), typeof req.body?.note === "string" ? req.body.note.slice(0, 1000) : null, Date.now(), row.operation_id);
       return changed.changes ? res.json({ acknowledged: true }) : error(res, 409, "RESET_CONFLICT");
+    } catch { return error(res, 409, "RESET_CONFLICT"); }
+  });
+}
+
+function registerGrok(router: Router, state: RouterState): void {
+  const { deps, confirmations, ledger, owner } = state;
+  router.get("/api/quota/grok/reset-coupons", async (_req, res) => {
+    try {
+      const session = await requireGrok(deps);
+      const coupons = await new GrokResetClient(session.transport).list();
+      return res.json({ accountLabel: session.identity.email, coupons });
+    } catch { return error(res, 502, "GROK_COUPONS_UNAVAILABLE"); }
+  });
+  router.post("/api/quota/grok/reset-coupons/redeem", async (req, res) => {
+    try {
+      const id = req.body?.operationId, target = req.body?.target;
+      if (typeof id !== "string" || !id.trim() || typeof target !== "string" || !target.trim()) return error(res, 400, "INVALID_REQUEST");
+      const session = await requireGrok(deps), identity = session.identity.ledgerKey;
+      const existing = ledger.get(id) as Row | undefined;
+      if (existing) return existing.provider === "grok" && existing.ledger_key === identity
+        ? res.json({ operationId: id, state: existing.state }) : error(res, 409, "IDENTITY_CHANGED");
+      const confirmation = confirmations.take(String(req.body?.confirmationToken ?? ""));
+      if (!confirmation || confirmation.provider !== "grok" || confirmation.operationId !== id || confirmation.target !== target) return error(res, 400, "INVALID_CONFIRMATION");
+      if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
+      if (confirmation.ledgerKey !== identity) return error(res, 409, "IDENTITY_CHANGED");
+      ledger.claim({ operationId: id, provider: "grok", ledgerKey: identity, target, ownerId: owner });
+      let current: Awaited<ReturnType<typeof requireGrok>>;
+      try { current = await requireGrok(deps); } catch { ledger.abandon(id, owner); return error(res, 502, "GROK_COUPONS_UNAVAILABLE"); }
+      if (current.identity.ledgerKey !== identity) { ledger.abandon(id, owner); return error(res, 409, "IDENTITY_CHANGED"); }
+      if (!ledger.sending(id, owner)) return error(res, 409, "OPERATION_FENCED");
+      let result: { outcome: string };
+      try { result = await new GrokResetClient(current.transport).redeem(target); } catch { ledger.unknown(id); return error(res, 503, "DISPATCH_FAILED"); }
+      if (result.outcome === "unknown") ledger.unknown(id); else ledger.settle(id, JSON.stringify(result));
+      try {
+        if ((await requireGrok(deps)).identity.ledgerKey !== identity) return error(res, 409, "IDENTITY_CHANGED");
+      } catch { return error(res, 502, "GROK_COUPONS_UNAVAILABLE"); }
+      return res.json({ operationId: id, result });
     } catch { return error(res, 409, "RESET_CONFLICT"); }
   });
 }

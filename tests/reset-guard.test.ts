@@ -6,12 +6,13 @@ import { join } from "node:path";
 import { sentinelCount } from "./helpers/resetTestGuard.ts";
 import { fakeResetTransport } from "./helpers/fakeResetTransport.ts";
 import { dispatchReset } from "../lib/reset/dispatch.ts";
-import { CODEX_CONSUME_URL, realResetTransport } from "../lib/reset/transport.ts";
+import { CODEX_CONSUME_URL, GROK_REDEEM_URL, grokResetTransport, realResetTransport } from "../lib/reset/transport.ts";
 
 after(() => assert.equal(sentinelCount(), 0));
 describe("consumption guard controls", () => {
   it("blocks real transport before a socket", async () => {
     await assert.rejects(dispatchReset(realResetTransport, CODEX_CONSUME_URL, {}), /CONSUME_DISABLED/);
+    await assert.rejects(dispatchReset(grokResetTransport("fixture"), GROK_REDEEM_URL, new Uint8Array()), /CONSUME_DISABLED/);
     assert.equal(sentinelCount(), 0);
   });
   it("counts fake calls independently", async () => {
@@ -24,8 +25,9 @@ describe("consumption guard controls", () => {
       const path = join(dir, entry.name);
       return entry.isDirectory() ? find(path) : /\.ts$/.test(path) ? [path] : [];
     });
-    const matches = ["lib", "routes"].flatMap(find).filter((file) =>
-      readFileSync(file, "utf8").includes("rate-limit-reset-credits/consume"));
-    assert.deepEqual(matches, ["lib/reset/transport.ts"]);
+    for (const needle of ["rate-limit-reset-credits/consume", "ConsumerUiSvc/RedeemReset"]) {
+      const matches = ["lib", "routes"].flatMap(find).filter((file) => readFileSync(file, "utf8").includes(needle));
+      assert.deepEqual(matches, ["lib/reset/transport.ts"]);
+    }
   });
 });
