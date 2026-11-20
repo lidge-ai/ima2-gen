@@ -53,6 +53,23 @@ describe("auto-redeem controls", () => {
 });
 
 describe("auto-redeem reservation and settings", () => {
+  for (const change of ["lead", "expiry", "binding"]) it(`abandons when ${change} changes during preparation`, async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
+    let now = Date.parse("2026-11-21T00:00:00Z");
+    const fake = fakeResetTransport({ available_count: 1, credits: [{ granted_at: "2026-11-20T00:00:00Z", expires_at: "2026-11-21T00:05:00Z" }] });
+    let release!: () => void; let entered!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { entered = resolve; });
+    const transport = Object.assign(fake, { prepare: async () => { entered(); await gate; return fake; } });
+    const watcher = new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(transport), now: () => now });
+    const pending = watcher.tick(); await started;
+    if (change === "expiry") now += 5 * 60_000;
+    else writeResetSettings(f.a, { enabled: true, leadMinutes: change === "lead" ? 1 : 10, ledgerKey: change === "binding" ? "codex:other" : "codex:fixture-account" });
+    release(); await pending;
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 0);
+    assert.equal((f.a.prepare("SELECT state FROM reset_operations").get() as { state: string }).state, "abandoned");
+    assert.equal(f.a.prepare("SELECT * FROM reset_targets").all().length, 0);
+  }));
   it("does not clear a fence from a partial list before a stale complete list", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
     const now = Date.parse("2026-11-21T00:00:00Z");

@@ -92,6 +92,30 @@ for (const switchAt of ["open", "confirm"]) it(`rejects a changed Grok coupon ac
   assert.match(textContent(panel.tree()), /redeem.identityChanged/);
   assert.deepEqual(posts, []); assert.equal(refreshes, 1);
 });
+it("identifies the account and selected coupon in the Grok confirmation without email", async () => {
+  const accountRef = "abcdefgh12345678"; const tokenId = "couponAB12345678"; const validityEnd = 2000000000;
+  const transport = { list: async () => ({ accountLabel: null, accountRef, coupons: [{ tokenId, validityEnd }] }),
+    getOperations: async () => [], redeem: async () => { throw new Error("unexpected redemption"); } };
+  const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
+  await new Promise(resolve => setImmediate(resolve));
+  (findNode(panel.tree(), n => n.props["data-coupon"] === tokenId)!.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
+  await new Promise(resolve => setImmediate(resolve));
+  const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+  const text = textContent(dialog);
+  assert.match(text, /abcdefgh.*5678/); assert.doesNotMatch(text, /abcdefgh12345678/);
+  assert.match(text, /couponAB.*5678/); assert.doesNotMatch(text, /couponAB12345678/);
+  assert.ok(text.includes(new Date(validityEnd * 1000).toLocaleString()));
+});
+it("identifies the Codex account by shortened reference without email", async () => {
+  const accountRef = "abcdefgh12345678";
+  const transport = { getOperations: async () => [], list: async () => ({ accountRef, credits: [] }), redeem: async () => {} };
+  const panel = mountPanel(loadComponent("ResetCreditsPanel", "ResetCreditsPanel"), { transport, accountRef, availableCount: 1 });
+  await new Promise(resolve => setImmediate(resolve));
+  (findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
+  await new Promise(resolve => setImmediate(resolve));
+  const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
+  assert.match(textContent(dialog), /abcdefgh.*5678/); assert.doesNotMatch(textContent(dialog), /abcdefgh12345678/);
+});
 it("loads the coupon account and unresolved operations without redeeming", async () => {
   const calls: string[] = [];
   const transport = { list: async () => { calls.push("list"); return { accountLabel: "coupon@example.test", coupons: [{ tokenId: "token", validityEnd: 2000000000 }] }; },
