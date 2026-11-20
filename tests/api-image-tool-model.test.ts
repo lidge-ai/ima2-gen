@@ -7,7 +7,7 @@ import { executionTestProcess } from "./_executionTestProcess.ts";
 import { openRouteHarness, responsesSse, type RouteHarness } from "./_executionRouteHarness.ts";
 import { imagesJson, plannerSse } from "./_oauthNativeFixture.ts";
 
-const BASE = { prompt: "Image tool selection fixture", model: "gpt-5.4", quality: "high",
+const BASE = { prompt: "Image tool selection fixture", model: "gpt-6.1-terra", quality: "high",
   size: "1024x1024", webSearchEnabled: false, sizeNudge: false };
 const MODELS = ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare", "gpt-image-2.6-flare", "gpt-image-2.6-sunburst"];
 const SURFACES = ["classic", "edit", "node", "multimode"] as const;
@@ -66,7 +66,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
           else assert.equal(images, undefined);
         } else {
           assert.equal(f.calls[0]!.url, "https://api.openai.com/v1/responses");
-          assert.equal(body.model, "gpt-5.4");
+          assert.equal(body.model, "gpt-6.1-terra");
           assert.deepEqual(body.tools, [{ type: "image_generation", model: imageToolModel,
             quality, size: "1024x1024", moderation: "low" }]);
         }
@@ -75,7 +75,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
         const saved = JSON.parse(await readFile(join(f.generatedDir, `${image.filename}.json`), "utf8"));
         assert.equal(saved.imageToolModel, imageToolModel);
         assert.equal(saved.quality, quality);
-        assert.equal(saved.model, "gpt-5.4");
+        assert.equal(saved.model, "gpt-6.1-terra");
         const { readEmbeddedImageMetadataFromFile } = await import("../lib/imageMetadataStore.ts");
         const embedded = await readEmbeddedImageMetadataFromFile(join(f.generatedDir, image.filename));
         // Edit preserves the upstream bytes and records metadata in its sidecar.
@@ -201,7 +201,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
   for (const surface of SURFACES) {
     it(`${surface} rejects invalid API image tool models before upstream`, async () => {
       await harness.run(surface, { upstream: () => { throw new Error("Unexpected upstream"); } }, async (f) => {
-        for (const imageToolModel of ["gpt-image-2.5", "gpt-5.4", 25, {}]) {
+        for (const imageToolModel of ["gpt-image-2.5", "gpt-6.1-terra", 25, {}]) {
           const response = await f.post({ ...BASE, provider: "api", imageToolModel,
             ...(surface === "multimode" ? { async: true } : {}),
             ...(surface === "edit" ? { image: source } : {}) });
@@ -228,14 +228,14 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
         assert.equal(result.imageToolModel, undefined);
         if (provider === "oauth") {
           // The stale API tool model never reaches GPT OAuth; the legacy id plans on its GPT-6 tier.
-          assert.equal(JSON.parse(f.calls[0]!.body).model, "gpt-6-luna");
+          assert.equal(JSON.parse(f.calls[0]!.body).model, "gpt-6.1-terra");
           const render = await renderFields(f.calls[1]!);
           assert.equal(render.model, "gpt-image-2");
           assert.equal(render.quality, expected);
           return;
         }
         const body = JSON.parse(f.calls[0]!.body);
-        assert.equal(body.model, "gpt-5.4");
+        assert.equal(body.model, "gpt-6.1-terra");
         assert.deepEqual(body.tools, [{ type: "image_generation", quality: expected,
           size: "1024x1024", moderation: "low" }]);
       });
@@ -247,7 +247,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
     await harness.run("classic", { upstream: (call) => (isApi(call) ? success() : oauthSuccess(call)) }, async (f) => {
       const { generateViaResponses, editViaResponses } = await import("../lib/responsesImageAdapter.ts");
       for (const provider of ["api", "oauth"]) {
-        const options = { model: "gpt-5.4", webSearchEnabled: false };
+        const options = { model: "gpt-6.1-terra", webSearchEnabled: false };
         await generateViaResponses(provider, "fixture", undefined, "1024x1024", "low", [], null, "auto", f.ctx, options);
         await editViaResponses(provider, "fixture", source, undefined, "1024x1024", "low", "auto", f.ctx, null, options);
       }
@@ -255,7 +255,7 @@ if (executionTestProcess(import.meta.url)) describe("API image tool model contra
       assert.equal(api.length, 2);
       for (const call of api) {
         const body = JSON.parse(call.body);
-        assert.equal(body.model, "gpt-5.4");
+        assert.equal(body.model, "gpt-6.1-terra");
         assert.deepEqual(body.tools, [{ type: "image_generation", size: "1024x1024", moderation: "low" }]);
       }
       const renders = f.calls.filter((call) => /\/v1\/images\//.test(call.url));

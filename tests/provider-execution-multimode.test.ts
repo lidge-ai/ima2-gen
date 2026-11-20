@@ -47,7 +47,7 @@ if (executionTestProcess(import.meta.url)) describe("execution multimode routes 
     }, async (fixture) => {
       const response = await fixture.post({
         provider: "api", prompt: "Two colored stages", maxImages: 2, async: asyncMode,
-        model: "gpt-5.4", quality: "high", size: "1536x1024", moderation: "low", mode: "direct",
+        model: "gpt-6.1-terra", quality: "high", size: "1536x1024", moderation: "low", mode: "direct",
         reasoningEffort: "high", webSearchEnabled: true, references: [`data:image/png;base64,${first}`],
         composerPrompt: "Composer sequence fixture",
       });
@@ -63,7 +63,7 @@ if (executionTestProcess(import.meta.url)) describe("execution multimode routes 
       assert.equal(terminal.event, "done");
       assert.equal(fixture.calls.length, 1);
       const wire = JSON.parse(fixture.calls[0]!.body);
-      assert.equal(wire.model, "gpt-5.4");
+      assert.equal(wire.model, "gpt-6.1-terra");
       assert.deepEqual(wire.reasoning, { effort: "high" });
       assert.equal(wire.tool_choice, "required");
       assert.deepEqual(wire.tools.map((tool: { type: string }) => tool.type), ["web_search", "image_generation"]);
@@ -84,7 +84,7 @@ if (executionTestProcess(import.meta.url)) describe("execution multimode routes 
       });
       assert.equal(fixture.events.filter((event) => event.event === "done").length, 1);
       assert.equal(fixture.events.some((event) => event.event === "error"), false);
-      for (const [field, expected] of Object.entries({ ok: true, requested: 2, returned: 2, status: "complete", provider: "api", model: "gpt-5.4", quality: "high", size: "1536x1024", moderation: "low", webSearchCalls: 3, webSearchEnabled: true, extraIgnored: 0, promptMode: "direct" })) assert.deepEqual(terminal.data[field], expected, field);
+      for (const [field, expected] of Object.entries({ ok: true, requested: 2, returned: 2, status: "complete", provider: "api", model: "gpt-6.1-terra", quality: "high", size: "1536x1024", moderation: "low", webSearchCalls: 3, webSearchEnabled: true, extraIgnored: 0, promptMode: "direct" })) assert.deepEqual(terminal.data[field], expected, field);
       assert.deepEqual(terminal.data.usage, { input_tokens: 23, output_tokens: 31, total_tokens: 54 });
       assert.deepEqual(terminal.data.images, images.map((event) => event.data));
       const filenames = images.map((event) => String(event.data.filename));
@@ -93,7 +93,7 @@ if (executionTestProcess(import.meta.url)) describe("execution multimode routes 
       assert.equal(files.filter((name) => name.endsWith(".json")).length, 2);
       for (const [index, filename] of filenames.entries()) {
         const meta = JSON.parse(await readFile(join(fixture.generatedDir, `${filename}.json`), "utf8"));
-        for (const [field, expected] of Object.entries({ kind: "multimode-image", generationStrategy: "one-call-text-sequence", provider: "api", model: "gpt-5.4", quality: "high", size: "1536x1024", format: "png", prompt: "Two colored stages", userPrompt: "Two colored stages", composerPrompt: "Composer sequence fixture", promptMode: "direct", refsCount: 1, sequenceIndex: index + 1, stageLabel: index === 0 ? "A" : "B", sequenceTotalRequested: 2, sequenceTotalReturned: index + 1, sequenceStatus: index === 0 ? "partial" : "complete", revisedPrompt: index === 0 ? "Blue stage A" : "Amber stage B", usage: null, webSearchCalls: 0 })) assert.deepEqual(meta[field], expected, field);
+        for (const [field, expected] of Object.entries({ kind: "multimode-image", generationStrategy: "one-call-text-sequence", provider: "api", model: "gpt-6.1-terra", quality: "high", size: "1536x1024", format: "png", prompt: "Two colored stages", userPrompt: "Two colored stages", composerPrompt: "Composer sequence fixture", promptMode: "direct", refsCount: 1, sequenceIndex: index + 1, stageLabel: index === 0 ? "A" : "B", sequenceTotalRequested: 2, sequenceTotalReturned: index + 1, sequenceStatus: index === 0 ? "partial" : "complete", revisedPrompt: index === 0 ? "Blue stage A" : "Amber stage B", usage: null, webSearchCalls: 0 })) assert.deepEqual(meta[field], expected, field);
         assert.equal(meta.requestId, fixture.requestId);
         assert.equal(meta.sequenceId, terminal.data.sequenceId);
         assert.equal("originalIndexes" in meta, false);
@@ -131,7 +131,7 @@ if (executionTestProcess(import.meta.url)) describe("execution multimode routes 
         surface: "multimode", provider: "api", requestId: fixture.requestId,
         signal: controller.signal, prompt: "Native sequence", rawPrompt: "Raw sequence",
         references: [], providerUrl: null, maxImages: 2, nai: {},
-        options: { model: "gpt-5.4", quality: "medium", size: "1024x1024", moderation: "low", mode: "direct", reasoningEffort: "high", webSearchEnabled: false },
+        options: { model: "gpt-6.1-terra", quality: "medium", size: "1024x1024", moderation: "low", mode: "direct", reasoningEffort: "high", webSearchEnabled: false },
       };
       try {
         const preparation = fixture.trackWork(prepareImageExecution(fixture.ctx, request, {

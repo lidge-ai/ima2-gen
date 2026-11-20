@@ -26,7 +26,7 @@ import {
 import { normalizeOAuthParams, normalizeImageToolModel } from "../../oauthNormalize.js";
 import { postResponses } from "../../responsesTransport.js";
 import { runOAuthImageJob, type OAuthPlanImage } from "../../oauthImages.js";
-import { API_FALLBACK_IMAGE_MODEL, FALLBACK_IMAGE_MODEL, migrateOAuthImageModel } from "../../imageModels.js";
+import { API_FALLBACK_IMAGE_MODEL, FALLBACK_IMAGE_MODEL, migrateOpenAIImageModel } from "../../imageModels.js";
 import type { ReferenceRef, GenerateOptions } from "./openaiTypes.js";
 import { runImagesApi, shouldUseImagesApi, singleImageResult } from "./openaiImagesApi.js";
 
@@ -54,12 +54,12 @@ function isOAuthLane(provider: string | undefined) {
   return provider !== "api";
 }
 
-/** The request model: a legacy OAuth id moves to its GPT-6 tier; the API lane keeps its own default. */
+/** Migrate a legacy model in the selected OpenAI lane. */
 function requestModel(provider: string | undefined, ctx: RouteRuntimeContext, requested: string | undefined): string {
   if (!isOAuthLane(provider)) {
-    return requested || (ctx.config as { apiProvider?: { defaultImageModel?: string } } | undefined)?.apiProvider?.defaultImageModel || API_FALLBACK_IMAGE_MODEL;
+    return migrateOpenAIImageModel(requested || (ctx.config as { apiProvider?: { defaultImageModel?: string } } | undefined)?.apiProvider?.defaultImageModel || API_FALLBACK_IMAGE_MODEL);
   }
-  return migrateOAuthImageModel(requested || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL);
+  return migrateOpenAIImageModel(requested || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL);
 }
 
 export async function generateViaResponses(provider: string | undefined, prompt: string | undefined, quality: string | undefined, size: string | undefined, moderation: string = "low", references: ReferenceRef[] = [], requestId: string | null = null, mode: string = "auto", ctxRaw: RouteRuntimeContext = {}, options: GenerateOptions = {}) {

@@ -4,12 +4,16 @@
  * ("Requires access to the GIF preview for the selected model"), so ima2 offers them
  * only on the API key lane with a 2.6 image model. The ChatGPT/Codex OAuth image
  * endpoint answers GIF requests with "GIF output is not enabled for this request."
- * and silently returns PNG for SVG requests.
+ * and, in the 2026-11-21 recheck, returned PNG for SVG even with
+ * gpt-image-2.6-flare and svg.model. SVG is documented only for
+ * gpt-image-2.6-sunburst and gpt-image-2.6-flare. The API reference says
+ * "Supported efforts depend on the selected author model".
  * https://developers.openai.com/api/reference/resources/images/methods/generate
  */
 import { config } from "../config.js";
 export { DEFAULT_SVG_MODEL } from "../config.js";
 import { isImage26Model } from "./oauthNormalize.js";
+import { coerceReasoningEffortForModel } from "./imageModels.js";
 
 export const GIF_FRAME_COUNT = { min: 2, max: 16, default: 9 } as const;
 export const GIF_FRAME_DURATION_MS = { min: 20, max: 2000, default: 200 } as const;
@@ -116,18 +120,17 @@ function resolveSvgOutput(input: OutputInput): OutputResult {
   if (effort !== undefined && !SVG_REASONING_EFFORTS.some((value) => value === effort)) {
     return fail("INVALID_SVG_REASONING_EFFORT", `svgReasoningEffort must be one of: ${SVG_REASONING_EFFORTS.join(", ")}`);
   }
-  if (effort !== undefined && svgModel === undefined) {
-    return fail("SVG_REASONING_REQUIRES_MODEL", "svgReasoningEffort needs svgModel (the Image API sets both in the svg object)");
-  }
   const effectiveModel = svgModel ?? config.apiProvider.defaultSvgModel;
   if (typeof effectiveModel !== "string" || !/^[A-Za-z0-9._:-]{1,64}$/.test(effectiveModel)) {
     return fail("INVALID_SVG_MODEL", "svgModel must be a model id");
   }
+  const effectiveEffort = effort === "minimal" && coerceReasoningEffortForModel(effectiveModel, "none") === "low"
+    ? "low" : coerceReasoningEffortForModel(effectiveModel, effort as string | undefined);
   return {
     output: {
       format: "svg",
-      fields: { svg: { model: effectiveModel, ...(effort ? { reasoning: { effort } } : {}) } },
-      meta: { svgModel: effectiveModel, ...(effort ? { svgReasoningEffort: effort as string } : {}) },
+      fields: { svg: { model: effectiveModel, ...(effectiveEffort ? { reasoning: { effort: effectiveEffort } } : {}) } },
+      meta: { svgModel: effectiveModel, ...(effectiveEffort ? { svgReasoningEffort: effectiveEffort } : {}) },
     },
   };
 }

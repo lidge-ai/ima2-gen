@@ -5,6 +5,7 @@ import { out, die, dieWithError, color, json } from "../lib/output.js";
 import { config } from "../../config.js";
 import { createCliRequestId, recoverGeneratedOutputs, formatRecoveryHint } from "../lib/recover-output.js";
 import { canonicalizeImageModel } from "../lib/model-aliases.js";
+import { migrateOpenAIImageModel } from "../../lib/openaiLegacyModels.js";
 import { deriveCliImageModelSet, deriveProviderIds } from "../../lib/providers/derive.js";
 import { join } from "node:path";
 
@@ -51,7 +52,7 @@ const HELP = `
     -o, --out <file>
         --json
         --model <${[...KNOWN_IMAGE_MODELS].join("|")}>  Default: gpt-6-luna
-                                      Aliases: luna, astra, sol, terra, spark
+                                      Aliases: luna, terra, sol, astra
         --image-tool-model <id>       API only: gpt-image-2.6-flare|gpt-image-2.6-sunburst|gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --complexity <level>          low|medium|high; API 2.6 image models only (default high)
         --markup <file.png>           Markup-guided edit: transparent PNG of marks at the image's size.
@@ -78,7 +79,9 @@ export default async function editCmd(argv: string[]) {
   if (args.provider && !VALID_PROVIDERS.has(String(args.provider))) {
     die(2, `--provider must be one of: ${PROVIDER_VALUES.join(", ")}`);
   }
-  const model = canonicalizeImageModel(args.model);
+  const canonicalModel = canonicalizeImageModel(args.model);
+  const model = canonicalModel && (!args.provider || args.provider === "auto" || args.provider === "oauth" || args.provider === "api")
+    ? migrateOpenAIImageModel(canonicalModel) : canonicalModel;
   if (model && !KNOWN_IMAGE_MODELS.has(model)) {
     die(2, `--model must be one of: ${[...KNOWN_IMAGE_MODELS].join(", ")}`);
   }

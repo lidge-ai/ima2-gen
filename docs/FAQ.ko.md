@@ -100,13 +100,9 @@ ima2 serve
 
 ### 어떤 모델부터 쓰면 좋나요?
 
-GPT OAuth에서는 `gpt-6-luna`로 시작합니다. 이 레인에는 GPT-6 모델이 세 개 있고, 고른 모델이 이미지를 기획하면 `gpt-image-2`가 그립니다.
+GPT OAuth와 API 키 레인은 모두 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra` 모델을 제공하며 기본값은 `gpt-6-luna`입니다. 별칭은 `luna`, `terra`, `sol`, `astra`입니다. 고른 모델이 이미지를 기획하고 `gpt-image-2`가 그립니다. `gpt-6.2-sol`과 `gpt-6.2-astra`의 추론 강도 `none`은 `low`로 실행됩니다.
 
-- `gpt-6-luna`: 기본값입니다.
-- `gpt-6-sol`: 또 하나의 일상용 GPT-6 모델입니다.
-- `gpt-6-astra`: 가장 오래 추론하는 대신 가장 느립니다. 추론 강도 `none`은 `low`로 실행됩니다.
-
-예전 OAuth 모델 ID(`gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`)는 저장된 설정과 스크립트에서 그대로 동작합니다. `gpt-5.6-sol`은 `gpt-6-sol`로, 나머지는 `gpt-6-luna`로 실행됩니다. API 키 레인(`provider: "api"`)은 자체 목록을 유지하고 기본값은 `gpt-5.6-luna`입니다.
+저장된 이전 ID는 같은 레인의 대응 티어로 변환되며 매핑은 `lib/openaiLegacyModels.ts`에 있습니다.
 
 ### GPT-6 모델 하나만 실패하는 이유는 뭔가요?
 

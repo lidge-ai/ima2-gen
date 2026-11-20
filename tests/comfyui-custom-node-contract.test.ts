@@ -2,6 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { LEGACY_OPENAI_IMAGE_MODELS } from "../lib/openaiLegacyModels.ts";
 
 const root = process.cwd();
 const bridgeDir = "integrations/comfyui/ima2_gen_bridge";
@@ -11,6 +13,29 @@ function readSource(path) {
 }
 
 describe("ComfyUI custom node contract", () => {
+  it("accepts saved legacy models and sends their migrated tiers", () => {
+    const script = `
+import json, runpy, sys, types
+for name in ("numpy", "torch", "PIL"):
+    sys.modules[name] = types.ModuleType(name)
+sys.modules["PIL"].Image = object()
+node = runpy.run_path(sys.argv[1])
+models = json.loads(sys.argv[2])
+options = node["Ima2Generate"].INPUT_TYPES()["optional"]["model"][0]
+assert options == ["", "gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra", *models], options
+sent = []
+generate = node["Ima2Generate"].generate
+generate.__globals__["_post_generate"] = lambda url, payload, timeout: sent.append(payload) or {}
+generate.__globals__["_decode_data_url_to_tensor"] = lambda image: None
+for legacy, expected in models.items():
+    node["Ima2Generate"]().generate("draw", server_url="http://127.0.0.1:3333", model=legacy)
+    assert sent[-1]["model"] == expected, (legacy, sent[-1])
+`;
+    const python = process.platform === "win32" ? "python" : "python3";
+    const result = spawnSync(python, ["-B", "-c", script, join(root, bridgeDir, "nodes.py"), JSON.stringify(LEGACY_OPENAI_IMAGE_MODELS)], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+  });
+
   it("ships a loadable ComfyUI node pack", () => {
     assert.ok(existsSync(join(root, bridgeDir, "__init__.py")));
     assert.ok(existsSync(join(root, bridgeDir, "nodes.py")));
@@ -48,9 +73,10 @@ describe("ComfyUI custom node contract", () => {
 
   it("matches current ima2 image model support", () => {
     const source = readSource(`${bridgeDir}/nodes.py`);
-    assert.match(source, /gpt-5\.5/);
-    assert.match(source, /gpt-5\.4/);
-    assert.match(source, /gpt-5\.4-mini/);
+    assert.match(source, /gpt-6-luna/);
+    assert.match(source, /gpt-6\.1-terra/);
+    assert.match(source, /gpt-6\.2-sol/);
+    assert.match(source, /gpt-6\.2-astra/);
     assert.doesNotMatch(source, /gpt-5\.3-codex-spark/);
   });
 

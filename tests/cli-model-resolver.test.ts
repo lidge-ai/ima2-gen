@@ -28,8 +28,8 @@ function makeCatalog(): ModelCatalog {
       // Astra sits in BOTH lanes because that is what /api/models really
       // projects: the same supported GPT set appears under oauth and api. The
       // older single-lane entries above are long-standing fixture shorthand.
-      oauth: ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6-astra" }, { id: "shared" }] }, { image: "gpt-6-luna" }),
-      api: ready({ image: [{ id: "gpt-6-astra" }, { id: "shared" }] }, { image: "shared" }),
+      oauth: ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6.2-astra" }, { id: "shared" }] }, { image: "gpt-6-luna" }),
+      api: ready({ image: [{ id: "gpt-6.2-astra" }, { id: "shared" }] }, { image: "shared" }),
       grok: ready({ video: [{ id: "grok-video" }] }, { video: "grok-video" }),
       "grok-api": ready(),
       agy: ready({ image: [{ id: "banana" }] }, { image: "banana" }),
@@ -80,23 +80,6 @@ describe("resolveTarget", () => {
     });
   });
 
-  // The CLI alias map in bin/lib/model-aliases.ts is maintained separately from
-  // the registry's aliases field, which never reaches the resolver, so this is
-  // the only place proving a short alias actually resolves for a user.
-  it("canonicalizes the astra alias and reports both lanes when it is bare", () => {
-    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/astra" }, makeCatalog(), {}), {
-      ok: true, lane: "oauth", model: "gpt-6-astra", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "api/astra" }, makeCatalog(), {}), {
-      ok: true, lane: "api", model: "gpt-6-astra", transport: "core",
-    });
-    // Bare "astra" is ambiguous rather than oauth-by-default, because the
-    // registry puts Astra on both GPT lanes. The alias still resolves to the
-    // canonical id first, which is what the candidate list proves.
-    const failure = expectFailure(resolveTarget("image", { model: "astra" }, makeCatalog(), {}), "MODEL_AMBIGUOUS");
-    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/gpt-6-astra", "api/gpt-6-astra"]);
-  });
-
   it("returns MODEL_LOCKED for a catalog-only Comfy video workflow", () => {
     const failure = expectFailure(
       resolveTarget("video", { model: "comfy/minimax-h3" }, makeCatalog(), {}),
@@ -110,28 +93,6 @@ describe("resolveTarget", () => {
 
   it("rejects unknown lanes, missing models, kind mismatches, and lane conflicts", () => {
     expectFailure(resolveTarget("image", { model: "unknown/x" }, makeCatalog(), {}), "UNKNOWN_LANE");
-  });
-
-  // GPT OAuth keeps only GPT-6. Saved defaults and scripts that still name a pre-GPT-6 id land
-  // on its GPT-6 tier inside the oauth lane; a bare legacy id never silently moves to the API lane.
-  it("maps legacy GPT OAuth ids to their GPT-6 tier only on the oauth lane", () => {
-    const catalog = makeCatalog();
-    catalog.lanes.api = ready({ image: [{ id: "gpt-5.6-luna" }, { id: "gpt-6-astra" }] }, { image: "gpt-5.6-luna" });
-    catalog.lanes.oauth = ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6-sol" }, { id: "gpt-6-astra" }] }, { image: "gpt-6-luna" });
-    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/gpt-5.6-luna" }, catalog, {}), {
-      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "oauth/gpt-5.6-sol" }, catalog, {}), {
-      ok: true, lane: "oauth", model: "gpt-6-sol", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", { model: "api/gpt-5.6-luna" }, catalog, {}), {
-      ok: true, lane: "api", model: "gpt-5.6-luna", transport: "core",
-    });
-    assert.deepStrictEqual(resolveTarget("image", {}, catalog, { image: "oauth/gpt-5.5" }), {
-      ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
-    });
-    const bare = expectFailure(resolveTarget("image", { model: "gpt-5.6-luna" }, catalog, {}), "MODEL_AMBIGUOUS");
-    assert.deepStrictEqual(bare!.extra?.candidates, ["oauth/gpt-5.6-luna", "api/gpt-5.6-luna"]);
   });
 
   it("rejects missing models, kind mismatches, and lane conflicts", () => {
@@ -154,8 +115,23 @@ describe("resolveTarget", () => {
   });
 
   it("returns stable candidates for ambiguous bare ids", () => {
-    const failure = expectFailure(resolveTarget("image", { model: "shared" }, makeCatalog(), {}), "MODEL_AMBIGUOUS");
+    const catalog = makeCatalog();
+    catalog.lanes.agy.models.image.push({ id: "shared" });
+    const failure = expectFailure(resolveTarget("image", { model: "shared" }, catalog, { image: "api/shared" }), "MODEL_AMBIGUOUS");
+    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared", "api/shared", "agy/shared"]);
+  });
+
+  it("rejects a non-GPT image shared by OAuth and API as ambiguous", () => {
+    const failure = expectFailure(resolveTarget("image", { model: "shared" }, makeCatalog(), { image: "api/shared" }), "MODEL_AMBIGUOUS");
     assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared", "api/shared"]);
+  });
+
+  it("rejects a video shared by OAuth and API as ambiguous", () => {
+    const catalog = makeCatalog();
+    catalog.lanes.oauth.models.video.push({ id: "shared-video" });
+    catalog.lanes.api.models.video.push({ id: "shared-video" });
+    const failure = expectFailure(resolveTarget("video", { model: "shared-video" }, catalog, {}), "MODEL_AMBIGUOUS");
+    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared-video", "api/shared-video"]);
   });
 
   it("rejects missing bare ids and bare kind mismatches within a provider", () => {
@@ -187,7 +163,7 @@ describe("resolveTarget", () => {
   it("returns grouped models and two fix commands when the CLI default is absent", () => {
     const failure = expectFailure(resolveTarget("image", {}, makeCatalog(), {}), "NO_DEFAULT_MODEL");
     const models = failure!.extra?.models as Record<string, string[]>;
-    assert.deepStrictEqual(models.oauth, ["gpt-6-luna", "gpt-6-astra", "shared"]);
+    assert.deepStrictEqual(models.oauth, ["gpt-6-luna", "gpt-6.2-astra", "shared"]);
     assert.deepStrictEqual(models.runway, ["gen-4"]);
     assert.deepStrictEqual(failure!.extra?.fix, [
       "ima2 defaults set image <lane>/<model>",

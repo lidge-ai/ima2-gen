@@ -1,3 +1,4 @@
+import { FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, migrateOpenAIImageModel } from "../imageModels.js";
 import type { GenerateOptions } from "../providers/adapters/openaiTypes.js";
 import type { UpstreamErr } from "../generationErrors.js";
 import { setJobPhase } from "../inflight.js";
@@ -37,7 +38,7 @@ export async function generateViaOAuth(
 ) {
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = migrateOpenAIImageModel(options.model || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL);
   const webSearchEnabled = resolveWebSearchEnabled(options);
   const tools = buildImageTools(webSearchEnabled, {
     quality,
@@ -70,7 +71,7 @@ export async function generateViaOAuth(
     });
   }
 
-  const reasoningEffort = resolveReasoningEffort(ctx, options);
+  const reasoningEffort = coerceReasoningEffortForModel(model, resolveReasoningEffort(ctx, options));
   const developerPrompt = webSearchEnabled ? GENERATE_DEVELOPER_PROMPT : GENERATE_NO_SEARCH_DEVELOPER_PROMPT;
   const timeout = createOAuthGenerationTimeout(ctx, requestId, "oauth");
   try {

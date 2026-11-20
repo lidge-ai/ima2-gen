@@ -2,7 +2,8 @@ import { errInfo } from "./errInfo.js";
 import { logEvent } from "./logger.js";
 import { waitForOAuthReady } from "./oauthProxy/runtime.js";
 import { oauthFetch } from "./codexBackend/index.js";
-import { migrateOAuthImageModel } from "./oauthLegacyModels.js";
+import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
+import { coerceReasoningEffortForModel } from "./imageModels.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "./runtimeContext.js";
 
 const AGENT_QUESTION_DEVELOPER_PROMPT = [
@@ -72,18 +73,19 @@ export async function requestAgentQuestionAnswer(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const signal = options.signal ? combineSignals([controller.signal, options.signal]) : controller.signal;
+    const model = migrateOpenAIImageModel(options.model || ctx.config.imageModels?.default || "gpt-6-luna");
     try {
       const init: RequestInit = {
         method: "POST",
         headers: endpoint.headers,
         signal,
         body: JSON.stringify({
-          model: migrateOAuthImageModel(options.model || ctx.config.imageModels?.default || "gpt-6-luna"),
+          model,
           input: [
             { role: "developer", content: AGENT_QUESTION_DEVELOPER_PROMPT },
             { role: "user", content: question },
           ],
-          reasoning: { effort: options.reasoningEffort || "low" },
+          reasoning: { effort: coerceReasoningEffortForModel(model, options.reasoningEffort || "low") },
           stream: true,
         }),
       };

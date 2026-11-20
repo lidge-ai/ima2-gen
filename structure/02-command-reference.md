@@ -145,7 +145,7 @@ with `MODEL_NOT_FOUND` while an all-offline lane fails with
 | `--stdin` | false | Read extra prompt text from stdin |
 | `--timeout <sec>` | `180` | HTTP request timeout |
 | `--server <url>` | auto-discovered | Override server discovery |
-| `--model <id>` | `gpt-6-luna` | Image model: GPT OAuth `gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra` (legacy ids map to their GPT-6 tier); API-key lane `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`; `grok-imagine-image`, `grok-imagine-image-quality`, or server-rejected `gpt-5.3-codex-spark` |
+| `--model <id>` | `gpt-6-luna` | GPT OAuth and API-key models: `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra` (aliases `luna`, `terra`, `sol`, `astra`); saved older IDs migrate to their tier on the same lane. Other providers have their own models. |
 | `--provider <oauth|api|grok|grok-api|agy|gemini-api|atlascloud|minimax|nai|comfy|runway|higgsfield>` | server default | Per-request provider override; `api`/`grok-api`/`gemini-api`/`atlascloud`/`minimax`/`nai` require configured keys; `grok` uses the xAI OAuth session (device code); `agy` shells out to local `agy` CLI; `nai` is text-to-image only. The enum is derived from `lib/providers/registry.ts`, so it is never hand-maintained in code. |
 | `--mode <auto|direct>` | `auto` | Prompt handling mode |
 | `--moderation <auto|low>` | `low` | OAuth moderation level |
@@ -203,7 +203,7 @@ with one image/frame source. Ref2V/multi-ref, edit, and extension remain base-mo
 | `--json` | false | Print machine-readable JSON |
 | `--timeout <sec>` | `180` | HTTP request timeout |
 | `--server <url>` | auto-discovered | Target server URL |
-| `--model <id>` | `gpt-6-luna` | Image model: GPT OAuth `gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra` (legacy ids map to their GPT-6 tier); API-key lane `gpt-5.6-luna`, `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`; `grok-imagine-image`, `grok-imagine-image-quality`, or server-rejected `gpt-5.3-codex-spark` |
+| `--model <id>` | `gpt-6-luna` | GPT OAuth and API-key models: `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra` (aliases `luna`, `terra`, `sol`, `astra`); saved older IDs migrate to their tier on the same lane. Other providers have their own models. |
 | `--provider <oauth|api|grok|grok-api|agy|gemini-api|atlascloud|minimax|nai|comfy|runway|higgsfield>` | server default | Per-request provider override; `api`/`grok-api`/`gemini-api`/`atlascloud`/`minimax`/`nai` require configured keys; `grok` uses the xAI OAuth session (device code); `agy` shells out to local `agy` CLI; `nai` is text-to-image only. The enum is derived from `lib/providers/registry.ts`, so it is never hand-maintained in code. |
 | `--mode <auto|direct>` | `auto` | Prompt handling mode |
 | `--moderation <auto|low>` | `low` | OAuth moderation level |

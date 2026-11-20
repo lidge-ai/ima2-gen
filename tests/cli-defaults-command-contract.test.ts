@@ -71,18 +71,56 @@ function runCli(args, configDir) {
 }
 
 describe("CLI image/video defaults behavior", () => {
+  it("migrates legacy OpenAI image targets before catalog validation only on OpenAI lanes", async () => {
+    const configDir = mkdtempSync(join(tmpdir(), "ima2-defaults-legacy-"));
+    const models = { image: [{ id: "gpt-6.2-sol" }], video: [{ id: "gpt-5.6-sol" }] };
+    const server = createServer((req, res) => {
+      res.setHeader("Content-Type", "application/json");
+      if (req.url === "/api/health") { res.end('{"ok":true}'); return; }
+      if (req.url === "/api/models") {
+        res.end(JSON.stringify({ ok: true, lanes: {
+          api: { status: "ready", models }, oauth: { status: "ready", models },
+          runway: { status: "ready", models: { image: [{ id: "gpt-5.6-sol" }], video: [] } },
+        } })); return;
+      }
+      res.writeHead(404).end();
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const base = `http://127.0.0.1:${address.port}`;
+    const saved = () => JSON.parse(readFileSync(join(configDir, "config.json"), "utf8")).defaults;
+    try {
+      const api = await runCli(["defaults", "set", "image", "api/gpt-5.6-sol", "--server", base], configDir);
+      assert.equal(api.code, 0, api.stdout + api.stderr);
+      assert.match(api.stdout, /as api\/gpt-6\.2-sol/);
+      assert.equal(saved().image, "api/gpt-6.2-sol");
+      const oauth = await runCli(["defaults", "set", "image", "oauth/gpt-6-sol", "--json", "--server", base], configDir);
+      assert.equal(oauth.code, 0, oauth.stdout + oauth.stderr);
+      assert.equal(JSON.parse(oauth.stdout).value, "oauth/gpt-6.2-sol");
+      assert.equal(saved().image, "oauth/gpt-6.2-sol");
+      assert.equal((await runCli(["defaults", "set", "image", "runway/gpt-5.6-sol", "--server", base], configDir)).code, 0);
+      assert.equal(saved().image, "runway/gpt-5.6-sol");
+      assert.equal((await runCli(["defaults", "set", "video", "api/gpt-5.6-sol", "--server", base], configDir)).code, 0);
+      assert.equal(saved().video, "api/gpt-5.6-sol");
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      rmSync(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+
   it("defaults set model writes each GPT lane only a model it serves", async () => {
     const configDir = mkdtempSync(join(tmpdir(), "ima2-defaults-model-"));
     const saved = () => JSON.parse(readFileSync(join(configDir, "config.json"), "utf8"));
     try {
-      // A legacy id: GPT OAuth takes its GPT-6 tier, the API-key lane keeps the id it serves.
+      // A legacy id migrates on both OpenAI lanes.
       assert.equal((await runCli(["defaults", "set", "model", "gpt-5.6-luna"], configDir)).code, 0);
       assert.equal(saved().imageModels.default, "gpt-6-luna");
-      assert.equal(saved().apiProvider.defaultImageModel, "gpt-5.6-luna");
-      // A GPT OAuth-only id never becomes the API-key default.
+      assert.equal(saved().apiProvider.defaultImageModel, "gpt-6-luna");
+      // A former OAuth id migrates on both lanes.
       assert.equal((await runCli(["defaults", "set", "model", "gpt-6-sol"], configDir)).code, 0);
-      assert.equal(saved().imageModels.default, "gpt-6-sol");
-      assert.equal(saved().apiProvider.defaultImageModel, "gpt-5.6-luna");
+      assert.equal(saved().imageModels.default, "gpt-6.2-sol");
+      assert.equal(saved().apiProvider.defaultImageModel, "gpt-6.2-sol");
       const bad = await runCli(["defaults", "set", "model", "gpt-9"], configDir);
       assert.equal(bad.code, 2);
     } finally {

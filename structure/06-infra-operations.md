@@ -305,7 +305,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `VITE_IMA2_API_TARGET` / `IMA2_DEV_API_TARGET` | Split Vite dev API proxy target override |
 | `IMA2_IMAGE_MODEL_DEFAULT` | Server fallback GPT OAuth image model, default `gpt-6-luna` |
 | `IMA2_REASONING_EFFORT` | Server OAuth/default reasoning effort, default `medium` |
-| `IMA2_API_IMAGE_MODEL_DEFAULT` | Default image model for `provider: "api"` (Responses path), default `gpt-5.6-luna` |
+| `IMA2_API_IMAGE_MODEL_DEFAULT` | Default image model for `provider: "api"` (Responses path), default `gpt-6-luna` |
 | `IMA2_API_REASONING_EFFORT` | Default reasoning effort for `provider: "api"`, default `low` |
 | `IMA2_API_IMAGE_SIZE` | Default size for `provider: "api"`, default `1024x1024` |
 | `IMA2_API_ALLOW_WEB_SEARCH` | Toggle web search for `provider: "api"`, default `true` |
@@ -352,7 +352,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_CODEX_CLIENT_VERSION` | Codex client version sent to ChatGPT; default is the latest `@openai/codex` release, at least `0.157.0` |
 | `IMA2_RESEARCH_SUFFIX` | Optional suffix appended when research mode is on |
 | `IMA2_STYLE_SHEET_MAX_PREFIX` | Max characters of a session style sheet injected into the next prompt |
-| `IMA2_STYLE_MODEL` | Model used by `/api/sessions/:id/style-sheet/extract` (API-key client), default `gpt-5.6-luna` |
+| `IMA2_STYLE_MODEL` | Model used by `/api/sessions/:id/style-sheet/extract` (API-key client), default `gpt-6-luna` |
 | `IMA2_STATIC_MAX_AGE` | Static asset Cache-Control max-age |
 | `VITE_IMA2_DEV` | UI build-time dev flag; pairs with `VITE_IMA2_CARD_NEWS=1` to expose the dev-only card-news workspace in the bundle |
 

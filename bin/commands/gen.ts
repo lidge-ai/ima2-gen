@@ -83,8 +83,9 @@ const HELP = `
         --stdin                              Read prompt from stdin (core lanes only)
         --timeout <sec>                     Default: 180
         --server <url>                      Override server URL
-        --model <model|lane/model>          Bare IDs must be unique across lanes
-                                            Core aliases: luna, astra, sol, terra, spark
+        --model <model|lane/model>          Shared IDs require --provider, except GPT images:
+                                            OAuth/API default lane is used, otherwise OAuth
+                                            Core aliases: luna, terra, sol, astra
         --image-tool-model <id>             API only: gpt-image-2.6-flare|gpt-image-2.6-sunburst|gpt-image-2.5-sunburst|gpt-image-2.5-flare
         --complexity <level>                low|medium|high; API 2.6 image models only (default high)
         --gif                               Animated GIF output (API lane + 2.6 image model)

@@ -240,7 +240,7 @@ ima2 skill install --tmp        # 安裝到暫存資料夾（備案）
 | `minimax` | MiniMax API 金鑰 | ✓ | | `image-01`、`image-01-live` |
 | `runway`、`higgsfield` | MCP 連線 | ✓ | ✓ | 獨立的 MCP 整合 |
 
-GPT OAuth 通道使用三個 GPT-6 模型：預設 **`gpt-6-luna`**，另有 `gpt-6-sol`，以及推理時間最長、速度最慢的 `gpt-6-astra`。所選模型負責規劃畫面，`gpt-image-2` 負責出圖。`gpt-5.6-luna` 等舊的 OAuth 模型 ID 在已儲存的設定與腳本中仍可使用，會對應到相應的 GPT-6 模型。API key 通道保留自己的清單：`gpt-5.6-luna`（預設）、`gpt-6-astra`、`gpt-5.6-terra`、`gpt-5.6-sol`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`。應用程式也提供品質（`low`、`medium`、`high`）與審核等級（`auto`、`low`）控制。
+GPT OAuth 與 API key 通道均提供 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`，預設使用 `gpt-6-luna`，別名分別為 `luna`、`terra`、`sol`、`astra`。所選模型負責規劃畫面，`gpt-image-2` 負責出圖。已儲存的舊 ID 會遷移到同一通道的對應級別，對照表見 `lib/openaiLegacyModels.ts`。應用程式也提供品質（`low`、`medium`、`high`）與審核等級（`auto`、`low`）控制。
 
 <details>
 <summary><b>供應商詳情（English）</b></summary>
@@ -255,7 +255,7 @@ GPT OAuth 通道使用三個 GPT-6 模型：預設 **`gpt-6-luna`**，另有 `gp
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
 - Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
 
-If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth defaults to `gpt-6-luna` and API-key generation to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
+未指定供應商時，應用程式沿用 GPT OAuth 預設行為。GPT OAuth 與 API key 生成的預設模型均為 `gpt-6-luna`。API key 路徑在請求未提供經驗證的選項時，預設使用 `low` 推理強度與 `1024x1024` 尺寸。Grok 圖片生成的預設模型為 `grok-imagine-image-2.0`。
 
 One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
 
@@ -361,7 +361,7 @@ Full reference: [docs/CLI.md](CLI.md).
 | `IMA2_NAI_IMAGE_MODEL_DEFAULT` | `nai-diffusion-5-full` | Default NovelAI image model |
 | `IMA2_NAI_DEFAULT_AUTO_SMEA` | `false` | Default NovelAI Auto SMEA state |
 | `IMA2_NAI_DEFAULT_DECRISPER` | `false` | Default NovelAI Decrisper (`dynamic_thresholding`) state |
-| `IMA2_API_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Default image model for `provider: "api"` |
+| `IMA2_API_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Default image model for `provider: "api"` |
 | `IMA2_API_REASONING_EFFORT` | `low` | Default reasoning effort for `provider: "api"` |
 | `IMA2_API_IMAGE_SIZE` | `1024x1024` | Default size for `provider: "api"` |
 | `IMA2_API_ALLOW_WEB_SEARCH` | `true` | Toggle web search for `provider: "api"` |

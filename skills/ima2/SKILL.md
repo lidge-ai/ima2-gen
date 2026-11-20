@@ -91,7 +91,7 @@ ima2 gen "exact prompt text" --model oauth/luna --mode direct
 Use request-level overrides only for that one call:
 
 ```bash
-ima2 gen "cinematic mountain" --model oauth/gpt-5.5 --reasoning-effort high
+ima2 gen "cinematic mountain" --model oauth/gpt-6-luna --reasoning-effort high
 ```
 
 Use Grok when the request should run through the stored xAI OAuth session,
@@ -432,7 +432,13 @@ a preview: `sharp(file).metadata()` should report `channels: 4, hasAlpha: true`.
 
 ### Raster-to-Vector (SVG)
 
-`ima2 gen` always produces raster. When you need a REAL vector — a logo that
+`ima2 gen --svg` generates SVG on the OpenAI API-key lane with `gpt-image-2.6-flare`
+or `gpt-image-2.6-sunburst` (subject to access). The author model defaults to
+`gpt-5.6-luna`, live-verified with a funded key (PR #425); `gpt-6-luna` was not
+verified. Override with `IMA2_SVG_MODEL` or `--svg-model`; `--svg-effort` also
+works with the default author, with supported efforts depending on the model.
+
+For local tracing, when you need a REAL vector — a logo that
 scales, an icon for a design system, a brand-safe SVG asset — trace the raster
 afterwards. `flat vector style` in a prompt only produces a bitmap that LOOKS
 vector; it has no paths.
@@ -757,7 +763,7 @@ ima2 models --kind video --json
 `{"ok":true,"kinds":{"image":[],"video":[]}}`. It requires the server; an
 unreachable server returns `SERVER_UNREACHABLE` and exits 3.
 
-For GPT OAuth, GPT-6 Luna, Sol, and Astra select the planning model; ChatGPT
+For GPT OAuth, GPT-6 Luna, GPT-6.1 Terra, GPT-6.2 Sol, and GPT-6.2 Astra select the planning model; ChatGPT
 chooses the image model. Images 2.6 model choice, complexity, markup, GIF, and
 SVG require the OpenAI API-key lane in ima2 (subject to API access). ChatGPT's
 own UI may offer features not verified on the Codex OAuth endpoints. See
@@ -765,13 +771,13 @@ own UI may offer features not verified on the Codex OAuth endpoints. See
 
 Persist the server-side model defaults shared by GPT OAuth and API provider paths:
 
-The built-in GPT OAuth planning default is `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier); Grok image and video code
+The GPT OAuth and API-key lanes both offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra` (aliases `luna`, `terra`, `sol`, `astra`), defaulting to `gpt-6-luna`; saved older IDs migrate to their tier on the same lane. Grok image and video code
 defaults are `grok-imagine-image-quality` and `grok-imagine-video` respectively.
 For video, set `grok-imagine-video-1.5` as your default and leave the base model
 for edit and extension, which are the only things 1.5 cannot do.
 
 ```bash
-ima2 defaults set model gpt-5.5
+ima2 defaults set model gpt-6-luna
 ```
 
 Persist the fail-closed CLI image and video targets separately:

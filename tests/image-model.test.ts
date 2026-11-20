@@ -9,31 +9,31 @@ describe("image model normalization", () => {
     assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
   });
 
-  it("accepts the GPT-6 trio on GPT OAuth", () => {
-    for (const model of ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"]) {
+  it("accepts the GPT-6.x lineup on GPT OAuth", () => {
+    for (const model of ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"]) {
       assert.deepEqual(normalizeImageModel({}, model), { model });
     }
   });
 
-  it("maps legacy GPT OAuth ids to their GPT-6 tier and leaves the API-key lane alone", () => {
+  it("maps legacy ids on both OpenAI lanes", () => {
     const legacy = {
-      "gpt-5.6-sol": "gpt-6-sol",
+      "gpt-5.6-sol": "gpt-6.2-sol",
       "gpt-5.6-luna": "gpt-6-luna",
-      "gpt-5.6-terra": "gpt-6-luna",
+      "gpt-5.6-terra": "gpt-6.1-terra",
       "gpt-5.5": "gpt-6-luna",
       "gpt-5.4": "gpt-6-luna",
       "gpt-5.4-mini": "gpt-6-luna",
     };
     for (const [from, to] of Object.entries(legacy)) {
       assert.deepEqual(normalizeImageModel({}, from), { model: to }, `oauth ${from}`);
-      assert.deepEqual(normalizeImageModel({}, from, "api"), { model: from }, `api ${from}`);
+      assert.deepEqual(normalizeImageModel({}, from, "api"), { model: to }, `api ${from}`);
     }
   });
 
   it("accepts gpt-6-astra without moving the default off gpt-6-luna", () => {
-    assert.deepEqual(normalizeImageModel({}, "gpt-6-astra"), { model: "gpt-6-astra" });
+    assert.deepEqual(normalizeImageModel({}, "gpt-6.2-astra"), { model: "gpt-6.2-astra" });
     assert.deepEqual(normalizeImageModel({}, undefined), { model: "gpt-6-luna" });
-    assert.deepEqual(normalizeImageModel({}, undefined, "api"), { model: "gpt-5.6-luna" });
+    assert.deepEqual(normalizeImageModel({}, undefined, "api"), { model: "gpt-6-luna" });
   });
 
   // Short aliases are a CLI concern: bin/lib/model-aliases.ts resolves them

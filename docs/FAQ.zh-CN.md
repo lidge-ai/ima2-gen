@@ -120,13 +120,9 @@ ima2 serve
 
 ### 我应该使用哪个模型？
 
-GPT OAuth 默认使用 `gpt-6-luna`。该通道提供三个 GPT-6 模型：你选择的模型负责规划画面，`gpt-image-2` 负责出图。
+GPT OAuth 和 API key 通道均提供 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`，默认使用 `gpt-6-luna`，别名分别为 `luna`、`terra`、`sol`、`astra`。所选模型负责规划画面，`gpt-image-2` 负责出图。`gpt-6.2-sol` 和 `gpt-6.2-astra` 的推理强度 `none` 会按 `low` 执行。
 
-- `gpt-6-luna`：默认模型。
-- `gpt-6-sol`：另一个日常使用的 GPT-6 模型。
-- `gpt-6-astra`：推理时间最长、速度最慢；推理强度 `none` 会按 `low` 执行。
-
-旧的 OAuth 模型 ID（`gpt-5.6-sol`、`gpt-5.6-luna`、`gpt-5.6-terra`、`gpt-5.5`、`gpt-5.4`、`gpt-5.4-mini`）在已保存的设置和脚本中仍然可用。`gpt-5.6-sol` 会以 `gpt-6-sol` 运行，其余以 `gpt-6-luna` 运行。API key 通道（`provider: "api"`）保留自己的列表，默认是 `gpt-5.6-luna`。
+保存的旧 ID 会迁移到同一通道的对应级别，映射表见 `lib/openaiLegacyModels.ts`。
 
 ### 为什么只有某个 GPT-6 模型失败？
 

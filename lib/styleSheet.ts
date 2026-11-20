@@ -1,6 +1,6 @@
 // Style-sheet extractor (0.10)
 //
-// Uses GPT-5.4 (chat completions) to derive a structured "style guide" from a
+// Uses gpt-6-luna by default on the API-key client (chat completions) to derive a structured "style guide" from a
 // user prompt and optional reference image. The style guide is stored per
 // session and automatically prepended to subsequent image generations so
 // continuations feel cohesive — closer to ChatGPT 4o's image carry-over.

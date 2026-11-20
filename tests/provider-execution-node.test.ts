@@ -10,7 +10,7 @@ import { imagesJson } from "./_oauthNativeFixture.ts";
 type Harness = Awaited<ReturnType<typeof openRouteHarness>>;
 type Fixture = Parameters<Parameters<Harness["run"]>[2]>[0];
 type Call = Parameters<Parameters<Harness["run"]>[1]["upstream"]>[0];
-const BASE = { provider: "api", prompt: "node raw fixture", model: "gpt-5.4",
+const BASE = { provider: "api", prompt: "node raw fixture", model: "gpt-6.1-terra",
   reasoningEffort: "high", quality: "high", size: "1536x1024", format: "png",
   moderation: "low", mode: "direct", webSearchEnabled: false, searchMode: "off" };
 
@@ -132,7 +132,7 @@ if (executionTestProcess(import.meta.url)) describe("node execution: real route 
   it("E03-1 API wire, effective prompt and raw sidecar stay distinct", async () => {
     await harness.run("node", { context: { apiKey: "sk-node-fixture" }, upstream: (call) => {
       const wire = apiCall(call);
-      assert.equal(wire.model, "gpt-5.4");
+      assert.equal(wire.model, "gpt-6.1-terra");
       assert.deepEqual(wire.reasoning, { effort: "high" });
       assert.equal(wire.stream, true);
       assert.deepEqual(wire.tools, [{ type: "image_generation", quality: "high", size: "1536x1024", moderation: "low" }]);
@@ -157,7 +157,7 @@ if (executionTestProcess(import.meta.url)) describe("node execution: real route 
       const meta = JSON.parse(await readFile(join(fixture.generatedDir, `${body.filename}.json`), "utf8"));
       assert.equal(meta.prompt, "node raw fixture");
       assert.equal(meta.userPrompt, "node raw fixture");
-      assert.equal(meta.model, "gpt-5.4");
+      assert.equal(meta.model, "gpt-6.1-terra");
       assert.equal(meta.reasoningEffort, "high");
       assert.deepEqual(meta.options, { quality: "high", size: "1536x1024", format: "png", moderation: "low" });
       assert.deepEqual(meta.elementIds, ["e_fixture"]);

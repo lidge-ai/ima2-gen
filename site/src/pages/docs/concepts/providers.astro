@@ -64,17 +64,17 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
 
   <h2>Models</h2>
   <p>
-    The GPT OAuth lane defaults to <code>gpt-6-luna</code>; the API-key lane keeps <code>gpt-5.6-luna</code>. Prompt Builder has a separate backend
+    Both GPT OAuth and API-key lanes default to <code>gpt-6-luna</code>. Prompt Builder has a separate backend
     preference; when its backend resolves to GPT, Luna is the default GPT Builder model.
   </p>
+  <p>Saved older IDs migrate to their corresponding tier on the same lane (see <code>lib/openaiLegacyModels.ts</code>).</p>
   <table>
     <thead><tr><th>Model</th><th>Use</th></tr></thead>
     <tbody>
-      <tr><td><code>gpt-6-luna</code></td><td>GPT OAuth default and default GPT Builder model when the Builder uses GPT OAuth.</td></tr>
-      <tr><td><code>gpt-6-sol</code></td><td>The other everyday GPT-6 model on GPT OAuth.</td></tr>
-      <tr><td><code>gpt-6-astra</code></td><td>Reasons longest and is the slowest. Selectable on the OAuth and API lanes.</td></tr>
-      <tr><td><code>gpt-5.6-luna</code> / <code>gpt-5.6-terra</code> / <code>gpt-5.6-sol</code></td><td>API-key lane models (<code>gpt-5.6-luna</code> is its default). On GPT OAuth these ids map to <code>gpt-6-sol</code> (sol) or <code>gpt-6-luna</code>.</td></tr>
-      <tr><td><code>gpt-5.5</code> / <code>gpt-5.4</code> / <code>gpt-5.4-mini</code></td><td>API-key lane compatibility models; on GPT OAuth they run as <code>gpt-6-luna</code>.</td></tr>
+      <tr><td><code>gpt-6-luna</code></td><td>Default on both lanes (alias <code>luna</code>).</td></tr>
+      <tr><td><code>gpt-6.1-terra</code></td><td>Alias <code>terra</code>.</td></tr>
+      <tr><td><code>gpt-6.2-sol</code></td><td>Alias <code>sol</code>.</td></tr>
+      <tr><td><code>gpt-6.2-astra</code></td><td>Alias <code>astra</code>.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>Compatible fast Grok image model.</td></tr>
       <tr><td><code>grok-imagine-image-quality</code></td><td>Highest-quality Grok image model ("Grok+" / Best in the UI).</td></tr>
       <tr><td><code>grok-imagine-image-2.0</code></td><td>Default Grok image model for new sessions.</td></tr>
@@ -90,7 +90,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
     medium, high, and xhigh.
   </p>
   <div class="docs-callout docs-callout-info">
-    <strong>Persisted defaults.</strong> <code>ima2 defaults set model gpt-5.5</code> and
+    <strong>Persisted defaults.</strong> <code>ima2 defaults set model gpt-6-luna</code> and
     <code>ima2 defaults set reasoning high</code> write both OAuth and API-provider default keys, so
     your "default model" stays one concept across provider paths.
   </div>
@@ -202,7 +202,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
   <table>
     <thead><tr><th>Variable</th><th>Default</th></tr></thead>
     <tbody>
-      <tr><td><code>IMA2_API_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-5.6-luna</code></td></tr>
+      <tr><td><code>IMA2_API_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-6-luna</code></td></tr>
       <tr><td><code>IMA2_API_REASONING_EFFORT</code></td><td><code>low</code></td></tr>
       <tr><td><code>IMA2_API_IMAGE_SIZE</code></td><td><code>1024x1024</code></td></tr>
       <tr><td><code>IMA2_API_ALLOW_WEB_SEARCH</code></td><td><code>true</code></td></tr>

@@ -36,7 +36,7 @@ function timeout(error: unknown) {
 function request(surface: "classic" | "node" | "multimode", provider: "oauth" | "api" = "oauth", signal = new AbortController().signal): OpenaiRequest {
   const base = { provider, requestId: undefined, signal,
     prompt: "synthetic", rawPrompt: "synthetic", references: [], nai: {},
-    options: { model: provider === "api" ? "gpt-5.4" : "gpt-6-luna", quality: "high", size: "1024x1024",
+    options: { model: provider === "api" ? "gpt-6.1-terra" : "gpt-6-luna", quality: "high", size: "1024x1024",
       moderation: "low", mode: "direct", reasoningEffort: "low", webSearchEnabled: false } as const };
   if (surface === "multimode") return { ...base, surface, providerUrl: null, maxImages: 1 };
   return surface === "classic"
@@ -240,7 +240,7 @@ if (executionTestProcess(import.meta.url)) describe("prepared OAuth execution de
       await assert.rejects(execution.execute());
       assert.equal(bodies.length, 2);
       for (const body of bodies) {
-        assert.equal(body.model, provider === "api" ? "gpt-5.4" : "gpt-6-luna");
+        assert.equal(body.model, provider === "api" ? "gpt-6.1-terra" : "gpt-6-luna");
         assert.match(JSON.stringify(body.input), /synthetic/);
         assert.doesNotMatch(JSON.stringify(body.input), /mutated-caller-prompt/);
       }

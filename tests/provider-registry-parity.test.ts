@@ -13,8 +13,8 @@ const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const CORE_IDS = ["oauth", "api", "grok", "grok-api", "agy", "gemini-api", "atlascloud", "minimax", "nai", "comfy"];
 // GPT OAuth keeps only GPT-6; the API-key lane keeps its own GPT list.
-const OAUTH_MODELS = ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"];
-const API_MODELS = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra"];
+const OAUTH_MODELS = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"];
+const API_MODELS = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"];
 const CLI_IMAGE_MODELS = [
   ...OAUTH_MODELS,
   ...API_MODELS.filter((id) => !OAUTH_MODELS.includes(id)),

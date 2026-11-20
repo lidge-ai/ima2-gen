@@ -1,4 +1,4 @@
-import { migrateOAuthImageModel } from "../imageModels.js";
+import { migrateOpenAIImageModel } from "../imageModels.js";
 import {
   DEFAULT_PROMPT_BUILDER_MODELS,
   MAX_MESSAGES,
@@ -38,8 +38,8 @@ export function normalizePromptBuilderModel(
   const given = typeof raw === "string" && raw.trim()
     ? raw.trim()
     : DEFAULT_PROMPT_BUILDER_MODELS[backend];
-  // Saved GPT OAuth settings from before GPT-6 keep working on the matching GPT-6 tier.
-  const candidate = backend === "oauth" ? migrateOAuthImageModel(given) : given;
+  // Saved OpenAI settings migrate on both OpenAI lanes.
+  const candidate = (backend === "oauth" || backend === "api") ? migrateOpenAIImageModel(given) : given;
   if (!PROMPT_BUILDER_MODELS[backend].includes(candidate)) {
     throw promptBuilderError(
       `model for ${backend} must be one of: ${PROMPT_BUILDER_MODELS[backend].join(", ")}`,
@@ -67,15 +67,15 @@ export function normalizeRequestModel(
 }
 
 export function lanesForModel(model: string): ResolvedPromptBuilderBackend[] {
-  // A legacy GPT OAuth id still routes to GPT OAuth, on its GPT-6 tier (see promptBuilderLaneModel).
+  // Legacy OpenAI ids route through their migrated lineup id.
   return PROMPT_BUILDER_AUTO_ORDER.filter(
     (lane) => PROMPT_BUILDER_MODELS[lane].includes(promptBuilderLaneModel(lane, model)),
   );
 }
 
-/** The model id a lane actually receives: GPT OAuth takes the GPT-6 tier of a legacy id. */
+/** The model id a lane actually receives after migration. */
 export function promptBuilderLaneModel(lane: ResolvedPromptBuilderBackend, model: string): string {
-  return lane === "oauth" ? migrateOAuthImageModel(model) : model;
+  return (lane === "oauth" || lane === "api") ? migrateOpenAIImageModel(model) : model;
 }
 
 export function normalizePromptBuilderConfig(

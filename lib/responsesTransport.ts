@@ -16,6 +16,7 @@ import { waitForOAuthReady } from "./oauthProxy.js";
 import { oauthFetch } from "./codexBackend/index.js";
 import { oauthRateLimitFields, oauthRateLimitRetryConfig } from "./oauthRateLimit.js";
 import { apiSafetyFields } from "./safetyIdentifier.js";
+import { coerceReasoningEffortForModel } from "./imageModels.js";
 
 interface MakeErrorOptions {
   status?: number | undefined;
@@ -243,6 +244,12 @@ export async function postResponses(args: PostResponsesArgs): Promise<ParsedResp
   const body = payload && typeof payload === "object" && !Array.isArray(payload)
     ? { ...payload, ...apiSafetyFields(provider, ctx.config) }
     : payload;
+  if (body && typeof body === "object" && "model" in body && typeof body.model === "string" && "reasoning" in body && body.reasoning && typeof body.reasoning === "object" && !Array.isArray(body.reasoning)) {
+    const reasoning = body.reasoning as Record<string, unknown>;
+    if (typeof reasoning.effort === "string") {
+      body.reasoning = { ...reasoning, effort: coerceReasoningEffortForModel(body.model, reasoning.effort) };
+    }
+  }
   const lifetime = transportLifetime(ctx, provider, signal);
   try {
     const res = await lifetime.wait(() => requestResponses(ctx, url, {

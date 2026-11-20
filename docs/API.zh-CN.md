@@ -200,7 +200,7 @@ CLI和遗留客户省略`async`并保持原始行为：每个请求SSE在同一�
   "format": "png",
   "moderation": "low",
   "provider": "oauth",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "references": [],
   "requestId": "optional-client-id",
   "storyboard": false
@@ -214,7 +214,7 @@ CLI和遗留客户省略`async`并保持原始行为：每个请求SSE在同一�
 什么时候`storyboard`是`true`，服务器预先添加情节提要关键帧指令，以便图像
 几代人保持多镜头视频制作的角色和场景连续性。
 
-GPT OAuth 默认值：`gpt-6-luna`（另有 `gpt-6-sol`、`gpt-6-astra`；旧的 OAuth 模型 ID 会映射到对应的 GPT-6 模型）。API key 默认值：`gpt-5.6-luna`，调用方明确选择时仍可使用 `gpt-5.5` 等其他 API 模型。
+GPT OAuth 和 API key 通道均提供 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`，默认使用 `gpt-6-luna`（CLI 别名：`luna`、`terra`、`sol`、`astra`；HTTP API 需要模型 ID）。保存的旧 ID 会迁移到同一通道的对应级别，映射表见 `lib/openaiLegacyModels.ts`。
 
 什么时候`provider`是`"grok"`，支持的型号有`grok-imagine-image`和
 `grok-imagine-image-quality`。服务器使用`grok-4.5`作为搜索/规划者
@@ -314,7 +314,7 @@ Grok节点SSE回复不包括回复API `partial`图像事件是因为xAI图片API
   "size": "1024x1024",
   "format": "png",
   "moderation": "low",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "provider": "oauth",
   "references": [],
   "requestId": "optional-client-id",

@@ -25,20 +25,18 @@ export const PROVIDER_MODELS = {
   "oauth": {
     "image": [
       "gpt-6-luna",
-      "gpt-6-sol",
-      "gpt-6-astra"
+      "gpt-6.1-terra",
+      "gpt-6.2-sol",
+      "gpt-6.2-astra"
     ],
     "video": []
   },
   "api": {
     "image": [
-      "gpt-5.5",
-      "gpt-5.4",
-      "gpt-5.4-mini",
-      "gpt-5.6-sol",
-      "gpt-5.6-terra",
-      "gpt-5.6-luna",
-      "gpt-6-astra"
+      "gpt-6-luna",
+      "gpt-6.1-terra",
+      "gpt-6.2-sol",
+      "gpt-6.2-astra"
     ],
     "video": []
   },
@@ -114,14 +112,9 @@ export const PROVIDER_MODELS = {
 } as const;
 export const IMAGE_MODEL_IDS = [
   "gpt-6-luna",
-  "gpt-6-sol",
-  "gpt-6-astra",
-  "gpt-5.5",
-  "gpt-5.4",
-  "gpt-5.4-mini",
-  "gpt-5.6-sol",
-  "gpt-5.6-terra",
-  "gpt-5.6-luna",
+  "gpt-6.1-terra",
+  "gpt-6.2-sol",
+  "gpt-6.2-astra",
   "grok-imagine-image-2.0",
   "grok-imagine-image",
   "grok-imagine-image-quality",

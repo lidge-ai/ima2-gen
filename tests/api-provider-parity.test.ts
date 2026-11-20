@@ -164,7 +164,7 @@ describe("API provider parity", () => {
         body: JSON.stringify({
           prompt: "api provider generate",
           provider: "api",
-          model: "gpt-5.4",
+          model: "gpt-6.1-terra",
           reasoningEffort: "high",
           webSearchEnabled: true,
           size: "1024x1024",
@@ -173,10 +173,10 @@ describe("API provider parity", () => {
       const body = await res.json();
       assert.equal(res.status, 200);
       assert.equal(body.provider, "api");
-      assert.equal(body.model, "gpt-5.4");
+      assert.equal(body.model, "gpt-6.1-terra");
       assert.equal(calls[0].url, "https://api.openai.com/v1/responses");
       assert.match(calls[0].init.headers.Authorization, /^Bearer sk-test$/);
-      assert.equal(calls[0].body.model, "gpt-5.4");
+      assert.equal(calls[0].body.model, "gpt-6.1-terra");
       assert.equal(calls[0].body.reasoning.effort, "high");
       assert.equal(calls[0].body.tools[0].type, "web_search");
       assert.equal(calls[0].body.tools[1].type, "image_generation");

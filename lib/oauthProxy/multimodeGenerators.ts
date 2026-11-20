@@ -1,3 +1,4 @@
+import { FALLBACK_IMAGE_MODEL, coerceReasoningEffortForModel, migrateOpenAIImageModel } from "../imageModels.js";
 import type { GenerateOptions } from "../providers/adapters/openaiTypes.js";
 import type { CodedError } from "../errInfo.js";
 import type { UpstreamErr } from "../generationErrors.js";
@@ -46,7 +47,7 @@ export async function generateMultimodeViaOAuth(
 ) {
   await waitForOAuthReady(ctx);
   const oauthUrl = getOAuthUrl(ctx);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = migrateOpenAIImageModel(options.model || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL);
   const maxGeneratedImages = Math.max(
     1,
     Math.trunc(Number(ctx.config?.limits?.maxGeneratedImages) || 24),
@@ -89,7 +90,7 @@ export async function generateMultimodeViaOAuth(
     webSearchEnabled,
   });
 
-  const reasoningEffort = resolveReasoningEffort(ctx, options);
+  const reasoningEffort = coerceReasoningEffortForModel(model, resolveReasoningEffort(ctx, options));
   const developerPrompt = webSearchEnabled ? MULTIMODE_DEVELOPER_PROMPT : MULTIMODE_NO_SEARCH_DEVELOPER_PROMPT;
   const timeout = createOAuthGenerationTimeout(ctx, requestId, "oauth-multimode");
   try {
@@ -193,7 +194,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
     throw err;
   }
   const oauthUrl = getOAuthUrl(ctx);
-  const model = options.model || ctx.config?.imageModels?.default || "gpt-5.6-luna";
+  const model = migrateOpenAIImageModel(options.model || ctx.config?.imageModels?.default || FALLBACK_IMAGE_MODEL);
   const webSearchEnabled = resolveWebSearchEnabled(options);
   const textPrompt = buildEditTextPrompt(prompt, mode, { webSearchEnabled, size });
   const imageForRequest = await compressReferenceB64ForOAuth(imageB64, {
@@ -227,7 +228,7 @@ export async function editViaOAuth(prompt: string, imageB64: string, quality: st
     inputImageRequestChars: imageForRequest.outputBytes,
   });
 
-  const reasoningEffort = resolveReasoningEffort(ctx, options);
+  const reasoningEffort = coerceReasoningEffortForModel(model, resolveReasoningEffort(ctx, options));
   const developerPrompt = webSearchEnabled ? EDIT_DEVELOPER_PROMPT : EDIT_NO_SEARCH_DEVELOPER_PROMPT;
   const timeout = createOAuthGenerationTimeout(ctx, requestId, "oauth-edit");
   try {

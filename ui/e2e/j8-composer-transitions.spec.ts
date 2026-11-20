@@ -120,7 +120,7 @@ test("T4 mobile tabs navigate with arrows and restore the real opener on Escape"
 });
 
 test("MCP popup observes the selected image model without showing core GPT facts", async ({ browser }, info) => {
-  await withJ6(browser, info, { ...seed, provider: "oauth", imageModel: "gpt-5.6-luna" }, async (page, observation, origin) => {
+  await withJ6(browser, info, { ...seed, provider: "oauth", imageModel: "gpt-6-luna" }, async (page, observation, origin) => {
     await openCreate(page, origin); await selectOption(page, PROVIDER_TRIGGER, "Runway");
     await selectOption(page, MODEL_TRIGGER, "MCP image");
     await page.locator(".generate-row__readiness:visible").click();
@@ -272,7 +272,7 @@ test("T6 retired attachment highlight follows the mounted textarea after scroll 
 
 for (const scenario of ["default", "image", "video", "missing", "model-locked", "locked", "disconnected", "malformed", "retry"] as const) {
   test(`MCP observed facts ${scenario}: current selection, execution locks and recovery`, async ({ browser }, info) => {
-    await withJ6(browser, info, { ...seed, provider: "oauth", imageModel: "gpt-5.6-luna" }, async (page, observation, origin) => {
+    await withJ6(browser, info, { ...seed, provider: "oauth", imageModel: "gpt-6-luna" }, async (page, observation, origin) => {
       let phase: string = "ready", providerReads = 0;
       await page.route(`${origin}/api/mcp/providers`, async (route) => {
         providerReads++;
@@ -316,7 +316,7 @@ for (const scenario of ["default", "image", "video", "missing", "model-locked", 
 }
 
 test("MCP popup close aborts its pending observation and reopening reads fresh state", async ({ browser }, info) => {
-  await withJ6(browser, info, { ...seed, provider: "oauth", imageModel: "gpt-5.6-luna" }, async (page, observation, origin) => {
+  await withJ6(browser, info, { ...seed, provider: "oauth", imageModel: "gpt-6-luna" }, async (page, observation, origin) => {
     let hold = false, release!: () => void, arrived!: () => void, aborted!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const submitted = new Promise<void>((resolve) => { arrived = resolve; });

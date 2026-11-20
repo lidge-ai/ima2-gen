@@ -325,7 +325,7 @@ Text-to-image and reference-guided root generation.
   "format": "png",
   "moderation": "low",
   "provider": "oauth",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "references": [],
   "requestId": "optional-client-id",
   "storyboard": false
@@ -413,8 +413,10 @@ references) requests `output_format: "svg"` from `/v1/images/generations`. OpenA
 raster reference (`quality` and `complexity` apply) and an authoring model writes the SVG.
 The required `svg.model` defaults to `gpt-5.6-luna`; set `IMA2_SVG_MODEL` or
 `apiProvider.defaultSvgModel` in config to override it, or pass `svgModel` per request.
-Optional `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`) requires an
-explicit `svgModel` and becomes `svg.reasoning.effort`.
+The default was live-verified with a funded key (PR #425); `gpt-6-luna` was not verified.
+Optional `svgReasoningEffort` (`none|minimal|low|medium|high|xhigh|max`) applies to the
+effective author model, including the default, and becomes `svg.reasoning.effort`.
+Supported efforts depend on the selected author model.
 
 The returned XML is sanitized before anything is stored or returned (`lib/svgSanitize.ts`):
 DOCTYPE subsets and processing instructions are dropped; `script`, `foreignObject`,
@@ -430,7 +432,7 @@ The file is saved as `.svg` with a rasterized `.svg.thumb.jpg`; the sidecar keep
 |---|---|
 | `SVG_OUTPUT_UNSUPPORTED` | not the API lane with a 2.6 image model |
 | `SVG_COUNT_UNSUPPORTED` / `SVG_EDIT_UNSUPPORTED` | `n` other than 1 / reference images attached |
-| `INVALID_SVG_MODEL` / `INVALID_SVG_REASONING_EFFORT` / `SVG_REASONING_REQUIRES_MODEL` | bad authoring options |
+| `INVALID_SVG_MODEL` / `INVALID_SVG_REASONING_EFFORT` | bad authoring options |
 | `SVG_OPTIONS_WITHOUT_SVG` | SVG options with another format |
 | `IMAGE_FEATURE_NOT_ENABLED` | the project lacks SVG output or SVG model selection |
 
@@ -449,7 +451,7 @@ Supported moderation values: `auto`, `low`.
 When `storyboard` is `true`, the server prepends storyboard keyframe instructions so image
 generations maintain character and scene continuity for multi-shot video production.
 
-GPT OAuth default: `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier). API-key default: `gpt-5.6-luna`; `gpt-5.5` and the other API models remain available when callers select them.
+GPT OAuth and API-key lanes offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`, defaulting to `gpt-6-luna` (CLI aliases: `luna`, `terra`, `sol`, `astra`; the HTTP API requires model IDs). Saved older IDs migrate to their corresponding tier on the same lane; see `lib/openaiLegacyModels.ts`.
 
 When `provider` is `"nai"`, classic, multimode, and node generation accept the
 same 13 provider-native fields: `negativePrompt`, `sampler`, `noiseSchedule`,
@@ -575,7 +577,7 @@ Multi-image sequence generation. SSE-only on the POST response unless async mode
   "size": "1024x1024",
   "format": "png",
   "moderation": "low",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "provider": "oauth",
   "references": [],
   "requestId": "optional-client-id",

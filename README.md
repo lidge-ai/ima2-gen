@@ -248,7 +248,7 @@ ima2 skill install --tmp        # install to a temp dir (fallback)
 | `minimax` | MiniMax API key | ✓ | | `image-01`, `image-01-live` |
 | `runway`, `higgsfield` | MCP connection | ✓ | ✓ | Separate MCP-backed integrations |
 
-The GPT OAuth lane offers three GPT-6 models: **`gpt-6-luna`** (default), `gpt-6-sol`, and `gpt-6-astra`, which reasons longest and is the slowest. The chosen model plans the image and `gpt-image-2` draws it. Older OAuth ids such as `gpt-5.6-luna` keep working in saved settings and scripts and map to their GPT-6 tier. The API-key lane keeps its own list: `gpt-5.6-luna` (default), `gpt-6-astra`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.4` and `gpt-5.4-mini`. The app also exposes quality (`low`, `medium`, `high`) and moderation (`auto`, `low`) controls.
+GPT OAuth and API-key lanes both offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`, with `gpt-6-luna` as the default and aliases `luna`, `terra`, `sol`, and `astra`. The chosen model plans the image and `gpt-image-2` draws it. Saved older IDs (`gpt-6-sol`, `gpt-6-astra`, `gpt-6.1-sol`, `gpt-5.6-*`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`) migrate to their corresponding tier on the same lane; the map is in `lib/openaiLegacyModels.ts`. The app also exposes quality (`low`, `medium`, `high`) and moderation (`auto`, `low`) controls.
 
 <details>
 <summary><b>Provider details</b></summary>
@@ -263,7 +263,7 @@ The GPT OAuth lane offers three GPT-6 models: **`gpt-6-luna`** (default), `gpt-6
 - API-key generation supports classic generate, edit, mask-guided edit, multimode, and node generation.
 - Grok generation supports Classic, Node, and Agent flows. If a Classic reference, Node parent image, or Agent current image is present, ima2 switches the final Grok call to xAI image edit so image-to-image context is preserved.
 
-If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth defaults to `gpt-6-luna` and API-key generation to `gpt-5.6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
+If no provider is specified, the app keeps the current GPT OAuth/default behavior. GPT OAuth defaults to `gpt-6-luna` and API-key generation to `gpt-6-luna`; the API-key path also defaults to `low` reasoning and `1024x1024` unless the request passes validated options. Grok image generation defaults to `grok-imagine-image-2.0`.
 
 One caveat on the OAuth Grok lane: xAI documents only `/v1/me` as accepting an OAuth token, so image and video calls to `api.x.ai` with that token ride an undocumented path. It works today — progrok relied on the same path — but it carries no compatibility promise. If xAI closes it, `provider: "grok-api"` with `XAI_API_KEY` is the documented route and stays unaffected.
 
@@ -370,7 +370,7 @@ Config priority is `environment variables > ~/.ima2/config.json > built-in defau
 | `IMA2_NAI_IMAGE_MODEL_DEFAULT` | `nai-diffusion-5-full` | Default NovelAI image model |
 | `IMA2_NAI_DEFAULT_AUTO_SMEA` | `false` | Default NovelAI Auto SMEA state |
 | `IMA2_NAI_DEFAULT_DECRISPER` | `false` | Default NovelAI Decrisper (`dynamic_thresholding`) state |
-| `IMA2_API_IMAGE_MODEL_DEFAULT` | `gpt-5.6-luna` | Default image model for `provider: "api"` |
+| `IMA2_API_IMAGE_MODEL_DEFAULT` | `gpt-6-luna` | Default image model for `provider: "api"` |
 | `IMA2_API_REASONING_EFFORT` | `low` | Default reasoning effort for `provider: "api"` |
 | `IMA2_API_IMAGE_SIZE` | `1024x1024` | Default size for `provider: "api"` |
 | `IMA2_API_ALLOW_WEB_SEARCH` | `true` | Toggle web search for `provider: "api"` |

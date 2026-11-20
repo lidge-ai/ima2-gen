@@ -65,7 +65,7 @@ With a 2.6 tool model, `--complexity low|medium|high` sets how much goes into th
 scene (default `high`). It is ignored for 2.5 and non-API lanes.
 
 ```bash
-ima2 gen "botanical illustration" --provider api --model gpt-5.4 --image-tool-model gpt-image-2.5-sunburst --quality xhigh
+ima2 gen "botanical illustration" --provider api --model gpt-6-luna --image-tool-model gpt-image-2.5-sunburst --quality xhigh
 ima2 gen "dense transit map poster" --provider api --image-tool-model gpt-image-2.6-sunburst --complexity high
 ```
 
@@ -91,10 +91,12 @@ ima2 gen "a blue ball bouncing once, seamless loop" --provider api \
   --image-tool-model gpt-image-2.6-flare --gif --frames 6 --frame-ms 120 -s 512x512
 ```
 
-`gen --svg` asks a 2.6 image model for an SVG (one image, no references). The saved
+`gen --svg` asks a 2.6 image model on the OpenAI API-key lane for an SVG (one image, no references). The saved
 `.svg` is sanitized first. `--svg-model <id>` and `--svg-effort <level>` choose the SVG
 authoring model and its reasoning effort. The default model is `gpt-5.6-luna` (overridable
-with `IMA2_SVG_MODEL`); `--svg-effort` requires an explicit `--svg-model`. GPT OAuth cannot produce SVGs.
+with `IMA2_SVG_MODEL` or `--svg-model`); `--svg-effort` works with the default author model.
+The default was live-verified with a funded key (PR #425); `gpt-6-luna` was not verified.
+Supported efforts depend on the author model. GPT OAuth cannot produce SVGs.
 
 ## Common flags
 
@@ -258,10 +260,14 @@ image prompt, then sends the same references to xAI image editing. More than
 three Grok references are rejected with `GROK_REF_TOO_MANY`, matching xAI's
 documented multi-image editing limit.
 
+GPT OAuth and API-key image lanes both support `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, and `gpt-6.2-astra` (aliases `luna`, `terra`, `sol`, `astra`); the default is `gpt-6-luna`. Saved older IDs migrate to their tier on the same lane (see `lib/openaiLegacyModels.ts`).
+
+Bare GPT model IDs or aliases shared by OAuth and API use the configured CLI image default lane when it is OAuth or API; otherwise they use OAuth. Other shared model IDs remain ambiguous and require `--provider`.
+
 ```bash
 ima2 models --kind image
 ima2 defaults set image oauth/gpt-6-luna
-ima2 gen "a poster of a samurai cat" --model api/gpt-5.4 --reasoning-effort high
+ima2 gen "a poster of a samurai cat" --model api/gpt-6-luna --reasoning-effort high
 ima2 grok login
 ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
 ima2 gen "campaign still" --model runway/gen-4 --ref 1780000000000_abcd.png
@@ -611,7 +617,7 @@ The server writes `~/.ima2/server.json` on start. CLI commands read this file to
 
 ```bash
 # Generation with reasoning effort and web search
-ima2 gen "poster" --model gpt-5.4 --moderation low --reasoning-effort high
+ima2 gen "poster" --model gpt-6-luna --moderation low --reasoning-effort high
 ima2 edit input.png --prompt "make it rainy" --web-search
 ima2 multimode "two cats playing" --max-images 2 --ref cat.png --mode direct -o cat.png
 
@@ -640,7 +646,7 @@ ima2 skill front ref motion
 ima2 skill install --dir ~/.codex/skills
 ima2 skill install --tmp
 ima2 capabilities --json
-ima2 defaults set model gpt-5.5
+ima2 defaults set model gpt-6-luna
 ima2 defaults set reasoning high
 ima2 config set imageModels.reasoningEffort high
 ima2 config get log.level

@@ -1,6 +1,6 @@
 import { canonicalizeImageModel } from "./model-aliases.js";
-import { deriveProviderIds } from "../../lib/providers/derive.js";
-import { migrateOAuthImageModel } from "../../lib/oauthLegacyModels.js";
+import { deriveModels, deriveProviderIds } from "../../lib/providers/derive.js";
+import { migrateOpenAIImageModel } from "../../lib/openaiLegacyModels.js";
 import { listProviders } from "../../lib/mcp/providerRegistry.js";
 import type { CoreProviderId } from "../../lib/providers/registry.js";
 
@@ -32,6 +32,10 @@ const LANES = [
   ...deriveProviderIds(),
   ...listProviders([]).map((provider) => provider.id as Lane),
 ] as readonly Lane[];
+const API_IMAGE_MODELS = deriveModels("api", "image");
+const SHARED_GPT_IMAGE_MODELS = new Set(
+  [...deriveModels("oauth", "image")].filter((id) => id.startsWith("gpt-") && API_IMAGE_MODELS.has(id)),
+);
 
 function failure(code: string, message: string, extra?: Record<string, unknown> | undefined): ResolveResult {
   return { ok: false, code, message, ...(extra ? { extra } : {}) };
@@ -48,7 +52,7 @@ function canonicalModel(kind: "image" | "video", model: string): string {
 
 /** GPT OAuth keeps only GPT-6; a saved or scripted legacy OAuth id resolves to its GPT-6 tier. */
 function laneModel(lane: string, kind: "image" | "video", model: string): string {
-  return kind === "image" && lane === "oauth" ? migrateOAuthImageModel(model) : model;
+  return kind === "image" && (lane === "oauth" || lane === "api") ? migrateOpenAIImageModel(model) : model;
 }
 
 function modelExists(info: LaneInfo | undefined, kind: "image" | "video", model: string): boolean {
@@ -140,6 +144,7 @@ function resolveBare(
   rawModel: string,
   provider: string | undefined,
   catalog: ModelCatalog,
+  defaults: CliDefaults,
 ): ResolveResult {
   const model = canonicalModel(kind, rawModel);
   const existsIn = (lane: Lane) => modelExists(catalog.lanes[lane], kind, laneModel(lane, kind, model));
@@ -147,6 +152,12 @@ function resolveBare(
     ? [provider as Lane]
     : LANES.filter(existsIn);
   const matches = lanes.filter(existsIn);
+  if (kind === "image" && SHARED_GPT_IMAGE_MODELS.has(migrateOpenAIImageModel(model))
+    && matches.length > 1 && matches.every((lane) => lane === "oauth" || lane === "api")) {
+    const defaultLane = parseNamespaced(defaults.image ?? "")?.lane;
+    const lane = matches.find((candidate) => candidate === defaultLane) ?? "oauth";
+    return resolveLaneModel(kind, lane, model, catalog);
+  }
   if (matches.length > 1) {
     return failure("MODEL_AMBIGUOUS", `${model} exists in multiple lanes; pass --provider <lane>`, {
       candidates: matches.map((lane) => `${lane}/${model}`),
@@ -181,7 +192,7 @@ export function resolveTarget(
   if (flags.model) {
     return parseNamespaced(flags.model)
       ? resolveNamespaced(kind, flags.model, provider ?? undefined, catalog)
-      : resolveBare(kind, flags.model, provider ?? undefined, catalog);
+      : resolveBare(kind, flags.model, provider ?? undefined, catalog, defaults);
   }
   if (provider) {
     const laneInfo = catalog.lanes[provider];

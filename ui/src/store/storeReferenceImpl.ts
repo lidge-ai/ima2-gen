@@ -4,6 +4,7 @@ import { readFileAsDataURL } from "../lib/image";
 import { compressToBase64, isHeic, hasAlphaChannel } from "../lib/compress";
 import { parseRequestedCustomSide } from "../lib/size";
 import { isImageComplexity, isImageModel, isImageToolModel, normalizeImageQuality } from "../lib/imageModels";
+import { migrateCoreImageModel } from "../lib/coreSelection";
 import { t } from "../i18n";
 import {
   saveImageModel,
@@ -47,8 +48,9 @@ function applyMetadataToState(
   if (metadata.promptMode === "auto" || metadata.promptMode === "direct") {
     patch.promptMode = metadata.promptMode;
   }
-  if (metadata.model && isImageModel(metadata.model)) {
-    patch.imageModel = metadata.model;
+  const model = migrateCoreImageModel(state.provider, metadata.model);
+  if (isImageModel(model)) {
+    patch.imageModel = model;
   }
   const size = parseMetadataSize(metadata.size);
   if (size.preset) patch.sizePreset = size.preset;

@@ -18,7 +18,7 @@ const VARIANTS = {
     code: "OAUTH_UNAVAILABLE", error: "OAuth proxy unavailable", copy: {
       title: "GPT OAuth unavailable",
       body: "GPT OAuth is starting or cannot reach its endpoint. Reload first; if it persists, run `ima2 gpt status` and `ima2 doctor`.", cta: "Reload" } },
-  "invalid-request": { provider: "api", model: "gpt-5.6-luna", status: 400,
+  "invalid-request": { provider: "api", model: "gpt-6-luna", status: 400,
     code: "INVALID_REQUEST", error: "Invalid size for image generation", copy: {
       title: "Image request needs changes",
       body: "One or more generation parameters are invalid. Check the raw error details below, then edit the prompt or size and try again.", cta: null } },
@@ -355,7 +355,7 @@ async function mixedStackEvidence(page: Page, info: TestInfo, width: number) {
 
 for (const width of [320, 390]) {
   test(`WP03 mixed five-row stack ${width} stays reachable and auto-dismisses`, async ({ browser }, info) => {
-    await withJ6(browser, info, { provider: "api", imageModel: "gpt-5.6-luna", expectedSubmissions: 4 }, async (page, capture, origin) => {
+    await withJ6(browser, info, { provider: "api", imageModel: "gpt-6-luna", expectedSubmissions: 4 }, async (page, capture, origin) => {
       await page.clock.install({ time: new Date("2026-09-05T00:00:00Z") });
       await openCreate(page, origin);
       await prepareComposer(page, { width: 1280, height: 844 });

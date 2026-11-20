@@ -7,7 +7,7 @@ test.beforeAll(async ({}, info) => { await preflightJ6(info); });
 
 test("J6-S1 a comfy workflow left in storage does not blank the GPT model label", async ({ browser }, info) => {
   await withJ6(browser, info, {
-    provider: "oauth", imageModel: "gpt-5.6-luna",
+    provider: "oauth", imageModel: "gpt-6-luna",
     generationDefaults: { comfyVideoWorkflow: "wf-anim-1", comfyWorkflow: "wf-still-1" },
   }, async (page, capture, origin) => {
     await openCreate(page, origin);
@@ -23,7 +23,7 @@ test("J6-S1 a comfy workflow left in storage does not blank the GPT model label"
 
 test("J6-S2 leaving the comfy lane clears its selections and converges the model", async ({ browser }, info) => {
   await withJ6(browser, info, {
-    provider: "comfy", imageModel: "gpt-5.6-luna",
+    provider: "comfy", imageModel: "gpt-6-luna",
     generationDefaults: { comfyVideoWorkflow: "wf-anim-1", comfyWorkflow: "wf-still-1" },
   }, async (page, capture, origin) => {
     await openCreate(page, origin);
@@ -49,7 +49,7 @@ test("J6-S2 leaving the comfy lane clears its selections and converges the model
 
 test("J6-S3 a comfy workflow the catalog no longer lists still names itself", async ({ browser }, info) => {
   await withJ6(browser, info, {
-    provider: "comfy", imageModel: "gpt-5.6-luna",
+    provider: "comfy", imageModel: "gpt-6-luna",
     generationDefaults: { comfyVideoWorkflow: "wf-deleted-by-user" },
   }, async (page, capture, origin) => {
     await openCreate(page, origin);

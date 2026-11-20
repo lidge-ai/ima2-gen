@@ -7,7 +7,7 @@
  * The ChatGPT OAuth (Codex) session pins the image tool to the
  * `gpt-image-2-codex` variant, which REJECTS a forced transparent background
  * with HTTP 400 "Transparent background is not supported for this model." on
- * every OAuth model (gpt-6-astra, gpt-5.6-luna/sol/terra, gpt-5.5, gpt-5.4, gpt-5.4-mini).
+ * every OpenAI image model in the current lineup.
  * A bogus-parameter control returns a different error ("Unknown parameter"),
  * so that 400 is a genuine upstream semantic rejection, not a schema strip.
  *

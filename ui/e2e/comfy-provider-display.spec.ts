@@ -5,7 +5,7 @@ import { openComfyPanel, readable, displayEvidence } from "./fixtures/comfyDispl
 import type { LaneCatalog } from "../src/lib/api-comfy";
 
 test.beforeAll(async ({}, info) => { await preflightJ6(info, "wp08c"); });
-const BASE: J6Seed = { provider: "comfy", imageModel: "gpt-5.6-luna", nonGenerating: true,
+const BASE: J6Seed = { provider: "comfy", imageModel: "gpt-6-luna", nonGenerating: true,
   expectedSubmissions: 0, evidencePrefix: "wp08c", generationDefaults: { comfyWorkflow: "wf-selected", comfyVideoWorkflow: null, prompt: "Keep this draft" } };
 const control = (panel: Locator) => panel.getByTestId("comfy-generation-controls");
 const status = (panel: Locator) => panel.locator(".provider-status-line__value");
@@ -17,7 +17,7 @@ async function choose(page: Page, panel: Locator, label: string) {
 function catalog(image: Array<{ id: string; label: string; executable?: boolean; description?: string }> = [],
   video: Array<{ id: string; label: string; executable?: boolean; description?: string }> = [], state = "ready"): LaneCatalog {
   return { comfy: { status: state as "ready" | "disconnected" | "locked" | "key-missing", models: { image, video } },
-    oauth: { status: "ready", models: { image: [{ id: "gpt-5.6-luna", label: "GPT" }], video: [] } } };
+    oauth: { status: "ready", models: { image: [{ id: "gpt-6-luna", label: "GPT" }], video: [] } } };
 }
 
 test("held shared read then ready; a pending catalog is drained on teardown", async ({ browser }, info) => {

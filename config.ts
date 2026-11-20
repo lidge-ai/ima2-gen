@@ -17,7 +17,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { parsePublicOrigins } from "./lib/localAccessPolicy.js";
 export { SSE_STREAM_POLICY } from "./lib/eventsPolicy.js";
 import { deriveSupportedImageModels, deriveUnsupportedImageModels } from "./lib/providers/derive.js";
-import { migrateOAuthImageModel } from "./lib/oauthLegacyModels.js";
+import { migrateOpenAIImageModel } from "./lib/openaiLegacyModels.js";
 import {
   DEFAULT_PROMPT_BUILDER_MODELS,
   PROMPT_BUILDER_BACKENDS,
@@ -25,9 +25,10 @@ import {
   type PromptBuilderBackend,
 } from "./lib/promptBuilder/constants.js";
 
+// gpt-5.6-luna was live-verified with a funded key (PR #425); gpt-6-luna was not; override with IMA2_SVG_MODEL/--svg-model.
+export const DEFAULT_SVG_MODEL = "gpt-5.6-luna";
 // 4.6 rewrites prompts in ways that read worse than 4.3 for this planner's job, which
 // is judged by the result rather than a benchmark. 4.6 stays selectable below.
-export const DEFAULT_SVG_MODEL = "gpt-5.6-luna";
 export const DEFAULT_GROK_PLANNER_MODEL = "grok-4.3";
 export const AGY_PROCESS_POLICY = Object.freeze({ timeoutMs: 360_000, terminateGraceMs: 1000, maxOutputBytes: 1_048_576 });
 export const AGY_ARTIFACT_POLICY = Object.freeze({ maxBytes: 52_428_800, chunkBytes: 65_536 });
@@ -117,11 +118,14 @@ function promptBuilderBackend(raw: string): PromptBuilderBackend {
 const selectedPromptBuilderBackend = promptBuilderBackend(
   pickStr(env.IMA2_PROMPT_BUILDER_BACKEND, fileCfg.promptBuilder?.backend, "auto"),
 );
-const selectedPromptBuilderModel = pickStr(
+const rawPromptBuilderModel = pickStr(
   env.IMA2_PROMPT_BUILDER_MODEL,
   fileCfg.promptBuilder?.model,
   DEFAULT_PROMPT_BUILDER_MODELS[selectedPromptBuilderBackend],
 );
+const selectedPromptBuilderModel = selectedPromptBuilderBackend === "oauth" || selectedPromptBuilderBackend === "api"
+  ? migrateOpenAIImageModel(rawPromptBuilderModel)
+  : rawPromptBuilderModel;
 
 export function defaultLogLevelForEnv(runtimeEnv = env) {
   return runtimeEnv.IMA2_DEV === "1" ? "debug" : "info";
@@ -376,11 +380,11 @@ export const config = {
   },
   styleSheet: {
     maxPrefix: pickInt(env.IMA2_STYLE_SHEET_MAX_PREFIX, fileCfg.styleSheet?.maxPrefix, 4000),
-    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-5.6-luna"), // runs on the API-key client (lib/styleSheet.ts)
+    model: pickStr(env.IMA2_STYLE_MODEL, fileCfg.styleSheet?.model, "gpt-6-luna"), // runs on the API-key client (lib/styleSheet.ts)
   },
   imageModels: {
     // A saved pre-GPT-6 default maps onto its GPT-6 tier so every reader sees an id the lane lists.
-    default: migrateOAuthImageModel(pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna")),
+    default: migrateOpenAIImageModel(pickStr(env.IMA2_IMAGE_MODEL_DEFAULT, fileCfg.imageModels?.default, "gpt-6-luna")),
     valid: deriveSupportedImageModels("oauth"),
     unsupported: deriveUnsupportedImageModels(),
     reasoningEffort: pickStr(
@@ -392,13 +396,13 @@ export const config = {
   },
   apiProvider: {
     defaultSvgModel: pickStr(env.IMA2_SVG_MODEL, fileCfg.apiProvider?.defaultSvgModel, DEFAULT_SVG_MODEL),
-    /** The OpenAI API-key lane's own image models (GPT OAuth keeps only GPT-6). */
+    /** The shared OpenAI image lineup for the API-key lane. */
     validImageModels: deriveSupportedImageModels("api"),
-    defaultImageModel: pickStr(
+    defaultImageModel: migrateOpenAIImageModel(pickStr(
       env.IMA2_API_IMAGE_MODEL_DEFAULT,
       fileCfg.apiProvider?.defaultImageModel,
-      "gpt-5.6-luna",
-    ),
+      "gpt-6-luna",
+    )),
     defaultReasoningEffort: pickStr(
       env.IMA2_API_REASONING_EFFORT,
       fileCfg.apiProvider?.defaultReasoningEffort,
