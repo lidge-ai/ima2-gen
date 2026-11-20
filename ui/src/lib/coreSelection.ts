@@ -48,6 +48,11 @@ const LEGACY_OPENAI_MODELS: Readonly<Record<string, ImageModel>> = {
   "gpt-5.4-mini": "gpt-6-luna",
 };
 
+export function migrateCoreImageModel(provider: Provider, value: unknown): unknown {
+  return (provider === "oauth" || provider === "api") && typeof value === "string"
+    ? LEGACY_OPENAI_MODELS[value] ?? value : value;
+}
+
 function staticImage(provider: Provider, value: unknown): value is ImageModel {
   return typeof value === "string" && staticIds.has(value)
     && (PROVIDER_MODELS[provider].image as readonly string[]).includes(value);
@@ -80,9 +85,7 @@ export function reconcileCoreSelection(input: CoreSelectionInput): CoreSelection
       comfyVideoWorkflow: workflow(input.comfyVideoWorkflow),
     };
   }
-  const imageModel = (provider === "oauth" || provider === "api") && typeof input.imageModel === "string"
-    ? LEGACY_OPENAI_MODELS[input.imageModel] ?? input.imageModel
-    : input.imageModel;
+  const imageModel = migrateCoreImageModel(provider, input.imageModel);
   return {
     provider,
     imageModel: staticImage(provider, imageModel) ? imageModel : defaults[provider],
@@ -147,8 +150,7 @@ export function filterCoreSelectionMemory(value: unknown): CoreSelectionMemory {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
     const row = entry as Record<string, unknown>;
     if (row.kind !== "image" && row.kind !== "video") continue;
-    const candidate = (provider === "oauth" || provider === "api") && typeof row.image === "string"
-      ? LEGACY_OPENAI_MODELS[row.image] ?? row.image : row.image;
+    const candidate = migrateCoreImageModel(provider, row.image);
     const image = provider === "comfy" ? workflow(candidate)
       : staticImage(provider, candidate) ? candidate : null;
     const video = provider === "comfy" ? workflow(row.video)

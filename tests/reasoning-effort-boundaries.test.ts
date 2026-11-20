@@ -15,35 +15,35 @@ test("OpenAI request boundaries coerce unsupported none while preserving other e
     return Response.json({ output_text: '{"ok":true}', output: [] });
   };
   t.after(() => { globalThis.fetch = original; });
+  t.beforeEach(() => { body = undefined; });
   await t.test("API agent question uses migrated model", async () => {
     await requestAgentQuestionAnswer({ apiKey: "fixture" }, "question", { provider: "api", model: "gpt-6-sol", reasoningEffort: "none" });
     assert.deepEqual([body.model, body.reasoning.effort], ["gpt-6.2-sol", "low"]);
   });
   await t.test("card planner proxy", async () => {
     await requestCardNewsPlannerJson({ messages: [] }, { oauthUrl: "http://fixture.invalid", model: "gpt-6.2-astra", reasoningEffort: "none" });
-    assert.equal(body.reasoning.effort, "low");
+    assert.deepEqual([body?.model, body?.reasoning.effort], ["gpt-6.2-astra", "low"]);
   });
   await t.test("legacy OAuth generator proxy", async () => {
-    await generateViaOAuth("draw", "high", "auto", "low", [], null, "auto", { oauthUrl: "http://fixture.invalid" }, { model: "gpt-6.2-sol", reasoningEffort: "none" }).catch(() => {});
-    assert.equal(body.reasoning.effort, "low");
+    await assert.rejects(generateViaOAuth("draw", "high", "auto", "low", [], null, "auto", { oauthUrl: "http://fixture.invalid" }, { model: "gpt-6.2-sol", reasoningEffort: "none" }), /No image data in response/);
+    assert.deepEqual([body?.model, body?.reasoning.effort], ["gpt-6.2-sol", "low"]);
   });
   await t.test("legacy OAuth multimode proxy", async () => {
-    body = undefined;
-    await generateMultimodeViaOAuth("draw", "high", "auto", "low", [], null, "auto", { oauthUrl: "http://fixture.invalid" }, { model: "gpt-6.2-astra", reasoningEffort: "none" }).catch(() => {});
-    assert.equal(body?.reasoning.effort, "low");
+    await generateMultimodeViaOAuth("draw", "high", "auto", "low", [], null, "auto", { oauthUrl: "http://fixture.invalid" }, { model: "gpt-6.2-astra", reasoningEffort: "none" });
+    assert.deepEqual([body?.model, body?.reasoning.effort], ["gpt-6.2-astra", "low"]);
   });
   await t.test("legacy OAuth edit proxy", async () => {
-    body = undefined;
     const image = (await sharp({ create: { width: 2, height: 2, channels: 3, background: "red" } }).png().toBuffer()).toString("base64");
-    await editViaOAuth("draw", image, "high", "auto", "low", "auto", { oauthUrl: "http://fixture.invalid" }, null, { model: "gpt-6.2-sol", reasoningEffort: "none" }).catch(() => {});
-    assert.equal(body?.reasoning.effort, "low");
+    await assert.rejects(editViaOAuth("draw", image, "high", "auto", "low", "auto", { oauthUrl: "http://fixture.invalid" }, null, { model: "gpt-6.2-sol", reasoningEffort: "none" }), /No image data received from OAuth edit/);
+    assert.deepEqual([body?.model, body?.reasoning.effort], ["gpt-6.2-sol", "low"]);
   });
   for (const provider of ["api", "oauth"]) {
     await t.test(`Responses ${provider} boundary`, async () => {
       await postResponses({ ctx: { apiKey: "fixture", oauthUrl: "http://fixture.invalid" }, provider, scope: "test", payload: { model: "gpt-6.2-astra", reasoning: { effort: "none" } } });
-      assert.equal(body.reasoning.effort, "low");
+      assert.deepEqual([body?.model, body?.reasoning.effort], ["gpt-6.2-astra", "low"]);
+      body = undefined;
       await postResponses({ ctx: { apiKey: "fixture", oauthUrl: "http://fixture.invalid" }, provider, scope: "test", payload: { model: "gpt-6.1-terra", reasoning: { effort: "none" } } });
-      assert.equal(body.reasoning.effort, "none");
+      assert.deepEqual([body?.model, body?.reasoning.effort], ["gpt-6.1-terra", "none"]);
     });
   }
 });
