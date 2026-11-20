@@ -11,7 +11,7 @@ import { GrokResetClient } from "../lib/reset/grokResetClient.ts";
 after(() => assert.equal(sentinelCount(), 0));
 describe("Codex reset client behavior", () => {
   it("marks malformed and inconsistent projections partial while retaining valid entries", async () => {
-    for (const body of [null, {}, { credits: [null] }, { credits: [{}] }, { credits: [], available_count: 1 }]) {
+    for (const body of [null, {}, { credits: [] }, { credits: [{ granted_at: "2026-11-01", expires_at: "2026-12-01" }] }, { credits: [], available_count: -1 }, { credits: [], available_count: 0.5 }, { credits: [null] }, { credits: [{}] }, { credits: [], available_count: 1 }]) {
       const result = await new CodexResetClient(fakeResetTransport(body)).list();
       assert.equal(Reflect.get(result, "complete"), false);
     }

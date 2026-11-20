@@ -58,7 +58,7 @@ async function withFixture(fn: (f: Awaited<ReturnType<typeof fixture>>) => Promi
 
 for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed", "future_code"]) {
   it(`returns provider code ${code} to the UI`, async () => withFixture(async f => {
-    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code, windows_reset: ["weekly"] } : { credits: [] }; };
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code, windows_reset: ["weekly"] } : { credits: [], available_count: 0 }; };
     const token = await f.confirm(code);
     const response = await f.request(redeemPath, { operationId: code, confirmationToken: token });
     const body = await response.json() as { result: { outcome: string; windowsReset?: string[] } };
@@ -71,13 +71,27 @@ describe("reset route safety contracts", () => {
   it("fences auto after manual success until a listed credit disappears", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
     let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
-    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits }; };
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
     const token = await f.confirm("manual-fence");
     assert.equal((await f.request(redeemPath, { operationId: "manual-fence", confirmationToken: token })).status, 200);
     writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
     await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
     credits = credits.slice(1); await watcher.tick(); assert.equal(consumeCalls(f).length, 2);
+  }));
+  it("writes the validated manual snapshot atomically when entering sending", async () => withFixture(async f => {
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const credits = [6, 5].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
+    let lists = 0;
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); if (url.endsWith("/consume")) return { code: "reset" };
+      const current = ++lists === 1 ? credits : [credits[1]]; return { credits: current, available_count: current.length }; };
+    await f.request("/api/quota/codex/reset-credits");
+    f.db.exec(`CREATE TRIGGER inject_old_snapshot AFTER INSERT ON reset_operations BEGIN UPDATE reset_operations SET credit_snapshot='["2026-11-20T00:00:00Z|2026-11-21T00:06:00Z","2026-11-20T00:00:00Z|2026-11-21T00:05:00Z"]' WHERE operation_id=NEW.operation_id; END`);
+    const token = await f.confirm("manual-interleave");
+    assert.equal((await f.request(redeemPath, { operationId: "manual-interleave", confirmationToken: token })).status, 200);
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
+    await new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now }).tick();
+    assert.equal(consumeCalls(f).length, 1);
   }));
   it("records a consuming redirect failure as unknown and never resends", async () => withFixture(async f => {
     const send = f.transport.send.bind(f.transport);
