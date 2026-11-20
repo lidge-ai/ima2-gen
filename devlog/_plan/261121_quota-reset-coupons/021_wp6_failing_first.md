@@ -1,5 +1,9 @@
 # WP6 failing-first evidence (partial)
 
+## S6b-A additional baseline (partial)
+
+On the naive baseline, `node --test tests/reset-grok-grpc.test.ts tests/reset-grok-identity.test.ts tests/reset-grok-routes.test.ts` ran 29 tests: 7 pass, 22 fail, 0 skipped. The new long-token varint, redirect-with-sub and non-string-sub cases all failed; the pre-existing per-test results below remain applicable. The sentinel assertions passed. This is not the full requested route and identity matrix.
+
 Base: 87cf2847bbee85ea89d580114425e470ad889d0c. This is **incomplete**: the new reset modules are deliberately unsafe, unconnected test baselines and must not be wired into dispatch or used as an implementation. Fixtures and transports are synthetic; no real consume or redeem was called. Each reset test imports the guard first; all after hooks passed with socket sentinel count 0.
 
 ## Per-test baseline

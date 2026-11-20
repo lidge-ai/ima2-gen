@@ -32,6 +32,14 @@ describe("Grok identity safety", () => {
     const fake = (async () => Response.json({ sub: "a" }, { status: 403 })) as typeof fetch;
     assert.equal(await grokIdentity({ userinfo_endpoint: endpoint }, "synthetic", fake), null);
   });
+  it("refuses redirects containing a sub", async () => {
+    const fake = (async () => new Response('{"sub":"a"}', { status: 302, headers: { location: "https://attacker.example/" } })) as typeof fetch;
+    assert.equal(await grokIdentity({ userinfo_endpoint: endpoint }, "synthetic", fake), null);
+  });
+  it("rejects a non-string subject", async () => {
+    const fake = (async () => Response.json({ sub: { id: "a" } })) as typeof fetch;
+    assert.equal(await grokIdentity({ userinfo_endpoint: endpoint }, "synthetic", fake), null);
+  });
 });
 describe("Grok identity controls", () => {
   it("keys by sub while email changes", async () => {

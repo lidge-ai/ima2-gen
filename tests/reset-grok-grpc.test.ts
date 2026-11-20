@@ -36,5 +36,9 @@ describe("Grok gRPC-Web behavior", () => {
 describe("Grok gRPC-Web controls", () => {
   it("frames an empty list request", () => assert.deepEqual([...listRequest()], [0, 0, 0, 0, 0]));
   it("encodes redeem token in field one", () => assert.deepEqual([...redeemRequest("abc")], [0, 0, 0, 0, 5, 10, 3, 97, 98, 99]));
+  it("uses protobuf varints for long token identifiers", () => {
+    const encoded = redeemRequest("a".repeat(128));
+    assert.deepEqual([...encoded.slice(0, 8)], [0, 0, 0, 0, 131, 10, 128, 1]);
+  });
   it("accepts a complete success response", () => assert.equal(decodeRedeem(join(frame(0, []), trailer(0)), 200), "success"));
 });
