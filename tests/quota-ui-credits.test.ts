@@ -177,7 +177,7 @@ describe("quota UI credits and reset behavior", () => {
   });
   it("opens a confirmation dialog before any POST", async () => {
     const transport = fakeTransport();
-    const mounted = mountPanel(Panel, { transport });
+    const mounted = mountPanel(Panel, { transport, accountRef: "displayed" });
     const button = findNode(mounted.tree(), node => node.type === "button");
     assert.ok(button);
     (button.props.onClick as () => void)();
@@ -189,7 +189,7 @@ describe("quota UI credits and reset behavior", () => {
     let account = "";
     const transport = { getOperations: async () => [], list: async () => ({ accountRef: "displayed-ref", credits: [] }),
       redeem: async (ref: string) => { account = ref; } };
-    const panel = mountPanel(Panel, { transport, availableCount: 1 }); await Promise.resolve();
+    const panel = mountPanel(Panel, { transport, availableCount: 1, accountRef: "displayed-ref" }); await Promise.resolve();
     const open = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("redeem.action"));
     (open!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
     const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);

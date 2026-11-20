@@ -3,6 +3,7 @@ import { authHeaders, codexSessionStore } from "../codexBackend/client.js";
 import type { CodexSession } from "../codexBackend/session.js";
 import type { QuotaResult } from "./types.js";
 import { projectCodexUsage } from "./codexProjection.js";
+import { resetIdentity } from "../reset/identity.js";
 
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 const CODEX_SESSION_TIMEOUT_MS = 8_000;
@@ -47,6 +48,7 @@ export async function fetchCodexUsage(session: CodexSession): Promise<QuotaResul
         if (fresh.accessToken !== session.accessToken) {
           await resp.body?.cancel().catch(() => undefined);
           resp = await codexUsageRequest(fresh);
+          session = fresh;
         }
       } catch { /* the first response stands */ }
     }
@@ -55,7 +57,7 @@ export async function fetchCodexUsage(session: CodexSession): Promise<QuotaResul
       return { provider: "codex", error: true, windows: [] };
     }
     if (!session.accountId) return { provider: "codex", error: true, windows: [] };
-    return projectCodexUsage(await resp.json(), session.accountId);
+    return { ...projectCodexUsage(await resp.json(), session.accountId), accountRef: resetIdentity("codex", session.accountId).accountRef };
   } catch {
     return { provider: "codex", error: true, windows: [] };
   }

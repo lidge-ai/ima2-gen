@@ -1445,7 +1445,7 @@
       "window": {"weekly": "每週", "5h": "5 小時", "7d": "7 天", "30d": "30 天", "other": "{label}"},
       "credits": {"balance": "點數餘額", "unknown": "未知", "unlimited": "無限", "overage": "允許超額使用", "approxMessages": "約 {count} 則訊息"},
       "resetCredits": {"empty": "沒有重設點數。", "loadError": "無法載入重設點數。", "count": "重設點數", "unknown": "未知", "usableNow": "目前可用 {count} 個", "list": "查看重設點數", "expires": "到期時間：{date}"},
-      "redeem": {"creditUnknown": "無法確認可用的重設點數。", "action": "使用重設點數", "confirm": "為目前帳戶使用一個重設點數？", "cancel": "取消", "redeeming": "使用中…", "success": "用量已重設。", "nothingToReset": "沒有需要重設的用量。", "noCredit": "沒有可用的重設點數。", "identityChanged": "帳戶已變更，請再試一次。", "unknown": "結果未知。重試前請檢查操作狀態。", "alreadyRedeemed": "此重設已使用。", "loadError": "無法載入重設資訊。"},
+      "redeem": {"creditUnknown": "無法確認可用的重設點數。", "action": "使用重設點數", "confirm": "為目前帳戶使用一個重設點數？", "cancel": "取消", "redeeming": "使用中…", "success": "用量已重設。", "nothingToReset": "沒有需要重設的用量。", "noCredit": "沒有可用的重設點數。", "identityChanged": "帳戶已變更，正在重新整理用量，請再試一次。", "unknown": "結果未知。重試前請檢查操作狀態。", "alreadyRedeemed": "此重設已使用。", "loadError": "無法載入重設資訊。"},
       "acknowledge": {"action": "確認知悉", "explanation": "先前的嘗試可能已消耗一個點數。再次嘗試需要重新確認。", "blocked": "如果先前的程序仍在執行，請先重新啟動 ima2 或結束卡住的程序。"},
       "upsell": {"buyReset": "購買重設點數", "viewUsage": "查看用量"},
       "grokSource": {"ima2-session": "每週用量來源：ima2 工作階段", "grok-cli": "每週用量來源：Grok CLI", "accountMayDiffer": "優惠券帳戶可能與 Grok CLI 帳戶不同。"},

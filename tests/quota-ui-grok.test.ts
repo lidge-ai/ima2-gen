@@ -105,13 +105,14 @@ it("loads the coupon account and unresolved operations without redeeming", async
 });
 it("requires confirmation before redeeming the selected coupon", async () => {
   const calls: string[] = [];
-  const transport = { list: async () => ({ accountLabel: "account", coupons: [{ tokenId: "token", validityEnd: null }] }),
+  const transport = { list: async () => ({ accountLabel: "account", accountRef: "displayed-ref", coupons: [{ tokenId: "token", validityEnd: null }] }),
     getOperations: async () => [], redeem: async (id: string) => { calls.push(id); return { result: { outcome: "success" } }; } };
   const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
   await new Promise(resolve => setImmediate(resolve));
   const button = findNode(panel.tree(), n => n.type === "button" && n.props["data-coupon"] === "token");
   assert.ok(button); (button.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
   assert.deepEqual(calls, []);
+  await new Promise(resolve => setImmediate(resolve));
   assert.ok(findNode(panel.tree(), n => n.props.role === "dialog"));
 });
 it("passes the displayed coupon account into confirmation", async () => {
@@ -121,6 +122,7 @@ it("passes the displayed coupon account into confirmation", async () => {
   const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
   await new Promise(resolve => setImmediate(resolve));
   (findNode(panel.tree(), n => n.props["data-coupon"] === "token")!.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
+  await new Promise(resolve => setImmediate(resolve));
   const dialog = findNode(panel.tree(), n => n.props.role === "dialog"); assert.ok(dialog);
   (findNode(dialog, n => n.type === "button" && textContent(n).includes("redeem.action"))!.props.onClick as () => void)();
   await new Promise(resolve => setImmediate(resolve)); assert.deepEqual(calls, ["displayed-ref"]);

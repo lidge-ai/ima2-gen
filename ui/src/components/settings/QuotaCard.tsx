@@ -182,7 +182,7 @@ export function CodexQuota({ data, loading, onRefresh }: QuotaBlockProps) {
           overage={codex.credits?.overage} approxMessages={codex.credits?.approxMessages}
           resetCreditCount={codex.resetCredits?.availableCount ?? null}
           usableNow={codex.resetCredits?.applicableAvailableCount ?? null} t={t} />
-        <ResetCreditsPanel key={accountLine ?? "codex"} availableCount={codex.resetCredits?.availableCount}
+        <ResetCreditsPanel accountRef={codex.accountRef} availableCount={codex.resetCredits?.availableCount}
           applicableAvailableCount={codex.resetCredits?.applicableAvailableCount} transport={resetCreditsTransport} t={t} onRefresh={onRefresh} />
         {codex.upsell?.buyReset && <a target="_blank" rel="noopener noreferrer" href="https://chatgpt.com/codex/purchase/reset">{t("settings.quota.upsell.buyReset")}</a>}
         {codex.upsell?.viewUsage && <a target="_blank" rel="noopener noreferrer" href="https://chatgpt.com/settings/usage">{t("settings.quota.upsell.viewUsage")}</a>}

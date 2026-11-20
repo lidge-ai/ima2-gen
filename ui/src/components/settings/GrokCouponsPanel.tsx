@@ -26,14 +26,27 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
     catch { setList(null); setOps(null); if (reportUnavailable) setMessage("unavailable"); }
   }, [transport]);
   useEffect(() => { void refresh(); }, [refresh]);
+  const accountChanged = () => { setTarget(null); setMessage("identityChanged"); onRefresh?.(); };
+  const open = async (id: string, accountRef: string) => {
+    if (inFlight.current) return;
+    inFlight.current = true; setBusy(true);
+    try {
+      const latest = await transport.list();
+      if (!accountRef || latest.accountRef !== accountRef) { setList(latest); accountChanged(); return; }
+      setMessage(""); setTarget({ id, accountRef });
+    } catch { setMessage("unavailable"); }
+    finally { setBusy(false); inFlight.current = false; }
+  };
   const confirm = async () => {
     if (!target || inFlight.current) return;
     inFlight.current = true; setBusy(true); setMessage("redeeming");
     try {
+      const latest = await transport.list();
+      if (!target.accountRef || latest.accountRef !== target.accountRef) { setList(latest); accountChanged(); return; }
       const response = await transport.redeem(target.id, target.accountRef);
       setMessage(response.result?.outcome === "success" ? "success" : "unknown");
       onRefresh?.();
-    } catch (error) { setMessage((error as { code?: string }).code === "IDENTITY_CHANGED" ? "identityChanged" : "unknown"); }
+    } catch (error) { if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("unknown"); }
     finally { setTarget(null); await refresh(false); setBusy(false); inFlight.current = false; trigger.current?.focus(); }
   };
   const acknowledge = async (id: string) => {
@@ -50,7 +63,7 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
       <ul>{list.coupons.map(coupon => <li key={coupon.tokenId}>
         {coupon.validityEnd !== null && t("settings.quota.grokCoupons.expires", { date: new Date(coupon.validityEnd * 1000).toLocaleString() })}{" "}
         <button type="button" className="settings-action-btn" data-coupon={coupon.tokenId} disabled={busy || !ops || ops.some(unresolved)}
-          onClick={(event) => { trigger.current = event.currentTarget; setTarget({ id: coupon.tokenId, accountRef: list.accountRef }); }}>{t("settings.quota.redeem.action")}</button>
+          onClick={(event) => { trigger.current = event.currentTarget; void open(coupon.tokenId, list.accountRef); }}>{t("settings.quota.redeem.action")}</button>
       </li>)}</ul></>}
     {ops?.filter(unresolved).map(op => <div key={idOf(op)}><p>{idOf(op)} · {op.state}</p>
       {op.state === "unknown" && <><p>{t("settings.quota.acknowledge.explanation")}</p>

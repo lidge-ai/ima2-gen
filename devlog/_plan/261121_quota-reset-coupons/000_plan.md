@@ -27,4 +27,3 @@ Loop-spec (cxc-loop HOTL, same goal as 261121_openai-gpt6x-lineup; P amendment 2
 3. Ledger: a `reset_operations` table in ima2's SQLite db (`lib/db.ts`, better-sqlite3), unique operation_id, one unresolved operation per (provider, account) enforced by a partial unique index; claims are single INSERT transactions, so they are atomic across local server processes.
 4. Unresolved operations block new redeems for that account until the user clears them after a fresh read (explicit "I checked" action that records who/when); no automatic settlement.
 5. Codex auto-redeem ships in this PR but in its own slice (wp6) after manual redeem + ledger tests pass; default OFF, lead 10 min (1-60).
-

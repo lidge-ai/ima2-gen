@@ -90,4 +90,3 @@ Provenance: Aside exec report /Users/jun/.aside/u/0/artifacts/research-20261121/
 All Grok identity, coupon and weekly-reading rules live in 020 §1-§3 (supersedes earlier Grok text in this file and in 000).
 
 OpenCodex reference: decisions cite origin/dev d61cca122d; round 5 read current origin/dev 76746f9f and reported no conflicting change for the cited files.
-

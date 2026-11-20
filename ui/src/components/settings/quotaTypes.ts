@@ -7,6 +7,7 @@ export interface QuotaWindow {
 
 export interface QuotaResult {
   provider: string;
+  accountRef?: string;
   account?: { email: string | null; plan: string | null } | null;
   windows: QuotaWindow[];
   error?: boolean;

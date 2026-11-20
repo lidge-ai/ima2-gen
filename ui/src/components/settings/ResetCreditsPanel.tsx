@@ -54,9 +54,10 @@ function creditRows(list: ResetList | null, t: QuotaTranslate) {
 
 type PanelProps = {
   transport: ResetCreditsTransport; t?: QuotaTranslate; onRefresh?: () => void;
+  accountRef?: string;
   availableCount?: number | null; applicableAvailableCount?: number | null;
 };
-export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, availableCount, applicableAvailableCount }: PanelProps) {
+export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, availableCount, applicableAvailableCount }: PanelProps) {
   const [settings, setSettings] = useState<ResetSettings | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [ops, setOps] = useState<ResetOperation[]>([]);
@@ -70,6 +71,8 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
   const [opsLoaded, setOpsLoaded] = useState(false);
   const inFlight = useRef(false);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const displayedRef = useRef(accountRef); displayedRef.current = accountRef;
+  const accountChanged = () => { setDialog(null); setMessage("identityChanged"); onRefresh?.(); };
   const refreshOps = () => transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
     .catch(() => { setOpsLoaded(false); setMessage("loadError"); });
   useEffect(() => { void transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
@@ -85,11 +88,14 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
     inFlight.current = true;
     setBusy(true); setMessage("redeeming");
     try {
+      if (!transport.list) throw new Error("RESET_LIST_UNAVAILABLE");
+      const latest = await transport.list();
+      if (!dialog || !displayedRef.current || latest.accountRef !== dialog || dialog !== displayedRef.current) { accountChanged(); return; }
       const result = await transport.redeem(dialog);
       setMessage(outcomeKeys[result?.result?.outcome ?? result?.outcome ?? "unknown"] ?? "unknown");
       onRefresh?.();
     } catch (error) {
-      setMessage((error as { code?: string }).code === "IDENTITY_CHANGED" ? "identityChanged" : "unknown");
+      if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("unknown");
     } finally { inFlight.current = false; setBusy(false); setDialog(null); void refreshOps(); trigger.current?.focus(); }
   };
   const acknowledge = async (id: string) => {
@@ -101,7 +107,11 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, avai
   return <div className="quota-reset">
     <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => {
       if (!transport.list) return;
-      setBusy(true); void transport.list().then(data => { setList(data); if (data.accountRef) setDialog(data.accountRef); else setListError(true); })
+      const clickedRef = displayedRef.current;
+      setBusy(true); void transport.list().then(data => {
+        if (!clickedRef || data.accountRef !== clickedRef || displayedRef.current !== clickedRef) { accountChanged(); return; }
+        setList(data); setMessage(""); setDialog(data.accountRef);
+      })
         .catch(() => setListError(true)).finally(() => setBusy(false));
     }}>
       {t("settings.quota.redeem.action")}</button>
