@@ -4,6 +4,7 @@ import { OperationLedger } from "./operationLedger.js";
 import { readResetSettings } from "./settings.js";
 import { resetIdentity } from "./identity.js";
 import { CodexResetClient } from "./codexResetClient.js";
+import { attributedConsumeObserved } from "./fence.js";
 import { logWarn } from "../logger.js";
 
 export interface AutoDependencies {
@@ -103,10 +104,10 @@ export class CodexAutoRedeem {
   }
   private hasFence(key: string, snapshot: string[], now: number): boolean {
     const present = new Set(snapshot);
-    const rows = this.db.prepare(`SELECT operation_id, state, outcome, credit_snapshot FROM reset_operations
+    const rows = this.db.prepare(`SELECT operation_id, state, outcome, credit_snapshot, COALESCE(fence_target, target) AS fence_target FROM reset_operations
       WHERE provider='codex' AND ledger_key=? AND credit_snapshot IS NOT NULL
       AND state IN ('claimed','sending','unknown','acknowledged','settled')`)
-      .all(key) as Array<{ operation_id: string; state: string; outcome: string | null; credit_snapshot: string }>;
+      .all(key) as Array<{ operation_id: string; state: string; outcome: string | null; credit_snapshot: string; fence_target: string | null }>;
     for (const row of rows) {
       if (row.state === 'settled') {
         try {
@@ -117,12 +118,8 @@ export class CodexAutoRedeem {
       let previous: unknown;
       try { previous = JSON.parse(row.credit_snapshot); } catch { return true; }
       if (!Array.isArray(previous) || previous.some(pair => typeof pair !== 'string')) return true;
-      const disappearedUnexpired = previous.some(pair => {
-        if (present.has(pair)) return false;
-        const expiry = pair.slice(pair.lastIndexOf('|') + 1);
-        return time(/^\d+(?:\.\d+)?$/.test(expiry) ? Number(expiry) : expiry) > now;
-      });
-      if (!disappearedUnexpired || row.state === 'claimed' || row.state === 'sending') return true;
+      if (row.state === 'claimed' || row.state === 'sending') return true;
+      if (!attributedConsumeObserved(row.fence_target, previous, present, now)) return true;
       this.db.transaction(() => {
         this.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(row.operation_id);
         this.db.prepare("UPDATE reset_operations SET credit_snapshot=NULL WHERE operation_id=?").run(row.operation_id);

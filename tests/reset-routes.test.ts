@@ -256,14 +256,14 @@ describe("reset route safety contracts", () => {
     assert.equal(consumeCalls(f).length, 1);
   }));
   it("loads unresolved operations scoped to the current identity after restart", async () => withFixture(async f => {
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL)");
     insert.run("own", "codex:a"); insert.run("other", "codex:b"); await f.restart();
     const data = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { operations: Array<{ operation_id: string }> };
     assert.deepEqual(data.operations.map(row => row.operation_id), ["own"]); assert.equal(consumeCalls(f).length, 0);
   }));
   it("acknowledges only unknown operations and refuses recovered operations with live owners", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL)");
     insert.run("claimed", "claimed", null);
     assert.equal((await f.request("/api/quota/reset-operations/claimed/acknowledge", {})).status, 409);
     f.db.prepare("UPDATE reset_operations SET state='abandoned' WHERE operation_id='claimed'").run();
@@ -273,7 +273,7 @@ describe("reset route safety contracts", () => {
   }));
   it("refuses recovered unknown acknowledgement while its owner is alive", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)").run();
+    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL)").run();
     assert.equal((await f.request("/api/quota/reset-operations/recovered/acknowledge", {})).status, 409);
     assert.equal(consumeCalls(f).length, 0);
   }));
@@ -336,13 +336,15 @@ describe("reset route controls", () => {
     assert.deepEqual(consumeCalls(f)[0]?.body, { redeem_request_id: "happy" }); assert.equal(consumeCalls(f).length, 1); assert.equal(f.usageReads(), 1);
   }));
   it("attributes a manual fence to the nearest-expiring credit only", async () => withFixture(async f => {
-    const now = Date.parse("2026-11-21T00:00:00Z"), grant = "2026-11-20T00:00:00Z";
-    const a = { granted_at: grant, expires_at: "2026-11-21T00:05:00Z" }, b = { granted_at: grant, expires_at: "2026-11-21T00:06:00Z" };
+    // The route attributes with the real clock, so expiries are relative to it.
+    const now = Date.now(), grant = new Date(now - 86_400_000).toISOString();
+    const expiresA = new Date(now + 5 * 60_000).toISOString();
+    const a = { granted_at: grant, expires_at: expiresA }, b = { granted_at: grant, expires_at: new Date(now + 6 * 60_000).toISOString() };
     let credits = [b, a];
     f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
     assert.equal((await f.request(redeemPath, { operationId: "manual-fence", confirmationToken: await f.confirm("manual-fence") })).status, 200);
     const row = f.db.prepare("SELECT fence_target FROM reset_operations WHERE operation_id='manual-fence'").get() as { fence_target: string | null };
-    assert.equal(row.fence_target, `${grant}|2026-11-21T00:05:00Z`);
+    assert.equal(row.fence_target, `${grant}|${expiresA}`);
     writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
     credits = [a]; await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
