@@ -5,7 +5,7 @@ import Database from "better-sqlite3";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { migrateResetTables } from "../lib/reset/operationLedger.ts";
+import { migrateResetTables, OperationLedger } from "../lib/reset/operationLedger.ts";
 import { CodexAutoRedeem } from "../lib/reset/codexAutoRedeem.ts";
 import { sentinelCount } from "./helpers/resetTestGuard.ts";
 import { CodexResetClient } from "../lib/reset/codexResetClient.ts";
@@ -85,3 +85,82 @@ describe("auto-redeem reservation and settings", () => {
     assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 0);
   }));
 });
+
+describe("S6b-B2 scheduler interleavings", () => {
+  const now = Date.parse("2026-11-21T00:00:00Z");
+  const credit = { granted_at: "2026-11-20T00:00:00Z", expires_at: "2026-11-21T00:05:00Z" };
+  const sends = (calls: Array<{ url: string }>) => calls.filter(c => c.url.endsWith("/consume")).length;
+  it("disabled scheduler performs zero transport fetches for three ticks", async () => fixture(async f => {
+    const fake = fakeResetTransport({ credits: [credit] });
+    const watcher = new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now });
+    watcher.start(); await watcher.tick(); await watcher.tick(); await watcher.tick(); watcher.stop();
+    assert.equal(fake.calls.length, 0);
+  }));
+  it("lead change reconfigures the next inspection", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 1 });
+    const fake = fakeResetTransport({ credits: [credit], outcome: "reset" });
+    const watcher = new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now });
+    await watcher.tick(); assert.equal(sends(fake.calls), 0);
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 }); watcher.reconfigure();
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(sends(fake.calls), 1);
+  }));
+  it("manual claim during inspection causes a fresh inspection before dispatch", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const fake = fakeResetTransport({ credits: [credit], outcome: "reset" });
+    let release!: () => void; let inspected!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { inspected = resolve; });
+    let lists = 0; const baseSend = fake.send.bind(fake);
+    fake.send = async (url, body) => { if (!url.endsWith("/consume") && ++lists === 1) { inspected(); await gate; } return baseSend(url, body); };
+    const callbacks: Array<() => void> = [];
+    const watcher = new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now }, cb => callbacks.push(cb));
+    const run = watcher.tick(); await started;
+    const ledger = new OperationLedger(f.a);
+    ledger.claim({ operationId: "manual", provider: "codex", ledgerKey: "codex:fixture-account", ownerId: "manual" });
+    assert.equal(ledger.sending("manual", "manual"), true); ledger.settle("manual", "{}");
+    release(); await run; assert.equal(sends(fake.calls), 0); assert.equal(callbacks.length, 1);
+    callbacks[0]!(); await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(lists, 2); assert.equal(sends(fake.calls), 1);
+  }));
+  it("second scheduler inspected before first settles and claims afterwards", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const fake = fakeResetTransport({ credits: [credit], outcome: "reset" });
+    let release!: () => void; let inspected!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { inspected = resolve; });
+    let lists = 0; const baseSend = fake.send.bind(fake);
+    fake.send = async (url, body) => { if (!url.endsWith("/consume") && ++lists === 1) { const response = await baseSend(url, body); inspected(); await gate; return response; } return baseSend(url, body); };
+    const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
+    const callbacks: Array<() => void> = [];
+    const second = new CodexAutoRedeem(f.b, deps, cb => callbacks.push(cb));
+    const pending = second.tick(); await started; await new CodexAutoRedeem(f.a, deps).tick();
+    assert.equal(sends(fake.calls), 1); release(); await pending;
+    assert.equal(callbacks.length, 1); callbacks[0]!(); await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(sends(fake.calls), 1);
+  }));
+  it("restart inside lead window makes one attempt", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const fake = fakeResetTransport({ credits: [credit], outcome: "reset" });
+    const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
+    const first = new CodexAutoRedeem(f.a, deps); first.stop();
+    await new CodexAutoRedeem(f.b, deps).tick(); await new CodexAutoRedeem(f.a, deps).tick();
+    assert.equal(sends(fake.calls), 1);
+  }));
+});
+
+it("reconfigures again when lead changes during an inspection", async () => fixture(async f => {
+  const now = Date.parse("2026-11-21T00:00:00Z");
+  writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+  const fake = fakeResetTransport({ credits: [] });
+  let release!: () => void; let started!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const entered = new Promise<void>(resolve => { started = resolve; });
+  let lists = 0; const send = fake.send.bind(fake);
+  fake.send = async (url, body) => { if (++lists === 1) { started(); await gate; } return send(url, body); };
+  const watcher = new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now });
+  const pending = watcher.tick(); await entered;
+  writeResetSettings(f.a, { enabled: true, leadMinutes: 20 }); watcher.reconfigure();
+  release(); await pending; await new Promise<void>(resolve => setImmediate(resolve));
+  assert.equal(lists, 2);
+}));

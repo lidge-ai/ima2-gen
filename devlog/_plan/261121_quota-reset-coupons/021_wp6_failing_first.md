@@ -62,3 +62,22 @@ On a9d601d5, `node --experimental-transform-types --test tests/reset-grok-routes
 ### S6b-B implementation verification and coverage gap
 
 The five reservation/settings tests added with the implementation were not run against the naive baseline; they are not failing-first evidence. Final focused run: `node --import tsx --test tests/quota-grok-weekly.test.ts tests/reset-auto-redeem.test.ts tests/billing-source.test.ts`: 20 passed, 0 failed, socket sentinels 0. These include settled target reservation, unknown after restart, disable before send, expired credit, and settings bounds. Missing requested behavioral evidence includes forced concurrent scheduler interleavings, revision mismatch and re-inspection, lead change rescheduling, route GET/PUT integration and disabled zero-fetch counting. This is not a completed acceptance record.
+
+## S6b-B2
+
+Baseline: 0653bd84, with concurrent Grok lane work present in the working tree. All transports were synthetic and the network sentinel was zero. `node --import tsx --test tests/reset-auto-redeem.test.ts tests/reset-settings-routes.test.ts` ran 16 tests, 16 passed, before implementation changes. The new tests below are post-implementation guards, not failing-first evidence:
+
+| Case | First run |
+|---|---|
+| disabled: zero transport calls over three ticks | PASS, guard |
+| enable after boot within one tick | PASS, existing guard |
+| lead change reconfigures inspection | PASS, guard |
+| disable after claim: abandoned and reservation released, zero send | PASS, existing guard |
+| manual claim between inspection and CAS: re-inspect, no stale dispatch | PASS, guard |
+| two connections, second inspection paused until first settles | PASS, guard |
+| restart inside lead window: one attempt | PASS, guard |
+| unknown after restart: no redispatch | PASS, existing guard |
+| buildApp GET default, PUT validation 1–60 | PASS, guard |
+| buildApp PUT invokes reconfiguration | PASS, guard |
+| buildApp LAN token and origin protection | PASS, guard |
+| lead change during active inspection | FAIL, failing-first: expected two inspections, observed one (`node --import tsx --test --test-name-pattern='reconfigures again when lead changes during an inspection' tests/reset-auto-redeem.test.ts`, 1 failed). |
