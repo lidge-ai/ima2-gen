@@ -19,6 +19,7 @@ import { configureLogger, logError, logWarn } from "./lib/logger.js";
 import { createRequestLogger } from "./lib/requestLogger.js";
 import { configureApiCachePolicy } from "./lib/apiCachePolicy.js";
 import { configureRoutes } from "./routes/index.js";
+import { quotaResetRouter } from "./routes/quotaReset.js";
 import { startUpdateScheduler, updateChecksEnabled } from "./lib/updateCheck.js";
 import { defaultTag } from "./lib/updateVersion.js";
 import { API_REQUEST_POLICY, config } from "./config.js";
@@ -275,6 +276,7 @@ export function buildApp(ctx: RuntimeContext) {
   // parser skips bodies this one already read.
   app.use("/api/node-templates/import", express.json({ limit: TEMPLATE_FILE_MAX_BYTES }), templateImportBodyErrors);
   app.use(express.json({ limit: ctx.config.server.bodyLimit }));
+  app.use(quotaResetRouter(ctx));
   app.use(express.static(join(ctx.rootDir, "ui", "dist"), {
     setHeaders: setUiStaticHeaders,
   }));

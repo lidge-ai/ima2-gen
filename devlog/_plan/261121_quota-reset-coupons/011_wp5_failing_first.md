@@ -97,3 +97,35 @@ Failing-first baseline only; the new components are deliberately incomplete and 
 | npm run test:inventory | exit 0 |
 
 The lightweight component harness simulates JSX, effects and state; it is not a browser or accessibility verification. Full suite and UI build: NOT RUN.
+
+## S2c (routes)
+
+Status: PARTIAL, intentionally unsafe failing-first baseline. The app only registers the baseline handlers when fake dependencies are explicitly injected; no real transport is wired. Direct `node --import tsx --test tests/reset-routes.test.ts`: exit 1, 16 tests, 12 behavioral assertion failures, 4 controls pass, 0 skipped. The after hook passed with socket sentinel count 0; no real consuming endpoint was called.
+
+| Test | Baseline result |
+|---|---|
+| reset credits DTO | FAIL: availableCount missing |
+| confirmation single use | FAIL: token returned twice |
+| expired confirmation | FAIL: expired token returned |
+| concurrent token use | FAIL: both requests returned 200, expected 200/400 |
+| cross-principal | FAIL: 200 vs 403 |
+| changed identity | FAIL: 200 vs 409 |
+| replay | FAIL: 500 vs recorded 200 |
+| current-identity operations after app rebuild | FAIL: other identity also returned |
+| claimed acknowledgement | FAIL: 200 vs 409 |
+| recovered unknown with live owner | FAIL: 200 vs 409 |
+| reused token with another operation | FAIL: 200 vs 400 |
+| missing account id | FAIL: no exception |
+| confirmation zero upstream | PASS |
+| missing token zero consume | PASS |
+| LAN lock and cross-origin refusal | PASS |
+| happy fake consume request id and fresh usage | PASS |
+
+| Verifier | Result |
+|---|---|
+| npm run typecheck | exit 0 |
+| npm run typecheck:tests | exit 0 |
+| npm run lint | exit 0, 93 warnings |
+| npm run test:inventory | exit 1: generated docs/migration/runtime-test-inventory.md stale; file outside S2c authorized paths |
+
+Limitations: expiry is currently exercised directly on the confirmation store, not through the route. The restart rebuilds the app and listener against the same database in one process, not a fresh process. Revoked-session and token provider/target binding are not separately tested. Some zero-consume assertions follow an intentionally failing status assertion and thus did not execute on this baseline. Concurrent test uses one token with two operation IDs; a same-operation race still needs coverage. Full npm test, real upstream and production behavior: NOT RUN. These gaps and the stale generated inventory must be addressed by the coordinator before declaring the slice complete.

@@ -126,6 +126,9 @@ class LocalLanAccess {
       const viaCookie = !!credentials?.cookie && credentials.explicit === undefined;
       policy.checkBrowserRequest(req, origin, viaCookie);
       if (credentials) this.authorize(credentials, origin, res, req.socket.remoteAddress || "unknown");
+      const mode = !credentials ? "loopback" : viaCookie ? "lan-cookie" : "lan-token";
+      const value = viaCookie ? credentials?.cookie : credentials?.explicit;
+      res.locals.accessPrincipal = { mode, principalId: value ? createHash("sha256").update(value).digest("hex").slice(0, 16) : "loopback" };
       if (!res.writableEnded && !res.destroyed) next();
     } catch (error) { sendAccessError(res, error); }
   };
