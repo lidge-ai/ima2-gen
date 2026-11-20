@@ -1,5 +1,5 @@
 import { canonicalizeImageModel } from "./model-aliases.js";
-import { deriveProviderIds } from "../../lib/providers/derive.js";
+import { deriveModels, deriveProviderIds } from "../../lib/providers/derive.js";
 import { migrateOpenAIImageModel } from "../../lib/openaiLegacyModels.js";
 import { listProviders } from "../../lib/mcp/providerRegistry.js";
 import type { CoreProviderId } from "../../lib/providers/registry.js";
@@ -32,6 +32,10 @@ const LANES = [
   ...deriveProviderIds(),
   ...listProviders([]).map((provider) => provider.id as Lane),
 ] as readonly Lane[];
+const API_IMAGE_MODELS = deriveModels("api", "image");
+const SHARED_GPT_IMAGE_MODELS = new Set(
+  [...deriveModels("oauth", "image")].filter((id) => id.startsWith("gpt-") && API_IMAGE_MODELS.has(id)),
+);
 
 function failure(code: string, message: string, extra?: Record<string, unknown> | undefined): ResolveResult {
   return { ok: false, code, message, ...(extra ? { extra } : {}) };
@@ -148,7 +152,8 @@ function resolveBare(
     ? [provider as Lane]
     : LANES.filter(existsIn);
   const matches = lanes.filter(existsIn);
-  if (matches.length > 1 && matches.every((lane) => lane === "oauth" || lane === "api")) {
+  if (kind === "image" && SHARED_GPT_IMAGE_MODELS.has(migrateOpenAIImageModel(model))
+    && matches.length > 1 && matches.every((lane) => lane === "oauth" || lane === "api")) {
     const defaultLane = parseNamespaced(defaults.image ?? "")?.lane;
     const lane = matches.find((candidate) => candidate === defaultLane) ?? "oauth";
     return resolveLaneModel(kind, lane, model, catalog);

@@ -165,8 +165,8 @@ describe("Agent Mode right sidebar contract", () => {
     const options = readSource("ui/src/lib/agentModelOptions.ts");
     assert.match(model, /AGENT_LLM_MODEL_OPTIONS/);
     assert.match(options, /value: "gpt-6-luna"[\s\S]*?shortLabel: "6l"[\s\S]*?provider: "oauth"/);
-    assert.match(options, /value: "gpt-6.2-sol"[\s\S]*?shortLabel: "6.2s"[\s\S]*?provider: "oauth"/);
-    assert.match(options, /value: "gpt-6.2-astra"[\s\S]*?shortLabel: "6.2a"[\s\S]*?provider: "oauth"/);
+    assert.match(options, /value: "gpt-6\.2-sol"[\s\S]*?shortLabel: "6\.2s"[\s\S]*?provider: "oauth"/);
+    assert.match(options, /value: "gpt-6\.2-astra"[\s\S]*?shortLabel: "6\.2a"[\s\S]*?provider: "oauth"/);
     assert.match(options, /value: "grok-4\.3"[\s\S]*?shortLabel: "4\.3"[\s\S]*?provider: "grok"/);
     assert.match(model, /REASONING_EFFORT_OPTIONS/);
     assert.match(model, /image-model-select__trigger--pill/);

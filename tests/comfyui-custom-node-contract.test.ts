@@ -50,7 +50,8 @@ describe("ComfyUI custom node contract", () => {
     const source = readSource(`${bridgeDir}/nodes.py`);
     assert.match(source, /gpt-6-luna/);
     assert.match(source, /gpt-6\.1-terra/);
-    assert.match(source, /gpt-6\.2-(?:sol|astra)/);
+    assert.match(source, /gpt-6\.2-sol/);
+    assert.match(source, /gpt-6\.2-astra/);
     assert.doesNotMatch(source, /gpt-5\.3-codex-spark/);
   });
 

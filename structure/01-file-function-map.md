@@ -116,7 +116,7 @@ routes/
 | `ui/src/lib/eventChannel.ts` | 239 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
 | `bin/ima2.ts` | 500 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
-| `bin/commands/gen.ts` | 444 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
+| `bin/commands/gen.ts` | 445 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 178 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
 | `bin/commands/multimode.ts` | 229 | CLI multimode SSE client with provider override, references, prompt mode, incremental image save, timeout recovery, web-search, reasoning-effort, and session options |
@@ -129,7 +129,7 @@ routes/
 | `bin/commands/metadata.ts` | 51 | CLI image metadata read client |
 | `bin/commands/comfy.ts` | 330 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
 | `bin/commands/models.ts` | 101 | Human/JSON model catalog with lane/kind/id/label/lane status/model lock status/capabilities |
-| `bin/lib/modelResolver.ts` | 203 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
+| `bin/lib/modelResolver.ts` | 208 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
 | `bin/commands/cardnews.ts` | 251 | CLI dev-gated card-news client |
 | `bin/commands/config.ts` | 194 | CLI config get/set client |
 | `bin/commands/observability.ts` | 178 | Shared CLI handler for `storage`, `billing`, `providers`, `oauth`, and `inflight` aliases (`ima2.ts` routes those commands here) |
