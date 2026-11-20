@@ -229,7 +229,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/openDirectory.ts` | 60 | Cross-platform open of the generated directory (used by `/api/storage/open-generated-dir`) |
 | `lib/refs.ts` | 175 | Reference image validation, count/size limits |
 | `lib/referenceImageCompress.ts` | 85 | Sharp-based reference image compression below the configured byte cap |
-| `lib/imageModels.ts` | 442 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
+| `lib/imageModels.ts` | 446 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
 | `lib/imageMetadata.ts` | 132 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
 | `lib/imageMetadataStore.ts` | 84 | Sharp-based embed/read of XMP metadata into PNG/JPEG/WebP |
 | `lib/canvasVersionStore.ts` | 360 | Canvas version snapshot storage, list, restore, and pruning |

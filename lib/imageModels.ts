@@ -9,7 +9,7 @@ const VALID_API_IMAGE_MODELS = deriveSupportedImageModels("api");
 
 export { LEGACY_OPENAI_IMAGE_MODELS, migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
-import { migrateGrokImageModel, resolveGrokImageRequest } from "./grokImageQuality.js";
+import { RETIRED_GROK_IMAGE_MODELS, resolveGrokImageRequest } from "./grokImageQuality.js";
 const UNSUPPORTED_IMAGE_MODELS = deriveUnsupportedImageModels();
 const FALLBACK_REASONING_EFFORT = "none";
 const VALID_REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
@@ -120,8 +120,10 @@ export function normalizeGrokImageModel(input: unknown) {
   if (typeof input !== "string" || input.length === 0) {
     return { model: GROK_FALLBACK_IMAGE_MODEL };
   }
-  const rawModel = migrateGrokImageModel(input);
-  if (!VALID_GROK_IMAGE_MODELS.has(rawModel)) {
+  // A retired id stays as sent: resolveGrokImageRequest maps it to 2.0 together with
+  // quality, which keeps its low default (xAI redirects the slug at low).
+  const rawModel = input;
+  if (!VALID_GROK_IMAGE_MODELS.has(rawModel) && !RETIRED_GROK_IMAGE_MODELS.has(rawModel)) {
     return {
       error: `Grok image model must be one of: ${[...VALID_GROK_IMAGE_MODELS].join(", ")}`,
       code: "INVALID_GROK_IMAGE_MODEL" as const,
@@ -405,11 +407,13 @@ export function validateVideoResolutionForRequest(model: string, resolution: Vid
 
 /** Inputs a model cannot take are refused locally, before planning spends anything. */
 export function validateGrokVideoInputs(model: string, inputs: { referenceCount: number; voiceCount: number }) {
-  if (canonicalGrokVideoModel(model) !== GROK_VIDEO_MODEL_15_LITE) return { ok: true as const };
-  if (inputs.referenceCount > 0) {
+  if (!isGrokVideoModel(model)) return { ok: true as const };
+  const canonical = canonicalGrokVideoModel(model);
+  if (canonical === GROK_VIDEO_MODEL_15_LITE && inputs.referenceCount > 0) {
     return { error: `reference images are not supported by ${GROK_VIDEO_MODEL_15_LITE}`, code: "GROK_VIDEO_REF_UNSUPPORTED_MODEL" as const, status: 400 as const };
   }
-  if (inputs.voiceCount > 0) {
+  // Preset voices exist only on 1.5; refusing here spares the planner call.
+  if (inputs.voiceCount > 0 && canonical !== GROK_VIDEO_MODEL_15) {
     return { error: `reference audio requires ${GROK_VIDEO_MODEL_15}`, code: "GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL" as const, status: 400 as const };
   }
   return { ok: true as const };
