@@ -12,6 +12,23 @@ const end = "2026-12-01T00:00:00Z";
 const response = { config: { currentPeriod: { type: "USAGE_PERIOD_TYPE_WEEKLY", end }, creditUsagePercent: 25,
   productUsage: [{ product: "chat", percent: 12 }, { product: null, percent: "bad" }], prepaidBalance: 17 } };
 describe("Grok weekly behavior", () => {
+  it("tries session monthly after weekly and CLI monthly fail", async () => {
+    const home = mkdtempSync(join(tmpdir(), "ima2-monthly-fallback-")); const original = globalThis.fetch;
+    try {
+      mkdirSync(join(home, ".grok")); mkdirSync(join(home, ".progrok"));
+      writeFileSync(join(home, ".progrok", "auth.json"), JSON.stringify({ accessToken: "ima2-token" }));
+      writeFileSync(join(home, ".grok", "auth.json"), JSON.stringify({ fixture: { key: "cli-token" } }));
+      writeFileSync(join(home, ".grok", "version.json"), JSON.stringify({ version: "1.0.0" }));
+      globalThis.fetch = (async (url, init) => {
+        const auth = new Headers(init?.headers).get("authorization");
+        if (String(url).includes("format=credits") || auth === "Bearer cli-token") return new Response("", { status: 503 });
+        if (String(url).endsWith("/user")) return Response.json({ email: "fixture@example.test" });
+        return Response.json({ config: { monthlyLimit: { val: 10000 }, used: { val: 2000 }, billingPeriodEnd: end } });
+      }) as typeof fetch;
+      const result = await fetchGrokBilling(home);
+      assert.equal(result.windows[0]?.label, "monthly"); assert.equal(result.windows[0]?.percent, 20);
+    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
+  });
   it("prefers the ima2 session over the CLI account", async () => {
     const home = mkdtempSync(join(tmpdir(), "ima2-weekly-priority-"));
     const original = globalThis.fetch; const seen: string[] = [];

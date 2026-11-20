@@ -20,6 +20,9 @@ const { createTestRuntimeContext } = await import("../lib/runtimeContext.js");
 const { buildApp } = await import("../server.js");
 const { Confirmations } = await import("../lib/reset/confirmations.js");
 const { resetIdentity } = await import("../lib/reset/identity.js");
+const { CodexAutoRedeem } = await import("../lib/reset/codexAutoRedeem.js");
+const { CodexResetClient } = await import("../lib/reset/codexResetClient.js");
+const { writeResetSettings } = await import("../lib/reset/settings.js");
 let sequence = 0;
 after(() => { stopAgentQueueWorker(); closeDb(); rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); assert.equal(sentinelCount(), 0); });
 
@@ -55,7 +58,7 @@ async function withFixture(fn: (f: Awaited<ReturnType<typeof fixture>>) => Promi
 
 for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed", "future_code"]) {
   it(`returns provider code ${code} to the UI`, async () => withFixture(async f => {
-    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return { code, windows_reset: ["weekly"] }; };
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code, windows_reset: ["weekly"] } : { credits: [] }; };
     const token = await f.confirm(code);
     const response = await f.request(redeemPath, { operationId: code, confirmationToken: token });
     const body = await response.json() as { result: { outcome: string; windowsReset?: string[] } };
@@ -65,6 +68,17 @@ for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed"
 }
 
 describe("reset route safety contracts", () => {
+  it("fences auto after manual success until a listed credit disappears", async () => withFixture(async f => {
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits }; };
+    const token = await f.confirm("manual-fence");
+    assert.equal((await f.request(redeemPath, { operationId: "manual-fence", confirmationToken: token })).status, 200);
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 10 });
+    const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
+    await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
+    credits = credits.slice(1); await watcher.tick(); assert.equal(consumeCalls(f).length, 2);
+  }));
   it("records a consuming redirect failure as unknown and never resends", async () => withFixture(async f => {
     const send = f.transport.send.bind(f.transport);
     f.transport.send = async (url, body) => { if (url.endsWith("/consume")) { f.transport.calls.push({ url, body }); throw new Error("RESET_HTTP_307"); } return send(url, body); };

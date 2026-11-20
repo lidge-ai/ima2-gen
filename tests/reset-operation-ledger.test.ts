@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { migrate } from "../lib/db.ts";
-import { OperationLedger } from "../lib/reset/operationLedger.ts";
+import { migrateResetTables, OperationLedger } from "../lib/reset/operationLedger.ts";
 import { sentinelCount } from "./helpers/resetTestGuard.ts";
 const root = mkdtempSync(join(tmpdir(), "ima2-reset-ledger-"));
 const a = new Database(join(root, "ledger.sqlite"));
@@ -66,6 +66,17 @@ describe("reset ledger recovery and revision", () => {
   });
 });
 describe("reset ledger controls", () => {
+  it("adds a nullable snapshot to existing databases idempotently", () => {
+    const db = new Database(":memory:");
+    try {
+      db.exec(`CREATE TABLE reset_operations (operation_id TEXT PRIMARY KEY, provider TEXT NOT NULL, ledger_key TEXT NOT NULL, target TEXT,
+        state TEXT NOT NULL, unknown_origin TEXT, outcome TEXT, owner_id TEXT NOT NULL, acknowledged_at INTEGER,
+        acknowledged_by TEXT, note TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        INSERT INTO reset_operations VALUES ('old', 'codex', 'account', NULL, 'settled', NULL, NULL, 'owner', NULL, NULL, NULL, 0, 0)`);
+      migrateResetTables(db); migrateResetTables(db);
+      assert.deepEqual(db.prepare("SELECT credit_snapshot FROM reset_operations WHERE operation_id='old'").get(), { credit_snapshot: null });
+    } finally { db.close(); }
+  });
   it("migrates twice and records a settled operation", () => {
     one.claim(claim("control", "control"));
     assert.equal(one.sending("control", "owner-a"), true);
