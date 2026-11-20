@@ -9,7 +9,7 @@ export interface ResetOperation {
 }
 export interface ResetList {
   accountRef: string;
-  credits: Array<{ id?: string; title?: string | null; status?: string | null; expiresAt?: string | null }>;
+  credits: Array<{ id?: string; title?: string | null; status?: string | null; expiresAt?: string | number | null }>;
   availableCount?: number | null;
   complete?: boolean;
 }
@@ -51,10 +51,17 @@ function operationRows(ops: ResetOperation[], busy: boolean, t: QuotaTranslate, 
   </div>);
 }
 
+/** Upstream expiries arrive as epoch seconds, epoch milliseconds or date strings. */
+function expiryTime(value: string | number | null | undefined): number {
+  if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
+  return typeof value === "string" ? Date.parse(value) : NaN;
+}
+const formatExpiry = (value: string | number) => Number.isFinite(expiryTime(value)) ? new Date(expiryTime(value)).toLocaleDateString() : String(value);
+
 function creditRows(list: ResetList | null, t: QuotaTranslate) {
   if (list && list.credits.length === 0) return <p className="settings-row__microcopy">{t("settings.quota.resetCredits.empty")}</p>;
   return list && <ul>{list.credits.map((credit, index) => <li key={credit.id ?? index}>
-    {credit.title ?? credit.status ?? "—"} {credit.expiresAt && t("settings.quota.resetCredits.expires", { date: credit.expiresAt })}
+    {credit.title ?? credit.status ?? "—"} {credit.expiresAt != null && credit.expiresAt !== "" && t("settings.quota.resetCredits.expires", { date: formatExpiry(credit.expiresAt) })}
   </li>)}</ul>;
 }
 
@@ -114,19 +121,17 @@ function useResetSettings(transport: ResetCreditsTransport, displayedRef: Accoun
 }
 
 function earliestExpiry(credits: ResetList["credits"]): string | null {
-  const times = credits.map(credit => Date.parse(credit.expiresAt ?? "")).filter(Number.isFinite);
+  const times = credits.map(credit => expiryTime(credit.expiresAt)).filter(Number.isFinite);
   return times.length ? new Date(Math.min(...times)).toLocaleDateString() : null;
 }
 
-/** Read-only list for the folded summary; ignored if it belongs to another account. */
+/** Read-only list for the folded summary; lists for another account are ignored. */
 function useEarliestExpiry(transport: ResetCreditsTransport, accountRef: string | undefined, displayedRef: AccountRef) {
   const [earliest, setEarliest] = useState<string | null>(null);
-  useEffect(() => {
-    setEarliest(null);
-    if (!transport.list || !accountRef) return;
-    void transport.list().then(data => { if (data.accountRef === displayedRef.current) setEarliest(earliestExpiry(data.credits)); }).catch(() => {});
-  }, [transport, accountRef, displayedRef]);
-  return earliest;
+  const observe = (data: ResetList) => { if (data.accountRef === displayedRef.current) setEarliest(earliestExpiry(data.credits)); };
+  const refresh = () => { if (transport.list && displayedRef.current) void transport.list().then(observe).catch(() => {}); };
+  useEffect(() => { setEarliest(null); refresh(); }, [transport, accountRef, displayedRef]);
+  return { earliest, observe, refresh };
 }
 
 function resetSummary(t: QuotaTranslate, count: number | null | undefined, earliest: string | null, attention: boolean) {
@@ -141,6 +146,7 @@ interface Flow {
   setBusy(value: boolean): void; setMessage: SetMessage; setDialog(value: string | null): void;
   setList(value: ResetList | null): void; setListError(value: boolean): void;
   accountChanged(): void; refreshOps(): Promise<unknown>; refreshFence(): Promise<void>;
+  summary: { observe(data: ResetList): void; refresh(): void };
 }
 
 function openRedeem(flow: Flow) {
@@ -155,7 +161,7 @@ function openRedeem(flow: Flow) {
 
 function listCredits(flow: Flow) {
   flow.setList(null); flow.setListError(false);
-  if (flow.transport.list) void flow.transport.list().then(flow.setList).catch(() => flow.setListError(true));
+  if (flow.transport.list) void flow.transport.list().then(data => { flow.setList(data); flow.summary.observe(data); }).catch(() => flow.setListError(true));
 }
 
 async function confirmRedeem(flow: Flow) {
@@ -174,7 +180,7 @@ async function confirmRedeem(flow: Flow) {
     if (errorCode(error) === "IDENTITY_CHANGED") flow.accountChanged(); else flow.setMessage("unknown");
   } finally {
     flow.inFlight.current = false; flow.setBusy(false); flow.setDialog(null);
-    void flow.refreshOps(); void flow.refreshFence().catch(() => flow.setMessage("loadError")); flow.trigger.current?.focus();
+    void flow.refreshOps(); void flow.refreshFence().catch(() => flow.setMessage("loadError")); flow.summary.refresh(); flow.trigger.current?.focus();
   }
 }
 
@@ -248,12 +254,12 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   const { fence, refreshFence } = useFence(transport, accountRef, displayedRef, inFlight, fencePoller, setMessage);
   const { settings, settingsBusy, saveSettings } = useResetSettings(transport, displayedRef, accountChanged, setMessage);
   const details = useQuotaDetails();
-  const earliest = useEarliestExpiry(transport, accountRef, displayedRef);
+  const summaryState = useEarliestExpiry(transport, accountRef, displayedRef);
   const flow: Flow = { transport, displayedRef, inFlight, trigger, dialog, busy, onRefresh, setBusy, setMessage, setDialog,
-    setList, setListError, accountChanged, refreshOps, refreshFence };
+    setList, setListError, accountChanged, refreshOps, refreshFence, summary: summaryState };
   const usableCount = applicableAvailableCount === undefined ? availableCount : applicableAvailableCount;
   const noUsableCredits = usableCount == null || usableCount <= 0;
-  const summary = resetSummary(t, availableCount, earliest, fence.fenced || ops.some(unresolved));
+  const summary = resetSummary(t, availableCount, summaryState.earliest, fence.fenced || ops.some(unresolved));
   return <div className="quota-reset">
     {quotaDetails("quota-codex-reset-credits", details, t("settings.quota.resetCredits.count"), summary, <>
     <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => openRedeem(flow)}>
