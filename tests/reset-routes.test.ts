@@ -54,6 +54,13 @@ async function withFixture(fn: (f: Awaited<ReturnType<typeof fixture>>) => Promi
 }
 
 describe("reset route safety contracts", () => {
+  it("rejects confirmation when the displayed Codex account changed", async () => withFixture(async f => {
+    const displayed = await (await f.request("/api/quota/codex/reset-credits")).json() as { accountRef: string };
+    assert.ok(displayed.accountRef); f.setAccount("b");
+    const response = await f.request("/api/quota/reset-confirmations", { provider: "codex", operationId: "changed", accountRef: displayed.accountRef });
+    assert.equal(response.status, 409); assert.equal((await response.json() as { error: { code: string } }).error.code, "IDENTITY_CHANGED");
+    assert.equal(consumeCalls(f).length, 0);
+  }));
   it("lists reset credits as the DTO", async () => withFixture(async f => {
     const data = await (await f.request("/api/quota/codex/reset-credits")).json() as { availableCount?: number };
     assert.equal(data.availableCount, 1); assert.equal(consumeCalls(f).length, 0);

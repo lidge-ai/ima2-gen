@@ -42,6 +42,28 @@ describe("auto-redeem controls", () => {
 });
 
 describe("auto-redeem reservation and settings", () => {
+  it("rechecks upstream credit immediately before sending and releases a removed target", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const fake = fakeResetTransport({ credits: [{ granted_at: "2026-11-20T00:00:00Z", expires_at: "2026-11-21T00:05:00Z" }], outcome: "reset" });
+    let lists = 0; const send = fake.send.bind(fake);
+    fake.send = async (url, body) => { if (!url.endsWith("/consume") && ++lists === 2) return { credits: [] }; return send(url, body); };
+    const scheduled: Array<() => void> = [];
+    await new CodexAutoRedeem(f.a, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now }, cb => scheduled.push(cb)).tick();
+    assert.equal(lists, 2); assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 0);
+    assert.equal((f.a.prepare("SELECT state FROM reset_operations").get() as { state: string }).state, "abandoned");
+    assert.equal(f.a.prepare("SELECT * FROM reset_targets").all().length, 0); assert.equal(scheduled.length, 1);
+  }));
+  it("selects a later eligible credit when the earliest is already reserved", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
+    const fake = fakeResetTransport({ credits, outcome: "reset" });
+    const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
+    await new CodexAutoRedeem(f.a, deps).tick(); await new CodexAutoRedeem(f.b, deps).tick();
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 2);
+    assert.equal(f.a.prepare("SELECT * FROM reset_targets").all().length, 2);
+  }));
   it("validates the persisted lead bounds and default", async () => fixture(async f => {
     f.a.prepare("DELETE FROM reset_settings").run();
     assert.deepEqual(readResetSettings(f.a), { enabled: false, leadMinutes: 10 });

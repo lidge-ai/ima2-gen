@@ -50,6 +50,13 @@ async function withFixture(fn: (f: Awaited<ReturnType<typeof fixture>>) => Promi
 const path = "/api/quota/grok/reset-coupons/redeem";
 const sends = (f: Awaited<ReturnType<typeof fixture>>) => f.calls.filter(c => c.url.endsWith("RedeemReset"));
 describe("Grok coupon routes", () => {
+  it("rejects confirmation when the displayed Grok account changed", async () => withFixture(async f => {
+    const displayed = await (await f.request("/api/quota/grok/reset-coupons")).json() as { accountRef: string };
+    assert.ok(displayed.accountRef); f.setSub("b");
+    const res = await f.request("/api/quota/reset-confirmations", { provider: "grok", operationId: "changed", target: "one", accountRef: displayed.accountRef });
+    assert.equal(res.status, 409); assert.equal((await res.json() as { error: { code: string } }).error.code, "IDENTITY_CHANGED");
+    assert.equal(sends(f).length, 0);
+  }));
   it("lists session coupons with account label and validity end, independent of weekly CLI account", async () => withFixture(async f => {
     assert.deepEqual(await f.weekly(), { source: "grok-cli", accountLabel: "other" });
     const res = await f.request("/api/quota/grok/reset-coupons"); assert.equal(res.status, 200);

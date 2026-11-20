@@ -109,13 +109,14 @@ it("loads auto-redeem settings and exposes bounded lead minutes", async () => {
 it("sends a target-bound Grok confirmation before redeem", async () => {
   const source = readFileSync("ui/src/components/settings/grokCouponsTransport.ts", "utf8");
   const compiled = transformSync(source, { loader: "ts", format: "cjs" }).code;
-  const mod = { exports: {} as { grokCouponsTransport: { redeem(id: string): Promise<unknown> } } };
+  const mod = { exports: {} as { grokCouponsTransport: { redeem(id: string, accountRef: string): Promise<unknown> } } };
   const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
   const request = async (url: string, init: { body: string }) => { calls.push({ url, body: JSON.parse(init.body) as Record<string, unknown> }); return { token: "confirmation" }; };
   runInNewContext(compiled, { module: mod, exports: mod.exports, require: () => ({ jsonFetch: request }), crypto: { randomUUID: () => "op" } });
-  await mod.exports.grokCouponsTransport.redeem("coupon");
+  await mod.exports.grokCouponsTransport.redeem("coupon", "displayed-account");
   assert.deepEqual(calls.map(c => c.url), ["/api/quota/reset-confirmations", "/api/quota/grok/reset-coupons/redeem"]);
   assert.equal(calls[0]?.body.provider, "grok"); assert.equal(calls[0]?.body.target, "coupon");
+  assert.equal(calls[0]?.body.accountRef, "displayed-account");
   assert.equal(calls[1]?.body.target, "coupon"); assert.equal(calls[1]?.body.confirmationToken, "confirmation");
 });
 after(() => assert.equal(sentinelCount(), 0));

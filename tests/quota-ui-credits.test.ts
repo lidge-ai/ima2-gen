@@ -185,16 +185,17 @@ describe("quota UI fake transport controls", () => {
     const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
     const source = readFileSync("ui/src/components/settings/resetCreditsTransport.ts", "utf8");
     const compiled = transformSync(source, { loader: "ts", format: "cjs" }).code;
-    const mod = { exports: {} as { resetCreditsTransport: { redeem(): Promise<unknown> } } };
+    const mod = { exports: {} as { resetCreditsTransport: { redeem(accountRef: string): Promise<unknown> } } };
     const request = async (url: string, init: { body: string }) => {
       calls.push({ url, body: JSON.parse(init.body) as Record<string, unknown> });
       return calls.length === 1 ? { token: "confirmation" } : { result: { outcome: "reset" } };
     };
     runInNewContext(compiled, { module: mod, exports: mod.exports,
       require: () => ({ jsonFetch: request }), crypto: { randomUUID: () => "operation-1" } });
-    await mod.exports.resetCreditsTransport.redeem();
+    await mod.exports.resetCreditsTransport.redeem("displayed-account");
     assert.deepEqual(calls.map(({ url }) => url), ["/api/quota/reset-confirmations", "/api/quota/codex/reset-credits/redeem"]);
     assert.equal(calls[0]?.body.operationId, "operation-1");
+    assert.equal(calls[0]?.body.accountRef, "displayed-account");
     assert.equal(calls[1]?.body.operationId, "operation-1");
     assert.equal(calls[1]?.body.confirmationToken, "confirmation");
     assert.equal(Object.keys(calls[1]!.body).length, 2);
