@@ -152,7 +152,7 @@ export function NaiQuota({ data, loading }: Pick<QuotaBlockProps, "data" | "load
 
 /** Codex rate-limit block — lives inside the GPT OAuth provider card. */
 export function CodexQuota({ data, loading, onRefresh }: QuotaBlockProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const codex = data?.codex;
   const hasCodexWindows = codex?.windows && codex.windows.length > 0;
   const accountLine = codex?.account
@@ -178,11 +178,12 @@ export function CodexQuota({ data, loading, onRefresh }: QuotaBlockProps) {
         <span className="quota-card__hint">{t("settings.quota.noData")}</span>
       )}
       {codex && !codex.error && codex.authenticated !== false && <>
-        <CodexCredits balance={codex.credits?.balance ?? null} unlimited={codex.credits?.unlimited}
+        <CodexCredits locale={locale} balance={codex.credits?.balance ?? null} unlimited={codex.credits?.unlimited}
           overage={codex.credits?.overage} approxMessages={codex.credits?.approxMessages}
           resetCreditCount={codex.resetCredits?.availableCount ?? null}
           usableNow={codex.resetCredits?.applicableAvailableCount ?? null} t={t} />
-        <ResetCreditsPanel key={accountLine ?? "codex"} transport={resetCreditsTransport} t={t} onRefresh={onRefresh} />
+        <ResetCreditsPanel key={accountLine ?? "codex"} availableCount={codex.resetCredits?.availableCount}
+          applicableAvailableCount={codex.resetCredits?.applicableAvailableCount} transport={resetCreditsTransport} t={t} onRefresh={onRefresh} />
         {codex.upsell?.buyReset && <a target="_blank" rel="noopener noreferrer" href="https://chatgpt.com/codex/purchase/reset">{t("settings.quota.upsell.buyReset")}</a>}
         {codex.upsell?.viewUsage && <a target="_blank" rel="noopener noreferrer" href="https://chatgpt.com/settings/usage">{t("settings.quota.upsell.viewUsage")}</a>}
       </>}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import { Toggle } from "../controls";
 import type { QuotaTranslate } from "./CodexCredits";
 
 export interface ResetOperation {
@@ -44,6 +45,7 @@ function operationRows(ops: ResetOperation[], busy: boolean, t: QuotaTranslate, 
 }
 
 function creditRows(list: ResetList | null, t: QuotaTranslate) {
+  if (list && list.credits.length === 0) return <p className="settings-row__microcopy">{t("settings.quota.resetCredits.empty")}</p>;
   return list && <ul>{list.credits.map((credit, index) => <li key={credit.id ?? index}>
     {credit.title ?? credit.status ?? "—"} {credit.expiresAt && t("settings.quota.resetCredits.expires", { date: credit.expiresAt })}
   </li>)}</ul>;
@@ -51,8 +53,9 @@ function creditRows(list: ResetList | null, t: QuotaTranslate) {
 
 type PanelProps = {
   transport: ResetCreditsTransport; t?: QuotaTranslate; onRefresh?: () => void;
+  availableCount?: number | null; applicableAvailableCount?: number | null;
 };
-export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh }: PanelProps) {
+export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, availableCount, applicableAvailableCount }: PanelProps) {
   const [settings, setSettings] = useState<ResetSettings | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [ops, setOps] = useState<ResetOperation[]>([]);
@@ -60,6 +63,9 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh }: Pa
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [list, setList] = useState<ResetList | null>(null);
+  const [listError, setListError] = useState(false);
+  const usableCount = applicableAvailableCount === undefined ? availableCount : applicableAvailableCount;
+  const noUsableCredits = usableCount == null || usableCount <= 0;
   const [opsLoaded, setOpsLoaded] = useState(false);
   const inFlight = useRef(false);
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -92,17 +98,27 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh }: Pa
     catch { setMessage("ackBlocked"); } finally { setBusy(false); }
   };
   return <div className="quota-reset">
-    <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved)} onClick={() => setDialog(true)}>
+    <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => setDialog(true)}>
       {t("settings.quota.redeem.action")}</button>
+    {noUsableCredits && <p className="settings-row__microcopy">{t(usableCount == null ? "settings.quota.redeem.creditUnknown" : "settings.quota.redeem.noCredit")}</p>}
     <button type="button" className="settings-action-btn" onClick={() => {
-      if (transport.list) void transport.list().then(setList).catch(() => setMessage("loadError"));
+      setList(null); setListError(false);
+      if (transport.list) void transport.list().then(setList).catch(() => setListError(true));
     }}>{t("settings.quota.resetCredits.list")}</button>
+    {listError && <p role="alert" className="settings-row__microcopy">{t("settings.quota.resetCredits.loadError")}</p>}
     {creditRows(list, t)}
     {settings && <fieldset disabled={settingsBusy}><legend>{t("settings.quota.autoRedeem.title")}</legend>
-      <label><input type="checkbox" checked={settings.enabled} onChange={event => { void saveSettings({ ...settings, enabled: event.target.checked }); }} /> {t("settings.quota.autoRedeem.enable")}</label>
-      <p>{t("settings.quota.autoRedeem.warning")}</p>
-      <label>{t("settings.quota.autoRedeem.lead")} <input type="number" min={1} max={60} defaultValue={settings.leadMinutes} key={settings.leadMinutes}
-        onBlur={event => { const value = Number(event.target.value); if (Number.isInteger(value) && value >= 1 && value <= 60) void saveSettings({ ...settings, leadMinutes: value }); else event.target.value = String(settings.leadMinutes); }} /></label>
+      <article className="settings-row">
+        <div className="settings-row__copy"><h4>{t("settings.quota.autoRedeem.enable")}</h4>
+          <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.warning")}</p></div>
+        <div className="settings-row__control"><Toggle checked={settings.enabled} disabled={settingsBusy}
+          ariaLabel={t("settings.quota.autoRedeem.enable")} onChange={enabled => { void saveSettings({ ...settings, enabled }); }} /></div>
+      </article>
+      <article className="settings-row">
+        <div className="settings-row__copy"><label htmlFor="reset-lead-minutes">{t("settings.quota.autoRedeem.lead")}</label></div>
+        <div className="settings-row__control"><input id="reset-lead-minutes" className="custom-size-input" type="number" min={1} max={60} defaultValue={settings.leadMinutes} key={settings.leadMinutes}
+          onBlur={event => { const value = Number(event.target.value); if (Number.isInteger(value) && value >= 1 && value <= 60) void saveSettings({ ...settings, leadMinutes: value }); else event.target.value = String(settings.leadMinutes); }} /></div>
+      </article>
     </fieldset>}
     {operationRows(ops, busy, t, (id) => { void acknowledge(id); })}
     <div role="status" aria-live="polite">{message && t(message === "ackBlocked" ? "settings.quota.acknowledge.blocked" : `settings.quota.redeem.${message}`)}</div>
