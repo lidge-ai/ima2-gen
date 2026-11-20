@@ -41,6 +41,23 @@ describe("Grok weekly behavior", () => {
       assert.equal((result as typeof result & { source?: string }).source, "grok-cli");
     } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
+  it("uses session monthly billing when weekly fails and no CLI credentials exist", async () => {
+    const home = mkdtempSync(join(tmpdir(), "ima2-monthly-session-")); const original = globalThis.fetch;
+    const seen: string[] = [];
+    try {
+      mkdirSync(join(home, ".progrok"));
+      writeFileSync(join(home, ".progrok", "auth.json"), JSON.stringify({ accessToken: "ima2-token" }));
+      globalThis.fetch = (async (url, init) => {
+        seen.push(`${String(url)} ${new Headers(init?.headers).get("authorization")}`);
+        if (String(url).includes("format=credits")) return new Response("", { status: 503 });
+        if (String(url).endsWith("/user")) return Response.json({ email: "fixture@example.test" });
+        return Response.json({ config: { monthlyLimit: { val: 10000 }, used: { val: 2000 }, billingPeriodEnd: end } });
+      }) as typeof fetch;
+      const result = await fetchGrokBilling(home);
+      assert.equal(result.windows[0]?.label, "monthly"); assert.equal(result.windows[0]?.percent, 20);
+      assert.equal(seen.length, 3); assert.ok(seen.every(s => s.endsWith("Bearer ima2-token")));
+    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
+  });
   it("projects valid product usage and prepaid balance while ignoring malformed rows", () => {
     assert.deepEqual(parseGrokCreditsResponse(response), { percent: 25, periodEnd: end,
       productUsage: [{ product: "chat", percent: 12 }], prepaidBalance: 17 });

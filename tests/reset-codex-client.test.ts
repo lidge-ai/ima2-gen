@@ -18,6 +18,13 @@ describe("Codex reset client behavior", () => {
       credits: [{ id: "fixture", status: "available", title: "Reset", grantedAt: "2026-11-01", expiresAt: "2026-12-01" }] });
     assert.equal(fake.calls.length, 1);
   });
+  for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed", "future_code"]) {
+    it(`parses provider code ${code}`, async () => {
+      const fake = fakeResetTransport({ code, windows_reset: ["weekly"] });
+      assert.deepEqual(await new CodexResetClient(fake).consume("request"), code === "future_code"
+        ? { outcome: "unknown" } : { outcome: code, windowsReset: ["weekly"] });
+    });
+  }
   it("classifies an unrecognized response as unknown", async () => {
     const fake = fakeResetTransport({ unexpected: true });
     assert.deepEqual(await new CodexResetClient(fake).consume("request-1"), { outcome: "unknown" });

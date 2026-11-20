@@ -54,15 +54,51 @@ describe("auto-redeem reservation and settings", () => {
     assert.equal((f.a.prepare("SELECT state FROM reset_operations").get() as { state: string }).state, "abandoned");
     assert.equal(f.a.prepare("SELECT * FROM reset_targets").all().length, 0); assert.equal(scheduled.length, 1);
   }));
-  it("selects a later eligible credit when the earliest is already reserved", async () => fixture(async f => {
+  it("waits for a kept reservation to disappear before selecting the next credit", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
     const now = Date.parse("2026-11-21T00:00:00Z");
-    const credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
-    const fake = fakeResetTransport({ credits, outcome: "reset" });
+    let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
+    const fake = fakeResetTransport({});
+    fake.send = async (url, body) => { fake.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits }; };
     const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
-    await new CodexAutoRedeem(f.a, deps).tick(); await new CodexAutoRedeem(f.b, deps).tick();
+    const watcher = new CodexAutoRedeem(f.a, deps);
+    await watcher.tick(); await watcher.tick();
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 1);
+    credits = credits.slice(1); await watcher.tick();
     assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 2);
-    assert.equal(f.a.prepare("SELECT * FROM reset_targets").all().length, 2);
+  }));
+  for (const code of ["nothing_to_reset", "no_credit"]) it(`releases ${code} for a later retry`, async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const fake = fakeResetTransport({});
+    fake.send = async (url, body) => { fake.calls.push({ url, body }); return url.endsWith("/consume") ? { code } : { credits: [{ granted_at: "2026-11-20T00:00:00Z", expires_at: "2026-11-21T00:05:00Z" }] }; };
+    const watcher = new CodexAutoRedeem(f.a, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now });
+    await watcher.tick(); await watcher.tick();
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 2);
+    assert.equal(f.a.prepare("SELECT * FROM reset_targets").all().length, 0);
+  }));
+  it("checks disable after asynchronous transport preparation and before sending", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const fake = fakeResetTransport({ credits: [{ granted_at: "2026-11-20T00:00:00Z", expires_at: "2026-11-21T00:05:00Z" }] });
+    let release!: () => void; let entered!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { entered = resolve; });
+    const transport = Object.assign(fake, { prepare: async () => { entered(); await gate; return fake; } });
+    const watcher = new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(transport), now: () => now });
+    const run = watcher.tick();
+    await Promise.race([started, run]);
+    writeResetSettings(f.a, { enabled: false, leadMinutes: 10 }); release(); await run;
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 0);
+  }));
+  it("enters sending before a disable triggered at network dispatch", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const fake = fakeResetTransport({ credits: [{ granted_at: "2026-11-20T00:00:00Z", expires_at: "2026-11-21T00:05:00Z" }] });
+    const send = fake.send.bind(fake);
+    fake.send = async (url, body) => { if (url.endsWith("/consume")) { assert.equal((f.a.prepare("SELECT state FROM reset_operations").get() as { state: string }).state, "sending"); writeResetSettings(f.a, { enabled: false, leadMinutes: 10 }); } return send(url, body); };
+    await new CodexAutoRedeem(f.b, { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now }).tick();
+    assert.equal(fake.calls.filter(c => c.url.endsWith("/consume")).length, 1);
   }));
   it("validates the persisted lead bounds and default", async () => fixture(async f => {
     f.a.prepare("DELETE FROM reset_settings").run();
