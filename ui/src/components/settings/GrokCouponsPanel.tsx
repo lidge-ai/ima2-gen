@@ -12,7 +12,7 @@ export interface GrokCouponsTransport {
 }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const idOf = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
-const shortRef = (value: string) => value.length > 12 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+const shortRef = (value: string) => value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 type Props = { transport: GrokCouponsTransport; t?: QuotaTranslate; onRefresh?: () => void };
 export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Props) {
   const [list, setList] = useState<Awaited<ReturnType<GrokCouponsTransport["list"]>> | null>(null);

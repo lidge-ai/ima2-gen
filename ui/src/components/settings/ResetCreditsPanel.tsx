@@ -23,7 +23,7 @@ export interface ResetCreditsTransport {
 export interface ResetSettings { enabled: boolean; leadMinutes: number; accountRef: string | null }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const operationId = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
-const shortRef = (value: string) => value.length > 12 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+const shortRef = (value: string) => value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 const outcomeKeys: Record<string, string> = { reset: "success", nothing_to_reset: "nothingToReset",
   no_credit: "noCredit", already_redeemed: "alreadyRedeemed", unknown: "unknown", IDENTITY_CHANGED: "identityChanged" };
 
