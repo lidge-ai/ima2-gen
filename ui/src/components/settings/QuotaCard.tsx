@@ -4,6 +4,9 @@ import { useI18n } from "../../i18n";
 import { isLanSessionLocked, LAN_AUTH_REQUIRED_EVENT } from "../../lib/lanSession";
 import { SwitchAccountButton } from "./SwitchAccountButton";
 import type { QuotaWindow, QuotaResponse } from "./quotaTypes";
+import { CodexCredits } from "./CodexCredits";
+import { ResetCreditsPanel } from "./ResetCreditsPanel";
+import { resetCreditsTransport } from "./resetCreditsTransport";
 
 function barColor(pct: number): string {
   if (pct > 80) return "var(--red)";
@@ -18,17 +21,21 @@ function formatReset(iso: string | null): string {
 }
 
 function QuotaBar({ window: w }: { window: QuotaWindow }) {
+  const { t } = useI18n();
   const reset = formatReset(w.resetsAt);
+  const label = w.label === "5h" || w.label === "7d" || w.label === "30d"
+    ? t(`settings.quota.window.${w.label}`) : t("settings.quota.window.other", { label: w.label ?? "—" });
   return (
     <div className="quota-bar">
-      <span className="quota-bar__label">{w.label}</span>
-      <div className="quota-bar__track">
+      <span className="quota-bar__label">{label}</span>
+      <div className="quota-bar__track" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100}
+        aria-valuenow={w.percent === null ? undefined : Math.max(0, Math.min(w.percent, 100))}>
         <div
           className="quota-bar__fill"
-          style={{ width: `${Math.min(w.percent, 100)}%`, background: barColor(w.percent) }}
+          style={{ width: `${w.percent === null ? 0 : Math.max(0, Math.min(w.percent, 100))}%`, background: barColor(w.percent ?? 0) }}
         />
       </div>
-      <span className="quota-bar__pct">{w.percent}%</span>
+      <span className="quota-bar__pct">{w.percent === null ? "—" : `${w.percent}%`}</span>
       {reset && <span className="quota-bar__reset">{reset}</span>}
     </div>
   );
@@ -37,8 +44,8 @@ function QuotaBar({ window: w }: { window: QuotaWindow }) {
 /** NovelAI percent is remaining charge; resetsAt is the next 1% recharge ETA. */
 function ChargeBar({ window: w }: { window: QuotaWindow }) {
   const { t } = useI18n();
-  const percent = Math.max(0, Math.min(w.percent, 100));
-  const color = percent > 50 ? "var(--blue)" : percent >= 20 ? "var(--amber)" : "var(--red)";
+  const percent = w.percent === null ? null : Math.max(0, Math.min(w.percent, 100));
+  const color = (percent ?? 0) > 50 ? "var(--blue)" : (percent ?? 0) >= 20 ? "var(--amber)" : "var(--red)";
   const minutes = w.resetsAt === null
     ? null
     : Math.max(0, Math.ceil((Date.parse(w.resetsAt) - Date.now()) / 60_000));
@@ -51,11 +58,11 @@ function ChargeBar({ window: w }: { window: QuotaWindow }) {
         aria-label={t("settings.quota.naiBattery")}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={percent}
+        aria-valuenow={percent ?? undefined}
       >
-        <div className="quota-bar__fill" style={{ width: `${percent}%`, background: color }} />
+        <div className="quota-bar__fill" style={{ width: `${percent ?? 0}%`, background: color }} />
       </div>
-      <span className="quota-bar__pct">{w.percent}%</span>
+      <span className="quota-bar__pct">{w.percent === null ? "—" : `${w.percent}%`}</span>
       {minutes !== null && Number.isFinite(minutes) && (
         <span className="quota-bar__reset">{t("settings.quota.naiNextPercent", { minutes })}</span>
       )}
@@ -160,7 +167,7 @@ export function CodexQuota({ data, loading, onRefresh }: QuotaBlockProps) {
       {loading ? (
         <span className="quota-card__loading">{t("common.loading")}</span>
       ) : hasCodexWindows ? (
-        codex!.windows.map((w) => <QuotaBar key={w.label} window={w} />)
+        codex!.windows.map((w, index) => <QuotaBar key={w.id ?? `${w.label}-${index}`} window={w} />)
       ) : codex?.authenticated === false ? (
         <span className="quota-card__hint">{t("settings.quota.codexNotLoggedIn")}</span>
       ) : codex?.error ? (
@@ -168,6 +175,15 @@ export function CodexQuota({ data, loading, onRefresh }: QuotaBlockProps) {
       ) : (
         <span className="quota-card__hint">{t("settings.quota.noData")}</span>
       )}
+      {codex && !codex.error && codex.authenticated !== false && <>
+        <CodexCredits balance={codex.credits?.balance ?? null} unlimited={codex.credits?.unlimited}
+          overage={codex.credits?.overage} approxMessages={codex.credits?.approxMessages}
+          resetCreditCount={codex.resetCredits?.availableCount ?? null}
+          usableNow={codex.resetCredits?.applicableAvailableCount ?? null} t={t} />
+        <ResetCreditsPanel key={accountLine ?? "codex"} transport={resetCreditsTransport} t={t} onRefresh={onRefresh} />
+        {codex.upsell?.buyReset && <a target="_blank" rel="noopener noreferrer" href="https://chatgpt.com/codex/purchase/reset">{t("settings.quota.upsell.buyReset")}</a>}
+        {codex.upsell?.viewUsage && <a target="_blank" rel="noopener noreferrer" href="https://chatgpt.com/settings/usage">{t("settings.quota.upsell.viewUsage")}</a>}
+      </>}
       <SwitchAccountButton provider="codex" onComplete={onRefresh} />
     </div>
   );
@@ -197,7 +213,7 @@ export function GrokQuota({ data, loading, onRefresh }: QuotaBlockProps) {
       {loading ? (
         <span className="quota-card__loading">{t("common.loading")}</span>
       ) : hasGrokWindows ? (
-        grok!.windows.map((w) => <QuotaBar key={w.label} window={w} />)
+        grok!.windows.map((w, index) => <QuotaBar key={w.id ?? `${w.label}-${index}`} window={w} />)
       ) : grok?.authenticated === false ? (
         <span className="quota-card__hint">{t("settings.quota.codexNotLoggedIn")}</span>
       ) : (

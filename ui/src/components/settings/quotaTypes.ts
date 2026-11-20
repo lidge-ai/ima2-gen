@@ -1,6 +1,7 @@
 export interface QuotaWindow {
-  label: string;
-  percent: number;
+  id?: string;
+  label: string | null;
+  percent: number | null;
   resetsAt: string | null;
 }
 
@@ -11,6 +12,9 @@ export interface QuotaResult {
   error?: boolean;
   authenticated?: boolean;
   billing?: { usedUsd: number; limitUsd: number };
+  credits?: { balance: string | number | null; unlimited: boolean; hasCredits: boolean; overage?: boolean; approxMessages?: number | null } | null;
+  resetCredits?: { availableCount: number | null; applicableAvailableCount: number | null } | null;
+  upsell?: { buyReset?: boolean; viewUsage?: boolean } | null;
   nai?: {
     active: boolean;
     isNegative: boolean;

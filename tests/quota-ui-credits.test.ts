@@ -58,6 +58,12 @@ function loadComponent(file: string, name: string): Component {
         return [mount.states[index], (value: unknown) => { mount.states[index] = value; mount.update(); }];
       },
       useEffect: (effect: () => void) => { currentMount!.effects.push(effect); },
+      useRef: (initial: unknown) => {
+        const mount = currentMount!;
+        const index = mount.cursor++;
+        if (!(index in mount.states)) mount.states[index] = { current: initial };
+        return mount.states[index];
+      },
     };
     throw new Error(`unexpected dependency: ${id}`);
   };
@@ -66,10 +72,15 @@ function loadComponent(file: string, name: string): Component {
 }
 function textContent(node: unknown): string {
   if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (Array.isArray(node)) return node.map(textContent).join(" ");
   if (typeof node !== "object") return String(node);
   return (node as ElementNode).children.map(textContent).join(" ");
 }
 function findNode(node: ElementNode, predicate: (node: ElementNode) => boolean): ElementNode | undefined {
+  if (Array.isArray(node)) {
+    for (const child of node) { const found = findNode(child as ElementNode, predicate); if (found) return found; }
+    return undefined;
+  }
   if (predicate(node)) return node;
   for (const child of node.children) {
     if (child && typeof child === "object") {
@@ -139,6 +150,24 @@ describe("quota UI fake transport controls", () => {
     mountPanel(Panel, { transport });
     await Promise.resolve();
     assert.deepEqual(transport.calls, ["GET"]);
+  });
+  it("sends the confirmation before a redeem with the same operation id", async () => {
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    const source = readFileSync("ui/src/components/settings/resetCreditsTransport.ts", "utf8");
+    const compiled = transformSync(source, { loader: "ts", format: "cjs" }).code;
+    const mod = { exports: {} as { resetCreditsTransport: { redeem(): Promise<unknown> } } };
+    const request = async (url: string, init: { body: string }) => {
+      calls.push({ url, body: JSON.parse(init.body) as Record<string, unknown> });
+      return calls.length === 1 ? { token: "confirmation" } : { result: { outcome: "reset" } };
+    };
+    runInNewContext(compiled, { module: mod, exports: mod.exports,
+      require: () => ({ jsonFetch: request }), crypto: { randomUUID: () => "operation-1" } });
+    await mod.exports.resetCreditsTransport.redeem();
+    assert.deepEqual(calls.map(({ url }) => url), ["/api/quota/reset-confirmations", "/api/quota/codex/reset-credits/redeem"]);
+    assert.equal(calls[0]?.body.operationId, "operation-1");
+    assert.equal(calls[1]?.body.operationId, "operation-1");
+    assert.equal(calls[1]?.body.confirmationToken, "confirmation");
+    assert.equal(Object.keys(calls[1]!.body).length, 2);
   });
 });
 
