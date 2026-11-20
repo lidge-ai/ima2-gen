@@ -850,7 +850,7 @@
     "geminiApiCompatBodyLong": "Google Gemini API direct. Supports nano-banana-2 (Flash) and nano-banana-pro (Pro), with aspect ratio and resolution control from 512px to 4K.",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI image generation via Responses API. Supports quality, size, format, moderation, and web search settings.",
-    "oauthImageHint": "ChatGPT chooses the image model; GPT-6 Luna, Sol, and Astra choose the planning model. Images 2.6 model choice, complexity, GIF, and SVG require the OpenAI API-key lane.",
+    "oauthImageHint": "ChatGPT chooses the image model; GPT-6 Luna, GPT-6.1 Terra, GPT-6.2 Sol, and GPT-6.2 Astra choose the planning model. Images 2.6 model choice, complexity, GIF, and SVG require the OpenAI API-key lane.",
     "oauthCompatBody": "ChatGPT OAuth uses the Codex backend for planning and image generation. Some settings may be controlled by ChatGPT.",
     "naiApiKeyRequired": "NovelAI API token required"
   },

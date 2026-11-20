@@ -850,7 +850,7 @@
     "geminiApiCompatBodyLong": "Google Gemini API 直接。支持 nano-banana-2 (Flash) 和 nano-banana-pro (Pro)，宽高比和分辨率控制范围为 512px 至 4K。",
     "gptCompatTitle": "GPT Image",
     "gptCompatBody": "OpenAI 通过响应 API 生成图像。支持质量、大小、格式、审核和网络搜索设置。",
-    "oauthImageHint": "图像模型由 ChatGPT 选择；GPT-6 Luna、Sol 和 Astra 选择的是规划模型。选择 Images 2.6 模型、复杂度、GIF 和 SVG 需要 OpenAI API 密钥。",
+    "oauthImageHint": "图像模型由 ChatGPT 选择；GPT-6 Luna、GPT-6.1 Terra、GPT-6.2 Sol 和 GPT-6.2 Astra 选择的是规划模型。选择 Images 2.6 模型、复杂度、GIF 和 SVG 需要 OpenAI API 密钥。",
     "oauthCompatBody": "ChatGPT OAuth 使用 Codex 后端进行规划和图像生成，部分设置可能由 ChatGPT 控制。",
     "naiApiKeyRequired": "NovelAI API 需要令牌"
   },
