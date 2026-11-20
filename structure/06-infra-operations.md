@@ -313,7 +313,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_GROK_PLANNER_TIMEOUT_MS` | Timeout for the Grok planner call, default `900000` |
 | `IMA2_GROK_SEARCH_TIMEOUT_MS` | Timeout for the degradable Grok web-search brief, default `300000` |
 | `IMA2_GROK_VIDEO_PLAN_TOTAL_TIMEOUT_MS` | Ceiling on search + planner combined, default `1500000` (clamped to at least search + planner + 60 s) |
-| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | Default xAI image model for `provider: "grok"`, default `grok-imagine-image-quality` |
+| `IMA2_GROK_IMAGE_MODEL_DEFAULT` | Default xAI image model for `provider: "grok"`, default `grok-imagine-image-2.0` (retired ids migrate to it) |
 | `IMA2_GROK_VIDEO_MODEL_DEFAULT` | Default xAI video model for `provider: "grok"`, default `grok-imagine-video-1.5` |
 | `IMA2_GROK_GENERATION_TIMEOUT_MS` | Timeout for final Grok image generation/edit calls, default `120000` |
 | `IMA2_GROK_STATUS_TIMEOUT_MS` | Timeout for `/api/grok/status` model probes, default `3000` |

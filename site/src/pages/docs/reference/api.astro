@@ -63,7 +63,7 @@ const genBody = `{
   <p>
     Quality: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api,
     agy, gemini-api, atlascloud, minimax, nai, comfy. Both GPT OAuth and API-key lanes offer <code>gpt-6-luna</code>, <code>gpt-6.1-terra</code>, <code>gpt-6.2-sol</code>, and <code>gpt-6.2-astra</code>, defaulting to <code>gpt-6-luna</code>. Saved older IDs migrate to their corresponding tier on the same lane. Grok image models: <code>grok-imagine-image-2.0</code> (default),
-    <code>grok-imagine-image</code> and <code>grok-imagine-image-quality</code>. Gemini API models: <code>nano-banana-2</code>
+    <code>grok-imagine-image</code>; retired <code>grok-imagine-image-quality</code> / <code>-pro</code> ids migrate to 2.0, which receives <code>quality</code> (high is sent as medium). Gemini API models: <code>nano-banana-2</code>
     (default) and <code>nano-banana-pro</code>. The web UI uses <code>GET /api/events</code>
     (SSE multiplexing) for all generation progress: POST routes accept
     <code>{"{ async: true, requestId }"}</code> and respond <code>202</code>;
@@ -81,8 +81,8 @@ const genBody = `{
     via Grok. The default is canonical <code>grok-imagine-video-1.5</code>;
     <code>grok-imagine-video</code> remains for compatibility paths and <code>grok-imagine-video-1.5-preview</code> is accepted
     only as a compatibility alias. Modes: text-to-video, image-to-video, reference-to-video
-    (2–14 refs). <code>1080p</code> is available for 1.5 prompt-only T2V through the canvas shim and for I2V with one
-    image/frame source; Ref2V, V2V edit, and extension remain base-model paths. CLI:
+    (2–14 refs). <code>1080p</code> is native for 1.5 and 1.5-lite T2V and for I2V with one
+    image/frame source; <code>lastFrame</code> / <code>keyframes</code> pins (1.5) make a 720p-capped reference-to-video request; Ref2V, V2V edit, and extension remain base-model paths. CLI:
     <code>ima2 video</code>. Extended CLI/API surfaces include <code>ima2 video edit</code>,
     <code>ima2 video extend</code>, <code>ima2 video frame</code>, and <code>ima2 video analyze</code>.
     Request body accepts <code>plannerModel</code> (default <code>grok-4.3</code>; Grok 4.5 and 4.6 are selectable) and

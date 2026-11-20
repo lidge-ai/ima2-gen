@@ -87,7 +87,7 @@
 
 - `api`迫使API-key 响应路径并需要配置API钥匙。
 - `oauth` 强制使用 GPT OAuth：服务器直接调用 ChatGPT，GPT-6 规划、`gpt-image-2` 出图。
-- `grok`使用`~/.progrok/auth.json`中的xAI OAuth会话直接调用`https://api.x.ai`。经典一代首次运行强制xAI通过响应进行网络搜索API，然后询问`grok-4.5`打电话ima2是当地的`generate_image`工具，那么ima2执行xAI `/v1/images/generations`. `grok-4.3`仍然可以作为显式兼容性覆盖使用。如果`--ref`附加图像，最后一步使用xAI `/v1/images/edits`相反，图像到图像/参考上下文被保留。型号：`grok-imagine-image`, `grok-imagine-image-quality`。大小映射到xAI `aspect_ratio`和`resolution`;这UI网络搜索切换是OpenAI-仅提供者因为Grok搜索始终在此路径中进行。
+- `grok`使用`~/.progrok/auth.json`中的xAI OAuth会话直接调用`https://api.x.ai`。经典一代首次运行强制xAI通过响应进行网络搜索API，然后询问`grok-4.5`打电话ima2是当地的`generate_image`工具，那么ima2执行xAI `/v1/images/generations`. `grok-4.3`仍然可以作为显式兼容性覆盖使用。如果`--ref`附加图像，最后一步使用xAI `/v1/images/edits`相反，图像到图像/参考上下文被保留。型号：`grok-imagine-image-2.0`（默认，接收 quality low/medium/auto，high 按 medium 发送）、`grok-imagine-image`；已退役的 `grok-imagine-image-quality` / `-pro` 会迁移到 2.0。大小映射到xAI `aspect_ratio`和`resolution`;这UI网络搜索切换是OpenAI-仅提供者因为Grok搜索始终在此路径中进行。
 - `agy`产生Antigravity CLI通过Google生成Gemini (`nano-banana-2`）。固定1024×1024JPEG输出，最多 3 个参考值没有网络搜索、质量、尺寸或遮罩控制。如果`agy`不在服务器进程 PATH 上，ima2还检查常见的用户本地安装，例如`~/.local/bin/agy`;放`IMA2_AGY_BIN=/absolute/path/to/agy`强制使用特定的二进制文件。
 - `gemini-api`调用 Google 生成语言API直接地。型号：`nano-banana-2` (Gemini3.1 Flash 图像）和`nano-banana-pro` (Gemini3 专业图像）。使用`--model nano-banana-2`或者`--model nano-banana-pro`来选择。支持`--size`对于直接的宽高比和分辨率 (512px–4K)API小路;Vertex AI忽略方面/大小。需要`GEMINI_API_KEY`或一个Vertex AI服务帐户（`VERTEX_SERVICE_ACCOUNT_JSON`）。切换自`agy`或者`gemini-api`提供商自动选择相应的Gemini模型;切换离开重置为GPT默认。
 - `atlascloud`致电 Atlas Cloud 媒体API直接地。型号：`openai/gpt-image-2/text-to-image`用于文本到图像和`openai/gpt-image-2/edit`当附有参考文献时。需要`ATLASCLOUD_API_KEY`;网络搜索、推理、掩码和视频控制将被忽略。
@@ -122,7 +122,7 @@ ima2 models --kind image
 ima2 defaults set image oauth/gpt-6-luna
 ima2 gen "a poster of a samurai cat" --model api/gpt-6-luna --reasoning-effort high
 ima2 grok login
-ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
+ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-2.0
 ima2 gen "campaign still" --model runway/gen-4 --ref 1780000000000_abcd.png
 ima2 edit input.png --prompt "make it rainy" --provider oauth --web-search
 ima2 multimode "two cats playing" --max-images 2 --ref cat.png --mode direct

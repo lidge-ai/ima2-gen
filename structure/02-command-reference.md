@@ -189,8 +189,8 @@ extension endpoint.
 
 Video model contract, 2026-07-26: `grok-imagine-video-1.5` is the canonical
 generation default; `grok-imagine-video-1.5-preview` is accepted as an alias.
-`1080p` is valid for 1.5 prompt-only T2V through the canvas shim and for I2V
-with one image/frame source. Ref2V/multi-ref, edit, and extension remain base-model paths.
+`1080p` is valid natively for 1.5 and 1.5-lite T2V and I2V
+with one image/frame source. `--last-frame`, `--keyframe <file>@<s>`, `--no-audio` and `--no-planner` map to the new request fields. Ref2V/multi-ref, edit, and extension remain base-model paths.
 
 ## `edit` Options
 

@@ -216,8 +216,8 @@ CLI和遗留客户省略`async`并保持原始行为：每个请求SSE在同一�
 
 GPT OAuth 和 API key 通道均提供 `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`，默认使用 `gpt-6-luna`（CLI 别名：`luna`、`terra`、`sol`、`astra`；HTTP API 需要模型 ID）。保存的旧 ID 会迁移到同一通道的对应级别，映射表见 `lib/openaiLegacyModels.ts`。
 
-什么时候`provider`是`"grok"`，支持的型号有`grok-imagine-image`和
-`grok-imagine-image-quality`。服务器使用`grok-4.5`作为搜索/规划者
+什么时候`provider`是`"grok"`，支持的型号有`grok-imagine-image-2.0`（默认）和
+`grok-imagine-image`；已退役的`grok-imagine-image-quality` / `-pro`会迁移到 2.0，2.0 接收`quality`（high 按 medium 发送）。服务器使用`grok-4.5`作为搜索/规划者
 默认型号（`IMA2_GROK_PLANNER_MODEL`）和强制搜索的时间和
 规划器步骤与图像调用分开（`IMA2_GROK_PLANNER_TIMEOUT_MS`).
 为了`n > 1`，搜索和计划运行一次，计划的提示将重复用于
@@ -296,7 +296,7 @@ Grokmultimode 目前将每个图像请求直接发送到xAI图片API
 
 什么时候`parentNodeId`如果存在，服务器加载存储的父节点图像并使用编辑路径。根节点和子/编辑节点都允许节点本地引用；对于子/编辑节点，首先发送父图像，然后发送引用，然后发送文本提示。
 
-和`provider: "grok"`，Node模式使用相同xAI搜索+`grok-4.5`规划师+图像API管道作为经典一代。父节点图像，`externalSrc`，或者额外的参考传递给规划者，然后传递给xAI `/v1/images/edits`;否则最终调用使用`/v1/images/generations`. Grok节点请求的上限为三个输入图像，计算父/当前图像加上引用，然后返回`GROK_REF_TOO_MANY`当超过该限制时，在上游之前。`quality: "high"`将最终的图像模型提升为`grok-imagine-image-quality`.
+和`provider: "grok"`，Node模式使用相同xAI搜索+`grok-4.5`规划师+图像API管道作为经典一代。父节点图像，`externalSrc`，或者额外的参考传递给规划者，然后传递给xAI `/v1/images/edits`;否则最终调用使用`/v1/images/generations`. Grok节点请求的上限为三个输入图像，计算父/当前图像加上引用，然后返回`GROK_REF_TOO_MANY`当超过该限制时，在上游之前。`quality: "high"`选择`grok-imagine-image-2.0`并发送`quality: "medium"`.
 
 当客户端发送时，路由可以流式传输服务器发送的事件`Accept: text/event-stream`。可能发生的事件包括`phase`, `partial`, `done`， 和`error`。或者，发送`{ "async": true, "requestId": "req_xxx" }`在体内接收`202 { requestId }`立即并跟踪进展`GET /api/events`（参见“活动”部分）。
 
@@ -738,7 +738,7 @@ X-Ima2-Tab-Id
 | `GRAPH_VERSION_CONFLICT` |过时的图表版本|
 | `GRAPH_TOO_LARGE` |图超出节点/边限制|
 | `NODE_NOT_FOUND` |未找到节点元数据|
-| `INVALID_GROK_IMAGE_MODEL` | A Grok请求使用外部模型`grok-imagine-image`或者`grok-imagine-image-quality` |
+| `INVALID_GROK_IMAGE_MODEL` | Grok请求使用了`grok-imagine-image-2.0`和`grok-imagine-image`以外的模型（已退役的 id 会迁移） |
 | `GROK_RATE_LIMITED` | xAI返回了速率限制响应|
 | `GROK_AUTH_FAILED` | xAI请求鉴权失败（OAuth会话无效或已过期，需要重新`ima2 grok login`）|
 | `GROK_SEARCH_TIMEOUT` / `GROK_PLANNER_TIMEOUT` / `GROK_IMAGE_TIMEOUT` |这Grok搜索、规划器或图像API步骤超出了其超时预算|
