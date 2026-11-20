@@ -64,7 +64,7 @@ export class CodexAutoRedeem {
     this.db.prepare("INSERT OR IGNORE INTO reset_accounts VALUES ('codex', ?, 0)").run(key);
     const revision = (this.db.prepare("SELECT revision FROM reset_accounts WHERE provider='codex' AND ledger_key=?").get(key) as { revision: number }).revision;
     const list = await deps.client(account).list() as { credits: Credit[] };
-    if (this.hasFence(key, creditSnapshot(list.credits))) return;
+    if (this.hasFence(key, creditSnapshot(list.credits), deps.now?.() ?? Date.now())) return;
     const reserved = new Set((this.db.prepare("SELECT target_key FROM reset_targets WHERE provider='codex' AND ledger_key=?").all(key) as Array<{ target_key: string }>).map(row => row.target_key));
     if (list.credits.some(item => reserved.has(targetOf(item)))) return;
     const credit = selectCredit(list.credits, deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
@@ -97,7 +97,7 @@ export class CodexAutoRedeem {
       else this.ledger.settle(id, JSON.stringify(result), result.outcome === "nothing_to_reset" || result.outcome === "no_credit");
     } catch { this.ledger.unknown(id); }
   }
-  private hasFence(key: string, snapshot: string[]): boolean {
+  private hasFence(key: string, snapshot: string[], now: number): boolean {
     const present = new Set(snapshot);
     const rows = this.db.prepare(`SELECT operation_id, state, outcome, credit_snapshot FROM reset_operations
       WHERE provider='codex' AND ledger_key=? AND credit_snapshot IS NOT NULL
@@ -113,8 +113,16 @@ export class CodexAutoRedeem {
       let previous: unknown;
       try { previous = JSON.parse(row.credit_snapshot); } catch { return true; }
       if (!Array.isArray(previous) || previous.some(pair => typeof pair !== 'string')) return true;
-      if (previous.every(pair => present.has(pair))) return true;
-      if (row.state !== 'claimed' && row.state !== 'sending') this.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(row.operation_id);
+      const disappearedUnexpired = previous.some(pair => {
+        if (present.has(pair)) return false;
+        const expiry = pair.slice(pair.lastIndexOf('|') + 1);
+        return time(/^\d+(?:\.\d+)?$/.test(expiry) ? Number(expiry) : expiry) > now;
+      });
+      if (!disappearedUnexpired || row.state === 'claimed' || row.state === 'sending') return true;
+      this.db.transaction(() => {
+        this.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(row.operation_id);
+        this.db.prepare("UPDATE reset_operations SET credit_snapshot=NULL WHERE operation_id=?").run(row.operation_id);
+      })();
     }
     return false;
   }

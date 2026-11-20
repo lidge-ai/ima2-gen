@@ -14,7 +14,7 @@ function grokTierFromLimit(val: number): string {
 
 interface GrokTokenCandidate {
   token: string;
-  source: string;
+  source: "grok-cli" | "ima2-session";
   email: string | null;
   authMode: string | null;
   issuer: string | null;
@@ -29,13 +29,13 @@ function readGrokTokenCandidates(homeDir = homedir()): GrokTokenCandidate[] {
   const candidates: GrokTokenCandidate[] = [];
   try {
     const auth = JSON.parse(readFileSync(join(homeDir, ".grok", "auth.json"), "utf8")) as Record<string, unknown>;
-    for (const [scope, entry] of Object.entries(auth)) {
+    for (const entry of Object.values(auth)) {
       if (!entry || typeof entry !== "object") continue;
       const value = entry as Record<string, unknown>;
       if (typeof value.key !== "string" || !value.key.trim()) continue;
       candidates.push({
         token: value.key,
-        source: scope.startsWith("https://auth.x.ai::") ? "grok:auth-json-oidc" : "grok:auth-json",
+        source: "grok-cli",
         email: typeof value.email === "string" ? value.email : null,
         authMode: typeof value.auth_mode === "string" ? value.auth_mode : null,
         issuer: typeof value.oidc_issuer === "string" ? value.oidc_issuer : null,
@@ -96,7 +96,7 @@ export function inspectGrokWeeklyEligibility(homeDir = homedir(), grokBinary = "
   };
 }
 
-export function parseGrokCreditsResponse(value: unknown): { percent: number; periodEnd: string; productUsage?: Array<{ product: string; percent: number }>; prepaidBalance?: number } | null {
+export function parseGrokCreditsResponse(value: unknown): { percent: number | null; periodEnd: string; productUsage?: Array<{ product: string; percent: number }>; prepaidBalance?: number } | null {
   if (!value || typeof value !== "object") return null;
   const config = (value as Record<string, unknown>).config;
   if (!config || typeof config !== "object") return null;
@@ -114,7 +114,7 @@ export function parseGrokCreditsResponse(value: unknown): { percent: number; per
       ? [{ product: row.product, percent: row.percent }] : [];
   }) : undefined;
   return {
-    percent: Math.round(Math.min(100, Math.max(0, rawPercent as number | undefined ?? 0))),
+    percent: typeof rawPercent === "number" ? Math.round(Math.min(100, Math.max(0, rawPercent))) : null,
     periodEnd: period.end,
     ...(products ? { productUsage: products } : {}),
     ...(typeof data.prepaidBalance === "number" && Number.isFinite(data.prepaidBalance) ? { prepaidBalance: data.prepaidBalance } : {}),
@@ -193,6 +193,7 @@ export async function fetchGrokBilling(homeDir = homedir(), grokBinary = "grok")
       }
       return {
         provider: "grok",
+        source: candidate.source,
         account: { email, plan: grokTierFromLimit(limit) },
         windows: [{
           label: "monthly",
