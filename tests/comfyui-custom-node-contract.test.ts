@@ -31,7 +31,8 @@ for legacy, expected in models.items():
     node["Ima2Generate"]().generate("draw", server_url="http://127.0.0.1:3333", model=legacy)
     assert sent[-1]["model"] == expected, (legacy, sent[-1])
 `;
-    const result = spawnSync("python3", ["-B", "-c", script, join(root, bridgeDir, "nodes.py"), JSON.stringify(LEGACY_OPENAI_IMAGE_MODELS)], { encoding: "utf8" });
+    const python = process.platform === "win32" ? "python" : "python3";
+    const result = spawnSync(python, ["-B", "-c", script, join(root, bridgeDir, "nodes.py"), JSON.stringify(LEGACY_OPENAI_IMAGE_MODELS)], { encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr || result.error?.message);
   });
 
