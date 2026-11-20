@@ -25,7 +25,7 @@ Loop-spec: same HOTL goal, P amendment 2026-11-21 (user). Separate logical chang
 |---|---|
 | G1 | Image: retired `grok-imagine-image-quality` / `-pro` removed from registry, pickers and fallbacks (grokOperations.ts:47,94; grokMultimodeOperations.ts:53; grokImagePlanner.ts:305; imageModels.ts:46) and migrated to `grok-imagine-image-2.0` wherever a saved id is read (config, UI selection/memory, CLI resolver). Send `quality` to 2.0 on generate, edit, multimode, node and agent: UI low→low, medium→medium, high→medium (2.0's highest), auto/absent→auto. Base `grok-imagine-image` gets no quality field. |
 | G2 | Video: register `grok-imagine-video-1.5-lite` (t2v, i2v; 1-15 s; resolutions per docs; no references/voices/frames) across registry, capabilities, route validation, CLI, MCP, agent and UI. Remove the 1.5 white-canvas shim. |
-| G3 | Frames and references on 1.5: `last_frame` and up to 4 `keyframes` ({image, timestamp} strictly inside the duration, distinct 1/3 s slots), first-frame `image` allowed together with references; voice-only reference-to-video admitted end to end (route already allows, adapter rejects). Base model reference limit 7 per docs (1.5 keeps 14). |
+| G3 | Frames and references on 1.5: `last_frame` and up to 4 `keyframes` ({image, timestamp_s} strictly inside the duration, distinct 1/3 s slots), first-frame `image` allowed together with references; voice-only reference-to-video admitted end to end (route already allows, adapter rejects). Base model keeps 14 references (superseded by R2-F1; the docs say 7). |
 | G4 | Remove the automatic 1.5 → base resubmission on any 400 (it can spend on a different model); surface the 400. |
 | G5 | Voice roster: static list = the 28 live voices; capabilities read `GET /v1/tts/voices` when a credential exists (read-only, cached), static list as fallback, custom ids still allowed. |
 | G7 | Docs/help/skills: models, 2.0 quality semantics, Lite limits, native 1.5 T2V, extension 2-10 s (bin/commands/video.ts help), frame pins. |
@@ -66,11 +66,18 @@ Loop-spec: same HOTL goal, P amendment 2026-11-21 (user). Separate logical chang
 
 ## Report 2/2 + live contract corrections (2026-11-21)
 
-- Wire names (live 4xx probes): `last_frame: {url | file_id}`, `keyframes: [{ image: {url | file_id}, timestamp_s }]` (not `timestamp`), xAI enforces 0 < t < duration; `generate_audio` is a REST boolean.
+- Wire names (live 4xx probes): `last_frame: {url | file_id}`, `keyframes: [{ image: {url | file_id}, timestamp_s }]` (not `timestamp`), xAI enforces 0 < t < duration. Provenance (R4-F2): `last_frame` and `generate_audio` are guide-documented (the guide's Python SDK example sets `generate_audio=False`) and absent from the REST/OpenAPI request properties; OpenAPI mentions `last_frame` only inside the `keyframes` description (report §3.4). The wire shapes above come from live 4xx probes; live acceptance of `generate_audio: false` is not verified.
 - Image 2.0 resolutions are `1k | 1.5k | 2k` (live 422 enum): add 1.5k to lib/grokSizeMapper.ts and pickers; quality stays low/medium/auto.
 - `-pro` retired 2026-05-15 → `-quality` → (since 11-02) 2.0 low: same migration as G1.
 - 1.5 reference-to-video is capped at 720p (report §3.2): validate locally (reject 1080p for reference mode on 1.5) with a test; native 1080p only for text/image-to-video.
 - Lite 1080p is a 720p upscale billed at $0.14/s (7× 480p): show the price note in the UI cost hint/docs if ima2 has a Grok video cost estimate; no behavior change.
 - Edit/extend stay on the base model (unchanged).
-- G10 (new, small): optional `generateAudio: false` passthrough (`generate_audio`) for 1.5 and 1.5-lite only when the user turns sound off; default untouched; documented as guide/REST field, live acceptance of `false` not verified (NOT RUN).
+- G10 (new, small): optional `generateAudio: false` passthrough (`generate_audio`) for 1.5 and 1.5-lite only when the user turns sound off; default untouched; a guide-documented field missing from REST/OpenAPI, live acceptance of `false` not verified (NOT RUN).
 - Out of scope, recorded: deferred image generation + webhooks, output.upload_urls / storage_options, X Subscription plan tiers display, grok.com usage UI.
+
+## Audit round 4 revisions (R4-F1, R4-F2, NEAR-PASS)
+
+- R4-F1 (supersedes R2-F3 precedence): reference-to-video when the request has image references, reference voices, `lastFrame` or `keyframes` (report §3.2: `image` together with `last_frame`/`keyframes`/`reference_images` is R2V with a pinned first frame; the source becomes `<IMAGE_0>`, references start at `<IMAGE_1>`); else source ⇒ image-to-video; else text-to-video. Pins are 1.5-only (base and Lite reject them locally, R2-F1). Because 1.5 reference-to-video is capped at 720p, every pinned combination at 1080p — source + lastFrame, source + keyframes, lastFrame only, keyframes only, pins + references — is rejected locally before any upstream call; 480p/720p are accepted. Tests at the normalizer, route and outbound body: each pinned combination at 1080p ⇒ 400 with zero upstream starts; source + lastFrame at 720p ⇒ one start whose body carries `image`, `last_frame` and `resolution: "720p"`; source only at 1080p ⇒ image-to-video accepted with native 1080p.
+- R3-F1 test addition: `planner: "off"` + background constraint ⇒ 400 with zero upstream calls, as its own test next to the continuation test.
+- R4-F2: provenance of `last_frame` / `generate_audio` corrected above.
+- Prompt stays required on every request (R1-F4 product restriction), although the docs make it optional when frames are pinned.
