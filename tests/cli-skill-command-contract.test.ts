@@ -62,7 +62,8 @@ describe("CLI packaged skill contract", () => {
     assert.match(skill, /reference-to-video \| 15s/);
     assert.doesNotMatch(skill, /does not support `reference_images` Ref2V/);
     assert.match(skill, /Preset Voices \(1\.5 only\)/);
-    assert.match(skill, /white-canvas image-to-video anchor/);
+    assert.match(skill, /Prompt-only text-to-video on 1\.5 is native/);
+    assert.doesNotMatch(skill, /white-canvas/);
     assert.match(skill, /requestedModel/);
     assert.match(skill, /effectiveModel/);
     assert.match(skill, /modelFallback/);
