@@ -12,13 +12,10 @@ import {
   GROK_VIDEO_MODEL_15,
   GROK_VIDEO_MODEL_15_LITE,
   GROK_VIDEO_MODEL_BASE,
-  MAX_REF2V_REFERENCES,
-  MAX_REFERENCE_AUDIOS,
   canonicalGrokVideoModel,
-  validateVideoDurationForRequest,
-  validateVideoResolutionForRequest,
-  validateGrokVideoInputs,
 } from "./imageModels.js";
+import { buildVideoGenerationPayload } from "./grokVideoPayload.js";
+import type { VideoFramePins } from "./grokVideoPins.js";
 import { formatVideoContinuityForPlanner, type VideoContinuityLineage } from "./videoContinuity.js";
 import { DEFAULT_GROK_PLANNER_MODEL } from "../config.js";
 import { resolveGrokCredential, type GrokCredential } from "./grokRuntime.js";
@@ -370,52 +367,7 @@ export async function planGrokVideo(prompt: string, ctx: RouteRuntimeContext, op
   }
 }
 
-export function buildVideoGenerationPayload(plan: GrokVideoPlan, opts: { model: string; sourceImageUrl?: string | undefined; referenceImageUrls?: string[] | undefined; referenceAudios?: string[] | undefined }): Record<string, unknown> {
-  const model = canonicalVideoModel(opts.model);
-  const voices = opts.referenceAudios ?? [];
-  const inputCheck = validateGrokVideoInputs(model, { referenceCount: (opts.referenceImageUrls ?? []).length, voiceCount: voices.length });
-  if (!("ok" in inputCheck)) throw grokError(inputCheck.error, inputCheck.status, inputCheck.code);
-  if (voices.length > 0) {
-    // Preset voices exist only on 1.5. Attaching them to the base model earns a 400 from
-    // xAI; dropping them earns a video without the voice the user asked for. Say no.
-    if (model !== GROK_VIDEO_MODEL_15) {
-      throw grokError(`reference audio requires ${GROK_VIDEO_MODEL_15}`, 400, "GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL");
-    }
-    if (voices.length > MAX_REFERENCE_AUDIOS) {
-      throw grokError(`at most ${MAX_REFERENCE_AUDIOS} reference voices`, 400, "GROK_VIDEO_AUDIO_TOO_MANY");
-    }
-  }
-  if (plan.mode === "image-to-video" && !opts.sourceImageUrl) {
-    throw grokError("image-to-video requires a source image", 400, "GROK_VIDEO_INVALID_MODE");
-  }
-  const refs = opts.referenceImageUrls ?? [];
-  if (plan.mode === "reference-to-video") {
-    // One reference is a legitimate reference-to-video request: it guides the subject
-    // without locking the first frame, which is what distinguishes it from
-    // image-to-video. Verified against api.x.ai on 2026-08-20 (000_research.md).
-    // Zero references is still nonsense — that is text-to-video wearing the wrong name.
-    if (refs.length < 1) throw grokError("reference-to-video requires at least 1 reference image", 400, "GROK_VIDEO_INVALID_MODE");
-    if (refs.length > MAX_REF2V_REFERENCES) throw grokError(`reference-to-video allows at most ${MAX_REF2V_REFERENCES} reference images`, 400, "GROK_VIDEO_REF_TOO_MANY");
-    if (opts.sourceImageUrl) throw grokError("reference-to-video cannot be combined with a single source image", 400, "GROK_VIDEO_INVALID_MODE");
-  }
-  const resolutionCheck = validateVideoResolutionForRequest(model, plan.resolution, plan.mode);
-  if (!("ok" in resolutionCheck)) {
-    throw grokError(resolutionCheck.error, resolutionCheck.status, resolutionCheck.code);
-  }
-  // Answered here as well as at the route because the agent path builds payloads without
-  // going through routes/video.ts. Two checks of the same rule are two defenses, not a
-  // duplicated rule: both read the same function.
-  const durationCheck = validateVideoDurationForRequest(model, plan.duration, plan.mode);
-  if (!("ok" in durationCheck)) {
-    throw grokError(durationCheck.error, durationCheck.status, durationCheck.code);
-  }
-  const payload: Record<string, unknown> = { model, prompt: plan.prompt, duration: plan.duration, resolution: plan.resolution };
-  if (plan.aspectRatio && plan.aspectRatio !== "auto") payload.aspect_ratio = plan.aspectRatio;
-  if (plan.mode === "image-to-video") payload.image = { url: opts.sourceImageUrl };
-  if (plan.mode === "reference-to-video") payload.reference_images = refs.map((url) => ({ url }));
-  if (voices.length > 0) payload.reference_audios = voices.map((voiceId) => ({ voice_id: voiceId }));
-  return payload;
-}
+export { buildVideoGenerationPayload } from "./grokVideoPayload.js";
 
 export async function startVideoRequest(ctx: RouteRuntimeContext, payload: Record<string, unknown>, options: GrokVideoOptions): Promise<string> {
   const cfg = videoConfig(ctx);
@@ -447,6 +399,10 @@ export async function startVideoRequest(ctx: RouteRuntimeContext, payload: Recor
   }
 }
 
+function pinUrls(pins: VideoFramePins | undefined): VideoFramePins | undefined {
+  return pins && { ...(pins.lastFrame ? { lastFrame: sourceImageUrl(pins.lastFrame, undefined) } : {}), ...(pins.keyframes ? { keyframes: pins.keyframes.map((k) => ({ ...k, image: sourceImageUrl(k.image, undefined) })) } : {}) };
+}
+
 export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeContext, options: GrokVideoOptions = {}): Promise<GrokVideoGenerateResult> {
   const cfg = videoConfig(ctx);
   // Resolve once for the whole request: plan, start, and poll must all carry the same
@@ -468,7 +424,7 @@ export async function generateVideoViaGrok(prompt: string, ctx: RouteRuntimeCont
       }
     : await planGrokVideo(prompt, ctx, effective);
   // Native 1.5 T2V; a start 400 is surfaced, never retried on another model (plan G4).
-  const xaiVideoRequestId = await startVideoRequest(ctx, buildVideoGenerationPayload(plan, { model, sourceImageUrl: srcUrl, referenceImageUrls: refUrls, ...(voices.length ? { referenceAudios: voices } : {}) }), effective);
+  const xaiVideoRequestId = await startVideoRequest(ctx, buildVideoGenerationPayload(plan, { model, sourceImageUrl: srcUrl, referenceImageUrls: refUrls, ...(voices.length ? { referenceAudios: voices } : {}), pins: pinUrls(options.pins), generateAudio: options.generateAudio }), effective);
   const effectiveModel = model, modelFallback = null;
   options.onEvent?.({ phase: "submitted", xaiVideoRequestId, requestedModel: model, effectiveModel, modelFallback });
   logEvent("grok", "video:submitted", { requestId: options.requestId, xaiVideoRequestId, mode: plan.mode });

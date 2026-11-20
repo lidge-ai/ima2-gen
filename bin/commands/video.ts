@@ -112,6 +112,9 @@ const SPEC = {
     end:           { type: "string" },
     ref:           { type: "string", repeatable: true },
     voice:         { type: "string", repeatable: true },
+    "last-frame":  { type: "string" },
+    keyframe:      { type: "string", repeatable: true },
+    "no-audio":    { type: "boolean" },
     "as-reference": { type: "boolean" },
     "video-ref":   { type: "string" },
     character:     { type: "string" },
@@ -162,7 +165,11 @@ const HELP = `
                                         An unknown id returns the full list of valid voices
         --as-reference                  With exactly one --ref, guide a new scene instead of
                                         animating that image. Ignored for 0 or 2+ refs
-                                        Repeatable: Grok max 7, MCP max 3
+                                        Repeatable: Grok max 14, MCP max 3
+        --last-frame <file>             Grok 1.5: pin the ending frame (reference-to-video, max 720p)
+        --keyframe <file>@<seconds>     Grok 1.5: pin a frame strictly inside the duration
+                                        (repeatable, max 4, distinct 1/3 s slots)
+        --no-audio                      Grok 1.5 / 1.5-lite: generate a silent video
         --video-ref <generated-filename> MCP V2V/restyle reference video
         --character <element-id|name>      MCP lanes only: character binding element
     -o, --out <file>                    Output file path
@@ -180,7 +187,8 @@ const HELP = `
     0 refs                    → text-to-video
     1 ref                     → image-to-video (that image is the opening frame)
     1 ref + --as-reference    → reference-to-video (guides a new scene instead)
-    2-7 refs                  → reference-to-video (max 720p)
+    2-14 refs                 → reference-to-video (max 720p)
+    --last-frame/--keyframe   → reference-to-video; the --ref image is the pinned first frame
 
   Examples:
     ima2 video "a cat playing piano"

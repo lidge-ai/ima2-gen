@@ -28,6 +28,7 @@ import {
 } from "../lib/videoContinuity.js";
 import { extractGeneratedVideoFrameB64 } from "../lib/videoFrameExtract.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
+import { hasVideoPins, readVideoPinRequest } from "../lib/grokVideoPins.js";
 import {
   normalizeGrokVideoModel,
   normalizeVideoResolution,
@@ -37,7 +38,7 @@ import {
   MAX_REF2V_REFERENCES,
   MAX_REFERENCE_AUDIOS,
   validateVideoResolutionForRequest,
-  validateGrokVideoInputs,
+  validateGrokVideoInputs, canonicalGrokVideoModel, GROK_VIDEO_MODEL_15,
   validateVideoDurationForRequest,
   type VideoMode,
 } from "../lib/imageModels.js";
@@ -384,9 +385,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         return fail(400, "GROK_VIDEO_AUDIO_TOO_MANY", `at most ${MAX_REFERENCE_AUDIOS} reference voices`);
       }
       if (!isComfy) {
-        const inputCheck = validateGrokVideoInputs(modelCheck.model, { referenceCount: resolved.length, voiceCount: referenceAudios.length });
+        const inputCheck = validateGrokVideoInputs(modelCheck.model, { referenceCount: composerRefCount, voiceCount: referenceAudios.length });
         if (!("ok" in inputCheck)) return fail(inputCheck.status, inputCheck.code, inputCheck.error);
       }
+      const pinRequest = isComfy ? { pins: undefined, generateAudio: undefined } : readVideoPinRequest(req.body, modelCheck.model, durationCheck.duration, resolutionCheck.resolution);
+      if ("error" in pinRequest) return fail(pinRequest.status, pinRequest.code, pinRequest.error);
+      const { pins, generateAudio } = pinRequest;
       const derivedMode: VideoMode = composerRefCount > 0
         ? "reference-to-video"
         // A voice alone selects reference-to-video upstream: "at least one reference of
@@ -397,7 +401,11 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         : referenceAudios.length > 0
           ? "reference-to-video"
           : deriveVideoMode(resolved.length);
-      const mode: VideoMode = incomingProviderUrl
+      // Frame pins make a reference-to-video request whose source is the pinned first
+      // frame (xAI guide; plan R4-F1), whatever mode the caller named.
+      const mode: VideoMode = hasVideoPins(pins)
+        ? "reference-to-video"
+        : incomingProviderUrl
         ? "image-to-video"
         : (requestedMode === "reference-to-video" || requestedMode === "image-to-video" || requestedMode === "text-to-video")
           ? requestedMode
@@ -405,7 +413,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       // An explicit reference-to-video with nothing to reference at all would ship empty
       // arrays and fail upstream with a less useful message. A voice counts as a
       // reference, so audio-only is legitimate and must not be rejected here.
-      if (mode === "reference-to-video" && resolved.length === 0 && referenceAudios.length === 0) {
+      if (mode === "reference-to-video" && resolved.length === 0 && referenceAudios.length === 0 && !hasVideoPins(pins)) {
         return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
       }
       const duration = durationCheck.duration;
@@ -416,8 +424,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       // before the job is admitted rather than asynchronously after planning.
       const durationModeCheck = validateVideoDurationForRequest(modelCheck.model, duration, mode);
       if (isNormalizeError(durationModeCheck)) return fail(durationModeCheck.status, durationModeCheck.code, durationModeCheck.error);
-      const referenceImages = mode === "reference-to-video" ? resolved.map((r) => r.b64) : undefined;
-      const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : undefined);
+      // On 1.5 a node/continuity source inside reference-to-video is the pinned first frame
+      // (<IMAGE_0>); composer images stay references (plan G3, R2-F3).
+      const pinnedFirst = mode === "reference-to-video" && !isComfy && canonicalGrokVideoModel(modelCheck.model) === GROK_VIDEO_MODEL_15
+        ? resolved.find((r) => r.source !== "composer") : undefined;
+      const referenceImages = mode === "reference-to-video" ? resolved.filter((r) => r !== pinnedFirst).map((r) => r.b64) : undefined;
+      const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : pinnedFirst?.b64);
       const sourceFilename = resolved[0]?.filename ?? null;
 
       const started = startJob({
@@ -563,6 +575,8 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         sourceImage: sourceB64,
         referenceImages,
         ...(referenceAudios.length ? { referenceAudios } : {}),
+        ...(pins ? { pins } : {}),
+        ...(generateAudio === false ? { generateAudio } : {}),
         signal: cancelController.signal,
         requestId,
         continuityLineage: parentLineage,

@@ -87,7 +87,7 @@ routes/
 | `routes/generate.ts` | 13 | Classic generation API route wiring |
 | `routes/edit.ts` | 461 | Edit API, mask validation, cancellation, OAuth/API edit response save, alpha verification (alphaVerified/alphaReason), provider/web-search/reasoning-effort plumbing |
 | `routes/multimode.ts` | 10 | `POST /api/generate/multimode` route wiring |
-| `routes/video.ts` | 692 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
+| `routes/video.ts` | 706 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
 | `routes/videoExtended.ts` | 488 | Video edit, extension, frame extraction, and configured-planner first/last-frame analysis (Grok 4.5 default) |
 | `routes/nodes.ts` | 28 | Node generation and node fetch route wiring |
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
@@ -144,7 +144,7 @@ routes/
 | `bin/commands/ls.ts` | 65 | History list client (legacy alias); supports session and server-side favorites filtering via `favoritesOnly=1` |
 | `bin/commands/ps.ts` | 82 | Inflight job list client, including optional terminal job snapshots; accepts arbitrary `kind` and documents `classic|node|multimode` |
 | `bin/commands/show.ts` | 77 | Single history item display/reveal client |
-| `bin/commands/video.ts` | 420 | Video CLI surface: generate, edit, extend, frame, analyze, `--character` (MCP lanes), and branch-local `continue` |
+| `bin/commands/video.ts` | 428 | Video CLI surface: generate, edit, extend, frame, analyze, `--character` (MCP lanes), and branch-local `continue` |
 | `bin/commands/ping.ts` | 32 | Server health probe client |
 | `bin/lib/client.ts` | 333 | Server discovery, HTTP request wrapper (connection: close, cleared timeouts), response normalization |
 | `bin/lib/platform.ts` | 164 | Browser-open and binary-resolution helpers |
@@ -183,8 +183,8 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/videoContinuity.ts` | 193 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 100 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
 | `lib/videoGenerationRequest.ts` | 166 | Shared generate-request contract: mode inference, mutually-exclusive source guard, and duration/resolution/aspect defaults for UI, CLI, agent, and route |
-| `lib/grokVideoAdapter.ts` | 499 | Grok video planner and xAI video generation adapter, including continuity-aware prompt planning and model fallback metadata |
-| `lib/grokVideoShared.ts` | 162 | Shared Grok video types, config, endpoint, and timeout helpers keeping the adapter/poll dependency one-way |
+| `lib/grokVideoAdapter.ts` | 455 | Grok video planner and xAI video generation adapter, including continuity-aware prompt planning and model fallback metadata |
+| `lib/grokVideoShared.ts` | 166 | Shared Grok video types, config, endpoint, and timeout helpers keeping the adapter/poll dependency one-way |
 | `lib/grokVideoPoll.ts` | 122 | Grok video status polling with transient-failure tolerance so a network blip cannot discard a long render |
 | `lib/localImportStore.ts` | 116 | Validates raw PNG/JPEG/WebP body, writes timestamped `imported-*` to generated/, embeds XMP metadata, returns GenerateItem-shaped row |
 | `lib/storageMigration.ts` | 311 | Legacy generated-folder scan and migration support |
