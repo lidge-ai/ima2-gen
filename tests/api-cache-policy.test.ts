@@ -16,7 +16,7 @@ type HitResult = {
 };
 
 async function hit(app: express.Express, { headers = {}, path = "/api/history" }: HitOptions = {}) {
-  const server = app.listen(0);
+  const server = app.listen(0, "127.0.0.1");
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const port = (server.address() as import("node:net").AddressInfo).port;
   try {
@@ -28,11 +28,9 @@ async function hit(app: express.Express, { headers = {}, path = "/api/history" }
           raw += chunk;
         });
         res.on("end", () => {
-          resolve({
-            body: raw ? JSON.parse(raw) : null,
-            headers: res.headers,
-            status: res.statusCode,
-          });
+          try {
+            resolve({ body: raw ? JSON.parse(raw) : null, headers: res.headers, status: res.statusCode });
+          } catch (error) { reject(error); }
         });
       });
       req.on("error", reject);

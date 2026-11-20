@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
 import { createRequire } from "node:module";
-
 // wp2 (devlog/_plan/260831_ui_polish_round/010_wp2_radius_scale.md): every
 // border-radius in ui/src resolves through one of eight scale tokens defined in
 // exactly one place. A name-only check would pass a wrong token on a right
@@ -33,7 +32,6 @@ type PostcssRoot = {
 const postcss = require("../ui/node_modules/postcss") as {
   parse(css: string, opts?: { from?: string }): PostcssRoot;
 };
-
 type RadiusRow = {
   file: string;
   atRule: string | null;
@@ -41,11 +39,9 @@ type RadiusRow = {
   expected: string;
   important: boolean;
 };
-
 const MANIFEST: RadiusRow[] = JSON.parse(
   readFileSync("tests/fixtures/contracts/radius-scale.manifest.json", "utf8"),
 );
-
 const SCALE = {
   "--r-xs": "4px",
   "--r-sm": "6px",
@@ -56,7 +52,6 @@ const SCALE = {
   "--r-3xl": "20px",
   "--r-pill": "999px",
 } as const;
-
 const RADIUS_LONGHANDS = [
   "border-top-left-radius",
   "border-top-right-radius",
@@ -67,7 +62,6 @@ const RADIUS_LONGHANDS = [
   "border-end-start-radius",
   "border-end-end-radius",
 ];
-
 function cssFiles(dir = "ui/src"): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -77,7 +71,6 @@ function cssFiles(dir = "ui/src"): string[] {
   }
   return out.sort();
 }
-
 function tsFiles(dir = "ui/src"): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -87,11 +80,9 @@ function tsFiles(dir = "ui/src"): string[] {
   }
   return out.sort();
 }
-
 function normalize(path: string): string {
   return path.split(sep).join("/");
 }
-
 type Decl = {
   file: string;
   line: number;
@@ -101,7 +92,6 @@ type Decl = {
   atRule: string | null;
   selector: string;
 };
-
 function radiusDecls(): Decl[] {
   const found: Decl[] = [];
   for (const file of cssFiles()) {
@@ -130,21 +120,17 @@ function radiusDecls(): Decl[] {
   }
   return found;
 }
-
 function keyOf(row: { file: string; atRule: string | null; selector: string }): string {
   return [row.file, row.atRule ?? "", row.selector].join("||");
 }
-
 test("the frozen manifest covers every border-radius declaration exactly once", () => {
   const decls = radiusDecls().filter((d) => d.prop === "border-radius");
   // WP12s adds exactly three inspected sign-in panel/input/button declarations; the update
   // indicator (ui/src/styles/update-indicator.css) adds five scale-token declarations.
-  assert.equal(MANIFEST.length, 486, "the manifest is frozen at 486 rows");
+  assert.equal(MANIFEST.length, 487, "the manifest is frozen at 487 rows");
   assert.equal(decls.length, MANIFEST.length, "declaration count drifted from the manifest");
-
   const manifestKeys = new Set(MANIFEST.map(keyOf));
   assert.equal(manifestKeys.size, MANIFEST.length, "manifest keys must be unique");
-
   const seen = new Set<string>();
   for (const decl of decls) {
     const key = keyOf(decl);
@@ -156,7 +142,6 @@ test("the frozen manifest covers every border-radius declaration exactly once", 
     assert.ok(seen.has(keyOf(row)), "manifest row no longer present in CSS: " + keyOf(row));
   }
 });
-
 test("each declaration carries exactly the mapped token and !important flag", () => {
   const byKey = new Map(radiusDecls().filter((d) => d.prop === "border-radius").map((d) => [keyOf(d), d]));
   for (const row of MANIFEST) {
@@ -170,7 +155,6 @@ test("each declaration carries exactly the mapped token and !important flag", ()
     assert.equal(decl!.important, row.important, "!important drifted at " + decl!.file + ":" + decl!.line);
   }
 });
-
 test("the eight scale tokens hold their values and are defined exactly once", () => {
   const definitions = new Map<string, { file: string; line: number; value: string; selector: string }[]>();
   for (const file of cssFiles()) {
@@ -198,7 +182,6 @@ test("the eight scale tokens hold their values and are defined exactly once", ()
     assert.equal(list[0].value, expected, token + " must stay " + expected);
   }
 });
-
 test("no radius longhand, vendor prefix, or @property registration exists", () => {
   // A prefixed longhand such as -webkit-border-top-left-radius overrides the
   // standard shorthand in Chrome (reproduced: border-radius 6px followed by
@@ -229,7 +212,6 @@ test("no radius longhand, vendor prefix, or @property registration exists", () =
     });
   }
 });
-
 test("stylesheet imports stay inside the audited ui/src tree", () => {
   // The manifest only covers ui/src/**/*.css. An @import pointing at a URL or at
   // a path outside that tree would ship radius the contract never parsed.
@@ -249,7 +231,6 @@ test("stylesheet imports stay inside the audited ui/src tree", () => {
     });
   }
 });
-
 test("the HTML shell carries no radius of its own", () => {
   // index.html sits outside ui/src, so a <style> block or a style attribute there
   // would never reach the manifest.
@@ -268,7 +249,6 @@ test("the HTML shell carries no radius of its own", () => {
     "index.html must not link a stylesheet outside the audited tree",
   );
 });
-
 test("the retired radius tokens and calc pattern are gone", () => {
   for (const file of cssFiles()) {
     const css = readFileSync(file, "utf8");
@@ -279,7 +259,6 @@ test("the retired radius tokens and calc pattern are gone", () => {
     assert.ok(!/calc\(\s*var\(--r/.test(css), "calc offsets off the scale must not return: " + rel);
   }
 });
-
 test("every radius token reference resolves to a defined scale token", () => {
   const defined = new Set(Object.keys(SCALE));
   for (const decl of radiusDecls()) {
@@ -288,14 +267,13 @@ test("every radius token reference resolves to a defined scale token", () => {
     }
   }
 });
-
 test("TS and TSX carry exactly one allowlisted radius property", () => {
   // The earlier regex only matched double-quoted values, so borderRadius: '999px',
   // borderRadius: 999, a template literal, and WebkitBorderRadius all slipped past
   // (audit wp2c1-F1). Walk the TypeScript AST and key on the property NAME, which
   // makes the check independent of how the value is spelled.
   const ts = require("../ui/node_modules/typescript") as typeof import("typescript");
-  const ALLOWED = new Map([["ui/src/components/settings/QuotaCard.tsx", 'borderRadius: "var(--r-sm)"']]);
+  const ALLOWED = new Map([["ui/src/components/settings/SwitchAccountButton.tsx", 'borderRadius: "var(--r-sm)"']]);
   // CSSOM injection assembles a stylesheet the postcss walk never sees. The one
   // permitted write is pinned by exact text, not by file: exempting the whole file
   // would let that same caret-measurement mirror add radius later (audit wp2c3-F1).
@@ -311,10 +289,8 @@ test("TS and TSX carry exactly one allowlisted radius property", () => {
   // it is out of the manifest scope rather than a bypass of it.
   const VENDOR_CSS_ALLOWED = new Set(["@xyflow/react/dist/style.css"]);
   const hits: { file: string; text: string }[] = [];
-
   const isRadiusName = (name: string) =>
     /^([A-Za-z]*[Bb]order[A-Za-z]*Radius)$/.test(name) || /^--r-/.test(name);
-
   for (const file of tsFiles()) {
     const source = readFileSync(file, "utf8");
     const rel = normalize(file);

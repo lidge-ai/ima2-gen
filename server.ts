@@ -19,6 +19,13 @@ import { configureLogger, logError, logWarn } from "./lib/logger.js";
 import { createRequestLogger } from "./lib/requestLogger.js";
 import { configureApiCachePolicy } from "./lib/apiCachePolicy.js";
 import { configureRoutes } from "./routes/index.js";
+import { quotaResetRouter } from "./routes/quotaReset.js";
+import { quotaResetSettingsRouter } from "./routes/quotaResetSettings.js";
+import type { ResetDependencies } from "./routes/quotaReset.js";
+import { CodexAutoRedeem } from "./lib/reset/codexAutoRedeem.js";
+import { CodexResetClient } from "./lib/reset/codexResetClient.js";
+import { codexResetTransport } from "./lib/reset/transport.js";
+import { codexSessionStore } from "./lib/codexBackend/client.js";
 import { startUpdateScheduler, updateChecksEnabled } from "./lib/updateCheck.js";
 import { defaultTag } from "./lib/updateVersion.js";
 import { API_REQUEST_POLICY, config } from "./config.js";
@@ -30,7 +37,7 @@ import { resolveBootId, resolveLauncher, writeAdvertiseAtomic } from "./lib/runt
 import { shutdownServerAndMcp, startMcpRestoreAfterListen } from "./lib/mcp/shutdown.js";
 import type { RuntimeContext, RuntimeContextOverrides, ApiKeySource } from "./lib/runtimeContext.js";
 
-import { closeDb } from "./lib/db.js";
+import { closeDb, getDb } from "./lib/db.js";
 import { stopAgentQueueWorker } from "./lib/agentQueueWorker.js";
 import { reapCardNewsJobs } from "./lib/cardNewsJobStore.js";
 import { reapTerminalJobs } from "./lib/inflight.js";
@@ -275,6 +282,20 @@ export function buildApp(ctx: RuntimeContext) {
   // parser skips bodies this one already read.
   app.use("/api/node-templates/import", express.json({ limit: TEMPLATE_FILE_MAX_BYTES }), templateImportBodyErrors);
   app.use(express.json({ limit: ctx.config.server.bodyLimit }));
+  app.use(quotaResetRouter(ctx, dispose => {
+    const disposeAccess = locals.disposeLocalLanAccess;
+    locals.disposeLocalLanAccess = () => { dispose(); disposeAccess(); };
+  }));
+  const resetDeps = (ctx as RuntimeContext & { resetDependencies?: ResetDependencies }).resetDependencies;
+  const accountId = async () => resetDeps ? await resetDeps.accountId() : (await codexSessionStore().get()).accountId;
+  const watcher = new CodexAutoRedeem(resetDeps?.db ?? getDb(), {
+    accountId,
+    client: account => new CodexResetClient(resetDeps?.transport ?? codexResetTransport(() => account)),
+  });
+  watcher.start();
+  app.use(quotaResetSettingsRouter(resetDeps?.db ?? getDb(), watcher, accountId));
+  const disposeAccess = locals.disposeLocalLanAccess;
+  locals.disposeLocalLanAccess = () => { watcher.stop(); disposeAccess(); };
   app.use(express.static(join(ctx.rootDir, "ui", "dist"), {
     setHeaders: setUiStaticHeaders,
   }));

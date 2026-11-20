@@ -203,8 +203,12 @@ test("Comfy readiness popup names the selected video and opens workflow manageme
     await expect(dialog).not.toContainText("GPT");
     await expect(dialog.locator(".modal__hint")).toHaveCount(0);
     await displayEvidence(page, info, "selected-video-popup", capture, dialog);
+    expect(capture.resetReads).toEqual([]);
     await dialog.getByRole("button", { name: "Manage workflows", exact: true }).click();
     await expect(page.locator(".settings-workspace")).toBeVisible();
+    await expect.poll(() => [...capture.resetReads].sort()).toEqual([
+      "/api/quota/grok/reset-coupons", "/api/quota/reset-operations?provider=grok",
+    ]);
     await expect(page.locator("#comfy-workflow-manager-title")).toBeVisible();
     await page.locator("#comfy-workflow-manager-title").scrollIntoViewIfNeeded();
     await expect(page.locator("#comfy-workflow-manager-title")).toBeInViewport();

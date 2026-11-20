@@ -24,6 +24,7 @@ Deferred / 미래 항목은 `_plan/` 직속이 아니라 `_plan/_future/`에 둔
 
 | 경로 | 상태 |
 |---|---|
+| `261121_quota-reset-coupons/` | OpenCodex 기준 Codex 할당량(5시간·주간 창, 크레딧 잔액, 리셋 크레딧)과 Grok 주간 크레딧·리셋 쿠폰의 조회, 표시, 사용자가 확인하는 사용(redeem), Codex 자동 사용(기본 꺼짐). 실제 쿠폰·크레딧은 테스트에서 소비하지 않는다. 로드맵 000~030. |
 | `261121_openai-gpt6x-lineup/` | OpenAI 라인업을 GPT OAuth·API 키 두 레인 모두 gpt-6-luna / gpt-6.1-terra / gpt-6.2-sol / gpt-6.2-astra로 교체하고 저장된 구 id를 새 등급으로 옮긴다. SVG 지원 재확인(OAuth는 PNG로 응답, 2.6 이미지 모델 + API 키 레인만 유지). 로드맵 000~030, wp1 교체 → wp2 SVG → wp3 PR. |
 | `261002_background_hardening/` | PR #365 데스크톱 백그라운드 모드 수리와 리뷰 보강을 3.26.1로 배포 완료. 로그인 때만 숨김 시작, 창 닫기는 창을 없애고 서버는 트레이에서 유지, 업데이트 설치가 시작되지 않으면 서버를 다시 띄우는 복구(macOS는 감시 타이머 없음), 정지가 끝나지 않으면 기다리다 오류로 끝내는 Windows 프로세스 트리 정지, Windows에서도 `/api/admin/stop`이 서버 정리 루틴을 실행. 남은 것: 실제 NSIS·Squirrel.Mac 업데이트와 렌더러 강제 종료를 설치본에서 확인. dry-run 승격 문제는 3.26.2에서 수정·배포했다. 기록은 000~040과 `_fin/261003-issue-pr-release/042_release-evidence.md`. |
 | `260929_background_runtime/` | opencodex식 백그라운드 런타임. `ima2 start` / `status --runtime` / `stop --json` / `restart` / `logs`, 데스크톱이 이미 떠 있는 네이티브 서버를 붙잡거나(attach) 묻거나 넘겨받아(takeover) 번들 서버로 바꾸는 흐름, CLI 정지를 데스크톱이 크래시로 오인하지 않게 하는 정지 의도 마커. 로드맵 000~050, wp2~wp5 진행 중. |

@@ -19,6 +19,7 @@ import type { RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { chatgptAuthFilePath } from "../lib/chatgptAuth.js";
 import { createCodexSessionStore } from "../lib/codexBackend/session.js";
 import { setCodexSessionStoreForTests } from "../lib/codexBackend/client.js";
+import { resetIdentity } from "../lib/reset/identity.js";
 
 function jwt(payload: Record<string, unknown>): string {
   const enc = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -71,6 +72,7 @@ const bearers = () => seenCalls.map((call) => call.bearer);
 
 type QuotaBody = {
   codex: {
+    accountRef?: string;
     authenticated?: boolean;
     error?: boolean;
     account?: { email: string | null; plan: string | null } | null;
@@ -146,6 +148,7 @@ describe("/api/quota codex lane follows the session store", () => {
     assert.equal(body.codex.authenticated, undefined);
     assert.equal(body.codex.windows.length, 2);
     assert.equal(body.codex.account?.email, "a@b.c");
+    assert.equal(body.codex.accountRef, resetIdentity("codex", "acct-1").accountRef);
     assert.deepEqual(bearers(), [`Bearer ${FRESH}`], "wham/usage only ever sees the refreshed token");
     assert.deepEqual(seenCalls.map((c) => c.accountId), ["acct-1"]);
     assert.equal(refreshCalls, 1);

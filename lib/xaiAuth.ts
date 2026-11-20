@@ -71,6 +71,7 @@ export interface XaiDiscovery {
   authorizationEndpoint: string;
   tokenEndpoint: string;
   deviceAuthorizationEndpoint?: string;
+  userinfoEndpoint?: string;
 }
 
 export interface XaiTokenPayload {
@@ -108,6 +109,7 @@ interface XaiDiscoveryPayload {
   authorization_endpoint?: unknown;
   token_endpoint?: unknown;
   device_authorization_endpoint?: unknown;
+  userinfo_endpoint?: unknown;
 }
 
 interface XaiJwtPayload {
@@ -189,6 +191,9 @@ export async function discoverXaiOAuthEndpoints(signal?: AbortSignal): Promise<X
   };
   if (typeof payload.device_authorization_endpoint === "string") {
     discovery.deviceAuthorizationEndpoint = validateXaiAuthEndpoint(payload.device_authorization_endpoint);
+  }
+  if (typeof payload.userinfo_endpoint === "string") {
+    try { discovery.userinfoEndpoint = validateXaiAuthEndpoint(payload.userinfo_endpoint); } catch { /* unavailable */ }
   }
   return discovery;
 }

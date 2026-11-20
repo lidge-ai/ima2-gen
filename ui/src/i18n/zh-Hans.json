@@ -1442,6 +1442,16 @@
       }
     },
     "quota": {
+      "window": {"weekly": "每周", "5h": "5 小时", "7d": "7 天", "30d": "30 天", "other": "{label}"},
+      "credits": {"balance": "积分余额", "unknown": "未知", "unlimited": "无限", "overage": "允许超额使用", "approxMessages": "约 {count} 条消息", "title": "积分"},
+      "resetCredits": {"partial": "部分额度无法读取，列表不完整。", "empty": "没有重置积分。", "loadError": "无法加载重置积分。", "count": "重置积分", "unknown": "未知", "usableNow": "当前可用 {count} 个", "list": "查看重置积分", "expires": "到期时间：{date}", "summary": "可用 {count} 个", "summaryExpiry": "可用 {count} 个 · 最早到期 {date}"},
+      "redeem": {"creditUnknown": "无法确定可用的重置积分。", "action": "使用重置积分", "confirm": "为当前账户使用一个重置积分？", "cancel": "取消", "redeeming": "正在使用…", "success": "用量已重置。", "nothingToReset": "没有需要重置的用量。", "noCredit": "没有可用的重置积分。", "identityChanged": "账户已更改，正在刷新用量，请重试。", "unknown": "结果未知。重试前请检查操作状态。", "alreadyRedeemed": "此重置已使用。", "loadError": "无法加载重置信息。"},
+      "acknowledge": {"action": "确认知悉", "explanation": "之前的尝试可能已消耗一个积分。再次尝试需要重新确认。", "blocked": "如果之前的进程仍在运行，请先重启 ima2 或结束卡住的进程。"},
+      "upsell": {"buyReset": "购买重置积分", "viewUsage": "查看用量"},
+      "grokSource": {"ima2-session": "用量来源：ima2 会话", "grok-cli": "用量来源：Grok CLI", "accountMayDiffer": "优惠券账户可能与 Grok CLI 账户不同。"},
+      "grokCoupons": {"title": "Grok 重置券", "account": "优惠券账户", "empty": "没有可用优惠券", "expires": "有效期至 {date}", "confirm": "使用此优惠券重置 Grok 用量？", "unavailable": "优惠券不可用：需要 ima2 xAI 会话和已验证的身份。", "prepaidBalance": "预付余额", "summary": "{count} 张重置券", "summaryExpiry": "{count} 张重置券 · 最早有效期至 {date}"},
+      "autoRedeem": {"paused": "每次重置后，自动重置都会暂停，直到你恢复它", "resume": "恢复自动重置", "resumeExplanation": "恢复后，即使上一次重置已经使用额度，也可能再次使用额度。继续前请检查额度列表。", "account": "设置适用的账户：{account}", "title": "自动重置", "enable": "启用自动兑换", "warning": "启用后，临近到期时可能无需再次确认就使用重置额度。每次重置后，自动重置会暂停，直到你恢复它。", "lead": "到期前分钟数（1–60）"},
+      "details": {"attention": "需要处理"},
       "naiBattery": "V5 电量",
       "naiAnlas": "Anlas",
       "naiNegative": "充电中（负值）",

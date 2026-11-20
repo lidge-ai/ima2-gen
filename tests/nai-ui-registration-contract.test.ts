@@ -205,15 +205,25 @@ function renderNaiQuota(props: NaiQuotaProps, locale = "en"): string {
   const module = { exports: {} as { NaiQuota: NaiQuotaComponent } };
   const t = (key: string, vars: Record<string, string | number> = {}) =>
     String(lookup(dict, key)).replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name]));
+  function requireQuota(name: string): unknown {
+    if (name === "react" || name === "react/jsx-runtime") return requireUi(name);
+    if (name === "./GrokCouponsPanel" || name === "./grokCouponsTransport") return {};
+    if (name === "../controls") return {};
+    if (name === "../../i18n") return { useI18n: () => ({ t }) };
+    if (name === "../../lib/api-core" || name === "../../lib/lanSession") return {};
+    if (name === "../../hooks/useOAuthStatus") return { OAUTH_CHANGED_EVENT: "ima2:oauth-changed" };
+    if (["./SwitchAccountButton", "./useAccountSwitch", "./CodexCredits", "./ResetCreditsPanel", "./resetCreditsTransport", "./QuotaDetails"].includes(name)) {
+      const localModule = { exports: {} };
+      const path = `ui/src/components/settings/${name.slice(2)}.${["./useAccountSwitch", "./resetCreditsTransport"].includes(name) ? "ts" : "tsx"}`;
+      const source = transformSync(read(path), { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
+      runInNewContext(source, { module: localModule, exports: localModule.exports, require: requireQuota }, { timeout: 2000 });
+      return localModule.exports;
+    }
+    throw new Error(`Unexpected quota dependency: ${name}`);
+  }
   runInNewContext(quotaSource, {
     module, exports: module.exports, Date: { now: () => quotaNow, parse: Date.parse },
-    require(name: string) {
-      if (name === "react" || name === "react/jsx-runtime") return requireUi(name);
-      if (name === "../../i18n") return { useI18n: () => ({ t }) };
-      if (name === "../../lib/api-core" || name === "../../lib/lanSession") return {};
-      if (name === "../../hooks/useOAuthStatus") return { OAUTH_CHANGED_EVENT: "ima2:oauth-changed" };
-      throw new Error(`Unexpected quota dependency: ${name}`);
-    },
+    require: requireQuota,
   }, { timeout: 2000 });
   return renderer.renderToStaticMarkup(react.createElement(module.exports.NaiQuota, props));
 }

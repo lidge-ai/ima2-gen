@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const read = (path: string) => readFileSync(path, "utf8");
-const quota = read("ui/src/components/settings/QuotaCard.tsx");
+const quota = ["QuotaCard.tsx", "SwitchAccountButton.tsx", "useAccountSwitch.ts"]
+  .map((file) => read(`ui/src/components/settings/${file}`)).join("\n");
 const apiKey = read("ui/src/components/ApiKeyInput.tsx");
 const vertex = read("ui/src/components/VertexJsonInput.tsx");
 const locales = ["en", "ko", "zh-Hant", "zh-Hans"].map((locale) => JSON.parse(read(`ui/src/i18n/${locale}.json`)));
