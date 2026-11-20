@@ -54,3 +54,7 @@ Command: `node --experimental-transform-types --test tests/quota-grok-weekly.tes
 | weekly percent / end control | PASS |
 | disabled ticks control | PASS |
 | billing-source tests (7) | PASS |
+
+## S6b-A2 route baseline
+
+On a9d601d5, `node --experimental-transform-types --test tests/reset-grok-routes.test.ts` ran 10 tests: 1 pass, 9 fail, 0 skipped. The userinfo-unavailable control passes because the route is absent. Listing, confirmation/dispatch, changed identity, all three restart states, both invalid RPC replies and missing-coupon recovery fail because the Grok routes do not exist. The socket sentinel passed (0). Fixtures use only fake transports and a temporary database; no real RPC was sent. Several later assertions are necessarily unreached until the route exists.
