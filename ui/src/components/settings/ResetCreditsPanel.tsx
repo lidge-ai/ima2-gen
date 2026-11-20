@@ -155,11 +155,13 @@ interface Flow {
   setList(value: ResetList | null): void; setListError(value: boolean): void;
   accountChanged(): void; refreshOps(): Promise<unknown>; refreshFence(): Promise<void>;
   summary: { begin(): number; observe(request: number, data: ResetList): void; refresh(): void };
+  listRequest: { current: number };
 }
 
 function openRedeem(flow: Flow) {
   if (!flow.transport.list) return;
   const clickedRef = flow.displayedRef.current;
+  flow.listRequest.current++;
   flow.setBusy(true);
   void flow.transport.list().then(data => {
     if (!clickedRef || data.accountRef !== clickedRef || flow.displayedRef.current !== clickedRef) { flow.accountChanged(); return; }
@@ -170,8 +172,14 @@ function openRedeem(flow: Flow) {
 function listCredits(flow: Flow) {
   flow.setList(null); flow.setListError(false);
   if (!flow.transport.list) return;
-  const request = flow.summary.begin();
-  void flow.transport.list().then(data => { flow.setList(data); flow.summary.observe(request, data); }).catch(() => flow.setListError(true));
+  const clickedRef = flow.displayedRef.current;
+  const request = ++flow.listRequest.current;
+  const summaryRequest = flow.summary.begin();
+  const current = () => request === flow.listRequest.current && flow.displayedRef.current === clickedRef;
+  void flow.transport.list().then(data => {
+    if (!current() || data.accountRef !== clickedRef) return;
+    flow.setList(data); flow.summary.observe(summaryRequest, data);
+  }).catch(() => { if (current()) flow.setListError(true); });
 }
 
 async function confirmRedeem(flow: Flow) {
@@ -258,6 +266,7 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   const [listError, setListError] = useState(false);
   const inFlight = useRef(false);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const listRequest = useRef(0);
   const displayedRef = useRef(accountRef); displayedRef.current = accountRef;
   const accountChanged = () => { setDialog(null); setMessage("identityChanged"); onRefresh?.(); };
   const { ops, opsLoaded, refreshOps } = useOperations(transport, setMessage);
@@ -266,7 +275,9 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   const details = useQuotaDetails();
   const summaryState = useEarliestExpiry(transport, accountRef, displayedRef);
   const flow: Flow = { transport, displayedRef, inFlight, trigger, dialog, busy, onRefresh, setBusy, setMessage, setDialog,
-    setList, setListError, accountChanged, refreshOps, refreshFence, summary: summaryState };
+    setList, setListError, accountChanged, refreshOps, refreshFence, summary: summaryState, listRequest };
+  // A list read for one account must not stay visible after the account changes.
+  useEffect(() => { listRequest.current++; setList(null); setListError(false); }, [accountRef]);
   const usableCount = applicableAvailableCount === undefined ? availableCount : applicableAvailableCount;
   const noUsableCredits = usableCount == null || usableCount <= 0;
   const summary = resetSummary(t, availableCount, summaryState.earliest, fence.fenced || ops.some(unresolved));
