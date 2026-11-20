@@ -5,7 +5,7 @@ import { sentinelCount } from "./helpers/resetTestGuard.ts";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { transformSync } from "esbuild";
+import { buildSync, transformSync } from "esbuild";
 import { runInNewContext } from "node:vm";
 const requireUi = createRequire(join(process.cwd(), "ui/package.json"));
 const react = requireUi("react") as typeof import("../ui/node_modules/@types/react/index");
@@ -36,6 +36,18 @@ describe("quota UI controls", () => {
     assert.match(html, /75%/);
     assert.match(html, /aria-valuenow="75"/);
   });
+});
+
+it("keeps reset controls out of the readiness and composer dependency graphs", () => {
+  const inputs = (entry: string) => Object.keys(buildSync({
+    entryPoints: [entry], bundle: true, write: false, metafile: true,
+    platform: "browser", format: "esm", loader: { ".css": "empty" },
+  }).metafile!.inputs);
+  const resetModule = /\/(?:ResetCreditsPanel|GrokCouponsPanel|resetCreditsTransport|grokCouponsTransport)\.[tj]sx?$/;
+  for (const entry of ["ui/src/components/ProviderReadinessPopup.tsx", "ui/src/components/PromptComposer.tsx"]) {
+    assert.deepEqual(inputs(entry).filter(path => resetModule.test(path)), [], entry);
+  }
+  assert.ok(inputs("ui/src/components/SettingsWorkspace.tsx").some(path => resetModule.test(path)));
 });
 
 type ElementNode = { type: string; props: Record<string, unknown>; children: unknown[] };

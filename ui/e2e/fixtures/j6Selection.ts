@@ -17,6 +17,7 @@ export type J6Capture = {
   nonGenerating: boolean;
   continued: string[];
   unexpected: string[];
+  resetReads: string[];
   catalog: J6CatalogState;
   catalogReads: number;
   catalogCancelled: number;
@@ -106,6 +107,9 @@ async function serveJ6(route: Route, origin: string, capture: J6Capture, gate: C
   const request = route.request();
   const url = new URL(request.url());
   const method = request.method();
+  if (method === "GET" && url.pathname.startsWith("/api/quota/") && url.pathname.includes("reset")) {
+    capture.resetReads.push(`${url.pathname}${url.search}`);
+  }
   if (url.origin !== origin || url.username || url.password) {
     capture.unexpected.push(`${method} non-fixture-origin`);
     await route.abort("blockedbyclient");
@@ -126,6 +130,11 @@ async function serveJ6(route: Route, origin: string, capture: J6Capture, gate: C
       : { items: [], total: 0, nextCursor: null } });
   } else if (url.pathname === "/api/models") {
     await serveCatalog(route, capture, gate);
+  } else if (url.pathname === "/api/quota/grok/reset-coupons" && !url.search) {
+    // Settings renders the Grok coupon controls, including their initial read.
+    await route.fulfill({ json: { accountLabel: null, accountRef: "fixture-account", coupons: [] } });
+  } else if (url.pathname === "/api/quota/reset-operations" && url.search === "?provider=grok") {
+    await route.fulfill({ json: { operations: [] } });
   } else if (Object.hasOwn(readFixtures(capture.catalog, capture.nonGenerating), url.pathname)) {
     await route.fulfill({ json: readFixtures(capture.catalog, capture.nonGenerating)[url.pathname] });
   } else if (url.pathname.startsWith("/api/")) {
@@ -146,7 +155,7 @@ export async function installJ6SelectionCapture(context: BrowserContext, fixture
   }
   const gate: CatalogGate = { closing: false, waiters: [], pending: new Set() };
   const capture: J6Capture = { requests: [], deniedGeneration: [], continued: [], catalogReads: 0, catalogCancelled: 0, catalogPending: 0,
-    nonGenerating: options.nonGenerating ?? false, unexpected: [], catalog: options.catalog ?? { mode: "ready" },
+    nonGenerating: options.nonGenerating ?? false, unexpected: [], resetReads: [], catalog: options.catalog ?? { mode: "ready" },
     releaseCatalog: () => { while (gate.waiters.length) gate.waiters.shift()?.(); },
     async drainCatalog() {
       gate.closing = true; capture.releaseCatalog();

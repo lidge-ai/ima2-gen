@@ -131,8 +131,12 @@ test("MCP popup observes the selected image model without showing core GPT facts
     await capture(page, info, "mcp-image-ready");
     await popup.getByRole("button", { name: "Refresh", exact: true }).click();
     await expect(details).toHaveAttribute("data-mcp-readiness", "ready");
+    expect(observation.resetReads).toEqual([]);
     await popup.getByRole("button", { name: en.readiness.openAccount, exact: true }).click();
     await expect(page.getByRole("main", { name: "Settings", exact: true })).toBeVisible();
+    await expect.poll(() => [...observation.resetReads].sort()).toEqual([
+      "/api/quota/grok/reset-coupons", "/api/quota/reset-operations?provider=grok",
+    ]);
     await expect(page.getByRole("region", { name: "Providers", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Close settings", exact: true }).click();
     await selectOption(page, PROVIDER_TRIGGER, "GPT");
