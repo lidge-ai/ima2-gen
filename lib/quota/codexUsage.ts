@@ -1,7 +1,8 @@
 import { readChatgptAccess } from "../chatgptAuth.js";
 import { authHeaders, codexSessionStore } from "../codexBackend/client.js";
 import type { CodexSession } from "../codexBackend/session.js";
-import type { QuotaResult, QuotaWindow } from "./types.js";
+import type { QuotaResult } from "./types.js";
+import { projectCodexUsage } from "./codexProjection.js";
 
 const CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 const CODEX_SESSION_TIMEOUT_MS = 8_000;
@@ -53,34 +54,8 @@ export async function fetchCodexUsage(session: CodexSession): Promise<QuotaResul
       if (resp.status === 401 || resp.status === 403) return { provider: "codex", authenticated: false, windows: [] };
       return { provider: "codex", error: true, windows: [] };
     }
-    const data = await resp.json() as {
-      email?: string | null; plan_type?: string | null;
-      rate_limit?: {
-        primary_window?: { used_percent?: number; reset_at?: number };
-        secondary_window?: { used_percent?: number; reset_at?: number };
-      };
-    };
-    const account = { email: data.email ?? null, plan: data.plan_type ?? null };
-    const windows: QuotaWindow[] = [];
-    if (data.rate_limit?.primary_window) {
-      windows.push({
-        label: "5h",
-        percent: Math.round(data.rate_limit.primary_window.used_percent ?? 0),
-        resetsAt: data.rate_limit.primary_window.reset_at
-          ? new Date(data.rate_limit.primary_window.reset_at * 1000).toISOString()
-          : null,
-      });
-    }
-    if (data.rate_limit?.secondary_window) {
-      windows.push({
-        label: "7d",
-        percent: Math.round(data.rate_limit.secondary_window.used_percent ?? 0),
-        resetsAt: data.rate_limit.secondary_window.reset_at
-          ? new Date(data.rate_limit.secondary_window.reset_at * 1000).toISOString()
-          : null,
-      });
-    }
-    return { provider: "codex", account, windows };
+    if (!session.accountId) return { provider: "codex", error: true, windows: [] };
+    return projectCodexUsage(await resp.json(), session.accountId);
   } catch {
     return { provider: "codex", error: true, windows: [] };
   }

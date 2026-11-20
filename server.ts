@@ -276,7 +276,10 @@ export function buildApp(ctx: RuntimeContext) {
   // parser skips bodies this one already read.
   app.use("/api/node-templates/import", express.json({ limit: TEMPLATE_FILE_MAX_BYTES }), templateImportBodyErrors);
   app.use(express.json({ limit: ctx.config.server.bodyLimit }));
-  app.use(quotaResetRouter(ctx));
+  app.use(quotaResetRouter(ctx, dispose => {
+    const disposeAccess = locals.disposeLocalLanAccess;
+    locals.disposeLocalLanAccess = () => { dispose(); disposeAccess(); };
+  }));
   app.use(express.static(join(ctx.rootDir, "ui", "dist"), {
     setHeaders: setUiStaticHeaders,
   }));

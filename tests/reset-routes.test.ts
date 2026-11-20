@@ -101,8 +101,10 @@ describe("reset route safety contracts", () => {
   it("acknowledges only unknown operations and refuses recovered operations with live owners", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
     const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0)");
-    insert.run("claimed", "claimed", null); insert.run("recovered", "unknown", "recovered");
+    insert.run("claimed", "claimed", null);
     assert.equal((await f.request("/api/quota/reset-operations/claimed/acknowledge", {})).status, 409);
+    f.db.prepare("UPDATE reset_operations SET state='abandoned' WHERE operation_id='claimed'").run();
+    insert.run("recovered", "unknown", "recovered");
     assert.equal((await f.request("/api/quota/reset-operations/recovered/acknowledge", {})).status, 409);
     assert.equal(consumeCalls(f).length, 0);
   }));
@@ -117,6 +119,38 @@ describe("reset route safety contracts", () => {
     assert.equal((await f.request(redeemPath, { token, operationId: "second" })).status, 400);
     assert.equal(consumeCalls(f).length, 1);
   }));
+  it("rejects provider and target changes", async () => withFixture(async f => {
+    assert.equal((await f.request("/api/quota/reset-confirmations", { provider: "grok", operationId: "op" })).status, 400);
+    const token = await f.confirm("op");
+    assert.equal((await f.request(redeemPath, { token, operationId: "op", target: "other" })).status, 400);
+    assert.equal(consumeCalls(f).length, 0);
+  }));
+  it("sends at most once for simultaneous requests with the same operation", async () => withFixture(async f => {
+    const token = await f.confirm("same");
+    const responses = await Promise.all([f.request(redeemPath, { token, operationId: "same" }), f.request(redeemPath, { token, operationId: "same" })]);
+    assert.ok(responses.some(response => response.status === 200));
+    assert.equal(consumeCalls(f).length, 1);
+  }));
+  it("rejects an expired confirmation at the route", async () => withFixture(async f => {
+    const original = Date.now;
+    try {
+      Date.now = () => 10_000;
+      const token = await f.confirm("expired");
+      Date.now = () => 130_001;
+      assert.equal((await f.request(redeemPath, { token, operationId: "expired" })).status, 400);
+      assert.equal(consumeCalls(f).length, 0);
+    } finally { Date.now = original; }
+  }));
+  it("rejects a revoked LAN cookie", async () => withFixture(async f => {
+    const origin = new URL((await f.request("/api/health", undefined, { "x-ima2-token": "test-token" })).url).origin;
+    const session = await f.request("/api/auth/lan/session", {}, { origin, "x-ima2-token": "test-token" });
+    const cookie = session.headers.get("set-cookie")?.split(";")[0] ?? "";
+    const token = await f.confirm("revoked", { origin, cookie });
+    const revoke = await fetch(new URL("/api/auth/lan/session", session.url), { method: "DELETE", headers: { origin, cookie } });
+    assert.equal(revoke.status, 204);
+    assert.equal((await f.request(redeemPath, { token, operationId: "revoked" }, { origin, cookie })).status, 401);
+    assert.equal(consumeCalls(f).length, 0);
+  }, true));
   it("requires a nonempty account id", () => { assert.throws(() => resetIdentity("codex", "")); });
 });
 

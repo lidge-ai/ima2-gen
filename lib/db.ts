@@ -372,10 +372,10 @@ function migrateSchema(database: Database.Database) {
   migrateResetTables(database);
   const row = database.prepare("SELECT value FROM _meta WHERE key = 'schema_version'").get() as { value?: string } | undefined;
   if (!row) {
-    database.prepare("INSERT INTO _meta (key, value) VALUES ('schema_version', '8')").run();
-  } else if (row.value !== "8") {
+    database.prepare("INSERT INTO _meta (key, value) VALUES ('schema_version', '9')").run();
+  } else if (row.value !== "9") {
     database
-      .prepare("UPDATE _meta SET value = '8' WHERE key = 'schema_version'")
+      .prepare("UPDATE _meta SET value = '9' WHERE key = 'schema_version'")
       .run();
   }
 }
