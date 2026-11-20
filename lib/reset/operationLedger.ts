@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-export interface Claim { operationId: string; provider: string; ledgerKey: string; ownerId: string; target?: string }
+export interface Claim { operationId: string; provider: string; ledgerKey: string; ownerId: string; target?: string; expectedRevision?: number }
 export class OperationLedger {
   constructor(private readonly db: Database.Database) {}
   claim(input: Claim): void {
@@ -11,6 +11,10 @@ export class OperationLedger {
   }
   sending(id: string, _owner: string): boolean {
     return this.db.prepare("UPDATE reset_operations SET state='sending' WHERE operation_id=?").run(id).changes > 0;
+  }
+  recover(_now: number): void {}
+  unknown(id: string): void {
+    this.db.prepare("UPDATE reset_operations SET state='unknown' WHERE operation_id=?").run(id);
   }
   settle(id: string, outcome: string): void {
     this.db.prepare("UPDATE reset_operations SET state='settled', outcome=? WHERE operation_id=?").run(outcome, id);

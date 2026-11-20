@@ -30,6 +30,41 @@ describe("reset ledger behavior across connections", () => {
     assert.equal(one.sending("claim-4", "owner-a"), false);
   });
 });
+describe("reset ledger recovery and revision", () => {
+  it("abandons stale claims and releases their reservation", () => {
+    one.claim(claim("stale-claim", "stale-account"));
+    a.prepare("INSERT INTO reset_owners VALUES (?, ?, ?)").run("owner-a", process.pid, 0);
+    a.prepare("INSERT INTO reset_targets VALUES (?, ?, ?, ?, ?)").run("codex", "stale-account", "credit", "stale-claim", 0);
+    two.recover(100_000);
+    assert.equal((one.get("stale-claim") as { state: string }).state, "abandoned");
+  });
+  it("releases a stale pre-send reservation", () => {
+    one.claim(claim("stale-target", "stale-target-account"));
+    a.prepare("INSERT INTO reset_targets VALUES (?, ?, ?, ?, ?)").run("codex", "stale-target-account", "credit", "stale-target", 0);
+    two.recover(100_000);
+    assert.equal(a.prepare("SELECT * FROM reset_targets WHERE operation_id=?").get("stale-target"), undefined);
+  });
+  it("marks stale sending operations unknown with recovered origin", () => {
+    one.claim(claim("stale-send", "stale-send-account"));
+    one.sending("stale-send", "owner-a");
+    two.recover(100_000);
+    assert.deepEqual(a.prepare("SELECT state, unknown_origin FROM reset_operations WHERE operation_id=?").get("stale-send"),
+      { state: "unknown", unknown_origin: "recovered" });
+  });
+  it("records and persists owner unknown origin across reopening", () => {
+    one.claim(claim("owner-unknown", "owner-unknown-account"));
+    one.sending("owner-unknown", "owner-a");
+    one.unknown("owner-unknown");
+    const reopened = new Database(join(root, "ledger.sqlite"));
+    try {
+      assert.equal((reopened.prepare("SELECT unknown_origin FROM reset_operations WHERE operation_id=?").get("owner-unknown") as { unknown_origin: string }).unknown_origin, "owner");
+    } finally { reopened.close(); }
+  });
+  it("refuses claims against a stale account revision", () => {
+    a.prepare("INSERT INTO reset_accounts VALUES (?, ?, ?)").run("codex", "revision-account", 2);
+    assert.throws(() => one.claim({ ...claim("stale-revision", "revision-account"), expectedRevision: 1 }));
+  });
+});
 describe("reset ledger controls", () => {
   it("migrates twice and records a settled operation", () => {
     one.claim(claim("control", "control"));

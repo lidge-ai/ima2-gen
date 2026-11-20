@@ -35,3 +35,45 @@ describe("quota UI controls", () => {
     assert.match(html, /aria-valuenow="75"/);
   });
 });
+
+describe("reset credit locale contracts", () => {
+  for (const locale of ["en", "ko", "zh-Hans", "zh-Hant"]) {
+    it(`defines reset credit labels in ${locale}`, () => {
+      const strings = JSON.parse(readFileSync(`ui/src/i18n/${locale}.json`, "utf8")) as Record<string, unknown>;
+      for (const key of ["settings.quota.credits.balance", "settings.quota.resetCredits.count",
+        "settings.quota.redeem.confirm", "settings.quota.redeem.unknown"]) {
+        const value = key.split(".").reduce<unknown>((current, part) =>
+          current && typeof current === "object" ? (current as Record<string, unknown>)[part] : undefined, strings);
+        assert.equal(typeof value, "string", `${locale}: ${key}`);
+      }
+    });
+  }
+});
+
+describe("reset credit locale interpolation parity", () => {
+  it("uses the same variables for every reset quota key in all locales", () => {
+    const locales = ["en", "ko", "zh-Hans", "zh-Hant"];
+    const entries = locales.map(locale => {
+      const dict = JSON.parse(readFileSync(`ui/src/i18n/${locale}.json`, "utf8"));
+      const quota = dict.settings.quota as Record<string, unknown>;
+      const result: Record<string, string> = {};
+      const visit = (value: unknown, path: string): void => {
+        if (typeof value === "string") result[path] = value;
+        else if (value && typeof value === "object") {
+          for (const [key, child] of Object.entries(value)) visit(child, `${path}.${key}`);
+        }
+      };
+      for (const key of ["window", "credits", "resetCredits", "redeem"]) visit(quota[key], key);
+      return result;
+    });
+    const keys = [...new Set(entries.flatMap(entry => Object.keys(entry)))];
+    assert.ok(keys.length > 0, "reset quota translations are missing");
+    for (const key of keys) {
+      const variables = (value: string) => [...value.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort();
+      for (const entry of entries) {
+        assert.equal(typeof entry[key], "string", key);
+        assert.deepEqual(variables(entry[key]), variables(entries[0][key]), key);
+      }
+    }
+  });
+});
