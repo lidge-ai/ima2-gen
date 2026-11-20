@@ -81,3 +81,5 @@ Baseline: 0653bd84, with concurrent Grok lane work present in the working tree. 
 | buildApp PUT invokes reconfiguration | PASS, guard |
 | buildApp LAN token and origin protection | PASS, guard |
 | lead change during active inspection | FAIL, failing-first: expected two inspections, observed one (`node --import tsx --test --test-name-pattern='reconfigures again when lead changes during an inspection' tests/reset-auto-redeem.test.ts`, 1 failed). |
+
+After the queued-reconfiguration fix, the complete requested reset/quota glob passed: 128 tests, 0 failures, 0 skipped, sentinel assertions 0. `npm run typecheck` and `npm run typecheck:tests` exited 0; `npm run lint` exited 0 with 93 warnings and 0 errors. These checks ran with a temporary HOME/config/database and dispatch disabled; the concurrently owned Grok lane was present in the working tree. The new failing-first case passed in that run.

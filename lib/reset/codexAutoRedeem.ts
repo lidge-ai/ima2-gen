@@ -27,6 +27,7 @@ export class CodexAutoRedeem {
   private readonly ledger: OperationLedger;
   private readonly owner = randomUUID();
   private busy = false;
+  private reconfigurePending = false;
   private timer: ReturnType<typeof setInterval> | undefined;
   constructor(private readonly db: Database.Database, private readonly deps: AutoDependencies | (() => Promise<void>),
     private readonly schedule?: (callback: () => void) => void) { this.ledger = new OperationLedger(db); }
@@ -36,7 +37,10 @@ export class CodexAutoRedeem {
     void this.tick();
   }
   stop(): void { if (this.timer) clearInterval(this.timer); }
-  reconfigure(): void { void this.tick(); }
+  reconfigure(): void {
+    if (this.busy) { this.reconfigurePending = true; return; }
+    void this.tick();
+  }
   async tick(): Promise<void> {
     if (this.busy || !readResetSettings(this.db).enabled) return;
     this.busy = true;
@@ -45,7 +49,10 @@ export class CodexAutoRedeem {
       else await this.run(this.deps);
     } catch (error) {
       logWarn("reset", "auto_redeem_failed", { errorName: error instanceof Error ? error.name : typeof error });
-    } finally { this.busy = false; }
+    } finally {
+      this.busy = false;
+      if (this.reconfigurePending) { this.reconfigurePending = false; void this.tick(); }
+    }
   }
   private async run(deps: AutoDependencies): Promise<void> {
     const account = await deps.accountId(); const key = resetIdentity("codex", account).ledgerKey;
