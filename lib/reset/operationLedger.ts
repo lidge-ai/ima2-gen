@@ -85,6 +85,8 @@ export function migrateResetTables(db: Database.Database): void {
   `);
   const columns = db.prepare("PRAGMA table_info(reset_operations)").all() as Array<{ name: string }>;
   if (!columns.some(column => column.name === "credit_snapshot")) db.exec("ALTER TABLE reset_operations ADD COLUMN credit_snapshot TEXT");
+  if (!columns.some(column => column.name === "fence_released_at")) db.exec("ALTER TABLE reset_operations ADD COLUMN fence_released_at INTEGER");
+  if (!columns.some(column => column.name === "fence_released_by")) db.exec("ALTER TABLE reset_operations ADD COLUMN fence_released_by TEXT");
   const settingsColumns = db.prepare("PRAGMA table_info(reset_settings)").all() as Array<{ name: string }>;
   if (!settingsColumns.some(column => column.name === "ledger_key")) {
     db.transaction(() => { db.exec("ALTER TABLE reset_settings ADD COLUMN ledger_key TEXT"); db.exec("UPDATE reset_settings SET enabled=0"); })();

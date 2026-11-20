@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-export interface Confirmation { provider: string; ledgerKey: string; operationId: string; principalId: string; target?: string | null; expiresAt: number }
+export interface Confirmation { provider: string; ledgerKey: string; operationId: string; principalId: string; target?: string | null; purpose?: "release-fence"; expiresAt: number }
 export class Confirmations {
   private readonly tokens = new Map<string, Confirmation>();
   issue(value: Omit<Confirmation, "expiresAt">): string {

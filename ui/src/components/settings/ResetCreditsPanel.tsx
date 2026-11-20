@@ -19,7 +19,10 @@ export interface ResetCreditsTransport {
   acknowledge?(id: string): Promise<unknown>;
   getSettings?(): Promise<ResetSettings>;
   saveSettings?(settings: ResetSettings): Promise<ResetSettings>;
+  getFence?(): Promise<{ accountRef: string; fence: ResetFence }>;
+  releaseFence?(id: string, accountRef: string): Promise<unknown>;
 }
+export type ResetFence = { fenced: false } | { fenced: true; operation_id: string; outcome: string; settled_at: number; cause: string };
 export interface ResetSettings { enabled: boolean; leadMinutes: number; accountRef: string | null }
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const operationId = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
@@ -63,6 +66,7 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   const [settings, setSettings] = useState<ResetSettings | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [ops, setOps] = useState<ResetOperation[]>([]);
+  const [fence, setFence] = useState<ResetFence>({ fenced: false });
   const [dialog, setDialog] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -77,6 +81,12 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   const accountChanged = () => { setDialog(null); setMessage("identityChanged"); onRefresh?.(); };
   const refreshOps = () => transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
     .catch(() => { setOpsLoaded(false); setMessage("loadError"); });
+  const refreshFence = async () => {
+    if (!transport.getFence) return;
+    const data = await transport.getFence();
+    if (data.accountRef === displayedRef.current) setFence(data.fence);
+  };
+  useEffect(() => { setFence({ fenced: false }); void refreshFence().catch(() => setMessage("loadError")); }, [transport, accountRef]);
   useEffect(() => { void transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
     .catch(() => { setOpsLoaded(false); setMessage("loadError"); }); }, [transport]);
   useEffect(() => { if (transport.getSettings) void transport.getSettings().then(setSettings).catch(() => setMessage("loadError")); }, [transport]);
@@ -98,13 +108,21 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
       onRefresh?.();
     } catch (error) {
       if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("unknown");
-    } finally { inFlight.current = false; setBusy(false); setDialog(null); void refreshOps(); trigger.current?.focus(); }
+    } finally { inFlight.current = false; setBusy(false); setDialog(null); void refreshOps(); void refreshFence().catch(() => setMessage("loadError")); trigger.current?.focus(); }
   };
   const acknowledge = async (id: string) => {
     if (!transport.acknowledge || busy) return;
     setBusy(true);
-    try { await transport.acknowledge(id); await refreshOps(); }
+    try { await transport.acknowledge(id); await refreshOps(); await refreshFence(); }
     catch { setMessage("ackBlocked"); } finally { setBusy(false); }
+  };
+  const releaseFence = async () => {
+    if (!fence.fenced || !transport.releaseFence || !displayedRef.current || busy) return;
+    const ref = displayedRef.current;
+    setBusy(true);
+    try { await transport.releaseFence(fence.operation_id, ref); await refreshFence(); }
+    catch (error) { if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("loadError"); }
+    finally { setBusy(false); }
   };
   return <div className="quota-reset">
     <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => {
@@ -125,6 +143,9 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
     {listError && <p role="alert" className="settings-row__microcopy">{t("settings.quota.resetCredits.loadError")}</p>}
     {list?.complete === false && <p role="status" className="settings-row__microcopy">{t("settings.quota.resetCredits.partial")}</p>}
     {creditRows(list, t)}
+    {fence.fenced && <div role="status"><p>{t("settings.quota.autoRedeem.paused")}</p>
+      <p>{t("settings.quota.autoRedeem.resumeExplanation")}</p>
+      <button type="button" disabled={busy || !accountRef || !["reset", "already_redeemed", "unknown-acknowledged"].includes(fence.outcome)} onClick={() => { void releaseFence(); }}>{t("settings.quota.autoRedeem.resume")}</button></div>}
     {settings && <fieldset disabled={settingsBusy}><legend>{t("settings.quota.autoRedeem.title")}</legend>
       <article className="settings-row">
         <div className="settings-row__copy"><h4>{t("settings.quota.autoRedeem.enable")}</h4>

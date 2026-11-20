@@ -1450,7 +1450,7 @@
       "upsell": {"buyReset": "Buy reset credits", "viewUsage": "View usage"},
       "grokSource": {"ima2-session": "Usage source: ima2 session", "grok-cli": "Usage source: Grok CLI", "accountMayDiffer": "The coupon account may differ from the Grok CLI account."},
       "grokCoupons": {"title": "Grok reset coupons", "account": "Coupon account", "empty": "No coupons available", "expires": "Valid until {date}", "confirm": "Use this coupon to reset Grok usage?", "unavailable": "Coupons unavailable: an ima2 xAI session and verified identity are required.", "prepaidBalance": "Prepaid balance"},
-      "autoRedeem": {"account": "Setting applies to account {account}", "title": "Automatic reset", "enable": "Enable automatic redemption", "warning": "Enabling may consume a reset credit near expiry without another confirmation.", "lead": "Minutes before expiry (1–60)"},
+      "autoRedeem": {"paused": "Automatic reset is paused until the credit list confirms the last reset", "resume": "Resume automatic reset", "resumeExplanation": "Resuming may use another credit even if the last reset already used one. Check the credit list before continuing.", "account": "Setting applies to account {account}", "title": "Automatic reset", "enable": "Enable automatic redemption", "warning": "Enabling may consume a reset credit near expiry without another confirmation.", "lead": "Minutes before expiry (1–60)"},
       "naiBattery": "V5 battery",
       "naiAnlas": "Anlas",
       "naiNegative": "Recharging (negative)",

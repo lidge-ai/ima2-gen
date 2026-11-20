@@ -6,7 +6,7 @@ import { getDb } from "../lib/db.js";
 import { codexSessionStore } from "../lib/codexBackend/client.js";
 import { fetchCodexUsage } from "../lib/quota/codexUsage.js";
 import { Confirmations } from "../lib/reset/confirmations.js";
-import { resetIdentity } from "../lib/reset/identity.js";
+import { accountRefForLedgerKey, resetIdentity } from "../lib/reset/identity.js";
 import { CodexResetClient } from "../lib/reset/codexResetClient.js";
 import { codexResetTransport, type ResetTransport } from "../lib/reset/transport.js";
 import { GrokResetClient } from "../lib/reset/grokResetClient.js";
@@ -80,10 +80,11 @@ function registerConfirmations(router: Router, state: RouterState): void {
         return res.json({ token });
       }
       if (req.body?.provider !== "codex" || typeof req.body.operationId !== "string" || !req.body.operationId.trim() || req.body.target != null) return error(res, 400, "INVALID_REQUEST");
+      if (req.body.purpose != null && req.body.purpose !== "release-fence") return error(res, 400, "INVALID_REQUEST");
       const identity = resetIdentity("codex", await deps.accountId());
       if (req.body.accountRef !== identity.accountRef) return error(res, 409, "IDENTITY_CHANGED");
       const token = confirmations.issue({ provider: "codex", ledgerKey: identity.ledgerKey,
-        operationId: req.body.operationId, target: null, principalId: principal(res) });
+        operationId: req.body.operationId, target: null, principalId: principal(res), purpose: req.body.purpose });
       return res.json({ token });
     } catch { return error(res, 401, "ACCOUNT_ID_REQUIRED"); }
   });
@@ -99,7 +100,7 @@ function registerRedeem(router: Router, state: RouterState): void {
       if (existing) return existing.ledger_key === identity.ledgerKey && existing.provider === "codex"
         ? res.json({ operationId: id, state: existing.state }) : error(res, 409, "IDENTITY_CHANGED");
       const confirmation = confirmations.take(String(req.body?.confirmationToken ?? ""));
-      if (!confirmation || confirmation.operationId !== id || confirmation.provider !== "codex" || req.body?.target != null) return error(res, 400, "INVALID_CONFIRMATION");
+      if (!confirmation || confirmation.purpose || confirmation.operationId !== id || confirmation.provider !== "codex" || req.body?.target != null) return error(res, 400, "INVALID_CONFIRMATION");
       if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
       if (confirmation.ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");
       let snapshot: string[] = [];
@@ -140,8 +141,30 @@ function registerOperations(router: Router, state: RouterState): void {
       const provider = req.query.provider;
       if (provider !== "codex" && provider !== "grok") return error(res, 400, "INVALID_PROVIDER");
       const identity = provider === "grok" ? (await requireGrok(deps)).identity : resetIdentity("codex", await deps.accountId());
-      return res.json({ operations: deps.db.prepare("SELECT operation_id, provider, target, state, unknown_origin, outcome, acknowledged_at, note, created_at, updated_at FROM reset_operations WHERE provider=? AND ledger_key=? ORDER BY created_at DESC LIMIT 100").all(provider, identity.ledgerKey) });
+      const operations = deps.db.prepare("SELECT operation_id, provider, target, state, unknown_origin, outcome, acknowledged_at, note, created_at, updated_at FROM reset_operations WHERE provider=? AND ledger_key=? ORDER BY created_at DESC LIMIT 100").all(provider, identity.ledgerKey);
+      return res.json({ operations, ...(provider === "codex" ? { fence: fenceFor(deps.db, identity.ledgerKey), accountRef: accountRefForLedgerKey(identity.ledgerKey) } : {}) });
     } catch { return error(res, 401, "ACCOUNT_ID_REQUIRED"); }
+  });
+  router.post("/api/quota/reset-operations/:operationId/release-fence", async (req, res) => {
+    try {
+      const identity = resetIdentity("codex", await deps.accountId());
+      if (req.body?.accountRef !== identity.accountRef) return error(res, 409, "IDENTITY_CHANGED");
+      const confirmation = state.confirmations.take(String(req.body?.confirmationToken ?? ""));
+      if (!confirmation || confirmation.purpose !== "release-fence" || confirmation.provider !== "codex" || confirmation.operationId !== req.params.operationId) return error(res, 400, "INVALID_CONFIRMATION");
+      if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
+      if (confirmation.ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");
+      const released = deps.db.transaction(() => {
+        const fence = fenceFor(deps.db, identity.ledgerKey);
+        if (!fence.fenced || fence.operation_id !== req.params.operationId || !["reset", "already_redeemed", "unknown-acknowledged"].includes(fence.outcome)) return false;
+        const changed = deps.db.prepare("UPDATE reset_operations SET credit_snapshot=NULL, fence_released_at=?, fence_released_by=? WHERE operation_id=? AND provider='codex' AND ledger_key=? AND state IN ('settled','acknowledged') AND credit_snapshot IS NOT NULL")
+          .run(Date.now(), principal(res), req.params.operationId, identity.ledgerKey).changes;
+        if (!changed) return false;
+        deps.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(req.params.operationId);
+        deps.db.prepare("UPDATE reset_accounts SET revision=revision+1 WHERE provider='codex' AND ledger_key=?").run(identity.ledgerKey);
+        return true;
+      }).immediate();
+      return released ? res.json({ released: true }) : error(res, 409, "FENCE_NOT_RELEASABLE");
+    } catch { return error(res, 409, "RESET_CONFLICT"); }
   });
   router.post("/api/quota/reset-operations/:operationId/acknowledge", async (req, res) => {
     try {
@@ -155,6 +178,19 @@ function registerOperations(router: Router, state: RouterState): void {
       return changed.changes ? res.json({ acknowledged: true }) : error(res, 409, "RESET_CONFLICT");
     } catch { return error(res, 409, "RESET_CONFLICT"); }
   });
+}
+
+function fenceFor(db: Database.Database, key: string): { fenced: false } | { fenced: true; operation_id: string; outcome: string; settled_at: number; cause: string } {
+  const rows = db.prepare("SELECT operation_id, state, outcome, updated_at, acknowledged_at FROM reset_operations WHERE provider='codex' AND ledger_key=? AND credit_snapshot IS NOT NULL AND state IN ('claimed','sending','unknown','acknowledged','settled') ORDER BY rowid").all(key) as Array<{ operation_id: string; state: string; outcome: string | null; updated_at: number; acknowledged_at: number | null }>;
+  for (const row of rows) {
+    let outcome = row.state === "acknowledged" ? "unknown-acknowledged" : row.state;
+    if (row.state === "settled") {
+      try { outcome = (JSON.parse(row.outcome ?? "") as { outcome?: string }).outcome ?? "unknown"; } catch { outcome = "unknown"; }
+      if (outcome === "nothing_to_reset" || outcome === "no_credit") continue;
+    }
+    return { fenced: true, operation_id: row.operation_id, outcome, settled_at: row.acknowledged_at ?? row.updated_at, cause: "credit list has not confirmed the earlier reset" };
+  }
+  return { fenced: false };
 }
 
 function registerGrok(router: Router, state: RouterState): void {

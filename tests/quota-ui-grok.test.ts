@@ -179,6 +179,20 @@ it("loads auto-redeem settings and exposes bounded lead minutes", async () => {
   assert.equal(input.props.className, "custom-size-input");
   assert.ok(findNode(panel.tree(), n => n.props.className === "settings-row"));
 });
+it("shows an account-bound fence and resumes it on request", async () => {
+  const calls: string[] = []; let fenced = true;
+  const transport = { getOperations: async () => [], redeem: async () => {},
+    getFence: async () => ({ accountRef: "account", fence: fenced ? { fenced: true, operation_id: "old", outcome: "reset", settled_at: 1, cause: "unconfirmed" } : { fenced: false } }),
+    releaseFence: async (id: string, ref: string) => { calls.push(id, ref); fenced = false; } };
+  const panel = mountPanel(loadComponent("ResetCreditsPanel", "ResetCreditsPanel"), { transport, accountRef: "account" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(textContent(panel.tree()), /autoRedeem.paused/);
+  assert.match(textContent(panel.tree()), /autoRedeem.resumeExplanation/);
+  const button = findNode(panel.tree(), n => n.type === "button" && textContent(n).includes("autoRedeem.resume"));
+  assert.ok(button); (button.props.onClick as () => void)();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, ["old", "account"]); assert.doesNotMatch(textContent(panel.tree()), /autoRedeem.paused/);
+});
 it("sends a target-bound Grok confirmation before redeem", async () => {
   const source = readFileSync("ui/src/components/settings/grokCouponsTransport.ts", "utf8");
   const compiled = transformSync(source, { loader: "ts", format: "cjs" }).code;

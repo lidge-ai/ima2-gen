@@ -45,7 +45,7 @@ async function fixture(lan = false) {
     method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", ...headers },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  const confirm = async (operationId: string, headers = {}) => (await (await request("/api/quota/reset-confirmations", { provider: "codex", operationId, accountRef: resetIdentity("codex", account).accountRef }, headers)).json() as { token: string }).token;
+  const confirm = async (operationId: string, headers = {}, purpose?: string) => (await (await request("/api/quota/reset-confirmations", { provider: "codex", operationId, accountRef: resetIdentity("codex", account).accountRef, purpose }, headers)).json() as { token: string }).token;
   return { db, transport, request, confirm, setAccount: (id: string) => { account = id; }, usageReads: () => usageReads,
     restart: async () => { await running.close(); running = await start(); },
     close: async () => { await running.close(); db.close(); } };
@@ -68,6 +68,20 @@ for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed"
 }
 
 describe("reset route safety contracts", () => {
+  it("refuses release of a sending operation and a different principal", async () => withFixture(async f => {
+    f.db.prepare(`INSERT INTO reset_operations (operation_id, provider, ledger_key, state, owner_id, created_at, updated_at, credit_snapshot)
+      VALUES ('sending', 'codex', 'codex:a', 'sending', 'owner', 0, 0, '[]')`).run();
+    const path = "/api/quota/reset-operations/sending/release-fence";
+    const accountRef = resetIdentity("codex", "a").accountRef;
+    const headers = { "x-ima2-token": "test-token" };
+    const token = await f.confirm("sending", headers, "release-fence");
+    const origin = new URL((await f.request("/api/health", undefined, headers)).url).origin;
+    const session = await f.request("/api/auth/lan/session", {}, { origin, ...headers });
+    const cookie = session.headers.get("set-cookie")?.split(";")[0] ?? "";
+    assert.equal((await f.request(path, { accountRef, confirmationToken: token }, { origin, cookie })).status, 403);
+    assert.equal((await f.request(path, { accountRef, confirmationToken: await f.confirm("sending", headers, "release-fence") }, headers)).status, 409);
+    assert.equal(consumeCalls(f).length, 0);
+  }, true));
   it("recovers an expired-credit fence only with an account and principal bound release", async () => withFixture(async f => {
     let now = Date.parse("2026-11-21T00:00:00Z");
     let credits = [5, 20].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: new Date(now + m * 60_000).toISOString() }));
@@ -77,23 +91,37 @@ describe("reset route safety contracts", () => {
     await watcher().tick(); assert.equal(consumeCalls(f).length, 1);
     now += 6 * 60_000; credits = credits.slice(1);
     await watcher().tick(); assert.equal(consumeCalls(f).length, 1);
+    assert.ok((f.db.prepare("SELECT credit_snapshot FROM reset_operations").get() as { credit_snapshot: string | null }).credit_snapshot);
+    writeResetSettings(f.db, { enabled: false, leadMinutes: 20, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     await f.restart();
     const status = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { fence: { fenced: boolean; operation_id: string; outcome: string; settled_at: number; cause: string } };
     assert.equal(status.fence.fenced, true); assert.equal(status.fence.outcome, "reset");
     assert.equal(status.fence.cause, "credit list has not confirmed the earlier reset"); assert.ok(status.fence.settled_at);
     const id = status.fence.operation_id, path = `/api/quota/reset-operations/${id}/release-fence`;
     const accountRef = resetIdentity("codex", "a").accountRef;
-    const token = await f.confirm(id);
+    const token = await f.confirm(id, {}, "release-fence");
     assert.equal((await f.request(path, { accountRef: resetIdentity("codex", "b").accountRef, confirmationToken: token })).status, 409);
     f.setAccount("b");
-    assert.notEqual((await f.request(path, { accountRef, confirmationToken: await f.confirm(id) })).status, 200);
+    assert.notEqual((await f.request(path, { accountRef, confirmationToken: await f.confirm(id, {}, "release-fence") })).status, 200);
+    assert.equal((await f.request(path, { accountRef: resetIdentity("codex", "b").accountRef, confirmationToken: await f.confirm(id, {}, "release-fence") })).status, 409);
     f.setAccount("a");
-    const freshToken = await f.confirm(id);
+    const freshToken = await f.confirm(id, {}, "release-fence");
     assert.equal((await f.request(path, { accountRef, confirmationToken: freshToken })).status, 200);
     await f.restart();
     const row = f.db.prepare("SELECT fence_released_at, fence_released_by FROM reset_operations WHERE operation_id=?").get(id) as { fence_released_at: number; fence_released_by: string };
     assert.ok(row.fence_released_at); assert.ok(row.fence_released_by);
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 20, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     await watcher().tick(); assert.equal(consumeCalls(f).length, 2);
+  }));
+  it("releases an acknowledged unknown fence but rejects a redeem confirmation", async () => withFixture(async f => {
+    f.db.prepare(`INSERT INTO reset_operations (operation_id, provider, ledger_key, state, owner_id, created_at, updated_at, credit_snapshot, acknowledged_at)
+      VALUES ('unknown-op', 'codex', 'codex:a', 'acknowledged', 'owner', 1, 2, '[]', 2)`).run();
+    const path = "/api/quota/reset-operations/unknown-op/release-fence", accountRef = resetIdentity("codex", "a").accountRef;
+    const status = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { fence: { outcome: string } };
+    assert.equal(status.fence.outcome, "unknown-acknowledged");
+    assert.equal((await f.request(path, { accountRef, confirmationToken: await f.confirm("unknown-op") })).status, 400);
+    assert.equal((await f.request(path, { accountRef, confirmationToken: await f.confirm("unknown-op", {}, "release-fence") })).status, 200);
+    assert.equal(consumeCalls(f).length, 0);
   }));
   it("revalidates a manual list delayed across an auto redemption", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
@@ -228,14 +256,14 @@ describe("reset route safety contracts", () => {
     assert.equal(consumeCalls(f).length, 1);
   }));
   it("loads unresolved operations scoped to the current identity after restart", async () => withFixture(async f => {
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)");
     insert.run("own", "codex:a"); insert.run("other", "codex:b"); await f.restart();
     const data = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { operations: Array<{ operation_id: string }> };
     assert.deepEqual(data.operations.map(row => row.operation_id), ["own"]); assert.equal(consumeCalls(f).length, 0);
   }));
   it("acknowledges only unknown operations and refuses recovered operations with live owners", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)");
     insert.run("claimed", "claimed", null);
     assert.equal((await f.request("/api/quota/reset-operations/claimed/acknowledge", {})).status, 409);
     f.db.prepare("UPDATE reset_operations SET state='abandoned' WHERE operation_id='claimed'").run();
@@ -245,7 +273,7 @@ describe("reset route safety contracts", () => {
   }));
   it("refuses recovered unknown acknowledgement while its owner is alive", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL)").run();
+    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)").run();
     assert.equal((await f.request("/api/quota/reset-operations/recovered/acknowledge", {})).status, 409);
     assert.equal(consumeCalls(f).length, 0);
   }));

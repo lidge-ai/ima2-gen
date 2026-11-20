@@ -20,4 +20,9 @@ export const resetCreditsTransport: ResetCreditsTransport = {
   getSettings: () => jsonFetch("/api/quota/reset-settings"),
   saveSettings: (settings) => jsonFetch("/api/quota/reset-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) }),
   acknowledge: (id) => post(`/api/quota/reset-operations/${encodeURIComponent(id)}/acknowledge`, {}),
+  getFence: () => jsonFetch("/api/quota/reset-operations?provider=codex"),
+  async releaseFence(id, accountRef) {
+    const confirmation = await post<{ token: string }>("/api/quota/reset-confirmations", { provider: "codex", operationId: id, accountRef, purpose: "release-fence" });
+    return post(`/api/quota/reset-operations/${encodeURIComponent(id)}/release-fence`, { accountRef, confirmationToken: confirmation.token });
+  },
 };
