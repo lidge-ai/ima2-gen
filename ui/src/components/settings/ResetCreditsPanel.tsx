@@ -125,13 +125,21 @@ function earliestExpiry(credits: ResetList["credits"]): string | null {
   return times.length ? new Date(Math.min(...times)).toLocaleDateString() : null;
 }
 
-/** Read-only list for the folded summary; lists for another account are ignored. */
+/** Read-only list for the folded summary; only the newest request for the displayed account applies. */
 function useEarliestExpiry(transport: ResetCreditsTransport, accountRef: string | undefined, displayedRef: AccountRef) {
   const [earliest, setEarliest] = useState<string | null>(null);
-  const observe = (data: ResetList) => { if (data.accountRef === displayedRef.current) setEarliest(earliestExpiry(data.credits)); };
-  const refresh = () => { if (transport.list && displayedRef.current) void transport.list().then(observe).catch(() => {}); };
+  const latest = useRef(0);
+  const begin = () => ++latest.current;
+  const observe = (request: number, data: ResetList) => {
+    if (request === latest.current && data.accountRef === displayedRef.current) setEarliest(earliestExpiry(data.credits));
+  };
+  const refresh = () => {
+    if (!transport.list || !displayedRef.current) return;
+    const request = begin();
+    void transport.list().then(data => observe(request, data)).catch(() => {});
+  };
   useEffect(() => { setEarliest(null); refresh(); }, [transport, accountRef, displayedRef]);
-  return { earliest, observe, refresh };
+  return { earliest, begin, observe, refresh };
 }
 
 function resetSummary(t: QuotaTranslate, count: number | null | undefined, earliest: string | null, attention: boolean) {
@@ -146,7 +154,7 @@ interface Flow {
   setBusy(value: boolean): void; setMessage: SetMessage; setDialog(value: string | null): void;
   setList(value: ResetList | null): void; setListError(value: boolean): void;
   accountChanged(): void; refreshOps(): Promise<unknown>; refreshFence(): Promise<void>;
-  summary: { observe(data: ResetList): void; refresh(): void };
+  summary: { begin(): number; observe(request: number, data: ResetList): void; refresh(): void };
 }
 
 function openRedeem(flow: Flow) {
@@ -161,7 +169,9 @@ function openRedeem(flow: Flow) {
 
 function listCredits(flow: Flow) {
   flow.setList(null); flow.setListError(false);
-  if (flow.transport.list) void flow.transport.list().then(data => { flow.setList(data); flow.summary.observe(data); }).catch(() => flow.setListError(true));
+  if (!flow.transport.list) return;
+  const request = flow.summary.begin();
+  void flow.transport.list().then(data => { flow.setList(data); flow.summary.observe(request, data); }).catch(() => flow.setListError(true));
 }
 
 async function confirmRedeem(flow: Flow) {
