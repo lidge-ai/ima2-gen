@@ -4,7 +4,6 @@ import { OperationLedger } from "./operationLedger.js";
 import { readResetSettings } from "./settings.js";
 import { resetIdentity } from "./identity.js";
 import { CodexResetClient } from "./codexResetClient.js";
-import { attributedConsumeObserved } from "./fence.js";
 import { logWarn } from "../logger.js";
 
 export interface AutoDependencies {
@@ -67,7 +66,7 @@ export class CodexAutoRedeem {
     const revision = (this.db.prepare("SELECT revision FROM reset_accounts WHERE provider='codex' AND ledger_key=?").get(key) as { revision: number }).revision;
     const list = await deps.client(account).list();
     if (!list.complete) return;
-    if (this.hasFence(key, creditSnapshot(list.credits), deps.now?.() ?? Date.now())) return;
+    if (this.hasFence(key)) return;
     const reserved = new Set((this.db.prepare("SELECT target_key FROM reset_targets WHERE provider='codex' AND ledger_key=?").all(key) as Array<{ target_key: string }>).map(row => row.target_key));
     if (list.credits.some(item => reserved.has(targetOf(item)))) return;
     const credit = selectCredit(list.credits, deps.now?.() ?? Date.now(), readResetSettings(this.db).leadMinutes);
@@ -102,30 +101,21 @@ export class CodexAutoRedeem {
       else this.ledger.settle(id, JSON.stringify(result), result.outcome === "nothing_to_reset" || result.outcome === "no_credit");
     } catch { this.ledger.unknown(id); }
   }
-  private hasFence(key: string, snapshot: string[], now: number): boolean {
-    const present = new Set(snapshot);
-    const rows = this.db.prepare(`SELECT operation_id, state, outcome, credit_snapshot, COALESCE(fence_target, target) AS fence_target FROM reset_operations
+  // Consume is untargeted upstream, so no credit list proves which credit a reset used.
+  // Every redemption with a real outcome pauses automatic reset until the account owner
+  // releases it through the confirmed release-fence route (which clears credit_snapshot).
+  private hasFence(key: string): boolean {
+    const rows = this.db.prepare(`SELECT state, outcome FROM reset_operations
       WHERE provider='codex' AND ledger_key=? AND credit_snapshot IS NOT NULL
       AND state IN ('claimed','sending','unknown','acknowledged','settled')`)
-      .all(key) as Array<{ operation_id: string; state: string; outcome: string | null; credit_snapshot: string; fence_target: string | null }>;
-    for (const row of rows) {
-      if (row.state === 'settled') {
-        try {
-          const outcome = (JSON.parse(row.outcome ?? '') as { outcome?: string }).outcome;
-          if (outcome === 'nothing_to_reset' || outcome === 'no_credit') continue;
-        } catch { return true; }
-      }
-      let previous: unknown;
-      try { previous = JSON.parse(row.credit_snapshot); } catch { return true; }
-      if (!Array.isArray(previous) || previous.some(pair => typeof pair !== 'string')) return true;
-      if (row.state === 'claimed' || row.state === 'sending') return true;
-      if (!attributedConsumeObserved(row.fence_target, previous, present, now)) return true;
-      this.db.transaction(() => {
-        this.db.prepare("DELETE FROM reset_targets WHERE operation_id=?").run(row.operation_id);
-        this.db.prepare("UPDATE reset_operations SET credit_snapshot=NULL WHERE operation_id=?").run(row.operation_id);
-      })();
-    }
-    return false;
+      .all(key) as Array<{ state: string; outcome: string | null }>;
+    return rows.some(row => {
+      if (row.state !== 'settled') return true;
+      try {
+        const outcome = (JSON.parse(row.outcome ?? '') as { outcome?: string }).outcome;
+        return outcome !== 'nothing_to_reset' && outcome !== 'no_credit';
+      } catch { return true; }
+    });
   }
   private async retryInspection(deps: AutoDependencies): Promise<void> {
     // A later tick re-inspects without allowing unbounded recursive retries.

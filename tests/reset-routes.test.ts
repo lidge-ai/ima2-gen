@@ -176,7 +176,7 @@ describe("reset route safety contracts", () => {
     assert.equal((await response.json() as { error: { code: string } }).error.code, "RESET_LIST_PARTIAL");
     assert.equal(lists, 2); assert.equal(consumeCalls(f).length, 0);
   }));
-  it("fences auto after manual success until a listed credit disappears", async () => withFixture(async f => {
+  it("fences auto after manual success even when a listed credit disappears", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
     let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
     f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
@@ -185,7 +185,7 @@ describe("reset route safety contracts", () => {
     writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
     await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
-    credits = credits.slice(1); await watcher.tick(); assert.equal(consumeCalls(f).length, 2);
+    credits = credits.slice(1); await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
   }));
   it("writes the validated manual snapshot atomically when entering sending", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
@@ -256,14 +256,14 @@ describe("reset route safety contracts", () => {
     assert.equal(consumeCalls(f).length, 1);
   }));
   it("loads unresolved operations scoped to the current identity after restart", async () => withFixture(async f => {
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', ?, NULL, 'unknown', 'owner', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)");
     insert.run("own", "codex:a"); insert.run("other", "codex:b"); await f.restart();
     const data = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { operations: Array<{ operation_id: string }> };
     assert.deepEqual(data.operations.map(row => row.operation_id), ["own"]); assert.equal(consumeCalls(f).length, 0);
   }));
   it("acknowledges only unknown operations and refuses recovered operations with live owners", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL)");
+    const insert = f.db.prepare("INSERT INTO reset_operations VALUES (?, 'codex', 'codex:a', NULL, ?, ?, NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)");
     insert.run("claimed", "claimed", null);
     assert.equal((await f.request("/api/quota/reset-operations/claimed/acknowledge", {})).status, 409);
     f.db.prepare("UPDATE reset_operations SET state='abandoned' WHERE operation_id='claimed'").run();
@@ -273,7 +273,7 @@ describe("reset route safety contracts", () => {
   }));
   it("refuses recovered unknown acknowledgement while its owner is alive", async () => withFixture(async f => {
     f.db.prepare("INSERT INTO reset_owners VALUES ('owner', ?, 0)").run(process.pid);
-    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL)").run();
+    f.db.prepare("INSERT INTO reset_operations VALUES ('recovered', 'codex', 'codex:a', NULL, 'unknown', 'recovered', NULL, 'owner', NULL, NULL, NULL, 0, 0, NULL, NULL, NULL)").run();
     assert.equal((await f.request("/api/quota/reset-operations/recovered/acknowledge", {})).status, 409);
     assert.equal(consumeCalls(f).length, 0);
   }));

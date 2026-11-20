@@ -1450,7 +1450,7 @@
       "upsell": {"buyReset": "購買重設點數", "viewUsage": "查看用量"},
       "grokSource": {"ima2-session": "用量來源：ima2 工作階段", "grok-cli": "用量來源：Grok CLI", "accountMayDiffer": "優惠券帳戶可能與 Grok CLI 帳戶不同。"},
       "grokCoupons": {"title": "Grok 重設券", "account": "優惠券帳戶", "empty": "沒有可用優惠券", "expires": "有效期至 {date}", "confirm": "使用此優惠券重設 Grok 用量？", "unavailable": "優惠券無法使用：需要 ima2 xAI 工作階段和已驗證的身分。", "prepaidBalance": "預付餘額"},
-      "autoRedeem": {"paused": "自動重設已暫停，直到額度清單確認上一次重設", "resume": "恢復自動重設", "resumeExplanation": "恢復後，即使上一次重設已使用額度，也可能再次使用額度。繼續前請檢查額度清單。", "account": "設定適用的帳戶：{account}", "title": "自動重設", "enable": "啟用自動兌換", "warning": "啟用後，接近到期時可能不再確認就使用重設額度。", "lead": "到期前分鐘數（1–60）"},
+      "autoRedeem": {"paused": "每次重設後，自動重設都會暫停，直到你恢復它", "resume": "恢復自動重設", "resumeExplanation": "恢復後，即使上一次重設已使用額度，也可能再次使用額度。繼續前請檢查額度清單。", "account": "設定適用的帳戶：{account}", "title": "自動重設", "enable": "啟用自動兌換", "warning": "啟用後，接近到期時可能不再確認就使用重設額度。每次重設後，自動重設會暫停，直到你恢復它。", "lead": "到期前分鐘數（1–60）"},
       "naiBattery": "V5 電量",
       "naiAnlas": "Anlas",
       "naiNegative": "充電中（負值）",

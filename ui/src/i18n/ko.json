@@ -1450,7 +1450,7 @@
       "upsell": {"buyReset": "리셋 크레딧 구매", "viewUsage": "사용량 보기"},
       "grokSource": {"ima2-session": "사용량 출처: ima2 세션", "grok-cli": "사용량 출처: Grok CLI", "accountMayDiffer": "쿠폰 계정은 Grok CLI 계정과 다를 수 있습니다."},
       "grokCoupons": {"title": "Grok 리셋 쿠폰", "account": "쿠폰 계정", "empty": "사용 가능한 쿠폰이 없습니다", "expires": "유효 기간: {date}까지", "confirm": "이 쿠폰으로 Grok 사용량을 리셋할까요?", "unavailable": "쿠폰을 사용할 수 없습니다. ima2 xAI 세션과 확인된 계정이 필요합니다.", "prepaidBalance": "선불 잔액"},
-      "autoRedeem": {"paused": "마지막 리셋이 크레딧 목록에서 확인될 때까지 자동 리셋이 일시 중지됩니다", "resume": "자동 리셋 다시 시작", "resumeExplanation": "다시 시작하면 이전 리셋에서 이미 크레딧을 사용했더라도 다른 크레딧을 사용할 수 있습니다. 계속하기 전에 크레딧 목록을 확인하세요.", "account": "설정이 적용되는 계정: {account}", "title": "자동 리셋", "enable": "자동 사용 켜기", "warning": "켜면 만료가 임박한 리셋 크레딧을 추가 확인 없이 사용할 수 있습니다.", "lead": "만료 전 시간(분, 1–60)"},
+      "autoRedeem": {"paused": "리셋할 때마다 자동 리셋이 일시 중지되며, 다시 시작해야 이어집니다", "resume": "자동 리셋 다시 시작", "resumeExplanation": "다시 시작하면 이전 리셋에서 이미 크레딧을 사용했더라도 다른 크레딧을 사용할 수 있습니다. 계속하기 전에 크레딧 목록을 확인하세요.", "account": "설정이 적용되는 계정: {account}", "title": "자동 리셋", "enable": "자동 사용 켜기", "warning": "켜면 만료가 임박한 리셋 크레딧을 추가 확인 없이 사용할 수 있습니다. 리셋할 때마다 다시 시작할 때까지 자동 리셋이 일시 중지됩니다.", "lead": "만료 전 시간(분, 1–60)"},
       "naiBattery": "V5 배터리",
       "naiAnlas": "Anlas",
       "naiNegative": "충전 중 (음수)",

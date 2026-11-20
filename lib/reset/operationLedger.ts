@@ -21,7 +21,7 @@ export class OperationLedger {
   private enabled(provider: string, key: string): boolean {
     return !!this.db.prepare("SELECT 1 FROM reset_settings WHERE provider=? AND enabled=1 AND ledger_key=?").get(provider, key);
   }
-  sending(id: string, owner: string, auto = false, creditSnapshot?: string[], eligibility?: { expiresAt: number; now: () => number }, fenceTarget?: string | null): boolean {
+  sending(id: string, owner: string, auto = false, creditSnapshot?: string[], eligibility?: { expiresAt: number; now: () => number }): boolean {
     return this.db.transaction(() => {
       const row = this.get(id) as { provider: string; ledger_key: string; state: string; owner_id: string } | undefined;
       if (!row || row.state !== "claimed" || row.owner_id !== owner) return false;
@@ -35,8 +35,8 @@ export class OperationLedger {
           this.abandon(id, owner); return false;
         }
       }
-      return this.db.prepare("UPDATE reset_operations SET state='sending', updated_at=?, credit_snapshot=COALESCE(?, credit_snapshot), fence_target=COALESCE(?, fence_target, target) WHERE operation_id=? AND owner_id=? AND state='claimed'")
-        .run(Date.now(), creditSnapshot === undefined ? null : JSON.stringify(creditSnapshot), fenceTarget ?? null, id, owner).changes === 1;
+      return this.db.prepare("UPDATE reset_operations SET state='sending', updated_at=?, credit_snapshot=COALESCE(?, credit_snapshot) WHERE operation_id=? AND owner_id=? AND state='claimed'")
+        .run(Date.now(), creditSnapshot === undefined ? null : JSON.stringify(creditSnapshot), id, owner).changes === 1;
     }).immediate();
   }
   abandon(id: string, owner: string): void {
@@ -87,7 +87,6 @@ export function migrateResetTables(db: Database.Database): void {
   if (!columns.some(column => column.name === "credit_snapshot")) db.exec("ALTER TABLE reset_operations ADD COLUMN credit_snapshot TEXT");
   if (!columns.some(column => column.name === "fence_released_at")) db.exec("ALTER TABLE reset_operations ADD COLUMN fence_released_at INTEGER");
   if (!columns.some(column => column.name === "fence_released_by")) db.exec("ALTER TABLE reset_operations ADD COLUMN fence_released_by TEXT");
-  if (!columns.some(column => column.name === "fence_target")) db.exec("ALTER TABLE reset_operations ADD COLUMN fence_target TEXT");
   const settingsColumns = db.prepare("PRAGMA table_info(reset_settings)").all() as Array<{ name: string }>;
   if (!settingsColumns.some(column => column.name === "ledger_key")) {
     db.transaction(() => { db.exec("ALTER TABLE reset_settings ADD COLUMN ledger_key TEXT"); db.exec("UPDATE reset_settings SET enabled=0"); })();

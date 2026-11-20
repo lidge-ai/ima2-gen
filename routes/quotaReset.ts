@@ -15,7 +15,6 @@ import { discoverXaiOAuthEndpoints, getGrokAccessToken } from "../lib/xaiAuth.js
 import { grokResetTransport } from "../lib/reset/transport.js";
 import { OperationLedger } from "../lib/reset/operationLedger.js";
 import { creditSnapshot } from "../lib/reset/codexAutoRedeem.js";
-import { attributedTarget } from "../lib/reset/fence.js";
 export interface ResetDependencies {
   db: Database.Database; transport: ResetTransport;
   accountId(): string | Promise<string>; usage(): Promise<unknown>;
@@ -126,7 +125,7 @@ function registerRedeem(router: Router, state: RouterState): void {
       let client: CodexResetClient;
       try { client = await clientFor(identity.ledgerKey.slice("codex:".length)).prepare(); }
       catch { ledger.abandon(id, owner); return error(res, 503, "DISPATCH_FAILED"); }
-      if (!ledger.sending(id, owner, false, snapshot, undefined, attributedTarget(snapshot, Date.now()))) return error(res, 409, "OPERATION_FENCED");
+      if (!ledger.sending(id, owner, false, snapshot)) return error(res, 409, "OPERATION_FENCED");
       let result: Awaited<ReturnType<CodexResetClient["consume"]>>;
       try { result = await client.consume(id); } catch { ledger.unknown(id); return error(res, 503, "DISPATCH_FAILED"); }
       if (result.outcome === "unknown") ledger.unknown(id); else ledger.settle(id, JSON.stringify(result));
@@ -189,7 +188,7 @@ function fenceFor(db: Database.Database, key: string): { fenced: false } | { fen
       try { outcome = (JSON.parse(row.outcome ?? "") as { outcome?: string }).outcome ?? "unknown"; } catch { outcome = "unknown"; }
       if (outcome === "nothing_to_reset" || outcome === "no_credit") continue;
     }
-    return { fenced: true, operation_id: row.operation_id, outcome, settled_at: row.acknowledged_at ?? row.updated_at, cause: "credit list has not confirmed the earlier reset" };
+    return { fenced: true, operation_id: row.operation_id, outcome, settled_at: row.acknowledged_at ?? row.updated_at, cause: "automatic reset pauses after each redemption until released" };
   }
   return { fenced: false };
 }
