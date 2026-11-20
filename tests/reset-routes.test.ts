@@ -68,6 +68,33 @@ for (const code of ["reset", "nothing_to_reset", "no_credit", "already_redeemed"
 }
 
 describe("reset route safety contracts", () => {
+  it("recovers an expired-credit fence only with an account and principal bound release", async () => withFixture(async f => {
+    let now = Date.parse("2026-11-21T00:00:00Z");
+    let credits = [5, 20].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: new Date(now + m * 60_000).toISOString() }));
+    f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
+    writeResetSettings(f.db, { enabled: true, leadMinutes: 20, ledgerKey: resetIdentity("codex", "a").ledgerKey });
+    const watcher = () => new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
+    await watcher().tick(); assert.equal(consumeCalls(f).length, 1);
+    now += 6 * 60_000; credits = credits.slice(1);
+    await watcher().tick(); assert.equal(consumeCalls(f).length, 1);
+    await f.restart();
+    const status = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { fence: { fenced: boolean; operation_id: string; outcome: string; settled_at: number; cause: string } };
+    assert.equal(status.fence.fenced, true); assert.equal(status.fence.outcome, "reset");
+    assert.equal(status.fence.cause, "credit list has not confirmed the earlier reset"); assert.ok(status.fence.settled_at);
+    const id = status.fence.operation_id, path = `/api/quota/reset-operations/${id}/release-fence`;
+    const accountRef = resetIdentity("codex", "a").accountRef;
+    const token = await f.confirm(id);
+    assert.equal((await f.request(path, { accountRef: resetIdentity("codex", "b").accountRef, confirmationToken: token })).status, 409);
+    f.setAccount("b");
+    assert.notEqual((await f.request(path, { accountRef, confirmationToken: await f.confirm(id) })).status, 200);
+    f.setAccount("a");
+    const freshToken = await f.confirm(id);
+    assert.equal((await f.request(path, { accountRef, confirmationToken: freshToken })).status, 200);
+    await f.restart();
+    const row = f.db.prepare("SELECT fence_released_at, fence_released_by FROM reset_operations WHERE operation_id=?").get(id) as { fence_released_at: number; fence_released_by: string };
+    assert.ok(row.fence_released_at); assert.ok(row.fence_released_by);
+    await watcher().tick(); assert.equal(consumeCalls(f).length, 2);
+  }));
   it("revalidates a manual list delayed across an auto redemption", async () => withFixture(async f => {
     const now = Date.parse("2026-11-21T00:00:00Z");
     let credits = [5, 6].map(m => ({ granted_at: "2026-11-20T00:00:00Z", expires_at: `2026-11-21T00:0${m}:00Z` }));
