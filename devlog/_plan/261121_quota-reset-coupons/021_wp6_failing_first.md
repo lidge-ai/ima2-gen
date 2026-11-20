@@ -83,3 +83,7 @@ Baseline: 0653bd84, with concurrent Grok lane work present in the working tree. 
 | lead change during active inspection | FAIL, failing-first: expected two inspections, observed one (`node --import tsx --test --test-name-pattern='reconfigures again when lead changes during an inspection' tests/reset-auto-redeem.test.ts`, 1 failed). |
 
 After the queued-reconfiguration fix, the complete requested reset/quota glob passed: 128 tests, 0 failures, 0 skipped, sentinel assertions 0. `npm run typecheck` and `npm run typecheck:tests` exited 0; `npm run lint` exited 0 with 93 warnings and 0 errors. These checks ran with a temporary HOME/config/database and dispatch disabled; the concurrently owned Grok lane was present in the working tree. The new failing-first case passed in that run.
+
+## S6c
+
+Base: 793f3b3b. `node --import tsx --test tests/quota-ui-grok.test.ts`: 4 tests, 0 pass, 4 fail, 0 skipped; sentinel 0. The two coupon panel tests fail because the component does not exist, the transport test because its module does not exist, and the settings test because the bounded lead input is absent. Later assertions in those tests were not reached. All transports are synthetic; no redeem was called.
