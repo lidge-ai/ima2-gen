@@ -13,6 +13,7 @@
 import { config } from "../config.js";
 export { DEFAULT_SVG_MODEL } from "../config.js";
 import { isImage26Model } from "./oauthNormalize.js";
+import { coerceReasoningEffortForModel } from "./imageModels.js";
 
 export const GIF_FRAME_COUNT = { min: 2, max: 16, default: 9 } as const;
 export const GIF_FRAME_DURATION_MS = { min: 20, max: 2000, default: 200 } as const;
@@ -123,11 +124,13 @@ function resolveSvgOutput(input: OutputInput): OutputResult {
   if (typeof effectiveModel !== "string" || !/^[A-Za-z0-9._:-]{1,64}$/.test(effectiveModel)) {
     return fail("INVALID_SVG_MODEL", "svgModel must be a model id");
   }
+  const effectiveEffort = effort === "minimal" && coerceReasoningEffortForModel(effectiveModel, "none") === "low"
+    ? "low" : coerceReasoningEffortForModel(effectiveModel, effort as string | undefined);
   return {
     output: {
       format: "svg",
-      fields: { svg: { model: effectiveModel, ...(effort ? { reasoning: { effort } } : {}) } },
-      meta: { svgModel: effectiveModel, ...(effort ? { svgReasoningEffort: effort as string } : {}) },
+      fields: { svg: { model: effectiveModel, ...(effectiveEffort ? { reasoning: { effort: effectiveEffort } } : {}) } },
+      meta: { svgModel: effectiveModel, ...(effectiveEffort ? { svgReasoningEffort: effectiveEffort } : {}) },
     },
   };
 }

@@ -81,7 +81,7 @@ export function reconcileCoreSelection(input: CoreSelectionInput): CoreSelection
         ? input.imageModel as ImageModel : DEFAULT_IMAGE_MODEL,
       videoModelSelected: false,
       comfyWorkflow: workflow(input.comfyWorkflow)
-        ?? (legacy && !staticIds.has(legacy) ? legacy : null),
+        ?? (legacy && !staticIds.has(legacy) && !Object.hasOwn(LEGACY_OPENAI_MODELS, legacy) ? legacy : null),
       comfyVideoWorkflow: workflow(input.comfyVideoWorkflow),
     };
   }
