@@ -79,7 +79,7 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 613 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
+| `server.ts` | 628 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
 | `config.ts` | 571 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 97 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
@@ -297,7 +297,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/grokMultimodeAdapter.ts` | 6 | Compatibility re-exports of actual Grok multimode operation/type |
 | `lib/grokRuntime.ts` | 94 | Grok transport: api.x.ai endpoint, per-lane credential resolution, single 401 refresh replay |
 | `lib/xaiDeviceLogin.ts` | 232 | Stateless xAI device-code login used by the CLI when no server is running |
-| `lib/xaiAuth.ts` | 495 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
+| `lib/xaiAuth.ts` | 500 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
 | `lib/grokUpstreamRetry.ts` | 171 | Pre-response retry guard for idempotent Grok fetches: socket resets, transient 5xx, Retry-After backoff |
 | `lib/grokSizeMapper.ts` | 88 | Grok model image-size mapping and validation |
 | `lib/grokVideoCanvas.ts` | 41 | Grok video canvas/source preparation helpers |

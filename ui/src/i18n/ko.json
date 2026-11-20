@@ -1442,12 +1442,15 @@
       }
     },
     "quota": {
-      "window": {"5h": "5시간", "7d": "7일", "30d": "30일", "other": "{label}"},
+      "window": {"weekly": "주간", "5h": "5시간", "7d": "7일", "30d": "30일", "other": "{label}"},
       "credits": {"balance": "크레딧 잔액", "unknown": "알 수 없음", "unlimited": "무제한", "overage": "초과 사용 허용", "approxMessages": "약 {count}개 메시지"},
       "resetCredits": {"count": "리셋 크레딧", "unknown": "알 수 없음", "usableNow": "지금 사용 가능 {count}개", "list": "리셋 크레딧 보기", "expires": "만료: {date}"},
       "redeem": {"action": "리셋 크레딧 사용", "confirm": "현재 계정에서 리셋 크레딧 1개를 사용하시겠습니까?", "cancel": "취소", "redeeming": "사용 중…", "success": "사용량을 초기화했습니다.", "nothingToReset": "초기화할 사용량이 없습니다.", "noCredit": "사용할 리셋 크레딧이 없습니다.", "identityChanged": "계정이 변경되었습니다. 다시 시도하세요.", "unknown": "결과를 확인할 수 없습니다. 다시 시도하기 전에 작업을 확인하세요.", "alreadyRedeemed": "이미 사용된 리셋입니다.", "loadError": "리셋 정보를 불러오지 못했습니다."},
       "acknowledge": {"action": "확인", "explanation": "이전 시도에서 크레딧이 사용되었을 수 있습니다. 새 시도에는 다시 확인이 필요합니다.", "blocked": "이전 프로세스가 실행 중이라면 ima2를 재시작하거나 멈춘 프로세스를 먼저 종료하세요."},
       "upsell": {"buyReset": "리셋 크레딧 구매", "viewUsage": "사용량 보기"},
+      "grokSource": {"ima2-session": "주간 사용량 출처: ima2 세션", "grok-cli": "주간 사용량 출처: Grok CLI", "accountMayDiffer": "쿠폰 계정은 Grok CLI 계정과 다를 수 있습니다."},
+      "grokCoupons": {"title": "Grok 리셋 쿠폰", "account": "쿠폰 계정", "empty": "사용 가능한 쿠폰이 없습니다", "expires": "유효 기간: {date}까지", "confirm": "이 쿠폰으로 Grok 사용량을 리셋할까요?", "unavailable": "쿠폰을 사용할 수 없습니다. ima2 xAI 세션과 확인된 계정이 필요합니다.", "prepaidBalance": "선불 잔액"},
+      "autoRedeem": {"title": "자동 리셋", "enable": "자동 사용 켜기", "warning": "켜면 만료가 임박한 리셋 크레딧을 추가 확인 없이 사용할 수 있습니다.", "lead": "만료 전 시간(분, 1–60)"},
       "naiBattery": "V5 배터리",
       "naiAnlas": "Anlas",
       "naiNegative": "충전 중 (음수)",

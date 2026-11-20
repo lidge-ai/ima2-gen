@@ -25,7 +25,7 @@ describe("Grok weekly behavior", () => {
       assert.deepEqual(seen, ["Bearer ima2-token"]);
       assert.equal((result as typeof result & { source?: string }).source, "ima2-session");
       assert.equal(result.account?.email, "ima2@example.test");
-    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true }); }
+    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
   it("falls back from a failed session to the CLI weekly account", async () => {
     const home = mkdtempSync(join(tmpdir(), "ima2-weekly-fallback-"));
@@ -39,7 +39,7 @@ describe("Grok weekly behavior", () => {
       const result = await fetchGrokBilling(home);
       assert.deepEqual(seen, ["Bearer ima2-token", "Bearer cli-token"]);
       assert.equal((result as typeof result & { source?: string }).source, "grok-cli");
-    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true }); }
+    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
   it("projects valid product usage and prepaid balance while ignoring malformed rows", () => {
     assert.deepEqual(parseGrokCreditsResponse(response), { percent: 25, periodEnd: end,

@@ -18,7 +18,7 @@ const { migrate, closeDb } = await import("../lib/db.js");
 const { stopAgentQueueWorker } = await import("../lib/agentQueueWorker.js");
 const { createTestRuntimeContext } = await import("../lib/runtimeContext.js");
 const { buildApp } = await import("../server.js");
-after(() => { stopAgentQueueWorker(); closeDb(); rmSync(root, { recursive: true, force: true }); assert.equal(sentinelCount(), 0); });
+after(() => { stopAgentQueueWorker(); closeDb(); rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); assert.equal(sentinelCount(), 0); });
 let seq = 0;
 async function fixture(fn: (f: { request: (method: string, body?: unknown, headers?: Record<string, string>) => Promise<Response>; calls: () => number }) => Promise<void>, lan = false) {
   const db = new Database(join(root, `test-${seq++}.sqlite`)); migrate(db);

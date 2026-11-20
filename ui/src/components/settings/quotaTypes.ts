@@ -11,6 +11,9 @@ export interface QuotaResult {
   windows: QuotaWindow[];
   error?: boolean;
   authenticated?: boolean;
+  source?: "ima2-session" | "grok-cli";
+  productUsage?: Array<{ product: string; percent: number }>;
+  prepaidBalance?: number;
   billing?: { usedUsd: number; limitUsd: number };
   credits?: { balance: string | number | null; unlimited: boolean; hasCredits: boolean; overage?: boolean; approxMessages?: number | null } | null;
   resetCredits?: { availableCount: number | null; applicableAvailableCount: number | null } | null;

@@ -1442,12 +1442,15 @@
       }
     },
     "quota": {
-      "window": {"5h": "5 hours", "7d": "7 days", "30d": "30 days", "other": "{label}"},
+      "window": {"weekly": "Weekly", "5h": "5 hours", "7d": "7 days", "30d": "30 days", "other": "{label}"},
       "credits": {"balance": "Credit balance", "unknown": "Unknown", "unlimited": "Unlimited", "overage": "Overage enabled", "approxMessages": "About {count} messages"},
       "resetCredits": {"count": "Reset credits", "unknown": "Unknown", "usableNow": "{count} usable now", "list": "Show reset credits", "expires": "Expires {date}"},
       "redeem": {"action": "Redeem reset credit", "confirm": "Use one reset credit for the current account?", "cancel": "Cancel", "redeeming": "Redeeming…", "success": "Usage reset.", "nothingToReset": "There is nothing to reset.", "noCredit": "No reset credit is available.", "identityChanged": "The account changed. Try again.", "unknown": "The outcome is unknown. Check the operation before trying again.", "alreadyRedeemed": "This reset was already redeemed.", "loadError": "Could not load reset information."},
       "acknowledge": {"action": "Acknowledge", "explanation": "The earlier attempt may have used a credit. A new attempt requires a new confirmation.", "blocked": "If the earlier process is still running, restart ima2 or end the stuck process first."},
       "upsell": {"buyReset": "Buy reset credits", "viewUsage": "View usage"},
+      "grokSource": {"ima2-session": "Weekly source: ima2 session", "grok-cli": "Weekly source: Grok CLI", "accountMayDiffer": "The coupon account may differ from the Grok CLI account."},
+      "grokCoupons": {"title": "Grok reset coupons", "account": "Coupon account", "empty": "No coupons available", "expires": "Valid until {date}", "confirm": "Use this coupon to reset Grok usage?", "unavailable": "Coupons unavailable: an ima2 xAI session and verified identity are required.", "prepaidBalance": "Prepaid balance"},
+      "autoRedeem": {"title": "Automatic reset", "enable": "Enable automatic redemption", "warning": "Enabling may consume a reset credit near expiry without another confirmation.", "lead": "Minutes before expiry (1–60)"},
       "naiBattery": "V5 battery",
       "naiAnlas": "Anlas",
       "naiNegative": "Recharging (negative)",

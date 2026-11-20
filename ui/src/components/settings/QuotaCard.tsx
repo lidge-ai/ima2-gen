@@ -6,6 +6,8 @@ import { SwitchAccountButton } from "./SwitchAccountButton";
 import type { QuotaWindow, QuotaResponse } from "./quotaTypes";
 import { CodexCredits } from "./CodexCredits";
 import { ResetCreditsPanel } from "./ResetCreditsPanel";
+import { GrokCouponsPanel } from "./GrokCouponsPanel";
+import { grokCouponsTransport } from "./grokCouponsTransport";
 import { resetCreditsTransport } from "./resetCreditsTransport";
 
 function barColor(pct: number): string {
@@ -23,7 +25,7 @@ function formatReset(iso: string | null): string {
 function QuotaBar({ window: w }: { window: QuotaWindow }) {
   const { t } = useI18n();
   const reset = formatReset(w.resetsAt);
-  const label = w.label === "5h" || w.label === "7d" || w.label === "30d"
+  const label = w.label === "5h" || w.label === "7d" || w.label === "30d" || w.label === "weekly"
     ? t(`settings.quota.window.${w.label}`) : t("settings.quota.window.other", { label: w.label ?? "—" });
   return (
     <div className="quota-bar">
@@ -226,6 +228,11 @@ export function GrokQuota({ data, loading, onRefresh }: QuotaBlockProps) {
           {t("settings.quota.grokUsageLink")}
         </a>
       )}
+      {grok?.source && <p className="quota-card__hint">{t(`settings.quota.grokSource.${grok.source}`)}</p>}
+      {grok?.source === "grok-cli" && <p className="quota-card__hint">{t("settings.quota.grokSource.accountMayDiffer")}</p>}
+      {grok?.productUsage?.map((row, index) => <p key={`${row.product}-${index}`}>{row.product}: {row.percent}%</p>)}
+      {grok?.prepaidBalance !== undefined && <p>{t("settings.quota.grokCoupons.prepaidBalance")}: {grok.prepaidBalance}</p>}
+      <GrokCouponsPanel transport={grokCouponsTransport} t={t} onRefresh={onRefresh} />
       <SwitchAccountButton provider="grok" onComplete={onRefresh} />
     </div>
   );

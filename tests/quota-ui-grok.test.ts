@@ -16,6 +16,7 @@ function loadComponent(file: string, name: string): Component {
     type, props, children: Array.isArray(props.children) ? props.children : [props.children],
   });
   const requireStub = (id: string): unknown => {
+    if (id === "./ResetCreditsPanel") return { trapKey: () => {} };
     if (id === "react/jsx-runtime") return { jsx, jsxs: jsx };
     if (id === "react") return {
       useState: (initial: unknown) => {
@@ -24,6 +25,7 @@ function loadComponent(file: string, name: string): Component {
         if (!(index in mount.states)) mount.states[index] = initial;
         return [mount.states[index], (value: unknown) => { mount.states[index] = value; mount.update(); }];
       },
+      useCallback: (callback: unknown) => callback,
       useEffect: (effect: () => void) => { currentMount!.effects.push(effect); },
       useRef: (initial: unknown) => {
         const mount = currentMount!;
@@ -75,7 +77,7 @@ it("loads the coupon account and unresolved operations without redeeming", async
   const transport = { list: async () => { calls.push("list"); return { accountLabel: "coupon@example.test", coupons: [{ tokenId: "token", validityEnd: 2000000000 }] }; },
     getOperations: async () => { calls.push("operations"); return [{ operation_id: "old", state: "unknown" }]; }, redeem: async () => { calls.push("redeem"); } };
   const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
-  await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls, ["list", "operations"]);
   assert.match(textContent(panel.tree()), /coupon@example.test/);
   assert.match(textContent(panel.tree()), /old/);
@@ -86,9 +88,9 @@ it("requires confirmation before redeeming the selected coupon", async () => {
   const transport = { list: async () => ({ accountLabel: "account", coupons: [{ tokenId: "token", validityEnd: null }] }),
     getOperations: async () => [], redeem: async (id: string) => { calls.push(id); return { result: { outcome: "success" } }; } };
   const panel = mountPanel(loadComponent("GrokCouponsPanel", "GrokCouponsPanel"), { transport });
-  await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
   const button = findNode(panel.tree(), n => n.type === "button" && n.props["data-coupon"] === "token");
-  assert.ok(button); (button.props.onClick as () => void)();
+  assert.ok(button); (button.props.onClick as (event: unknown) => void)({ currentTarget: { focus() {} } });
   assert.deepEqual(calls, []);
   assert.ok(findNode(panel.tree(), n => n.props.role === "dialog"));
 });
@@ -113,3 +115,30 @@ it("sends a target-bound Grok confirmation before redeem", async () => {
   assert.equal(calls[1]?.body.target, "coupon"); assert.equal(calls[1]?.body.confirmationToken, "confirmation");
 });
 after(() => assert.equal(sentinelCount(), 0));
+
+it("shows Grok weekly source, product use and prepaid balance", () => {
+  const source = readFileSync("ui/src/components/settings/QuotaCard.tsx", "utf8");
+  const code = transformSync(source, { loader: "tsx", format: "cjs", jsx: "automatic" }).code;
+  const mod = { exports: {} as { GrokQuota: Component } };
+  const jsx = (type: string, props: Record<string, unknown>): ElementNode => ({ type, props, children: Array.isArray(props.children) ? props.children : [props.children] });
+  runInNewContext(code, { module: mod, exports: mod.exports, require: (id: string) => {
+    if (id === "react/jsx-runtime") return { jsx, jsxs: jsx };
+    if (id === "../../i18n") return { useI18n: () => ({ t: (key: string) => key }) };
+    return {};
+  } });
+  const tree = mod.exports.GrokQuota({ loading: false, data: { grok: { source: "grok-cli", windows: [{ label: "weekly", percent: 20 }], productUsage: [{ product: "chat", percent: 25 }], prepaidBalance: 12 } } });
+  const contents = textContent(tree);
+  assert.match(contents, /grok-cli/); assert.match(contents, /accountMayDiffer/); assert.match(contents, /chat.*25\s*%/); assert.match(contents, /12/);
+});
+it("defines matching new labels and interpolation variables in all locales", () => {
+  const locales = ["en", "ko", "zh-Hans", "zh-Hant"];
+  const entries = locales.map(locale => (JSON.parse(readFileSync(`ui/src/i18n/${locale}.json`, "utf8")) as { settings: { quota: Record<string, Record<string, string>> } }).settings.quota);
+  for (const family of ["grokSource", "grokCoupons", "autoRedeem"]) {
+    const keys = Object.keys(entries[0]![family]!).sort();
+    for (const entry of entries) {
+      assert.deepEqual(Object.keys(entry[family]!).sort(), keys);
+      for (const key of keys) assert.deepEqual([...entry[family]![key]!.matchAll(/\{(\w+)\}/g)].map(x => x[1]).sort(), [...entries[0]![family]![key]!.matchAll(/\{(\w+)\}/g)].map(x => x[1]).sort());
+    }
+  }
+  for (const entry of entries) assert.ok(entry.window?.weekly);
+});

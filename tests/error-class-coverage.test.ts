@@ -42,6 +42,11 @@ const LEXICAL_EXCEPTIONS = new Set([
   "ATLASCLOUD_TEXT_TO_IMAGE_MODEL",
   "GEMINI_API_FALLBACK_IMAGE_MODEL",
   "GEMINI_API_KEY",
+  // Reset route errors are not generation errors; URL constants are not errors.
+  "GROK_COUPONS_UNAVAILABLE",
+  "GROK_IDENTITY_UNAVAILABLE",
+  "GROK_LIST_URL",
+  "GROK_REDEEM_URL",
   "GROK_BILLING_URL",
   "GROK_CLIENT_ID",
   "GROK_CREDITS_URL",

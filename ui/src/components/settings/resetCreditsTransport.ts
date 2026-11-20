@@ -17,5 +17,7 @@ export const resetCreditsTransport: ResetCreditsTransport = {
       operationId, confirmationToken: confirmation.token,
     });
   },
+  getSettings: () => jsonFetch("/api/quota/reset-settings"),
+  saveSettings: (settings) => jsonFetch("/api/quota/reset-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) }),
   acknowledge: (id) => post(`/api/quota/reset-operations/${encodeURIComponent(id)}/acknowledge`, {}),
 };
