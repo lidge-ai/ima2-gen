@@ -325,7 +325,7 @@ Text-to-image and reference-guided root generation.
   "format": "png",
   "moderation": "low",
   "provider": "oauth",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "references": [],
   "requestId": "optional-client-id",
   "storyboard": false
@@ -449,7 +449,7 @@ Supported moderation values: `auto`, `low`.
 When `storyboard` is `true`, the server prepends storyboard keyframe instructions so image
 generations maintain character and scene continuity for multi-shot video production.
 
-GPT OAuth default: `gpt-6-luna` (also `gpt-6-sol` and `gpt-6-astra`; legacy OAuth ids map to their GPT-6 tier). API-key default: `gpt-5.6-luna`; `gpt-5.5` and the other API models remain available when callers select them.
+GPT OAuth and API-key lanes offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`, defaulting to `gpt-6-luna` (aliases: `luna`, `terra`, `sol`, `astra`). Saved older IDs migrate to their corresponding tier on the same lane; see `lib/openaiLegacyModels.ts`.
 
 When `provider` is `"nai"`, classic, multimode, and node generation accept the
 same 13 provider-native fields: `negativePrompt`, `sampler`, `noiseSchedule`,
@@ -575,7 +575,7 @@ Multi-image sequence generation. SSE-only on the POST response unless async mode
   "size": "1024x1024",
   "format": "png",
   "moderation": "low",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "provider": "oauth",
   "references": [],
   "requestId": "optional-client-id",

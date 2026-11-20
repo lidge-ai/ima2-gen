@@ -133,13 +133,9 @@ Use the **Switch Account** button in Settings > QuotaCard for the provider. This
 
 ### Which model should I use?
 
-On GPT OAuth the app starts with `gpt-6-luna`. The lane offers three GPT-6 models: the one you pick plans the image and `gpt-image-2` renders it.
+Both GPT OAuth and API-key lanes offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra`; `gpt-6-luna` is the default. Their aliases are `luna`, `terra`, `sol`, and `astra`. The chosen model plans the image and `gpt-image-2` renders it. For `gpt-6.2-sol` and `gpt-6.2-astra`, reasoning effort `none` runs as `low`.
 
-- `gpt-6-luna`: the default.
-- `gpt-6-sol`: the other everyday GPT-6 model.
-- `gpt-6-astra`: reasons longest and is the slowest; a `none` reasoning effort runs as `low`.
-
-Older OAuth ids (`gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`) still work in saved settings and scripts. `gpt-5.6-sol` runs as `gpt-6-sol` and the rest run as `gpt-6-luna`. The API-key lane (`provider: "api"`) keeps its own list, with `gpt-5.6-luna` as its default.
+Saved older IDs migrate to their corresponding tier on the same lane; see `lib/openaiLegacyModels.ts` for the map.
 
 ### Why does one GPT-6 model fail when the others work?
 

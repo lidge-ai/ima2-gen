@@ -47,7 +47,7 @@ function sourceOf(item: ProvenanceInput): string | null {
  *
  * Deliberately narrow: the full continuity chain belongs in the metadata modal, not on
  * a thumbnail. Provider is folded into the model label rather than shown separately —
- * "GPT-5.5 · openai" says the same thing twice.
+ * "GPT-6 Luna · openai" says the same thing twice.
  */
 export function buildProvenanceView(item: ProvenanceInput): ProvenanceView {
   return {

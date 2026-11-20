@@ -64,17 +64,17 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
 
   <h2>모델</h2>
   <p>
-    GPT OAuth 레인의 기본 모델은 <code>gpt-6-luna</code>이고, API 키 레인은 <code>gpt-5.6-luna</code>를 유지합니다. Prompt Builder는 별도 백엔드
+    GPT OAuth와 API 키 레인의 기본 모델은 모두 <code>gpt-6-luna</code>입니다. Prompt Builder는 별도 백엔드
     설정을 따르며, GPT 백엔드를 쓸 때 Luna가 기본 Builder model입니다.
   </p>
+  <p>저장된 이전 ID는 같은 레인의 대응 티어로 변환됩니다 (<code>lib/openaiLegacyModels.ts</code> 참조).</p>
   <table>
     <thead><tr><th>모델</th><th>용도</th></tr></thead>
     <tbody>
-      <tr><td><code>gpt-6-luna</code></td><td>GPT OAuth 기본값. Prompt Builder가 GPT OAuth를 쓸 때도 기본 모델입니다.</td></tr>
-      <tr><td><code>gpt-6-sol</code></td><td>GPT OAuth의 또 다른 일상용 GPT-6 모델.</td></tr>
-      <tr><td><code>gpt-6-astra</code></td><td>가장 오래 추론하는 대신 가장 느립니다. OAuth·API 레인에서 고를 수 있습니다.</td></tr>
-      <tr><td><code>gpt-5.6-luna</code> / <code>gpt-5.6-terra</code> / <code>gpt-5.6-sol</code></td><td>API 키 레인 모델(<code>gpt-5.6-luna</code>가 기본값). GPT OAuth에서는 <code>gpt-6-sol</code>(sol) 또는 <code>gpt-6-luna</code>로 바뀝니다.</td></tr>
-      <tr><td><code>gpt-5.5</code> / <code>gpt-5.4</code> / <code>gpt-5.4-mini</code></td><td>API 키 레인 호환 모델. GPT OAuth에서는 <code>gpt-6-luna</code>로 실행됩니다.</td></tr>
+      <tr><td><code>gpt-6-luna</code></td><td>두 레인의 기본 모델 (별칭 <code>luna</code>).</td></tr>
+      <tr><td><code>gpt-6.1-terra</code></td><td>별칭 <code>terra</code>.</td></tr>
+      <tr><td><code>gpt-6.2-sol</code></td><td>별칭 <code>sol</code>.</td></tr>
+      <tr><td><code>gpt-6.2-astra</code></td><td>별칭 <code>astra</code>.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>빠른 호환 Grok 이미지 모델.</td></tr>
       <tr><td><code>grok-imagine-image-quality</code></td><td>최고 품질 Grok 이미지 모델.</td></tr>
       <tr><td><code>grok-imagine-image-2.0</code></td><td>새 세션의 기본 Grok 이미지 모델.</td></tr>
@@ -89,7 +89,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
     <code>low</code>) 컨트롤도 제공합니다. reasoning effort는 none, low, medium, high, xhigh를 받습니다.
   </p>
   <div class="docs-callout docs-callout-info">
-    <strong>영속 기본값.</strong> <code>ima2 defaults set model gpt-5.5</code>와
+    <strong>영속 기본값.</strong> <code>ima2 defaults set model gpt-6-luna</code>와
     <code>ima2 defaults set reasoning high</code>는 OAuth와 API 프로바이더 기본 키를 모두 기록해,
     "기본 모델"이 두 경로에서 하나의 개념으로 유지됩니다.
   </div>
@@ -158,7 +158,7 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'ko', slug);
   <table>
     <thead><tr><th>변수</th><th>기본값</th></tr></thead>
     <tbody>
-      <tr><td><code>IMA2_API_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-5.6-luna</code></td></tr>
+      <tr><td><code>IMA2_API_IMAGE_MODEL_DEFAULT</code></td><td><code>gpt-6-luna</code></td></tr>
       <tr><td><code>IMA2_API_REASONING_EFFORT</code></td><td><code>low</code></td></tr>
       <tr><td><code>IMA2_API_IMAGE_SIZE</code></td><td><code>1024x1024</code></td></tr>
       <tr><td><code>IMA2_API_ALLOW_WEB_SEARCH</code></td><td><code>true</code></td></tr>

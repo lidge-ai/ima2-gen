@@ -113,10 +113,12 @@ Grok尺寸映射如下xAI的形象API， 不是OpenAI's `size`场地。ima2
 三Grok引用被拒绝`GROK_REF_TOO_MANY`, 匹配xAI's
 记录多图像编辑限制。
 
+GPT OAuth 和 API key 图像通道均支持 `gpt-6-luna`、`gpt-6.1-terra`、`gpt-6.2-sol`、`gpt-6.2-astra`（别名 `luna`、`terra`、`sol`、`astra`），默认使用 `gpt-6-luna`。保存的旧 ID 会迁移到同一通道的对应级别（见 `lib/openaiLegacyModels.ts`）。
+
 ```bash
 ima2 models --kind image
 ima2 defaults set image oauth/gpt-6-luna
-ima2 gen "a poster of a samurai cat" --model api/gpt-5.4 --reasoning-effort high
+ima2 gen "a poster of a samurai cat" --model api/gpt-6-luna --reasoning-effort high
 ima2 grok login
 ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
 ima2 gen "campaign still" --model runway/gen-4 --ref 1780000000000_abcd.png
@@ -421,7 +423,7 @@ history.{defaultPageSize,maxPageCap}
 
 ```bash
 # Generation with reasoning effort and web search
-ima2 gen "poster" --model gpt-5.4 --moderation low --reasoning-effort high
+ima2 gen "poster" --model gpt-6-luna --moderation low --reasoning-effort high
 ima2 edit input.png --prompt "make it rainy" --web-search
 ima2 multimode "two cats playing" --max-images 2 --ref cat.png --mode direct -o cat.png
 
@@ -450,7 +452,7 @@ ima2 skill front ref motion
 ima2 skill install --dir ~/.codex/skills
 ima2 skill install --tmp
 ima2 capabilities --json
-ima2 defaults set model gpt-5.5
+ima2 defaults set model gpt-6-luna
 ima2 defaults set reasoning high
 ima2 config set imageModels.reasoningEffort high
 ima2 config get log.level

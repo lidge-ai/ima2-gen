@@ -122,7 +122,7 @@ export async function codexCatalog(): Promise<CatalogModel[]> {
   }
 }
 
-/** GPT-6 and GPT-5.6 are lite on the Codex backend; an unknown catalog falls back to the family rule. */
+/** GPT-6.x and GPT-5.6 are lite on the Codex backend; an unknown catalog falls back to the family rule. */
 export async function isLiteModel(model: unknown): Promise<boolean> {
   if (typeof model !== "string") return false;
   const entry = (await codexCatalog()).find((row) => row.slug === model);

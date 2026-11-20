@@ -13,7 +13,7 @@ const genBody = `{
   "format": "png",
   "moderation": "low",
   "provider": "oauth",
-  "model": "gpt-5.4",
+  "model": "gpt-6-luna",
   "references": [],
   "requestId": "optional-client-id"
 }`;
@@ -62,7 +62,7 @@ const genBody = `{
   <pre><code>{genBody}</code></pre>
   <p>
     Quality: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api,
-    agy, gemini-api, atlascloud, minimax, nai, comfy. GPT OAuth defaults to <code>gpt-6-luna</code> (also <code>gpt-6-sol</code>, <code>gpt-6-astra</code>); the API-key lane defaults to <code>gpt-5.6-luna</code>. Grok image models: <code>grok-imagine-image-2.0</code> (default),
+    agy, gemini-api, atlascloud, minimax, nai, comfy. Both GPT OAuth and API-key lanes offer <code>gpt-6-luna</code>, <code>gpt-6.1-terra</code>, <code>gpt-6.2-sol</code>, and <code>gpt-6.2-astra</code>, defaulting to <code>gpt-6-luna</code>. Saved older IDs migrate to their corresponding tier on the same lane. Grok image models: <code>grok-imagine-image-2.0</code> (default),
     <code>grok-imagine-image</code> and <code>grok-imagine-image-quality</code>. Gemini API models: <code>nano-banana-2</code>
     (default) and <code>nano-banana-pro</code>. The web UI uses <code>GET /api/events</code>
     (SSE multiplexing) for all generation progress: POST routes accept
