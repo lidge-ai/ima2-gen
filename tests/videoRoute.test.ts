@@ -464,4 +464,29 @@ test("/api/video/generate rejects non-grok provider and bad params", async () =>
   }
 });
 
+test("/api/video/generate pins frames on 1.5 as reference-to-video and refuses pinned 1080p before any start", async () => {
+  const starts: any[] = [];
+  const proxy = makeProxy({ captureStart: (body) => { starts.push(body); } });
+  await listen(proxy);
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-route-pins-"));
+  const { url } = await videoApp(generatedDir);
+  const png = Buffer.from("img").toString("base64");
+  const body = (resolution: string) => JSON.stringify({ prompt: "walk to the door", provider: "grok", model: "grok-imagine-video-1.5", sourceImage: png, lastFrame: png, keyframes: [{ image: png, timestampS: 1 }], duration: 3, resolution, requestId: `req_video_pins_${resolution}` });
+  try {
+    const rejected = parseSse(await (await fixture.fetchApp(`${url}/api/video/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: body("1080p") })).text());
+    assert.equal(rejected.find((e) => e.event === "error")?.data.code, "INVALID_VIDEO_RESOLUTION");
+    assert.equal(starts.length, 0);
+    const res = await fixture.fetchApp(`${url}/api/video/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: body("720p") });
+    assert.ok(parseSse(await res.text()).some((e) => e.event === "done"), "has done");
+    assert.equal(starts.length, 1);
+    assert.equal(starts[0].resolution, "720p");
+    assert.ok(starts[0].image?.url?.startsWith("data:image/"));
+    assert.ok(starts[0].last_frame?.url?.startsWith("data:image/"));
+    assert.equal(starts[0].keyframes?.[0]?.timestamp_s, 1);
+    assert.equal("reference_images" in starts[0], false);
+  } finally {
+    await fixture.finishCase();
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+});
 }
