@@ -110,3 +110,6 @@ Base: 228da39c. `node --import tsx --test tests/quota-ui-credits.test.ts` (reset
 ## Final review #12 minor — out-of-order summary reads
 
 Base: 6ab8a286. `node --import tsx --test tests/quota-ui-credits.test.ts` (reset test guard): 26 tests, 25 pass, 1 fail, exit 1; sentinel 0. `ignores an older summary response that arrives after a newer list`: the slow mount-time list resolved after an explicit list and overwrote the summary with the stale earliest expiry (12/1 instead of 12/9). Synthetic transports only.
+## Final review #13 minor — stale credit list body
+
+Base: 85144a88. `node --import tsx --test tests/quota-ui-credits.test.ts` (reset test guard): 27 tests, 26 pass, 1 fail, exit 1; sentinel 0. `shows only the newest credit list for the displayed account`: an older explicit list response resolved last and replaced the newest list in the expanded body. Display only; redeem re-reads and re-checks the account before confirming. Synthetic transports only.

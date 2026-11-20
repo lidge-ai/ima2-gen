@@ -171,6 +171,23 @@ describe("quota details start folded", () => {
     (list!.props.onClick as () => void)(); await new Promise(resolve => setImmediate(resolve));
     assert.ok(visibleText(view.tree()).includes(`settings.quota.resetCredits.expires(${date})`));
   });
+  it("shows only the newest credit list for the displayed account", async () => {
+    const listed = (accountRef: string, title: string) => ({ accountRef, complete: true, credits: [{ title, expiresAt: "2026-12-05T00:00:00Z" }] });
+    const pending: Array<(value: unknown) => void> = []; let calls = 0;
+    const transport = { getOperations: async () => [], redeem: async () => {},
+      list: () => ++calls === 1 ? Promise.resolve(listed("acct", "mount")) : new Promise(resolve => { pending.push(resolve); }) };
+    const view = mountPanel(Panel, { transport, accountRef: "acct", availableCount: 1, t: withParams });
+    await new Promise(resolve => setImmediate(resolve));
+    (disclosure(view.tree())!.props.onClick as () => void)();
+    const show = () => (findNode(view.tree(), n => n.type === "button" && textContent(n).includes("resetCredits.list"))!.props.onClick as () => void)();
+    show(); show();
+    pending[1]!(listed("acct", "newest-credit")); await new Promise(resolve => setImmediate(resolve));
+    pending[0]!(listed("acct", "older-credit")); await new Promise(resolve => setImmediate(resolve));
+    assert.match(visibleText(view.tree()), /newest-credit/);
+    assert.doesNotMatch(visibleText(view.tree()), /older-credit/);
+    show(); pending[2]!(listed("other-account", "other-account-credit")); await new Promise(resolve => setImmediate(resolve));
+    assert.doesNotMatch(visibleText(view.tree()), /other-account-credit/);
+  });
   it("ignores an older summary response that arrives after a newer list", async () => {
     const stale = { accountRef: "acct", complete: true, credits: [{ expiresAt: "2026-12-01T00:00:00Z" }] };
     const fresh = { accountRef: "acct", complete: true, credits: [{ expiresAt: "2026-12-09T00:00:00Z" }] };
