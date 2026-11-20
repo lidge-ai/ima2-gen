@@ -83,18 +83,19 @@ describe("resolveTarget", () => {
   // The CLI alias map in bin/lib/model-aliases.ts is maintained separately from
   // the registry's aliases field, which never reaches the resolver, so this is
   // the only place proving a short alias actually resolves for a user.
-  it("canonicalizes the astra alias and reports both lanes when it is bare", () => {
+  it("canonicalizes the astra alias and resolves the default OpenAI lane", () => {
     assert.deepStrictEqual(resolveTarget("image", { model: "oauth/astra" }, makeCatalog(), {}), {
       ok: true, lane: "oauth", model: "gpt-6.2-astra", transport: "core",
     });
     assert.deepStrictEqual(resolveTarget("image", { model: "api/astra" }, makeCatalog(), {}), {
       ok: true, lane: "api", model: "gpt-6.2-astra", transport: "core",
     });
-    // Bare "astra" is ambiguous rather than oauth-by-default, because the
-    // registry puts Astra on both GPT lanes. The alias still resolves to the
-    // canonical id first, which is what the candidate list proves.
-    const failure = expectFailure(resolveTarget("image", { model: "astra" }, makeCatalog(), {}), "MODEL_AMBIGUOUS");
-    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/gpt-6.2-astra", "api/gpt-6.2-astra"]);
+    assert.deepStrictEqual(resolveTarget("image", { model: "astra" }, makeCatalog(), {}), {
+      ok: true, lane: "oauth", model: "gpt-6.2-astra", transport: "core",
+    });
+    assert.deepStrictEqual(resolveTarget("image", { model: "astra" }, makeCatalog(), { image: "api/shared" }), {
+      ok: true, lane: "api", model: "gpt-6.2-astra", transport: "core",
+    });
   });
 
   it("returns MODEL_LOCKED for a catalog-only Comfy video workflow", () => {
@@ -112,7 +113,7 @@ describe("resolveTarget", () => {
     expectFailure(resolveTarget("image", { model: "unknown/x" }, makeCatalog(), {}), "UNKNOWN_LANE");
   });
 
-  // Saved legacy ids migrate within each OpenAI lane; bare ids remain ambiguous.
+  // Saved legacy ids migrate within each OpenAI lane.
   it("maps legacy GPT OAuth ids to their GPT-6 tier on both OpenAI lanes", () => {
     const catalog = makeCatalog();
     catalog.lanes.api = ready({ image: [{ id: "gpt-6-luna" }, { id: "gpt-6.2-astra" }] }, { image: "gpt-6-luna" });
@@ -129,8 +130,9 @@ describe("resolveTarget", () => {
     assert.deepStrictEqual(resolveTarget("image", {}, catalog, { image: "oauth/gpt-5.5" }), {
       ok: true, lane: "oauth", model: "gpt-6-luna", transport: "core",
     });
-    const bare = expectFailure(resolveTarget("image", { model: "gpt-5.6-luna" }, catalog, {}), "MODEL_AMBIGUOUS");
-    assert.deepStrictEqual(bare!.extra?.candidates, ["oauth/gpt-5.6-luna", "api/gpt-5.6-luna"]);
+    assert.deepStrictEqual(resolveTarget("image", { model: "gpt-5.6-luna" }, catalog, { image: "api/gpt-6-luna" }), {
+      ok: true, lane: "api", model: "gpt-6-luna", transport: "core",
+    });
   });
 
   it("rejects missing models, kind mismatches, and lane conflicts", () => {
@@ -153,8 +155,10 @@ describe("resolveTarget", () => {
   });
 
   it("returns stable candidates for ambiguous bare ids", () => {
-    const failure = expectFailure(resolveTarget("image", { model: "shared" }, makeCatalog(), {}), "MODEL_AMBIGUOUS");
-    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared", "api/shared"]);
+    const catalog = makeCatalog();
+    catalog.lanes.agy.models.image.push({ id: "shared" });
+    const failure = expectFailure(resolveTarget("image", { model: "shared" }, catalog, { image: "api/shared" }), "MODEL_AMBIGUOUS");
+    assert.deepStrictEqual(failure!.extra?.candidates, ["oauth/shared", "api/shared", "agy/shared"]);
   });
 
   it("rejects missing bare ids and bare kind mismatches within a provider", () => {
