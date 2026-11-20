@@ -53,14 +53,6 @@ describe("auto-redeem controls", () => {
 });
 
 describe("auto-redeem reservation and settings", () => {
-  it("adds the fence target column idempotently", () => {
-    const db = new Database(":memory:");
-    try {
-      migrateResetTables(db); migrateResetTables(db);
-      const names = (db.prepare("PRAGMA table_info(reset_operations)").all() as Array<{ name: string }>).map(c => c.name);
-      assert.equal(names.filter(name => name === "fence_target").length, 1);
-    } finally { db.close(); }
-  });
   it("keeps an unattributed settled fence when a snapshot credit disappears", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
     const now = Date.parse("2026-11-21T00:00:00Z"), grant = "2026-11-20T00:00:00Z";
@@ -155,7 +147,8 @@ describe("auto-redeem reservation and settings", () => {
     await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 1);
     credits = [c]; await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 1);
   }));
-  it("clears a fence when a consumed credit disappears before expiry", async () => fixture(async f => {
+  // Consume is untargeted upstream: here it took b, a vanished independently, and the stale list still shows b.
+  it("keeps the fence when a guessed credit disappears but the consumed one is still listed", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });
     const now = Date.parse("2026-11-21T00:00:00Z");
     const grant = "2026-11-20T00:00:00Z";
@@ -165,7 +158,7 @@ describe("auto-redeem reservation and settings", () => {
     fake.send = async (url, body) => { fake.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
     const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
     await new CodexAutoRedeem(f.a, deps).tick(); credits = [b]; await new CodexAutoRedeem(f.b, deps).tick();
-    assert.equal(fake.calls.filter(call => call.url.endsWith("/consume")).length, 2);
+    assert.equal(fake.calls.filter(call => call.url.endsWith("/consume")).length, 1);
   }));
   it("rechecks upstream credit immediately before sending and releases a removed target", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10, ledgerKey: "codex:fixture-account" });

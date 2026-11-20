@@ -96,7 +96,7 @@ describe("reset route safety contracts", () => {
     await f.restart();
     const status = await (await f.request("/api/quota/reset-operations?provider=codex")).json() as { fence: { fenced: boolean; operation_id: string; outcome: string; settled_at: number; cause: string } };
     assert.equal(status.fence.fenced, true); assert.equal(status.fence.outcome, "reset");
-    assert.equal(status.fence.cause, "credit list has not confirmed the earlier reset"); assert.ok(status.fence.settled_at);
+    assert.equal(status.fence.cause, "automatic reset pauses after each redemption until released"); assert.ok(status.fence.settled_at);
     const id = status.fence.operation_id, path = `/api/quota/reset-operations/${id}/release-fence`;
     const accountRef = resetIdentity("codex", "a").accountRef;
     const token = await f.confirm(id, {}, "release-fence");
@@ -335,19 +335,20 @@ describe("reset route controls", () => {
     const token = await f.confirm("happy"); assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "happy" })).status, 200);
     assert.deepEqual(consumeCalls(f)[0]?.body, { redeem_request_id: "happy" }); assert.equal(consumeCalls(f).length, 1); assert.equal(f.usageReads(), 1);
   }));
-  it("attributes a manual fence to the nearest-expiring credit only", async () => withFixture(async f => {
-    // The route attributes with the real clock, so expiries are relative to it.
+  it("keeps a manual fence until explicit release whichever credit disappears", async () => withFixture(async f => {
+    // Expiries are relative to the real clock used by the route.
     const now = Date.now(), grant = new Date(now - 86_400_000).toISOString();
-    const expiresA = new Date(now + 5 * 60_000).toISOString();
-    const a = { granted_at: grant, expires_at: expiresA }, b = { granted_at: grant, expires_at: new Date(now + 6 * 60_000).toISOString() };
+    const a = { granted_at: grant, expires_at: new Date(now + 5 * 60_000).toISOString() }, b = { granted_at: grant, expires_at: new Date(now + 6 * 60_000).toISOString() };
     let credits = [b, a];
     f.transport.send = async (url, body) => { f.transport.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits, available_count: credits.length }; };
     assert.equal((await f.request(redeemPath, { operationId: "manual-fence", confirmationToken: await f.confirm("manual-fence") })).status, 200);
-    const row = f.db.prepare("SELECT fence_target FROM reset_operations WHERE operation_id='manual-fence'").get() as { fence_target: string | null };
-    assert.equal(row.fence_target, `${grant}|${expiresA}`);
     writeResetSettings(f.db, { enabled: true, leadMinutes: 10, ledgerKey: resetIdentity("codex", "a").ledgerKey });
     const watcher = new CodexAutoRedeem(f.db, { accountId: async () => "a", client: () => new CodexResetClient(f.transport), now: () => now });
     credits = [a]; await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
-    credits = [b]; await watcher.tick(); assert.equal(consumeCalls(f).length, 2);
+    credits = [b]; await watcher.tick(); assert.equal(consumeCalls(f).length, 1);
+    const accountRef = resetIdentity("codex", "a").accountRef;
+    const release = await f.request("/api/quota/reset-operations/manual-fence/release-fence", { accountRef, confirmationToken: await f.confirm("manual-fence", {}, "release-fence") });
+    assert.equal(release.status, 200);
+    await watcher.tick(); assert.equal(consumeCalls(f).length, 2);
   }));
 });

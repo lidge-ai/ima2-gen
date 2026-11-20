@@ -95,3 +95,8 @@ Base: 33d1c87b. `IMA2_RESET_DISPATCH_DISABLED=1 node --experimental-test-module-
 ## Final review #9 — open panel fence refresh
 
 Base: fence-attribution fix commit. `node --import tsx --test tests/quota-ui-grok.test.ts` (with the reset test guard): 18 tests, 17 pass, 1 fail, exit 1; sentinel 0. `shows a fence created in the background while the panel stays open` failed because the panel registered no fence poller (`poll` undefined), so a fence created by background auto-redeem stayed invisible until remount. Synthetic transport only.
+## Final review #10 — no automatic fence clearing
+
+Consume is untargeted upstream, so no list observation identifies which credit a reset used. Decision: after a redemption with a real outcome (reset, already_redeemed, or an acknowledged unknown), automatic reset stays paused until the user releases it through the account- and principal-bound release-fence route. nothing_to_reset and no_credit do not pause it. The guessed attribution (fence_target) is removed.
+
+Base: 09793802. `IMA2_RESET_DISPATCH_DISABLED=1 node --experimental-test-module-mocks --import tsx --test tests/reset-auto-redeem.test.ts tests/reset-routes.test.ts`: 68 tests, 65 pass, 3 fail, exit 1; sentinel 0. `keeps the fence when a guessed credit disappears but the consumed one is still listed` and `keeps a manual fence until explicit release whichever credit disappears` observed 2 consumes where 1 was expected (the guessed credit's disappearance cleared the fence). `recovers an expired-credit fence ...` failed on the old cause text. Synthetic transports only; no consume or redeem endpoint was called.
