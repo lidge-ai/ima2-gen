@@ -17,7 +17,7 @@ import { generateViaMinimax } from "./minimaxImageAdapter.js";
 import { generateViaNai } from "./naiImageAdapter.js";
 import { DEFAULT_GROK_PLANNER_MODEL } from "../config.js";
 import { generateVideoViaGrok, type GrokVideoGenerateResult } from "./grokVideoAdapter.js";
-import { GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, resolveGrokQualityModel, validateVideoResolutionForRequest } from "./imageModels.js";
+import { GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, isMinimaxH3ImageModel, resolveGrokQualityModel, validateVideoResolutionForRequest } from "./imageModels.js";
 import { parseVideoParams } from "./agentGenerationPlanner.js";
 import {
   isVideoGenerationError,
@@ -47,6 +47,9 @@ export async function generateAgentImageWithRetry(
   options: AgentRunOptions,
 ) {
   options.onProgressStage?.("requesting");
+  if (options.provider === "minimax" && isMinimaxH3ImageModel(options.model || ctx.config.minimaxProvider.defaultImageModel)) {
+    return generateAgentImage(ctx, sessionId, prompt, manifest, webSearchEnabled, options);
+  }
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {

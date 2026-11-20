@@ -7,7 +7,7 @@ import { detectImageMimeFromB64, summarizeReferencePayload } from "./refs.js";
 import { classifyUpstreamError } from "./errorClassify.js";
 import { normalizeOAuthParams } from "./oauthNormalize.js";
 import { resolveProviderOptions } from "./providerOptions.js";
-import { resolveGrokQualityModel } from "./imageModels.js";
+import { isMinimaxH3ImageModel, resolveGrokQualityModel } from "./imageModels.js";
 import { prepareImageExecution } from "./providers/execution/index.js";
 import { checkImageExecutionAdmission } from "./providers/execution/admission.js";
 import { readNaiOptions } from "./naiOptions.js";
@@ -279,7 +279,9 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         },
       } : undefined);
       let resultFormat = activeProvider === "grok" || activeProvider === "agy" || activeProvider === "grok-api" || activeProvider === "gemini-api" || activeProvider === "atlascloud" || activeProvider === "minimax" ? "jpeg" : format;
-      const maxAttempts = inputImageCount > 0 ? 1 : 2;
+      // A submitted H3 generation may be billed even if the response is lost.
+      const singleAttempt = inputImageCount > 0 || (activeProvider === "minimax" && isMinimaxH3ImageModel(effectiveImageModel));
+      const maxAttempts = singleAttempt ? 1 : 2;
       let lastErr: UpstreamErr | null = null;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {

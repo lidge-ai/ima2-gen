@@ -187,6 +187,8 @@ export const REGISTRY = [
     models: [
       { id: "image-01", kind: "image", supports: EDIT },
       { id: "image-01-live", kind: "image", supports: EDIT },
+      { id: "MiniMax-H3-Image", kind: "image", supports: GENERATE_ONLY },
+      { id: "MiniMax-H3-Image-Highspeed", kind: "image", supports: GENERATE_ONLY },
     ],
     referenceLimits: { image: 1, edit: 1 },
     elementTaxonomy: "gpt",

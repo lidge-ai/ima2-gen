@@ -193,7 +193,7 @@ test("GET /api/models returns every canonical lane with deterministic statuses a
     ]);
     assert.equal(body.lanes.minimax.status, "key-missing");
     assert.deepEqual(body.lanes.minimax.models.image.map((model) => model.id), [
-      "image-01", "image-01-live",
+      "image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed",
     ]);
     assert.equal(body.lanes.runway.status, "disconnected");
     assert.equal(body.lanes.higgsfield.status, "disconnected");
@@ -311,7 +311,7 @@ test("the MiniMax lane keeps its exact DTO when no key is configured", async () 
     assert.equal(minimax.status, "key-missing");
     assert.equal(minimax.reason, "MiniMax API key missing");
     assert.equal(minimax.defaults.image, "image-01");
-    assert.deepEqual(minimax.models.image.map((model) => model.id), ["image-01", "image-01-live"]);
+    assert.deepEqual(minimax.models.image.map((model) => model.id), ["image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed"]);
     assert.deepEqual(minimax.models.video, []);
     for (const model of minimax.models.image) {
       assert.equal(model.label, model.id);
@@ -328,7 +328,7 @@ test("the MiniMax lane reports ready once the runtime context holds a key", asyn
     assert.equal(minimax.status, "ready");
     assert.equal(minimax.reason, undefined, "a ready lane carries no reason");
     assert.equal(minimax.defaults.image, "image-01");
-    assert.deepEqual(minimax.models.image.map((model) => model.id), ["image-01", "image-01-live"]);
+    assert.deepEqual(minimax.models.image.map((model) => model.id), ["image-01", "image-01-live", "MiniMax-H3-Image", "MiniMax-H3-Image-Highspeed"]);
     assert.deepEqual(minimax.models.video, []);
   });
 });

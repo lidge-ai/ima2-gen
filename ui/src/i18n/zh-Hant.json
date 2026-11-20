@@ -1488,6 +1488,8 @@
       "atlasCloudGptImage2Edit": "阿特拉斯雲 GPT Image 2 編輯",
       "minimaxImage01": "MiniMax image-01",
       "minimaxImage01Live": "MiniMax image-01-live",
+      "minimaxH3": "MiniMax H3 Image",
+      "minimaxH3Highspeed": "MiniMax H3 Image Highspeed",
       "agy": "Antigravity (agy)",
       "gpt53CodexSpark": "GPT-5.3 Codex Spark — 不支援影像",
       "unsupportedHelp": "Grok 模型使用 xAI Images API。GPT OAuth 使用 Codex 後端；OpenAI API 金鑰使用 OpenAI API。",
