@@ -71,25 +71,22 @@ const intervalFencePoller: FencePoller = (refresh) => {
   const timer = setInterval(refresh, FENCE_POLL_MS);
   return () => clearInterval(timer);
 };
-export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, accountEmail, availableCount, applicableAvailableCount, fencePoller = intervalFencePoller }: PanelProps) {
-  const [settings, setSettings] = useState<ResetSettings | null>(null);
-  const [settingsBusy, setSettingsBusy] = useState(false);
+type SetMessage = (message: string) => void;
+type AccountRef = { current: string | undefined };
+const errorCode = (error: unknown) => (error as { code?: string }).code;
+
+function useOperations(transport: ResetCreditsTransport, setMessage: SetMessage) {
   const [ops, setOps] = useState<ResetOperation[]>([]);
-  const [fence, setFence] = useState<ResetFence>({ fenced: false });
-  const [dialog, setDialog] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [list, setList] = useState<ResetList | null>(null);
-  const [listError, setListError] = useState(false);
-  const usableCount = applicableAvailableCount === undefined ? availableCount : applicableAvailableCount;
-  const noUsableCredits = usableCount == null || usableCount <= 0;
   const [opsLoaded, setOpsLoaded] = useState(false);
-  const inFlight = useRef(false);
-  const trigger = useRef<HTMLButtonElement | null>(null);
-  const displayedRef = useRef(accountRef); displayedRef.current = accountRef;
-  const accountChanged = () => { setDialog(null); setMessage("identityChanged"); onRefresh?.(); };
   const refreshOps = () => transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
     .catch(() => { setOpsLoaded(false); setMessage("loadError"); });
+  useEffect(() => { void refreshOps(); }, [transport]);
+  return { ops, opsLoaded, refreshOps };
+}
+
+function useFence(transport: ResetCreditsTransport, accountRef: string | undefined, displayedRef: AccountRef,
+  inFlight: { current: boolean }, fencePoller: FencePoller, setMessage: SetMessage) {
+  const [fence, setFence] = useState<ResetFence>({ fenced: false });
   const refreshFence = async () => {
     if (!transport.getFence) return;
     const data = await transport.getFence();
@@ -98,87 +95,151 @@ export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, acco
   useEffect(() => { setFence({ fenced: false }); void refreshFence().catch(() => setMessage("loadError")); }, [transport, accountRef]);
   // Background auto-redeem can create a fence while this panel stays open.
   useEffect(() => fencePoller(() => { if (!inFlight.current) void refreshFence().catch(() => {}); }), [transport, accountRef, fencePoller]);
-  useEffect(() => { void transport.getOperations().then((data) => { setOps(data); setOpsLoaded(true); })
-    .catch(() => { setOpsLoaded(false); setMessage("loadError"); }); }, [transport]);
+  return { fence, refreshFence };
+}
+
+function useResetSettings(transport: ResetCreditsTransport, displayedRef: AccountRef, accountChanged: () => void, setMessage: SetMessage) {
+  const [settings, setSettings] = useState<ResetSettings | null>(null);
+  const [settingsBusy, setSettingsBusy] = useState(false);
   useEffect(() => { if (transport.getSettings) void transport.getSettings().then(setSettings).catch(() => setMessage("loadError")); }, [transport]);
   const saveSettings = async (next: ResetSettings) => {
     if (!transport.saveSettings || !displayedRef.current || settingsBusy || !Number.isInteger(next.leadMinutes) || next.leadMinutes < 1 || next.leadMinutes > 60) return;
     setSettingsBusy(true);
-    try { setSettings(await transport.saveSettings({ ...next, accountRef: displayedRef.current })); } catch (error) { if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("loadError"); } finally { setSettingsBusy(false); }
+    try { setSettings(await transport.saveSettings({ ...next, accountRef: displayedRef.current })); }
+    catch (error) { if (errorCode(error) === "IDENTITY_CHANGED") accountChanged(); else setMessage("loadError"); }
+    finally { setSettingsBusy(false); }
   };
-  const confirm = async () => {
-    if (inFlight.current || !dialog) return;
-    inFlight.current = true;
-    setBusy(true); setMessage("redeeming");
-    try {
-      if (!transport.list) throw new Error("RESET_LIST_UNAVAILABLE");
-      const latest = await transport.list();
-      if (!dialog || !displayedRef.current || latest.accountRef !== dialog || dialog !== displayedRef.current) { accountChanged(); return; }
-      const result = await transport.redeem(dialog);
-      setMessage(outcomeKeys[result?.result?.outcome ?? result?.outcome ?? "unknown"] ?? "unknown");
-      onRefresh?.();
-    } catch (error) {
-      if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("unknown");
-    } finally { inFlight.current = false; setBusy(false); setDialog(null); void refreshOps(); void refreshFence().catch(() => setMessage("loadError")); trigger.current?.focus(); }
+  return { settings, settingsBusy, saveSettings };
+}
+
+interface Flow {
+  transport: ResetCreditsTransport; displayedRef: AccountRef; inFlight: { current: boolean };
+  trigger: { current: HTMLButtonElement | null }; dialog: string | null; busy: boolean; onRefresh?: () => void;
+  setBusy(value: boolean): void; setMessage: SetMessage; setDialog(value: string | null): void;
+  setList(value: ResetList | null): void; setListError(value: boolean): void;
+  accountChanged(): void; refreshOps(): Promise<unknown>; refreshFence(): Promise<void>;
+}
+
+function openRedeem(flow: Flow) {
+  if (!flow.transport.list) return;
+  const clickedRef = flow.displayedRef.current;
+  flow.setBusy(true);
+  void flow.transport.list().then(data => {
+    if (!clickedRef || data.accountRef !== clickedRef || flow.displayedRef.current !== clickedRef) { flow.accountChanged(); return; }
+    flow.setList(data); flow.setMessage(""); flow.setDialog(data.accountRef);
+  }).catch(() => flow.setListError(true)).finally(() => flow.setBusy(false));
+}
+
+function listCredits(flow: Flow) {
+  flow.setList(null); flow.setListError(false);
+  if (flow.transport.list) void flow.transport.list().then(flow.setList).catch(() => flow.setListError(true));
+}
+
+async function confirmRedeem(flow: Flow) {
+  const { dialog } = flow;
+  if (flow.inFlight.current || !dialog) return;
+  flow.inFlight.current = true;
+  flow.setBusy(true); flow.setMessage("redeeming");
+  try {
+    if (!flow.transport.list) throw new Error("RESET_LIST_UNAVAILABLE");
+    const latest = await flow.transport.list();
+    if (!flow.displayedRef.current || latest.accountRef !== dialog || dialog !== flow.displayedRef.current) { flow.accountChanged(); return; }
+    const result = await flow.transport.redeem(dialog);
+    flow.setMessage(outcomeKeys[result?.result?.outcome ?? result?.outcome ?? "unknown"] ?? "unknown");
+    flow.onRefresh?.();
+  } catch (error) {
+    if (errorCode(error) === "IDENTITY_CHANGED") flow.accountChanged(); else flow.setMessage("unknown");
+  } finally {
+    flow.inFlight.current = false; flow.setBusy(false); flow.setDialog(null);
+    void flow.refreshOps(); void flow.refreshFence().catch(() => flow.setMessage("loadError")); flow.trigger.current?.focus();
+  }
+}
+
+async function acknowledgeOperation(flow: Flow, id: string) {
+  if (!flow.transport.acknowledge || flow.busy) return;
+  flow.setBusy(true);
+  try { await flow.transport.acknowledge(id); await flow.refreshOps(); await flow.refreshFence(); }
+  catch { flow.setMessage("ackBlocked"); } finally { flow.setBusy(false); }
+}
+
+async function releaseFence(flow: Flow, fence: ResetFence) {
+  if (!fence.fenced || !flow.transport.releaseFence || !flow.displayedRef.current || flow.busy) return;
+  const ref = flow.displayedRef.current;
+  flow.setBusy(true);
+  try { await flow.transport.releaseFence(fence.operation_id, ref); await flow.refreshFence(); }
+  catch (error) { if (errorCode(error) === "IDENTITY_CHANGED") flow.accountChanged(); else flow.setMessage("loadError"); }
+  finally { flow.setBusy(false); }
+}
+
+function fenceNotice(fence: ResetFence, disabled: boolean, t: QuotaTranslate, release: () => void) {
+  if (!fence.fenced) return null;
+  return <div role="status"><p>{t("settings.quota.autoRedeem.paused")}</p>
+    <p>{t("settings.quota.autoRedeem.resumeExplanation")}</p>
+    <button type="button" disabled={disabled || !["reset", "already_redeemed", "unknown-acknowledged"].includes(fence.outcome)} onClick={release}>{t("settings.quota.autoRedeem.resume")}</button></div>;
+}
+
+function settingsSection(settings: ResetSettings, settingsBusy: boolean, accountRef: string | undefined, t: QuotaTranslate, save: (next: ResetSettings) => void) {
+  const saveLead = (input: HTMLInputElement) => {
+    const value = Number(input.value);
+    if (Number.isInteger(value) && value >= 1 && value <= 60) save({ ...settings, enabled: settings.enabled && settings.accountRef === accountRef, leadMinutes: value });
+    else input.value = String(settings.leadMinutes);
   };
-  const acknowledge = async (id: string) => {
-    if (!transport.acknowledge || busy) return;
-    setBusy(true);
-    try { await transport.acknowledge(id); await refreshOps(); await refreshFence(); }
-    catch { setMessage("ackBlocked"); } finally { setBusy(false); }
-  };
-  const releaseFence = async () => {
-    if (!fence.fenced || !transport.releaseFence || !displayedRef.current || busy) return;
-    const ref = displayedRef.current;
-    setBusy(true);
-    try { await transport.releaseFence(fence.operation_id, ref); await refreshFence(); }
-    catch (error) { if ((error as { code?: string }).code === "IDENTITY_CHANGED") accountChanged(); else setMessage("loadError"); }
-    finally { setBusy(false); }
-  };
+  return <fieldset disabled={settingsBusy}><legend>{t("settings.quota.autoRedeem.title")}</legend>
+    <article className="settings-row">
+      <div className="settings-row__copy"><h4>{t("settings.quota.autoRedeem.enable")}</h4>
+        <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.warning")}</p>
+        <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.account", { account: settings.accountRef ?? "—" })}</p></div>
+      <div className="settings-row__control"><Toggle checked={settings.enabled && !!accountRef && settings.accountRef === accountRef} disabled={settingsBusy || !accountRef}
+        ariaLabel={t("settings.quota.autoRedeem.enable")} onChange={enabled => save({ ...settings, enabled })} /></div>
+    </article>
+    <article className="settings-row">
+      <div className="settings-row__copy"><label htmlFor="reset-lead-minutes">{t("settings.quota.autoRedeem.lead")}</label></div>
+      <div className="settings-row__control"><input id="reset-lead-minutes" className="custom-size-input" type="number" min={1} max={60} disabled={!accountRef || (settings.enabled && settings.accountRef !== accountRef)} defaultValue={settings.leadMinutes} key={settings.leadMinutes}
+        onBlur={event => saveLead(event.target)} /></div>
+    </article>
+  </fieldset>;
+}
+
+function confirmDialog(flow: Flow, dialog: string, accountEmail: string | null | undefined, t: QuotaTranslate) {
+  const close = () => { flow.setDialog(null); flow.trigger.current?.focus(); };
+  return <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title"
+    className="quota-reset__dialog" onKeyDown={(event) => trapKey(event, () => { if (!flow.busy) close(); })}>
+    <p id="reset-confirm-title">{t("settings.quota.redeem.confirm")}</p>
+    <p>{accountEmail && <>{accountEmail} · </>}{shortRef(dialog)}</p>
+    <button type="button" disabled={flow.busy} ref={(node) => { node?.focus(); }} onClick={close}>{t("settings.quota.redeem.cancel")}</button>
+    <button type="button" disabled={flow.busy} onClick={() => { void confirmRedeem(flow); }}>{t("settings.quota.redeem.action")}</button>
+  </div></div>;
+}
+
+export function ResetCreditsPanel({ transport, t = (key) => key, onRefresh, accountRef, accountEmail, availableCount, applicableAvailableCount, fencePoller = intervalFencePoller }: PanelProps) {
+  const [dialog, setDialog] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [list, setList] = useState<ResetList | null>(null);
+  const [listError, setListError] = useState(false);
+  const inFlight = useRef(false);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const displayedRef = useRef(accountRef); displayedRef.current = accountRef;
+  const accountChanged = () => { setDialog(null); setMessage("identityChanged"); onRefresh?.(); };
+  const { ops, opsLoaded, refreshOps } = useOperations(transport, setMessage);
+  const { fence, refreshFence } = useFence(transport, accountRef, displayedRef, inFlight, fencePoller, setMessage);
+  const { settings, settingsBusy, saveSettings } = useResetSettings(transport, displayedRef, accountChanged, setMessage);
+  const flow: Flow = { transport, displayedRef, inFlight, trigger, dialog, busy, onRefresh, setBusy, setMessage, setDialog,
+    setList, setListError, accountChanged, refreshOps, refreshFence };
+  const usableCount = applicableAvailableCount === undefined ? availableCount : applicableAvailableCount;
+  const noUsableCredits = usableCount == null || usableCount <= 0;
   return <div className="quota-reset">
-    <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => {
-      if (!transport.list) return;
-      const clickedRef = displayedRef.current;
-      setBusy(true); void transport.list().then(data => {
-        if (!clickedRef || data.accountRef !== clickedRef || displayedRef.current !== clickedRef) { accountChanged(); return; }
-        setList(data); setMessage(""); setDialog(data.accountRef);
-      })
-        .catch(() => setListError(true)).finally(() => setBusy(false));
-    }}>
+    <button type="button" className="settings-action-btn" ref={trigger} disabled={busy || !opsLoaded || ops.some(unresolved) || noUsableCredits} onClick={() => openRedeem(flow)}>
       {t("settings.quota.redeem.action")}</button>
     {noUsableCredits && <p className="settings-row__microcopy">{t(usableCount == null ? "settings.quota.redeem.creditUnknown" : "settings.quota.redeem.noCredit")}</p>}
-    <button type="button" className="settings-action-btn" onClick={() => {
-      setList(null); setListError(false);
-      if (transport.list) void transport.list().then(setList).catch(() => setListError(true));
-    }}>{t("settings.quota.resetCredits.list")}</button>
+    <button type="button" className="settings-action-btn" onClick={() => listCredits(flow)}>{t("settings.quota.resetCredits.list")}</button>
     {listError && <p role="alert" className="settings-row__microcopy">{t("settings.quota.resetCredits.loadError")}</p>}
     {list?.complete === false && <p role="status" className="settings-row__microcopy">{t("settings.quota.resetCredits.partial")}</p>}
     {creditRows(list, t)}
-    {fence.fenced && <div role="status"><p>{t("settings.quota.autoRedeem.paused")}</p>
-      <p>{t("settings.quota.autoRedeem.resumeExplanation")}</p>
-      <button type="button" disabled={busy || !accountRef || !["reset", "already_redeemed", "unknown-acknowledged"].includes(fence.outcome)} onClick={() => { void releaseFence(); }}>{t("settings.quota.autoRedeem.resume")}</button></div>}
-    {settings && <fieldset disabled={settingsBusy}><legend>{t("settings.quota.autoRedeem.title")}</legend>
-      <article className="settings-row">
-        <div className="settings-row__copy"><h4>{t("settings.quota.autoRedeem.enable")}</h4>
-          <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.warning")}</p>
-          <p className="settings-row__microcopy">{t("settings.quota.autoRedeem.account", { account: settings.accountRef ?? "—" })}</p></div>
-        <div className="settings-row__control"><Toggle checked={settings.enabled && !!accountRef && settings.accountRef === accountRef} disabled={settingsBusy || !accountRef}
-          ariaLabel={t("settings.quota.autoRedeem.enable")} onChange={enabled => { void saveSettings({ ...settings, enabled }); }} /></div>
-      </article>
-      <article className="settings-row">
-        <div className="settings-row__copy"><label htmlFor="reset-lead-minutes">{t("settings.quota.autoRedeem.lead")}</label></div>
-        <div className="settings-row__control"><input id="reset-lead-minutes" className="custom-size-input" type="number" min={1} max={60} disabled={!accountRef || (settings.enabled && settings.accountRef !== accountRef)} defaultValue={settings.leadMinutes} key={settings.leadMinutes}
-          onBlur={event => { const value = Number(event.target.value); if (Number.isInteger(value) && value >= 1 && value <= 60) void saveSettings({ ...settings, enabled: settings.enabled && settings.accountRef === accountRef, leadMinutes: value }); else event.target.value = String(settings.leadMinutes); }} /></div>
-      </article>
-    </fieldset>}
-    {operationRows(ops, busy, t, (id) => { void acknowledge(id); })}
+    {fenceNotice(fence, busy || !accountRef, t, () => { void releaseFence(flow, fence); })}
+    {settings && settingsSection(settings, settingsBusy, accountRef, t, (next) => { void saveSettings(next); })}
+    {operationRows(ops, busy, t, (id) => { void acknowledgeOperation(flow, id); })}
     <div role="status" aria-live="polite">{message && t(message === "ackBlocked" ? "settings.quota.acknowledge.blocked" : `settings.quota.redeem.${message}`)}</div>
-    {dialog && <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title"
-      className="quota-reset__dialog" onKeyDown={(event) => trapKey(event, () => { if (!busy) { setDialog(null); trigger.current?.focus(); } })}>
-      <p id="reset-confirm-title">{t("settings.quota.redeem.confirm")}</p>
-      <p>{accountEmail && <>{accountEmail} · </>}{shortRef(dialog)}</p>
-      <button type="button" disabled={busy} ref={(node) => { node?.focus(); }} onClick={() => { setDialog(null); trigger.current?.focus(); }}>{t("settings.quota.redeem.cancel")}</button>
-      <button type="button" disabled={busy} onClick={() => { void confirm(); }}>{t("settings.quota.redeem.action")}</button>
-    </div></div>}
+    {dialog && confirmDialog(flow, dialog, accountEmail, t)}
   </div>;
 }

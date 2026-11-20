@@ -10,14 +10,69 @@ export interface GrokCouponsTransport {
   redeem(target: string, accountRef: string): Promise<{ result?: { outcome?: string }; state?: string }>;
   acknowledge?(id: string): Promise<unknown>;
 }
+type CouponList = Awaited<ReturnType<GrokCouponsTransport["list"]>>;
+type Target = { id: string; accountRef: string; accountLabel: string | null; validityEnd: number | null };
 const unresolved = (op: ResetOperation) => ["claimed", "sending", "unknown"].includes(op.state);
 const idOf = (op: ResetOperation) => op.operationId ?? op.operation_id ?? "";
 const shortRef = (value: string) => value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+const expiry = (t: QuotaTranslate, validityEnd: number) => t("settings.quota.grokCoupons.expires", { date: new Date(validityEnd * 1000).toLocaleString() });
 type Props = { transport: GrokCouponsTransport; t?: QuotaTranslate; onRefresh?: () => void };
+
+interface CouponFlow {
+  transport: GrokCouponsTransport; inFlight: { current: boolean };
+  setBusy(value: boolean): void; setMessage(value: string): void; setList(value: CouponList): void;
+  setTarget(value: Target | null): void; accountChanged(): void;
+}
+
+async function openCoupon(flow: CouponFlow, id: string, accountRef: string) {
+  if (flow.inFlight.current) return;
+  flow.inFlight.current = true; flow.setBusy(true);
+  try {
+    const latest = await flow.transport.list();
+    if (!accountRef || latest.accountRef !== accountRef) { flow.setList(latest); flow.accountChanged(); return; }
+    const coupon = latest.coupons.find(item => item.tokenId === id);
+    if (!coupon) { flow.setList(latest); flow.setMessage("unavailable"); return; }
+    flow.setMessage(""); flow.setTarget({ id, accountRef, accountLabel: latest.accountLabel, validityEnd: coupon.validityEnd });
+  } catch { flow.setMessage("unavailable"); }
+  finally { flow.setBusy(false); flow.inFlight.current = false; }
+}
+
+function couponRows(list: CouponList, disabled: boolean, t: QuotaTranslate, open: (button: HTMLButtonElement, id: string) => void) {
+  return <><p>{t("settings.quota.grokCoupons.account")}: {list.accountLabel ?? "—"}</p>
+    {list.coupons.length === 0 && <p>{t("settings.quota.grokCoupons.empty")}</p>}
+    <ul>{list.coupons.map(coupon => <li key={coupon.tokenId}>
+      {coupon.validityEnd !== null && expiry(t, coupon.validityEnd)}{" "}
+      <button type="button" className="settings-action-btn" data-coupon={coupon.tokenId} disabled={disabled}
+        onClick={(event) => open(event.currentTarget, coupon.tokenId)}>{t("settings.quota.redeem.action")}</button>
+    </li>)}</ul></>;
+}
+
+function operationRows(ops: ResetOperation[] | null, busy: boolean, t: QuotaTranslate, acknowledge: (id: string) => void) {
+  return ops?.filter(unresolved).map(op => <div key={idOf(op)}><p>{idOf(op)} · {op.state}</p>
+    {op.state === "unknown" && <><p>{t("settings.quota.acknowledge.explanation")}</p>
+      {(op.unknownOrigin ?? op.unknown_origin) === "recovered" && <p>{t("settings.quota.acknowledge.blocked")}</p>}
+      <button type="button" disabled={busy} onClick={() => acknowledge(idOf(op))}>{t("settings.quota.acknowledge.action")}</button></>}
+  </div>);
+}
+
+function confirmDialog(target: Target, busy: boolean, t: QuotaTranslate, close: () => void, confirm: () => void) {
+  return <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="grok-confirm-title" className="quota-reset__dialog"
+    onKeyDown={event => trapKey(event, () => { if (!busy) close(); })}>
+    <p id="grok-confirm-title">{t("settings.quota.grokCoupons.confirm")}</p>
+    <p>{t("settings.quota.grokCoupons.account")}: {target.accountLabel && <>{target.accountLabel} · </>}{shortRef(target.accountRef)}</p>
+    <p>{t("settings.quota.grokCoupons.title")}: {shortRef(target.id)} · {target.validityEnd === null ? "—" : expiry(t, target.validityEnd)}</p>
+    <button type="button" disabled={busy} ref={node => { node?.focus(); }} onClick={close}>{t("settings.quota.redeem.cancel")}</button>
+    <button type="button" disabled={busy} onClick={confirm}>{t("settings.quota.redeem.action")}</button>
+  </div></div>;
+}
+
+const statusKey = (message: string) => message === "ackBlocked" ? "settings.quota.acknowledge.blocked"
+  : message === "unavailable" ? "settings.quota.grokCoupons.unavailable" : `settings.quota.redeem.${message}`;
+
 export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Props) {
-  const [list, setList] = useState<Awaited<ReturnType<GrokCouponsTransport["list"]>> | null>(null);
+  const [list, setList] = useState<CouponList | null>(null);
   const [ops, setOps] = useState<ResetOperation[] | null>(null);
-  const [target, setTarget] = useState<{ id: string; accountRef: string; accountLabel: string | null; validityEnd: number | null } | null>(null);
+  const [target, setTarget] = useState<Target | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const inFlight = useRef(false);
@@ -28,18 +83,8 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
   }, [transport]);
   useEffect(() => { void refresh(); }, [refresh]);
   const accountChanged = () => { setTarget(null); setMessage("identityChanged"); onRefresh?.(); };
-  const open = async (id: string, accountRef: string) => {
-    if (inFlight.current) return;
-    inFlight.current = true; setBusy(true);
-    try {
-      const latest = await transport.list();
-      if (!accountRef || latest.accountRef !== accountRef) { setList(latest); accountChanged(); return; }
-      const coupon = latest.coupons.find(item => item.tokenId === id);
-      if (!coupon) { setList(latest); setMessage("unavailable"); return; }
-      setMessage(""); setTarget({ id, accountRef, accountLabel: latest.accountLabel, validityEnd: coupon.validityEnd });
-    } catch { setMessage("unavailable"); }
-    finally { setBusy(false); inFlight.current = false; }
-  };
+  const flow: CouponFlow = { transport, inFlight, setBusy, setMessage, setList, setTarget, accountChanged };
+  const close = () => { setTarget(null); trigger.current?.focus(); };
   const confirm = async () => {
     if (!target || inFlight.current) return;
     inFlight.current = true; setBusy(true); setMessage("redeeming");
@@ -61,26 +106,9 @@ export function GrokCouponsPanel({ transport, t = (key) => key, onRefresh }: Pro
   };
   return <div className="quota-reset">
     <p>{t("settings.quota.grokCoupons.title")}</p>
-    {list && <><p>{t("settings.quota.grokCoupons.account")}: {list.accountLabel ?? "—"}</p>
-      {list.coupons.length === 0 && <p>{t("settings.quota.grokCoupons.empty")}</p>}
-      <ul>{list.coupons.map(coupon => <li key={coupon.tokenId}>
-        {coupon.validityEnd !== null && t("settings.quota.grokCoupons.expires", { date: new Date(coupon.validityEnd * 1000).toLocaleString() })}{" "}
-        <button type="button" className="settings-action-btn" data-coupon={coupon.tokenId} disabled={busy || !ops || ops.some(unresolved)}
-          onClick={(event) => { trigger.current = event.currentTarget; void open(coupon.tokenId, list.accountRef); }}>{t("settings.quota.redeem.action")}</button>
-      </li>)}</ul></>}
-    {ops?.filter(unresolved).map(op => <div key={idOf(op)}><p>{idOf(op)} · {op.state}</p>
-      {op.state === "unknown" && <><p>{t("settings.quota.acknowledge.explanation")}</p>
-        {(op.unknownOrigin ?? op.unknown_origin) === "recovered" && <p>{t("settings.quota.acknowledge.blocked")}</p>}
-        <button type="button" disabled={busy} onClick={() => { void acknowledge(idOf(op)); }}>{t("settings.quota.acknowledge.action")}</button></>}
-    </div>)}
-    <div role="status" aria-live="polite">{message && t(message === "ackBlocked" ? "settings.quota.acknowledge.blocked" : message === "unavailable" ? "settings.quota.grokCoupons.unavailable" : `settings.quota.redeem.${message}`)}</div>
-    {target && <div className="quota-reset__backdrop"><div role="dialog" aria-modal="true" aria-labelledby="grok-confirm-title" className="quota-reset__dialog"
-      onKeyDown={event => trapKey(event, () => { if (!busy) { setTarget(null); trigger.current?.focus(); } })}>
-      <p id="grok-confirm-title">{t("settings.quota.grokCoupons.confirm")}</p>
-      <p>{t("settings.quota.grokCoupons.account")}: {target.accountLabel && <>{target.accountLabel} · </>}{shortRef(target.accountRef)}</p>
-      <p>{t("settings.quota.grokCoupons.title")}: {shortRef(target.id)} · {target.validityEnd === null ? "—" : t("settings.quota.grokCoupons.expires", { date: new Date(target.validityEnd * 1000).toLocaleString() })}</p>
-      <button type="button" disabled={busy} ref={node => { node?.focus(); }} onClick={() => { setTarget(null); trigger.current?.focus(); }}>{t("settings.quota.redeem.cancel")}</button>
-      <button type="button" disabled={busy} onClick={() => { void confirm(); }}>{t("settings.quota.redeem.action")}</button>
-    </div></div>}
+    {list && couponRows(list, busy || !ops || ops.some(unresolved), t, (button, id) => { trigger.current = button; void openCoupon(flow, id, list.accountRef); })}
+    {operationRows(ops, busy, t, (id) => { void acknowledge(id); })}
+    <div role="status" aria-live="polite">{message && t(statusKey(message))}</div>
+    {target && confirmDialog(target, busy, t, close, () => { void confirm(); })}
   </div>;
 }
