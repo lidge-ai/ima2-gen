@@ -151,6 +151,7 @@ async function corePins(args: ParsedArgs): Promise<Record<string, unknown>> {
     return { image: (await readFile(String(spec).slice(0, at))).toString("base64"), timestampS };
   }));
   if (args["no-audio"]) body.generateAudio = false;
+  if (args["no-planner"]) body.planner = "off";
   return body;
 }
 

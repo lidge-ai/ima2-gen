@@ -391,6 +391,10 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const pinRequest = isComfy ? { pins: undefined, generateAudio: undefined } : readVideoPinRequest(req.body, modelCheck.model, durationCheck.duration, resolutionCheck.resolution);
       if ("error" in pinRequest) return fail(pinRequest.status, pinRequest.code, pinRequest.error);
       const { pins, generateAudio } = pinRequest;
+      // planner:"off" sends the composed prompt as-is. Lineage and background constraints
+      // reach only the planner, so the bypass would drop them (plan R2-F4, R3-F1).
+      const plannerOff = req.body?.planner === "off";
+      if (plannerOff && (parentLineage || backgroundPreset)) return fail(400, "GROK_VIDEO_PLANNER_OFF_UNSUPPORTED", "planner off cannot carry continuation lineage or a background constraint");
       const derivedMode: VideoMode = composerRefCount > 0
         ? "reference-to-video"
         // A voice alone selects reference-to-video upstream: "at least one reference of
@@ -577,6 +581,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         ...(referenceAudios.length ? { referenceAudios } : {}),
         ...(pins ? { pins } : {}),
         ...(generateAudio === false ? { generateAudio } : {}),
+        ...(plannerOff ? { plannedPrompt: effectivePrompt, webSearchCalls: 0 } : {}),
         signal: cancelController.signal,
         requestId,
         continuityLineage: parentLineage,

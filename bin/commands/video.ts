@@ -115,6 +115,7 @@ const SPEC = {
     "last-frame":  { type: "string" },
     keyframe:      { type: "string", repeatable: true },
     "no-audio":    { type: "boolean" },
+    "no-planner":  { type: "boolean" },
     "as-reference": { type: "boolean" },
     "video-ref":   { type: "string" },
     character:     { type: "string" },
@@ -170,6 +171,8 @@ const HELP = `
         --keyframe <file>@<seconds>     Grok 1.5: pin a frame strictly inside the duration
                                         (repeatable, max 4, distinct 1/3 s slots)
         --no-audio                      Grok 1.5 / 1.5-lite: generate a silent video
+        --no-planner                    Grok: send the prompt as written (no planner or search;
+                                        not with continuation or --bg)
         --video-ref <generated-filename> MCP V2V/restyle reference video
         --character <element-id|name>      MCP lanes only: character binding element
     -o, --out <file>                    Output file path
