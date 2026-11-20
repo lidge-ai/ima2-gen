@@ -26,7 +26,7 @@ describe("Grok weekly behavior", () => {
         return Response.json({ config: { monthlyLimit: { val: 10000 }, used: { val: 2000 }, billingPeriodEnd: end } });
       }) as typeof fetch;
       const result = await fetchGrokBilling(home);
-      assert.equal(result.windows[0]?.label, "monthly"); assert.equal(result.windows[0]?.percent, 20);
+      assert.equal(result.windows[0]?.label, "monthly"); assert.equal(result.windows[0]?.percent, 20); assert.equal(result.source, "ima2-session");
     } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
   it("prefers the ima2 session over the CLI account", async () => {
@@ -78,6 +78,19 @@ describe("Grok weekly behavior", () => {
   it("projects valid product usage and prepaid balance while ignoring malformed rows", () => {
     assert.deepEqual(parseGrokCreditsResponse(response), { percent: 25, periodEnd: end,
       productUsage: [{ product: "chat", percent: 12 }], prepaidBalance: 17 });
+  });
+  it("labels CLI monthly billing and keeps an omitted weekly percent null", async () => {
+    const home = mkdtempSync(join(tmpdir(), "ima2-monthly-cli-")); const original = globalThis.fetch;
+    try {
+      mkdirSync(join(home, ".grok"));
+      writeFileSync(join(home, ".grok", "auth.json"), JSON.stringify({ fixture: { key: "synthetic" } }));
+      writeFileSync(join(home, ".grok", "version.json"), JSON.stringify({ version: "1.0.0" }));
+      globalThis.fetch = (async (url) => String(url).endsWith("/user") ? Response.json({}) :
+        Response.json({ config: { monthlyLimit: { val: 100 }, used: { val: 20 }, billingPeriodEnd: end } })) as typeof fetch;
+      const result = await fetchGrokBilling(home);
+      assert.equal(result.source, "grok-cli"); assert.equal(result.windows[0]?.label, "monthly");
+      assert.deepEqual(parseGrokCreditsResponse({ config: { currentPeriod: { type: "USAGE_PERIOD_TYPE_WEEKLY", end } } }), { percent: null, periodEnd: end });
+    } finally { globalThis.fetch = original; rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
   });
   it("labels a CLI weekly observation", async () => {
     const home = mkdtempSync(join(tmpdir(), "ima2-weekly-source-"));

@@ -130,7 +130,7 @@ describe("Grok weekly credits quota", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("parses the real nested weekly envelope and proto3 omitted zero", () => {
+  it("parses the weekly envelope and preserves an omitted percentage", () => {
     const end = "2026-07-19T13:05:52.277209+00:00";
     assert.deepStrictEqual(parseGrokCreditsResponse({
       config: {
@@ -140,7 +140,7 @@ describe("Grok weekly credits quota", () => {
     }), { percent: 57, periodEnd: end });
     assert.deepStrictEqual(parseGrokCreditsResponse({
       config: { currentPeriod: { type: "USAGE_PERIOD_TYPE_WEEKLY", end } },
-    }), { percent: 0, periodEnd: end });
+    }), { percent: null, periodEnd: end });
     assert.strictEqual(parseGrokCreditsResponse({
       config: { creditUsagePercent: 57, currentPeriod: { type: "USAGE_PERIOD_TYPE_MONTHLY", end } },
     }), null);

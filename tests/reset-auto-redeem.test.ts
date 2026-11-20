@@ -42,6 +42,35 @@ describe("auto-redeem controls", () => {
 });
 
 describe("auto-redeem reservation and settings", () => {
+  it("keeps a persisted fence when an unrelated snapshot credit expires", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    let now = Date.parse("2026-11-21T00:00:00Z");
+    const grant = "2026-11-20T00:00:00Z";
+    const a = { granted_at: grant, expires_at: "2026-11-21T00:01:00Z" };
+    const b = { granted_at: grant, expires_at: "2026-11-21T00:05:00Z" };
+    const c = { granted_at: grant, expires_at: "2026-11-21T00:06:00Z" };
+    let credits = [a, b];
+    const fake = fakeResetTransport({});
+    fake.send = async (url, body) => { fake.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits }; };
+    const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
+    const sends = () => fake.calls.filter(call => call.url.endsWith("/consume")).length;
+    await new CodexAutoRedeem(f.a, deps).tick(); assert.equal(sends(), 1);
+    now += 2 * 60_000; credits = [b, c];
+    await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 1);
+    credits = [c]; await new CodexAutoRedeem(f.b, deps).tick(); assert.equal(sends(), 2);
+  }));
+  it("clears a fence when a consumed credit disappears before expiry", async () => fixture(async f => {
+    writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
+    const now = Date.parse("2026-11-21T00:00:00Z");
+    const grant = "2026-11-20T00:00:00Z";
+    const a = { granted_at: grant, expires_at: "2026-11-21T00:05:00Z" };
+    const b = { granted_at: grant, expires_at: "2026-11-21T00:06:00Z" };
+    let credits = [a, b]; const fake = fakeResetTransport({});
+    fake.send = async (url, body) => { fake.calls.push({ url, body }); return url.endsWith("/consume") ? { code: "reset" } : { credits }; };
+    const deps = { accountId: async () => "fixture-account", client: () => new CodexResetClient(fake), now: () => now };
+    await new CodexAutoRedeem(f.a, deps).tick(); credits = [b]; await new CodexAutoRedeem(f.b, deps).tick();
+    assert.equal(fake.calls.filter(call => call.url.endsWith("/consume")).length, 2);
+  }));
   it("rechecks upstream credit immediately before sending and releases a removed target", async () => fixture(async f => {
     writeResetSettings(f.a, { enabled: true, leadMinutes: 10 });
     const now = Date.parse("2026-11-21T00:00:00Z");

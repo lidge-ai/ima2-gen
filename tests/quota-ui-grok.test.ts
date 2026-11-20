@@ -183,6 +183,8 @@ it("shows Grok weekly source, product use and prepaid balance", () => {
   const tree = mod.exports.GrokQuota({ loading: false, data: { grok: { source: "grok-cli", windows: [{ label: "weekly", percent: 20 }], productUsage: [{ product: "chat", percent: 25 }], prepaidBalance: 12 } } });
   const contents = textContent(tree);
   assert.match(contents, /grok-cli/); assert.match(contents, /accountMayDiffer/); assert.match(contents, /chat.*25\s*%/); assert.match(contents, /12/);
+  const monthly = mod.exports.GrokQuota({ loading: false, data: { grok: { source: "grok-cli", windows: [{ label: "monthly", percent: 20 }] } } });
+  assert.match(textContent(monthly), /accountMayDiffer/);
 });
 it("defines matching new labels and interpolation variables in all locales", () => {
   const locales = ["en", "ko", "zh-Hans", "zh-Hant"];
