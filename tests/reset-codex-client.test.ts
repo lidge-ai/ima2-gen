@@ -8,10 +8,10 @@ after(() => assert.equal(sentinelCount(), 0));
 describe("Codex reset client behavior", () => {
   it("projects the list count and display fields", async () => {
     const fake = fakeResetTransport({ available_count: 1, total_earned_count: 2,
-      credits: [{ id: "fixture", status: "available", title: "Reset" }] });
+      credits: [{ id: "fixture", status: "available", title: "Reset", granted_at: "2026-11-01", expires_at: "2026-12-01" }] });
     const result = await new CodexResetClient(fake).list();
     assert.deepEqual(result, { availableCount: 1, totalEarnedCount: 2,
-      credits: [{ id: "fixture", status: "available", title: "Reset" }] });
+      credits: [{ id: "fixture", status: "available", title: "Reset", grantedAt: "2026-11-01", expiresAt: "2026-12-01" }] });
     assert.equal(fake.calls.length, 1);
   });
   it("classifies an unrecognized response as unknown", async () => {

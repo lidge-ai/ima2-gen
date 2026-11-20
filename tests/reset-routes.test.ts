@@ -155,6 +155,12 @@ describe("reset route safety contracts", () => {
 });
 
 describe("reset route controls", () => {
+  it("accepts the settings UI confirmationToken payload", async () => withFixture(async f => {
+    const confirmationToken = await f.confirm("ui-payload");
+    const response = await f.request(redeemPath, { operationId: "ui-payload", confirmationToken });
+    assert.equal(response.status, 200);
+    assert.deepEqual(consumeCalls(f).map(call => call.body), [{ redeem_request_id: "ui-payload" }]);
+  }));
   it("confirmation performs no upstream calls", async () => withFixture(async f => { assert.ok(await f.confirm("op")); assert.equal(f.transport.calls.length, 0); }));
   it("missing token is rejected without consumption", async () => withFixture(async f => { assert.equal((await f.request(redeemPath, { operationId: "op" })).status, 400); assert.equal(consumeCalls(f).length, 0); }));
   it("LAN locked and cross-origin requests are rejected", async () => withFixture(async f => {
