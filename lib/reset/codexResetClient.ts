@@ -8,7 +8,8 @@ export class CodexResetClient {
     const raw = object(await this.transport.send(LIST_URL, {}));
     if (!raw || !Array.isArray(raw.credits)) throw new Error("INVALID_RESET_LIST");
     return { availableCount: raw.available_count ?? null, totalEarnedCount: raw.total_earned_count ?? null,
-      credits: raw.credits.map(object).filter(Boolean).map(item => ({ id: item?.id, status: item?.status, title: item?.title })) };
+      credits: raw.credits.map(object).filter(Boolean).map(item => ({ id: item?.id, status: item?.status, title: item?.title,
+        grantedAt: item?.granted_at, expiresAt: item?.expires_at })) };
   }
   async consume(redeemRequestId: string): Promise<{ outcome: string; windowsReset?: unknown }> {
     try {

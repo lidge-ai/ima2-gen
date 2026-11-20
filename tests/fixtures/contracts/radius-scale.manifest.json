@@ -2704,6 +2704,13 @@
   {
     "file": "ui/src/styles/quota-card.css",
     "atRule": null,
+    "selector": ".quota-reset__dialog",
+    "expected": "var(--r-lg)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/quota-card.css",
+    "atRule": null,
     "selector": ".quota-bar__fill",
     "expected": "var(--r-xs)",
     "important": false

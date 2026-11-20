@@ -70,7 +70,7 @@ function registerRedeem(router: Router, state: RouterState): void {
       const existing = ledger.get(id) as Row | undefined;
       if (existing) return existing.ledger_key === identity.ledgerKey && existing.provider === "codex"
         ? res.json({ operationId: id, state: existing.state }) : error(res, 409, "IDENTITY_CHANGED");
-      const confirmation = confirmations.take(String(req.body?.token ?? ""));
+      const confirmation = confirmations.take(String(req.body?.confirmationToken ?? ""));
       if (!confirmation || confirmation.operationId !== id || confirmation.provider !== "codex" || req.body?.target != null) return error(res, 400, "INVALID_CONFIRMATION");
       if (confirmation.principalId !== principal(res)) return error(res, 403, "PRINCIPAL_CHANGED");
       if (confirmation.ledgerKey !== identity.ledgerKey) return error(res, 409, "IDENTITY_CHANGED");

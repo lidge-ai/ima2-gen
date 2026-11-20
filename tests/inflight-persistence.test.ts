@@ -71,11 +71,15 @@ test("stale inflight jobs are purged by ttl", () => {
   assert.deepEqual(row, { error_code: "JOB_TRACKING_TIMEOUT", http_status: 504 });
 });
 
-test("migration records schema version 8", () => {
+test("migration records schema version 9 and is idempotent on an existing database", () => {
+  const database = db.getDb();
+  database.prepare("UPDATE _meta SET value = '8' WHERE key = 'schema_version'").run();
+  db.migrate(database);
+  db.migrate(database);
   const row = db
     .getDb()
     .prepare("SELECT value FROM _meta WHERE key = 'schema_version'")
     .get() as { value: string } | undefined;
-  // 8 adds reset operation tables.
-  assert.equal(row?.value, "8");
+  assert.equal(row?.value, "9");
+  assert.ok(database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'reset_operations'").get());
 });

@@ -147,7 +147,7 @@ test("pure middleware: failed token guesses share cooldown across API media and 
         socket: { localAddress: "127.0.0.1", localPort: 49123, remoteAddress: "192.0.2.1" } } as unknown as import("express").Request;
       let status = 0, response = "";
       const output: Record<string, string> = {};
-      const res = { getHeader: (name: string) => output[name], setHeader: (name: string, value: string) => { output[name] = value; },
+      const res = { locals: {}, getHeader: (name: string) => output[name], setHeader: (name: string, value: string) => { output[name] = value; },
         status(code: number) { status = code; return this; }, type() { return this; }, end(body: string) { response = body; } } as unknown as
         import("express").Response;
       (attempt % 3 === 2 ? sessionCheck : access.guard)(req, res, () => { status = 200; });

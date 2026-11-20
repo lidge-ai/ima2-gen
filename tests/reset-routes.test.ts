@@ -70,7 +70,7 @@ describe("reset route safety contracts", () => {
   }));
   it("admits only one concurrent use", async () => withFixture(async f => {
     const token = await f.confirm("one");
-    const responses = await Promise.all([f.request(redeemPath, { token, operationId: "one" }), f.request(redeemPath, { token, operationId: "two" })]);
+    const responses = await Promise.all([f.request(redeemPath, { confirmationToken: token, operationId: "one" }), f.request(redeemPath, { confirmationToken: token, operationId: "two" })]);
     assert.deepEqual(responses.map(r => r.status).sort(), [200, 400]); assert.equal(consumeCalls(f).length, 1);
   }));
   it("rejects a different principal", async () => withFixture(async f => {
@@ -78,18 +78,18 @@ describe("reset route safety contracts", () => {
     const origin = new URL((await f.request("/api/health", undefined, { "x-ima2-token": "test-token" })).url).origin;
     const session = await f.request("/api/auth/lan/session", {}, { origin, "x-ima2-token": "test-token" });
     const cookie = session.headers.get("set-cookie")?.split(";")[0] ?? "";
-    assert.equal((await f.request(redeemPath, { token, operationId: "op" }, { origin, cookie })).status, 403);
+    assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "op" }, { origin, cookie })).status, 403);
     assert.equal(consumeCalls(f).length, 0);
   }, true));
   it("rejects an identity change before dispatch", async () => withFixture(async f => {
     const token = await f.confirm("op"); f.setAccount("b");
-    const response = await f.request(redeemPath, { token, operationId: "op" });
+    const response = await f.request(redeemPath, { confirmationToken: token, operationId: "op" });
     assert.equal(response.status, 409); assert.equal((await response.json() as { error: { code: string } }).error.code, "IDENTITY_CHANGED");
     assert.equal(consumeCalls(f).length, 0);
   }));
   it("replay returns the recorded result without dispatch", async () => withFixture(async f => {
-    const token = await f.confirm("op"); const first = await f.request(redeemPath, { token, operationId: "op" }); assert.equal(first.status, 200);
-    const replay = await f.request(redeemPath, { token, operationId: "op" }); assert.equal(replay.status, 200);
+    const token = await f.confirm("op"); const first = await f.request(redeemPath, { confirmationToken: token, operationId: "op" }); assert.equal(first.status, 200);
+    const replay = await f.request(redeemPath, { confirmationToken: token, operationId: "op" }); assert.equal(replay.status, 200);
     assert.equal(consumeCalls(f).length, 1);
   }));
   it("loads unresolved operations scoped to the current identity after restart", async () => withFixture(async f => {
@@ -115,19 +115,19 @@ describe("reset route safety contracts", () => {
     assert.equal(consumeCalls(f).length, 0);
   }));
   it("refuses a reused token for a new operation", async () => withFixture(async f => {
-    const token = await f.confirm("first"); assert.equal((await f.request(redeemPath, { token, operationId: "first" })).status, 200);
-    assert.equal((await f.request(redeemPath, { token, operationId: "second" })).status, 400);
+    const token = await f.confirm("first"); assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "first" })).status, 200);
+    assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "second" })).status, 400);
     assert.equal(consumeCalls(f).length, 1);
   }));
   it("rejects provider and target changes", async () => withFixture(async f => {
     assert.equal((await f.request("/api/quota/reset-confirmations", { provider: "grok", operationId: "op" })).status, 400);
     const token = await f.confirm("op");
-    assert.equal((await f.request(redeemPath, { token, operationId: "op", target: "other" })).status, 400);
+    assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "op", target: "other" })).status, 400);
     assert.equal(consumeCalls(f).length, 0);
   }));
   it("sends at most once for simultaneous requests with the same operation", async () => withFixture(async f => {
     const token = await f.confirm("same");
-    const responses = await Promise.all([f.request(redeemPath, { token, operationId: "same" }), f.request(redeemPath, { token, operationId: "same" })]);
+    const responses = await Promise.all([f.request(redeemPath, { confirmationToken: token, operationId: "same" }), f.request(redeemPath, { confirmationToken: token, operationId: "same" })]);
     assert.ok(responses.some(response => response.status === 200));
     assert.equal(consumeCalls(f).length, 1);
   }));
@@ -137,7 +137,7 @@ describe("reset route safety contracts", () => {
       Date.now = () => 10_000;
       const token = await f.confirm("expired");
       Date.now = () => 130_001;
-      assert.equal((await f.request(redeemPath, { token, operationId: "expired" })).status, 400);
+      assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "expired" })).status, 400);
       assert.equal(consumeCalls(f).length, 0);
     } finally { Date.now = original; }
   }));
@@ -148,7 +148,7 @@ describe("reset route safety contracts", () => {
     const token = await f.confirm("revoked", { origin, cookie });
     const revoke = await fetch(new URL("/api/auth/lan/session", session.url), { method: "DELETE", headers: { origin, cookie } });
     assert.equal(revoke.status, 204);
-    assert.equal((await f.request(redeemPath, { token, operationId: "revoked" }, { origin, cookie })).status, 401);
+    assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "revoked" }, { origin, cookie })).status, 401);
     assert.equal(consumeCalls(f).length, 0);
   }, true));
   it("requires a nonempty account id", () => { assert.throws(() => resetIdentity("codex", "")); });
@@ -169,7 +169,7 @@ describe("reset route controls", () => {
     assert.equal(consumeCalls(f).length, 0);
   }, true));
   it("happy path passes operation id to fake transport and refreshes usage", async () => withFixture(async f => {
-    const token = await f.confirm("happy"); assert.equal((await f.request(redeemPath, { token, operationId: "happy" })).status, 200);
+    const token = await f.confirm("happy"); assert.equal((await f.request(redeemPath, { confirmationToken: token, operationId: "happy" })).status, 200);
     assert.deepEqual(consumeCalls(f)[0]?.body, { redeem_request_id: "happy" }); assert.equal(consumeCalls(f).length, 1); assert.equal(f.usageReads(), 1);
   }));
 });
