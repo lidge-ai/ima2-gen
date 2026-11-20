@@ -3,7 +3,9 @@ import { test } from "node:test";
 import { requestAgentQuestionAnswer } from "../lib/agentQuestionResponder.ts";
 import { requestCardNewsPlannerJson } from "../lib/cardNewsPlannerClient.ts";
 import { generateViaOAuth } from "../lib/oauthProxy/generators.ts";
+import { editViaOAuth, generateMultimodeViaOAuth } from "../lib/oauthProxy/multimodeGenerators.ts";
 import { postResponses } from "../lib/responsesTransport.ts";
+import sharp from "sharp";
 
 test("OpenAI request boundaries coerce unsupported none while preserving other efforts", async (t) => {
   const original = globalThis.fetch;
@@ -24,6 +26,17 @@ test("OpenAI request boundaries coerce unsupported none while preserving other e
   await t.test("legacy OAuth generator proxy", async () => {
     await generateViaOAuth("draw", "high", "auto", "low", [], null, "auto", { oauthUrl: "http://fixture.invalid" }, { model: "gpt-6.2-sol", reasoningEffort: "none" }).catch(() => {});
     assert.equal(body.reasoning.effort, "low");
+  });
+  await t.test("legacy OAuth multimode proxy", async () => {
+    body = undefined;
+    await generateMultimodeViaOAuth("draw", "high", "auto", "low", [], null, "auto", { oauthUrl: "http://fixture.invalid" }, { model: "gpt-6.2-astra", reasoningEffort: "none" }).catch(() => {});
+    assert.equal(body?.reasoning.effort, "low");
+  });
+  await t.test("legacy OAuth edit proxy", async () => {
+    body = undefined;
+    const image = (await sharp({ create: { width: 2, height: 2, channels: 3, background: "red" } }).png().toBuffer()).toString("base64");
+    await editViaOAuth("draw", image, "high", "auto", "low", "auto", { oauthUrl: "http://fixture.invalid" }, null, { model: "gpt-6.2-sol", reasoningEffort: "none" }).catch(() => {});
+    assert.equal(body?.reasoning.effort, "low");
   });
   for (const provider of ["api", "oauth"]) {
     await t.test(`Responses ${provider} boundary`, async () => {
