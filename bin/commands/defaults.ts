@@ -203,8 +203,11 @@ async function fetchModelCatalog(args: ReturnType<typeof parseArgs>): Promise<Re
   }
 }
 
-async function validateCliTarget(kind: CliKind, value: string, args: ReturnType<typeof parseArgs>): Promise<void> {
+async function validateCliTarget(kind: CliKind, value: string, args: ReturnType<typeof parseArgs>): Promise<string> {
   const target = parseCliTarget(value, Boolean(args.json));
+  if (kind === "image" && (target.lane === "oauth" || target.lane === "api")) {
+    target.model = migrateOpenAIImageModel(target.model);
+  }
   const lane = (await fetchModelCatalog(args))[target.lane];
   if (!lane) fail({ json: Boolean(args.json), code: "LANE_NOT_FOUND", message: `unknown lane: ${target.lane}` });
   if (lane.status !== "ready") {
@@ -217,15 +220,16 @@ async function validateCliTarget(kind: CliKind, value: string, args: ReturnType<
   if (!(lane.models?.[kind] ?? []).some((entry) => entry.id === target.model)) {
     fail({ json: Boolean(args.json), code: "MODEL_NOT_FOUND", message: `${value} is not an available ${kind} model` });
   }
+  return `${target.lane}/${target.model}`;
 }
 
-function setCliDefault(kind: CliKind, value: string, isJson: boolean): void {
+function setCliDefault(kind: CliKind, value: string, isJson: boolean, original: string): void {
   const key = `defaults.${kind}`;
   const fileCfg = loadFileCfg();
   setNestedKey(fileCfg, key, value);
   saveFileCfg(fileCfg);
   if (isJson) json({ ok: true, kind, value });
-  else out(color.green("✓ ") + `wrote ${key}=${JSON.stringify(value)} to ${displayPath(CONFIG_FILE)}`);
+  else out(color.green("✓ ") + `wrote ${key}=${JSON.stringify(original)}${value === original ? "" : ` (as ${value})`} to ${displayPath(CONFIG_FILE)}`);
 }
 
 function resetCliDefault(kind: CliKind, isJson: boolean): void {
@@ -265,8 +269,8 @@ async function setSub(argv: string[]): Promise<void> {
     return;
   }
   if (target === "image" || target === "video") {
-    await validateCliTarget(target, value, args);
-    setCliDefault(target, value, Boolean(args.json));
+    const migrated = await validateCliTarget(target, value, args);
+    setCliDefault(target, migrated, Boolean(args.json), value);
     return;
   }
   die(2, "target must be one of: model, reasoning, image, video");

@@ -136,7 +136,7 @@ routes/
 | `bin/commands/doctor.ts` | 313 | CLI diagnostics: storage, OAuth, providers, image probe |
 | `bin/commands/gpt.ts` | 211 | ChatGPT (GPT OAuth) login/status/logout; `ima2 login` delegates here |
 | `bin/commands/grok.ts` | 258 | Grok OAuth login and status helpers |
-| `bin/commands/defaults.ts` | 304 | CLI default provider/model/size/reasoning-effort get/set |
+| `bin/commands/defaults.ts` | 308 | CLI default provider/model/size/reasoning-effort get/set |
 | `bin/commands/capabilities.ts` | 145 | CLI wrapper for `GET /api/capabilities` |
 | `bin/commands/skill.ts` | 402 | CLI packaged-skill reader: `skill [ls|<name>] [path] [--json]` over KNOWN_SKILLS (ima2/front/uiux) |
 | `bin/commands/backfillThumbs.ts` | 35 | Gallery thumbnail backfill command |
