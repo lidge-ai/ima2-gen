@@ -152,4 +152,18 @@ for (const blank of ["", "   "]) {
     }
   });
 }
+test("an explicit reference-to-video whose only image becomes the pinned first frame is refused before any upstream call", async () => {
+  const paths: string[] = [];
+  await listen(makeProxy({ onPath: (path) => paths.push(path) }));
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-r2v-source-only-"));
+  const { url } = await videoApp(generatedDir);
+  try {
+    const events = parseSse(await (await post(url, { prompt: "walk to the door", provider: "grok", model: "grok-imagine-video-1.5", mode: "reference-to-video", sourceImage: Buffer.from("img").toString("base64"), duration: 2, resolution: "720p", requestId: "req_r2v_source_only" })).text());
+    assert.equal(events.find((e) => e.event === "error")?.data.code, "GROK_VIDEO_INVALID_MODE");
+    assert.deepEqual(paths, []);
+  } finally {
+    await fixture.finishCase();
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+});
 }
