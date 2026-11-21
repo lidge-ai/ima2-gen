@@ -404,12 +404,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const pinnedFirst = mode === "reference-to-video" && !isComfy && canonicalGrokVideoModel(modelCheck.model) === GROK_VIDEO_MODEL_15
         ? resolved.find((r) => r.source !== "composer") : undefined;
       const referenceImages = mode === "reference-to-video" ? resolved.filter((r) => r !== pinnedFirst).map((r) => r.b64) : undefined;
-      // A reference-to-video with nothing to reference (a 1.5 source alone is the pinned
-      // first frame, not a reference) fails in the payload builder after paid planning;
-      // answer it here. A voice or frame pin counts, so audio-only stays legitimate.
-      if (mode === "reference-to-video" && !referenceImages?.length && referenceAudios.length === 0 && !hasVideoPins(pins)) {
-        return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
-      }
+      // The payload builder re-checks what is actually sent, after paid planning, so answer it
+      // here: the references sent (a node source counts on Lite/base; on 1.5 it is the pinned
+      // first frame) and an empty reference-to-video (a voice or frame pin counts).
+      const sentRefCheck = isComfy ? { ok: true as const } : validateGrokVideoInputs(modelCheck.model, { referenceCount: referenceImages?.length ?? 0, voiceCount: referenceAudios.length });
+      if (!("ok" in sentRefCheck)) return fail(sentRefCheck.status, sentRefCheck.code, sentRefCheck.error);
+      if (mode === "reference-to-video" && !referenceImages?.length && referenceAudios.length === 0 && !hasVideoPins(pins)) return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
       const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : pinnedFirst?.b64);
       if (mode === "image-to-video" && !sourceB64) return fail(400, "GROK_VIDEO_INVALID_MODE", "image-to-video requires a source image");
       const sourceFilename = resolved[0]?.filename ?? null;
