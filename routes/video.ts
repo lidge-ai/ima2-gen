@@ -411,6 +411,7 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
       }
       const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : pinnedFirst?.b64);
+      if (mode === "image-to-video" && !sourceB64) return fail(400, "GROK_VIDEO_INVALID_MODE", "image-to-video requires a source image");
       const sourceFilename = resolved[0]?.filename ?? null;
 
       const started = startJob({
