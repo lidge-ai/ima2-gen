@@ -43,12 +43,10 @@ export async function generateViaGrok(
     references?: GrokReferenceImage[] | undefined;
     credential?: GrokCredential | undefined;
     plannerModel?: string | undefined;
-    webSearchEnabled?: boolean | undefined;
-    quality?: string | undefined;
+    webSearchEnabled?: boolean | undefined; quality?: string | undefined;
   } = {},
 ): Promise<GrokGenerateResult> {
-  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality);
-  const model = resolved.model;
+  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality), model = resolved.model;
   const references = options.references || [];
   const credential = await requireCredential(ctx, options);
   const plan = options.plannedPrompt
@@ -95,8 +93,7 @@ export async function editViaGrok(
   ctx: RouteRuntimeContext,
   options: { model?: string | undefined; size?: string | undefined; signal?: AbortSignal | undefined; requestId?: string | undefined; credential?: GrokCredential | undefined; quality?: string | undefined } = {},
 ): Promise<GrokGenerateResult> {
-  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality);
-  const model = resolved.model;
+  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality), model = resolved.model;
   const detectedInputMime = detectImageMimeFromB64(imageB64) || "image/png";
   const imageUrl = imageB64.startsWith("data:") ? imageB64 : `data:${detectedInputMime};base64,${imageB64}`;
   const payload = withGrokImageQuality({ model, prompt, n: 1, response_format: "url", image: { type: "image_url", url: imageUrl }, ...mapSizeToGrokImageParams(options.size) }, resolved);

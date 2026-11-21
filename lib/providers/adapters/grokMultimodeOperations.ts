@@ -48,13 +48,11 @@ export async function generateMultimodeViaGrok(
     requestId?: string | undefined;
     references?: GrokReferenceImage[] | undefined;
     credential?: GrokCredential | undefined;
-    webSearchEnabled?: boolean | undefined;
-    quality?: string | undefined;
+    webSearchEnabled?: boolean | undefined; quality?: string | undefined;
     onFinalImage?: ((image: { b64: string; revisedPrompt?: string | undefined; mime?: string | undefined }, index: number) => void | Promise<void>) | undefined;
   } = {},
 ): Promise<GrokMultimodeResult> {
-  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality);
-  const model = resolved.model;
+  const resolved = resolveGrokImageRequest(options.model || ctx.config?.grokProvider?.defaultImageModel || GROK_FALLBACK_IMAGE_MODEL, options.quality), model = resolved.model;
   const maxGeneratedImages = Math.max(
     1,
     Math.trunc(Number(ctx.config?.limits?.maxGeneratedImages) || 24),
