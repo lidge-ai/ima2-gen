@@ -136,4 +136,20 @@ for (const named of ["text-to-video", "image-to-video"] as const) {
     }
   });
 }
+for (const blank of ["", "   "]) {
+  test(`a blank keyframe image (${JSON.stringify(blank)}) is refused before any upstream call`, async () => {
+    const paths: string[] = [];
+    await listen(makeProxy({ onPath: (path) => paths.push(path) }));
+    const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-blank-keyframe-"));
+    const { url } = await videoApp(generatedDir);
+    try {
+      const events = parseSse(await (await post(url, { prompt: "walk to the door", provider: "grok", model: "grok-imagine-video-1.5", keyframes: [{ image: blank, timestampS: 1 }], duration: 3, resolution: "720p", requestId: `req_blank_keyframe_${blank.length}` })).text());
+      assert.equal(events.find((e) => e.event === "error")?.data.code, "GROK_VIDEO_KEYFRAMES_INVALID");
+      assert.deepEqual(paths, []);
+    } finally {
+      await fixture.finishCase();
+      await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+}
 }
