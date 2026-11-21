@@ -9,7 +9,6 @@ import {
   canonicalGrokVideoModel,
   maxRef2vDuration,
   normalizeGrokVideoModel,
-  usesGrokVideo15TextCanvasShim,
   validateVideoResolutionForRequest,
 } from "../lib/imageModels.js";
 import {
@@ -42,7 +41,10 @@ test("an alias behaves identically to the canonical id at every gate", () => {
   // missed when the dated alias arrived, and the symptom differs per gate: a rejected
   // 1080p request here, a wrongly clamped duration there.
   for (const alias of ALIASES) {
-    assert.equal(usesGrokVideo15TextCanvasShim(alias, "text-to-video"), true);
+    assert.deepEqual(
+      validateVideoResolutionForRequest(alias, "1080p", "text-to-video"),
+      validateVideoResolutionForRequest(GROK_VIDEO_MODEL_15, "1080p", "text-to-video"),
+    );
     assert.deepEqual(
       validateVideoResolutionForRequest(alias, "1080p", "image-to-video"),
       validateVideoResolutionForRequest(GROK_VIDEO_MODEL_15, "1080p", "image-to-video"),

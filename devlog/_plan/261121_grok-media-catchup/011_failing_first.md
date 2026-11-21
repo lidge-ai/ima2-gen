@@ -1,0 +1,20 @@
+# 011 Failing-first evidence
+
+## S1 image (G1, R1-F1, R2-F2, 1.5k)
+
+Base: 077765cf. `node --experimental-test-module-mocks --import tsx --test tests/grok-planner-adapter.test.ts`: 21 tests, 12 pass, 9 fail, exit 1. Failing (assertion failures at the outbound `/v1/images/*` body): retired `grok-imagine-image-quality` stayed on the retired slug with no quality for request quality none/high/medium/auto; `grok-imagine-image-pro` likewise; 2.0 edits sent no quality for none/low/high; `grok:1:1:1.5k` mapped to 1k. Control that passes on base: the base `grok-imagine-image` request carries no `quality` field. Fake fetch and the isolated CDN transport only; no live call.
+## S2 video models (G2, G4, native 1.5 T2V)
+
+Base: dd38a850. `node --experimental-test-module-mocks --import tsx --test tests/grok-video-lite.test.ts tests/grokVideoAdapter.test.ts tests/videoRoute.test.ts tests/video-reference-audio-contract.test.ts`: exit 1. Failing as intended: Lite is not a registered video model and has no local reference/voice rule; 1080p is refused for 1.5 and Lite text-to-video without the canvas option; a 1.5 start 400 is resubmitted on grok-imagine-video (two starts, done event, mp4 saved); 1.5 prompt-only 1080p sends a white canvas `image` and a technical-note prompt (adapter and route); the adapter source still contains the base-model retry. The replaced tests previously pinned the canvas shim and the fallback metadata (plan R1-F6 names them). Fake fetch and loopback fixtures only.
+## S3 frames + mode (G3, R2-F1, R2-F3, R4-F1, G10)
+
+Base: 0243f6b4. `node --experimental-test-module-mocks --import tsx --test tests/grok-video-pins.test.ts tests/videoRoute.test.ts`: exit 1; all 12 existing route tests pass. Failing as intended: a 1.5 payload with a source and pins gets no `last_frame`/`keyframes` and rejects the pinned first frame ("reference-to-video requires at least 1 reference image"); pins are not refused on the base model or Lite, at 1080p, or with 5 keyframes, out-of-range timestamps or a shared 1/3 s slot; `generate_audio: false` is never sent and is not refused on the base model; the route accepts source + lastFrame + keyframe at 1080p (pins ignored, image-to-video). Fake fetch and loopback fixtures only.
+## S4 planner off (R2-F4, R3-F1)
+
+Base: ad5c0cc9. The video route harness moved to tests/_videoRouteHarness.ts (unchanged behavior plus an `onPath` probe) so route tests stay under 500 lines; the S3 pin route test moved to tests/videoRoutePins.test.ts. `node --experimental-test-module-mocks --import tsx --test tests/videoRoute.test.ts tests/videoRoutePins.test.ts`: exit 1; the 12 existing route tests and the moved pin test pass. Failing as intended: `planner: "off"` still ran search and the planner (responses + chat/completions calls observed); planner off with continuation lineage and with a background constraint were not refused (no GROK_VIDEO_PLANNER_OFF_UNSUPPORTED, upstream calls made). Loopback fixtures only.
+## S5 voices + planner model (G5 static roster, G9)
+
+Base: 4b1f6c52. `node --experimental-test-module-mocks --import tsx --test tests/grok-voices-planner.test.ts`: 2 tests, 0 pass, 2 fail, exit 1. The capabilities roster had 26 ids (missing aurora and liora from the 28 live voices); grok-4.7 was absent from the Grok planner list (config), the prompt builder, the agent allowlist and the UI agent options. Deferred (R5 note): live `GET /v1/tts/voices` discovery with credential-scoped caching; the static roster stays non-authoritative and custom voice ids remain accepted.
+## PR #434 fresh review #1 fixes
+
+Base: 859bb6d6. `node --experimental-test-module-mocks --import tsx --test tests/grok-video-lite.test.ts tests/videoRoutePins.test.ts`: exit 1. Failing as intended: `normalizeGrokImageModel` rewrote a retired id to 2.0, so the resolver produced `auto` instead of `low`; `validateGrokVideoInputs` allowed a voice on the base model; the route sent a base-model voice request to search and the planner (upstream paths observed) before the payload check refused it.

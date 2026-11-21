@@ -12,7 +12,7 @@ import { normalizeOAuthParams } from "./oauthNormalize.js";
 import { resolveProviderOptions } from "./providerOptions.js";
 import { prepareImageExecution } from "./providers/execution/index.js";
 import { checkImageExecutionAdmission } from "./providers/execution/admission.js";
-import { resolveGrokQualityModel } from "./imageModels.js";
+import { grokRouteQuality, resolveGrokQualityModel } from "./imageModels.js";
 import { composerNegativePromptMeta, readNaiOptions } from "./naiOptions.js";
 import { startJob, finishJob, registerJobAbortController, isJobCanceled, isStartJobFailure, setJobPhase, INFLIGHT_RETRY_AFTER_SECONDS, } from "./inflight.js";
 import { isGenerationCanceledError, makeGenerationCanceledError, throwIfJobCanceled, } from "./generationCancel.js";
@@ -170,7 +170,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       const composerInsertedPrompts = normalizeComposerInsertedPrompts(
         req.body?.composerInsertedPrompts,
       );
-      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
+      const { quality: normalizedQuality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
       const providerOptions = resolveProviderOptions(ctx, {
         provider,
         rawModel,
@@ -183,7 +183,7 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
       if (providerOptions.error !== undefined) {
         return fail(providerOptions.status, { error: providerOptions.error, code: providerOptions.code });
       }
-      const imageModel = providerOptions.model;
+      const imageModel = providerOptions.model, quality = grokRouteQuality(providerOptions.provider, imageModel, req.body?.quality, normalizedQuality);
       const imageToolModel = providerOptions.imageToolModel;
       const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;

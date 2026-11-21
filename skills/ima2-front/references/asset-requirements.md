@@ -304,7 +304,7 @@ When ima2 is available with multiple providers configured, choose by asset type:
 | High-fidelity product photo | GPT OAuth + `--quality high` | Best detail, lighting, material rendering |
 | Korean text in image | GPT OAuth + `--mode direct` | Best Hangul rendering with exact-text prompts |
 
-Override per-request only: `ima2 gen "prompt" --model grok/grok-imagine-image-quality`
+Override per-request only: `ima2 gen "prompt" --model grok/grok-imagine-image-2.0`
 
 #### `ima2 gen` Fallback
 

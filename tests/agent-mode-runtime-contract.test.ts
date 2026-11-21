@@ -418,7 +418,7 @@ describe("Agent Mode runtime contract", () => {
         return respond(call.url, { method: "GET", headers: call.headers, signal: call.signal });
       },
     });
-    for (const plannerModel of ["grok-4.6", "grok-4.5", "grok-4.3"]) {
+    for (const plannerModel of ["grok-4.7", "grok-4.6", "grok-4.5", "grok-4.3"]) {
       calls.length = 0;
       await withApp(async (baseUrl) => {
       const created = await createSession(baseUrl);
@@ -451,8 +451,8 @@ describe("Agent Mode runtime contract", () => {
       assert.match(calls.find((call) => call.url.endsWith("/v1/chat/completions"))?.body.messages[1].content[0].text, /English only/);
       });
     }
-    assert.equal(imageTransport.calls.length, 3);
-    assert.equal(imageTransport.resolutions.length, 3);
+    assert.equal(imageTransport.calls.length, 4);
+    assert.equal(imageTransport.resolutions.length, 4);
   });
 
   it("routes Agent 1080p I2V video through Grok Video 1.5 and records sidecar metadata", async () => {
@@ -552,7 +552,7 @@ describe("Agent Mode runtime contract", () => {
     assertAgentVideoSaved(session.id, generatedDir);
   });
 
-  it("routes Agent prompt-only 1080p video through Grok Video 1.5 canvas shim", async () => {
+  it("routes Agent prompt-only 1080p video natively through Grok Video 1.5", async () => {
     const generatedDir = join(TEST_DIR, `generated-video-t2v-${Date.now()}`);
     mkdirSync(generatedDir, { recursive: true });
     const session = createAgentSession({ title: "agent 1080p t2v" });
@@ -626,8 +626,8 @@ describe("Agent Mode runtime contract", () => {
     assert.deepEqual(downloads, { poll: 1, artifact: 1 });
     assert.equal(starts[0].model, "grok-imagine-video-1.5");
     assert.equal(starts[0].resolution, "1080p");
-    assert.ok(starts[0].image?.url?.startsWith("data:image/png;base64,"));
-    assert.match(starts[0].prompt, /blank white canvas.*technical placeholder/);
+    assert.equal("image" in starts[0], false);
+    assert.doesNotMatch(starts[0].prompt, /blank white canvas/);
     const sidecarName = readdirSync(generatedDir).find((name) => name.endsWith("_agent.mp4.json"));
     assert.ok(sidecarName);
     const sidecar = JSON.parse(readFileSync(join(generatedDir, sidecarName), "utf8"));

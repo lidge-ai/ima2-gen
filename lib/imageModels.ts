@@ -9,6 +9,8 @@ const VALID_API_IMAGE_MODELS = deriveSupportedImageModels("api");
 
 export { LEGACY_OPENAI_IMAGE_MODELS, migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
+import { RETIRED_GROK_IMAGE_MODELS, resolveGrokImageRequest } from "./grokImageQuality.js";
+export { grokRouteQuality } from "./grokImageQuality.js";
 const UNSUPPORTED_IMAGE_MODELS = deriveUnsupportedImageModels();
 const FALLBACK_REASONING_EFFORT = "none";
 const VALID_REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
@@ -29,9 +31,8 @@ export function coerceReasoningEffortForModel(model: string | undefined, effort:
   return MODELS_WITHOUT_NONE_EFFORT.has(model) ? "low" : effort;
 }
 
-// xAI's current flagship Imagine image model. The legacy "quality" knob used to
-// swap in grok-imagine-image-quality; 2.0 supersedes it for high-quality work,
-// so the knob now resolves here. An explicit user selection is never downgraded.
+// xAI's current flagship Imagine image model. The "high" quality knob selects it
+// (sent as quality medium, 2.0's highest); retired slugs migrate to it (grokImageQuality.ts).
 export const GROK_QUALITY_IMAGE_MODEL = "grok-imagine-image-2.0";
 const VALID_GROK_IMAGE_MODELS = deriveModels("grok", "image");
 
@@ -40,8 +41,7 @@ const VALID_GROK_IMAGE_MODELS = deriveModels("grok", "image");
  * Returns the caller's model untouched unless quality === "high".
  */
 export function resolveGrokQualityModel(model: string | undefined, quality: unknown): string {
-  if (quality !== "high") return model ?? GROK_FALLBACK_IMAGE_MODEL;
-  return GROK_QUALITY_IMAGE_MODEL;
+  return resolveGrokImageRequest(model ?? GROK_FALLBACK_IMAGE_MODEL, quality).model;
 }
 
 const GEMINI_API_FALLBACK_IMAGE_MODEL = "nano-banana-2";
@@ -117,11 +117,14 @@ export function normalizeImageModel(
   return { model };
 }
 
-export function normalizeGrokImageModel(rawModel: unknown) {
-  if (typeof rawModel !== "string" || rawModel.length === 0) {
+export function normalizeGrokImageModel(input: unknown) {
+  if (typeof input !== "string" || input.length === 0) {
     return { model: GROK_FALLBACK_IMAGE_MODEL };
   }
-  if (!VALID_GROK_IMAGE_MODELS.has(rawModel)) {
+  // A retired id stays as sent: resolveGrokImageRequest maps it to 2.0 together with
+  // quality, which keeps its low default (xAI redirects the slug at low).
+  const rawModel = input;
+  if (!VALID_GROK_IMAGE_MODELS.has(rawModel) && !RETIRED_GROK_IMAGE_MODELS.has(rawModel)) {
     return {
       error: `Grok image model must be one of: ${[...VALID_GROK_IMAGE_MODELS].join(", ")}`,
       code: "INVALID_GROK_IMAGE_MODEL" as const,
@@ -228,6 +231,8 @@ export function normalizeComfyWorkflowModel(rawModel: unknown) {
 export const GROK_VIDEO_MODEL_BASE = "grok-imagine-video";
 export const GROK_VIDEO_MODEL_15 = "grok-imagine-video-1.5";
 export const GROK_VIDEO_MODEL_15_PREVIEW_ALIAS = "grok-imagine-video-1.5-preview";
+// Released 2026-10-08: text/image-to-video only (no references, voices or frame pins).
+export const GROK_VIDEO_MODEL_15_LITE = "grok-imagine-video-1.5-lite";
 // GET /v1/video-generation-models lists this alongside -preview. Without it a legal
 // model id is rejected locally with INVALID_GROK_VIDEO_MODEL before the request ever
 // reaches xAI. Verified 2026-09-08: devlog/_plan/260908_xai_imagine_spec_resync.
@@ -276,6 +281,7 @@ export const MAX_REFERENCE_AUDIOS = 3;
 export type GrokVideoModel =
   | typeof GROK_VIDEO_MODEL_BASE
   | typeof GROK_VIDEO_MODEL_15
+  | typeof GROK_VIDEO_MODEL_15_LITE
   | typeof GROK_VIDEO_MODEL_15_PREVIEW_ALIAS
   | typeof GROK_VIDEO_MODEL_15_DATED_ALIAS;
 export type VideoResolution = "480p" | "720p" | "1080p";
@@ -378,33 +384,40 @@ export function normalizeVideoResolution(raw: unknown) {
   return { resolution: raw as VideoResolution };
 }
 
-export function usesGrokVideo15TextCanvasShim(model: string, mode: VideoMode): boolean {
-  return canonicalGrokVideoModel(model) === GROK_VIDEO_MODEL_15 && mode === "text-to-video";
-}
-
-export function validateVideoResolutionForRequest(
-  model: string,
-  resolution: VideoResolution,
-  mode: VideoMode,
-  options: { allowTextCanvasShim?: boolean } = {},
-) {
+/**
+ * Native 1080p exists for text- and image-to-video on grok-imagine-video-1.5 and
+ * -1.5-lite (Lite's 1080p is a 720p upscale billed at $0.14/s). Reference-to-video is
+ * capped at 720p and the base model has no 1080p. 1.5 text-to-video is native since
+ * 2026-11 (live probe), so the old white-canvas image-to-video shim is gone.
+ */
+export function validateVideoResolutionForRequest(model: string, resolution: VideoResolution, mode: VideoMode) {
   if (resolution !== "1080p") return { ok: true as const };
   // A non-Grok model reaches this function too: comfy passes its workflow id through the
   // same field. xAI's 1080p rule says nothing about a locally-run workflow, so refusing
   // one here would be this codebase inventing a limit rather than enforcing a real one.
   if (!isGrokVideoModel(model)) return { ok: true as const };
   const canonicalModel = canonicalGrokVideoModel(model);
-  if (canonicalModel === GROK_VIDEO_MODEL_15 && mode === "image-to-video") {
-    return { ok: true as const };
-  }
-  if (options.allowTextCanvasShim && usesGrokVideo15TextCanvasShim(canonicalModel, mode)) {
-    return { ok: true as const };
-  }
+  const native1080 = canonicalModel === GROK_VIDEO_MODEL_15 || canonicalModel === GROK_VIDEO_MODEL_15_LITE;
+  if (native1080 && (mode === "text-to-video" || mode === "image-to-video")) return { ok: true as const };
   return {
-    error: "1080p video resolution requires grok-imagine-video-1.5 text-to-video with the canvas shim or image-to-video",
+    error: "1080p video resolution requires grok-imagine-video-1.5 or -1.5-lite text-to-video or image-to-video",
     code: "INVALID_VIDEO_RESOLUTION" as const,
     status: 400 as const,
   };
+}
+
+/** Inputs a model cannot take are refused locally, before planning spends anything. */
+export function validateGrokVideoInputs(model: string, inputs: { referenceCount: number; voiceCount: number }) {
+  if (!isGrokVideoModel(model)) return { ok: true as const };
+  const canonical = canonicalGrokVideoModel(model);
+  if (canonical === GROK_VIDEO_MODEL_15_LITE && inputs.referenceCount > 0) {
+    return { error: `reference images are not supported by ${GROK_VIDEO_MODEL_15_LITE}`, code: "GROK_VIDEO_REF_UNSUPPORTED_MODEL" as const, status: 400 as const };
+  }
+  // Preset voices exist only on 1.5; refusing here spares the planner call.
+  if (inputs.voiceCount > 0 && canonical !== GROK_VIDEO_MODEL_15) {
+    return { error: `reference audio requires ${GROK_VIDEO_MODEL_15}`, code: "GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL" as const, status: 400 as const };
+  }
+  return { ok: true as const };
 }
 
 export function normalizeVideoAspectRatio(raw: unknown) {

@@ -61,7 +61,7 @@ const genBody = `{
   <p>
     품질: low, medium, high. Moderation: auto, low. Provider: auto, oauth, api, grok, grok-api, agy, gemini-api, atlascloud, minimax, nai, comfy.
     GPT OAuth와 API 키 레인은 <code>gpt-6-luna</code>, <code>gpt-6.1-terra</code>, <code>gpt-6.2-sol</code>, <code>gpt-6.2-astra</code>를 제공하며 기본값은 <code>gpt-6-luna</code>입니다. 저장된 이전 ID는 같은 레인의 대응 티어로 변환됩니다.
-    Grok 이미지 모델은 <code>grok-imagine-image-2.0</code>(기본), <code>grok-imagine-image</code>, <code>grok-imagine-image-quality</code>입니다.
+    Grok 이미지 모델은 <code>grok-imagine-image-2.0</code>(기본), <code>grok-imagine-image</code>입니다. 은퇴한 <code>grok-imagine-image-quality</code> / <code>-pro</code> id는 2.0으로 이전되며, 2.0은 <code>quality</code>를 받습니다(high는 medium으로 전송).
     Gemini 모델은 <code>nano-banana-2</code>(Flash)와 <code>nano-banana-pro</code>(Pro)입니다.
     웹 UI는 <code>GET /api/events</code> (SSE 멀티플렉싱)로 모든 생성 진행 이벤트를 받습니다:
     POST 라우트에 <code>{"{ async: true, requestId }"}</code>를 보내면 <code>202</code> 응답 후

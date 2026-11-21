@@ -43,27 +43,27 @@ export const PROVIDER_MODELS = {
   "grok": {
     "image": [
       "grok-imagine-image-2.0",
-      "grok-imagine-image",
-      "grok-imagine-image-quality"
+      "grok-imagine-image"
     ],
     "video": [
       "grok-imagine-video",
       "grok-imagine-video-1.5",
       "grok-imagine-video-1.5-preview",
-      "grok-imagine-video-1.5-2026-05-30"
+      "grok-imagine-video-1.5-2026-05-30",
+      "grok-imagine-video-1.5-lite"
     ]
   },
   "grok-api": {
     "image": [
       "grok-imagine-image-2.0",
-      "grok-imagine-image",
-      "grok-imagine-image-quality"
+      "grok-imagine-image"
     ],
     "video": [
       "grok-imagine-video",
       "grok-imagine-video-1.5",
       "grok-imagine-video-1.5-preview",
-      "grok-imagine-video-1.5-2026-05-30"
+      "grok-imagine-video-1.5-2026-05-30",
+      "grok-imagine-video-1.5-lite"
     ]
   },
   "agy": {
@@ -117,7 +117,6 @@ export const IMAGE_MODEL_IDS = [
   "gpt-6.2-astra",
   "grok-imagine-image-2.0",
   "grok-imagine-image",
-  "grok-imagine-image-quality",
   "nano-banana-2",
   "nano-banana-pro",
   "openai/gpt-image-2/text-to-image",
@@ -138,7 +137,8 @@ export const VIDEO_MODEL_IDS = [
   "grok-imagine-video",
   "grok-imagine-video-1.5",
   "grok-imagine-video-1.5-preview",
-  "grok-imagine-video-1.5-2026-05-30"
+  "grok-imagine-video-1.5-2026-05-30",
+  "grok-imagine-video-1.5-lite"
 ] as const;
 export type VideoModelId = typeof VIDEO_MODEL_IDS[number];
 export const PROVIDER_REFERENCE_LIMITS = {

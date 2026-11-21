@@ -192,7 +192,7 @@ Provider override semantics:
 
 - `api` forces the API-key Responses path and requires a configured API key.
 - `oauth` forces GPT OAuth: the server calls ChatGPT directly, a GPT-6 model plans and `gpt-image-2` renders.
-- `grok` calls `https://api.x.ai` directly with the xAI OAuth session in `~/.progrok/auth.json`. Classic generation first runs mandatory xAI Web Search through Responses API, then asks `grok-4.5` to call ima2's local `generate_image` tool, then ima2 executes xAI `/v1/images/generations`. `grok-4.3` remains available as an explicit compatibility override. If `--ref` images are attached, the final step uses xAI `/v1/images/edits` instead so image-to-image/reference context is preserved. Models: `grok-imagine-image`, `grok-imagine-image-quality`. Size is mapped to xAI `aspect_ratio` and `resolution`; the UI web-search toggle is OpenAI-provider-only because Grok search is always on in this path.
+- `grok` calls `https://api.x.ai` directly with the xAI OAuth session in `~/.progrok/auth.json`. Classic generation first runs mandatory xAI Web Search through Responses API, then asks `grok-4.5` to call ima2's local `generate_image` tool, then ima2 executes xAI `/v1/images/generations`. `grok-4.3` remains available as an explicit compatibility override. If `--ref` images are attached, the final step uses xAI `/v1/images/edits` instead so image-to-image/reference context is preserved. Models: `grok-imagine-image-2.0` (default, receives quality low/medium/auto; high is sent as medium) and `grok-imagine-image`; the retired `grok-imagine-image-quality` / `-pro` ids migrate to 2.0. Size is mapped to xAI `aspect_ratio` and `resolution`; the UI web-search toggle is OpenAI-provider-only because Grok search is always on in this path.
 - `agy` spawns the Antigravity CLI to generate via Google Gemini (`nano-banana-2`). Fixed 1024×1024 JPEG output, max 3 refs. No web search, quality, size, or mask controls. If `agy` is not on the server process PATH, ima2 also checks common user-local installs such as `~/.local/bin/agy`; set `IMA2_AGY_BIN=/absolute/path/to/agy` to force a specific binary.
 - `gemini-api` calls the Google Generative Language API directly. Models: `nano-banana-2` (Gemini 3.1 Flash Image) and `nano-banana-pro` (Gemini 3 Pro Image). Use `--model nano-banana-2` or `--model nano-banana-pro` to select. Supports `--size` for aspect ratio and resolution (512px–4K) on the direct API path; Vertex AI ignores aspect/size. Requires `GEMINI_API_KEY` or a Vertex AI service account (`VERTEX_SERVICE_ACCOUNT_JSON`). Switching from `agy` or `gemini-api` provider auto-selects the corresponding Gemini model; switching away resets to the GPT default.
 - `atlascloud` calls Atlas Cloud's Media API directly. Models: `openai/gpt-image-2/text-to-image` for text-to-image and `openai/gpt-image-2/edit` when references are attached. Requires `ATLASCLOUD_API_KEY`; web search, reasoning, mask, and video controls are ignored.
@@ -269,7 +269,7 @@ ima2 models --kind image
 ima2 defaults set image oauth/gpt-6-luna
 ima2 gen "a poster of a samurai cat" --model api/gpt-6-luna --reasoning-effort high
 ima2 grok login
-ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
+ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-2.0
 ima2 gen "campaign still" --model runway/gen-4 --ref 1780000000000_abcd.png
 ima2 edit input.png --prompt "make it rainy" --provider oauth --web-search
 ima2 multimode "two cats playing" --max-images 2 --ref cat.png --mode direct
@@ -310,12 +310,16 @@ Video generate flags:
 | Flag | Meaning |
 |---|---|
 | `--duration <1..15>` | Duration in seconds (default: 5) |
-| `--resolution <480p\|720p\|1080p>` | Video resolution (default: 480p). 1080p requires `--model grok-imagine-video-1.5`; prompt-only 1.5 uses the internal white-canvas I2V shim |
+| `--resolution <480p\|720p\|1080p>` | Video resolution (default: 480p). 1080p is native on `grok-imagine-video-1.5` and `-1.5-lite` text- and image-to-video; reference-to-video and frame pins cap at 720p |
 | `--aspect-ratio <ratio\|auto>` | 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto (default: auto) |
-| `--model <name>` | `grok-imagine-video` or `grok-imagine-video-1.5`; `grok-imagine-video-1.5-preview` is accepted as a compatibility alias |
+| `--model <name>` | `grok-imagine-video`, `grok-imagine-video-1.5` or `grok-imagine-video-1.5-lite`; `grok-imagine-video-1.5-preview` is accepted as a compatibility alias |
 | `--planner-model <name>` | Grok planner override (default: `grok-4.5`; `grok-4.3` remains compatible; also in settings UI and `IMA2_GROK_PLANNER_MODEL`) |
 | `--storyboard` | Enable storyboard mode — maintains character/scene continuity across sequential clips |
-| `--ref <file>` | Attach source/reference image (repeatable, max 7) |
+| `--ref <file>` | Attach source/reference image (repeatable, max 14) |
+| `--last-frame <file>` | Grok 1.5: pin the ending frame (reference-to-video, 720p max) |
+| `--keyframe <file>@<seconds>` | Grok 1.5: pin a frame strictly inside the duration (repeatable, max 4, distinct 1/3 s slots) |
+| `--no-audio` | Grok 1.5 / 1.5-lite: silent video (`generateAudio: false`) |
+| `--no-planner` | Send the prompt as written, without planner or search; refused with continuation or `--bg` |
 | `-o, --out <file>` | Output file path |
 | `-d, --out-dir <dir>` | Output directory |
 | `--timeout <sec>` | Timeout in seconds (default: 5400) |
@@ -359,7 +363,7 @@ Video mode is auto-detected from `--ref` count:
 | 1 | image-to-video |
 | 2–14 | reference-to-video (15s on grok-imagine-video-1.5, 10s on grok-imagine-video) |
 
-`grok-imagine-video-1.5` supports 1080p for prompt-only text-to-video and single image/frame image-to-video. Prompt-only 1.5 text-to-video is submitted through the internal white-canvas image-to-video shim because upstream 1.5 rejects raw T2V. The old `grok-imagine-video-1.5-preview` name is accepted as an alias and normalized before the upstream request. 1.5 does not support `reference_images` reference-to-video, V2V edit, or video extension. For 2+ refs, use `grok-imagine-video`; if ima2 auto-retries a 1.5 Ref2V request to the base model, read `video.effectiveModel` and `video.modelFallback` from CLI `--json`, or `effectiveModel` and `modelFallback` from SSE.
+`grok-imagine-video-1.5` supports 1080p for prompt-only text-to-video and single image/frame image-to-video. Prompt-only 1.5 text-to-video is sent natively (no canvas). `grok-imagine-video-1.5-lite` supports text- and image-to-video only. The old `grok-imagine-video-1.5-preview` name is accepted as an alias and normalized before the upstream request. 1.5 does not support `reference_images` reference-to-video, V2V edit, or video extension. A start error is returned as-is: ima2 no longer retries a failed 1.5 request on `grok-imagine-video`, so `effectiveModel` always equals `requestedModel` and `modelFallback` is null.
 
 SSE events: `planning` → `submitted` → `progress` (0–100%) → `done` or `error`.
 

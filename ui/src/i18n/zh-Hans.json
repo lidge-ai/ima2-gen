@@ -1552,7 +1552,8 @@
     },
     "videoModel": {
       "grokImagine": "Grok Imagine 视频",
-      "grokImagine15": "Grok Imagine 视频 1.5"
+      "grokImagine15": "Grok Imagine 视频 1.5",
+      "grokImagine15Lite": "Grok Imagine 视频 1.5 Lite"
     },
     "reasoning": {
       "title": "推理努力",

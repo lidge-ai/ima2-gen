@@ -48,6 +48,7 @@ async function prepareGrokClassic(
       webSearchCalls: sharedGrokPlan?.webSearchCalls,
       references: grokRefs,
       credential,
+      quality,
     });
     return { kind: "single", value };
   } };
@@ -68,13 +69,14 @@ async function executeGrokNode(
   credential: GrokCredential,
 ): Promise<SingleImageExecutionResult> {
   const { sourceImage: parentB64, prompt: generationPrompt, references, requestId, signal, options } = request;
-  const { model, size, webSearchEnabled } = options;
+  const { model, size, webSearchEnabled, quality } = options;
   const refsForRequest = request.contextMode === "parent-only" ? [] : references;
   return await generateViaGrok(generationPrompt, ctx, {
     model, size, requestId, signal,
     references: toGrokReferences(parentB64, refsForRequest),
     credential,
     webSearchEnabled,
+    quality,
   });
 }
 
@@ -85,7 +87,7 @@ async function executeGrokEdit(
   const credential = await resolveGrokCredential(ctx, provider, { signal });
   return await editViaGrok(rawPrompt, sourceImage, ctx, {
     model: resolveGrokQualityModel(options.model, options.quality),
-    size: options.size, signal, requestId, credential,
+    size: options.size, signal, requestId, credential, quality: options.quality,
   });
 }
 
@@ -102,6 +104,7 @@ async function executeGrokMultimode(
     size: options.size, signal, requestId, references: grokRefs, credential,
     onFinalImage: progress.onFinalImage,
     webSearchEnabled: options.webSearchEnabled,
+    quality: options.quality,
   });
 }
 

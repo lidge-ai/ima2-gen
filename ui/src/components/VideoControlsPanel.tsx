@@ -7,7 +7,7 @@ import { Chip, ChipRow, Select } from "./controls";
 import { DurationSlider } from "./controls/DurationSlider";
 import { VoicePicker } from "./VoicePicker";
 import { SoundIntentPicker } from "./SoundIntentPicker";
-import { deriveVideoModeUI, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_BASE, maxVideoDurationUI, supportsVideoResolutionUI } from "../lib/imageModels";
+import { deriveVideoModeUI, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_15_LITE, GROK_VIDEO_MODEL_BASE, maxVideoDurationUI, supportsVideoResolutionUI } from "../lib/imageModels";
 import { ACTIVE_VIDEO_PROMPT_GUIDANCE, continuitySummary } from "../lib/videoContinuity";
 import { getPresetById } from "../lib/presets";
 import type { VideoResolutionUI } from "../types";
@@ -25,6 +25,7 @@ const DURATIONS = [3, 5, 8, 10, 12, 15];
 const VIDEO_MODELS: Array<{ value: string; label: string; sub: string }> = [
   { value: GROK_VIDEO_MODEL_BASE, label: "Grok V", sub: "Fast" },
   { value: GROK_VIDEO_MODEL_15, label: "Grok V1.5", sub: "HD" },
+  { value: GROK_VIDEO_MODEL_15_LITE, label: "Grok V1.5 Lite", sub: "Lite" },
 ];
 
 export function VideoControlsPanel() {

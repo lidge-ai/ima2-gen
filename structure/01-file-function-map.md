@@ -80,7 +80,7 @@ routes/
 | File | Lines | Responsibility |
 |---|---:|---|
 | `server.ts` | 629 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 571 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `config.ts` | 569 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 97 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
@@ -144,7 +144,7 @@ routes/
 | `bin/commands/ls.ts` | 65 | History list client (legacy alias); supports session and server-side favorites filtering via `favoritesOnly=1` |
 | `bin/commands/ps.ts` | 82 | Inflight job list client, including optional terminal job snapshots; accepts arbitrary `kind` and documents `classic|node|multimode` |
 | `bin/commands/show.ts` | 77 | Single history item display/reveal client |
-| `bin/commands/video.ts` | 421 | Video CLI surface: generate, edit, extend, frame, analyze, `--character` (MCP lanes), and branch-local `continue` |
+| `bin/commands/video.ts` | 431 | Video CLI surface: generate, edit, extend, frame, analyze, `--character` (MCP lanes), and branch-local `continue` |
 | `bin/commands/ping.ts` | 32 | Server health probe client |
 | `bin/lib/client.ts` | 333 | Server discovery, HTTP request wrapper (connection: close, cleared timeouts), response normalization |
 | `bin/lib/platform.ts` | 164 | Browser-open and binary-resolution helpers |
@@ -183,8 +183,8 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/videoContinuity.ts` | 193 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 100 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
 | `lib/videoGenerationRequest.ts` | 166 | Shared generate-request contract: mode inference, mutually-exclusive source guard, and duration/resolution/aspect defaults for UI, CLI, agent, and route |
-| `lib/grokVideoAdapter.ts` | 529 | Grok video planner and xAI video generation adapter, including continuity-aware prompt planning and model fallback metadata |
-| `lib/grokVideoShared.ts` | 162 | Shared Grok video types, config, endpoint, and timeout helpers keeping the adapter/poll dependency one-way |
+| `lib/grokVideoAdapter.ts` | 455 | Grok video planner and xAI video generation adapter, including continuity-aware prompt planning and model fallback metadata |
+| `lib/grokVideoShared.ts` | 166 | Shared Grok video types, config, endpoint, and timeout helpers keeping the adapter/poll dependency one-way |
 | `lib/grokVideoPoll.ts` | 122 | Grok video status polling with transient-failure tolerance so a network blip cannot discard a long render |
 | `lib/localImportStore.ts` | 116 | Validates raw PNG/JPEG/WebP body, writes timestamped `imported-*` to generated/, embeds XMP metadata, returns GenerateItem-shaped row |
 | `lib/storageMigration.ts` | 311 | Legacy generated-folder scan and migration support |
@@ -229,7 +229,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/openDirectory.ts` | 60 | Cross-platform open of the generated directory (used by `/api/storage/open-generated-dir`) |
 | `lib/refs.ts` | 175 | Reference image validation, count/size limits |
 | `lib/referenceImageCompress.ts` | 85 | Sharp-based reference image compression below the configured byte cap |
-| `lib/imageModels.ts` | 434 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
+| `lib/imageModels.ts` | 447 | Image model allowlist and `normalizeImageModel(ctx, raw)` helper |
 | `lib/imageMetadata.ts` | 132 | `ima2.generation.v1` payload schema, XMP build/parse, embed limits |
 | `lib/imageMetadataStore.ts` | 84 | Sharp-based embed/read of XMP metadata into PNG/JPEG/WebP |
 | `lib/canvasVersionStore.ts` | 360 | Canvas version snapshot storage, list, restore, and pruning |
@@ -287,10 +287,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/generationCancel.ts` | 29 | Shared generation cancellation helpers |
 | `lib/generationInputValidation.ts` | 46 | Shared generation request input validation |
 | `lib/grokImageCore.ts` | 188 | Shared Grok image request and response handling |
-| `lib/grokImagePlanner.ts` | 371 | Actual Grok search/planner operations, payload builders and plan parser |
-| `lib/providers/adapters/grokExecution.ts` | 125 | Four-surface Grok/proxy and direct execution, captured keys and search forwarding |
-| `lib/providers/adapters/grokOperations.ts` | 109 | Actual generate/edit operations with scoped artifact-origin policy |
-| `lib/providers/adapters/grokMultimodeOperations.ts` | 127 | Ordered per-image planning and sparse original-index result identity |
+| `lib/grokImagePlanner.ts` | 372 | Actual Grok search/planner operations, payload builders and plan parser |
+| `lib/providers/adapters/grokExecution.ts` | 128 | Four-surface Grok/proxy and direct execution, captured keys and search forwarding |
+| `lib/providers/adapters/grokOperations.ts` | 111 | Actual generate/edit operations with scoped artifact-origin policy |
+| `lib/providers/adapters/grokMultimodeOperations.ts` | 129 | Ordered per-image planning and sparse original-index result identity |
 | `lib/grokImageDownloadPolicy.ts` | 128 | Conservative address policy, exact-origin exception and abort-aware pinned DNS resolution |
 | `lib/grokImageDownload.ts` | 153 | Grok redirect trust, overall deadline, bounded streamed image body and cleanup |
 | `lib/pinnedHttpGet.ts` | 173 | Shared validated-address GET lifecycle, public redirect handling and bounded text bodies |
@@ -300,7 +300,6 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/xaiAuth.ts` | 500 | xAI OAuth credential store (~/.progrok/auth.json), single-flight refresh, terminal-failure negative cache |
 | `lib/grokUpstreamRetry.ts` | 171 | Pre-response retry guard for idempotent Grok fetches: socket resets, transient 5xx, Retry-After backoff |
 | `lib/grokSizeMapper.ts` | 88 | Grok model image-size mapping and validation |
-| `lib/grokVideoCanvas.ts` | 41 | Grok video canvas/source preparation helpers |
 | `lib/grokVideoDownload.ts` | 167 | Bounded incremental video download, validation and reader cleanup; callers own persistence |
 | `lib/videoExtendI2vOperation.ts` | 105 | Actual whole last-frame background operation Promise, preserving phase/persistence/terminal order |
 | `lib/grokVideoPlannerPrompt.ts` | 225 | Grok video planner prompt construction |
@@ -357,7 +356,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentToolManifest.ts` | 31 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 205 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 356 | Generation plan assembly |
-| `lib/agentImageVideoGen.ts` | 480 | Image/video generation caller for agent turns |
+| `lib/agentImageVideoGen.ts` | 478 | Image/video generation caller for agent turns |
 | `lib/agentQuestionResponder.ts` | 281 | `/question` responder |
 | `lib/promptBuilder/constants.ts` | 34 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
 | `lib/promptBuilder/router.ts` | 140 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |
@@ -394,8 +393,8 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Cost | `ui/src/lib/cost.ts` | 91 | Quality/size cost estimation |
 | Error codes | `ui/src/lib/errorCodes.ts` | 312 | Stable error code → translation key mapping |
 | Error handler | `ui/src/lib/errorHandler.ts` | 31 | Routes errors to toast or persistent `ErrorCard` |
-| Image models | `ui/src/lib/imageModels.ts` | 325 | UI-side image model labels and `resolveCoreModelValue` lane gating |
-| Core selection policy | `ui/src/lib/coreSelection.ts` | 162 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
+| Image models | `ui/src/lib/imageModels.ts` | 327 | UI-side image model labels and `resolveCoreModelValue` lane gating |
+| Core selection policy | `ui/src/lib/coreSelection.ts` | 171 | Pure provider/model/workflow reconciliation, lane memory projection and image wire model |
 | Core selection persistence | `ui/src/store/coreSelectionPersistence.ts` | 59 | Legacy active snapshot and bounded versioned lane-memory storage boundary |
 | Core selection actions | `ui/src/store/storeCoreSelectionImpl.ts` | 84 | One selection patch for provider/image/video/workflow choices, including explicit slot clearing |
 | Core generation mode | `ui/src/lib/coreGenerationMode.ts` | 30 | Shared derived image/multimode/video decision for dispatch and composer chrome; no preference writes |
@@ -426,7 +425,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `GalleryImageTile.tsx` | 67 | Per-image gallery thumbnail and selection state |
 | `CardNewsGalleryTile.tsx` | 58 | Card-news set tile in the gallery |
 | `HistoryStrip.tsx` / `HistoryStripLayoutToggle.tsx` | n/a | Inline history strip with rail/grid layout toggle |
-| `ui/src/components/VideoControlsPanel.tsx` | 223 | Video model/options, voice controls and sound-intent prompt chips |
+| `ui/src/components/VideoControlsPanel.tsx` | 224 | Video model/options, voice controls and sound-intent prompt chips |
 | `ui/src/components/SoundIntentPicker.tsx` | 66 | Localized sound-intent selection using persisted ordinary prompt chips |
 | `PromptComposer.tsx` | 498 | Prompt input, reference handling, style-sheet entry, save-to-library, and provider-gated NovelAI Positive prompt pane |
 | `NegativePromptField.tsx` | 58 | Self-gated NovelAI Undesired content pane shared by Classic, Home, and mobile compose surfaces |

@@ -50,6 +50,10 @@ export interface GrokVideoOptions {
   referenceImages?: string[] | undefined;
   /** Preset voice ids (grok-imagine-video-1.5 only, max 3). */
   referenceAudios?: string[] | undefined;
+  /** Frame pins (1.5 only): image strings as given by the caller. */
+  pins?: import("./grokVideoPins.js").VideoFramePins | undefined;
+  /** false asks 1.5 / 1.5-lite for a silent video (generate_audio). */
+  generateAudio?: boolean | undefined;
   signal?: AbortSignal | undefined;
   requestId?: string | undefined;
   plannedPrompt?: string | undefined;

@@ -1,12 +1,11 @@
 import test, { before, beforeEach, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import express from "express";
-import { createServer } from "node:http";
 import { access, mkdir, mkdtemp, rm, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { executionTestProcess } from "./_executionTestProcess.ts";
-import { GROK_DIRECT_ORIGIN, openVideoFixture } from "./_videoExecutionFixture.ts";
+import { openVideoFixture } from "./_videoExecutionFixture.ts";
 import { fakeMp4Bytes } from "./_videoStreamFixture.ts";
+import { createVideoRouteHarness } from "./_videoRouteHarness.ts";
 if (executionTestProcess(import.meta.url)) {
 type VideoFixture = Awaited<ReturnType<typeof openVideoFixture>>;
 let fixture: VideoFixture;
@@ -23,125 +22,7 @@ before(async () => {
 beforeEach(() => { fixture.beginCase(); });
 afterEach(async () => { await fixture?.finishCase(); });
 after(async () => { await fixture?.close(); });
-const proxyOptions = new WeakMap<import("node:http").Server, ProxyOptions>();
-type ProxyOptions = {
-  failFirstGeneration?: boolean; captureStart?: (body: any) => void;
-  downloadCase?: "invalid-mp4" | "declared-too-large";
-};
-async function listen(server: import("node:http").Server): Promise<string> {
-  const origin = await fixture.listen(server, "proxy");
-  fixture.bridgeProxy(server, (call) => {
-    const target = new URL(call.url);
-    assert.equal(target.search, "");
-    assert.equal(call.headers.get("cookie"), null);
-    if (target.pathname === "/dl/v.mp4") {
-      assert.equal(target.origin, origin, "the artifact stays on the owned mock origin");
-      assert.equal(call.method, "GET");
-      assert.equal(call.body, "");
-      assert.equal(call.headers.get("authorization"), null);
-      return;
-    }
-    assert.equal(target.origin, GROK_DIRECT_ORIGIN, "authenticated video calls leave for xAI directly");
-    assert.equal(call.headers.get("authorization"), fixture.grokBearer);
-    if (target.pathname === "/v1/videos/vid-xyz") {
-      assert.equal(call.method, "GET");
-      assert.equal(call.body, "");
-      return;
-    }
-    assert.ok(["/v1/responses", "/v1/chat/completions", "/v1/videos/generations"].includes(target.pathname));
-    assert.equal(call.method, "POST");
-    assert.equal(call.headers.get("content-type"), "application/json");
-    const body = JSON.parse(call.body);
-    assert.ok(body && typeof body === "object" && !Array.isArray(body));
-    assert.equal(typeof body.model, "string");
-    if (target.pathname === "/v1/videos/generations") {
-      assert.equal(typeof body.prompt, "string");
-      proxyOptions.get(server)?.captureStart?.(body);
-    } else {
-      assert.ok(Array.isArray(target.pathname === "/v1/responses" ? body.input : body.messages));
-    }
-  }, "/dl/v.mp4");
-  return origin;
-}
-
-function artifactReply(res: import("node:http").ServerResponse, kind?: ProxyOptions["downloadCase"]): void {
-  res.writeHead(200, { "Content-Type": "video/mp4",
-    ...(kind === "declared-too-large" ? { "Content-Length": "104857601" } : {}) });
-  if (kind === "declared-too-large") { res.flushHeaders(); return; }
-  res.end(kind === "invalid-mp4" ? Buffer.from("invalid MP4 bytes") : fakeMp4Bytes());
-}
-// Mock xAI upstream: search -> planner -> start -> poll(done) -> download.
-function makeProxy(options: ProxyOptions = {}) {
-  let polls = 0;
-  let starts = 0;
-  const server = createServer((req, res) => {
-    const url = req.url || "";
-    if (url === "/v1/responses") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ output: [{ type: "message", content: [{ type: "text", text: "brief" }] }] }));
-    }
-    if (url === "/v1/chat/completions") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ choices: [{ message: { tool_calls: [{ type: "function", function: { name: "generate_video", arguments: JSON.stringify({ prompt: "english clip" }) } }] } }] }));
-    }
-    if (url === "/v1/videos/generations") {
-      req.resume();
-      req.on("end", () => {
-        starts += 1;
-        if (options.failFirstGeneration && starts === 1) {
-          res.writeHead(400, { "Content-Type": "application/json" });
-          return res.end(JSON.stringify({ error: "`reference_images` is not supported for this model." }));
-        }
-        res.writeHead(200, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ request_id: "vid-xyz" }));
-      });
-      return;
-    }
-    if (url === "/v1/videos/vid-xyz") {
-      polls += 1;
-      res.writeHead(200, { "Content-Type": "application/json" });
-      const port = (server.address() as any).port;
-      if (!options.downloadCase && polls < 2) return res.end(JSON.stringify({ status: "pending", progress: 50 }));
-      return res.end(JSON.stringify({ status: "done", progress: 100, video: { url: `http://127.0.0.1:${port}/dl/v.mp4`, duration: 1, respect_moderation: true }, usage: { cost_in_usd_ticks: 500000000 } }));
-    }
-    if (url === "/dl/v.mp4") {
-      return artifactReply(res, options.downloadCase);
-    }
-    res.writeHead(404);
-    res.end("nope");
-  });
-  proxyOptions.set(server, options);
-  return server;
-}
-
-async function videoApp(generatedDir) {
-  const app = express();
-  fixture.trackApp(app);
-  app.use(express.json({ limit: "8mb" }));
-  registerVideoRoutes(app, {
-    rootDir: fixture.root,
-    packageVersion: "test",
-    grokAuthHomeDir: fixture.grokAuthHomeDir,
-    config: {
-      ...config,
-      storage: { ...config.storage, generatedDir },
-      grokProvider: { ...config.grokProvider, videoPollIntervalMs: 1, videoStartTimeoutMs: 5000, videoTimeoutMs: 30000, videoDownloadTimeoutMs: 5000, plannerTimeoutMs: 5000 },
-    },
-  });
-  const server = createServer(app);
-  const url = await fixture.listen(server, "app");
-  return { server, url };
-}
-
-function parseSse(text) {
-  const events = [];
-  for (const block of text.split("\n\n")) {
-    const ev = /event: (.+)/.exec(block);
-    const data = /data: (.+)/.exec(block);
-    if (ev && data) events.push({ event: ev[1].trim(), data: JSON.parse(data[1]) });
-  }
-  return events;
-}
+const { listen, makeProxy, videoApp, parseSse } = createVideoRouteHarness(() => ({ fixture, config, registerVideoRoutes }));
 
 for (const downloadCase of ["invalid-mp4", "declared-too-large"] as const) {
   test(`/api/video/generate ${downloadCase}: error on both channels, no persistence or retry`, async () => {
@@ -277,42 +158,20 @@ test("/api/video/generate uses configured Grok Video 1.5 default when model is o
   }
 });
 
-test("/api/video/generate exposes fallback model metadata for 1.5 Ref2V", async () => {
+test("/api/video/generate surfaces a 1.5 Ref2V 400 without a base-model resubmission", async () => {
   const proxy = makeProxy({ failFirstGeneration: true });
   await listen(proxy);
-  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-route-fallback-"));
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-route-400-"));
   const { url } = await videoApp(generatedDir);
   try {
     const res = await fixture.fetchApp(`${url}/api/video/generate`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: "continue the character motion", provider: "grok", model: "grok-imagine-video-1.5-preview", referenceImages: ["A", "B"], duration: 10, resolution: "720p", requestId: "req_video_fallback", }),
+      body: JSON.stringify({ prompt: "continue the character motion", provider: "grok", model: "grok-imagine-video-1.5-preview", referenceImages: ["A", "B"], duration: 10, resolution: "720p", requestId: "req_video_400", }),
     });
     const events = parseSse(await res.text());
-    const fallback = { from: "grok-imagine-video-1.5", to: "grok-imagine-video" };
-    const submitted = events.find((e) => e.event === "submitted");
-    const done = events.find((e) => e.event === "done");
-    assert.ok(submitted, "has submitted");
-    assert.ok(done, "has done");
-    assert.equal(submitted.data.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(submitted.data.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(submitted.data.modelFallback, fallback);
-    assert.equal(done.data.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(done.data.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(done.data.modelFallback, fallback);
-    assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(done.data.video.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(done.data.video.modelFallback, fallback);
-    const files = await readdir(generatedDir);
-    const mp4 = files.find((f) => f.endsWith(".mp4"));
-    assert.ok(mp4, "mp4 written");
-    const sidecar = JSON.parse(await readFile(join(generatedDir, `${mp4}.json`), "utf8"));
-    assert.equal(sidecar.model, "grok-imagine-video");
-    assert.equal(sidecar.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(sidecar.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(sidecar.modelFallback, fallback);
-    assert.equal(sidecar.video.requestedModel, "grok-imagine-video-1.5");
-    assert.equal(sidecar.video.effectiveModel, "grok-imagine-video");
-    assert.deepEqual(sidecar.video.modelFallback, fallback);
+    assert.ok(events.some((e) => e.event === "error"), "has error");
+    assert.equal(events.some((e) => e.event === "done"), false);
+    assert.equal((await readdir(generatedDir)).some((f) => f.endsWith(".mp4")), false);
   } finally {
     await fixture.finishCase();
     await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
@@ -343,7 +202,7 @@ test("/api/video/generate accepts Grok Video 1.5 image-to-video 1080p", async ()
   }
 });
 
-test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas shim", async () => {
+test("/api/video/generate sends Grok Video 1.5 prompt-only 1080p natively", async () => {
   let startBody: any = null;
   const proxy = makeProxy({ captureStart: (body) => { startBody = body; } });
   await listen(proxy);
@@ -358,8 +217,8 @@ test("/api/video/generate accepts Grok Video 1.5 prompt-only 1080p via canvas sh
     assert.ok(done, "has done");
     assert.equal(startBody.model, "grok-imagine-video-1.5");
     assert.equal(startBody.resolution, "1080p");
-    assert.ok(startBody.image?.url?.startsWith("data:image/png;base64,"));
-    assert.match(startBody.prompt, /blank white canvas.*technical placeholder/);
+    assert.equal("image" in startBody, false);
+    assert.doesNotMatch(startBody.prompt, /blank white canvas/);
     assert.equal(done.data.video.resolution, "1080p");
     assert.equal(done.data.video.requestedModel, "grok-imagine-video-1.5");
   } finally {

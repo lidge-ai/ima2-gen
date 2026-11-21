@@ -32,19 +32,19 @@ async function submitSelection(page: Page, capture: J6Capture, origin: string,
 }
 
 test("WP02 Grok API survives true reload and another Grok image click", async ({ browser }, info) => {
-  await withJ6(browser, info, { provider: "grok-api", imageModel: "grok-imagine-image-quality" },
+  await withJ6(browser, info, { provider: "grok-api", imageModel: "grok-imagine-image" },
     async (page, capture, origin) => {
       await openCreate(page, origin);
-      await assertSelection(page, "xAI API", "grok+");
+      await assertSelection(page, "xAI API", "grok");
       await page.reload();
-      await assertSelection(page, "xAI API", "grok+");
+      await assertSelection(page, "xAI API", "grok");
       await selectionScreenshot(page, info, "grok-api-reload");
       await page.setViewportSize({ width: 390, height: 844 });
-      await assertSelection(page, "xAI API", "grok+");
+      await assertSelection(page, "xAI API", "grok");
       await selectionScreenshot(page, info, "grok-api-reload-narrow");
       await page.setViewportSize({ width: 1280, height: 800 });
-      await selectionViewports(page, info, "replan027-grok-api-reload", { provider: "xAI API", model: "grok+" });
-      await submitSelection(page, capture, origin, { path: "/api/generate", provider: "grok-api", model: "grok-imagine-image-quality" });
+      await selectionViewports(page, info, "replan027-grok-api-reload", { provider: "xAI API", model: "grok" });
+      await submitSelection(page, capture, origin, { path: "/api/generate", provider: "grok-api", model: "grok-imagine-image" });
       await selectOption(page, MODEL_TRIGGER, "grok2");
       await assertSelection(page, "xAI API", "grok2");
       expect(await page.evaluate(() => localStorage.getItem("ima2.imageModel"))).toBe("grok-imagine-image-2.0");
@@ -56,7 +56,7 @@ test("WP02 Grok API survives true reload and another Grok image click", async ({
 });
 
 test("WP02 Grok API video preview alias reloads and submits the canonical video id", async ({ browser }, info) => {
-  await withJ6(browser, info, { provider: "grok-api", imageModel: "grok-imagine-image-quality",
+  await withJ6(browser, info, { provider: "grok-api", imageModel: "grok-imagine-image",
     videoModel: "grok-imagine-video-1.5-preview" }, async (page, capture, origin) => {
     await openCreate(page, origin);
     await page.reload();
@@ -140,7 +140,7 @@ test("WP02 Comfy video survives leave/return and bypasses saved multimode", asyn
 
 for (const positive of [
   { provider: "oauth", imageModel: "gpt-6-luna", label: "GPT", model: "6l" },
-  { provider: "grok-api", imageModel: "grok-imagine-image-quality", label: "xAI API", model: "grok+" },
+  { provider: "grok-api", imageModel: "grok-imagine-image", label: "xAI API", model: "grok" },
 ]) {
   test(`WP02 ${positive.provider} Sequence renders and survives Comfy switch-return without submission`, async ({ browser }, info) => {
     await withJ6(browser, info, { provider: positive.provider, imageModel: positive.imageModel, expectedSubmissions: 0,

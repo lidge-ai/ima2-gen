@@ -100,7 +100,7 @@ mandatory xAI Web Search, planner pass (default: `grok-4.3`), and xAI Images API
 ```bash
 ima2 grok login
 ima2 grok status
-ima2 gen "cinematic neon city" --model grok/grok-imagine-image-quality
+ima2 gen "cinematic neon city" --model grok/grok-imagine-image-2.0
 ```
 
 `ima2 grok login` defaults to the manual-paste flow.
@@ -772,7 +772,7 @@ own UI may offer features not verified on the Codex OAuth endpoints. See
 Persist the server-side model defaults shared by GPT OAuth and API provider paths:
 
 The GPT OAuth and API-key lanes both offer `gpt-6-luna`, `gpt-6.1-terra`, `gpt-6.2-sol`, `gpt-6.2-astra` (aliases `luna`, `terra`, `sol`, `astra`), defaulting to `gpt-6-luna`; saved older IDs migrate to their tier on the same lane. Grok image and video code
-defaults are `grok-imagine-image-quality` and `grok-imagine-video` respectively.
+defaults are `grok-imagine-image-2.0` and `grok-imagine-video` respectively (retired `grok-imagine-image-quality` / `-pro` ids migrate to 2.0).
 For video, set `grok-imagine-video-1.5` as your default and leave the base model
 for edit and extension, which are the only things 1.5 cannot do.
 
@@ -916,15 +916,12 @@ So: **1.5 for generating, base for editing and extending.** Nothing needs both a
 `grok-imagine-video-1.5-preview` is still accepted as a compatibility alias, but write
 `grok-imagine-video-1.5` in anything new.
 
-Prompt-only text-to-video on 1.5 is implemented as an internal white-canvas image-to-video anchor,
-because upstream 1.5 rejects raw T2V. That is an implementation detail — ask for
-text-to-video normally.
+Prompt-only text-to-video on 1.5 is native (no canvas). `grok-imagine-video-1.5-lite` does
+text- and image-to-video only. Pin frames on 1.5 with `--last-frame <file>` and
+`--keyframe <file>@<seconds>` (max 4); pins make reference-to-video, capped at 720p.
 
-When a request does fall back to another model, the result carries `requestedModel`,
-`effectiveModel`, and `modelFallback`. Read `effectiveModel` before naming or reporting
-which model produced a clip. A request carrying `--voice` never falls back, because the
-base model cannot honor the voice and silently dropping it would return a clip missing
-what was asked for.
+A start error is returned as-is: ima2 never retries on another model, so
+`effectiveModel` equals `requestedModel` and `modelFallback` is null.
 
 ### Modes (from --ref count, plus your choice at one reference)
 
@@ -1031,9 +1028,8 @@ agents should always write an active prompt that includes:
 
 The planner is model-aware: it adjusts for `grok-imagine-video` (simpler, bolder
 composition at 480p) vs `grok-imagine-video-1.5` (finer detail, 1080p textures).
-For 1.5 text-to-video, the server uses a white-canvas shim internally; the
-planner automatically writes a fresh-scene prompt without referencing a source
-image.
+For 1.5 text-to-video the planner writes a fresh-scene prompt; `--no-planner`
+sends your prompt as written (not with continuation or `--bg`).
 
 **Anti-slop**: the planner rejects generic prestige phrases ("AAA trailer",
 "senior VFX artist", "shot on RED"), filler lighting ("volumetric", "neon glow"),
@@ -1050,7 +1046,7 @@ ima2 serve          # server must be running
 ### Output
 
 SSE streaming events: `planning` → `submitted` → `progress` (0-100%) → `done`.
-The `submitted` and `done` payloads include `requestedModel`, `effectiveModel`, and `modelFallback` so agents can report which model actually produced a clip when a request falls back. A request carrying `--voice` never falls back. CLI `--json` prints `video.requestedModel`, `video.effectiveModel`, and `video.modelFallback`; use `path`/`filename` for local chaining.
+The `submitted` and `done` payloads include `requestedModel`, `effectiveModel`, and `modelFallback`; since 2026-11 ima2 never retries on another model, so they always agree. CLI `--json` prints `video.requestedModel`, `video.effectiveModel`, and `video.modelFallback`; use `path`/`filename` for local chaining.
 
 ### Discover Valid Parameters
 
@@ -1068,7 +1064,7 @@ Generate a high-quality still image first, then animate it. This produces better
 
 **Keyframe image provider rule (MANDATORY)**:
 - **Primary**: GPT Image 2 (OpenAI, `provider: oauth`) with `quality: high`, maximum resolution matching the target video aspect ratio. For 16:9 video use `1792x1024`. For 1:1 use `1024x1024`. For 9:16 use `1024x1792`.
-- **Fallback**: Grok (`provider: grok`, model `grok-imagine-image-quality`). Only aspect ratio must match — resolution does not matter because i2v accepts any resolution source image and internally rescales.
+- **Fallback**: Grok (`provider: grok`, model `grok-imagine-image-2.0`). Only aspect ratio must match — resolution does not matter because i2v accepts any resolution source image and internally rescales.
 - GPT Image 2 produces superior keyframes: better lighting coherence, character consistency, and fine detail that survives i2v animation. Always try GPT first.
 - The i2v model internally rescales the source image to its native resolution regardless of input size, so there is no benefit to upscaling a Grok fallback image.
 
@@ -1087,7 +1083,7 @@ Generate a high-quality still image first, then animate it. This produces better
 ima2 gen "cinematic wide shot of Bruce Lee in yellow tracksuit facing Elon Musk in dark gi, underground fight arena, dramatic lighting, 16:9" --quality high --size 1792x1024 -o scene.png
 
 # Fallback if GPT fails: Grok quality model, match aspect ratio only
-# ima2 gen "same prompt" --provider grok --model grok-imagine-image-quality --size 1824x1024 -o scene.png
+# ima2 gen "same prompt" --provider grok --model grok-imagine-image-2.0 --size 1824x1024 -o scene.png
 
 # Then animate from the composed scene
 ima2 video "Bruce throws a rapid jeet kune do combination" --ref scene.png --duration 10 --resolution 720p --aspect-ratio 16:9
@@ -1136,7 +1132,7 @@ ima2 gen "cinematic wide shot of two fighters in a dojo, dramatic lighting" \
   --quality high --size 1792x1024 --storyboard
 ```
 
-Fallback: Grok `grok-imagine-image-quality`, match aspect ratio only — resolution does not matter because i2v internally rescales.
+Fallback: Grok `grok-imagine-image-2.0`, match aspect ratio only — resolution does not matter because i2v internally rescales.
 
 **Step 2 — 9-panel storyboard grid** (GPT Image 2 with keyframe as reference):
 
@@ -1273,7 +1269,7 @@ done
   measured 2026-09-08. Do not confuse it with the mode-wide 10-second clamp removed in
   v3.8.0 (issue #155): that one was ours and applied to every model
 - A preset voice with no reference image also selects reference-to-video
-- 1080p resolution is available for `grok-imagine-video-1.5` prompt-only text-to-video via the white-canvas I2V shim, and for image-to-video with a single image/frame source
+- 1080p resolution is native for `grok-imagine-video-1.5` and `-1.5-lite` text-to-video and image-to-video with a single image/frame source
 - Video edit/extend: grok-imagine-video only (1.5 is not supported)
 - Video edit input: ~8.7 seconds is our own measured practical ceiling, not a limit xAI enforces
 - Video extend: extension duration 1-15 seconds, and it is the length of the ADDED

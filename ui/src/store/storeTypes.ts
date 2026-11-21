@@ -228,7 +228,7 @@ export type GenerationDefaults = Partial<{
   customW: number;
   customH: number;
   grokAspectRatio: string;
-  grokResolution: "1k" | "2k";
+  grokResolution: "1k" | "1.5k" | "2k";
   format: Format;
   moderation: Moderation;
   count: Count;
@@ -343,7 +343,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   customW: number;
   customH: number;
   grokAspectRatio: string;
-  grokResolution: "1k" | "2k";
+  grokResolution: "1k" | "1.5k" | "2k";
   format: Format;
   moderation: Moderation;
   imageModel: ImageModel;
@@ -541,7 +541,7 @@ export type AppState = PresetState & ReferenceTraySlice & {
   setSizePreset: (s: SizePreset) => void;
   setCustomSize: (w: number, h: number) => void;
   setGrokAspectRatio: (ar: string) => void;
-  setGrokResolution: (r: "1k" | "2k") => void;
+  setGrokResolution: (r: "1k" | "1.5k" | "2k") => void;
   setFormat: (f: Format) => void;
   setModeration: (m: Moderation) => void;
   setImageModel: (m: ImageModel) => void;

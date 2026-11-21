@@ -5,7 +5,7 @@ export type ResolvedPromptBuilderBackend = Exclude<PromptBuilderBackend, "auto">
 // GPT OAuth runs GPT-6 only; the API-key lane keeps the models the OpenAI API serves.
 const OAUTH_GPT_MODELS = ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra"] as const;
 const API_GPT_MODELS = OAUTH_GPT_MODELS;
-const grokModels = ["grok-4.3", "grok-4.6", "grok-4.5"] as const;
+const grokModels = ["grok-4.3", "grok-4.7", "grok-4.6", "grok-4.5"] as const;
 
 export const PROMPT_BUILDER_MODELS: Record<PromptBuilderBackend, readonly string[]> = {
   auto: ["auto"],

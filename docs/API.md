@@ -466,8 +466,9 @@ enabled alpha are V5-only. The four exact image models are
 text-to-image only: `NAI_REF_UNSUPPORTED`, `NAI_EDIT_UNSUPPORTED`, and
 `NAI_MASK_UNSUPPORTED` fail closed rather than discarding input.
 
-When `provider` is `"grok"`, supported models include `grok-imagine-image-2.0`,
-`grok-imagine-image` and `grok-imagine-image-quality`. The server uses `grok-4.3`
+When `provider` is `"grok"`, supported models are `grok-imagine-image-2.0` (default)
+and `grok-imagine-image`; the retired `grok-imagine-image-quality` / `-pro` ids migrate to 2.0. 2.0 receives
+`quality` (low→low, medium→medium, high→medium, auto→auto); an omitted `quality` sends `low` for a retired id and `auto` for 2.0. The base model gets no quality field. Resolutions: 1k, 1.5k, 2k. The server uses `grok-4.3`
 as the configured search/planner default (`IMA2_GROK_PLANNER_MODEL`) and times search and
 planner steps separately from the image call (`IMA2_GROK_PLANNER_TIMEOUT_MS`).
 For `n > 1`, search and planning run once and the planned prompt is reused for
@@ -652,7 +653,7 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 | 1 image (`sourceImage` or `sourceFilename`) | image-to-video | 1–15s |
 | 2–14 images (`referenceImages` / `referenceFilenames`) | reference-to-video | 1–15s on grok-imagine-video-1.5, 1–10s on grok-imagine-video |
 
-1080p is accepted for `grok-imagine-video-1.5` prompt-only text-to-video and image-to-video with one image/frame source, including `continueFromVideo` after the server extracts the parent video's last frame. Prompt-only 1.5 text-to-video uses the internal white-canvas image-to-video shim before the upstream request. 1.5 does not add Ref2V, V2V edit, or extension support.
+1080p is accepted for `grok-imagine-video-1.5` prompt-only text-to-video and image-to-video with one image/frame source, including `continueFromVideo` after the server extracts the parent video's last frame. Prompt-only 1.5 text-to-video is sent natively. `grok-imagine-video-1.5-lite` also takes 1080p text- and image-to-video (a 720p upscale) and refuses reference images and voices (`GROK_VIDEO_REF_UNSUPPORTED_MODEL`, `GROK_VIDEO_AUDIO_UNSUPPORTED_MODEL`). A start error is returned as-is; ima2 no longer retries on another model. 1.5 does not add V2V edit or extension support.
 
 **Parameters**:
 
@@ -662,7 +663,7 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 | `provider` | string | `"grok"` | `"grok"` or `"grok-api"` |
 | `model` | string | `grok-imagine-video-1.5` | Video model |
 | `duration` | integer | `5` | 1–15 seconds (clamped to 10 for reference-to-video) |
-| `resolution` | string | `"480p"` | `480p`, `720p`, or `1080p` (`1080p` uses 1.5 T2V canvas shim or I2V) |
+| `resolution` | string | `"480p"` | `480p`, `720p`, or `1080p` (`1080p`: 1.5 / 1.5-lite text- or image-to-video only) |
 | `aspectRatio` | string | `"auto"` | 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto |
 | `sourceImage` | string | — | Base64 image for image-to-video |
 | `sourceFilename` | string | — | Existing generated file for image-to-video |
@@ -670,7 +671,11 @@ Generate a video via the Grok video provider. Returns Server-Sent Events on the 
 | `referenceFilenames` | string[] | — | Existing generated files for reference-to-video |
 | `continueFromVideo` | string | — | Generated `.mp4` parent; server extracts its last frame and rebuilds lineage from sidecar |
 | `continuityLineage` | object | — | Optional client hint; used only when `continueFromVideo` is absent |
-| `plannerModel` | string | `grok-4.3` | Grok video planner model override; `grok-4.6` and `grok-4.5` are selectable (also via settings UI or `IMA2_GROK_PLANNER_MODEL`) |
+| `lastFrame` | string | — | 1.5 only: image pinned as the last frame; makes the request reference-to-video (720p max) |
+| `keyframes` | `{image, timestampS}[]` | — | 1.5 only: up to 4 pinned frames, `0 < timestampS < duration`, distinct 1/3 s slots (`GROK_VIDEO_KEYFRAMES_INVALID`, `GROK_VIDEO_PINS_UNSUPPORTED_MODEL`) |
+| `generateAudio` | boolean | — | `false` asks 1.5 / 1.5-lite for a silent video; other models answer `GROK_VIDEO_AUDIO_TOGGLE_UNSUPPORTED` |
+| `planner` | string | — | `"off"` sends the composed prompt without planner or search; refused with `GROK_VIDEO_PLANNER_OFF_UNSUPPORTED` when continuation lineage or a background preset is present |
+| `plannerModel` | string | `grok-4.3` | Grok video planner model override; `grok-4.7`, `grok-4.6` and `grok-4.5` are selectable (also via settings UI or `IMA2_GROK_PLANNER_MODEL`) |
 | `storyboard` | boolean | `false` | Enable storyboard mode — maintains character/scene continuity across sequential clips |
 
 Blank prompts return `PROMPT_REQUIRED` with a `guidance` string. The active
@@ -1049,7 +1054,7 @@ npm installs check the registry for a newer ima2 while the server runs (at most 
 | `GRAPH_VERSION_CONFLICT` | Stale graph version |
 | `GRAPH_TOO_LARGE` | Graph exceeds node/edge limits |
 | `NODE_NOT_FOUND` | Node metadata was not found |
-| `INVALID_GROK_IMAGE_MODEL` | A Grok request used a model outside `grok-imagine-image` or `grok-imagine-image-quality` |
+| `INVALID_GROK_IMAGE_MODEL` | A Grok request used a model outside `grok-imagine-image-2.0` and `grok-imagine-image` (retired ids migrate instead) |
 | `GROK_RATE_LIMITED` | xAI returned a rate-limit response |
 | `GROK_AUTH_FAILED` | The xAI request could not be authenticated |
 | `GROK_SEARCH_TIMEOUT` / `GROK_PLANNER_TIMEOUT` / `GROK_IMAGE_TIMEOUT` | The Grok search, planner, or image API step exceeded its timeout budget |

@@ -63,6 +63,7 @@ const LEXICAL_EXCEPTIONS = new Set([
   "GROK_VIDEO_MODEL_15_DATED_ALIAS",
   "GROK_VIDEO_MODEL_15_PREVIEW_ALIAS",
   "GROK_VIDEO_MODEL_BASE",
+  "GROK_VIDEO_MODEL_15_LITE",
   "MINIMAX_API_KEY",
   // NovelAI constants, not error codes: config/model/enum names that share the
   // NAI_ prefix (lib/naiImageAdapter.ts, lib/naiZip.ts).

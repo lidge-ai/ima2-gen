@@ -28,17 +28,18 @@ import {
 } from "../lib/videoContinuity.js";
 import { extractGeneratedVideoFrameB64 } from "../lib/videoFrameExtract.js";
 import { errorEnvelopeFields } from "../lib/errors/envelope.js";
+import { hasVideoPins, readVideoPinRequest } from "../lib/grokVideoPins.js";
+import { resolveRouteVideoMode } from "../lib/videoRouteMode.js";
 import {
   normalizeGrokVideoModel,
   normalizeVideoResolution,
   normalizeVideoAspectRatio,
   normalizeVideoDuration,
-  deriveVideoMode,
   MAX_REF2V_REFERENCES,
   MAX_REFERENCE_AUDIOS,
   validateVideoResolutionForRequest,
+  validateGrokVideoInputs, canonicalGrokVideoModel, GROK_VIDEO_MODEL_15,
   validateVideoDurationForRequest,
-  type VideoMode,
 } from "../lib/imageModels.js";
 import { errInfo, numberField, stringField, thrownFields } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
@@ -364,12 +365,6 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       }
       if (resolved.length > MAX_REF2V_REFERENCES) return fail(400, "GROK_VIDEO_REF_TOO_MANY", `at most ${MAX_REF2V_REFERENCES} reference images`);
       const incomingProviderUrl = typeof req.body?.providerUrl === "string" && req.body.providerUrl.startsWith("http") ? req.body.providerUrl : null;
-      // Which slot an image arrived in IS the caller's intent, and a bare count throws
-      // that away. A composer reference means "guide the video with this" even when
-      // there is only one of them; a node/continuity image means "start from this
-      // frame". Deriving from the count alone forced every single composer reference
-      // into image-to-video, so the one thing the tray is named for was unreachable.
-      // devlog/_plan/260820_grok15_multi_reference_video/030_single_ref_mode_choice.md
       const composerRefCount = resolved.filter((r) => r.source === "composer").length;
       const requestedMode = typeof req.body?.mode === "string" ? req.body.mode : null;
       // Shape only. Which voice ids exist is xAI's to answer, and its 400 names every
@@ -382,39 +377,41 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       if (referenceAudios.length > MAX_REFERENCE_AUDIOS) {
         return fail(400, "GROK_VIDEO_AUDIO_TOO_MANY", `at most ${MAX_REFERENCE_AUDIOS} reference voices`);
       }
-      const derivedMode: VideoMode = composerRefCount > 0
-        ? "reference-to-video"
-        // A voice alone selects reference-to-video upstream: "at least one reference of
-        // either kind selects the reference-to-video mode" (xAI OpenAPI,
-        // GenerateVideoRequest.reference_audios). Calling it text-to-video here would let
-        // a 15s base-model request through while xAI applies the 10s r2v ceiling, and the
-        // rejection would name a mode this request never asked for.
-        : referenceAudios.length > 0
-          ? "reference-to-video"
-          : deriveVideoMode(resolved.length);
-      const mode: VideoMode = incomingProviderUrl
-        ? "image-to-video"
-        : (requestedMode === "reference-to-video" || requestedMode === "image-to-video" || requestedMode === "text-to-video")
-          ? requestedMode
-          : derivedMode;
-      // An explicit reference-to-video with nothing to reference at all would ship empty
-      // arrays and fail upstream with a less useful message. A voice counts as a
-      // reference, so audio-only is legitimate and must not be rejected here.
-      if (mode === "reference-to-video" && resolved.length === 0 && referenceAudios.length === 0) {
-        return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
+      if (!isComfy) {
+        const inputCheck = validateGrokVideoInputs(modelCheck.model, { referenceCount: composerRefCount, voiceCount: referenceAudios.length });
+        if (!("ok" in inputCheck)) return fail(inputCheck.status, inputCheck.code, inputCheck.error);
       }
+      const pinRequest = isComfy ? { pins: undefined, generateAudio: undefined } : readVideoPinRequest(req.body, modelCheck.model, durationCheck.duration, resolutionCheck.resolution);
+      if ("error" in pinRequest) return fail(pinRequest.status, pinRequest.code, pinRequest.error);
+      const { pins, generateAudio } = pinRequest;
+      // planner:"off" sends the composed prompt as-is. Lineage and background constraints
+      // reach only the planner, so the bypass would drop them (plan R2-F4, R3-F1).
+      const plannerOff = req.body?.planner === "off";
+      if (plannerOff && (parentLineage || backgroundPreset)) return fail(400, "GROK_VIDEO_PLANNER_OFF_UNSUPPORTED", "planner off cannot carry continuation lineage or a background constraint");
+      // Mode rules (slot intent, voices, frame pins, provider URL): lib/videoRouteMode.ts.
+      const mode = resolveRouteVideoMode({ model: modelCheck.model, isComfy, composerRefCount, resolvedCount: resolved.length,
+        voiceCount: referenceAudios.length, providerUrl: incomingProviderUrl, requestedMode, pins });
       const duration = durationCheck.duration;
-      const resolutionModeCheck = validateVideoResolutionForRequest(modelCheck.model, resolutionCheck.resolution, mode, {
-        allowTextCanvasShim: true,
-      });
+      const resolutionModeCheck = validateVideoResolutionForRequest(modelCheck.model, resolutionCheck.resolution, mode);
       if (isNormalizeError(resolutionModeCheck)) return fail(resolutionModeCheck.status, resolutionModeCheck.code, resolutionModeCheck.error);
       // The r2v ceiling is per model, and the start call is deliberately never retried
       // (a retry could bill a second video), so a 400 we can predict must be answered
       // before the job is admitted rather than asynchronously after planning.
       const durationModeCheck = validateVideoDurationForRequest(modelCheck.model, duration, mode);
       if (isNormalizeError(durationModeCheck)) return fail(durationModeCheck.status, durationModeCheck.code, durationModeCheck.error);
-      const referenceImages = mode === "reference-to-video" ? resolved.map((r) => r.b64) : undefined;
-      const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : undefined);
+      // On 1.5 a node/continuity source inside reference-to-video is the pinned first frame
+      // (<IMAGE_0>); composer images stay references (plan G3, R2-F3).
+      const pinnedFirst = mode === "reference-to-video" && !isComfy && canonicalGrokVideoModel(modelCheck.model) === GROK_VIDEO_MODEL_15
+        ? resolved.find((r) => r.source !== "composer") : undefined;
+      const referenceImages = mode === "reference-to-video" ? resolved.filter((r) => r !== pinnedFirst).map((r) => r.b64) : undefined;
+      // The payload builder re-checks what is actually sent, after paid planning, so answer it
+      // here: the references sent (a node source counts on Lite/base; on 1.5 it is the pinned
+      // first frame) and an empty reference-to-video (a voice or frame pin counts).
+      const sentRefCheck = isComfy ? { ok: true as const } : validateGrokVideoInputs(modelCheck.model, { referenceCount: referenceImages?.length ?? 0, voiceCount: referenceAudios.length });
+      if (!("ok" in sentRefCheck)) return fail(sentRefCheck.status, sentRefCheck.code, sentRefCheck.error);
+      if (mode === "reference-to-video" && !referenceImages?.length && referenceAudios.length === 0 && !hasVideoPins(pins)) return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
+      const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : pinnedFirst?.b64);
+      if (mode === "image-to-video" && !sourceB64) return fail(400, "GROK_VIDEO_INVALID_MODE", "image-to-video requires a source image");
       const sourceFilename = resolved[0]?.filename ?? null;
 
       const started = startJob({
@@ -560,6 +557,9 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         sourceImage: sourceB64,
         referenceImages,
         ...(referenceAudios.length ? { referenceAudios } : {}),
+        ...(pins ? { pins } : {}),
+        ...(generateAudio === false ? { generateAudio } : {}),
+        ...(plannerOff ? { plannedPrompt: effectivePrompt, webSearchCalls: 0 } : {}),
         signal: cancelController.signal,
         requestId,
         continuityLineage: parentLineage,

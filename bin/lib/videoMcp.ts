@@ -120,7 +120,7 @@ function validateCoreOptions(args: ParsedArgs, refs: string[], model: string, la
   // size is whatever its own graph says, so checking it against that table
   // would reject perfectly valid workflows by name alone.
   if (lane === "comfy") return { duration, resolution, aspectRatio };
-  const check = validateVideoResolutionForRequest(model, resolution as VideoResolution, mode, { allowTextCanvasShim: true });
+  const check = validateVideoResolutionForRequest(model, resolution as VideoResolution, mode);
   if (!("ok" in check)) die(2, check.error);
   return { duration, resolution, aspectRatio };
 }
@@ -137,6 +137,22 @@ async function coreReferences(serverBase: string, refs: string[], jsonMode: bool
     return fail({ json: jsonMode, code: typed.code ?? "REFERENCE_FAILED", message: typed.message || String(error),
       exitCode: typed.code === "HISTORY_EMPTY" ? 5 : exitCodeForError(error) });
   });
+}
+
+/** Grok 1.5 frame pins and the sound toggle, read from local files (plan G3, G10). */
+async function corePins(args: ParsedArgs): Promise<Record<string, unknown>> {
+  const body: Record<string, unknown> = {};
+  if (args["last-frame"]) body.lastFrame = (await readFile(String(args["last-frame"]))).toString("base64");
+  const specs = (Array.isArray(args.keyframe) ? args.keyframe : args.keyframe ? [args.keyframe] : []) as string[];
+  if (specs.length) body.keyframes = await Promise.all(specs.map(async (spec) => {
+    const at = String(spec).lastIndexOf("@");
+    const timestampS = Number(String(spec).slice(at + 1));
+    if (at <= 0 || !Number.isFinite(timestampS)) throw Object.assign(new Error(`--keyframe must be <file>@<seconds>: ${spec}`), { code: "INVALID_ARGS" });
+    return { image: (await readFile(String(spec).slice(0, at))).toString("base64"), timestampS };
+  }));
+  if (args["no-audio"]) body.generateAudio = false;
+  if (args["no-planner"]) body.planner = "off";
+  return body;
 }
 
 function coreBody(args: ParsedArgs, context: VideoContext, options: CoreOptions, references: string[], requestId: string) {
@@ -207,7 +223,7 @@ async function runCoreVideo(args: ParsedArgs, context: VideoContext): Promise<vo
   const options = validateCoreOptions(args, refs, context.target.model, context.target.lane);
   const references = await coreReferences(context.server.base, refs, Boolean(args.json));
   const requestId = createCliRequestId("req_cli_video");
-  const done = await consumeCoreSse(`${context.server.base}/api/video/generate`, coreBody(args, context, options, references, requestId), args, requestId);
+  const done = await consumeCoreSse(`${context.server.base}/api/video/generate`, { ...coreBody(args, context, options, references, requestId), ...(await corePins(args)) }, args, requestId);
   if (!done?.filename) die(1, "server did not return a video filename");
   const filename = String(done.filename);
   const target = args.out ? String(args.out) : args["out-dir"] ? join(String(args["out-dir"]), filename) : join(config.storage.generatedDir, filename);

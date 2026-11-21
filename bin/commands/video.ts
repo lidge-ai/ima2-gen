@@ -8,6 +8,7 @@ import { runVideoGenerate } from "../lib/videoMcp.js";
 import {
   GROK_VIDEO_MODEL_15,
   GROK_VIDEO_MODEL_15_PREVIEW_ALIAS,
+  GROK_VIDEO_MODEL_15_LITE,
   GROK_VIDEO_MODEL_BASE,
   MAX_VIDEO_DURATION,
   MIN_VIDEO_DURATION,
@@ -33,7 +34,7 @@ const VIDEO_PROVIDER_VALUES = [
 
 const VALID_RESOLUTIONS = new Set(["480p", "720p", "1080p"]);
 const VALID_ASPECT_RATIOS = new Set(["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "auto"]);
-const VALID_MODELS = new Set([GROK_VIDEO_MODEL_BASE, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_15_PREVIEW_ALIAS]);
+const VALID_MODELS = new Set([GROK_VIDEO_MODEL_BASE, GROK_VIDEO_MODEL_15, GROK_VIDEO_MODEL_15_LITE, GROK_VIDEO_MODEL_15_PREVIEW_ALIAS]);
 const ACTIVE_VIDEO_PROMPT_GUIDANCE = "Active video prompt required: describe visual flow, motion flow, sound/no-music intent, dialogue/no-dialogue intent, and the desired ending frame. Pace the scene to naturally fill the selected duration with an opening composition, connected motion/emotion change, and stable ending frame.";
 
 function canonicalVideoModel(model: string): string {
@@ -41,9 +42,7 @@ function canonicalVideoModel(model: string): string {
 }
 
 function validateCliVideoResolution(model: string, resolution: string, mode: VideoMode): void {
-  const check = validateVideoResolutionForRequest(canonicalVideoModel(model), resolution as VideoResolution, mode, {
-    allowTextCanvasShim: true,
-  });
+  const check = validateVideoResolutionForRequest(canonicalVideoModel(model), resolution as VideoResolution, mode);
   if (!("ok" in check)) die(2, check.error);
 }
 
@@ -113,6 +112,10 @@ const SPEC = {
     end:           { type: "string" },
     ref:           { type: "string", repeatable: true },
     voice:         { type: "string", repeatable: true },
+    "last-frame":  { type: "string" },
+    keyframe:      { type: "string", repeatable: true },
+    "no-audio":    { type: "boolean" },
+    "no-planner":  { type: "boolean" },
     "as-reference": { type: "boolean" },
     "video-ref":   { type: "string" },
     character:     { type: "string" },
@@ -147,7 +150,7 @@ const HELP = `
 
   Options (generate mode):
         --duration <1..15>              Duration in seconds. Default: 5. Prompt motion should naturally fill this length
-        --resolution <480p|720p|1080p>  Default: 480p. Default model: grok-imagine-video-1.5; prompt-only 1080p uses a white-canvas I2V shim
+        --resolution <480p|720p|1080p>  Default: 480p. Default model: grok-imagine-video-1.5; 1080p on 1.5/1.5-lite text- or image-to-video
         --aspect-ratio <ratio|auto>     1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto. Default: auto
         --model <model|lane/model>      Bare IDs must be unique across lanes; Grok preview alias accepted
         --provider <${VIDEO_PROVIDER_VALUES.join("|")}>
@@ -163,7 +166,13 @@ const HELP = `
                                         An unknown id returns the full list of valid voices
         --as-reference                  With exactly one --ref, guide a new scene instead of
                                         animating that image. Ignored for 0 or 2+ refs
-                                        Repeatable: Grok max 7, MCP max 3
+                                        Repeatable: Grok max 14, MCP max 3
+        --last-frame <file>             Grok 1.5: pin the ending frame (reference-to-video, max 720p)
+        --keyframe <file>@<seconds>     Grok 1.5: pin a frame strictly inside the duration
+                                        (repeatable, max 4, distinct 1/3 s slots)
+        --no-audio                      Grok 1.5 / 1.5-lite: generate a silent video
+        --no-planner                    Grok: send the prompt as written (no planner or search;
+                                        not with continuation or --bg)
         --video-ref <generated-filename> MCP V2V/restyle reference video
         --character <element-id|name>      MCP lanes only: character binding element
     -o, --out <file>                    Output file path
@@ -181,7 +190,8 @@ const HELP = `
     0 refs                    → text-to-video
     1 ref                     → image-to-video (that image is the opening frame)
     1 ref + --as-reference    → reference-to-video (guides a new scene instead)
-    2-7 refs                  → reference-to-video (max 720p)
+    2-14 refs                 → reference-to-video (max 720p)
+    --last-frame/--keyframe   → reference-to-video; the --ref image is the pinned first frame
 
   Examples:
     ima2 video "a cat playing piano"
@@ -333,7 +343,7 @@ async function videoContinueCmd(argv: string[]) {
   const aspectRatio = String(args["aspect-ratio"]);
   if (!VALID_ASPECT_RATIOS.has(aspectRatio)) die(2, "--aspect-ratio must be one of: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, auto");
   if (args.model && !VALID_MODELS.has(String(args.model))) {
-    die(2, "--model must be one of: grok-imagine-video, grok-imagine-video-1.5");
+    die(2, "--model must be one of: grok-imagine-video, grok-imagine-video-1.5, grok-imagine-video-1.5-lite");
   }
   const model = args.model ? canonicalVideoModel(String(args.model)) : GROK_VIDEO_MODEL_BASE;
   validateCliVideoResolution(model, resolution, "image-to-video");

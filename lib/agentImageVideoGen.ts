@@ -36,7 +36,7 @@ import { type AgentRunOptions, forceImagePrompt, isTextOnlyResult, textOnlyError
 
 // Spelled out rather than derived from the default, so moving the default does not
 // silently drop a model agents are allowed to ask for.
-const AGENT_GROK_PLANNER_MODELS = new Set([DEFAULT_GROK_PLANNER_MODEL, "grok-4.6", "grok-4.5", "grok-4.3"]);
+const AGENT_GROK_PLANNER_MODELS = new Set([DEFAULT_GROK_PLANNER_MODEL, "grok-4.7", "grok-4.6", "grok-4.5", "grok-4.3"]);
 
 export async function generateAgentImageWithRetry(
   ctx: RuntimeContext,
@@ -142,7 +142,7 @@ async function generateAgentImage(
       })
     : activeProvider === "grok"
     ? await generateViaGrok(`${manifest}\n\nUser request:\n${prompt}`, ctx, {
-        model: effectiveModel,
+        model: effectiveModel, quality: options.quality,
         size: providerOptions.size,
         requestId,
         ...(options.signal ? { signal: options.signal } : {}),
@@ -341,9 +341,7 @@ export async function runAgentVideoGeneration(
   // downgrading the resolution — silently altering the request is the defect this
   // work-phase exists to remove. Same helper the HTTP route uses, so the two surfaces
   // cannot drift apart again.
-  const resolutionCheck = validateVideoResolutionForRequest(videoModel, videoParams.resolution, videoParams.mode, {
-    allowTextCanvasShim: true,
-  });
+  const resolutionCheck = validateVideoResolutionForRequest(videoModel, videoParams.resolution, videoParams.mode);
   if (!("ok" in resolutionCheck)) {
     throw Object.assign(new Error(resolutionCheck.error), {
       status: resolutionCheck.status,

@@ -76,7 +76,6 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
       <tr><td><code>gpt-6.2-sol</code></td><td>Alias <code>sol</code>.</td></tr>
       <tr><td><code>gpt-6.2-astra</code></td><td>Alias <code>astra</code>.</td></tr>
       <tr><td><code>grok-imagine-image</code></td><td>Compatible fast Grok image model.</td></tr>
-      <tr><td><code>grok-imagine-image-quality</code></td><td>Highest-quality Grok image model ("Grok+" / Best in the UI).</td></tr>
       <tr><td><code>grok-imagine-image-2.0</code></td><td>Default Grok image model for new sessions.</td></tr>
       <tr><td><code>grok-imagine-video</code></td><td>Base model for Ref2V, edit, and extension compatibility paths.</td></tr>
       <tr><td><code>grok-imagine-video-1.5</code></td><td>Default Grok video model for prompt-only T2V and single-image/frame I2V, including 1080p when supported.</td></tr>
@@ -153,8 +152,8 @@ const d = (slug: string) => docsPath(import.meta.env.BASE_URL, 'en', slug);
   </p>
   <p>
     <strong>Model and size pickers.</strong> The UI exposes a two-button image model picker
-    ("Grok" / Fast = <code>grok-imagine-image</code>; "Grok+" / Best = <code>grok-imagine-image-quality</code>)
-    and a size picker with native xAI <code>aspect_ratio</code> and <code>resolution</code> (1k/2k) values.
+    ("grok2" = <code>grok-imagine-image-2.0</code>, default; "grok" = <code>grok-imagine-image</code>; retired
+    <code>-quality</code> / <code>-pro</code> ids migrate to 2.0) and a size picker with native xAI <code>aspect_ratio</code> and <code>resolution</code> (1k/1.5k/2k) values.
   </p>
   <p>
     <strong>Billing and quota.</strong> When Grok is authorized, <code>GET /api/quota</code> returns

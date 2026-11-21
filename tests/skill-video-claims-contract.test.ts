@@ -55,8 +55,7 @@ test("the skill presents 1.5 as the model to reach for first", () => {
   assert.match(text, /1\.5 for generating, base for editing and extending/);
 });
 
-test("the skill records that a voiced request never falls back", () => {
-  // The base model rejects reference_audios, so falling back would either fail twice or
-  // return a clip missing the voice. Both are worse than the original error.
-  assert.match(skill(), /A request carrying `--voice` never falls back/);
+test("the skill records that no request falls back to another model", () => {
+  // A retry on another model could spend on a model the user did not choose (plan G4).
+  assert.match(skill(), /ima2 never retries on another model/);
 });

@@ -56,7 +56,7 @@ before(async () => {
   emit("lib/providers/derive.js", `export const deriveProviderIds = () => ['oauth','grok']; export const deriveVideoProviderIds = () => ['grok'];
     export const deriveModels = () => new Set(['gpt-6-luna']);`);
   emit("lib/mcp/providerRegistry.js", `export const listProviders = () => [{id:'runway'},{id:'higgsfield'}];`);
-  emit("lib/imageModels.js", `export const GROK_VIDEO_MODEL_15 = 'grok-imagine-video-1.5', GROK_VIDEO_MODEL_15_PREVIEW_ALIAS = 'preview',
+  emit("lib/imageModels.js", `export const GROK_VIDEO_MODEL_15 = 'grok-imagine-video-1.5', GROK_VIDEO_MODEL_15_PREVIEW_ALIAS = 'preview', GROK_VIDEO_MODEL_15_LITE = 'grok-imagine-video-1.5-lite',
     GROK_VIDEO_MODEL_BASE = 'grok-imagine-video'; export const MIN_VIDEO_DURATION = 1, MAX_VIDEO_DURATION = 15;
     export const validateVideoResolutionForRequest = () => ({ok:true});`);
   emit("lib/capabilities.js", `export const buildIma2Capabilities = () => ({ok:true, source:'local'});`);

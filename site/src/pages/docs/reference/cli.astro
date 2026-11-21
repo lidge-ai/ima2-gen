@@ -64,7 +64,7 @@ const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
     <code>gen</code> accepts <code>--provider &lt;oauth|api|grok|grok-api|agy|gemini-api|atlascloud|minimax|nai|comfy|runway|higgsfield&gt;</code>,
     <code>--reasoning-effort</code> (none, low, medium, high, xhigh), <code>--web-search</code> /
     <code>--no-web-search</code>, <code>--model</code> (GPT models, <code>grok-imagine-image-2.0</code>, <code>grok-imagine-image</code>,
-    <code>grok-imagine-image-quality</code>, <code>nano-banana-2</code>, <code>nano-banana-pro</code>),
+    <code>nano-banana-2</code>, <code>nano-banana-pro</code>),
     <code>--mode</code>, <code>--moderation</code>, <code>--ref &lt;file&gt;</code> (repeatable, up to 5),
     <code>-q low|medium|high</code>, <code>-n &lt;count&gt;</code>, and <code>-o &lt;file&gt;</code>.
     Generate-mode <code>video</code> accepts <code>--provider &lt;grok|grok-api|runway|higgsfield&gt;</code>.
@@ -80,7 +80,7 @@ const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
   <p><code>ima2 grok login</code> uses the manual-paste login flow by default.</p>
   <pre><code>ima2 gen "a poster of a samurai cat" --model api/gpt-6-luna --reasoning-effort high
 ima2 grok login
-ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-quality
+ima2 gen "a cinematic neon city" --model grok/grok-imagine-image-2.0
 ima2 video "a cat playing piano" --model grok/grok-imagine-video-1.5 --duration 5 --resolution 720p
 ima2 video "animate this scene" --model grok/grok-imagine-video-1.5 --ref scene.png --planner-model grok-4.5 --storyboard
 ima2 edit input.png --prompt "make it rainy" --provider oauth --web-search
