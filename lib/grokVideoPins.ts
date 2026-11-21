@@ -28,7 +28,7 @@ export function parseVideoPins(body: Record<string, unknown> | undefined): { pin
   const keyframes: VideoKeyframe[] = [];
   for (const entry of (raw as unknown[] | undefined) ?? []) {
     const item = entry as { image?: unknown; timestampS?: unknown } | null;
-    if (!item || typeof item.image !== "string" || typeof item.timestampS !== "number") return invalid("each keyframe needs an image and timestampS");
+    if (!item || typeof item.image !== "string" || !item.image.trim() || typeof item.timestampS !== "number") return invalid("each keyframe needs an image and timestampS");
     keyframes.push({ image: item.image, timestampS: item.timestampS });
   }
   const pins: VideoFramePins = { ...(typeof lastFrame === "string" ? { lastFrame } : {}), ...(keyframes.length ? { keyframes } : {}) };
