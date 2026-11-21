@@ -87,7 +87,7 @@ routes/
 | `routes/generate.ts` | 13 | Classic generation API route wiring |
 | `routes/edit.ts` | 461 | Edit API, mask validation, cancellation, OAuth/API edit response save, alpha verification (alphaVerified/alphaReason), provider/web-search/reasoning-effort plumbing |
 | `routes/multimode.ts` | 10 | `POST /api/generate/multimode` route wiring |
-| `routes/video.ts` | 688 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
+| `routes/video.ts` | 689 | `POST /api/video/generate` SSE: Grok video T2V/I2V/Ref2V, active prompt guard, continuation lineage, sidecar persistence |
 | `routes/videoExtended.ts` | 488 | Video edit, extension, frame extraction, and configured-planner first/last-frame analysis (Grok 4.5 default) |
 | `routes/nodes.ts` | 28 | Node generation and node fetch route wiring |
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
@@ -289,8 +289,8 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/grokImageCore.ts` | 188 | Shared Grok image request and response handling |
 | `lib/grokImagePlanner.ts` | 372 | Actual Grok search/planner operations, payload builders and plan parser |
 | `lib/providers/adapters/grokExecution.ts` | 128 | Four-surface Grok/proxy and direct execution, captured keys and search forwarding |
-| `lib/providers/adapters/grokOperations.ts` | 114 | Actual generate/edit operations with scoped artifact-origin policy |
-| `lib/providers/adapters/grokMultimodeOperations.ts` | 131 | Ordered per-image planning and sparse original-index result identity |
+| `lib/providers/adapters/grokOperations.ts` | 111 | Actual generate/edit operations with scoped artifact-origin policy |
+| `lib/providers/adapters/grokMultimodeOperations.ts` | 129 | Ordered per-image planning and sparse original-index result identity |
 | `lib/grokImageDownloadPolicy.ts` | 128 | Conservative address policy, exact-origin exception and abort-aware pinned DNS resolution |
 | `lib/grokImageDownload.ts` | 153 | Grok redirect trust, overall deadline, bounded streamed image body and cleanup |
 | `lib/pinnedHttpGet.ts` | 173 | Shared validated-address GET lifecycle, public redirect handling and bounded text bodies |
@@ -356,7 +356,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentToolManifest.ts` | 31 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 205 | Planner model selection |
 | `lib/agentGenerationPlanner.ts` | 356 | Generation plan assembly |
-| `lib/agentImageVideoGen.ts` | 479 | Image/video generation caller for agent turns |
+| `lib/agentImageVideoGen.ts` | 478 | Image/video generation caller for agent turns |
 | `lib/agentQuestionResponder.ts` | 281 | `/question` responder |
 | `lib/promptBuilder/constants.ts` | 34 | Prompt Builder backend/model catalogs, defaults, and deterministic Auto order |
 | `lib/promptBuilder/router.ts` | 140 | Ready-lane selection, explicit-backend fail-closed errors, and transport targets |
