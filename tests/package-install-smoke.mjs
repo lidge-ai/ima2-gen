@@ -186,7 +186,10 @@ test("packaged tarball installs, serves core status routes, and keeps Card News 
     const codexBin = packageBin("@openai/codex", "codex");
     assert.doesNotThrow(() => installedRequire.resolve("zod/v4"));
     const oauthClient = readFileSync(join(packageRoot, "lib", "codexBackend", "client.js"), "utf8");
-    for (const marker of ["CODEX_CLIENT_VERSION_FLOOR", "0.157.0"]) {
+    // The floor moves with the GPT lineup; read it from source so this check never goes stale.
+    const floor = readFileSync(new URL("../lib/codexBackend/client.ts", import.meta.url), "utf8").match(/CODEX_CLIENT_VERSION_FLOOR = "([^"]+)"/)?.[1];
+    assert.ok(floor, "source should declare CODEX_CLIENT_VERSION_FLOOR");
+    for (const marker of ["CODEX_CLIENT_VERSION_FLOOR", floor]) {
       assert.ok(oauthClient.includes(marker), `installed GPT OAuth client should include ${marker}`);
     }
     if (process.env.IMA2_PACKAGE_TARBALL && sourceSha) {
