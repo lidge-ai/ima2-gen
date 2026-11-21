@@ -180,4 +180,18 @@ test("an explicit image-to-video without any source is refused before any upstre
     await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
+test("an explicit Lite reference-to-video whose reference is a node source is refused before any upstream call", async () => {
+  const paths: string[] = [];
+  await listen(makeProxy({ onPath: (path) => paths.push(path) }));
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-lite-r2v-source-"));
+  const { url } = await videoApp(generatedDir);
+  try {
+    const events = parseSse(await (await post(url, { prompt: "walk to the door", provider: "grok", model: "grok-imagine-video-1.5-lite", mode: "reference-to-video", sourceImage: Buffer.from("img").toString("base64"), duration: 2, resolution: "720p", requestId: "req_lite_r2v_source" })).text());
+    assert.equal(events.find((e) => e.event === "error")?.data.code, "GROK_VIDEO_REF_UNSUPPORTED_MODEL");
+    assert.deepEqual(paths, []);
+  } finally {
+    await fixture.finishCase();
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+});
 }
