@@ -27,3 +27,14 @@ export function resolveGrokImageRequest(model: string, quality: unknown): GrokIm
 export function withGrokImageQuality(payload: Record<string, unknown>, request: GrokImageRequest): Record<string, unknown> {
   return request.quality ? { ...payload, quality: request.quality } : payload;
 }
+
+/**
+ * Image routes default an omitted quality to "medium" for every provider. On a Grok lane
+ * that default would override the documented 2.0 defaults, so an omitted quality becomes
+ * "low" for a retired id and "auto" for native 2.0 (plan R1-F1/R2-F2; PR #434 review #4).
+ */
+export function grokRouteQuality(provider: unknown, model: unknown, requested: unknown, normalized: string): string {
+  if ((provider !== "grok" && provider !== "grok-api") || typeof requested === "string") return normalized;
+  if (typeof model === "string" && RETIRED_GROK_IMAGE_MODELS.has(model)) return "low";
+  return model === XAI_IMAGE_2_MODEL ? "auto" : normalized;
+}

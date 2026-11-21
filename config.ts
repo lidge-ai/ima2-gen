@@ -42,10 +42,7 @@ export const LAN_SECURITY_POLICY = Object.freeze({
   lanAuthMaxBuckets: 4096, lanTokenMaxBytes: 4096,
 });
 export const GROK_PLANNER_MODELS = [
-  DEFAULT_GROK_PLANNER_MODEL,
-  "grok-4.7",
-  "grok-4.6",
-  "grok-4.5",
+  DEFAULT_GROK_PLANNER_MODEL, "grok-4.7", "grok-4.6", "grok-4.5",
   "gpt-5.6-luna",
   "gpt-5.6-terra",
   "gpt-5.6-sol",

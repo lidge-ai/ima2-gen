@@ -468,7 +468,7 @@ text-to-image only: `NAI_REF_UNSUPPORTED`, `NAI_EDIT_UNSUPPORTED`, and
 
 When `provider` is `"grok"`, supported models are `grok-imagine-image-2.0` (default)
 and `grok-imagine-image`; the retired `grok-imagine-image-quality` / `-pro` ids migrate to 2.0. 2.0 receives
-`quality` (low→low, medium→medium, high→medium, auto→auto); the base model gets no quality field. Resolutions: 1k, 1.5k, 2k. The server uses `grok-4.3`
+`quality` (low→low, medium→medium, high→medium, auto→auto); an omitted `quality` sends `low` for a retired id and `auto` for 2.0. The base model gets no quality field. Resolutions: 1k, 1.5k, 2k. The server uses `grok-4.3`
 as the configured search/planner default (`IMA2_GROK_PLANNER_MODEL`) and times search and
 planner steps separately from the image call (`IMA2_GROK_PLANNER_TIMEOUT_MS`).
 For `n > 1`, search and planning run once and the planned prompt is reused for

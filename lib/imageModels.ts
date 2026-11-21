@@ -10,6 +10,7 @@ const VALID_API_IMAGE_MODELS = deriveSupportedImageModels("api");
 export { LEGACY_OPENAI_IMAGE_MODELS, migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 import { migrateOpenAIImageModel } from "./openaiLegacyModels.js";
 import { RETIRED_GROK_IMAGE_MODELS, resolveGrokImageRequest } from "./grokImageQuality.js";
+export { grokRouteQuality } from "./grokImageQuality.js";
 const UNSUPPORTED_IMAGE_MODELS = deriveUnsupportedImageModels();
 const FALLBACK_REASONING_EFFORT = "none";
 const VALID_REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);

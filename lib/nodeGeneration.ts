@@ -7,7 +7,7 @@ import { detectImageMimeFromB64, summarizeReferencePayload } from "./refs.js";
 import { classifyUpstreamError } from "./errorClassify.js";
 import { normalizeOAuthParams } from "./oauthNormalize.js";
 import { resolveProviderOptions } from "./providerOptions.js";
-import { isMinimaxH3ImageModel, resolveGrokQualityModel } from "./imageModels.js";
+import { isMinimaxH3ImageModel, grokRouteQuality, resolveGrokQualityModel } from "./imageModels.js";
 import { prepareImageExecution } from "./providers/execution/index.js";
 import { checkImageExecutionAdmission } from "./providers/execution/admission.js";
 import { readNaiOptions } from "./naiOptions.js";
@@ -70,7 +70,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
         reasoningEffort: rawReasoningEffort,
       } = body;
       const { provider = "oauth" } = body;
-      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
+      const { quality: normalizedQuality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
       const normalizedPromptMode = promptMode === "direct" ? "direct" : "auto";
       const contextMode = rawContextMode === "parent-only" ? "parent-only"
         : rawContextMode === "ancestry" ? "ancestry" : "parent-plus-refs";
@@ -108,7 +108,7 @@ export async function runNodeGeneration(req: Request, res: Response, ctx: Runtim
           parentNodeId,
         });
       }
-      const imageModel = providerOptions.model;
+      const imageModel = providerOptions.model, quality = grokRouteQuality(providerOptions.provider, imageModel, req.body?.quality, normalizedQuality);
       const imageToolModel = providerOptions.imageToolModel;
       const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;

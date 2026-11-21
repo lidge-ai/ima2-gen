@@ -10,7 +10,7 @@ import { normalizeOAuthParams } from "../lib/oauthNormalize.js";
 import { resolveProviderOptions } from "../lib/providerOptions.js";
 import { prepareImageExecution } from "../lib/providers/execution/index.js";
 import { checkImageExecutionAdmission } from "../lib/providers/execution/admission.js";
-import { resolveGrokQualityModel } from "../lib/imageModels.js";
+import { grokRouteQuality, resolveGrokQualityModel } from "../lib/imageModels.js";
 import { startJob, finishJob, registerJobAbortController, isJobCanceled, isStartJobFailure, INFLIGHT_RETRY_AFTER_SECONDS } from "../lib/inflight.js";
 import {
   isGenerationCanceledError,
@@ -129,7 +129,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         reasoningEffort: rawReasoningEffort,
         webSearchEnabled: rawWebSearchEnabled = true,
       } = req.body;
-      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
+      const { quality: normalizedQuality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
       const providerOptions = resolveProviderOptions(ctx, {
         provider,
         rawModel,
@@ -145,7 +145,7 @@ export function registerEditRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         finishErrorCode = providerOptions.code;
         return res.status(providerOptions.status).json({ error: providerOptions.error, code: providerOptions.code });
       }
-      const imageModel = providerOptions.model;
+      const imageModel = providerOptions.model, quality = grokRouteQuality(providerOptions.provider, imageModel, req.body?.quality, normalizedQuality);
       const imageToolModel = providerOptions.imageToolModel;
       const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;

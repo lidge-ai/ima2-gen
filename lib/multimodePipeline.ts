@@ -11,7 +11,7 @@ import { normalizeOAuthParams } from "./oauthNormalize.js";
 import { resolveProviderOptions } from "./providerOptions.js";
 import { prepareImageExecution } from "./providers/execution/index.js";
 import { checkImageExecutionAdmission } from "./providers/execution/admission.js";
-import { resolveGrokQualityModel } from "./imageModels.js";
+import { grokRouteQuality, resolveGrokQualityModel } from "./imageModels.js";
 import { composerNegativePromptMeta, readNaiOptions } from "./naiOptions.js";
 import { startJob, finishJob, registerJobAbortController, isJobCanceled, isStartJobFailure, INFLIGHT_RETRY_AFTER_SECONDS } from "./inflight.js";
 import { isGenerationCanceledError, makeGenerationCanceledError, throwIfJobCanceled, } from "./generationCancel.js";
@@ -155,7 +155,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
       );
       const maxImages = normalizeMaxImages(maxImagesResult.value, maxAllowedImages);
       const normalizedPromptMode = promptMode === "direct" ? "direct" : "auto";
-      const { quality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
+      const { quality: normalizedQuality, warnings: qualityWarnings } = normalizeOAuthParams({ provider, quality: rawQuality, imageToolModel: rawImageToolModel });
       // Multimode has no comfy dispatch in this unit. Without this guard the
       // request would reach generateViaResponses and bill OAuth for an image
       // the user asked ComfyUI to make — silently, with no error to trace.
@@ -191,7 +191,7 @@ export async function runMultimodePipeline(req: Request, res: Response, ctx: Run
           requestId,
         });
       }
-      const imageModel = providerOptions.model;
+      const imageModel = providerOptions.model, quality = grokRouteQuality(providerOptions.provider, imageModel, req.body?.quality, normalizedQuality);
       const imageToolModel = providerOptions.imageToolModel;
       const complexity = providerOptions.complexity;
       const reasoningEffort = providerOptions.reasoningEffort;
