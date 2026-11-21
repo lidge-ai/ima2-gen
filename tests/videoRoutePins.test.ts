@@ -166,4 +166,18 @@ test("an explicit reference-to-video whose only image becomes the pinned first f
     await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
+test("an explicit image-to-video without any source is refused before any upstream call", async () => {
+  const paths: string[] = [];
+  await listen(makeProxy({ onPath: (path) => paths.push(path) }));
+  const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-i2v-no-source-"));
+  const { url } = await videoApp(generatedDir);
+  try {
+    const events = parseSse(await (await post(url, { prompt: "walk to the door", provider: "grok", model: "grok-imagine-video-1.5", mode: "image-to-video", duration: 2, resolution: "720p", requestId: "req_i2v_no_source" })).text());
+    assert.equal(events.find((e) => e.event === "error")?.data.code, "GROK_VIDEO_INVALID_MODE");
+    assert.deepEqual(paths, []);
+  } finally {
+    await fixture.finishCase();
+    await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+});
 }
