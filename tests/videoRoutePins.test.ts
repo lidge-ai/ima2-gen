@@ -120,4 +120,20 @@ for (const [label, extra] of [["a voice", { referenceAudios: ["eve"] }], ["a com
     }
   });
 }
+for (const named of ["text-to-video", "image-to-video"] as const) {
+  test(`a voice keeps reference-to-video over an explicit ${named}: 1080p refused before any upstream call`, async () => {
+    const paths: string[] = [];
+    await listen(makeProxy({ onPath: (path) => paths.push(path) }));
+    const generatedDir = await mkdtemp(join(fixture.root, "ima2-video-voice-named-mode-"));
+    const { url } = await videoApp(generatedDir);
+    try {
+      const events = parseSse(await (await post(url, { prompt: "say hello", provider: "grok", model: "grok-imagine-video-1.5", mode: named, referenceAudios: ["eve"], duration: 2, resolution: "1080p", requestId: `req_voice_named_${named}` })).text());
+      assert.equal(events.find((e) => e.event === "error")?.data.code, "INVALID_VIDEO_RESOLUTION");
+      assert.deepEqual(paths, []);
+    } finally {
+      await fixture.finishCase();
+      await rm(generatedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    }
+  });
+}
 }
