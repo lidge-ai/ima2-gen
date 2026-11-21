@@ -391,12 +391,6 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       // Mode rules (slot intent, voices, frame pins, provider URL): lib/videoRouteMode.ts.
       const mode = resolveRouteVideoMode({ model: modelCheck.model, isComfy, composerRefCount, resolvedCount: resolved.length,
         voiceCount: referenceAudios.length, providerUrl: incomingProviderUrl, requestedMode, pins });
-      // An explicit reference-to-video with nothing to reference at all would ship empty
-      // arrays and fail upstream with a less useful message. A voice counts as a
-      // reference, so audio-only is legitimate and must not be rejected here.
-      if (mode === "reference-to-video" && resolved.length === 0 && referenceAudios.length === 0 && !hasVideoPins(pins)) {
-        return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
-      }
       const duration = durationCheck.duration;
       const resolutionModeCheck = validateVideoResolutionForRequest(modelCheck.model, resolutionCheck.resolution, mode);
       if (isNormalizeError(resolutionModeCheck)) return fail(resolutionModeCheck.status, resolutionModeCheck.code, resolutionModeCheck.error);
@@ -410,6 +404,12 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const pinnedFirst = mode === "reference-to-video" && !isComfy && canonicalGrokVideoModel(modelCheck.model) === GROK_VIDEO_MODEL_15
         ? resolved.find((r) => r.source !== "composer") : undefined;
       const referenceImages = mode === "reference-to-video" ? resolved.filter((r) => r !== pinnedFirst).map((r) => r.b64) : undefined;
+      // A reference-to-video with nothing to reference (a 1.5 source alone is the pinned
+      // first frame, not a reference) fails in the payload builder after paid planning;
+      // answer it here. A voice or frame pin counts, so audio-only stays legitimate.
+      if (mode === "reference-to-video" && !referenceImages?.length && referenceAudios.length === 0 && !hasVideoPins(pins)) {
+        return fail(400, "GROK_VIDEO_INVALID_MODE", "reference-to-video requires at least 1 reference image or voice");
+      }
       const sourceB64 = incomingProviderUrl || (mode === "image-to-video" ? resolved[0]?.b64 : pinnedFirst?.b64);
       const sourceFilename = resolved[0]?.filename ?? null;
 
