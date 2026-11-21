@@ -2,7 +2,7 @@ import "./helpers/resetTestGuard.ts";
 import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { sentinelCount } from "./helpers/resetTestGuard.ts";
 import { fakeResetTransport } from "./helpers/fakeResetTransport.ts";
 import { dispatchReset } from "../lib/reset/dispatch.ts";
@@ -26,7 +26,8 @@ describe("consumption guard controls", () => {
       return entry.isDirectory() ? find(path) : /\.ts$/.test(path) ? [path] : [];
     });
     for (const needle of ["rate-limit-reset-credits/consume", "ConsumerUiSvc/RedeemReset"]) {
-      const matches = ["lib", "routes"].flatMap(find).filter((file) => readFileSync(file, "utf8").includes(needle));
+      const matches = ["lib", "routes"].flatMap(find).filter((file) => readFileSync(file, "utf8").includes(needle))
+        .map((file) => file.split(sep).join("/"));
       assert.deepEqual(matches, ["lib/reset/transport.ts"]);
     }
   });
