@@ -32,7 +32,9 @@ function intentMode(input: RouteVideoModeInput): VideoMode {
 // provider URL keeps meaning "start from this frame".
 export function resolveRouteVideoMode(input: RouteVideoModeInput): VideoMode {
   const derived = intentMode(input);
-  if (hasVideoPins(input.pins)) return "reference-to-video";
+  // A voice exists only in reference-to-video upstream and is always sent, so a named
+  // mode cannot downgrade it: the r2v caps must be checked here, before planning.
+  if (hasVideoPins(input.pins) || input.voiceCount > 0) return "reference-to-video";
   if (input.providerUrl) {
     const is15 = !input.isComfy && canonicalGrokVideoModel(input.model) === GROK_VIDEO_MODEL_15;
     return is15 && derived === "reference-to-video" ? "reference-to-video" : "image-to-video";
