@@ -19,16 +19,15 @@ import {
   responsesToChatCompletion,
 } from "./normalize.js";
 import { CodexSessionError } from "./session.js";
+import { DEFAULT_OAUTH_PROXY_URL, safeOAuthBaseUrl, usesNativeOAuth, type OAuthTransportContext } from "./endpoint.js";
+import { normalizeProxyEditsBody, proxyEditsFetch } from "./proxyEdits.js";
 
 export { codexCatalog, codexSessionStore, setCodexSessionStoreForTests, codexClientVersion, resetCodexCaches } from "./client.js";
 export { CodexSessionError } from "./session.js";
+export { oauthEndpointLabel, safeOAuthBaseUrl, usesNativeOAuth } from "./endpoint.js";
+export { resetProxyEditsMemoryForTests, type ProxyEditsBody } from "./proxyEdits.js";
 
 export const CODEX_IMAGE_MODEL = "gpt-image-2";
-
-interface OAuthTransportContext {
-  oauthUrl?: string | undefined;
-  oauthTransport?: "native" | "proxy" | undefined;
-}
 
 type Json = Record<string, unknown>;
 
@@ -140,32 +139,12 @@ export async function codexFetch(path: string, init: RequestInit = {}): Promise<
   }
 }
 
-export function usesNativeOAuth(ctx: OAuthTransportContext | null | undefined): boolean {
-  return ctx?.oauthTransport === "native";
-}
-
-/** Drop trailing slashes with a linear scan (no regex backtracking on untrusted input). */
-function trimTrailingSlashes(value: string): string {
-  let end = value.length;
-  while (end > 0 && value.charCodeAt(end - 1) === 47) end--;
-  return value.slice(0, end);
-}
-
-/** An external endpoint URL without embedded credentials or a trailing slash. */
-export function safeOAuthBaseUrl(value: string): string {
-  try {
-    const parsed = new URL(value);
-    parsed.username = "";
-    parsed.password = "";
-    return trimTrailingSlashes(parsed.toString());
-  } catch {
-    return trimTrailingSlashes(value);
-  }
-}
-
 /** The one call every GPT OAuth caller makes. */
 export function oauthFetch(ctx: OAuthTransportContext | null | undefined, path: string, init: RequestInit = {}): Promise<Response> {
   if (usesNativeOAuth(ctx)) return codexFetch(path, init);
-  const base = safeOAuthBaseUrl(ctx?.oauthUrl || "http://127.0.0.1:10531");
+  const base = safeOAuthBaseUrl(ctx?.oauthUrl || DEFAULT_OAUTH_PROXY_URL);
+  if (path.split("?")[0] === "/v1/images/edits" && typeof FormData !== "undefined" && init.body instanceof FormData) {
+    return proxyEditsFetch(base, path, init, init.body, normalizeProxyEditsBody(ctx?.config?.oauth?.proxyEditsBody));
+  }
   return fetch(`${base}${path}`, init);
 }

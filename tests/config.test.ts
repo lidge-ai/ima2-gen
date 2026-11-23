@@ -68,6 +68,7 @@ test("config exposes default shape", () => {
   assert.equal(c.server.bodyLimit, "50mb");
   assert.equal(c.oauth.proxyPort, 10531);
   assert.equal(c.oauth.autoStart, true);
+  assert.equal(c.oauth.proxyEditsBody, "auto");
   assert.equal(c.oauth.generationTimeoutMs, 400000);
   assert.ok(c.oauth.researchSuffix.includes("If factual visual accuracy is required"));
   assert.ok(c.oauth.researchSuffix.includes("pass the user's prompt through"));
@@ -108,6 +109,7 @@ test("env overrides win", () => {
     IMA2_OAUTH_GENERATION_TIMEOUT_MS: "123456",
     IMA2_MAX_REF_COUNT: "7",
     IMA2_NO_OAUTH_PROXY: "1",
+    IMA2_OAUTH_PROXY_EDITS_BODY: "json",
     IMA2_BODY_LIMIT: "10mb",
     IMA2_GROK_PLANNER_MODEL: "grok-4.3",
     IMA2_STYLE_MODEL: "gpt-5.4-mini",
@@ -119,6 +121,7 @@ test("env overrides win", () => {
   assert.equal(c.oauth.generationTimeoutMs, 123456);
   assert.equal(c.limits.maxRefCount, 7);
   assert.equal(c.oauth.autoStart, false);
+  assert.equal(c.oauth.proxyEditsBody, "json");
   assert.equal(c.server.bodyLimit, "10mb");
   assert.equal(c.grokProvider.plannerModel, "grok-4.3");
   assert.equal(c.styleSheet.model, "gpt-5.4-mini");

@@ -71,7 +71,8 @@ test("/api/node/generate JSON returns INVALID_REQUEST with status", async () => 
     assert.equal(body.status, 400);
     assert.equal(body.error.code, "INVALID_REQUEST");
     assert.equal(body.upstreamCode, "invalid_value");
-    assert.equal(body.error.message, "OpenAI rejected the image request parameters.");
+    // The stub stands in for an external GPT OAuth endpoint, so the message names that endpoint.
+    assert.match(body.error.message, /^The OAuth endpoint at 127\.0\.0\.1:\d+ rejected the image request parameters\.$/);
     assert.doesNotMatch(JSON.stringify(body), /foo\.bar/);
     assert.equal(getUpstreamHits(), 1);
   });

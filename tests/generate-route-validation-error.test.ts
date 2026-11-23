@@ -64,7 +64,8 @@ test("/api/generate returns upstream validation as INVALID_REQUEST without retry
     assert.equal(body.upstreamCode, "invalid_value");
     assert.equal(body.upstreamType, "invalid_request_error");
     assert.equal(body.upstreamParam, "tools[0].size");
-    assert.equal(body.error, "OpenAI rejected the image request parameters.");
+    // The stub stands in for an external GPT OAuth endpoint, so the message names that endpoint.
+    assert.equal(body.error, `The OAuth endpoint at ${new URL(oauthUrl).host} rejected the image request parameters.`);
     assert.doesNotMatch(JSON.stringify(body), /512x512/);
     assert.equal(upstreamHits, 1);
   } finally {

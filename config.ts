@@ -18,6 +18,7 @@ import { parsePublicOrigins } from "./lib/localAccessPolicy.js";
 export { SSE_STREAM_POLICY } from "./lib/eventsPolicy.js";
 import { deriveSupportedImageModels, deriveUnsupportedImageModels } from "./lib/providers/derive.js";
 import { migrateOpenAIImageModel } from "./lib/openaiLegacyModels.js";
+import { normalizeProxyEditsBody } from "./lib/codexBackend/proxyEdits.js";
 import {
   DEFAULT_PROMPT_BUILDER_MODELS,
   PROMPT_BUILDER_BACKENDS,
@@ -271,6 +272,10 @@ export const config = {
     proxyPort: pickInt(firstDefined(env.IMA2_OAUTH_PROXY_PORT, env.OAUTH_PORT), fileCfg.oauth?.proxyPort, 10531),
     // IMA2_NO_OAUTH_PROXY=1 disables auto-start; default is auto-start enabled.
     autoStart: !pickBool(env.IMA2_NO_OAUTH_PROXY, fileCfg.oauth?.disableAutoStart, false),
+    // Body shape for reference-image edits sent to that external endpoint: "multipart" (public
+    // OpenAI shape), "json" (data-URL images, as opencodex and the Codex backend expect), or
+    // "auto" (multipart, retried once as JSON on 400/415). See lib/codexBackend/proxyEdits.ts.
+    proxyEditsBody: normalizeProxyEditsBody(pickStr(env.IMA2_OAUTH_PROXY_EDITS_BODY, fileCfg.oauth?.proxyEditsBody, "auto")),
     // GPT OAuth calls the Codex backend directly (lib/codexBackend). The base URL and client
     // version are overridable for tests and for pinning a Codex build; the version otherwise
     // follows the latest published @openai/codex, which gates the model roster.
