@@ -404,7 +404,7 @@ cardNewsPlanner.{enabled,model,timeoutMs,deterministicFallback}
 comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes}
 storage.{generatedDir,generatedDirName}
 server.{port,host,bodyLimit}
-oauth.{proxyPort,statusTimeoutMs,restartDelayMs}
+oauth.{proxyPort,proxyEditsBody,statusTimeoutMs,restartDelayMs}
 limits.{maxRefCount,maxGeneratedImages,maxParallel}
 history.{defaultPageSize,maxPageCap}
 ```

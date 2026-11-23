@@ -349,6 +349,7 @@ cause/body/stack data; this does not claim arbitrary opaque free text is safe.
 | `IMA2_OAUTH_RATE_RETRY_MAX_MS` | Cap for a single rate-limit wait (default 45000); a wordless 429 whose `Retry-After` exceeds it is not retried |
 | `IMA2_OAUTH_RATE_RETRY_TOTAL_MS` | Cap for all rate-limit waits of one job (default 120000); a wait that would pass the generation timeout is skipped and the original error surfaces |
 | `IMA2_NO_OAUTH_PROXY` | Send GPT OAuth calls to an external OpenAI-compatible endpoint instead of ChatGPT |
+| `IMA2_OAUTH_PROXY_EDITS_BODY` | Edit body shape for that endpoint (`oauth.proxyEditsBody`): `multipart`, `json` (data-URL images), or `auto` (default; multipart, retried once as JSON on 400/415) |
 | `IMA2_CODEX_CLIENT_VERSION` | Codex client version sent to ChatGPT; default is the latest `@openai/codex` release, at least `0.157.0` |
 | `IMA2_RESEARCH_SUFFIX` | Optional suffix appended when research mode is on |
 | `IMA2_STYLE_SHEET_MAX_PREFIX` | Max characters of a session style sheet injected into the next prompt |

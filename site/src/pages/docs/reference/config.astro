@@ -35,6 +35,7 @@ const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
       <tr><td><code>IMA2_PROMPT_BUILDER_MODEL</code></td><td><code>auto</code> with Auto backend</td><td>Backend-scoped Builder model. Changing backend resets this to that backend's default.</td></tr>
       <tr><td><code>IMA2_REASONING_EFFORT</code></td><td><code>medium</code></td><td>Default reasoning effort for the default (OAuth) path; one of none, low, medium, high, xhigh.</td></tr>
       <tr><td><code>IMA2_NO_OAUTH_PROXY</code></td><td>—</td><td>Set <code>1</code> to send GPT OAuth calls to an OpenAI-compatible endpoint on <code>127.0.0.1:IMA2_OAUTH_PROXY_PORT</code> instead of ChatGPT directly.</td></tr>
+      <tr><td><code>IMA2_OAUTH_PROXY_EDITS_BODY</code></td><td><code>auto</code></td><td>Body shape for reference-image edits sent to that endpoint (<code>oauth.proxyEditsBody</code>): <code>multipart</code> (public OpenAI shape), <code>json</code> (data-URL images, as opencodex expects), or <code>auto</code> (multipart, retried once as JSON on HTTP 400/415).</td></tr>
       <tr><td><code>IMA2_LOG_LEVEL</code></td><td><code>info</code></td><td>serve defaults to info, dev to debug; accepts debug, info, warn, error, silent.</td></tr>
       <tr><td><code>IMA2_INFLIGHT_TERMINAL_TTL_MS</code></td><td><code>300000</code></td><td>Recent terminal job retention for debug views.</td></tr>
       <tr><td><code>OPENAI_API_KEY</code></td><td>—</td><td>API key for the API-provider Responses path and auxiliary features.</td></tr>

@@ -35,6 +35,7 @@ const cliMd = 'https://github.com/lidge-ai/ima2-gen/blob/main/docs/CLI.md';
       <tr><td><code>IMA2_PROMPT_BUILDER_MODEL</code></td><td>자동 백엔드에서는 <code>auto</code></td><td>선택한 백엔드 전용 Builder model. 백엔드를 바꾸면 해당 경로의 기본 모델로 함께 바뀝니다.</td></tr>
       <tr><td><code>IMA2_REASONING_EFFORT</code></td><td><code>medium</code></td><td>기본(OAuth) 경로의 reasoning effort 기본값; none·low·medium·high·xhigh 중 하나.</td></tr>
       <tr><td><code>IMA2_NO_OAUTH_PROXY</code></td><td>—</td><td><code>1</code>로 설정하면 GPT OAuth 호출을 ChatGPT 대신 <code>127.0.0.1:IMA2_OAUTH_PROXY_PORT</code>의 OpenAI 호환 엔드포인트로 보냅니다.</td></tr>
+      <tr><td><code>IMA2_OAUTH_PROXY_EDITS_BODY</code></td><td><code>auto</code></td><td>그 엔드포인트로 보내는 참조 이미지 편집 요청의 본문 형식(<code>oauth.proxyEditsBody</code>): <code>multipart</code>(OpenAI 공개 형식), <code>json</code>(opencodex처럼 data URL 이미지를 받는 형식), <code>auto</code>(multipart로 보내고 HTTP 400/415면 JSON으로 한 번 재시도).</td></tr>
       <tr><td><code>IMA2_LOG_LEVEL</code></td><td><code>info</code></td><td>serve는 info, dev는 debug 기본; debug·info·warn·error·silent 지원.</td></tr>
       <tr><td><code>IMA2_INFLIGHT_TERMINAL_TTL_MS</code></td><td><code>300000</code></td><td>디버그 뷰용 최근 종료 작업 보존 시간.</td></tr>
       <tr><td><code>OPENAI_API_KEY</code></td><td>—</td><td>API 프로바이더 Responses 경로 및 보조 기능용 API key.</td></tr>
