@@ -48,11 +48,13 @@ export function expectedMetadata(value, operation, policy) {
 }
 export function expectedPlatformProbe(value, operation, write) {
   if (write || !["open", "readFile"].includes(normalOp(operation))) return false;
-  // Content remains denied. This only identifies the two observed libc
+  // Content remains denied. This only identifies the observed libc
   // detector probes so its report-based fallback can run without false alarm.
   let path;
   try { path = lexicalPath(value); } catch { return false; }
-  return path === "/proc/self/exe" || path === "/usr/bin/ldd";
+  // better-sqlite3 13.2 reads maps synchronously for libc detection and falls back on denial.
+  return path === "/proc/self/exe" || path === "/usr/bin/ldd"
+    || (path === "/proc/self/maps" && operation === "readFileSync");
 }
 function admitted(path, operation, write, policy) {
   if (isDescendant(path, policy.home)) return !inMigration(path, policy.home);

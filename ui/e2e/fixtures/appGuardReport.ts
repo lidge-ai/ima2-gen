@@ -56,7 +56,7 @@ export function createGuardReport(): GuardReport {
       && typeof value.operation === "string" && /^[a-zA-Z.]{1,64}$/.test(value.operation)
       && typeof value.category === "string" && ["outside-fixture", "expected-discovery-metadata", "expected-platform-probe"].includes(value.category)) {
       if (value.category === "expected-platform-probe") {
-        if (!/^(?:open(?:Sync)?|readFile(?:Sync)?|promises\.(?:open|readFile))\.platform(?:Ldd|Executable)$/.test(value.operation)) { invalid(); return; }
+        if (!/^(?:(?:open(?:Sync)?|readFile(?:Sync)?|promises\.(?:open|readFile))\.platform(?:Ldd|Executable)|readFileSync\.platformMaps)$/.test(value.operation)) { invalid(); return; }
         platformProbes.push({ operation: value.operation });
       } else if (value.category === "expected-discovery-metadata") expectedLegacyProbes++;
       else filesystem.push({ operation: value.operation, category: "outside-fixture" });
