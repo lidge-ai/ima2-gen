@@ -596,7 +596,7 @@ cardNewsPlanner.{enabled,model,timeoutMs,deterministicFallback}
 comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes,healthTimeoutMs,pollIntervalMs,generationTimeoutMs,maxDownloadBytes}
 storage.{generatedDir,generatedDirName}
 server.{port,host,bodyLimit}
-oauth.{proxyPort,statusTimeoutMs,restartDelayMs}
+oauth.{proxyPort,proxyEditsBody,statusTimeoutMs,restartDelayMs}
 limits.{maxRefCount,maxGeneratedImages,maxParallel}
 history.{defaultPageSize,maxPageCap}
 ```

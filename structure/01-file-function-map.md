@@ -80,7 +80,7 @@ routes/
 | File | Lines | Responsibility |
 |---|---:|---|
 | `server.ts` | 629 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 569 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `config.ts` | 574 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 97 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
@@ -196,7 +196,9 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/mcp/characterRefs.ts` | 41 | Character provider binding resolution for MCP generate — element load, binding validation, refs expansion without trimming |
 | `lib/mcp/shutdown.ts` | 24 | Post-listen restore activation plus concurrent HTTP/MCP shutdown coordination and grace bound |
 | `lib/mcp/snapshotPipeline.ts` | 113 | Generation/epoch-safe live tool snapshot ingest and stale-result suppression |
-| `lib/codexBackend/index.ts` | 172 | GPT OAuth transport: in-process Codex backend routes (`/v1/responses`, chat, images, models) or an external endpoint |
+| `lib/codexBackend/index.ts` | 151 | GPT OAuth transport: in-process Codex backend routes (`/v1/responses`, chat, images, models) or an external endpoint |
+| `lib/codexBackend/endpoint.ts` | 47 | GPT OAuth endpoint choice (native vs external), credential-free base URL and host:port label for error wording |
+| `lib/codexBackend/proxyEdits.ts` | 61 | Reference-image edit body shape for an external endpoint (`oauth.proxyEditsBody`: auto/multipart/json) |
 | `lib/oauthProxy.ts` | 4 | Re-export shim for the `lib/oauthProxy/` subtree (kept for callers that imported the original module path) |
 | `lib/oauthProxy/index.ts` | 29 | Public surface — re-exports generators, streams, prompts, references, runtime, and shared types |
 | `lib/oauthProxy/generators.ts` | 232 | OAuth Responses single-image generation and stable generator exports |
@@ -217,7 +219,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/oauthProxy/types.ts` | 10 | Shared GPT OAuth prompt/runtime types (re-exported from `index`) |
 | `lib/promptSafetyPolicy.ts` | 3 | `SAFETY_INTENT_POLICY` constant: 3-line intent policy injected by oauthProxy/prompts and the API-key Responses adapter |
 | `lib/responsesImageAdapter.ts` | 6 | Compatibility re-exports of the three OpenAI operations; existing agent/sprite imports remain valid |
-| `lib/responsesTransport.ts` | 357 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
+| `lib/responsesTransport.ts` | 364 | Responses endpoint/auth/readiness, redacted errors, abort/timeout and JSON/SSE parser boundary |
 | `lib/oauthRateLimit.ts` | 215 | GPT OAuth per-minute rate-limit classifier (usage caps excluded first), jittered abortable backoff and one per-job retry budget (count, total wait, generation deadline) |
 | `lib/providers/adapters/openaiTypes.ts` | 34 | Original positional-operation reference/options types, unchanged optional fields |
 | `lib/providers/adapters/openaiOperations.ts` | 392 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
@@ -280,7 +282,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/capabilities.ts` | 260 | Runtime provider and feature capability resolution |
 | `lib/characterBindings.ts` | 112 | Character provider binding validation, refs preservation guard, and drift detection |
 | `lib/composerSnapshot.ts` | 34 | Composer state snapshot normalization |
-| `lib/configKeys.ts` | 81 | Runtime configuration key definitions and validation |
+| `lib/configKeys.ts` | 83 | Runtime configuration key definitions and validation |
 | `lib/elementCompiler.ts` | 200 | Structured element prompt compilation and validation |
 | `lib/geminiApiImageAdapter.ts` | 2 | Compatibility reexport of Gemini native operation/result |
 | `lib/providers/adapters/geminiOperations.ts` | 276 | Actual public/Vertex image payload, auth selection and unchanged native response/error handling |

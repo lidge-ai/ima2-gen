@@ -14,6 +14,7 @@ import {
 } from "./responsesParse.js";
 import { waitForOAuthReady } from "./oauthProxy.js";
 import { oauthFetch } from "./codexBackend/index.js";
+import { oauthEndpointLabel } from "./codexBackend/endpoint.js";
 import { oauthRateLimitFields, oauthRateLimitRetryConfig } from "./oauthRateLimit.js";
 import { apiSafetyFields } from "./safetyIdentifier.js";
 import { coerceReasoningEffortForModel } from "./imageModels.js";
@@ -77,19 +78,25 @@ export function normalizedCode(upstream: UpstreamError | null | undefined) {
   return byMessage !== "UNKNOWN" ? byMessage : "RESPONSES_IMAGE_ERROR";
 }
 
-export function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, status: number) {
+/**
+ * Client-safe wording for an upstream 4xx. `endpoint` is the host:port of an external GPT OAuth
+ * endpoint (IMA2_NO_OAUTH_PROXY); its rejections name that endpoint, since it may have refused
+ * the request before OpenAI ever saw it.
+ */
+export function safeUpstreamClientMessage(upstream: UpstreamError | null | undefined, status: number, endpoint?: string | null) {
   const code = normalizedCode(upstream);
+  const rejecter = endpoint ? `The OAuth endpoint at ${endpoint}` : "OpenAI";
   if (code === "AUTH_CHATGPT_EXPIRED") return "ChatGPT sign-in is missing or expired. Run `ima2 gpt login`.";
   if (code === "AUTH_API_KEY_INVALID") return "API key is invalid or unavailable.";
   if (code === "MODERATION_REFUSED") return "OpenAI refused the image request for safety reasons.";
   if (code === "INVALID_REQUEST") {
     return upstream?.param
-      ? "OpenAI rejected the image request parameters."
-      : "OpenAI rejected the image request.";
+      ? `${rejecter} rejected the image request parameters.`
+      : `${rejecter} rejected the image request.`;
   }
   if (status === 401 || status === 403) return "OpenAI authentication failed.";
   if (status === 429) return "OpenAI rate limited the image request.";
-  return "OpenAI rejected the image request.";
+  return `${rejecter} rejected the image request.`;
 }
 
 /**
@@ -214,7 +221,7 @@ async function readResponses(res: Response, args: PostResponsesArgs, wait: Trans
     const upstream = parseOpenAIErrorBody(text);
     const rateLimit = provider === "api" ? {} : rateLimitFieldsOf(ctx, res, upstream, text);
     if (res.status >= 400 && res.status < 500 && upstream?.message) {
-      throw makeError(safeUpstreamClientMessage(upstream, res.status), {
+      throw makeError(safeUpstreamClientMessage(upstream, res.status, provider === "api" ? null : oauthEndpointLabel(ctx)), {
         status: res.status,
         code: normalizedCode(upstream),
         upstreamBodyChars: text.length,
@@ -301,7 +308,7 @@ async function readOAuthImages(res: Response, args: PostOAuthImagesArgs, wait: T
     const upstream = parseOpenAIErrorBody(text);
     const rateLimit = rateLimitFieldsOf(ctx, res, upstream, text);
     if (res.status >= 400 && res.status < 500 && upstream?.message) {
-      throw makeError(safeUpstreamClientMessage(upstream, res.status), {
+      throw makeError(safeUpstreamClientMessage(upstream, res.status, oauthEndpointLabel(ctx)), {
         status: res.status,
         code: normalizedCode(upstream),
         upstreamBodyChars: text.length,

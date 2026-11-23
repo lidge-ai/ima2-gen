@@ -9,7 +9,7 @@
  */
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createServer, type IncomingMessage, type Server } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -191,5 +191,124 @@ describe("native GPT OAuth transport", () => {
     } finally {
       rmSync(empty, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
+  });
+});
+
+type EndpointShape = "multipart" | "json" | "neither";
+type EndpointCall = { contentType: string; body: string };
+
+/**
+ * An external GPT OAuth endpoint (IMA2_NO_OAUTH_PROXY) that only reads one edit body shape:
+ * "json" behaves like opencodex (400 "Invalid JSON body" on multipart), "multipart" like the public
+ * OpenAI shape (415 on JSON), and "neither" rejects every edit as an invalid request.
+ */
+describe("external GPT OAuth endpoint edits (#436)", () => {
+  let endpoint: Server;
+  let shape: EndpointShape = "json";
+  const calls: EndpointCall[] = [];
+  let oauthUrl = "";
+  let resetProxyEditsMemory: () => void;
+
+  function ctx(proxyEditsBody?: string) {
+    return { oauthUrl, oauthTransport: "proxy", oauthReadyState: "ready", config: { oauth: { proxyEditsBody, generationTimeoutMs: 5000 } } } as never;
+  }
+
+  function editForm(): FormData {
+    const form = new FormData();
+    for (const [key, value] of Object.entries({ model: "gpt-image-2", prompt: "sketch it", quality: "low", size: "1024x1024" })) form.set(key, value);
+    form.append("image", new Blob([Buffer.from("ref")], { type: "image/png" }), "ref.png");
+    return form;
+  }
+
+  function reject(res: ServerResponse, status: number, message: string) {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: { message, type: "invalid_request_error" } }));
+  }
+
+  before(async () => {
+    ({ resetProxyEditsMemoryForTests: resetProxyEditsMemory } = await import("../lib/codexBackend/index.ts"));
+    endpoint = createServer((req, res) => {
+      let raw = "";
+      req.setEncoding("latin1");
+      req.on("data", (chunk) => { raw += chunk; });
+      req.on("end", () => {
+        const contentType = String(req.headers["content-type"] ?? "");
+        calls.push({ contentType, body: raw });
+        const isJson = contentType.startsWith("application/json");
+        if (shape === "neither") return reject(res, 400, "Invalid image");
+        if (shape === "json" && !isJson) return reject(res, 400, "Invalid JSON body");
+        if (shape === "multipart" && isJson) return reject(res, 415, "Unsupported content type");
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ data: [{ b64_json: "aW1n" }] }));
+      });
+    });
+    await new Promise<void>((resolve) => endpoint.listen(0, "127.0.0.1", resolve));
+    oauthUrl = `http://127.0.0.1:${(endpoint.address() as AddressInfo).port}`;
+  });
+
+  after(async () => {
+    await new Promise((resolve) => endpoint.close(resolve));
+  });
+
+  async function edit(proxyEditsBody?: string) {
+    const { postOAuthImages } = await import("../lib/responsesTransport.ts");
+    return postOAuthImages({ ctx: ctx(proxyEditsBody), scope: "test", kind: "edits", form: editForm() });
+  }
+
+  function reset(next: EndpointShape) {
+    shape = next;
+    calls.length = 0;
+    resetProxyEditsMemory();
+  }
+
+  it("auto: a JSON-only endpoint gets the multipart edit retried once as data-URL JSON, then JSON directly", async () => {
+    reset("json");
+    const result = await edit();
+    assert.deepEqual(result.images, [{ b64: "aW1n" }]);
+    assert.equal(calls.length, 2);
+    assert.match(calls[0]!.contentType, /^multipart\/form-data; boundary=/);
+    assert.equal(calls[1]!.contentType, "application/json");
+    assert.deepEqual(JSON.parse(calls[1]!.body), {
+      model: "gpt-image-2", prompt: "sketch it", quality: "low", size: "1024x1024",
+      images: [{ image_url: `data:image/png;base64,${Buffer.from("ref").toString("base64")}` }],
+    });
+
+    calls.length = 0;
+    await edit();
+    assert.deepEqual(calls.map((call) => call.contentType), ["application/json"], "the endpoint's JSON shape is remembered");
+  });
+
+  it("auto: an endpoint that reads the public multipart shape gets one multipart request", async () => {
+    reset("multipart");
+    assert.deepEqual((await edit("auto")).images, [{ b64: "aW1n" }]);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0]!.contentType, /^multipart\/form-data; boundary=/);
+    assert.match(calls[0]!.body, /name="image"; filename="ref.png"/);
+  });
+
+  it("json and multipart settings send exactly one request in that shape", async () => {
+    reset("json");
+    await edit("json");
+    assert.deepEqual(calls.map((call) => call.contentType), ["application/json"]);
+
+    reset("multipart");
+    await edit("multipart");
+    assert.equal(calls.length, 1);
+    assert.match(calls[0]!.contentType, /^multipart\/form-data/);
+
+    reset("json");
+    await assert.rejects(edit("multipart"), /rejected the image request/);
+    assert.equal(calls.length, 1, "the multipart setting never retries as JSON");
+  });
+
+  it("names the external endpoint when it rejects the edit in both shapes", async () => {
+    reset("neither");
+    await assert.rejects(edit(), (error: Error & { code?: string; status?: number }) => {
+      assert.equal(error.status, 400);
+      assert.equal(error.code, "INVALID_REQUEST");
+      assert.equal(error.message, `The OAuth endpoint at ${new URL(oauthUrl).host} rejected the image request.`);
+      return true;
+    });
+    assert.equal(calls.length, 2);
   });
 });
