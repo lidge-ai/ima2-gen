@@ -117,9 +117,10 @@ test("platform refusal IPC accepts only the fixed readonly operation vocabulary"
   const report = createGuardReport(); report.accept({ type: "ima2-e2e-guard-ready", version: 1 });
   report.accept({ type: "ima2-e2e-file-denied", operation: "openSync.platformExecutable", category: "expected-platform-probe" });
   report.accept({ type: "ima2-e2e-file-denied", operation: "promises.readFile.platformLdd", category: "expected-platform-probe" });
-  assert.deepEqual(report.expectedPlatformProbes, [{ operation: "openSync.platformExecutable" }, { operation: "promises.readFile.platformLdd" }]);
+  report.accept({ type: "ima2-e2e-file-denied", operation: "readFileSync.platformMaps", category: "expected-platform-probe" });
+  assert.deepEqual(report.expectedPlatformProbes, [{ operation: "openSync.platformExecutable" }, { operation: "promises.readFile.platformLdd" }, { operation: "readFileSync.platformMaps" }]);
   assert.deepEqual(report.deniedFilesystem, []); report.assertClean();
-  for (const operation of ["writeFileSync.platformLdd", "openSync.platformKernel", "readFileSync", "openSync.platformLdd.extra"]) {
+  for (const operation of ["writeFileSync.platformLdd", "openSync.platformMaps", "readFile.platformMaps", "openSync.platformKernel", "readFileSync", "openSync.platformLdd.extra"]) {
     const rejected = createGuardReport(); rejected.accept({ type: "ima2-e2e-guard-ready", version: 1 });
     rejected.accept({ type: "ima2-e2e-file-denied", operation, category: "expected-platform-probe" });
     assert.throws(() => rejected.assertClean(), /E2E_GUARD_UNEXPECTED_DENIAL/);

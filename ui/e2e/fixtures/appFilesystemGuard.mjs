@@ -14,7 +14,7 @@ export function installFilesystemGuard(policy, report = () => {}) {
   const checkPath = createPathChecker(policy, native);
   const descriptors = createDescriptorRegistry(report);
   const platformLabels = new Map([["/usr/bin/ldd", "platformLdd"], ["/proc/self/exe", "platformExecutable"],
-    ["/proc/version", "platformKernel"], ["/proc/self/cgroup", "platformContainer"]]);
+    ["/proc/self/maps", "platformMaps"], ["/proc/version", "platformKernel"], ["/proc/self/cgroup", "platformContainer"]]);
   const mark = (error, operation, value, platformProbe = false) => {
     if (error?.[REPORTED]) return error;
     const denied = safeDenial(); denied[REPORTED] = true;

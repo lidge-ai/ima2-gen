@@ -163,6 +163,13 @@ test("fixed readonly platform probes stay denied but are distinguished from unex
       assert.throws(() => fs.readFileSync(path, { flag: "r+" }), { code: "E2E_FILESYSTEM_DENIED" });
       assert.equal(f.reports.at(-1).category, "outside-fixture");
     }
+    assert.throws(() => fs.readFileSync("/proc/self/maps"), { code: "E2E_FILESYSTEM_DENIED" });
+    assert.equal(f.reports.at(-1).operation, "readFileSync.platformMaps");
+    assert.equal(f.reports.at(-1).category, "expected-platform-probe");
+    assert.throws(() => fs.openSync("/proc/self/maps", "r"), { code: "E2E_FILESYSTEM_DENIED" });
+    assert.equal(f.reports.at(-1).category, "outside-fixture");
+    assert.throws(() => fs.readFileSync("/proc/self/maps", { flag: "r+" }), { code: "E2E_FILESYSTEM_DENIED" });
+    assert.equal(f.reports.at(-1).category, "outside-fixture");
     assert.throws(() => fs.readFileSync("/proc/version"), { code: "E2E_FILESYSTEM_DENIED" });
     assert.equal(f.reports.at(-1).category, "outside-fixture");
     assert.throws(() => fs.readFileSync(ROOT + "/.ima2/config.json"), { code: "E2E_FILESYSTEM_DENIED" });
