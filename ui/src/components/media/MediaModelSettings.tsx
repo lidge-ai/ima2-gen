@@ -1,12 +1,14 @@
 import { useEffect, useId, useState } from "react";
 import { useI18n } from "../../i18n";
-import type { MediaModel, MediaRoute } from "../../lib/mediaCatalog";
+import type { MediaAdapter, MediaModel, MediaRoute } from "../../lib/mediaCatalog";
 import { candidateRoutes, lowestPrice, resolveRoute, type ResolvedRoute } from "../../lib/mediaRoutes";
 import { parseSeed, reconcileSelection, type Adjustment, type MediaSelection } from "../../lib/mediaSelection";
 import { inputLimits, inputProblem, modelTasks, type ClassicTask } from "../../lib/mediaTasks";
 import { useAppStore } from "../../store/useAppStore";
 import { Segmented, Select } from "../controls";
 import { DurationSlider } from "../controls/DurationSlider";
+import { MediaEstimate } from "./MediaEstimate";
+import { MediaKeyEntry } from "./MediaKeyEntry";
 import { MediaLogo } from "./MediaLogo";
 import { fromPrice, unitPrice } from "./mediaLabels";
 
@@ -188,10 +190,12 @@ function PriceList({ route }: { route: MediaRoute }) {
 }
 
 /** Settings for the selected model: only what the catalog lists for the route that will run. */
-export function MediaModelSettings({ model, selection }: { model: MediaModel; selection: MediaSelection }) {
+export function MediaModelSettings({ model, selection, adapters }: { model: MediaModel; selection: MediaSelection; adapters: readonly MediaAdapter[] }) {
   const { t } = useI18n();
   const setSelection = useAppStore((s) => s.setMediaSelection);
   const openSettings = useAppStore((s) => s.openSettings);
+  const keyPrompt = useAppStore((s) => s.mediaKeyPrompt);
+  const closeKeyPrompt = useAppStore((s) => s.closeMediaKeyPrompt);
   const resolved = resolveRoute(model, selection);
   const adapter = resolved?.route.adapter;
   // Keys can change under an automatic choice (one is added or removed); follow it without touching the settings that still fit.
@@ -203,6 +207,7 @@ export function MediaModelSettings({ model, selection }: { model: MediaModel; se
   }, [adapter, selection.adapter]);
   if (!resolved) return <p className="media-inputs media-inputs--problem" role="alert">{t("mediaPicker.missingModel")}</p>;
   const tasks = modelTasks(model);
+  const lane = adapters.find((item) => item.id === resolved.route.adapter);
   const changeTask = (task: ClassicTask) => {
     const target = resolveRoute(model, { ...selection, task });
     if (!target) return;
@@ -217,11 +222,13 @@ export function MediaModelSettings({ model, selection }: { model: MediaModel; se
       ) : null}
       <InputStatus route={resolved.route} selection={selection} />
       <RouteChoice model={model} selection={selection} resolved={resolved} update={setSelection} />
-      {resolved.state === "needs-key" ? (
-        <p className="media-inputs media-inputs--problem" role="status">{t("mediaPicker.routeNeedsKey", { route: resolved.route.label })}{" "}
+      {resolved.state === "needs-key" ? (lane
+        ? <MediaKeyEntry key={lane.id} adapter={lane} />
+        : <p className="media-inputs media-inputs--problem" role="status">{t("mediaPicker.routeNeedsKey", { route: resolved.route.label })}{" "}
           <button type="button" className="media-link" onClick={() => openSettings("providers")}>{t("mediaPicker.settings")}</button></p>
-      ) : null}
+      ) : lane && keyPrompt === lane.id ? <MediaKeyEntry key={lane.id} adapter={lane} replacing onDone={closeKeyPrompt} /> : null}
       <RouteParams route={resolved.route} selection={selection} update={setSelection} />
+      <MediaEstimate route={resolved.route} selection={selection} />
       <PriceList route={resolved.route} />
     </div>
   );

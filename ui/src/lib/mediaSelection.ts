@@ -33,6 +33,16 @@ export interface MediaSelectionState {
   mediaPicker: { kind?: "image" | "video" } | null;
   openMediaPicker: (kind?: "image" | "video") => void;
   closeMediaPicker: () => void;
+  /** The last failed media job, kept through reloads until dismissed or a later job succeeds. */
+  mediaFailure: import("./mediaFailure").MediaFailure | null;
+  setMediaFailure: (failure: import("./mediaFailure").MediaFailure | null) => void;
+  dismissMediaFailure: () => void;
+  /** Runs the failed job's model, settings and prompt again. */
+  retryMediaFailure: () => Promise<void>;
+  /** The provider lane whose key is being replaced after it was rejected; null when no replacement is open. */
+  mediaKeyPrompt: string | null;
+  promptMediaKey: (failure: import("./mediaFailure").MediaFailure) => void;
+  closeMediaKeyPrompt: () => void;
 }
 
 export type AdjustedField = "task" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed" | "negativePrompt";

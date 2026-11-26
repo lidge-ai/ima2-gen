@@ -38,6 +38,7 @@ export const PERSISTED_KEYS = [
   // media models (classic UI): the chosen model with its settings, and recently used models
   "ima2.mediaSelection.v1",
   "ima2.mediaRecentModels.v1",
+  "ima2.mediaFailure.v1",
 ] as const;
 
 export type PersistedKey = (typeof PERSISTED_KEYS)[number];
@@ -66,6 +67,7 @@ export const CORE_SELECTION_MEMORY_STORAGE_KEY = PERSISTED_KEYS[20];
 export const ONBOARDING_DISMISSED_STORAGE_KEY = PERSISTED_KEYS[21];
 export const MEDIA_SELECTION_STORAGE_KEY = PERSISTED_KEYS[22];
 export const MEDIA_RECENT_MODELS_STORAGE_KEY = PERSISTED_KEYS[23];
+export const MEDIA_FAILURE_STORAGE_KEY = PERSISTED_KEYS[24];
 
 export const PERSISTED_REGISTRY: Record<
   PersistedKey,
@@ -101,4 +103,5 @@ export const PERSISTED_REGISTRY: Record<
   "ima2.onboardingDismissed": { domain: "layout", shape: "string:1", resetSafe: true },
   "ima2.mediaSelection.v1": { domain: "generation", shape: "json:MediaSelection", resetSafe: true },
   "ima2.mediaRecentModels.v1": { domain: "generation", shape: "json:string[]", resetSafe: true },
+  "ima2.mediaFailure.v1": { domain: "runtime", shape: "json:MediaFailure", resetSafe: true },
 };

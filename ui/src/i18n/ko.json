@@ -145,7 +145,52 @@
     "routeAutoNowNoDirectKey": "지금: {route} ({direct} 직결은 키 필요)",
     "routeAutoNowCheapest": "지금: {route} (직결 경로 없음, 키 있는 가장 싼 경로)",
     "routeAutoNone": "아직 키가 있는 경로가 없어요",
-    "routeKeyNeeded": "키 필요"
+    "routeKeyNeeded": "키 필요",
+    "blockKey": "{provider} API 키를 넣어야 생성할 수 있어요.",
+    "estimate": {
+      "label": "예상 비용",
+      "unknown": "가격표에 없음",
+      "basisSeconds": "{n}초 × {price}",
+      "rangeNote": "이 모델은 가격표에 단계가 여러 개예요. 이 화면에서 정하지 않는 옵션에 따라 청구액이 달라져요.",
+      "unpricedNote": "{provider}가 이 모델의 가격을 공개하지 않아요. 청구액은 {provider} 콘솔에서 확인해 주세요.",
+      "hint": "{model} · 예상 {amount}",
+      "hintNoPrice": "{model} · 공개 가격 없음"
+    },
+    "key": {
+      "title": "{provider} API 키가 필요해요",
+      "replaceTitle": "{provider} 키 바꾸기",
+      "body": "여기에 키를 붙여 넣어 주세요. 저장하기 전에 {provider}에 확인하고, 프롬프트와 설정은 그대로 남아요.",
+      "get": "{provider}에서 키 발급",
+      "newTab": "(새 탭에서 열림)",
+      "show": "보기",
+      "hide": "숨기기",
+      "save": "확인하고 저장",
+      "checking": "{provider}에 확인하는 중…",
+      "saved": "{provider} 키를 저장했어요. 이제 생성할 수 있어요.",
+      "failed": "키를 저장하지 못했어요: {reason}",
+      "short": "키로 보기에는 너무 짧아요.",
+      "prefix": "이 제공업체의 키는 {prefix}(으)로 시작해요.",
+      "extra": "필수 칸을 채워 주세요.",
+      "required": "(필수)",
+      "subscription": "ChatGPT·Grok 로그인으로 쓰는 모델은 키가 필요 없어요. 기본 제공자에서 실행해요.",
+      "fileOnly": "이 제공업체는 서비스 계정 파일로 로그인해요. 설정에서 추가해 주세요."
+    },
+    "failure": {
+      "title": "{model} 생성이 끝나지 못했어요",
+      "auth": "{provider}가 키를 거부했어요.",
+      "quota": "{provider} 계정의 크레딧이나 할당량이 부족해요. 청구와 환불은 {provider} 정책을 따라요.",
+      "rateLimit": "{provider}가 지금 이 키의 요청 수를 제한하고 있어요.",
+      "timeout": "{provider} 응답이 너무 늦었어요.",
+      "upstream": "{provider} 서버에 오류가 생겼어요.",
+      "moderation": "{provider}의 안전 필터가 요청을 거절했어요. 프롬프트나 이미지를 바꿔 주세요.",
+      "invalid": "{provider}가 이 설정을 받지 않았어요. 설정을 바꾼 뒤 다시 생성해 주세요.",
+      "notFound": "{provider}가 이 경로에서 이 모델을 더는 제공하지 않아요. 다른 경로나 모델을 골라 주세요.",
+      "unknown": "작업이 실패했지만 이 화면에서 해결할 수 있는 이유를 받지 못했어요.",
+      "actionKey": "키 바꾸기",
+      "actionBilling": "{provider} 열기",
+      "actionRetry": "같은 설정으로 다시 시도",
+      "actionPrompt": "프롬프트 고치기"
+    }
   },
   "media": {
     "keysTitle": "미디어 제공업체",

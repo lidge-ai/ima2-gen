@@ -98,6 +98,8 @@ export function toPersistedInFlightJob(job: ServerInFlightJob): PersistedInFligh
     parentNodeId: typeof meta.parentNodeId === "string" ? meta.parentNodeId : null,
     clientNodeId: typeof meta.clientNodeId === "string" ? meta.clientNodeId : null,
     kind,
+    // Media jobs carry their model in the job record; other lanes name theirs from the kind.
+    ...(typeof meta.adapter === "string" && typeof meta.model === "string" ? { model: meta.model } : {}),
   };
 }
 
@@ -112,6 +114,12 @@ export function terminalJobError(job: ServerTerminalJob): Error & { code?: strin
     : "Generation failed on the server.") as Error & { code?: string; status?: number };
   e.code = code;
   e.status = typeof job.httpStatus === "number" ? job.httpStatus : undefined;
+  const meta = job.meta ?? {};
+  // A media job's terminal record says which lane failed and, on newer servers, why; the failure card reads it after a reload.
+  if (typeof meta.adapter === "string") {
+    Object.assign(e, { media: { requestId: job.requestId, adapter: meta.adapter, model: typeof meta.model === "string" ? meta.model : undefined, prompt: job.prompt },
+      ...(typeof meta.category === "string" ? { category: meta.category } : {}), ...(typeof meta.retryable === "boolean" ? { retryable: meta.retryable } : {}) });
+  }
   return e;
 }
 
@@ -168,6 +176,7 @@ export function loadInFlight({ includeExpired = false }: { includeExpired?: bool
         kind: x.kind === "classic" || x.kind === "node" || x.kind === "multimode" || x.kind === "video"
           ? x.kind
           : normalizeInflightKind(x.kind),
+        ...(typeof x.model === "string" && x.model ? { model: x.model } : {}),
       }));
   } catch {
     return [];

@@ -1,3 +1,4 @@
+import { recordTerminalMediaFailure } from "./storeMediaImpl";
 import type { GenerateItem } from "../types";
 import { getHistory } from "../lib/api";
 import { handleError } from "../lib/errorHandler";
@@ -31,7 +32,7 @@ function commitMerge(merge: InflightMerge, set: StoreSet, get: StoreGet): void {
     || merge.inFlight.some((job, index) => job !== current.inFlight[index])) {
     set({ inFlight: merge.inFlight, activeGenerations: merge.inFlight.length });
   }
-  for (const error of merge.terminalErrors) handleError(error, get());
+  for (const error of merge.terminalErrors) { handleError(error, get()); recordTerminalMediaFailure(error, get()); }
 }
 
 function updateHistory(arr: GenerateItem[], set: StoreSet): void {
@@ -128,7 +129,7 @@ export async function reconcileInflightImpl(set: StoreSet, get: StoreGet): Promi
     if (!merge) return;
     saveInFlight(merge.inFlight);
     set({ inFlight: merge.inFlight, activeGenerations: merge.inFlight.length });
-    for (const error of merge.terminalErrors) handleError(error, get());
+    for (const error of merge.terminalErrors) { handleError(error, get()); recordTerminalMediaFailure(error, get()); }
     if (merge.inFlight.length) get().startInFlightPolling();
   } catch (error) {
     if (import.meta.env.DEV) console.warn("[inflight] reconcile failed", error);

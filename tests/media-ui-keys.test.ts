@@ -118,3 +118,23 @@ test("a failure record keeps what was run and survives storage without trusting 
     { requestId: "r", at: 1, category: "unknown", retryable: false, code: "X", message: "", adapter: "", prompt: "", selection: null });
   assert.equal(buildMediaFailure({ status: 401 }, { requestId: "r", prompt: "", selection: null, adapter: "kling" }).adapter, "kling");
 });
+
+const { generateBlocker } = await import("../ui/src/lib/mediaReadiness.js");
+
+test("Generate is held back for a missing key first, then for images that do not fit the task", () => {
+  const route = { adapter: "fal", route: "aggregator" as const, label: "fal", logo: null, upstreamId: "x", tasks: ["text-to-video", "image-to-video"],
+    params: {}, pricing: [], docsUrl: "", hasKey: true };
+  assert.equal(generateBlocker(undefined, "text-to-video", 0), null, "nothing is claimed before the catalog has loaded");
+  assert.equal(generateBlocker({ route, state: "auto" }, "text-to-video", 0), null);
+  assert.deepEqual(generateBlocker({ route, state: "needs-key" }, "image-to-video", 0), { code: "key", route });
+  assert.deepEqual(generateBlocker({ route, state: "pinned" }, "image-to-video", 0), { code: "input", problem: { code: "needsImages", min: 1, max: 1, have: 0 } });
+  assert.deepEqual(generateBlocker({ route, state: "auto" }, "text-to-video", 2), { code: "input", problem: { code: "noImages", min: 0, max: 0, have: 2 } });
+});
+
+const { formatUsd } = await import("../ui/src/lib/mediaFormat.js");
+
+test("amounts keep enough digits to tell prices apart and round up, never down", () => {
+  assert.deepEqual([0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12], [0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12].map((n) => n));
+  assert.deepEqual([0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12].map(formatUsd),
+    ["$0", "$0.0004", "$0.004", "$0.035", "$0.221", "$0.50", "$1.11", "$2.37", "$12.00"]);
+});

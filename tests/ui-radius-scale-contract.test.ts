@@ -128,8 +128,9 @@ test("the frozen manifest covers every border-radius declaration exactly once", 
   // WP12s adds exactly three inspected sign-in panel/input/button declarations; the update
   // indicator (ui/src/styles/update-indicator.css) adds five scale-token declarations; the media
   // model picker adds two (.media-parameter input, .media-logo in form-controls.css); the classic
-  // model window and per-model settings (ui/src/styles/media-models.css) add thirteen scale-token declarations.
-  assert.equal(MANIFEST.length, 502, "the manifest is frozen at 502 rows");
+  // model window and per-model settings (ui/src/styles/media-models.css) add thirteen scale-token declarations,
+  // and its key entry and failure card two more.
+  assert.equal(MANIFEST.length, 504, "the manifest is frozen at 504 rows");
   assert.equal(decls.length, MANIFEST.length, "declaration count drifted from the manifest");
   const manifestKeys = new Set(MANIFEST.map(keyOf));
   assert.equal(manifestKeys.size, MANIFEST.length, "manifest keys must be unique");

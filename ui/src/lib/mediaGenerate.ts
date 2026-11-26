@@ -14,6 +14,15 @@ export function cancelMediaJob(id: string): Promise<unknown> {
   return jsonFetch(`/api/media/${encodeURIComponent(id)}/cancel`, { method: "POST" });
 }
 
+/** The shared error shape plus what the media lane adds: the category, whether a retry can help, and the lane that answered. */
+function mediaError(data: Record<string, unknown>, fallback: string): Error {
+  return Object.assign(parseSseErrorPayload(data, fallback), {
+    ...(typeof data.category === "string" ? { category: data.category } : {}),
+    ...(typeof data.retryable === "boolean" ? { retryable: data.retryable } : {}),
+    ...(typeof data.adapter === "string" ? { adapter: data.adapter } : {}),
+  });
+}
+
 async function inputFor(value: string, role: MediaInputRole, signal: AbortSignal): Promise<MediaInput> {
   if (value.startsWith("/generated/")) return { role, filename: decodeURIComponent(value.slice(11).split(/[?#]/, 1)[0]) };
   if (/^https:\/\//i.test(value)) return { role, url: value };
@@ -63,7 +72,7 @@ export async function submitMediaJob(payload: Record<string, unknown>, id: strin
           finish(new Error(t("toast.generateFailed")));
         } else finish(undefined, data.outputs as MediaOutput[]);
       }
-      if (event === "error") finish(parseSseErrorPayload(data, t("toast.generateFailed")));
+      if (event === "error") finish(mediaError(data, t("toast.generateFailed")));
     });
     const clearTimer = armStreamTimeout(() => {
       cancelRequested = true;
@@ -80,7 +89,7 @@ export async function submitMediaJob(payload: Record<string, unknown>, id: strin
       const response = await fetchApi("/api/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json().catch(() => ({})) as Record<string, unknown>;
       if (cancelRequested && response.ok) { await cancelMediaJob(id); return; }
-      if (!response.ok) throw parseSseErrorPayload(data, `Request failed: ${response.status}`);
+      if (!response.ok) throw mediaError({ status: response.status, ...data }, `Request failed: ${response.status}`);
     })().catch(finish);
   });
 }

@@ -3,7 +3,7 @@
 // tests/settings-persistence-contract.test.ts enforces this invariant.
 // Legacy generation-controls contract: GENERATION_DEFAULTS_STORAGE_KEY = "ima2.generationDefaults".
 import { create } from "zustand";
-import { setMediaSelectionImpl } from "./storeMediaImpl";
+import { loadMediaFailure, promptMediaKeyImpl, retryMediaFailureImpl, setMediaFailureImpl, setMediaSelectionImpl } from "./storeMediaImpl";
 import { loadMediaSelection } from "../lib/mediaSelectionStore";
 import type { VideoResolutionUI } from "../types";
 import { getBrowserId } from "../lib/api";
@@ -175,6 +175,13 @@ export const useAppStore = create<AppState>((set, get, store) => ({
   mediaPicker: null,
   openMediaPicker: (kind) => set({ mediaPicker: kind ? { kind } : {} }),
   closeMediaPicker: () => set({ mediaPicker: null }),
+  mediaFailure: loadMediaFailure(),
+  setMediaFailure: (failure) => setMediaFailureImpl(failure, set),
+  dismissMediaFailure: () => setMediaFailureImpl(null, set),
+  retryMediaFailure: () => retryMediaFailureImpl(set, get),
+  mediaKeyPrompt: null,
+  promptMediaKey: (failure) => promptMediaKeyImpl(failure, set, get),
+  closeMediaKeyPrompt: () => set({ mediaKeyPrompt: null }),
   ...createPresetSlice(set, get, store),
   assets: [],
   assetGenWorkflow: "generate",

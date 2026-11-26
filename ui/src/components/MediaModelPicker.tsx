@@ -2,6 +2,7 @@ import { useI18n } from "../i18n";
 import { loadMediaCatalog, useMediaCatalog } from "../lib/mediaCatalogStore";
 import type { MediaSelection } from "../lib/mediaSelection";
 import { useAppStore } from "../store/useAppStore";
+import { MediaFailureCard } from "./media/MediaFailureCard";
 import { MediaLogo } from "./media/MediaLogo";
 import { MediaModelSettings } from "./media/MediaModelSettings";
 
@@ -29,6 +30,7 @@ export function MediaModelPicker({ kind }: { kind?: "image" | "video" }) {
     return (
       <div className="option-group media-card">
         <div className="section-title">{t("mediaPicker.model")}</div>
+        <MediaFailureCard />
         <p className="media-card__idle">{t("mediaPicker.cardIdle")}</p>
         <button type="button" className="option-btn media-picker__open" onClick={() => open(kind)}>{t("mediaPicker.open")}</button>
       </div>
@@ -38,6 +40,7 @@ export function MediaModelPicker({ kind }: { kind?: "image" | "video" }) {
   return (
     <div className="option-group media-card">
       <div className="section-title">{t("mediaPicker.model")}</div>
+      <MediaFailureCard />
       <div className="media-card__current">
         <MediaLogo logo={model?.logo} label={shown.vendor ?? shown.model} />
         <span className="media-card__name"><strong>{shown.label ?? shown.model}</strong><small>{taskLine(shown, t)}</small></span>
@@ -55,7 +58,7 @@ export function MediaModelPicker({ kind }: { kind?: "image" | "video" }) {
       {catalog.status === "ready" && !model ? (
         <p className="media-inputs media-inputs--problem" role="alert">{t("mediaPicker.missingModel")}</p>
       ) : null}
-      {model ? <MediaModelSettings model={model} selection={shown} /> : null}
+      {model ? <MediaModelSettings model={model} selection={shown} adapters={catalog.adapters} /> : null}
     </div>
   );
 }

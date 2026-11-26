@@ -145,7 +145,52 @@
     "routeAutoNowNoDirectKey": "当前：{route}（{direct} 直连需要密钥）",
     "routeAutoNowCheapest": "当前：{route}（无直连线路，有密钥的最便宜线路）",
     "routeAutoNone": "还没有带密钥的线路",
-    "routeKeyNeeded": "需要密钥"
+    "routeKeyNeeded": "需要密钥",
+    "blockKey": "需要先填写 {provider} 的 API 密钥才能生成。",
+    "estimate": {
+      "label": "预计费用",
+      "unknown": "价格表中没有",
+      "basisSeconds": "{n} 秒 × {price}",
+      "rangeNote": "此模型的价格表有多个档位，实际费用取决于此界面未设置的选项。",
+      "unpricedNote": "{provider} 未公布此模型的价格，请在其控制台查看费用。",
+      "hint": "{model} · 预计 {amount}",
+      "hintNoPrice": "{model} · 未公布价格"
+    },
+    "key": {
+      "title": "需要 {provider} 的 API 密钥",
+      "replaceTitle": "更换 {provider} 的密钥",
+      "body": "把密钥粘贴到这里。保存前会先向 {provider} 验证，提示词和设置保持不变。",
+      "get": "在 {provider} 获取密钥",
+      "newTab": "（在新标签页打开）",
+      "show": "显示",
+      "hide": "隐藏",
+      "save": "验证并保存",
+      "checking": "正在向 {provider} 验证…",
+      "saved": "已保存 {provider} 的密钥，现在可以生成了。",
+      "failed": "密钥未保存：{reason}",
+      "short": "这太短了，不像密钥。",
+      "prefix": "此提供商的密钥以 {prefix} 开头。",
+      "extra": "请填写必填项。",
+      "required": "（必填）",
+      "subscription": "ChatGPT 和 Grok 的登录模型不需要密钥，它们由内置提供商运行。",
+      "fileOnly": "此提供商使用服务账号文件登录，请在设置中添加。"
+    },
+    "failure": {
+      "title": "{model} 未能完成",
+      "auth": "{provider} 拒绝了此密钥。",
+      "quota": "{provider} 账户的额度或配额不足。计费和退款以 {provider} 的政策为准。",
+      "rateLimit": "{provider} 正在限制此密钥的请求频率。",
+      "timeout": "{provider} 响应超时。",
+      "upstream": "{provider} 的服务器出错了。",
+      "moderation": "{provider} 的安全过滤拒绝了此请求，请修改提示词或图片。",
+      "invalid": "{provider} 不接受这些设置，请修改后重新生成。",
+      "notFound": "{provider} 已不再通过此线路提供该模型，请选择其他线路或模型。",
+      "unknown": "任务失败了，但没有收到可在此界面处理的原因。",
+      "actionKey": "更换密钥",
+      "actionBilling": "打开 {provider}",
+      "actionRetry": "用相同设置重试",
+      "actionPrompt": "修改提示词"
+    }
   },
   "media": {
     "keysTitle": "媒体提供商",
