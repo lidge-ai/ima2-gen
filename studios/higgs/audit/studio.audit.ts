@@ -31,6 +31,9 @@ async function cell(page: Page, locale: string, c: Cell) {
   try {
     await page.unrouteAll({ behavior: "ignoreErrors" });
     if (c.setup) await c.setup(page);
+    // Leave the app first: going to the same URL with only a hash change would not reload,
+    // so route overrides (no keys, stalled or failing requests) and open popovers would leak.
+    await page.goto("about:blank");
     await page.goto("/#" + c.hash);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(700);
