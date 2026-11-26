@@ -22,7 +22,7 @@ const { _resetForTests: resetInflight } = await import("../lib/inflight.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter } = await import("./_mediaFakeAdapter.ts");
 type WorkflowDefinition = import("../lib/workflows/types.ts").WorkflowDefinition;
 
-test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true }); });
+test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 test.afterEach(() => { resetBus(); resetInflight(); });
 
 const VIDEO_URL = "https://cdn.fake.example/out/clip.mp4";
@@ -63,7 +63,7 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
     extraFields: [{ name: "region", envVar: "FAKE_REGION", secret: false, required: false }, { name: "secretToken", envVar: "FAKE_SECRET_TOKEN", secret: true, required: false }],
     script: { states: (opts.states ?? [{ status: "running", progress: 0.5 }, { status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }]) as never },
   });
-  const aggregator = makeFakeAdapter({ id: "agg", route: "aggregator", models: [fakeSpec("acme/clip-1")] });
+  const aggregator = makeFakeAdapter({ id: "agg", route: "aggregator", models: [fakeSpec("acme/clip-1")], script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }] } });
   const registry = new MediaRegistry([adapter, aggregator]);
   const transport = fakeTransport({ downloads: { [VIDEO_URL]: { body: "mp4", type: "video/mp4" } }, ...(opts.status ? { status: opts.status } : {}) });
   const studiosRoot = join(root, "studios");
@@ -99,7 +99,7 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
   } finally {
     unsubscribe();
     await new Promise<void>((r) => server.close(() => r()));
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 

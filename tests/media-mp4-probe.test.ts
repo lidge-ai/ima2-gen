@@ -8,7 +8,7 @@ import { join } from "node:path";
 const configDir = await mkdtemp(join(tmpdir(), "ima2-mp4-probe-"));
 process.env.IMA2_CONFIG_DIR = configDir;
 const { probeMp4 } = await import("../lib/providers/media/mp4Probe.ts");
-test.after(async () => { await rm(configDir, { recursive: true, force: true }); });
+test.after(async () => { await rm(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 function box(type: string, ...parts: Uint8Array[]): Buffer {
   const body = Buffer.concat(parts);

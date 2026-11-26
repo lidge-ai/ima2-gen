@@ -79,9 +79,9 @@ routes/
 
 | File | Lines | Responsibility |
 |---|---:|---|
-| `server.ts` | 629 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 574 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
-| `routes/index.ts` | 97 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
+| `server.ts` | 632 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
+| `config.ts` | 579 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `routes/index.ts` | 103 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
 | `routes/generate.ts` | 13 | Classic generation API route wiring |
@@ -279,7 +279,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/assetsStore.ts` | 533 | Generated asset indexing, lookup, and persistence helpers |
 | `lib/assetRef.ts` | 57 | Asset-id-first reference resolution with legacy filename fallback and `via` provenance for generate requests |
 | `lib/atomicWrite.ts` | 16 | Atomic file-write helper |
-| `lib/capabilities.ts` | 260 | Runtime provider and feature capability resolution |
+| `lib/capabilities.ts` | 275 | Runtime provider and feature capability resolution |
 | `lib/characterBindings.ts` | 112 | Character provider binding validation, refs preservation guard, and drift detection |
 | `lib/composerSnapshot.ts` | 34 | Composer state snapshot normalization |
 | `lib/configKeys.ts` | 83 | Runtime configuration key definitions and validation |

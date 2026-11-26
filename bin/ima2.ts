@@ -438,8 +438,7 @@ switch (command) {
     }
     break;
   case "gen":
-  case "video":
-  case "media":
+  case "video": case "media":
   case "upscale":
   case "edit":
   case "vectorize":

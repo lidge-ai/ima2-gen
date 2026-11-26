@@ -9,7 +9,7 @@ import { once } from "node:events";
 
 const root = await mkdtemp(join(tmpdir(), "ima2-cli-media-"));
 process.env.IMA2_CONFIG_DIR = root;
-test.after(async () => { await rm(root, { recursive: true, force: true }); });
+test.after(async () => { await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 async function cli(base: string, args: string[], stdin = "") {
   const child = spawn(process.execPath, ["--import", "tsx", "bin/ima2.ts", "media", ...args, "--server", base], {
     env: { ...process.env, IMA2_CONFIG_DIR: root, IMA2_GENERATED_DIR: root, NO_COLOR: "1" },

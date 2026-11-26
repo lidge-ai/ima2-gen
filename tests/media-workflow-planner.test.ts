@@ -12,7 +12,7 @@ process.env.IMA2_CONFIG_DIR = isolatedConfigDir;
 const { config } = await import("../config.ts");
 const { createOAuthPlanText } = await import("../lib/providers/media/workflowPlanner.ts");
 
-test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true }); });
+test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 async function withProxy(reply: (body: Record<string, unknown>) => { status: number; body: string }, fn: (url: string, seen: Record<string, unknown>[]) => Promise<void>) {
   const seen: Record<string, unknown>[] = [];

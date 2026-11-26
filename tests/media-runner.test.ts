@@ -23,7 +23,7 @@ const logLines: string[] = [];
 configureLogger({ level: "debug", sink: { log: (l) => logLines.push(l), debug: (l) => logLines.push(l), info: (l) => logLines.push(l), warn: (l) => logLines.push(l), error: (l) => logLines.push(l) } });
 
 test.after(async () => {
-  await rm(isolatedConfigDir, { recursive: true, force: true });
+  await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 test.afterEach(() => {
@@ -51,7 +51,7 @@ async function setup(adapters: FakeAdapter[], opts: { keys?: Record<string, stri
   };
   const events: { jobId: string; event: string; data: Record<string, unknown> }[] = [];
   const unsubscribe = subscribe((ev) => events.push({ jobId: ev.jobId, event: ev.event, data: ev.data }));
-  return { root, deps, transport, events, done: async () => { unsubscribe(); await rm(root, { recursive: true, force: true }); } };
+  return { root, deps, transport, events, done: async () => { unsubscribe(); await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); } };
 }
 
 function body(extra: Record<string, unknown> = {}) {

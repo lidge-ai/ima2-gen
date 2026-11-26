@@ -63,9 +63,14 @@ export class VendorLogos {
     return null;
   }
 
-  /** An adapter's own brand: its id, then its key vocabulary (topaz, gemini), then the first model's maker. */
+  /**
+   * An adapter's own brand: its id, then its key vocabulary (topaz, gemini). A direct
+   * adapter may fall back to its maker; an aggregator never shows a maker's logo as its own.
+   */
   forAdapter(adapter: MediaProviderAdapter): VendorLogo | null {
-    return this.find(adapter.id, adapter.credential.keyVocabulary, adapter.listModels()[0]?.vendor);
+    const own = this.find(adapter.id, adapter.credential.keyVocabulary);
+    if (own || adapter.route !== "direct") return own;
+    return this.find(adapter.listModels()[0]?.vendor);
   }
 
   all(): VendorLogo[] {
