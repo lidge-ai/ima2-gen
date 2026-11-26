@@ -81,7 +81,7 @@ export class Studio {
       (workflows) => this.set({ workflows, workflowsLoaded: true, workflowsError: null }),
       (error: unknown) => this.set({ workflowsLoaded: true, workflowsError: message(error) }),
     );
-    void this.client.media.jobs({ status: "all", limit: 60 }).then(
+    void this.client.media.jobs({ status: "all" }).then(
       (jobs) => {
         for (const job of jobs.reverse()) this.upsertJob(job);
       },
@@ -171,10 +171,10 @@ export class Studio {
     return this.client.uploads.put(file, file.type || "application/octet-stream", file.name);
   }
 
-  async saveKey(vocab: string, body: KeySaveBody): Promise<{ ok: boolean; reason?: string } | undefined> {
-    const result = await this.client.keys.save(vocab, body);
+  /** The server checks the key with the provider before saving; a rejected key throws. */
+  async saveKey(vocab: string, body: KeySaveBody): Promise<void> {
+    await this.client.keys.save(vocab, body);
     await Promise.all([this.refreshKeys(), this.refreshCatalog()]);
-    return result.validation;
   }
 
   async removeKey(vocab: string): Promise<void> {
@@ -188,7 +188,8 @@ export class Studio {
   }
 
   async toggleFavorite(item: HistoryItem): Promise<void> {
-    const { item: next } = await this.client.history.favorite(item.historyId, !item.favorite);
+    const { favorite } = await this.client.history.favorite(item.historyId, !item.favorite);
+    const next = { ...item, favorite };
     this.set({ history: this.state.history.map((it) => (it.historyId === next.historyId ? next : it)) });
   }
 }

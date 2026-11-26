@@ -1,0 +1,105 @@
+/** Workflow description, run body and estimate translation (lib/workflows <-> kit types). */
+import type {
+  MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowRunBody,
+} from "./types.ts";
+import type { WireEstimateResponse, WireField, WireWorkflow } from "./wire.ts";
+
+const IMAGE_OUTPUT = new Set(["director-cast", "director-locations"]);
+
+function family(id: string): WorkflowDef["family"] {
+  return id.startsWith("remix") ? "remix" : id.startsWith("director") ? "director" : "other";
+}
+
+function toInput(field: WireField): WorkflowInputSpec | null {
+  const base = { name: field.name, label: field.label, required: field.required, ...(field.help ? { description: field.help } : {}) };
+  if (field.type === "media") {
+    const role = field.accept === "video" ? "source-video" : field.accept === "audio" ? "reference-audio" : "reference-image";
+    const range = field.minDurationSec && field.maxDurationSec ? field.minDurationSec + " to " + field.maxDurationSec + " seconds" : undefined;
+    return {
+      ...base, kind: field.accept, role, accept: field.accept + "/*", maxCount: field.max,
+      ...(base.description ? {} : range ? { description: range } : {}),
+    };
+  }
+  if (field.type === "text") return { ...base, kind: "text" };
+  return null;
+}
+
+function toParam(field: WireField): WorkflowParamSpec | null {
+  const base = { name: field.name, label: field.label };
+  switch (field.type) {
+    case "enum":
+      return { ...base, type: "select", options: field.options, ...(field.default !== undefined ? { default: field.default } : {}) };
+    case "integer":
+      return { ...base, type: "number", min: field.min, max: field.max, step: 1, ...(field.default !== undefined ? { default: field.default } : {}) };
+    case "boolean":
+      return { ...base, type: "boolean", default: field.default };
+    case "colors":
+      return { ...base, type: "text" };
+    default:
+      return null;
+  }
+}
+
+export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
+  return {
+    id: wire.id,
+    family: family(wire.id),
+    label: wire.label,
+    description: wire.description,
+    output: (IMAGE_OUTPUT.has(wire.id) ? "image" : "video") as MediaKind,
+    inputs: wire.fields.map(toInput).filter((x): x is WorkflowInputSpec => x !== null),
+    params: wire.fields.map(toParam).filter((x): x is WorkflowParamSpec => x !== null),
+    steps: wire.slots.map((slot) => ({
+      id: slot.name,
+      label: slot.label,
+      model: slot.defaultModel,
+      modelChoices: [slot.defaultModel, ...slot.alternatives].filter((m, i, all) => all.indexOf(m) === i),
+      available: slot.available,
+      rationale: slot.rationale,
+    })),
+  };
+}
+
+function mediaValue(list: readonly SubmitInput[]) {
+  return list.map((item) => ("inputId" in item ? { ref: item.inputId } : { url: item.url }));
+}
+
+function colorsValue(def: WorkflowDef | undefined, name: string, value: unknown): unknown {
+  const isColors = def?.params.some((p) => p.name === name && p.type === "text");
+  return isColors && typeof value === "string" ? value.split(/[\s,]+/).filter(Boolean) : value;
+}
+
+/** POST /api/workflows/:id body. Slot overrides become selection.models / selection.routes. */
+export function toWireRun(body: WorkflowRunBody, def?: WorkflowDef): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(body.inputs)) values[name] = typeof value === "string" ? value : mediaValue(value);
+  for (const [name, value] of Object.entries(body.params ?? {})) values[name] = colorsValue(def, name, value);
+  const models: Record<string, string> = {};
+  const routes: Record<string, string> = {};
+  for (const [slot, pick] of Object.entries(body.steps ?? {})) {
+    if (pick.model) models[slot] = pick.model;
+    if (pick.provider) routes[slot] = pick.provider;
+  }
+  return {
+    values,
+    ...(Object.keys(models).length || Object.keys(routes).length ? { selection: { models, routes } } : {}),
+    ...(body.clientRequestId ? { requestId: body.clientRequestId } : {}),
+  };
+}
+
+export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
+  const steps = wire.estimate.steps.map((e) => {
+    const summary = wire.steps.find((s) => s.id === e.stepId);
+    const basis = e.note ?? (e.units ? e.units.quantity + " " + e.units.unit + (e.units.variant ? " (" + e.units.variant + ")" : "") : "");
+    return {
+      id: e.stepId,
+      ...(summary ? { label: summary.label } : {}),
+      ...(e.model ? { model: e.model } : {}),
+      estimate: { usd: e.usd, basis: e.usd === null ? "No published price" : basis },
+    };
+  });
+  const total = wire.estimate.complete
+    ? { usd: wire.estimate.usd, basis: steps.length + " steps" }
+    : { usd: null, basis: "At least one step has no published price" };
+  return { steps, total };
+}

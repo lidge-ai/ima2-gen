@@ -40,6 +40,8 @@ export interface CatalogModel {
   /** Ordered by the server's default preference: direct with key, then aggregators with key, then keyless. */
   routes: readonly CatalogRoute[];
   routeParams?: Readonly<Record<string, MediaModelSpec["params"]>>;
+  /** Route the server would pick right now, or null when no route has a key. */
+  defaultRoute?: string | null;
 }
 
 export interface CatalogProvider {
@@ -234,6 +236,10 @@ export interface WorkflowStepSpec {
   /** Models the step accepts as overrides. */
   modelChoices?: readonly string[];
   pricingBasis?: string;
+  /** model id -> whether a registered route can run it for this step. */
+  available?: Readonly<Record<string, boolean>>;
+  /** Why the workflow uses this model, with its evidence. */
+  rationale?: string;
 }
 
 export interface WorkflowDef {
@@ -257,6 +263,6 @@ export interface WorkflowRunBody {
 }
 
 export interface WorkflowEstimate {
-  steps: readonly { id: string; estimate: CostEstimate }[];
+  steps: readonly { id: string; label?: string; model?: string; estimate: CostEstimate }[];
   total: CostEstimate;
 }
