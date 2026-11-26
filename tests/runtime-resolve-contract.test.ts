@@ -71,6 +71,19 @@ async function hopWithNeighbour(): Promise<{ ours: Server; neighbour: Server; po
   throw new Error("could not bind two adjacent loopback ports");
 }
 
+/**
+ * Real fetch for our own server only. Every other port reads as refused, so whatever else listens
+ * on a busy host (another test's ima2, anything) cannot answer for the configured port.
+ */
+function reachOnly(port: number): typeof fetch {
+  const own = `http://127.0.0.1:${port}`;
+  const refused = () => Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNREFUSED" } });
+  return ((input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(input instanceof Request ? input.url : String(input));
+    return url.origin === own ? fetch(input, init) : Promise.reject(refused());
+  }) as typeof fetch;
+}
+
 test("a server the advertisement vouches for is live and stoppable", async () => {
   const { server, port } = await serve(ima2(process.pid, { bootId: "b1", launcher: "background", root: "/r" }));
   const { dir, file } = advertiseDir({ pid: process.pid, url: `http://127.0.0.1:${port}`, adminNonce: "n" });
@@ -104,15 +117,14 @@ test("a server that hopped ports is found without an advertisement, but is not s
   const configured = port - 1;
   const { dir, file } = advertiseDir();
   try {
-    const r = await resolveRuntime({ advertiseFile: file, port: configured, span: 1 });
-    // configured may be occupied by something else on a busy host; only assert when it is free.
-    if (r.status === "live") {
-      assert.equal(r.runtime?.pid, 4242);
-      assert.equal(r.source, "port");
-      assert.equal(r.stoppable, false);
-    } else {
-      assert.equal(r.status, "unknown");
-    }
+    // The neighbour really answers on the configured port; reachOnly keeps it (and any other
+    // listener on a busy host) out, so the hop to our server is what gets resolved.
+    const r = await resolveRuntime({ advertiseFile: file, port: configured, span: 1, fetchFn: reachOnly(port) });
+    assert.equal(r.status, "live");
+    assert.equal(r.runtime?.pid, 4242);
+    assert.equal(r.runtime?.port, port);
+    assert.equal(r.source, "port");
+    assert.equal(r.stoppable, false);
   } finally {
     await close(ours);
     await close(neighbour);
