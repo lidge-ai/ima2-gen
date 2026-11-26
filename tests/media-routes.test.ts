@@ -22,6 +22,9 @@ const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts"
 const { _resetForTests: resetInflight } = await import("../lib/inflight.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter } = await import("./_mediaFakeAdapter.ts");
 type WorkflowDefinition = import("../lib/workflows/types.ts").WorkflowDefinition;
+const { prepareWorkflow } = await import("../lib/workflows/index.ts");
+const { createWorkflowGateway } = await import("../lib/providers/media/workflowGateway.ts");
+const { launchWorkflowJob } = await import("../lib/providers/media/workflowJob.ts");
 
 test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 test.afterEach(() => { resetBus(); resetInflight(); });
@@ -230,14 +233,25 @@ test("workflows: list, estimate and a run through the L6 engine land the final c
   });
 });
 
-test("workflows: a requestId of '..' never turns the run's scratch folder into the config folder", async () => {
-  await withApp(async ({ base, events, root, configFile }) => {
-    const res = await fetch(`${base}/api/workflows/test-flow`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: "..", values: { prompt: "fox" } }) });
-    assert.equal(res.status, 202);
-    await waitFor(events, "..", ["done", "error"]);
-    assert.ok(existsSync(configFile), "config.json survives the run's cleanup");
-    assert.ok(existsSync(join(root, "generated")), "history survives the run's cleanup");
-  });
+// Awaits the job itself: the "done" event goes out before the run's cleanup, so an HTTP-level
+// check would pass even when the cleanup removed the wrong folder.
+test("a workflow job with requestId '..' keeps its scratch folder inside runsDir", async () => {
+  const root = await mkdtemp(join(tmpdir(), "ima2-wf-dotdot-"));
+  try {
+    const deps = {
+      registry: new MediaRegistry([makeFakeAdapter({ models: [fakeSpec("acme/clip-1")], script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }] } })]),
+      generatedDir: join(root, "generated"), configFile: join(root, "config.json"), inputsDir: join(root, "inputs"),
+      env: {}, fetch: fakeTransport({ downloads: { [VIDEO_URL]: { body: "mp4", type: "video/mp4" } } }).fetch, thumbnails: false,
+    };
+    await writeFile(deps.configFile, JSON.stringify({ fakeApiKey: FAKE_KEY }));
+    const wfDeps = { gateway: await createWorkflowGateway(deps), local: noLocalOps, allowedRoots: [deps.inputsDir, deps.generatedDir] };
+    const prepared = await prepareWorkflow(oneStep, { values: { prompt: "fox" } }, wfDeps, AbortSignal.timeout(30_000));
+    await launchWorkflowJob(deps, wfDeps, prepared, { requestId: "..", runsDir: join(root, "workflow-runs") });
+    assert.ok(existsSync(deps.configFile), "config.json survives the run's cleanup");
+    assert.ok(existsSync(deps.generatedDir), "history survives the run's cleanup");
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
 });
 
 test("workflows: a session route runs a keyless adapter with the signed-in token, and a missing session fails clearly", async () => {
