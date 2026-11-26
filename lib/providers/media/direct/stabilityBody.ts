@@ -51,7 +51,9 @@ function fillOptions(form: FormData, options: Record<string, unknown>, audio: bo
   return typeof options["output_format"] === "string" ? options["output_format"] : audio ? "mp3" : "png";
 }
 export function buildStabilityBody(model: MediaModelSpec, request: MediaSubmitRequest): { body: FormData; path: string; format: string; async: boolean } {
-  requireTask(PREFIX, model, request); refuseUnsupportedFields(PREFIX, model, request); requireSingleOutput(PREFIX, request);
+  requireTask(PREFIX, model, request);
+  refuseUnsupportedFields(PREFIX, model, request);
+  requireSingleOutput(PREFIX, request);
   const id = model.id.split("/")[1] ?? "";
   const options = readVendorOptions(PREFIX, request, optionsFor(id));
   const hasImage = validateInputs(request);
@@ -62,7 +64,10 @@ export function buildStabilityBody(model: MediaModelSpec, request: MediaSubmitRe
   if (request.task === "image-to-image" && options["strength"] === undefined) fail(PREFIX, "STRENGTH_REQUIRED", "Image-to-image requires strength", { category: "invalid-request" });
   if (request.task !== "image-to-image" && options["strength"] !== undefined) fail(PREFIX, "UNSUPPORTED_PARAM", "strength requires image-to-image", { category: "invalid-request" });
   if (id === "sd3.5-large" && hasImage && request.aspectRatio !== undefined) fail(PREFIX, "UNSUPPORTED_PARAM", "SD3 image-to-image does not accept aspect ratio", { category: "invalid-request" });
-  if (id === "sd3.5-large") { form.set("model", model.upstreamId); form.set("mode", request.task); }
+  if (id === "sd3.5-large") {
+    form.set("model", model.upstreamId);
+    form.set("mode", request.task);
+  }
   if (id.startsWith("stable-audio")) form.set("model", model.upstreamId);
   if (request.negativePrompt !== undefined) form.set("negative_prompt", request.negativePrompt);
   if (request.aspectRatio !== undefined) form.set("aspect_ratio", request.aspectRatio);

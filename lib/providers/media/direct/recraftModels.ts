@@ -11,8 +11,16 @@ const entries = [
   ["recraft-v4.1-flash-v2", "recraftv4_1_flash_v2", 0.007],
 ] as const;
 const docsUrl = "https://www.recraft.ai/docs/api-reference/agents.md";
+
+/** "recraft-v4.1-pro-vector" -> "Recraft V4.1 Pro Vector". */
+export function recraftLabel(id: string): string {
+  const words = id.replace(/^recraft-/, "").split("-").map((part) =>
+    /^v\d/.test(part) ? part.toUpperCase() : part.charAt(0).toUpperCase() + part.slice(1));
+  return `Recraft ${words.join(" ")}`;
+}
+
 const generations: MediaModelSpec[] = entries.map(([id, upstreamId, usd]) => ({
-  id: `recraft/${id}`, upstreamId, vendor: "recraft", label: id, kind: "image",
+  id: `recraft/${id}`, upstreamId, vendor: "recraft", label: recraftLabel(id), kind: "image",
   tasks: upstreamId.includes("flash") ? ["text-to-image"] : ["text-to-image", "image-to-image"],
   params: { aspectRatios: RATIOS, maxReferenceImages: 1, seed: true }, pricing: [price(usd)], docsUrl,
 }));
@@ -22,7 +30,7 @@ const utilities: MediaModelSpec[] = [
   ["recraft-crisp-upscale", "crispUpscale", "image-upscale", 0.004],
   ["recraft-creative-upscale", "creativeUpscale", "image-upscale", 0.25],
 ].map(([id, upstreamId, task, usd]) => ({
-  id: `recraft/${id}`, upstreamId: String(upstreamId), vendor: "recraft", label: String(id), kind: "image",
+  id: `recraft/${id}`, upstreamId: String(upstreamId), vendor: "recraft", label: recraftLabel(String(id)), kind: "image",
   tasks: [task as "image-vectorize" | "image-upscale"], params: { maxReferenceImages: 1 }, pricing: [price(Number(usd))], docsUrl,
 }));
 export const RECRAFT_MODELS: readonly MediaModelSpec[] = [...generations, ...utilities];

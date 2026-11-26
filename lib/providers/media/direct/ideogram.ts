@@ -1,30 +1,55 @@
+/**
+ * Ideogram direct adapter (developer.ideogram.ai v2 OpenAPI, read 2026-11-26).
+ * Every route is submitted with async=true and polled at GET
+ * /v2/generations/{id}; the synchronous mode can time out with 503 while the
+ * generation still runs and bills, with no id to recover it.
+ */
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
 import { fail, makeError, normalizeUnknownError, MediaAdapterError } from "./_l4kit/errors.js";
 import { asRecord, httpError, readBody, readString, type ResponseBody } from "./_l4kit/http.js";
+import { withResolvedInputs } from "./_l4kit/inputBytes.js";
 import { findModel, requireApiKey } from "./_l4kit/request.js";
 import { buildIdeogramBody } from "./ideogramBody.js";
 import { IDEOGRAM_MODELS } from "./ideogramModels.js";
 
 const P = "IDEOGRAM";
 const LABEL = "Ideogram";
-function base(ctx: MediaAdapterContext): string { return (ctx.baseUrl ?? "https://api.ideogram.ai").replace(/\/+$/, ""); }
-function redact(text: string, key: string): string { return key ? text.split(key).join("[redacted]") : text; }
-function headers(key: string): Record<string, string> { return { "Api-Key": key, accept: "application/json" }; }
+
+function base(ctx: MediaAdapterContext): string {
+  return (ctx.baseUrl ?? "https://api.ideogram.ai").replace(/\/+$/, "");
+}
+
+/** Unlike the kit helper this also removes keys shorter than six characters. */
+function redact(text: string, key: string): string {
+  return key ? text.split(key).join("[redacted]") : text;
+}
+
+function headers(key: string): Record<string, string> {
+  return { "Api-Key": key, accept: "application/json" };
+}
+
 async function call(ctx: MediaAdapterContext, path: string, init: RequestInit, key: string): Promise<ResponseBody> {
   let res: Response;
-  try { res = await ctx.fetch(`${base(ctx)}${path}`, { ...init, ...(ctx.signal ? { signal: ctx.signal } : {}), redirect: "error" }); }
-  catch (error) { const detail = normalizeUnknownError(P, error, [key]); throw new MediaAdapterError({ ...detail, message: redact(detail.message, key) }); }
+  try {
+    res = await ctx.fetch(`${base(ctx)}${path}`, { ...init, ...(ctx.signal ? { signal: ctx.signal } : {}), redirect: "error" });
+  } catch (error) {
+    const detail = normalizeUnknownError(P, error, [key]);
+    throw new MediaAdapterError({ ...detail, message: redact(detail.message, key) });
+  }
   const body = await readBody(res);
   if (!res.ok) {
-    const error = httpError({ prefix: P, label: LABEL, status: res.status, body, secrets: [key], ...(res.status === 422 ? { override: { reason: "MODERATED", category: "moderation" as const, retryable: false } } : {}) });
+    // 422 is Ideogram's prompt-safety rejection (errors guide), not a schema error.
+    const override = res.status === 422 ? { reason: "MODERATED", category: "moderation" as const, retryable: false } : undefined;
+    const error = httpError({ prefix: P, label: LABEL, status: res.status, body, secrets: [key], ...(override ? { override } : {}) });
     throw new MediaAdapterError({ ...error.detail, message: redact(error.message, key) });
   }
   return body;
 }
+
 async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Promise<MediaJobRef> {
   const key = requireApiKey(P, LABEL, ctx);
   const model = findModel(P, IDEOGRAM_MODELS, request.model);
-  const { path, form, mimeType } = buildIdeogramBody(model, request);
+  const { path, form, mimeType } = buildIdeogramBody(model, await withResolvedInputs(P, ctx, request));
   const body = await call(ctx, `/v2/${path}`, { method: "POST", headers: headers(key), body: form }, key);
   const id = readString(asRecord(body.json), "generation_id");
   if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) fail(P, "BAD_RESPONSE", "Ideogram did not return a valid generation_id", { category: "upstream", retryable: false });
@@ -67,8 +92,15 @@ async function validateKey(ctx: MediaAdapterContext): Promise<{ ok: boolean; rea
   } catch (error) { return { ok: false, reason: normalizeUnknownError(P, error, [key]).message }; }
 }
 export const adapter: MediaProviderAdapter = {
-  id: "ideogram", label: LABEL, route: "direct", errorPrefix: P,
+  id: "ideogram",
+  label: LABEL,
+  route: "direct",
+  errorPrefix: P,
   credential: { keyVocabulary: "ideogram", envVars: ["IDEOGRAM_API_KEY"], configKey: "ideogramApiKey", consoleUrl: "https://ideogram.ai/platform" },
-  inputTransport: "inline", listModels: () => IDEOGRAM_MODELS, validateKey, submit, poll,
+  inputTransport: "inline",
+  listModels: () => IDEOGRAM_MODELS,
+  validateKey,
+  submit,
+  poll,
   normalizeError: (error) => normalizeUnknownError(P, error),
 };

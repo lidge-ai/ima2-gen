@@ -4,7 +4,7 @@
  * so a URL input is fetched here through ctx.fetch, without any credential and
  * with a size cap.
  */
-import type { MediaAdapterContext, MediaInput } from "../../contract.js";
+import type { MediaAdapterContext, MediaInput, MediaSubmitRequest } from "../../contract.js";
 import { fail } from "./errors.js";
 
 export const DEFAULT_MAX_INPUT_BYTES = 50 * 1024 * 1024;
@@ -36,4 +36,17 @@ function safeHttpsUrl(raw: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** The same request with every URL input replaced by its bytes, for adapters that upload files. */
+export async function withResolvedInputs(
+  prefix: string, ctx: MediaAdapterContext, request: MediaSubmitRequest, maxBytes = DEFAULT_MAX_INPUT_BYTES,
+): Promise<MediaSubmitRequest> {
+  if (request.inputs.every((input) => input.bytes)) return request;
+  const inputs = await Promise.all(request.inputs.map(async (input): Promise<MediaInput> => {
+    if (input.bytes) return input;
+    const resolved = await resolveInputBytes(prefix, ctx, input, maxBytes);
+    return { role: input.role, bytes: resolved.bytes, mimeType: resolved.mimeType };
+  }));
+  return { ...request, inputs };
 }
