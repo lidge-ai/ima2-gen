@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
+import { createServer, type ServerResponse } from "node:http";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -24,11 +24,28 @@ async function cli(base: string, args: string[], stdin = "") {
 }
 async function fixture(run: (base: string, calls: { url: string; method: string; body: string }[]) => Promise<void>) {
   const calls: { url: string; method: string; body: string }[] = [];
+  let stream: ServerResponse | undefined;
   const server = createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const url = req.url ?? "", body = Buffer.concat(chunks).toString();
     calls.push({ url, method: req.method ?? "", body });
+    if (url === "/api/events") { stream = res; res.writeHead(200, { "Content-Type": "text/event-stream" }); res.flushHeaders(); return; }
     res.setHeader("Content-Type", "application/json");
+    if (url === "/api/media") {
+      const data = JSON.parse(body) as { requestId: string; model: string };
+      res.end(JSON.stringify({ requestId: data.requestId }));
+      const error = data.model.startsWith("error-");
+      stream?.write(`event: ${error ? "error" : "running"}\ndata: ${JSON.stringify(error ? { jobId: data.requestId, code: data.model.slice(6), error: "failed", category: "auth" } : { jobId: data.requestId, progress: 42 })}\n\n`);
+      if (!error) stream?.write(`event: done\ndata: ${JSON.stringify({ jobId: data.requestId, outputs: [{ filename: "result.png" }] })}\n\n`);
+      return;
+    }
+    if (url === "/api/media/jobs/used") return void res.end('{"status":"completed"}');
+    if (url === "/api/media/jobs/running") return void res.end('{"status":"running"}');
+    if (url.startsWith("/api/history") && url.includes("requestId=result")) return void res.end('{"items":[{"filename":"result.png"}]}');
+    if (url === "/generated/result.png") return void res.end("saved");
+    if (url === "/api/workflows") return void res.end('{"workflows":[{"id":"demo","fields":[]}]}');
+    if (url === "/api/workflows/demo" || url === "/api/workflows/demo/estimate") return void res.end(body);
+    if (url === "/api/studios/default") return void res.end(body);
     if (url === "/api/health") return void res.end('{"ok":true}');
     if (url === "/api/media/catalog") return void res.end(JSON.stringify({ adapters: [], models: [
       { id: "v/a", vendor: "v", kind: "image", tasks: ["generate"], routes: [{ adapter: "direct", hasKey: true, pricing: [{ usd: 0.1 }] }] },
@@ -60,8 +77,8 @@ test("catalog filters and estimate use the shared API", async () => fixture(asyn
 test("keys reject argv secrets and redact validation response", async () => fixture(async (base, calls) => {
   const bad = await cli(base, ["keys", "set", "fake", "--key-stdin", "--extra", "secret=wrong"], "short");
   assert.match(bad.stderr, /MEDIA_SECRET_ON_ARGV/); assert.equal(calls.filter((c) => c.url === "/api/keys/fake").length, 0);
-  const valid = await cli(base, ["keys", "validate", "fake", "--stdin-json", "--json"], '{"apiKey":"abc","extra":{"secret":"xyz"}}');
-  assert.equal(valid.code, 0, valid.stderr); assert.doesNotMatch(valid.stdout + valid.stderr, /abc|xyz/);
+  const valid = await cli(base, ["keys", "validate", "fake", "--stdin-json", "--json"], '{"apiKey":"abcdef","extra":{"secret":"ghijkl"}}');
+  assert.equal(valid.code, 0, valid.stderr); assert.doesNotMatch(valid.stdout + valid.stderr, /abcdef|ghijkl/);
   const no = await cli(base, ["keys", "delete", "fake"]); assert.match(no.stderr, /MEDIA_CONFIRM_REQUIRED/);
   const yes = await cli(base, ["keys", "delete", "fake", "--yes"]); assert.equal(yes.code, 0, yes.stderr);
   assert.equal(calls.filter((c) => c.url === "/api/keys/fake" && c.method === "DELETE").length, 1);
@@ -71,4 +88,42 @@ test("schema, tools and unknown studio", async () => fixture(async (base) => {
   assert.equal(schema.code, 0, schema.stderr); assert.equal(JSON.parse(schema.stdout).type, "object");
   const tools = await cli(base, ["tools", "--json"]); assert.equal(tools.code, 0, tools.stderr); assert.equal(JSON.parse(tools.stdout).tools.length, 14);
   const unknown = await cli(base, ["studio", "open", "nope"]); assert.match(unknown.stderr, /STUDIO_UNKNOWN/);
+}));
+
+
+test("run progress, SSE error bytes, id reuse and vendor option merge", async () => fixture(async (base, calls) => {
+  const run = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--vendor-json", '{"x":"old","y":1}', "--vendor-option", "x=new"]);
+  assert.equal(run.code, 0, run.stderr); assert.equal(run.stdout, `${join(root, "result.png")}\n`); assert.match(run.stderr, /running/);
+  assert.deepEqual(JSON.parse(calls.find((c) => c.url === "/api/media")!.body).vendorOptions, { x: "new", y: 1 });
+  for (const code of ["MEDIA_KEY_MISSING", "CREDIT", "MODERATION", "MEDIA_ROUTE_UNKNOWN"]) {
+    const failure = await cli(base, ["run", "--model", `error-${code}`, "--task", "generate"]);
+    assert.equal(failure.stderr, `${code}: failed (auth)\n`);
+  }
+  const before = calls.filter((c) => c.url === "/api/media").length;
+  const used = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--request-id", "used"]);
+  assert.match(used.stderr, /REQUEST_ID_IN_USE/); assert.equal(calls.filter((c) => c.url === "/api/media").length, before);
+}));
+test("status, timed wait, result and output download", async () => fixture(async (base) => {
+  const status = await cli(base, ["status", "running", "--json"]); assert.equal(status.code, 0, status.stderr);
+  const wait = await cli(base, ["wait", "running", "--timeout", "1", "--json"]); assert.equal(wait.code, 0, wait.stderr); assert.equal(JSON.parse(wait.stdout).timedOut, true);
+  const result = await cli(base, ["result", "result", "--out", join(root, "saved"), "--json"]); assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).paths, [join(root, "saved", "result.png")]);
+}));
+test("keys preserve short set, reject short validate and reject secret extra for both actions", async () => fixture(async (base, calls) => {
+  const set = await cli(base, ["keys", "set", "fake", "--key-stdin"], "abc"); assert.equal(set.code, 0, set.stderr);
+  assert.equal(JSON.parse(calls.find((c) => c.url === "/api/keys/fake" && c.method === "PUT")!.body).apiKey, "abc");
+  const short = await cli(base, ["keys", "validate", "fake", "--key-stdin"], "abcde"); assert.match(short.stderr, /KEY_TOO_SHORT/);
+  const before = calls.filter((c) => c.url === "/api/keys/fake/validate").length;
+  const secret = await cli(base, ["keys", "validate", "fake", "--extra", "secret=123456"]); assert.match(secret.stderr, /MEDIA_SECRET_ON_ARGV/);
+  assert.equal(calls.filter((c) => c.url === "/api/keys/fake/validate").length, before);
+  const collision = await cli(base, ["keys", "validate", "fake", "--key-stdin", "--json"], "redact"); assert.doesNotMatch(collision.stdout + collision.stderr, /redact/);
+}));
+test("workflow selections, studios and invalid flag safety", async () => fixture(async (base, calls) => {
+  const wf = await cli(base, ["workflow", "demo", "--estimate", "--slot-model", "one=v/a", "--slot-route", "one=direct", "--json"]);
+  assert.equal(wf.code, 0, wf.stderr); const body = JSON.parse(calls.find((c) => c.url === "/api/workflows/demo/estimate")!.body);
+  assert.match(JSON.stringify(body.selection), /v\/a/); assert.match(JSON.stringify(body.selection), /direct/);
+  const studios = await cli(base, ["studios", "--json"]); assert.equal(studios.code, 0, studios.stderr);
+  const def = await cli(base, ["studio", "default", "classic", "--json"]); assert.equal(def.code, 0, def.stderr);
+  const before = calls.length; const bad = await cli(base, ["keys", "delete", "fake", "--yes=false"]); assert.match(bad.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
+  const badFlag = await cli(base, ["models", "--quiet"]); assert.match(badFlag.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
 }));
