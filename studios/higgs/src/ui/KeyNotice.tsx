@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState, type KeyboardEvent } from "react";
 import type { CatalogProvider, CatalogRoute } from "@ima2/studio-kit";
 import { messages, useT } from "../i18n.ts";
 import { href } from "../router.ts";
@@ -85,23 +85,29 @@ function useKeyEntry(provider: CatalogProvider) {
 function KeyEntry({ provider }: { provider: CatalogProvider }) {
   const t = useT(M);
   const id = useId();
+  const groupId = useId();
   const [show, setShow] = useState(false);
   const entry = useKeyEntry(provider);
   const missingExtra = provider.extraFields?.some((f) => f.required && !entry.extra[f.name]?.trim());
+  const ready = !entry.busy && !!entry.key.trim() && !missingExtra;
+  // This sits inside the generate form, so it cannot be a form itself: a nested form
+  // lets Enter or Save submit the outer one. Enter saves the key here and stops there.
+  const onEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (ready) void entry.save(t);
+  };
   return (
-    <form
-      className="key-entry"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void entry.save(t);
-      }}
-    >
+    <div className="key-entry" role="group" aria-labelledby={groupId}>
+      <span id={groupId} className="visually-hidden">
+        {t("via")} {provider.label}
+      </span>
       <a className="muted-link" href={provider.consoleUrl} target="_blank" rel="noreferrer">
         {t("get", { provider: provider.label })} <Icon name="external" size={12} /> <span className="visually-hidden">{t("newTab")}</span>
       </a>
       <label htmlFor={id}>{t("key")}</label>
       <div className="key-entry-row">
-        <input id={id} type={show ? "text" : "password"} autoComplete="off" spellCheck={false} value={entry.key} onChange={(e) => entry.setKey(e.target.value)} />
+        <input id={id} type={show ? "text" : "password"} autoComplete="off" spellCheck={false} value={entry.key} onChange={(e) => entry.setKey(e.target.value)} onKeyDown={onEnter} />
         <button type="button" className="btn" aria-pressed={show} onClick={() => setShow(!show)}>
           {t(show ? "hide" : "show")}
         </button>
@@ -113,10 +119,11 @@ function KeyEntry({ provider }: { provider: CatalogProvider }) {
             type={field.secret ? "password" : "text"}
             value={entry.extra[field.name] ?? ""}
             onChange={(e) => entry.setExtra({ ...entry.extra, [field.name]: e.target.value })}
+            onKeyDown={onEnter}
           />
         </label>
       ))}
-      <button type="submit" className={entry.key.trim() ? "btn btn-primary" : "btn"} disabled={entry.busy || !entry.key.trim() || missingExtra}>
+      <button type="button" className={entry.key.trim() ? "btn btn-primary" : "btn"} disabled={!ready} onClick={() => void entry.save(t)}>
         {t(entry.busy ? "saving" : "save")}
       </button>
       {entry.result ? (
@@ -124,7 +131,7 @@ function KeyEntry({ provider }: { provider: CatalogProvider }) {
           {entry.result.text}
         </p>
       ) : null}
-    </form>
+    </div>
   );
 }
 
