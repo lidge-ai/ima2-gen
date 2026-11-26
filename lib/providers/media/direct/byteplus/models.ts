@@ -2,7 +2,7 @@
 // Wire ids, limits and parameters: https://docs.byteplus.com/en/docs/ModelArk/model-list
 // and the create-video-generation-task / image-generation API references (read 2026-11-26).
 // Prices: https://docs.byteplus.com/en/docs/ModelArk/model-pricing (read 2026-11-26).
-import type { MediaModelSpec, MediaPrice } from "../../../contract.js";
+import type { MediaModelSpec, MediaPrice } from "../../contract.js";
 
 export const PRICE_SOURCE = "https://docs.byteplus.com/en/docs/ModelArk/model-pricing";
 const CHECKED = "2026-11-26";
