@@ -4,6 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -226,6 +227,16 @@ test("workflows: list, estimate and a run through the L6 engine land the final c
     assert.ok(!JSON.stringify(mine).includes(FAKE_KEY));
     const unknown = await post("/api/workflows/nope", {});
     assert.equal(unknown.status, 404);
+  });
+});
+
+test("workflows: a requestId of '..' never turns the run's scratch folder into the config folder", async () => {
+  await withApp(async ({ base, events, root, configFile }) => {
+    const res = await fetch(`${base}/api/workflows/test-flow`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: "..", values: { prompt: "fox" } }) });
+    assert.equal(res.status, 202);
+    await waitFor(events, "..", ["done", "error"]);
+    assert.ok(existsSync(configFile), "config.json survives the run's cleanup");
+    assert.ok(existsSync(join(root, "generated")), "history survives the run's cleanup");
   });
 });
 

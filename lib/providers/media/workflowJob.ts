@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { saveOutput } from "./runnerOutputs.js";
@@ -57,7 +58,9 @@ async function saveFinals(deps: MediaRunnerDeps, prepared: PreparedWorkflow, opt
 async function execute(deps: MediaRunnerDeps, wfDeps: WorkflowDeps, prepared: PreparedWorkflow, opts: WorkflowJobOptions, controller: AbortController) {
   const emit = emitter(opts.requestId);
   const workflowId = prepared.definition.id;
-  const workDir = join(opts.runsDir, opts.requestId.replace(/[^A-Za-z0-9_.-]/g, "_"));
+  // Never derived from the request: a requestId such as ".." would otherwise point the
+  // scratch folder (removed recursively when the run ends) outside runsDir.
+  const workDir = join(opts.runsDir, `${Date.now()}-${randomBytes(8).toString("hex")}`);
   const startedAt = Date.now();
   let finish: Parameters<typeof finishJob>[1] = {};
   try {

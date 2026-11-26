@@ -27,12 +27,26 @@ function studiosRoot(ctx: RuntimeContext, options: StudioOptions): string {
   return options.root ?? join(ctx.rootDir, "studios");
 }
 
-function distDir(root: string, name: string): string {
-  return join(root, name, "dist");
+/**
+ * The dist folder of a built studio, or null. The path is built from the directory
+ * listing entry, never from the requested name, so a URL can only select a folder
+ * that already exists under root.
+ */
+function builtDist(root: string, name: string): string | null {
+  if (!STUDIO_NAME.test(name) || NOT_A_STUDIO.has(name)) return null;
+  let entry: string | undefined;
+  try {
+    entry = readdirSync(root, { withFileTypes: true }).find((d) => d.isDirectory() && d.name === name)?.name;
+  } catch {
+    return null;
+  }
+  if (!entry) return null;
+  const dist = join(root, entry, "dist");
+  return existsSync(join(dist, "index.html")) ? dist : null;
 }
 
 function isBuilt(root: string, name: string): boolean {
-  return STUDIO_NAME.test(name) && !NOT_A_STUDIO.has(name) && existsSync(join(distDir(root, name), "index.html"));
+  return builtDist(root, name) !== null;
 }
 
 export function listStudios(root: string): StudioEntry[] {
@@ -61,17 +75,18 @@ function studioHandler(root: string): RequestHandler {
   const statics = new Map<string, RequestHandler>();
   return (req: Request, res: Response, next: NextFunction) => {
     const name = String(req.params.name ?? "");
-    if (!isBuilt(root, name)) return next();
+    const dist = builtDist(root, name);
+    if (!dist) return next();
     if (req.originalUrl.split("?")[0] === `/studio/${name}`) return res.redirect(301, `/studio/${name}/`);
     let serve = statics.get(name);
     if (!serve) {
-      serve = express.static(distDir(root, name), { index: "index.html", fallthrough: true });
+      serve = express.static(dist, { index: "index.html", fallthrough: true });
       statics.set(name, serve);
     }
     serve(req, res, () => {
       const wantsPage = (req.method === "GET" || req.method === "HEAD") && !/\.[a-z0-9]+$/i.test(req.path);
       if (!wantsPage) return next();
-      res.sendFile(join(distDir(root, name), "index.html"));
+      res.sendFile(join(dist, "index.html"));
     });
   };
 }

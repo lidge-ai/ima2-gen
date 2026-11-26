@@ -150,6 +150,6 @@ test("atlas discoverModels adds media models outside the catalog and submits the
   await adapter.submit(ctx(fetch), request({ model: "acme/new/text-to-video", durationSec: 10 }));
   const post = calls.find((call) => call.url.endsWith("/generateVideo"));
   assert.deepEqual(post?.body, { model: "acme/new/text-to-video", prompt: "a golden retriever on a beach", duration: 10 });
-  const schemaCall = calls.find((call) => call.url.startsWith("https://static.atlas.test"));
+  const schemaCall = calls.find((call) => new URL(call.url).origin === "https://static.atlas.test");
   assert.equal(schemaCall?.headers.authorization, undefined);
 });

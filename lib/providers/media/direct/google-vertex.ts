@@ -1,4 +1,4 @@
-import { createHash, createSign } from 'node:crypto';
+import { createSign } from 'node:crypto';
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from '../contract.js';
 import { assertAllowed, findModel, fromBase64, httpJson, invalidRequest, MediaHttpError, normalizeMediaError, protocolError, readVendorOptions, redact, toBase64 } from './l3-http.js';
 
@@ -7,7 +7,7 @@ const models: readonly MediaModelSpec[] = ['veo-3.1','veo-3.1-fast','veo-3.1-lit
  id:'google/'+name, upstreamId:['veo-3.1-generate-001','veo-3.1-fast-generate-001','veo-3.1-lite-generate-001'][i]!, vendor:'google', label:name, kind:'video', tasks:i===2?['text-to-video','image-to-video']:['text-to-video','image-to-video','reference-to-video'],
  params:{durationsSec:[4,6,8],resolutions:i===0?['720p','1080p','4k']:['720p','1080p'],aspectRatios:['16:9','9:16'],nativeAudio:true,negativePrompt:true,seed:true},pricing:[],docsUrl:docs,
 }));
-interface Account { type: string; project_id: string; client_email: string; private_key: string }
+interface Account { type: string; project_id: string; client_email: string; private_key: string; private_key_id?: string }
 /** A context whose key and secret extras cover the token, the service JSON and its private key. */
 function scrubbingContext(ctx:MediaAdapterContext,a:Account,apiKey:string):MediaAdapterContext {
  return {...ctx,apiKey,extra:{...(ctx.extra??{}),serviceJson:ctx.apiKey,privateKey:a.private_key}};
@@ -33,7 +33,8 @@ function jwt(a:Account):string {
  catch { throw invalidRequest('Invalid service account private key'); }
 }
 async function token(ctx:MediaAdapterContext,a:Account):Promise<string> {
- const id=a.client_email+':'+createHash('sha256').update(ctx.apiKey).digest('hex'); const old=cache.get(id);
+ // A service account key is identified by its key id; no need to hash the secret for a cache key.
+ const id=a.client_email+':'+(a.private_key_id ?? 'no-key-id'); const old=cache.get(id);
  if (old && old.until>Date.now()) return old.token;
  const assertion=jwt(a); const payload=new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion});
  // Token errors (invalid_grant, disabled account) are actionable; the JSON, private key and assertion are scrubbed.
