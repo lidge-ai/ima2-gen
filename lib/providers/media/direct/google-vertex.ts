@@ -78,7 +78,7 @@ function operationState(op:Operation,secrets:readonly string[]):MediaJobState {
 }
 export const adapter:MediaProviderAdapter={
  id:'google-vertex',label:'Google Vertex AI',route:'direct',errorPrefix:'GOOGLE_VERTEX',inputTransport:'inline',
- credential:{keyVocabulary:'google-vertex',configKey:'vertexServiceAccountJson',envVars:['VERTEX_SERVICE_ACCOUNT_JSON'],consoleUrl:'https://console.cloud.google.com/iam-admin/serviceaccounts',extraFields:[{name:'location',envVar:'VERTEX_LOCATION',secret:false,required:false}]},
+ credential:{keyVocabulary:'vertex',configKey:'vertexServiceAccountJson',envVars:['VERTEX_SERVICE_ACCOUNT_JSON'],consoleUrl:'https://console.cloud.google.com/iam-admin/serviceaccounts',extraFields:[{name:'location',envVar:'VERTEX_LOCATION',secret:false,required:false}]},
  listModels:()=>models,
  async validateKey(ctx) { const a=account(ctx),loc=location(ctx); try { await call(ctx,a,root(ctx,loc)+modelPath(a,loc,models[0]!.upstreamId),'GET'); return {ok:true}; } catch(error) { if(error instanceof MediaHttpError && (error.status===401 || error.status===403)) return {ok:false,reason:'Invalid or unauthorized service account'}; throw error; } },
  async submit(ctx,req) { const spec=findModel(models,req.model), data=payload(req,spec), a=account(ctx),loc=location(ctx),path=modelPath(a,loc,spec.upstreamId); const result=await call<Operation>(ctx,a,root(ctx,loc)+path+':predictLongRunning','POST',data); if(!result.name?.startsWith(path.slice(1)+'/operations/') || !/^[a-zA-Z0-9/_.-]+$/.test(result.name)) throw protocolError('Invalid operation name'); return {providerJobId:result.name,resume:{model:spec.upstreamId}}; },

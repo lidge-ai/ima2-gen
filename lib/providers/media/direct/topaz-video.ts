@@ -1,5 +1,6 @@
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
 import { assertAllowed, contextSecrets, findModel, httpJson, httpRaw, invalidRequest, MediaHttpError, normalizeMediaError, protocolError, readVendorOptions, redact, requireInput } from "./l3-http.js";
+import { probeMp4 } from "../mp4Probe.js";
 
 const prefix = "TOPAZ_VIDEO";
 const models: readonly MediaModelSpec[] = [{ id: "topaz-labs/topaz-video", upstreamId: "prob-4", vendor: "topaz-labs", label: "Topaz Video (Proteus 4)", kind: "video", tasks: ["video-upscale"], params: {}, pricing: [], docsUrl: "https://developer.topazlabs.com/getting-started/video-quickstart" }];
@@ -34,10 +35,21 @@ function dimensions(value: unknown): { width: number; height: number } {
   if (!Number.isInteger(width) || !Number.isInteger(height)) throw invalidRequest("Resolution must use integer pixels");
   return { width, height };
 }
+/** Source metadata Topaz needs before it issues upload URLs, read from the MP4 when the caller gave none (L0 mp4Probe). */
+function probedSource(bytes: Uint8Array): Record<string, unknown> {
+  let probe: ReturnType<typeof probeMp4>;
+  try {
+    probe = probeMp4(bytes);
+  } catch (error) {
+    throw invalidRequest("Could not read the source MP4 (" + (error instanceof Error ? error.message : "unknown") + "); pass vendorOptions.source", "INPUT_PROBE_FAILED");
+  }
+  if (probe.container !== "mp4") throw invalidRequest("source.container must be mp4 (this file is QuickTime .mov)");
+  return { resolution: { width: probe.width, height: probe.height }, container: "mp4", duration: probe.durationSec, frameRate: probe.frameRate, frameCount: probe.frameCount };
+}
 function buildBody(request: MediaSubmitRequest, bytes: Uint8Array): object {
   const opts = readVendorOptions(request, ["source", "output", "model"]);
   assertAllowed("model", opts.model, ["prob-4"]);
-  const source = object(opts.source, "source"), output = object(opts.output, "output");
+  const source = opts.source === undefined ? probedSource(bytes) : object(opts.source, "source"), output = object(opts.output, "output");
   if (Object.keys(source).some(k => !["resolution", "container", "duration", "frameRate", "frameCount"].includes(k)) || Object.keys(output).some(k => k !== "resolution")) throw invalidRequest("Unknown source or output field");
   assertAllowed("container", source.container, ["mp4"]);
   if (source.container !== "mp4") throw invalidRequest("source.container must be mp4");
