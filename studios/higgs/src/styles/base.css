@@ -8,7 +8,7 @@
   --line-strong: rgba(255, 255, 255, 0.16);
   --text: #f4f4f6;
   --text-dim: #b6b6c2;
-  --text-muted: #90909d;
+  --text-muted: #a5a5b1;
   /* Decoration only (dots, rules): fails 4.5:1 for text, so text uses --text-muted. */
   --text-faint: #55555f;
   --primary: #f4f4f6;
@@ -147,7 +147,7 @@ code {
   font-weight: 560;
   white-space: nowrap;
 }
-.btn:hover:not(:disabled) {
+.btn:hover:not(:disabled):not([aria-pressed="true"]) {
   background: var(--surface-3);
 }
 .btn-ghost {
@@ -155,7 +155,7 @@ code {
   border-color: transparent;
   color: var(--text-dim);
 }
-.btn-ghost:hover:not(:disabled) {
+.btn-ghost:hover:not(:disabled):not([aria-pressed="true"]) {
   color: var(--text);
   background: var(--surface-2);
 }
@@ -307,3 +307,5 @@ code {
     transition-duration: 0.01ms !important;
   }
 }
+
+.menu-item[aria-pressed="true"] { background: var(--surface-2); }
