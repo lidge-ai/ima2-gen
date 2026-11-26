@@ -52,11 +52,13 @@ async function fixture(run: (base: string, calls: { url: string; method: string;
       { id: "x/b", vendor: "x", kind: "image", tasks: ["edit"], routes: [{ adapter: "other", hasKey: false, pricing: [{ usd: 1 }] }] }] }));
     if (url === "/api/media/estimate") return void res.end(body);
     if (url === "/api/media/tools") return void res.end(JSON.stringify({ tools: Array.from({ length: 14 }, (_, i) => ({ name: `tool${i}` })) }));
+    if (url === "/api/keys/broken/validate") return void res.end('{}');
+    if (url === "/api/keys/vocabulary" && req.headers["x-never"]) { res.statusCode = 500; return void res.end('{}'); }
     if (url === "/api/keys/vocabulary") return void res.end(JSON.stringify({ vocabularies: [{ vocabulary: "fake", extraFields: [{ name: "secret", secret: true }] }] }));
     if (url === "/api/keys/fake/validate") return void res.end(body);
     if (url === "/api/keys/fake") return void res.end('{"ok":true}');
     if (url === "/api/workflows/demo/schema") return void res.end('{"type":"object","properties":{"prompt":{"type":"string"}}}');
-    if (url === "/api/studios") return void res.end('{"studios":[],"defaultUi":"web"}');
+    if (url === "/api/studios") return void res.end('{"studios":[{"name":"demo","built":true,"url":"/studio/demo/"}],"defaultUi":"web"}');
     if (url.startsWith("/api/media/jobs/")) { res.statusCode = 404; return void res.end('{"code":"MEDIA_JOB_UNKNOWN","error":"missing"}'); }
     if (url.startsWith("/api/history")) return void res.end('{"items":[]}');
     res.statusCode = 404; res.end('{}');
@@ -143,3 +145,18 @@ test("waitUntil slices until terminal state or its absolute deadline", async () 
     assert.equal(value.pollAfterSeconds, 0); assert.ok(statusCalls >= 3);
   } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); }
 });
+
+
+test("validateKey scrubs echoed success and overlapping secrets", async () => fixture(async (base) => {
+  const { validateKey } = await import("../bin/lib/mediaApi.js");
+  const result = await validateKey(base, "fake", { apiKey: "redact", extra: { secret: "abcdef", other: "cdefgh" } });
+  const text = JSON.stringify(result); for (const secret of ["redact", "abcdef", "cdefgh"]) assert.ok(!text.includes(secret), text);
+}));
+test("flags are scoped, short secrets are rejected, studio output and quiet mode", async () => fixture(async (base, calls) => {
+  const before = calls.length;
+  const wrong = await cli(base, ["status", "running", "--model", "v/a"]); assert.match(wrong.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
+  const short = await cli(base, ["keys", "validate", "fake", "--stdin-json"], '{"apiKey":"abcdef","extra":{"secret":"short"}}');
+  assert.match(short.stderr, /KEY_TOO_SHORT/); assert.equal(calls.filter((c) => c.url === "/api/keys/fake/validate").length, 0);
+  const studio = await cli(base, ["studio", "open", "demo"]); assert.equal(studio.code, 0, studio.stderr); assert.equal(studio.stdout, `${base}/studio/demo/\n`);
+  const quiet = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--quiet"]); assert.equal(quiet.code, 0, quiet.stderr); assert.equal(quiet.stderr, "");
+}));
