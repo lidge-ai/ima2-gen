@@ -17,6 +17,7 @@
     "nativeAudio": "Native audio",
     "negativePrompt": "Negative prompt",
     "seed": "Seed",
+    "checked": "checked {date}",
     "documentation": "Documentation"
   },
   "media": {

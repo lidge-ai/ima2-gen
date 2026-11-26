@@ -17,6 +17,7 @@
     "nativeAudio": "原生音訊",
     "negativePrompt": "負面提示詞",
     "seed": "種子",
+    "checked": "查核於 {date}",
     "documentation": "文件"
   },
   "media": {

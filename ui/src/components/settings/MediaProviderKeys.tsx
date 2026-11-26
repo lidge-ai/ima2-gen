@@ -59,25 +59,30 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   };
-  return <section className="media-provider-keys__provider">
-    <h4>{logo && <img src={logo} alt="" width={24} height={24} style={{ objectFit: "contain", verticalAlign: "middle", marginRight: 8 }} />}{v.label}</h4>
-    {!v.legacy && <>
-      <p>{status?.configured ? t("media.configured") : t("media.notConfigured")} · {status?.source ?? "none"} {status?.maskedKey}</p>
-      <label>{t("media.apiKey")} <input className="api-key-input" type="password" autoComplete="off"
-        placeholder={v.keyPrefix ?? ""} value={key} onChange={(e) => setKey(e.target.value)} /></label>
-      {v.consoleUrl && <p><a href={v.consoleUrl} target="_blank" rel="noopener noreferrer">{t("media.getKey")}</a></p>}
-    </>}
-    {fields.map((field) => <label key={field.name} style={{ display: "block" }}>
-      {field.name}{field.required ? " *" : ""} · {field.configured ? t("media.configured") : t("media.notConfigured")}
-      {field.source && ` · ${field.source}`} {field.secret ? "" : field.value ?? ""}
-      <input className="api-key-input" type={field.secret ? "password" : "text"} autoComplete="off"
-        value={extra[field.name] ?? ""} onChange={(e) => setExtra({ ...extra, [field.name]: e.target.value })} />
-    </label>)}
-    <div className="api-key-actions">
-      <button type="button" className="settings-action-btn" disabled={busy || (v.legacy ? !Object.values(extra).some(Boolean) : !key.trim())} onClick={() => void save("PUT")}>{t("settings.apiKeys.save")}</button>
-      {!v.legacy && status?.source === "env" && <span>{t("media.envImmutable")}</span>}
-      {!v.legacy && status?.source === "config" && <button type="button" className="settings-action-btn settings-action-btn--danger" disabled={busy} onClick={() => void save("DELETE")}>{t("settings.apiKeys.remove")}</button>}
+  return <section className="settings-row media-provider-keys__provider">
+    <div className="settings-row__copy">
+      <p className="settings-eyebrow">{status?.source === "env" ? t("settings.apiKeys.envSource") : t("settings.apiKeys.configSource")}</p>
+      <h4 className="media-provider-keys__heading">{logo && <span className="media-logo"><img src={logo} alt="" /></span>}{v.label}</h4>
+      {!v.legacy && <>
+        <div className="api-key-input-group">
+          <input className="api-key-input" type="password" autoComplete="off" aria-label={t("media.apiKey")}
+            placeholder={status?.maskedKey || v.keyPrefix || ""} value={key} onChange={(e) => setKey(e.target.value)} />
+          <div className="api-key-actions">
+            <button type="button" className="settings-action-btn" disabled={busy || !key.trim()} onClick={() => void save("PUT")}>{t("settings.apiKeys.save")}</button>
+            {status?.source === "config" && <button type="button" className="settings-action-btn settings-action-btn--danger" disabled={busy} onClick={() => void save("DELETE")}>{t("settings.apiKeys.remove")}</button>}
+          </div>
+        </div>
+        {v.consoleUrl && <p><a href={v.consoleUrl} target="_blank" rel="noopener noreferrer">{t("media.getKey")}</a></p>}
+        {status?.source === "env" && <p>{t("media.envImmutable")}</p>}
+      </>}
+      {fields.map((field) => <div className="media-provider-keys__field" key={field.name}>
+        <span>{field.name}{field.required ? " *" : ""} · {field.configured ? t("media.configured") : t("media.notConfigured")}{field.source && ` · ${field.source}`} {field.secret ? "" : field.value ?? ""}</span>
+        <div className="api-key-input-group"><input className="api-key-input" type={field.secret ? "password" : "text"} autoComplete="off" aria-label={field.name}
+          value={extra[field.name] ?? ""} onChange={(e) => setExtra({ ...extra, [field.name]: e.target.value })} />
+          <button type="button" className="settings-action-btn" disabled={busy || !extra[field.name]?.trim() || (!v.legacy && !key.trim())} onClick={() => void save("PUT")}>{t("settings.apiKeys.save")}</button></div>
+      </div>)}
+      {error && <p className="api-key-error" role="alert">{error}</p>}
     </div>
-    {error && <p className="api-key-error" role="alert">{error}</p>}
+    <div className={`settings-status${status?.configured ? " is-ok" : ""}`}><span aria-hidden="true" />{status?.configured ? t("media.configured") : t("media.notConfigured")}</div>
   </section>;
 }
