@@ -190,13 +190,16 @@ export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowF
     <div className="workflow-steps">
       <h3>{t("steps")}</h3>
       {def.steps.map((step) => {
+        // Show what will run: the person's pick, else the model the server's estimate planned.
+        const current = form.slotModel(step.id, step.model);
+        const ids = step.modelChoices?.length ? [...step.modelChoices, ...(current && !step.modelChoices.includes(current) ? [current] : [])] : [];
         return (
           <div className="workflow-step" key={step.id}>
-            {step.modelChoices?.length ? (
+            {ids.length ? (
               <SettingTile
                 caption={step.label}
-                value={form.steps[step.id]?.model ?? step.model ?? ""}
-                options={step.modelChoices.map((id) => ({
+                value={current ?? ""}
+                options={ids.map((id) => ({
                   value: id,
                   label: form.catalog?.models.find((m) => m.id === id)?.label ?? id,
                   icon: <StepModelIcon id={id} form={form} />,
@@ -208,7 +211,7 @@ export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowF
             ) : (
               <span>
                 {step.label}
-                {step.model ? <ModelName id={step.model} /> : null}
+                {current ? <ModelName id={current} /> : null}
               </span>
             )}
             {step.rationale ? <p className="form-hint">{step.rationale}</p> : null}

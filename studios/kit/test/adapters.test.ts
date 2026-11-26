@@ -98,3 +98,12 @@ test("a workflow reads in Korean from the server's i18n.ko, and stays English wh
   assert.equal(ko.id, def.id);
   assert.equal(localizeWorkflow(def, "en"), def);
 });
+
+test("an estimate carries the model and route the server planned for each step", () => {
+  const est = toEstimate({
+    estimate: { usd: 0.4, complete: true, steps: [{ stepId: "subject-first", usd: 0.035 }] },
+    steps: [{ id: "subject-first", label: "Subject frame", kind: "media", dependsOn: [], model: "bytedance/seedream-5.5", route: "byteplus", final: false }],
+  } as never);
+  assert.equal(est.steps[0]?.model, "bytedance/seedream-5.5");
+  assert.equal(est.steps[0]?.route, "byteplus");
+});

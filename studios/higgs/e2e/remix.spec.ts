@@ -89,3 +89,17 @@ test("in Korean, Remix reads the server's Korean workflow text: name, field help
   await expect(page.getByText("1-8 images of the people or things")).toHaveCount(0);
   await expect(page.getByText("Standard", { exact: true })).toHaveCount(0);
 });
+
+test("a step shows the model the server's estimate planned, not the workflow default", async ({ page }) => {
+  // A web instance without the ChatGPT sign-in plans another model for the first frame.
+  await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const s of body.estimate.steps) if (s.stepId === "stylize") s.model = "openai/gpt-image-2";
+    for (const s of body.steps) if (s.id === "stylize") s.model = "openai/gpt-image-2";
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto("/#/remix/remix-restyle");
+  await expect(page.getByRole("button", { name: "Restyle the first frame: GPT Image 2" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Restyle the first frame: Seedream 5.5" })).toHaveCount(0);
+});

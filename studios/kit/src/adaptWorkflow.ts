@@ -127,7 +127,8 @@ export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
     return {
       id: e.stepId,
       ...(summary ? { label: summary.label } : {}),
-      ...(e.model ? { model: e.model } : {}),
+      ...(e.model ? { model: e.model } : summary?.model ? { model: summary.model } : {}),
+      ...(summary?.route ? { route: summary.route } : {}),
       estimate: { usd: e.usd, basis: e.usd === null ? "No published price" : basis },
     };
   });

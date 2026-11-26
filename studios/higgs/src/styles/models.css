@@ -66,20 +66,24 @@
 .model-card-foot {
   align-self: end;
 }
+/* One grid for the card's routes: rows share columns sized by their content (subgrid), so a long
+   per-token price never runs into the key state and the columns line up down the card. */
 .route-lines {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) max-content max-content;
+  column-gap: 10px;
+  row-gap: 6px;
   align-content: start;
-  gap: 6px;
   font-size: 12.5px;
 }
 /* Fixed price and key columns keep every card's rows on the same grid. */
 .route-line {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 7.5em 5.2em;
-  gap: 8px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   min-height: 22px;
 }
