@@ -37,6 +37,8 @@ export function localize(def: WorkflowDefinition, dict: Dict): WorkflowText {
   if (Object.keys(fields).length) text.fields = fields;
   const slots = Object.fromEntries(def.slots.flatMap((s) => { const t = pick(dict, s.label); return t ? [[s.name, t]] : []; }));
   if (Object.keys(slots).length) text.slots = slots;
+  const slotDescriptions = Object.fromEntries(def.slots.flatMap((s) => { const t = pick(dict, s.description); return t ? [[s.name, t]] : []; }));
+  if (Object.keys(slotDescriptions).length) text.slotDescriptions = slotDescriptions;
   if (def.preset) {
     const p = def.preset;
     const preset: NonNullable<WorkflowText["preset"]> = {};
@@ -76,7 +78,7 @@ export function englishStrings(def: WorkflowDefinition): string[] {
     if (f.help) out.push(f.help);
     if (f.type === "enum") out.push(...f.options.map((o) => o.label));
   }
-  out.push(...def.slots.map((s) => s.label));
+  out.push(...def.slots.flatMap((s) => [s.label, ...(s.description ? [s.description] : [])]));
   if (def.preset) out.push(def.preset.label, ...def.preset.requires.map((r) => r.label), ...def.preset.losses.map((l) => l.detail), ...(def.preset.billingNote ? [def.preset.billingNote] : []));
   for (const c of def.combos ?? []) out.push(c.label, ...(c.note ? [c.note] : []));
   return [...new Set(out)].filter((s) => !UNTRANSLATED.test(s));
