@@ -1,7 +1,7 @@
 import { parseArgs, type FlagDef, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { err, json, out } from "../lib/output.js";
-import { catalog, estimate, jobs, cancel, tools, workflows, workflowSchema, workflowEstimate, ensureRequestIdUnused } from "../lib/mediaApi.js";
+import { catalog, estimate, jobs, cancel, tools, workflows, workflowSchema, ensureRequestIdUnused } from "../lib/mediaApi.js";
 import { cliErrorJson, formatMediaError, toMediaApiError } from "../lib/mediaErrors.js";
 import { printModels } from "../lib/media/catalogCmd.js";
 import { runBody, pairs, type Dict } from "../lib/media/common.js";
@@ -48,9 +48,11 @@ async function workflow(base: string, id: string, args: ParsedArgs): Promise<unk
   if (args.schema) return workflowSchema(base, id);
   if (!args.estimate && args["request-id"]) await ensureRequestIdUnused(base, String(args["request-id"]));
   const values = await workflowInput(base, id, args.input);
-  const selection = { models: pairs(args["slot-model"]), routes: pairs(args["slot-route"]) };
-  if (args.estimate) return workflowEstimate(base, id, values, selection);
-  return submit(base, `/api/workflows/${encodeURIComponent(id)}`, { values, selection }, args);
+  const models = pairs(args["slot-model"]), routes = pairs(args["slot-route"]);
+  const selection = { ...(Object.keys(models).length && { models }), ...(Object.keys(routes).length && { routes }) };
+  const body = Object.keys(selection).length ? { values, selection } : { values };
+  if (args.estimate) return request(base, `/api/workflows/${encodeURIComponent(id)}/estimate`, { method: "POST", body });
+  return submit(base, `/api/workflows/${encodeURIComponent(id)}`, body, args);
 }
 async function execute(base: string, args: ParsedArgs): Promise<unknown> {
   const [sub, id] = args.positional;
