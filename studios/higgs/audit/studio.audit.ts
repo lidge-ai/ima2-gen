@@ -169,7 +169,7 @@ const PRISTINE: Cell[] = [
     hash: "/",
     setup: sixClips,
     act: async (p) => {
-      await showcaseTile(p).locator(".showcase-peek").click();
+      await showcaseTile(p).locator(".showcase-peek").click({ position: { x: 12, y: 12 } });
       await p.mouse.move(0, 0);
       await p.waitForTimeout(400);
     },

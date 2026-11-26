@@ -153,11 +153,12 @@ test("clip details stay out of the way: hover, keyboard focus or a tap opens the
   await page.keyboard.press("Escape");
   await expect.poll(height).toBe(0);
   await page.mouse.move(0, 0);
-  // Tap path: the clip itself toggles the details.
+  // Tap path: the clip itself toggles the details. Tap near the top: on a pointer device the
+  // hover-opened details cover the lower part of the clip, and a touch screen has no hover.
   const peek = tile.getByRole("button", { name: "Details for Clip 1" });
-  await peek.click();
+  await peek.click({ position: { x: 12, y: 12 } });
   await expect(peek).toHaveAttribute("aria-expanded", "true");
-  await peek.click();
+  await peek.click({ position: { x: 12, y: 12 } });
   await expect(peek).toHaveAttribute("aria-expanded", "false");
   await page.mouse.move(0, 0);
   // Keyboard path: tabbing into the details (the key link comes first) opens them.
