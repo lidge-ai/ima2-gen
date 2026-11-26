@@ -38,13 +38,12 @@ function OptionMenu<T extends string | number>({ titleId, caption, value, option
       <p className="menu-title" id={titleId}>
         {caption}
       </p>
-      <div role="radiogroup" aria-labelledby={titleId} className="menu-list">
+      <div role="group" aria-labelledby={titleId} className="menu-list">
         {options.map((option) => (
           <button
             key={String(option.value)}
             type="button"
-            role="radio"
-            aria-checked={option.value === value}
+            aria-pressed={option.value === value}
             disabled={option.disabled}
             className="menu-item"
             onClick={() => onPick(option.value)}

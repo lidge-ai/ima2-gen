@@ -1,0 +1,31 @@
+.logo-sheet {
+  border-collapse: collapse;
+  margin: 16px;
+  font-size: 12.5px;
+}
+.logo-sheet th,
+.logo-sheet td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+.logo-sheet thead th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.logo-sheet tbody th {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+}
+.logo-sheet tbody th code {
+  color: var(--text-muted);
+}
+.logo-sheet td[data-slot="route"] {
+  width: 300px;
+}
+.logo-sheet td[data-slot="card"] {
+  width: 220px;
+}
+

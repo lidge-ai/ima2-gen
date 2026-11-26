@@ -1,7 +1,11 @@
+import { messages, tr, useT } from "../i18n.ts";
 import { useRef, useState, type DragEvent } from "react";
 import type { MediaInputRole, UploadedInput } from "@ima2/studio-kit";
 import { useStudioApi } from "../studio/context.tsx";
 import { Icon } from "./Icon.tsx";
+
+const M = messages({ failed: "Upload failed", remove: "Remove {label}", uploading: "Uploading" },
+  { failed: "업로드에 실패했어요", remove: "{label} 삭제", uploading: "업로드 중" });
 
 export interface SlotValue {
   role: MediaInputRole;
@@ -30,7 +34,7 @@ function useSlotUpload(role: MediaInputRole, onChange: Props["onChange"]) {
     try {
       onChange({ role, upload: await studio.upload(file), name: file.name });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : tr(M, "failed"));
     } finally {
       setBusy(false);
     }
@@ -39,6 +43,7 @@ function useSlotUpload(role: MediaInputRole, onChange: Props["onChange"]) {
 }
 
 function SlotPreview({ value, label, onRemove }: { value: SlotValue; label: string; onRemove: () => void }) {
+  const t = useT(M);
   const isVideo = value.upload.mimeType.startsWith("video/");
   return (
     <>
@@ -47,7 +52,7 @@ function SlotPreview({ value, label, onRemove }: { value: SlotValue; label: stri
       ) : (
         <img className="slot-preview" src={value.upload.url} alt={value.name} />
       )}
-      <button type="button" className="slot-remove" aria-label={"Remove " + label} onClick={onRemove}>
+      <button type="button" className="slot-remove" aria-label={t("remove", { label })} onClick={onRemove}>
         <Icon name="close" size={14} />
       </button>
     </>
@@ -65,10 +70,11 @@ function SlotEmpty({
   busy: boolean;
   onPick: () => void;
 }) {
+  const t = useT(M);
   return (
     <button type="button" className="slot-empty" onClick={onPick} disabled={busy}>
       <Icon name={busy ? "clock" : "upload"} />
-      <span>{busy ? "Uploading" : label}</span>
+      <span>{busy ? t("uploading") : label}</span>
       {hint ? <span className="slot-hint">{hint}</span> : null}
     </button>
   );

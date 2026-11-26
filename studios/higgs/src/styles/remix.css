@@ -110,3 +110,10 @@
     min-height: 130px;
   }
 }
+
+.remix-modes a { min-width: 0; min-height: 32px; overflow-wrap: anywhere; }
+.workflow-input, .workflow-step, .workflow-card { min-width: 0; overflow-wrap: anywhere; }
+.workflow-steps[aria-label] .workflow-step { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.workflow-steps[aria-label] .workflow-step > :last-child { margin-left: auto; text-align: right; color: var(--text); }
+.remix-clip-label { right: 0; left: 0; bottom: 0; padding: 8px 12px; background: rgba(0, 0, 0, .8); color: #fff; overflow-wrap: anywhere; }
+.remix-clip:focus-visible, .remix-modes a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }

@@ -46,13 +46,20 @@
 }
 @media (max-width: 760px) {
   .assets-filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
     padding-bottom: 6px;
   }
   .assets-tabs,
   .assets-model,
   .assets-density {
-    flex: none;
+    flex: 0 1 auto;
+    min-width: 0;
   }
+}
+
+.assets-tabs {
+  flex-wrap: wrap;
+}
+.assets-page .empty {
+  overflow-wrap: anywhere;
 }

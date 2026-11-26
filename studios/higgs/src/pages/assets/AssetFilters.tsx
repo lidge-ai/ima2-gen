@@ -1,10 +1,11 @@
+import { useT } from "../../i18n.ts";
+import { M } from "./messages.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
 import type { Tab } from "./AssetsPage.tsx";
 
 const tabs: readonly Tab[] = ["all", "images", "videos", "audio", "saved"];
-const labels: Record<Tab, string> = { all: "All", images: "Images", videos: "Videos", audio: "Audio", saved: "Saved" };
 
 function ModelFilter({
   model,
@@ -15,6 +16,7 @@ function ModelFilter({
   setModel: (value: string) => void;
   models: readonly string[];
 }) {
+  const t = useT(M);
   const catalog = useStudio((state) => state.catalog);
   const options = models.map((id) => {
     const entry = catalog?.models.find((item) => item.id === id);
@@ -31,11 +33,11 @@ function ModelFilter({
   return (
     <div className="assets-model">
       <SettingTile
-        caption="Filter by model"
-        accessibleLabel="Filter by model"
+        caption={t("filterModel")}
+        accessibleLabel={t("filterModel")}
         value={model}
         onChange={setModel}
-        options={[{ value: "", label: "All models" }, ...options]}
+        options={[{ value: "", label: t("allModels") }, ...options]}
       />
     </div>
   );
@@ -56,17 +58,18 @@ export function AssetFilters({
   density: string;
   setDensity: (value: "comfortable" | "compact") => void;
 }) {
+  const t = useT(M);
   return (
     <div className="assets-filters">
-      <nav className="tabs assets-tabs" aria-label="Asset filters">
+      <nav className="tabs assets-tabs" aria-label={t("filters")}>
         {tabs.map((value) => (
           <a key={value} className="tab" href={"#/assets/" + value} aria-current={tab === value ? "page" : undefined}>
-            {labels[value]}
+            {t(value)}
           </a>
         ))}
       </nav>
       <ModelFilter model={model} setModel={setModel} models={models} />
-      <div className="assets-density" role="group" aria-label="Grid density">
+      <div className="assets-density" role="group" aria-label={t("density")}>
         {(["comfortable", "compact"] as const).map((value) => (
           <button
             key={value}
@@ -75,7 +78,7 @@ export function AssetFilters({
             aria-pressed={density === value}
             onClick={() => setDensity(value)}
           >
-            {value === "comfortable" ? "Comfortable" : "Compact"}
+            {t(value)}
           </button>
         ))}
       </div>

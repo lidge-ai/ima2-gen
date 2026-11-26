@@ -1,3 +1,5 @@
+import { useT } from "../../i18n.ts";
+import { M } from "./messages.ts";
 import { useEffect, useState } from "react";
 import type { Catalog, KeyStatus } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
@@ -31,21 +33,24 @@ function ProviderGroups({
   statuses,
   query,
   focus,
+  clearSearch,
 }: {
   catalog: Catalog;
   statuses: readonly KeyStatus[];
   query: string;
   focus?: string;
+  clearSearch: () => void;
 }) {
+  const t = useT(M);
   const providers = catalog.providers.filter((p) => (p.label + " " + p.id).toLowerCase().includes(query.toLowerCase()));
   return (
     <>
-      {!providers.length ? <p>No providers match your search.</p> : null}
+      {!providers.length ? <div><p>{t("noMatch")}</p><button className="btn" type="button" onClick={clearSearch}>{t("clearSearch")}</button></div> : null}
       {(["direct", "aggregator"] as const).map((route) => {
         const group = providers.filter((provider) => provider.route === route);
         return group.length ? (
           <section className="key-group" key={route}>
-            <h2>{route === "direct" ? "Direct from the model maker" : "Aggregators"}</h2>
+            <h2>{t(route === "direct" ? "direct" : "aggregators")}</h2>
             {group.map((provider) => (
               <ProviderRow
                 key={provider.id}
@@ -63,13 +68,14 @@ function ProviderGroups({
 }
 
 function KeysError({ error, retry }: { error: string; retry: () => void }) {
+  const t = useT(M);
   return (
     <main className="page-pad">
-      <h1>API keys</h1>
+      <h1>{t("title")}</h1>
       <div role="alert">
-        Could not load providers: {error}{" "}
+        {t("loadError", { error })}{" "}
         <button className="btn" onClick={retry}>
-          Retry
+          {t("retry")}
         </button>
       </div>
     </main>
@@ -77,6 +83,7 @@ function KeysError({ error, retry }: { error: string; retry: () => void }) {
 }
 
 export function KeysPage({ focus }: { focus?: string }) {
+  const t = useT(M);
   const studio = useStudioApi();
   const catalog = useStudio((s) => s.catalog);
   const catalogError = useStudio((s) => s.catalogError);
@@ -97,20 +104,20 @@ export function KeysPage({ focus }: { focus?: string }) {
   if (!catalog || !initialKeys)
     return (
       <main className="page-pad">
-        <h1>API keys</h1>
-        <p role="status">Loading providers</p>
+        <h1>{t("title")}</h1>
+        <p role="status">{t("loading")}</p>
       </main>
     );
   return (
     <main className="page-pad keys-page">
       <header className="page-head">
         <div>
-          <h1>API keys</h1>
-          <p>Add keys to use models from your providers.</p>
+          <h1>{t("title")}</h1>
+          <p>{t("intro")}</p>
         </div>
         <label>
-          Search providers{" "}
-          <input type="search" aria-label="Search providers" value={query} onChange={(e) => setQuery(e.target.value)} />
+          {t("search")}{" "}
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
       </header>
       <ProviderGroups
@@ -118,6 +125,7 @@ export function KeysPage({ focus }: { focus?: string }) {
         statuses={storeKeys.length ? storeKeys : initialKeys}
         query={query}
         focus={focus}
+        clearSearch={() => setQuery("")}
       />
     </main>
   );
