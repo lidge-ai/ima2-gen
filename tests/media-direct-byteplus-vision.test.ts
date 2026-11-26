@@ -87,6 +87,8 @@ test('validates keys with signed result lookup and distinguishes auth from servi
     [{ ResponseMetadata: { Error: { Code: 'InvalidCredential' } } }, 400, false],
     [{ code: 50215 }, 403, false],
     [{ code: 50500 }, 500, false],
+    [{ code: 50500 }, 200, false],
+    [{ code: 50429 }, 200, false],
   ] as const) {
     const ctx = context(async (url, init) => {
       assert.equal(String(url), 'https://cv.byteplusapi.com/?Action=CVGetResult&Version=2024-06-06');
@@ -99,13 +101,16 @@ test('validates keys with signed result lookup and distinguishes auth from servi
 });
 
 test('official OpenAPI signing vector uses the provider signer', async () => {
-  const { signatureFromSigningKey, canonicalRequest } = await import('../lib/providers/media/direct/byteplus-vision/signature.js');
+  const { signatureFromSigningKey, canonicalRequest, deriveSigningKey } = await import('../lib/providers/media/direct/byteplus-vision/signature.js');
   const payload = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
   const canonical = canonicalRequest('GET', '/', 'Action=ListUsers&Limit=10&Offset=0&Version=2018-01-01', 'application/x-www-form-urlencoded; charset=utf-8', 'iam.byteplusapi.com', payload, '20201230T081805Z');
   const { createHash } = await import('node:crypto');
   assert.equal(createHash('sha256').update(canonical).digest('hex'), '4809ff4a3260bb6714f750191275cfcf0c16466951fcfd99187e69644b6ae020');
-  const signature = signatureFromSigningKey(Buffer.from('e7d2eb478084eaaaf8f85c161de16f13d97e52e77bd0415f33e7feb561cccffd', 'hex'), '20201230T081805Z', '20201230/ap-singapore-1/iam/request', canonical);
-  assert.equal(signature, '28eeabbbd726b87002e0fe58ad8c1c768e619b06e2646f35b6ad7ed029a6d8a7');
+  const secret = 'TnpCak5XWXpZV1U0WkRaaE5ERmxaR0ZpTmpjeVkyUXlZek0wTWpJMU1qWQ=='; // BytePlus RTC public demo credential
+  const key = deriveSigningKey(secret, '20201230', 'ap-singapore-1', 'rtc');
+  assert.equal(key.toString('hex'), 'aa6c033b312f2984f152589a7b015852909f850a150ba517ae8dea394126af08');
+  const signature = signatureFromSigningKey(key, '20201230T081805Z', '20201230/ap-singapore-1/rtc/request', '347e7f5324998a2c7984370c3c50dc75bf9e6b449ea498a6bf8864d94cbd84b9');
+  assert.equal(signature, '0d7e689b7d7949fa8b0132f5718b8f3b0d25cf7ea6c46eea33d91efd79f1e973');
 });
 
 test('OmniHuman 2 uses its own wire protocol and resumable req_key', async () => {
