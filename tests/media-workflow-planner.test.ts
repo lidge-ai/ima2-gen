@@ -54,3 +54,16 @@ test("planText turns upstream failures and non-JSON text into coded workflow err
     await assert.rejects(planText(request, new AbortController().signal), { code: "WORKFLOW_PLANNER_INVALID" });
   });
 });
+
+test("planText sends images as input_image parts after the user text (Remix captions)", async () => {
+  await withProxy(() => ({ status: 200, body: JSON.stringify({ output_text: '{"motion":"drifts"}' }) }), async (url, seen) => {
+    const planText = createOAuthPlanText({ oauthUrl: url, oauthTransport: "proxy", config: config as never });
+    const out = await planText({ ...request, purpose: "remix-caption", images: [{ mimeType: "image/png", bytes: new Uint8Array([1, 2, 3]) }] }, new AbortController().signal);
+    assert.deepEqual(out, { motion: "drifts" });
+    const input = seen[0]!.input as { role: string; content: unknown }[];
+    assert.deepEqual(input[1]!.content, [
+      { type: "input_text", text: request.user },
+      { type: "input_image", image_url: "data:image/png;base64,AQID" },
+    ]);
+  });
+});

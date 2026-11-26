@@ -15,8 +15,13 @@ const { createSessionRoutes } = await import("../lib/providers/media/sessionRout
 const { getMediaRegistry } = await import("../lib/providers/media/registry.ts");
 const { WORKFLOWS } = await import("../lib/workflows/index.ts");
 const { registerHistoryRoutes } = await import("../routes/history.ts");
+const { closeDb } = await import("../lib/db.ts");
 
-test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
+// GET /api/history opens <config>/sessions.db; close it before removing the folder (Windows EBUSY).
+test.after(async () => {
+  closeDb();
+  await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
 
 const ctx = { rootDir: isolatedConfigDir, oauthUrl: "http://127.0.0.1:9", config } as never;
 

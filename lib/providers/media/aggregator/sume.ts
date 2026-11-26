@@ -76,10 +76,22 @@ function resolve(request: MediaSubmitRequest): { route: "video" | "image"; wire:
   return { ...routed, kind: routed.route === "image" ? "image" : "video" };
 }
 
+/**
+ * Sume's image router takes every input image in one ordered image_urls list. An edit sends the
+ * image to change first and its references after it, so both roles share that field in that order.
+ */
+function imageOrder(request: MediaSubmitRequest): MediaSubmitRequest {
+  const sources = request.inputs.filter((i) => i.role === "source-image");
+  if (sources.length === 0) return request;
+  const refs = request.inputs.filter((i) => i.role === "reference-image");
+  const rest = request.inputs.filter((i) => i.role !== "source-image" && i.role !== "reference-image");
+  return { ...request, inputs: [...[...sources, ...refs].map((i) => ({ ...i, role: "reference-image" as const })), ...rest] };
+}
+
 async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Promise<MediaJobRef> {
   const { route, wire, kind } = resolve(request);
   const schema: EndpointSchema = { endpoint: wire, task: request.task, required: [], fields: route === "image" ? IMAGE_FIELDS : VIDEO_FIELDS };
-  const body = { model: wire, ...buildSchemaBody(PREFIX, schema, request) };
+  const body = { model: wire, ...buildSchemaBody(PREFIX, schema, route === "image" ? imageOrder(request) : request) };
   const res = asRecord(await requestJson(ctx, {
     url: joinUrl(base(ctx), `/v1/${route}-router/generate`),
     // One key per submit: a transport retry of this same call is deduplicated by Sume.

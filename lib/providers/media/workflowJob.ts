@@ -32,7 +32,7 @@ function publicArtifact(a: WorkflowArtifact) {
 
 /** Bus events for L6 engine events. File paths stay on the server. */
 function forward(emit: ReturnType<typeof emitter>, workflowId: string, e: WorkflowEvent): void {
-  if (e.type === "workflow.planned") emit("planned", { workflow: workflowId, estimate: e.estimate, steps: e.steps });
+  if (e.type === "workflow.planned") emit("planned", { workflow: workflowId, estimate: e.estimate, steps: e.steps, notes: e.notes });
   else if (e.type === "step.started") emit("step", { stepId: e.stepId, status: "started" });
   else if (e.type === "step.progress") emit("progress", { stepId: e.stepId, status: e.state, progress: e.progress ?? null });
   else if (e.type === "step.artifact") emit("step", { stepId: e.stepId, status: "artifact", artifact: publicArtifact(e.artifact) });

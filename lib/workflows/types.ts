@@ -15,6 +15,7 @@ import type {
 export type WorkflowId =
   | "remix-motion-transfer" | "remix-object-swap" | "remix-restyle"
   | "remix-motion-transfer-subscription" | "remix-object-swap-subscription" | "remix-restyle-subscription"
+  | "remix-motion-transfer-open" | "remix-object-swap-open" | "remix-restyle-open"
   | "director-studio" | "director-cast" | "director-locations" | "director-cinema";
 
 /* ---------- Input schema: rendered by any UI, validated by the server ---------- */
@@ -74,15 +75,37 @@ export interface ModelSlot {
   tierModels?: Readonly<Record<string, string>>;
   /** Adapter id used when the user pins none, e.g. a subscription route. */
   defaultRoute?: string;
+  /** The workflow still runs without this step; when no listed model can run, the step is left out and a note says what it needs. */
+  optional?: boolean;
   /** Why this model fits, with the evidence source; shown to users and reviewers. */
   rationale: string;
 }
 
 export interface WorkflowSelection {
+  /** A named combination from WorkflowDefinition.combos; explicit models/routes override it per slot. */
+  combo?: string;
   /** slot name -> model id (must be defaultModel or an alternative). */
   models?: Readonly<Record<string, string>>;
   /** slot name -> adapter id the user pinned. Absent: the gateway's route policy decides. */
   routes?: Readonly<Record<string, string>>;
+}
+
+/** A named, tested model and route set for a workflow's slots (e.g. "byteplus only", "subscriptions only"). */
+export interface WorkflowCombo {
+  id: string;
+  label: string;
+  models: Readonly<Record<string, string>>;
+  routes?: Readonly<Record<string, string>>;
+  /** What this combination gives up or needs, shown next to it. */
+  note?: string;
+}
+
+/** Something the plan could not include, or a choice it made, that the UI should show before a run. */
+export interface PlanNote {
+  slot?: string;
+  stepId?: string;
+  kind: "skipped" | "needs-key" | "fallback" | "info";
+  message: string;
 }
 
 export interface WorkflowRequest {
@@ -186,10 +209,15 @@ export type WorkflowStep = MediaStep | LocalStep | TextStep;
 export interface WorkflowPlan {
   workflowId: WorkflowId;
   steps: readonly WorkflowStep[];
+  notes?: readonly PlanNote[];
 }
 
 export interface PlanEnv {
   catalog(modelId: string): MediaModelSpec | undefined;
+  /** Whether a model can run now on a keyed or signed-in route. Absent: assume yes. */
+  canRun?(modelId: string, route: string | undefined): boolean;
+  /** Whether the gateway offers planText (captions, shot plans). */
+  canPlanText?: boolean;
 }
 
 export interface WorkflowDefinition {
@@ -200,6 +228,8 @@ export interface WorkflowDefinition {
   equivalents: readonly string[];
   /** Set on variants that trade quality for running on particular accounts (e.g. subscriptions only). */
   preset?: WorkflowPreset;
+  /** Named model/route combinations the UI can offer as one choice. */
+  combos?: readonly WorkflowCombo[];
   fields: readonly WorkflowField[];
   slots: readonly ModelSlot[];
   /** An enum field whose value picks ModelSlot.tierModels defaults. */
@@ -240,6 +270,8 @@ export interface TextPlanRequest {
   purpose: string;
   system: string;
   user: string;
+  /** Images for a vision-capable planner (captions of source frames), in order. */
+  images?: readonly { mimeType: string; bytes: Uint8Array }[];
 }
 
 export interface WorkflowGateway {
@@ -252,6 +284,8 @@ export interface WorkflowGateway {
   fetch: typeof fetch;
   /** JSON-returning text model call (shot planning). Absent: steps that need it fail with a coded error. */
   planText?(request: TextPlanRequest, signal: AbortSignal): Promise<unknown>;
+  /** Whether a model can run now (a saved key or a session route). Absent: every listed model counts as runnable. */
+  canRun?(modelId: string, route: string | undefined): boolean;
 }
 
 export interface ProbeResult {
@@ -270,12 +304,14 @@ export interface WorkflowLocalOps {
   concat(paths: readonly string[], outPath: string, signal: AbortSignal): Promise<void>;
   /** Cuts [startSec, startSec + durationSec) into a new MP4 (re-encoded, video only, frame-accurate). */
   cut(videoPath: string, startSec: number, durationSec: number, outPath: string, signal: AbortSignal): Promise<void>;
+  /** Shot-cut times in seconds (scene score above threshold, 0-1). Empty for a single shot. */
+  scenes(videoPath: string, threshold: number, signal: AbortSignal): Promise<number[]>;
 }
 
 /* ---------- Events and results ---------- */
 
 export type WorkflowEvent =
-  | { type: "workflow.planned"; runId: string; workflowId: WorkflowId; estimate: WorkflowEstimate; steps: readonly StepSummary[] }
+  | { type: "workflow.planned"; runId: string; workflowId: WorkflowId; estimate: WorkflowEstimate; steps: readonly StepSummary[]; notes: readonly PlanNote[] }
   | { type: "step.started"; runId: string; stepId: string }
   | { type: "step.progress"; runId: string; stepId: string; state: "queued" | "running"; progress?: number }
   | { type: "step.artifact"; runId: string; stepId: string; artifact: WorkflowArtifact }

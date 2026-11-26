@@ -49,6 +49,12 @@ function secretsOf(adapter: MediaProviderAdapter, ctx: Omit<MediaAdapterContext,
 }
 
 async function prepareInput(adapter: MediaProviderAdapter, ctx: MediaAdapterContext, gateway: WorkflowGateway, input: MediaInput): Promise<MediaInput> {
+  // Video inputs travel by URL when a publisher exists: several inline adapters (BytePlus Seedance) take
+  // no inline video, and a URL keeps multi-MB clips out of JSON bodies. Upload adapters keep their own path.
+  if (input.bytes && input.mimeType.startsWith("video/") && adapter.inputTransport !== "upload" && gateway.publishInput) {
+    const { url } = await gateway.publishInput(input, ctx.signal ?? new AbortController().signal);
+    return { role: input.role, mimeType: input.mimeType, url };
+  }
   if (adapter.inputTransport === "inline") {
     if (input.bytes || !input.url) return input;
     const res = await gateway.fetch(input.url, ctx.signal ? { signal: ctx.signal } : {});
