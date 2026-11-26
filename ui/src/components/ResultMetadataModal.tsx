@@ -163,9 +163,6 @@ export function ResultMetadataModal({
   const providerFields: Field[] = [];
   addField(providerFields, t("metadata.fields.provider"), provider, { compact: true });
   addField(providerFields, t("metadata.fields.model"), item.model, { compact: true });
-  if (isMediaResult(item) && (item.route === "direct" || item.route === "aggregator")) {
-    addField(providerFields, t("metadata.fields.mediaRoute"), t(item.route === "direct" ? "mediaPicker.direct" : "mediaPicker.aggregator"), { compact: true });
-  }
   addField(providerFields, t("metadata.fields.providerUrl"), item.providerUrl, {
     copyValue: item.providerUrl ?? undefined,
   });
@@ -183,6 +180,9 @@ export function ResultMetadataModal({
   addField(settingsFields, t("metadata.fields.promptMode"), item.promptMode, { compact: true });
   addField(settingsFields, t("metadata.fields.kind"), item.kind, { compact: true });
   addField(settingsFields, t("metadata.fields.mediaType"), item.mediaType, { compact: true });
+  if (isMediaResult(item) && (item.route === "direct" || item.route === "aggregator")) {
+    addField(settingsFields, t("metadata.fields.mediaRoute"), t(item.route === "direct" ? "mediaPicker.direct" : "mediaPicker.aggregator"), { compact: true });
+  }
   if (isMediaResult(item) && item.media) {
     const made = item.media;
     addField(settingsFields, t("mediaPicker.task"), made.task && isClassicTask(made.task) ? t(`mediaPicker.tasks.${made.task}`) : made.task, { compact: true });
