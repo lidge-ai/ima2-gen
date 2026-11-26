@@ -126,3 +126,8 @@ test("transport failures redact the key before normalization", async () => {
     return true;
   });
 });
+test("catalog labels are readable names", () => {
+  const labels = new Map(adapter.listModels().map((m) => [m.id, m.label]));
+  assert.equal(labels.get("recraft/recraft-v4.1-pro-vector"), "Recraft V4.1 Pro Vector");
+  assert.equal(labels.get("recraft/recraft-crisp-upscale"), "Recraft Crisp Upscale");
+});
