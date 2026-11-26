@@ -157,7 +157,7 @@ function costText(item: ShowcaseItem, t: (key: keyof typeof M.en, vars?: Record<
   return t("cost", { usd: "$" + usd.toFixed(2) });
 }
 
-function Tile({ item }: { item: ShowcaseItem }) {
+function Tile({ item, hide = "" }: { item: ShowcaseItem; hide?: string }) {
   const t = useT(M);
   const locale = useLocale();
   const workflows = useStudio((s) => s.workflows);
@@ -190,7 +190,7 @@ function Tile({ item }: { item: ShowcaseItem }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [pointer]);
-  const cls = ["showcase-tile", open ? "is-open" : "", quiet ? "is-quiet" : "", compare ? "is-comparing" : ""].filter(Boolean).join(" ");
+  const cls = ["showcase-tile", hide, open ? "is-open" : "", quiet ? "is-quiet" : "", compare ? "is-comparing" : ""].filter(Boolean).join(" ");
   return (
     <article
       className={cls}
@@ -277,6 +277,15 @@ function Tile({ item }: { item: ShowcaseItem }) {
   );
 }
 
+/**
+ * Classes that hide a tile where it would start a partial last row at that width (4, 3 or 2
+ * columns; at most two rows on tablets, three on phones). Fewer clips than one row all show.
+ */
+function rowCuts(count: number, index: number): string {
+  const keep = (cols: number, max: number) => (count < cols ? count : Math.floor(Math.min(count, max) / cols) * cols);
+  return [index >= keep(4, 8) ? "hide-4" : "", index >= keep(3, 6) ? "hide-3" : "", index >= keep(2, 6) ? "hide-2" : ""].filter(Boolean).join(" ");
+}
+
 /** Showcase grid; renders nothing when the server has no showcase items. With a limit, links to the full gallery. */
 export function Showcase({ heading = true, limit }: { heading?: boolean; limit?: number }) {
   const t = useT(M);
@@ -291,16 +300,16 @@ export function Showcase({ heading = true, limit }: { heading?: boolean; limit?:
             <h2 id="showcase-title">{t("title")}</h2>
             <p className="muted">{t("lead")}</p>
           </div>
-          {items.length < all.length ? (
+          {limit && all.length > 3 ? (
             <a className="muted-link" href={href("remix")}>
               {t("all", { count: all.length })} <Icon name="arrowRight" size={13} />
             </a>
           ) : null}
         </div>
       ) : null}
-      <div className={"showcase-grid" + (items.length <= 2 ? " is-few" : "")}>
-        {items.map((item) => (
-          <Tile key={item.id} item={item} />
+      <div className={"showcase-grid" + (items.length <= 2 ? " is-few" : "") + (limit ? " is-capped" : "")}>
+        {items.map((item, index) => (
+          <Tile key={item.id} item={item} hide={limit ? rowCuts(items.length, index) : ""} />
         ))}
       </div>
     </section>

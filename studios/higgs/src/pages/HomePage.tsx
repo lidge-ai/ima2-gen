@@ -1,6 +1,6 @@
 import { messages, useT } from "../i18n.ts";
 import { useReducedMotion } from "../ui/MediaView.tsx";
-import { PRESETS } from "../data/presets.ts";
+import { PRESETS, posterOf } from "../data/presets.ts";
 import { href } from "../router.ts";
 import { useStudio } from "../studio/context.tsx";
 import { Feed } from "../ui/Feed.tsx";
@@ -136,7 +136,7 @@ function PresetRail() {
       <div className="rail">
         {presets.map((p) => (
           <a key={p.id} className="rail-card" href={href("video", { preset: p.id })}>
-            <video key={String(reduce)} src={p.sample} muted loop={!reduce} autoPlay={!reduce} playsInline aria-hidden />
+            <video key={String(reduce)} src={p.sample} poster={posterOf(p.sample)} preload="metadata" muted loop={!reduce} autoPlay={!reduce} playsInline aria-hidden />
             <span>{p.label}</span>
           </a>
         ))}

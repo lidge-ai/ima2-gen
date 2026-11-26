@@ -66,7 +66,7 @@ test("on a shared web server, an unpriced step is named before Generate, and a r
   );
   await page.goto("/#/remix/remix-restyle");
   const generate = page.getByRole("button", { name: /^Generate/ });
-  await expect(page.getByText("This shared server runs only priced steps. No published price: Restyle the first frame.")).toBeVisible();
+  await expect(page.getByText("This shared server runs only priced steps. No published price: “Restyle the first frame”.")).toBeVisible();
   await expect(generate).toBeDisabled();
   // Priced again (another style), the button opens; if the server still refuses, its reason is shown as sent.
   unpriced = false;

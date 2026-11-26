@@ -22,7 +22,8 @@ const usd = (value: number) => formatUsd({ usd: value, basis: "exact" });
  */
 export function spendBlock(spend: WebSpend | null, steps: readonly { label: string; usd: number | null }[], total: number | null): string | null {
   if (!spend) return null;
-  const unpriced = steps.filter((s) => s.usd === null).map((s) => s.label);
+  // Step names come from the server, often in English; quotes keep them apart from the sentence.
+  const unpriced = steps.filter((s) => s.usd === null).map((s) => "“" + s.label + "”");
   if (unpriced.length || total === null) return tr(M, "unpriced", { steps: unpriced.join(", ") || "-" });
   if (total > spend.requestCapUsd) return tr(M, "overRequest", { usd: usd(total), cap: usd(spend.requestCapUsd) });
   if (spend.spentUsd + total > spend.dailyCapUsd) return tr(M, "overDaily", { left: usd(Math.max(0, spend.dailyCapUsd - spend.spentUsd)), usd: usd(total) });

@@ -166,3 +166,18 @@ test("clip details stay out of the way: hover, keyboard focus or a tap opens the
   await expect(tile.getByRole("link", { name: "BytePlus ModelArk" })).toBeFocused();
   await expect.poll(height).toBeGreaterThan(40);
 });
+
+test("Home ends the showcase on a full row: 4 x 2 on desktops, 3 x 2 on tablets", async ({ page }) => {
+  const items = Array.from({ length: 10 }, (_, i) => ({ id: "row-" + i, title: { en: "Row " + i }, workflow: "remix-object-swap", result: "/generated/showcase-swap-result.mp4", models: [], keys: [], estimate: { usd: 0.5 } }));
+  await page.route("**/api/showcase", (route) => route.fulfill({ json: { items } }));
+  await page.goto("/#/");
+  const showcase = page.getByRole("region", { name: "Made with ima2" });
+  await expect(showcase.getByRole("article")).toHaveCount(8);
+  const tops = async () => showcase.getByRole("article").evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+  const rows = (values: number[]) => [...new Set(values)].map((top) => values.filter((v) => v === top).length);
+  expect(rows(await tops())).toEqual([4, 4]);
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await expect(showcase.getByRole("article")).toHaveCount(6);
+  expect(rows(await tops())).toEqual([3, 3]);
+  await expect(showcase.getByRole("link", { name: "All 10 clips" })).toBeVisible();
+});

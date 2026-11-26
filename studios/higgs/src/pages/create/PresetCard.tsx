@@ -1,6 +1,6 @@
 import { messages, useT } from "../../i18n.ts";
 import { presetText } from "./defaults.ts";
-import type { Preset } from "../../data/presets.ts";
+import { posterOf, type Preset } from "../../data/presets.ts";
 import { Icon } from "../../ui/Icon.tsx";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
 
@@ -32,7 +32,7 @@ export function PresetCard({ preset, modelLabel, vendor, onChange }: Props) {
     <div className="preset-feature">
       {preset ? (
         preset.sampleKind === "video" ? (
-          <video className="preset-feature-media" src={preset.sample} muted loop autoPlay playsInline aria-hidden />
+          <video className="preset-feature-media" src={preset.sample} poster={posterOf(preset.sample)} preload="metadata" muted loop autoPlay playsInline aria-hidden />
         ) : (
           <img className="preset-feature-media" src={preset.sample} alt="" />
         )
