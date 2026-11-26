@@ -1,0 +1,21 @@
+{
+  "name": "@ima2/studio-kit",
+  "private": true,
+  "version": "0.1.0",
+  "description": "UI-agnostic typed client and development fake server for ima2 studios.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fake": "./src/fake/server.ts"
+  },
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "fake": "node src/fake/cli.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.9",
+    "typescript": "^5.9.3"
+  }
+}

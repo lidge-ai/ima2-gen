@@ -1,0 +1,41 @@
+.app { min-height: 100%; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 30; height: var(--topbar-h); display: flex; align-items: center; gap: 18px;
+  padding: 0 14px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .logo { color: var(--text); }
+.brand { display: inline-flex; align-items: center; text-decoration: none; }
+.nav { display: flex; gap: 2px; align-items: center; }
+.nav a {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: var(--radius-s);
+  color: var(--text-muted); text-decoration: none; font-weight: 560;
+}
+.nav a:hover { color: var(--text); }
+.nav a[aria-current="page"] { color: var(--text); background: var(--surface-2); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.stream-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); }
+.stream-dot.is-open { background: var(--green); }
+.stream-dot.is-reconnecting { background: var(--amber); }
+.key-count { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+
+.page { flex: 1; min-height: 0; }
+.bottombar { display: none; }
+
+@media (max-width: 760px) {
+  .nav { display: none; }
+  .bottombar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr);
+    align-items: end; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+  }
+  .bottombar a {
+    display: grid; justify-items: center; gap: 2px; padding: 6px 0; color: var(--text-muted); text-decoration: none; font-size: 11px; font-weight: 560;
+  }
+  .bottombar a[aria-current="page"] { color: var(--text); }
+  .bottombar a.bottom-create { color: var(--primary-ink); }
+  .bottombar a.bottom-create span.create-pill {
+    display: grid; place-items: center; width: 56px; height: 40px; border-radius: 14px; background: var(--primary);
+  }
+  .page { padding-bottom: 72px; }
+}
