@@ -13,7 +13,8 @@ import { remixMotionTransferSubscription, remixObjectSwapSubscription } from "./
 import { remixRestyleSubscription } from "./definitions/remixRestyleSubscription.js";
 import { remixMotionTransferOpen, remixObjectSwapOpen, remixRestyleOpen } from "./definitions/open/remixOpen.js";
 import { slotModelAvailable } from "./validate.js";
-import type { ModelSlot, WorkflowCombo, WorkflowDefinition, WorkflowField, WorkflowId, WorkflowGateway, WorkflowPreset } from "./types.js";
+import { workflowI18n } from "./i18n/index.js";
+import type { ModelSlot, WorkflowCombo, WorkflowDefinition, WorkflowField, WorkflowId, WorkflowGateway, WorkflowPreset, WorkflowText } from "./types.js";
 
 export const WORKFLOWS: readonly WorkflowDefinition[] = [
   remixMotionTransfer, remixObjectSwap, remixRestyle,
@@ -44,6 +45,8 @@ export interface WorkflowDescription {
   tierField?: string;
   preset?: WorkflowPreset;
   combos?: readonly WorkflowCombo[];
+  /** Text by language (ko today); clients fall back to the English fields above. */
+  i18n: { ko: WorkflowText };
 }
 
 /** JSON-safe description for GET /api/workflows. Pass a gateway to mark which models have adapters. */
@@ -60,7 +63,7 @@ export function describeWorkflow(def: WorkflowDefinition, gateway?: Pick<Workflo
     })) };
   });
   const description: WorkflowDescription = {
-    id: def.id, label: def.label, description: def.description, equivalents: def.equivalents, fields: def.fields, slots,
+    id: def.id, label: def.label, description: def.description, equivalents: def.equivalents, fields: def.fields, slots, i18n: workflowI18n(def),
   };
   if (def.tierField) description.tierField = def.tierField;
   if (def.preset) description.preset = def.preset;

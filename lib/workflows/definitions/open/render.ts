@@ -4,6 +4,7 @@ import type { MediaStep, PlanEnv, ResolvedSlot, StepRuntime, WorkflowValues } fr
 import { sourceOf } from "../remixShared.js";
 import { refsOf, textOf } from "../shared.js";
 import { STYLE_PRESETS } from "../styles.js";
+import { videoTokenUnits } from "../../videoTokens.js";
 import { motionRenderPrompt, restyleRenderPrompt, swapRenderPrompt } from "./prompts.js";
 import { captionOf, renderSeconds, TEXT_ONLY_EDIT, userReferences, type FramePoint, type OpenMode, type RenderStrategy } from "./stages.js";
 
@@ -81,15 +82,22 @@ export function renderStep(spec: RenderSpec, env: PlanEnv): MediaStep {
   const sourceSec = sourceOf(values).durationSec ?? 0;
   const seconds = strategy === "pins" ? spec.pinDuration : renderSeconds(sourceSec, env.catalog(slot.model));
   const anchors = spec.hasSubject ? (strategy === "pins" ? spec.points.map((p) => "subject-" + p.id) : ["subject-first"]) : [];
+  const source = sourceOf(values);
+  // Models billed per token (BytePlus Seedance) get token units from the official formula; an edit's
+  // output follows the source length, and pinned frames send no video.
+  const tokens = videoTokenUnits(env.catalog(slot.model), {
+    resolution, inSec: strategy === "pins" ? 0 : sourceSec, outSec: strategy === "edit" ? sourceSec : seconds, width: source.width, height: source.height,
+  });
   const step: MediaStep = {
     id: "render", label: strategy === "edit" ? "Edit the source video" : strategy === "pins" ? "Regenerate between pinned frames" : "Render with the source as motion reference",
     kind: "media", slot: "render", model: slot.model, outputKind: "video",
     dependsOn: [...anchors, ...(spec.hasCaption ? ["caption"] : [])],
-    units: { unit: "second", quantity: seconds, variant: resolution + (sound === "model" ? "+audio" : "") },
+    units: tokens?.units ?? { unit: "second", quantity: seconds, variant: resolution + (sound === "model" ? "+audio" : "") },
+    ...(tokens ? { unitsApproximate: tokens.note } : {}),
     async build(rt) {
-      // Grok's video edit always returns sound and refuses a silent request (checkRenderFit keeps silent
-      // outputs away from it); the sound step replaces that sound with the source's.
-      const audio = sound === "model" ? true : TEXT_ONLY_EDIT.has(slot.model) ? undefined : false;
+      // Grok's video edit follows the source's sound and refuses any audio flag (checkRenderFit keeps
+      // silent outputs away from it); the sound step, when asked, replaces it with the source's.
+      const audio = TEXT_ONLY_EDIT.has(slot.model) ? undefined : sound === "model";
       if (strategy === "pins") {
         const { inputs, prompt, keyframes } = await pinInputs(rt, spec);
         return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, ...(audio === undefined ? {} : { audio }), inputs, vendorOptions: { keyframes } };

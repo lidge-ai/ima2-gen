@@ -26,6 +26,7 @@ export function renderHelp(pkg: { name: string; version: string }): string {
     gen <prompt>   Generate image(s) from prompt  (ima2 gen --help)
     video <prompt> Generate video via Grok        (ima2 video --help)
     media <sub>    Media catalog, jobs, workflows and studios (ima2 media --help)
+    mcp            Serve media tools over MCP stdio (ima2 mcp --help)
     edit <file>    Edit an existing image         (ima2 edit --help)
     ls             List recent history            (ima2 ls --help)
     show <name>    Show one history item          (ima2 show --help)

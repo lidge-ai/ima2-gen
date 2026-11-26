@@ -116,7 +116,25 @@ routes/
 | `lib/jobs/terminalStore.ts` | 79 | Terminal snapshot disk read/write/reap and per-ID admission cleanup; no inflight import |
 | `ui/src/lib/eventChannel.ts` | 239 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
-| `bin/ima2.ts` | 500 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/ima2.ts` | 499 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/commands/mcp.ts` | 58 | MCP stdio server and tool listing CLI |
+| `bin/lib/mediaApi.ts` | 214 | Media API client, job submission and output retrieval |
+| `bin/lib/mediaErrors.ts` | 52 | Media error conversion, redaction and MCP hints |
+| `bin/lib/mediaWait.ts` | 32 | Media event stream and job waiting |
+| `bin/lib/mcpServer.ts` | 132 | MCP server registration and dispatch |
+| `bin/lib/mcpMediaHandlers.ts` | 87 | Media MCP tool handlers and response projection |
+| `bin/lib/mcpWorkflowHandlers.ts` | 25 | Workflow MCP tool handlers |
+| `lib/providers/media/toolSchema.ts` | 171 | Media and workflow tool descriptors and schemas |
+| `lib/providers/media/estimate.ts` | 48 | Published media price estimates |
+| `routes/mediaTools.ts` | 47 | Media descriptors, estimates and workflow schema routes |
+| `bin/lib/media/catalogCmd.ts` | 14 | Catalog display |
+| `bin/lib/media/common.ts` | 74 | Shared media CLI inputs and options |
+| `bin/lib/media/jobCmd.ts` | 23 | Media job CLI actions |
+| `bin/lib/media/keysCmd.ts` | 58 | Media key CLI actions |
+| `bin/lib/media/progress.ts` | 18 | Media progress output |
+| `bin/lib/media/runCmd.ts` | 31 | Media job submission |
+| `bin/lib/media/studioCmd.ts` | 20 | Studio CLI actions |
+| `bin/lib/media/workflowCmd.ts` | 35 | Workflow CLI input parsing |
 | `bin/commands/gen.ts` | 445 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 181 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |

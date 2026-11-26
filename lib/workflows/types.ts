@@ -136,6 +136,8 @@ export interface StepEstimate {
   source?: string;
   checkedAt?: string;
   note?: string;
+  /** True when the number is an estimate (a formula from official unit prices, or the highest listed variant). */
+  approximate?: boolean;
 }
 
 export interface WorkflowEstimate {
@@ -143,6 +145,8 @@ export interface WorkflowEstimate {
   usd: number;
   /** False when any paid step has no public price. */
   complete: boolean;
+  /** True when any step's number is an estimate rather than a published per-unit price times a known quantity. */
+  approximate?: boolean;
   steps: readonly StepEstimate[];
 }
 
@@ -198,6 +202,8 @@ export interface MediaStep extends StepBase {
   route?: string;
   outputKind: MediaKind;
   units: CostUnits;
+  /** Set when units come from a formula rather than the request itself; the reason is shown with the estimate. */
+  unitsApproximate?: string;
   build(rt: StepRuntime): Promise<MediaSubmitRequest>;
 }
 export interface LocalStep extends StepBase {
@@ -223,12 +229,16 @@ export interface PlanEnv {
   canRun?(modelId: string, route: string | undefined): boolean;
   /** Whether the gateway offers planText (captions, shot plans). */
   canPlanText?: boolean;
+  /** Label of the subscription behind a session route (e.g. "ChatGPT subscription"); undefined for keyed routes. */
+  subscription?(route: string): string | undefined;
 }
 
 export interface WorkflowDefinition {
   id: WorkflowId;
   label: string;
   description: string;
+  /** Text in other languages. Korean is generated from lib/workflows/i18n/ko.ts; a definition may override parts here. */
+  i18n?: { ko?: WorkflowText };
   /** Public products this workflow matches in function (ids from Sume's public list). */
   equivalents: readonly string[];
   /** Set on variants that trade quality for running on particular accounts (e.g. subscriptions only). */
@@ -247,6 +257,20 @@ export interface WorkflowDefinition {
 export interface ResolvedSlot {
   model: string;
   route?: string;
+}
+
+/**
+ * One language's text for a workflow (GET /api/workflows i18n.<lang>). Every key is optional;
+ * clients fall back to the English fields. Keys follow the wire: field "help", option values,
+ * slot names, combo ids, preset route ids; preset losses align by index with preset.losses.
+ */
+export interface WorkflowText {
+  label?: string;
+  description?: string;
+  fields?: Record<string, { label?: string; help?: string; options?: Record<string, string> }>;
+  slots?: Record<string, string>;
+  preset?: { label?: string; requires?: Record<string, string>; losses?: (string | null)[]; billingNote?: string };
+  combos?: Record<string, { label?: string; note?: string }>;
 }
 
 /** What a preset variant needs and what it gives up, for the UI to show before a run. */
@@ -291,6 +315,8 @@ export interface WorkflowGateway {
   planText?(request: TextPlanRequest, signal: AbortSignal): Promise<unknown>;
   /** Whether a model can run now (a saved key or a session route). Absent: every listed model counts as runnable. */
   canRun?(modelId: string, route: string | undefined): boolean;
+  /** Label of the subscription behind a session route; undefined for keyed routes. */
+  subscription?(route: string): string | undefined;
 }
 
 export interface ProbeResult {
