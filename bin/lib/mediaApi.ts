@@ -9,7 +9,7 @@ import { openMediaSse, waitForJob, type WaitOptions } from "./mediaWait.js";
 export { waitForJob } from "./mediaWait.js";
 type Dict = Record<string, unknown>;
 type Input = Dict & { role?: string; path?: string };
-type Cursor = { before: string; beforeFilename: string };
+type Cursor = { before: string | number; beforeFilename: string };
 type Catalog = { adapters: Dict[]; models: (Dict & { routes: Dict[] })[] };
 type Filters = { kind?: string; vendor?: string; task?: string; model?: string; adapter?: string; keyed?: boolean; maxUsd?: number };
 async function call<T>(base: string, path: string, options?: RequestOptions, secrets: string[] = []): Promise<T> {
@@ -138,7 +138,7 @@ export async function history(base: string, options: { limit?: number; kind?: st
   let cursor = options.cursor;
   for (let page = 0; page < 10; page++) {
     const params = new URLSearchParams({ limit: "50", includeAudio: "true" });
-    if (cursor) { params.set("before", cursor.before); params.set("beforeFilename", cursor.beforeFilename); }
+    if (cursor) { params.set("before", String(cursor.before)); params.set("beforeFilename", cursor.beforeFilename); }
     const data = await call<{ items: Dict[]; nextCursor?: Cursor | null }>(base, `/api/history?${params}`);
     for (const item of data.items) if (typeof item.provider === "string" && /^(media|workflow):/.test(item.provider) && (!options.kind || item.mediaType === options.kind)) {
       items.push(item);
