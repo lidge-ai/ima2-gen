@@ -72,14 +72,19 @@ export function workflowValuesSchema(fields: readonly WorkflowField[]): ObjectSc
     fields.filter((field) => field.required).map((field) => field.name));
 }
 
+export function withClientMediaPaths(schema: ObjectSchema): ObjectSchema {
+  const properties = Object.fromEntries(Object.entries(schema.properties).map(([name, value]) => {
+    const field = value as Record<string, unknown>;
+    const items = field.items as InputSchema | undefined;
+    if (field.type !== "array" || !items || items.type !== "object" || !items.properties || !Array.isArray(items.oneOf)
+      || !items.properties.ref || !items.properties.filename || !items.properties.url) return [name, value];
+    return [name, { ...field, items: withClientPath(items) }];
+  }));
+  return { ...schema, properties };
+}
+
 function clientWorkflowValues(fields: readonly WorkflowField[]): ObjectSchema {
-  const schema = workflowValuesSchema(fields);
-  for (const field of fields) {
-    if (field.type === "media") schema.properties[field.name] = {
-      type: "array", minItems: field.min, maxItems: field.max, items: withClientPath(workflowMediaSchema()),
-    };
-  }
-  return schema;
+  return withClientMediaPaths(workflowValuesSchema(fields));
 }
 
 function mediaJobSchema(clientPath: boolean): ObjectSchema {
@@ -93,7 +98,9 @@ function mediaJobSchema(clientPath: boolean): ObjectSchema {
 }
 
 function output(properties: Record<string, object>): ObjectSchema {
-  return { type: "object", properties };
+  return { type: "object", properties: { ...properties, ok: { type: "boolean" }, code: string, error: string,
+    category: string, retryable: { type: "boolean" }, field: string, stepId: string, hint: string,
+    status: { type: ["string", "number"] } } };
 }
 
 type ToolMode = "read" | "local" | "billed" | "cancel";
@@ -105,9 +112,11 @@ function tool(name: string, title: string, description: string, inputSchema: Obj
   } };
 }
 
-const billedDescription = "BILLED: runs on the user's own provider key and is charged by that provider. Call media_estimate (or workflow_estimate) first. requestId is the job handle. Before submitting, ima2 checks whether it already knows this requestId (running, recent, or saved in history) and refuses it if so. The check is best-effort: it is not atomic with the submit and cannot see very old or pre-restart ids, so a retry can still create a second, separately billed job. Check media_job_status before retrying.";
+const billedDescription = "BILLED: runs on the user's own provider key and is charged by that provider. Call media_estimate (or workflow_estimate) first. requestId is the job handle. Before submitting, ima2 checks whether it already knows this requestId (running, recent, or saved in history) and refuses it if so. The check is best-effort: it is not atomic with the submit and cannot see very old or pre-restart ids, so a retry can still create a second, separately billed job. Check media_job_status before retrying. If you cancel after the job was submitted, it keeps running; check media_job_status with your requestId.";
 const estimateOutput = { model: string, adapter: string, usd: { type: ["number", "null"] }, prices: { type: "array" }, quantity: { type: ["number", "null"] }, unit: string, note: string, route: string, hasKey: { type: "boolean" } };
-const jobOutput = { requestId: string, model: string, adapter: string, status: string, outputs: { type: "array" } };
+const jobOutput = { requestId: string, jobId: string, model: string, adapter: string, outputs: { type: "array" },
+  filename: { type: ["string", "null"] }, url: { type: ["string", "null"] }, mediaType: { type: ["string", "null"] }, elapsed: { type: "number" } };
+const statusOutput = { job: { type: "object" }, pollAfterSeconds: { type: "number" }, timedOut: { type: "boolean" } };
 
 function catalogTools(): MediaToolDescriptor[] {
   const estimate = mediaJobSchema(false);
@@ -117,7 +126,7 @@ function catalogTools(): MediaToolDescriptor[] {
   submit.required = [...(submit.required ?? []), "requestId"];
   return [
     tool("media_catalog", "Media catalog", "List available media models and routes; maxUsd filters by the cheapest published price.", object({ kind, vendor: shortString, task, model: shortString, adapter: shortString, keyed: { type: "boolean" }, maxUsd: { type: "number" } }), { models: { type: "array" }, adapters: { type: "array" } }),
-    tool("media_keys_status", "Media keys status", "Inspect provider key availability.", object({}), { adapters: { type: "array" } }),
+    tool("media_keys_status", "Media keys status", "Inspect provider key availability.", object({}), { vocabularies: { type: "array" } }),
     tool("media_estimate", "Estimate media", "Informational: published price x quantity for the chosen route. usd is set only when one published price applies (or priceVariant names one); the provider's actual bill may differ.", estimate, estimateOutput),
     tool("media_submit", "Submit media", billedDescription, submit, jobOutput, "billed"),
   ];
@@ -126,12 +135,12 @@ function catalogTools(): MediaToolDescriptor[] {
 function jobTools(): MediaToolDescriptor[] {
   const cursor = object({ before: { type: "number" }, beforeFilename: string }, ["before", "beforeFilename"]);
   return [
-    tool("media_job_status", "Media job status", "Jobs stay listed while running and among the last 100 finished; saved outputs stay in history.", object({ requestId }, ["requestId"]), jobOutput),
-    tool("media_wait", "Wait for media", "Wait for a media job to finish or the timeout to elapse.", object({ requestId, timeoutSec: timeout(60) }, ["requestId"]), jobOutput),
-    tool("media_jobs", "Media jobs", "List media jobs.", object({ all: { type: "boolean" } }), { jobs: { type: "array" } }),
-    tool("media_cancel", "Cancel media", "Cancel a running media job.", object({ requestId }, ["requestId"]), jobOutput, "cancel"),
-    tool("media_result", "Media result", "Retrieve or save a media job's outputs.", object({ requestId, saveDir: string }, ["requestId"]), { requestId: string, outputs: { type: "array" } }, "local"),
-    tool("media_history", "Media history", "List saved media, continuing from the returned cursor when truncated.", object({ limit: timeout(50), kind, cursor }), { items: { type: "array" }, truncated: { type: "boolean" }, cursor }),
+    tool("media_job_status", "Media job status", "Jobs stay listed while running and among the last 100 finished; saved outputs stay in history.", object({ requestId }, ["requestId"]), statusOutput),
+    tool("media_wait", "Wait for media", "Wait for a media job to finish or the timeout to elapse.", object({ requestId, timeoutSec: timeout(60) }, ["requestId"]), statusOutput),
+    tool("media_jobs", "Media jobs", "List media jobs.", object({ all: { type: "boolean" } }), { jobs: { type: "array" }, terminalJobs: { type: "array" } }),
+    tool("media_cancel", "Cancel media", "Cancel a running media job.", object({ requestId }, ["requestId"]), { requestId: string, active: { type: "boolean" }, aborted: { type: "boolean" } }, "cancel"),
+    tool("media_result", "Media result", "Retrieve or save a media job's outputs.", object({ requestId, saveDir: string }, ["requestId"]), { requestId: string, outputs: { type: "array" }, paths: { type: "array", items: string } }, "local"),
+    tool("media_history", "Media history", "List saved media, continuing from the returned cursor when truncated.", object({ limit: timeout(50), kind, cursor }), { items: { type: "array" }, truncated: { type: "boolean" }, cursor: object({ before: { type: ["string", "number"] }, beforeFilename: string }) }),
   ];
 }
 
@@ -151,8 +160,8 @@ function workflowTools(workflows: readonly WorkflowSchemaSource[]): MediaToolDes
   return [
     tool("workflow_list", "List workflows", "List available workflows.", object({}), { workflows: { type: "array" } }),
     tool("workflow_schema", "Workflow schema", "Get a workflow's input schema.", object({ id }, ["id"]), { id: string, label: string, schema: { type: "object" } }),
-    tool("workflow_estimate", "Estimate workflow", "Prices each step from published prices. Runs a local media probe; calls no provider.", workflowArguments(workflows, false), { usd: { type: "number" }, complete: { type: "boolean" }, steps: { type: "array" } }, "local"),
-    tool("workflow_run", "Run workflow", `${billedDescription} Director text planning uses the signed-in GPT session.`, workflowArguments(workflows, true), jobOutput, "billed"),
+    tool("workflow_estimate", "Estimate workflow", "Prices each step from published prices. Runs a local media probe; calls no provider.", workflowArguments(workflows, false), { estimate: { type: "object" }, steps: { type: "array" } }, "local"),
+    tool("workflow_run", "Run workflow", `${billedDescription} Director text planning uses the signed-in GPT session.`, workflowArguments(workflows, true), { ...jobOutput, workflow: string, estimate: { type: "object" }, steps: { type: "array" } }, "billed"),
   ];
 }
 

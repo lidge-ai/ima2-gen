@@ -1,5 +1,5 @@
 import { messages, useT } from "../i18n.ts";
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { modelHasKey, type CatalogModel, type MediaKind } from "@ima2/studio-kit";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
@@ -10,10 +10,7 @@ const M = messages(
   {
     "audio": "Audio",
     "nonePrice": "No published price",
-    "key": "Key ready",
-    "noKey": "Needs key",
-    "filter": "Filter by maker",
-    "all": "All",
+        "all": "All",
     "search": "Search models",
     "models": "Models",
     "empty": "No model matches.",
@@ -21,14 +18,23 @@ const M = messages(
     "modelLabel": "Model: {model}",
     "model": "Model",
     "choose": "Choose a model",
+    "filters": "Show only",
+    "f_mine": "My keys",
+    "f_audio": "Sound",
+    "f_frames": "Start from an image",
+    "f_refs": "References",
+    "f_hd": "1080p or more",
+    "f_long": "10 s or longer",
+    "maker": "Maker",
+    "count": "{n} of {total}",
+    "recent": "Recent",
+    "ready": "Ready with your keys",
+    "needsKey": "Needs a key (add it after picking)",
   },
   {
     "audio": "오디오",
     "nonePrice": "공개 가격 없음",
-    "key": "키 사용 가능",
-    "noKey": "키 필요",
-    "filter": "제조사 필터",
-    "all": "전체",
+        "all": "전체",
     "search": "모델 검색",
     "models": "모델",
     "empty": "일치하는 모델이 없어요. 검색어나 필터를 바꿔 보세요.",
@@ -36,6 +42,18 @@ const M = messages(
     "modelLabel": "모델: {model}",
     "model": "모델",
     "choose": "모델 선택",
+    "filters": "이것만 보기",
+    "f_mine": "내 키로 되는 것",
+    "f_audio": "사운드",
+    "f_frames": "이미지로 시작",
+    "f_refs": "레퍼런스",
+    "f_hd": "1080p 이상",
+    "f_long": "10초 이상",
+    "maker": "제작사",
+    "count": "{total}개 중 {n}개",
+    "recent": "최근 사용",
+    "ready": "내 키로 바로 쓸 수 있어요",
+    "needsKey": "키가 필요해요 (고른 뒤 넣을 수 있어요)",
   },
 );
 
@@ -70,7 +88,6 @@ function specChips(model: CatalogModel): string[] {
 
 function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: boolean; onPick: () => void }) {
   const t = useT(M);
-  const keyed = modelHasKey(model);
   return (
     <li>
       <button type="button" className="model-row" aria-current={selected} onClick={onPick}>
@@ -93,7 +110,6 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
         </span>
         <span className="model-row-meta">
           <span className="model-row-price">{fromPrice(model.routes) ?? t("nonePrice")}</span>
-          <span className={"key-state " + (keyed ? "is-on" : "is-off")}>{t(keyed ? "key" : "noKey")}</span>
         </span>
         {selected ? <Icon name="check" size={16} /> : <span className="check-space" />}
       </button>
@@ -107,61 +123,119 @@ interface PanelProps {
   onPick: (modelId: string) => void;
 }
 
-function VendorFilter({
-  vendors,
-  vendor,
-  setVendor,
-}: {
-  vendors: readonly string[];
-  vendor: string | null;
-  setVendor: (v: string | null) => void;
-}) {
+type Feature = "mine" | "audio" | "frames" | "refs" | "hd" | "long";
+
+const FEATURES: readonly { id: Feature; test: (m: CatalogModel) => boolean }[] = [
+  { id: "mine", test: (m) => modelHasKey(m) },
+  { id: "audio", test: (m) => !!m.params.nativeAudio },
+  { id: "frames", test: (m) => m.tasks.includes("image-to-video") || m.tasks.includes("image-to-image") },
+  { id: "refs", test: (m) => m.tasks.includes("reference-to-video") },
+  { id: "hd", test: (m) => (m.params.resolutions ?? []).some((r) => /1080|1440|2k|4k/i.test(String(r))) },
+  { id: "long", test: (m) => Math.max(0, ...(m.params.durationsSec ?? [])) >= 10 },
+];
+
+const RECENT_KEY = "ima2.studio.recentModels";
+
+function recentIds(): string[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as unknown;
+    return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === "string").slice(0, 3) : [];
+  } catch {
+    return [];
+  }
+}
+
+function remember(id: string): void {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify([id, ...recentIds().filter((v) => v !== id)].slice(0, 3)));
+  } catch {
+    /* storage disabled */
+  }
+}
+
+function FeatureFilter({ models, on, toggle }: { models: readonly CatalogModel[]; on: readonly Feature[]; toggle: (f: Feature) => void }) {
   const t = useT(M);
+  const offered = FEATURES.filter((f) => models.some(f.test) && !models.every(f.test));
+  if (!offered.length) return null;
   return (
-    <div className="chip-row" role="group" aria-label={t("filter")}>
-      <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>
-        {t("all")}
-      </button>
-      {vendors.map((v) => (
-        <button
-          key={v}
-          type="button"
-          className="chip"
-          aria-pressed={vendor === v}
-          onClick={() => setVendor(vendor === v ? null : v)}
-        >
-          <VendorLogo id={v} size={18} withName />
+    <div className="chip-row picker-filters" role="group" aria-label={t("filters")}>
+      {offered.map((f) => (
+        <button key={f.id} type="button" className="chip" aria-pressed={on.includes(f.id)} onClick={() => toggle(f.id)}>
+          {t(("f_" + f.id) as "f_mine")}
         </button>
       ))}
     </div>
   );
 }
 
-/** Search, maker filter and the model list inside the picker popover. */
+function MakerSelect({ vendors, vendor, setVendor }: { vendors: readonly string[]; vendor: string | null; setVendor: (v: string | null) => void }) {
+  const t = useT(M);
+  return (
+    <label className="picker-maker">
+      <span>{t("maker")}</span>
+      <select value={vendor ?? ""} onChange={(e) => setVendor(e.target.value || null)}>
+        <option value="">{t("all")}</option>
+        {vendors.map((v) => (
+          <option key={v} value={v}>
+            {vendorDisplayName(v)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function Group({ title, models, value, onPick }: { title: string; models: readonly CatalogModel[]; value?: string; onPick: (id: string) => void }) {
+  const id = useId();
+  if (!models.length) return null;
+  return (
+    <li className="model-group-wrap">
+      <p className="model-group" id={id}>
+        {title}
+      </p>
+      <ul className="model-sublist" aria-labelledby={id}>
+        {models.map((model) => (
+          <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => onPick(model.id)} />
+        ))}
+      </ul>
+    </li>
+  );
+}
+
+/** Search, feature filters, maker and the model list; models your keys can run come first. */
 function PickerPanel({ models, value, onPick }: PanelProps) {
   const t = useT(M);
   const [query, setQuery] = useState("");
   const [vendor, setVendor] = useState<string | null>(null);
+  const [features, setFeatures] = useState<Feature[]>([]);
   const vendors = useMemo(() => [...new Set(models.map((m) => m.vendor))].sort(), [models]);
-  const shown = models.filter((m) => matches(m, query, vendor));
+  const shown = models.filter(
+    (m) => matches(m, query, vendor) && features.every((f) => FEATURES.find((x) => x.id === f)!.test(m)),
+  );
+  const narrowed = !!query || !!vendor || features.length > 0;
+  const recent = narrowed ? [] : recentIds().flatMap((id) => shown.filter((m) => m.id === id));
+  const rest = shown.filter((m) => !recent.includes(m));
+  const pick = (id: string) => {
+    remember(id);
+    onPick(id);
+  };
   return (
     <>
       <div className="popover-search">
         <Icon name="search" />
-        <input
-          autoFocus
-          type="search"
-          placeholder={t("search")}
-          aria-label={t("search")}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <input autoFocus type="search" placeholder={t("search")} aria-label={t("search")} value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
-      <VendorFilter vendors={vendors} vendor={vendor} setVendor={setVendor} />
+      <div className="picker-tools">
+        <FeatureFilter models={models} on={features} toggle={(f) => setFeatures((on) => (on.includes(f) ? on.filter((x) => x !== f) : [...on, f]))} />
+        <MakerSelect vendors={vendors} vendor={vendor} setVendor={setVendor} />
+      </div>
+      <p className="picker-count" role="status">
+        {t("count", { n: shown.length, total: models.length })}
+      </p>
       <ul className="model-list" aria-label={t("models")}>
-        {shown.map((model) => (
-          <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => onPick(model.id)} />
-        ))}
+        <Group title={t("recent")} models={recent} value={value} onPick={pick} />
+        <Group title={t("ready")} models={rest.filter(modelHasKey)} value={value} onPick={pick} />
+        <Group title={t("needsKey")} models={rest.filter((m) => !modelHasKey(m))} value={value} onPick={pick} />
         {shown.length === 0 ? <li className="empty-line">{t("empty")}</li> : null}
       </ul>
     </>

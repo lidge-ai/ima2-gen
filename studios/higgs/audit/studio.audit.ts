@@ -73,7 +73,7 @@ const click = (name: RegExp): Act => async (page) => {
 };
 const GENERATE = /^(Generate|생성)/;
 const SAVE = /^(Save|저장)/;
-const KEY_LABEL = /API key|API 키/;
+const KEY_LABEL = /^(API key|API 키)$/;
 const prompt = (text: string): Act => async (page) => {
   await page.locator("textarea").first().fill(text);
 };
