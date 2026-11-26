@@ -96,8 +96,9 @@ for (const scenario of scenarios) {
       assert.equal(result.content.length, 1);
       assert.equal(result.content[0]?.type, "text");
       assert.equal((result.content[0] as { text: string }).text, human.stderr.slice(0, -1));
-      assert.equal(result.structuredContent?.code, parsed.code);
-      assert.equal(result.structuredContent?.category, parsed.category);
+      const structured = result.structuredContent as Record<string, unknown>;
+      assert.equal(structured.code, parsed.code);
+      assert.equal(structured.category, parsed.category);
       if (scenario.transport === "sse") {
         const verbose = await cli(fake.base, root, []);
         assert.equal(verbose.code, 1); assert.match(verbose.stderr, /running 42%/);
