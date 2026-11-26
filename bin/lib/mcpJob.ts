@@ -169,12 +169,28 @@ function matchingOutcome(event: SseEvent, opts: McpJobOptions): StreamOutcome | 
   return null;
 }
 
-async function consumeStream(stream: OpenSseResult, opts: McpJobOptions): Promise<StreamOutcome> {
+/** Rejects once signal aborts, so a body iterator that never observes the abort cannot outlive the deadline. */
+function abortRace(signal: AbortSignal): { promise: Promise<never>; dispose(): void } {
+  let onAbort = () => {};
+  const promise = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(new Error("aborted"));
+    if (signal.aborted) onAbort();
+    else signal.addEventListener("abort", onAbort, { once: true });
+  });
+  promise.catch(() => { /* observed through Promise.race below */ });
+  return { promise, dispose: () => signal.removeEventListener("abort", onAbort) };
+}
+
+async function consumeStream(stream: OpenSseResult, opts: McpJobOptions, signal: AbortSignal): Promise<StreamOutcome> {
   // Keep the server's pre-job bookmark until an event is actually observed.
   // This makes an EOF before the first frame recoverable without reposting.
   let lastEventId: string | undefined = stream.initialEventId;
+  const abort = abortRace(signal);
   try {
-    for await (const event of stream.events) {
+    while (true) {
+      const next = await Promise.race([stream.events.next(), abort.promise]);
+      if (next.done) break;
+      const event = next.value;
       if (event.id !== undefined) lastEventId = event.id;
       const outcome = matchingOutcome(event, opts);
       if (outcome) return { ...outcome, lastEventId: outcome.lastEventId ?? lastEventId };
@@ -182,6 +198,8 @@ async function consumeStream(stream: OpenSseResult, opts: McpJobOptions): Promis
     return { kind: "dropped", lastEventId };
   } catch {
     return { kind: "dropped", lastEventId };
+  } finally {
+    abort.dispose();
   }
 }
 
@@ -241,7 +259,7 @@ async function waitForTerminal(
   let lastEventId: string | undefined;
   try {
     while (true) {
-      const outcome = await consumeStream(stream, opts);
+      const outcome = await consumeStream(stream, opts, signal);
       if (outcome.lastEventId !== undefined) lastEventId = outcome.lastEventId;
       if (outcome.kind === "done") return outcome.result;
       if (outcome.kind === "error") throw outcome.error;
