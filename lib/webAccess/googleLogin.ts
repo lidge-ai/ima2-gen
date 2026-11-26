@@ -93,8 +93,6 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
   const redirectUri = options.origin + "/auth/google/callback";
   const keyFor = createCertCache(CERTS, get, now);
   const box = sealer(subKey(options.secret, "oauth-pending"));
-  const pendingCookie = { path: "/auth/google", httpOnly: true, secure: true, sameSite: "lax" as const };
-  const sessionCookie = { path: "/", httpOnly: true, secure: true, sameSite: "lax" as const };
 
   async function verifyIdToken(token: string, nonce: string): Promise<Verified> {
     const parts = token.split(".");
@@ -122,7 +120,7 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
       state: pending.s, nonce: pending.n, code_challenge: challenge, code_challenge_method: "S256", prompt: "select_account",
     });
     res.setHeader("Cache-Control", "no-store");
-    res.cookie(PENDING_COOKIE, box.seal(pending), { ...pendingCookie, maxAge: PENDING_MS });
+    res.cookie(PENDING_COOKIE, box.seal(pending), { path: "/auth/google", httpOnly: true, secure: true, sameSite: "lax", maxAge: PENDING_MS });
     res.redirect(302, AUTHORIZE + "?" + query.toString());
   }
 
@@ -138,7 +136,7 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
 
   async function callback(req: Request, res: Response): Promise<void> {
     const pending = box.open(readCookie(req, PENDING_COOKIE));
-    res.cookie(PENDING_COOKIE, "", { ...pendingCookie, maxAge: 0 });
+    res.cookie(PENDING_COOKIE, "", { path: "/auth/google", httpOnly: true, secure: true, sameSite: "lax", maxAge: 0 });
     const refuse = (reason: string, kind: Parameters<typeof refusedPage>[1] = "failed", email?: string) => {
       console.warn("[web.google] sign-in refused:", reason);
       refusedPage(res, kind, email);
@@ -154,7 +152,7 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
     const verified = await verifyIdToken(token, pending.n);
     if ("reason" in verified) return refuse(verified.reason, verified.reason === "not allowed" ? "not-allowed" : "failed", verified.email);
     res.setHeader("Cache-Control", "no-store");
-    res.cookie(SESSION_COOKIE, options.sessions.issue(verified.email), { ...sessionCookie, maxAge: SESSION_TTL_MS });
+    res.cookie(SESSION_COOKIE, options.sessions.issue(verified.email), { path: "/", httpOnly: true, secure: true, sameSite: "lax", maxAge: SESSION_TTL_MS });
     res.redirect(302, safeReturn(pending.r));
   }
 
@@ -167,7 +165,7 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
     const session = options.sessions.read(readCookie(req, SESSION_COOKIE));
     if (session) options.sessions.revoke(session);
     res.setHeader("Cache-Control", "no-store");
-    res.cookie(SESSION_COOKIE, "", { ...sessionCookie, maxAge: 0 });
+    res.cookie(SESSION_COOKIE, "", { path: "/", httpOnly: true, secure: true, sameSite: "lax", maxAge: 0 });
     res.redirect(303, "/auth/signed-out");
   }
 
