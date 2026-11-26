@@ -4,6 +4,7 @@ import { PRESETS } from "../data/presets.ts";
 import { href } from "../router.ts";
 import { useStudio } from "../studio/context.tsx";
 import { Feed } from "../ui/Feed.tsx";
+import { Showcase } from "../ui/Showcase.tsx";
 import { Icon, type IconName } from "../ui/Icon.tsx";
 import { VendorLogo } from "../ui/VendorLogo.tsx";
 import "../styles/models.css";
@@ -159,6 +160,7 @@ export function HomePage() {
   return (
     <div className="home">
       <KeyBanner />
+      <Showcase />
       <ToolRow />
       <MakerStrip />
       <PresetRail />

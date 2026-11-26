@@ -6,6 +6,7 @@ import { PRESETS, type Preset } from "../../data/presets.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile, takeHandOff } from "../../studio/handoff.ts";
 import { Feed } from "../../ui/Feed.tsx";
+import { Showcase } from "../../ui/Showcase.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
@@ -126,6 +127,12 @@ function useRemixHandOff(form: WorkflowForm) {
     if (!input) return;
     const handoff = takeHandOff("remix");
     if (!handoff) return;
+    // A showcase "make one like this" also carries the example's field values.
+    for (const [name, value] of Object.entries(handoff.values ?? {})) {
+      if (form.def.inputs.some((entry) => entry.kind === "text" && entry.name === name))
+        form.setTexts((old) => ({ ...old, [name]: String(value) }));
+      else if (form.def.params.some((param) => param.name === name)) form.setParams((old) => ({ ...old, [name]: value }));
+    }
     void handOffFile(handoff)
       .then((file) => form.studio.upload(file))
       .then((upload) => {
@@ -135,7 +142,7 @@ function useRemixHandOff(form: WorkflowForm) {
         }));
       })
       .catch((err: unknown) => form.setError(err instanceof Error ? err.message : tr(M, "videoFailed")));
-  }, [form.def, form.studio, form.setFiles, form.setError]);
+  }, [form.def, form.studio, form.setFiles, form.setError, form.setTexts, form.setParams]);
 }
 
 const modes = [
@@ -264,7 +271,10 @@ function RemixStage({
       </div>
       <div className="stage-body">
         {view === "library" ? (
-          <MotionLibrary form={form} />
+          <>
+            <Showcase />
+            <MotionLibrary form={form} />
+          </>
         ) : (
           <Feed workflow={(id) => id.startsWith("remix-")} empty={<div className="empty"><p>{t("empty")}</p><p>{t("emptyHint")}</p></div>} />
         )}

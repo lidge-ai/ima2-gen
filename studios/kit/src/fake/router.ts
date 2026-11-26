@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { makeCatalog, wireCatalog } from "./catalog.ts";
 import { workflows, estimateWorkflow } from "./workflows.ts";
+import { fakeShowcase } from "./showcase.ts";
 import type { Jobs } from "./jobs.ts";
 import type { Keys } from "./keys.ts";
 
@@ -289,6 +290,10 @@ async function dispatchOther(
   }
   if (method === "GET" && url.pathname === "/api/workflows") {
     send(res, 200, { workflows });
+    return;
+  }
+  if (method === "GET" && url.pathname === "/api/showcase") {
+    send(res, 200, fakeShowcase(jobs));
     return;
   }
   if (method === "POST" && p[1] === "workflows" && p[2]) {
