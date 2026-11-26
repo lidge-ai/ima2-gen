@@ -7,10 +7,11 @@ test("models page shows makers, official names, routes and prices, and opens a m
   await expect(seedance.getByRole("list", { name: "Ways to run Seedance 2.5" }).getByRole("listitem")).toHaveCount(3);
   await expect(seedance).toContainText("BytePlus ModelArk");
   await expect(seedance).toContainText("$0.06/s");
-  await page.getByRole("tab", { name: "Image" }).click();
+  const kinds = page.getByRole("group", { name: "Kind" });
+  await kinds.getByRole("button", { name: "Image", exact: true }).click();
   await expect(page.getByRole("article", { name: "Seedance 2.5", exact: true })).toHaveCount(0);
   await expect(page.getByRole("article", { name: "GPT Image 2", exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: "All" }).click();
+  await kinds.getByRole("button", { name: "All", exact: true }).click();
   await page.getByLabel("Search models").fill("veo 3.1 fast");
   await page
     .getByRole("article", { name: "Veo 3.1 Fast" })

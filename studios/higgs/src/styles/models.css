@@ -2,67 +2,114 @@
   display: grid;
   gap: 10px;
 }
+.models-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
 .models-filters .search-field {
   width: min(320px, 100%);
 }
+.chip-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px 0 5px;
+}
+.results-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.results-bar p {
+  font-variant-numeric: tabular-nums;
+}
+/* Cards share row tracks (subgrid), so headers, route lists and buttons line up across a row. */
 .model-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 12px;
 }
 .model-card {
+  grid-row: span 4;
   display: grid;
-  grid-template-rows: 96px auto;
+  grid-template-rows: subgrid;
+  row-gap: 10px;
+  padding: 14px 16px 16px;
   border-radius: var(--radius-l);
   background: var(--surface);
   border: 1px solid var(--line);
-  overflow: hidden;
+  min-width: 0;
 }
-.model-card-thumb {
+.model-card-head {
   display: grid;
-  place-items: center;
-  background: radial-gradient(120% 120% at 50% 0%, var(--surface-3), var(--surface-2));
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
 }
-.model-card-thumb .vendor-logo.is-text {
-  height: 40px;
-  padding: 0 14px;
-  font-size: 16px;
+.model-card-head h3 {
+  font-size: 15px;
+  overflow-wrap: anywhere;
 }
-.model-card-body {
-  display: grid;
-  gap: 8px;
-  padding: 12px 14px 14px;
-  align-content: start;
+.model-card-maker {
+  color: var(--text-muted);
+  font-size: 12.5px;
 }
-.model-card-body h3 {
-  font-size: 16px;
+.model-card-id {
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
-.model-card-body .btn {
-  justify-self: start;
+.model-card-foot {
+  align-self: end;
 }
 .route-lines {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  align-content: start;
+  gap: 6px;
   font-size: 12.5px;
 }
+/* Fixed price and key columns keep every card's rows on the same grid. */
 .route-line {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 18px minmax(0, 1fr) 7.5em 5.2em;
   gap: 8px;
   align-items: center;
+  min-height: 22px;
 }
 .route-line-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.route-line-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.route-line-name .tag {
+  margin-left: 0;
+  flex: none;
+}
 .route-line-price {
   font-variant-numeric: tabular-nums;
   color: var(--text-dim);
+  text-align: right;
+  white-space: nowrap;
+}
+.route-line-price.is-none {
+  color: var(--text-muted);
+}
+.route-line .key-state {
+  text-align: right;
+  white-space: nowrap;
 }
 .maker-strip {
   display: flex;
@@ -88,12 +135,5 @@
 @media (max-width: 760px) {
   .model-grid {
     grid-template-columns: 1fr;
-  }
-  .route-line {
-    grid-template-columns: 16px minmax(0, 1fr) auto;
-  }
-  .route-line .tag,
-  .route-line .key-state {
-    display: none;
   }
 }

@@ -55,8 +55,16 @@ export function fetchMediaCatalog(kind: "image" | "video") {
 }
 
 export function logoUrl(logo: MediaLogo | null | undefined): string | undefined {
-  // The light plate renders logos with brightness(0), so a file drawn for dark backgrounds works too.
   return logo?.urls.mark ?? logo?.urls.primary ?? logo?.urls.dark ?? logo?.urls.light;
+}
+
+/**
+ * Plate behind the file logoUrl picks. Files are shown unaltered (no recolouring), so a
+ * file drawn in white ink for dark backgrounds gets a dark plate and every other file a light one.
+ */
+export function logoPlate(logo: MediaLogo | null | undefined): "light" | "dark" {
+  const url = logoUrl(logo);
+  return url !== undefined && url === logo?.urls.dark ? "dark" : "light";
 }
 
 export function formatMediaPrice(price: MediaPrice): string {

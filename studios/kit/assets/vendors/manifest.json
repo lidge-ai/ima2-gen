@@ -11,7 +11,8 @@
           "format": "png",
           "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/bytedance-logo-white.png",
           "width": 160,
-          "height": 28
+          "height": 28,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/bytedance-logo-white.png",
@@ -30,7 +31,10 @@
           "file": "alibaba.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://www.alibabacloud.com/"
+          "sourceUrl": "https://www.alibabacloud.com/",
+          "width": 295.93,
+          "height": 37.28,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://www.alibabacloud.com/",
@@ -54,7 +58,9 @@
           "format": "png",
           "sourceUrl": "https://github.com/Tencent-Hunyuan.png?size=460",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/Tencent-Hunyuan.png?size=460",
@@ -77,7 +83,9 @@
           "variant": "mark",
           "format": "png",
           "width": 180,
-          "height": 180
+          "height": 180,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://s16-kling.klingai.com/kos/s101/nlav112918/kling-homepage-aio/logo-180x180.png",
@@ -99,14 +107,16 @@
           "variant": "primary",
           "format": "webp",
           "width": 349,
-          "height": 128
+          "height": 128,
+          "shape": "wordmark"
         },
         {
           "file": "minimax-dark.webp",
           "variant": "dark",
           "format": "webp",
           "width": 349,
-          "height": 128
+          "height": 128,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://www.minimax.io/assets/logo/minimax-horizontal-brand-black.webp",
@@ -127,7 +137,10 @@
           "file": "vidu.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://www.vidu.com/logo.svg"
+          "sourceUrl": "https://www.vidu.com/logo.svg",
+          "width": 64,
+          "height": 64,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://www.vidu.com/logo.svg",
@@ -148,13 +161,19 @@
           "file": "google.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg"
+          "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg",
+          "width": 79,
+          "height": 20,
+          "shape": "wordmark"
         },
         {
           "file": "google-dark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__dark.height-25.svg"
+          "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__dark.height-25.svg",
+          "width": 79,
+          "height": 20,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg",
@@ -179,7 +198,10 @@
           "file": "openai.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://openai.com/brand/"
+          "sourceUrl": "https://openai.com/brand/",
+          "width": 292,
+          "height": 78,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://openai.com/brand/",
@@ -202,7 +224,9 @@
           "format": "png",
           "sourceUrl": "https://github.com/xai-org.png?size=460",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/xai-org.png?size=460",
@@ -226,7 +250,9 @@
           "format": "png",
           "sourceUrl": "https://github.com/meta.png?size=460",
           "width": 400,
-          "height": 400
+          "height": 400,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/meta.png?size=460",
@@ -247,19 +273,26 @@
           "format": "png",
           "sourceUrl": "https://bfl.ai/brand/logotype-black.png",
           "width": 570,
-          "height": 140
+          "height": 140,
+          "shape": "wordmark"
         },
         {
           "file": "black-forest-labs-dark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://bfl.ai/brand/logotype-white.svg"
+          "sourceUrl": "https://bfl.ai/brand/logotype-white.svg",
+          "width": 571,
+          "height": 141,
+          "shape": "wordmark"
         },
         {
           "file": "black-forest-labs-mark.svg",
           "variant": "mark",
           "format": "svg",
-          "sourceUrl": "https://bfl.ai/brand/symbol-black.svg"
+          "sourceUrl": "https://bfl.ai/brand/symbol-black.svg",
+          "width": 196,
+          "height": 140,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://bfl.ai/brand/logotype-black.png",
@@ -281,7 +314,9 @@
           "variant": "mark",
           "format": "jpg",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/ideogram-ai.png?size=460",
@@ -300,7 +335,10 @@
           "file": "recraft.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://static.recraft.ai/apps/images/home/logo.svg"
+          "sourceUrl": "https://static.recraft.ai/apps/images/home/logo.svg",
+          "width": 40,
+          "height": 40,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://static.recraft.ai/apps/images/home/logo.svg",
@@ -319,19 +357,28 @@
           "file": "pixverse.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg"
+          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg",
+          "width": 1024,
+          "height": 213,
+          "shape": "wordmark"
         },
         {
           "file": "pixverse-dark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-light-20261103.svg"
+          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-light-20261103.svg",
+          "width": 1024,
+          "height": 213,
+          "shape": "wordmark"
         },
         {
           "file": "pixverse-mark.svg",
           "variant": "mark",
           "format": "svg",
-          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-icon-dark.svg"
+          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-icon-dark.svg",
+          "width": 1024,
+          "height": 1024,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg",
@@ -351,21 +398,30 @@
           "variant": "primary",
           "format": "svg",
           "sourceUrl": "https://dynamic.heygen.ai/Heygen%20Brand-kit/heygen-brandkit.zip",
-          "archiveEntry": "heygen-brandkit/heygen-full-black-logo.svg"
+          "archiveEntry": "heygen-brandkit/heygen-full-black-logo.svg",
+          "width": 241,
+          "height": 143,
+          "shape": "stacked"
         },
         {
           "file": "heygen-dark.svg",
           "variant": "dark",
           "format": "svg",
           "sourceUrl": "https://dynamic.heygen.ai/Heygen%20Brand-kit/heygen-brandkit.zip",
-          "archiveEntry": "heygen-brandkit/heygen-full-white-logo.svg"
+          "archiveEntry": "heygen-brandkit/heygen-full-white-logo.svg",
+          "width": 241,
+          "height": 143,
+          "shape": "stacked"
         },
         {
           "file": "heygen-mark.svg",
           "variant": "mark",
           "format": "svg",
           "sourceUrl": "https://dynamic.heygen.ai/Heygen%20Brand-kit/heygen-brandkit.zip",
-          "archiveEntry": "heygen-brandkit/heygen-symbol-black-logo.svg"
+          "archiveEntry": "heygen-brandkit/heygen-symbol-black-logo.svg",
+          "width": 132,
+          "height": 132,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://dynamic.heygen.ai/Heygen%20Brand-kit/heygen-brandkit.zip",
@@ -384,7 +440,10 @@
           "file": "sand-ai.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://sand.ai/migrated/assets/svg/logo.svg"
+          "sourceUrl": "https://sand.ai/migrated/assets/svg/logo.svg",
+          "width": 86,
+          "height": 30,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://sand.ai/migrated/assets/svg/logo.svg",
@@ -405,7 +464,10 @@
           "file": "veed.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://www.veed.io/"
+          "sourceUrl": "https://www.veed.io/",
+          "width": 115,
+          "height": 24,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://www.veed.io/",
@@ -425,7 +487,9 @@
           "variant": "mark",
           "format": "jpg",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/MeiGen-AI.png?size=460",
@@ -444,13 +508,19 @@
           "file": "sync.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://sync.so/sync-logo.svg"
+          "sourceUrl": "https://sync.so/sync-logo.svg",
+          "width": 1178,
+          "height": 291,
+          "shape": "wordmark"
         },
         {
           "file": "sync-mark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://sync.so/landing/footer-logo.svg"
+          "sourceUrl": "https://sync.so/landing/footer-logo.svg",
+          "width": 92,
+          "height": 92,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://sync.so/sync-logo.svg",
@@ -471,13 +541,19 @@
           "file": "topaz-labs.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg"
+          "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg",
+          "width": 125,
+          "height": 22,
+          "shape": "wordmark"
         },
         {
           "file": "topaz-labs-dark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/68d1aa55ea71e44b7916c8e3_topaz-logo-(r)-white.svg"
+          "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/68d1aa55ea71e44b7916c8e3_topaz-logo-(r)-white.svg",
+          "width": 97,
+          "height": 21,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg",
@@ -500,13 +576,19 @@
           "file": "mirelo.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://mirelo.ai/mirelo-logo-text-light.svg"
+          "sourceUrl": "https://mirelo.ai/mirelo-logo-text-light.svg",
+          "width": 514,
+          "height": 128,
+          "shape": "wordmark"
         },
         {
           "file": "mirelo-mark.svg",
           "variant": "mark",
           "format": "svg",
-          "sourceUrl": "https://mirelo.ai/mirelo-logo-icon-light.svg?v=b66a685"
+          "sourceUrl": "https://mirelo.ai/mirelo-logo-icon-light.svg?v=b66a685",
+          "width": 152,
+          "height": 152,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://mirelo.ai/mirelo-logo-text-light.svg",
@@ -525,13 +607,19 @@
           "file": "elevenlabs.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg"
+          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg",
+          "width": 694,
+          "height": 90,
+          "shape": "wordmark"
         },
         {
           "file": "elevenlabs-dark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-white.svg"
+          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-white.svg",
+          "width": 694,
+          "height": 90,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg",
@@ -550,19 +638,28 @@
           "file": "cartesia.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg"
+          "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg",
+          "width": 579,
+          "height": 83,
+          "shape": "wordmark"
         },
         {
           "file": "cartesia-dark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-white.svg"
+          "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-white.svg",
+          "width": 579,
+          "height": 83,
+          "shape": "wordmark"
         },
         {
           "file": "cartesia-mark.svg",
           "variant": "mark",
           "format": "svg",
-          "sourceUrl": "https://www.cartesia.ai/brand/black-archie.svg"
+          "sourceUrl": "https://www.cartesia.ai/brand/black-archie.svg",
+          "width": 90,
+          "height": 83,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg",
@@ -583,7 +680,8 @@
           "format": "png",
           "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/8346fca1-a188-450e-8c75-e487e0ff3fae/stability-ai-white-dot-logo-mobile.png",
           "width": 249,
-          "height": 49
+          "height": 49,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/8346fca1-a188-450e-8c75-e487e0ff3fae/stability-ai-white-dot-logo-mobile.png",
@@ -605,7 +703,9 @@
           "variant": "mark",
           "format": "jpg",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/ace-step.png?size=460",
@@ -626,7 +726,9 @@
           "format": "png",
           "sourceUrl": "https://github.com/VAST-AI-Research.png?size=460",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/VAST-AI-Research.png?size=460",
@@ -647,7 +749,9 @@
           "format": "png",
           "sourceUrl": "https://github.com/meshy-dev.png?size=460",
           "width": 256,
-          "height": 256
+          "height": 256,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/meshy-dev.png?size=460",
@@ -668,7 +772,9 @@
           "format": "png",
           "sourceUrl": "https://github.com/higgsfield-ai.png?size=460",
           "width": 460,
-          "height": 460
+          "height": 460,
+          "shape": "mark",
+          "tile": true
         }
       ],
       "sourceUrl": "https://github.com/higgsfield-ai.png?size=460",
@@ -687,13 +793,19 @@
           "file": "byteplus.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/images/bp-logo-colored.svg"
+          "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/images/bp-logo-colored.svg",
+          "width": 104,
+          "height": 24,
+          "shape": "wordmark"
         },
         {
           "file": "byteplus-mark.svg",
           "variant": "dark",
           "format": "svg",
-          "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/byteplus_logo_footer.svg"
+          "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/byteplus_logo_footer.svg",
+          "width": 41,
+          "height": 32,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/images/bp-logo-colored.svg",
@@ -714,7 +826,10 @@
           "file": "fal.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://fal.ai/"
+          "sourceUrl": "https://fal.ai/",
+          "width": 120,
+          "height": 48,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://fal.ai/",
@@ -735,13 +850,19 @@
           "file": "replicate.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://replicate.com/"
+          "sourceUrl": "https://replicate.com/",
+          "width": 512,
+          "height": 120,
+          "shape": "wordmark"
         },
         {
           "file": "replicate-mark.svg",
           "variant": "mark",
           "format": "svg",
-          "sourceUrl": "https://replicate.com/"
+          "sourceUrl": "https://replicate.com/",
+          "width": 1000,
+          "height": 1000,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://replicate.com/",
@@ -760,7 +881,10 @@
           "file": "atlascloud.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://www.atlascloud.ai/logo.svg"
+          "sourceUrl": "https://www.atlascloud.ai/logo.svg",
+          "width": 163,
+          "height": 26,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://www.atlascloud.ai/logo.svg",
@@ -781,7 +905,10 @@
           "file": "sume.svg",
           "variant": "primary",
           "format": "svg",
-          "sourceUrl": "https://sume.com/"
+          "sourceUrl": "https://sume.com/",
+          "width": 69.56,
+          "height": 20,
+          "shape": "wordmark"
         }
       ],
       "sourceUrl": "https://sume.com/",
@@ -799,12 +926,18 @@
         {
           "file": "openrouter.svg",
           "variant": "mark",
-          "format": "svg"
+          "format": "svg",
+          "width": 401.4,
+          "height": 401.4,
+          "shape": "mark"
         },
         {
           "file": "openrouter-dark.svg",
           "variant": "dark",
-          "format": "svg"
+          "format": "svg",
+          "width": 401.4,
+          "height": 401.4,
+          "shape": "mark"
         }
       ],
       "sourceUrl": "https://openrouter.ai/images/icons/brands/openrouter.svg",

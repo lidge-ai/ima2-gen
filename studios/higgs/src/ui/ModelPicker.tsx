@@ -94,7 +94,7 @@ function VendorFilter({
           aria-pressed={vendor === v}
           onClick={() => setVendor(vendor === v ? null : v)}
         >
-          <VendorLogo id={v} size={14} withName />
+          <VendorLogo id={v} size={18} withName />
         </button>
       ))}
     </div>

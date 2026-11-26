@@ -22,9 +22,47 @@ const NAV: { path: string; label: string; icon: IconName; match: (r: Route) => b
   { path: "assets", label: "Assets", icon: "assets", match: (r) => r.page === "assets" },
 ];
 
-function TopBar({ route }: { route: Route }) {
+const STREAM_TEXT: Record<string, string> = {
+  connecting: "Connecting",
+  reconnecting: "Reconnecting",
+  closed: "Offline",
+};
+
+/** Says something only when live updates are not flowing; a working connection needs no badge. */
+function StreamStatus() {
   const stream = useStudio((s) => s.stream);
+  const text = STREAM_TEXT[stream];
+  return (
+    <span className={"stream-status is-" + stream} role="status">
+      {text ? (
+        <>
+          <span className="stream-dot" aria-hidden="true" />
+          {text}
+        </>
+      ) : null}
+    </span>
+  );
+}
+
+function KeysButton({ route }: { route: Route }) {
+  const loaded = useStudio((s) => s.catalog !== null);
   const keyed = useStudio((s) => s.keys.filter((k) => k.configured).length);
+  return (
+    <a className="btn" href="#/keys" aria-current={route.page === "keys" ? "page" : undefined}>
+      <Icon name="key" size={15} />
+      {loaded && keyed === 0 ? (
+        "Add API key"
+      ) : (
+        <>
+          API keys{" "}
+          {keyed > 0 ? <span className="key-count">{keyed}</span> : null}
+        </>
+      )}
+    </a>
+  );
+}
+
+function TopBar({ route }: { route: Route }) {
   return (
     <header className="topbar">
       <a className="brand" href="#/" aria-label="ima2 studio home">
@@ -38,15 +76,8 @@ function TopBar({ route }: { route: Route }) {
         ))}
       </nav>
       <div className="topbar-right">
-        <span
-          className={"stream-dot is-" + stream}
-          role="status"
-          aria-label={"Live updates: " + stream}
-          title={"Live updates: " + stream}
-        />
-        <a className="btn" href="#/keys" aria-current={route.page === "keys" ? "page" : undefined}>
-          <Icon name="key" size={15} /> API keys <span className="key-count">{keyed}</span>
-        </a>
+        <StreamStatus />
+        <KeysButton route={route} />
       </div>
     </header>
   );

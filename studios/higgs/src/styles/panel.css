@@ -165,7 +165,7 @@
   background: var(--surface-3);
 }
 .slot-hint {
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-size: 11.5px;
   font-weight: 500;
 }
@@ -222,7 +222,7 @@
 }
 .prompt-card textarea::placeholder,
 .dock textarea::placeholder {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 .prompt-card-chips {
   display: flex;
@@ -423,7 +423,7 @@
   color: var(--green);
 }
 .key-state.is-off {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 .empty-line {
   padding: 16px;
@@ -587,7 +587,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 .chip .vendor-logo {
   gap: 5px;

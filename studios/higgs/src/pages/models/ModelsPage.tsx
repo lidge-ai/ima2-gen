@@ -3,11 +3,13 @@ import { modelHasKey, type CatalogModel, type CatalogRoute, type MediaKind } fro
 import { href } from "../../router.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
-import { VendorLogo } from "../../ui/VendorLogo.tsx";
+import { VendorLogo, vendorDisplayName } from "../../ui/VendorLogo.tsx";
 import { modelKinds, routePrice } from "../../ui/format.ts";
 import "../../styles/models.css";
 
-const KINDS: readonly { id: MediaKind | "all"; label: string }[] = [
+type Kind = MediaKind | "all";
+
+const KINDS: readonly { id: Kind; label: string }[] = [
   { id: "all", label: "All" },
   { id: "video", label: "Video" },
   { id: "image", label: "Image" },
@@ -20,13 +22,16 @@ function priceSource(route: CatalogRoute): string {
 }
 
 function RouteLine({ route }: { route: CatalogRoute }) {
+  const priced = route.pricing.length > 0;
   return (
     <li className="route-line">
-      <VendorLogo id={route.providerId} size={16} />
-      <span className="route-line-name">{route.label}</span>
-      <span className="tag">{route.route === "direct" ? "Direct" : "Aggregator"}</span>
-      <span className="route-line-price" title={priceSource(route)}>
-        {routePrice(route)}
+      <VendorLogo id={route.providerId} size={18} />
+      <span className="route-line-name">
+        <span className="route-line-label">{route.label}</span>
+        {route.route === "direct" ? <span className="tag">Direct</span> : null}
+      </span>
+      <span className={"route-line-price" + (priced ? "" : " is-none")} title={priceSource(route)}>
+        {priced ? routePrice(route) : "Not published"}
       </span>
       <span className={"key-state " + (route.keyConfigured ? "is-on" : "is-off")}>
         {route.keyConfigured ? "Key saved" : "No key"}
@@ -38,23 +43,29 @@ function RouteLine({ route }: { route: CatalogRoute }) {
 function ModelCard({ model }: { model: CatalogModel }) {
   const target = model.kind === "image" ? "image" : "video";
   return (
-    <article className="model-card" aria-label={model.label}>
-      <div className="model-card-thumb">
-        <VendorLogo id={model.vendor} shape="full" size={40} />
-      </div>
-      <div className="model-card-body">
-        <h3>{model.label}</h3>
-        <p className="muted">
-          <code>{model.id}</code> · {modelKinds(model)}
-        </p>
-        <ul className="route-lines" aria-label={"Ways to run " + model.label}>
-          {model.routes.map((route) => (
-            <RouteLine key={route.providerId} route={route} />
-          ))}
-        </ul>
+    <article className="model-card" aria-labelledby={"model-" + model.id}>
+      <header className="model-card-head">
+        <VendorLogo id={model.vendor} size={32} />
+        <div>
+          <h3 id={"model-" + model.id}>{model.label}</h3>
+          <p className="model-card-maker">
+            {vendorDisplayName(model.vendor)} · {modelKinds(model)}
+          </p>
+        </div>
+      </header>
+      <p className="model-card-id">
+        <code>{model.id}</code>
+      </p>
+      <ul className="route-lines" aria-label={"Ways to run " + model.label}>
+        {model.routes.map((route) => (
+          <RouteLine key={route.providerId} route={route} />
+        ))}
+      </ul>
+      <div className="model-card-foot">
         {model.kind !== "audio" ? (
           <a className="btn" href={href(target, { model: model.id })}>
-            <Icon name="sparkle" size={14} /> {modelHasKey(model) ? "Use this model" : "Open and add a key"}
+            {modelHasKey(model) ? "Use this model" : "Open and add a key"}
+            <Icon name="arrowRight" size={14} />
           </a>
         ) : null}
       </div>
@@ -62,7 +73,7 @@ function ModelCard({ model }: { model: CatalogModel }) {
   );
 }
 
-function useFiltered(models: readonly CatalogModel[], kind: MediaKind | "all", vendor: string | null, query: string) {
+function useFiltered(models: readonly CatalogModel[], kind: Kind, vendor: string | null, query: string) {
   return useMemo(() => {
     const needle = query.trim().toLowerCase();
     return models.filter(
@@ -74,16 +85,15 @@ function useFiltered(models: readonly CatalogModel[], kind: MediaKind | "all", v
   }, [models, kind, vendor, query]);
 }
 
-function KindTabs({ kind, setKind }: { kind: MediaKind | "all"; setKind: (k: MediaKind | "all") => void }) {
+function KindTabs({ kind, setKind }: { kind: Kind; setKind: (k: Kind) => void }) {
   return (
-    <div className="tabs" role="tablist" aria-label="Kind">
+    <div className="tabs" role="group" aria-label="Kind">
       {KINDS.map((k) => (
         <button
           key={k.id}
           type="button"
-          role="tab"
           className="tab"
-          aria-selected={kind === k.id}
+          aria-pressed={kind === k.id}
           onClick={() => setKind(k.id)}
         >
           {k.label}
@@ -93,38 +103,41 @@ function KindTabs({ kind, setKind }: { kind: MediaKind | "all"; setKind: (k: Med
   );
 }
 
-function ModelFilters(props: {
-  vendors: readonly string[];
-  kind: MediaKind | "all";
-  setKind: (k: MediaKind | "all") => void;
+interface Filters {
+  kind: Kind;
+  setKind: (k: Kind) => void;
   vendor: string | null;
   setVendor: (v: string | null) => void;
   query: string;
   setQuery: (q: string) => void;
-}) {
+}
+
+function ModelFilters({ vendors, ...f }: Filters & { vendors: readonly string[] }) {
   return (
     <div className="models-filters">
-      <KindTabs kind={props.kind} setKind={props.setKind} />
-      <label className="search-field">
-        <Icon name="search" size={15} />
-        <input
-          type="search"
-          placeholder="Search models"
-          aria-label="Search models"
-          value={props.query}
-          onChange={(e) => props.setQuery(e.target.value)}
-        />
-      </label>
+      <div className="models-filters-row">
+        <KindTabs kind={f.kind} setKind={f.setKind} />
+        <label className="search-field">
+          <Icon name="search" size={15} />
+          <input
+            type="search"
+            placeholder="Search models"
+            aria-label="Search models"
+            value={f.query}
+            onChange={(e) => f.setQuery(e.target.value)}
+          />
+        </label>
+      </div>
       <div className="chip-row" role="group" aria-label="Filter by maker">
-        {props.vendors.map((v) => (
+        {vendors.map((v) => (
           <button
             key={v}
             type="button"
-            className="chip"
-            aria-pressed={props.vendor === v}
-            onClick={() => props.setVendor(props.vendor === v ? null : v)}
+            className="chip chip-logo"
+            aria-pressed={f.vendor === v}
+            onClick={() => f.setVendor(f.vendor === v ? null : v)}
           >
-            <VendorLogo id={v} size={14} withName />
+            <VendorLogo id={v} size={18} withName />
           </button>
         ))}
       </div>
@@ -132,15 +145,47 @@ function ModelFilters(props: {
   );
 }
 
+/** How many models show and which filters narrow them, with one way to clear them all. */
+function ResultsBar({ count, total, ...f }: Filters & { count: number; total: number }) {
+  const active = f.kind !== "all" || f.vendor !== null || f.query.trim() !== "";
+  const parts = [
+    f.vendor ? vendorDisplayName(f.vendor) : null,
+    f.kind !== "all" ? KINDS.find((k) => k.id === f.kind)?.label : null,
+    f.query.trim() ? '"' + f.query.trim() + '"' : null,
+  ].filter(Boolean);
+  return (
+    <div className="results-bar">
+      <p role="status">
+        {active ? count + " of " + total + " models" : total + " models"}
+        {parts.length ? <span className="muted"> · {parts.join(" · ")}</span> : null}
+      </p>
+      {active ? (
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => {
+            f.setKind("all");
+            f.setVendor(null);
+            f.setQuery("");
+          }}
+        >
+          Clear filters
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 /** Every model the server can run, who makes it, every way to run it and what each costs. */
 export function ModelsPage({ vendor: initialVendor }: { vendor?: string }) {
   const catalog = useStudio((s) => s.catalog);
-  const [kind, setKind] = useState<MediaKind | "all">("all");
+  const [kind, setKind] = useState<Kind>("all");
   const [vendor, setVendor] = useState<string | null>(initialVendor ?? null);
   const [query, setQuery] = useState("");
   const models = catalog?.models ?? [];
   const vendors = useMemo(() => [...new Set(models.map((m) => m.vendor))].sort(), [models]);
   const shown = useFiltered(models, kind, vendor, query);
+  const filters = { kind, setKind, vendor, setVendor, query, setQuery };
   if (!catalog)
     return (
       <div className="empty" role="status">
@@ -149,23 +194,18 @@ export function ModelsPage({ vendor: initialVendor }: { vendor?: string }) {
     );
   return (
     <div className="page-pad">
-      <div className="page-head">
-        <h1>Models and prices</h1>
-        <p className="muted">Prices are the providers' own published rates. ima2 adds nothing on top.</p>
-      </div>
-      <ModelFilters
-        vendors={vendors}
-        kind={kind}
-        setKind={setKind}
-        vendor={vendor}
-        setVendor={setVendor}
-        query={query}
-        setQuery={setQuery}
-      />
+      <header className="page-head">
+        <div>
+          <h1>Models and prices</h1>
+          <p className="muted">Prices are the providers' own published rates. ima2 adds nothing on top.</p>
+        </div>
+      </header>
+      <ModelFilters vendors={vendors} {...filters} />
+      <ResultsBar count={shown.length} total={models.length} {...filters} />
       {shown.length === 0 ? (
         <div className="empty">
           <h2>No model matches</h2>
-          <p>Clear the search or pick another maker.</p>
+          <p>Clear the filters or pick another maker.</p>
         </div>
       ) : (
         <div className="model-grid">
