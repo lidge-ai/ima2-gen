@@ -138,3 +138,28 @@ test("amounts keep enough digits to tell prices apart and round up, never down",
   assert.deepEqual([0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12].map(formatUsd),
     ["$0", "$0.0004", "$0.004", "$0.035", "$0.221", "$0.50", "$1.11", "$2.37", "$12.00"]);
 });
+
+const { keySaveProblem } = await import("../ui/src/lib/mediaKeyEntry.js");
+const { cheapestRoute } = await import("../ui/src/lib/mediaRoutes.js");
+
+test("a refused key is put in words by kind; the provider's raw text is never the headline", () => {
+  const refused = (code: string, message: string) => Object.assign(new Error(message), { code, status: 400 });
+  assert.equal(keySaveProblem(refused("KEY_VALIDATION_FAILED", "API key validation failed: HTTP 401: invalid api key")), "rejected");
+  assert.equal(keySaveProblem(refused("KEY_VALIDATION_FAILED", "API key validation failed: HTTP 403: forbidden")), "rejected");
+  assert.equal(keySaveProblem(refused("KEY_VALIDATION_FAILED", "API key validation failed: The operation timed out")), "unverified");
+  assert.equal(keySaveProblem(refused("KEY_VALIDATION_FAILED", "API key validation failed: HTTP 503: upstream")), "unverified");
+  assert.equal(keySaveProblem(refused("INVALID_KEY_FORMAT", "Invalid key format for fal: expected prefix fal-")), "format");
+  assert.equal(keySaveProblem(refused("KEY_TOO_SHORT", "API key too short")), "format");
+  assert.equal(keySaveProblem(refused("MISSING_EXTRA", "Missing required fields: secretKey")), "extra");
+  assert.equal(keySaveProblem(new Error("Failed to fetch")), "unknown");
+});
+
+test("the cheapest route to add a key for is offered only when it is not the one already shown", () => {
+  const p = (usd: number) => [{ unit: "second", usd, source: "https://example.com/p", checkedAt: "2026-11-27" }];
+  const r = (adapter: string, kind: "direct" | "aggregator", usd?: number) => ({ adapter, route: kind, label: adapter, logo: null, upstreamId: adapter,
+    tasks: ["text-to-video"], params: {}, pricing: usd === undefined ? [] : p(usd), docsUrl: "", hasKey: false });
+  const m = (routes: ReturnType<typeof r>[]) => ({ id: "acme/clip", label: "clip", vendor: "acme", logo: null, kind: "video" as const, tasks: ["text-to-video"], routes, defaultRoute: null });
+  assert.equal(cheapestRoute(m([r("direct", "direct", 0.1), r("agg", "aggregator", 0.09), r("free", "aggregator")]), "text-to-video")?.adapter, "agg");
+  assert.equal(cheapestRoute(m([r("direct", "direct", 0.05), r("agg", "aggregator", 0.09)]), "text-to-video")?.adapter, "direct");
+  assert.equal(cheapestRoute(m([r("a", "aggregator"), r("b", "aggregator")]), "text-to-video"), undefined, "no published price, no claim about which is cheapest");
+});
