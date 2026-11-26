@@ -75,6 +75,11 @@ export interface ModelSlot {
   tierModels?: Readonly<Record<string, string>>;
   /** Adapter id used when the user pins none, e.g. a subscription route. */
   defaultRoute?: string;
+  /**
+   * Route per model, used when neither the user nor a combo pins one; it wins over defaultRoute.
+   * Lets one slot try a subscription first (GPT image over the ChatGPT sign-in) and keyed models after it.
+   */
+  modelRoutes?: Readonly<Record<string, string>>;
   /** The workflow still runs without this step; when no listed model can run, the step is left out and a note says what it needs. */
   optional?: boolean;
   /** Why this model fits, with the evidence source; shown to users and reviewers. */

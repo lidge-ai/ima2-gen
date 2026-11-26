@@ -16,9 +16,15 @@ const { registerMediaRoutes } = await import("../routes/media.ts");
 const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts");
 const { _resetForTests: resetInflight } = await import("../lib/inflight.ts");
 const { createSpendGuard } = await import("../lib/webAccess/spendGuard.ts");
+const { closeDb } = await import("../lib/db.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter } = await import("./_mediaFakeAdapter.ts");
 
-test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
+// Jobs persist through lib/inflight into <config>/sessions.db; Windows refuses to unlink an open
+// SQLite file, so the handle is closed before the folder goes (same as tests/media-routes.test.ts).
+test.after(async () => {
+  closeDb();
+  await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
 test.afterEach(() => { resetBus(); resetInflight(); });
 
 const VIDEO_URL = "https://cdn.fake.example/out/clip.mp4";

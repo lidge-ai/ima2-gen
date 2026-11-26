@@ -173,6 +173,11 @@ export function checkRenderFit(env: PlanEnv, model: string, values: WorkflowValu
   if (resolution && listed && listed.length > 0 && !listed.some((r) => r.toLowerCase() === resolution.toLowerCase())) {
     throw new WorkflowError("WORKFLOW_INPUT_INVALID", "resolution: " + model + " offers " + listed.join(", "), { status: 400, field: "resolution" });
   }
+  const sound = textOf(values, "sound") ?? "source";
+  const silent = sound === "none" || (sound === "source" && sourceOf(values).hasAudio !== true);
+  if (TEXT_ONLY_EDIT.has(model) && silent) {
+    throw new WorkflowError("WORKFLOW_INPUT_INVALID", "sound: " + model + " always returns sound; keep the source sound (a source with sound) or let the model make sound", { status: 400, field: "sound" });
+  }
 }
 
 export function withSound(values: WorkflowValues, steps: WorkflowStep[], render: MediaStep): WorkflowStep[] {
