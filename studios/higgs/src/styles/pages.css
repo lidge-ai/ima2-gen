@@ -50,7 +50,7 @@
 @media (max-width: 760px) {
   .image-page { height: calc(100dvh - var(--topbar-h) - 64px); }
   .dock-main { grid-template-columns: 1fr; }
-  .dock-generate { flex-direction: row; justify-content: space-between; }
+  .dock-generate { flex-direction: row; justify-content: space-between; min-height: 46px; }
   .home { padding: 12px; gap: 20px; }
   .tool-row { grid-template-columns: 1fr 1fr; gap: 8px; }
   .tool-card-body { display: none; }

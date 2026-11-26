@@ -39,7 +39,7 @@ export function ParamControls({ model, form, set, variant = "tile" }: Props) {
         <SettingTile variant={variant} icon={variant === "chip" ? "layers" : undefined} caption="Resolution" value={form.resolution} options={opts(p.resolutions)} onChange={(resolution) => set({ resolution })} />
       ) : null}
       {model.routes.length > 0 ? (
-        <SettingTile variant={variant} caption="Run through" value={form.provider} options={routeOptions(model)} onChange={(provider) => set({ provider })} />
+        <SettingTile variant={variant} caption="Run through" chipText={(label) => "via " + label} value={form.provider} options={routeOptions(model)} onChange={(provider) => set({ provider })} />
       ) : null}
     </div>
   );

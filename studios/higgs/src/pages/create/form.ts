@@ -55,7 +55,7 @@ export function defaultsFor(model: CatalogModel | undefined, keep?: Partial<Crea
     aspectRatio: pick(p.aspectRatios, keep?.aspectRatio),
     durationSec: pick(p.durationsSec, keep?.durationSec),
     resolution: pick(p.resolutions, keep?.resolution),
-    audio: p.nativeAudio ? keep?.audio ?? true : false,
+    audio: keep?.audio ?? true,
   };
 }
 
