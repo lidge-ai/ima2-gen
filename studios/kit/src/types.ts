@@ -248,6 +248,17 @@ export interface WorkflowStepSpec {
   rationale?: string;
 }
 
+/**
+ * One language's text for a workflow (GET /api/workflows i18n.<lang>). Every key is optional and
+ * falls back to the English fields. Keys follow the wire: field names, option values, slot names.
+ */
+export interface WorkflowText {
+  label?: string;
+  description?: string;
+  fields?: Readonly<Record<string, { label?: string; help?: string; options?: Readonly<Record<string, string>> }>>;
+  slots?: Readonly<Record<string, string>>;
+}
+
 export interface WorkflowDef {
   id: string;
   /** "remix" covers motion transfer, subject swap and restyle; "director" covers studio, cast, locations, cinema. */
@@ -258,6 +269,8 @@ export interface WorkflowDef {
   inputs: readonly WorkflowInputSpec[];
   params: readonly WorkflowParamSpec[];
   steps: readonly WorkflowStepSpec[];
+  /** Text in other languages as the server sent it; see localizeWorkflow. */
+  i18n?: Readonly<Record<string, WorkflowText>>;
 }
 
 export interface WorkflowRunBody {

@@ -77,3 +77,13 @@ test("on a shared web server, an unpriced step is named before Generate, and a r
   await generate.click();
   await expect(page.getByRole("alert").filter({ hasText: refusal })).toBeVisible();
 });
+
+test("in Korean, Remix reads the server's Korean workflow text: name, field help, options and step names", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
+  await page.goto("/#/remix/remix-object-swap");
+  await expect(page.getByRole("heading", { name: "리믹스: 사물 바꾸기", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "품질: 표준" })).toBeVisible();
+  await expect(page.getByText("공연할 사람이나 사물 이미지 1~8장, 순서대로.").first()).toBeAttached();
+  await expect(page.getByText("1-8 images of the people or things")).toHaveCount(0);
+  await expect(page.getByText("Standard", { exact: true })).toHaveCount(0);
+});

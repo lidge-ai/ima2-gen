@@ -1,7 +1,6 @@
 import { formatUsd, type WorkflowDef, type WorkflowInputSpec } from "@ima2/studio-kit";
 import { useState } from "react";
 import { messages, tr, useT } from "../../i18n.ts";
-import { fieldLabel } from "./workflowLabels.ts";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { ModelName } from "../../ui/ModelName.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
@@ -43,10 +42,10 @@ function TextWorkflowInput({
       ) : null}
       {enabled ? (
         <label className="field">
-          {fieldLabel(form.def.id, input.name, input.label)}
+          {input.label}
           {input.required ? ` · ${t("required")}` : null}
           <textarea
-            aria-label={fieldLabel(form.def.id, input.name, input.label)}
+            aria-label={input.label}
             required={input.required}
             rows={4}
             value={form.texts[input.name] ?? ""}
@@ -66,7 +65,7 @@ function TextWorkflowInput({
 
 function FileWorkflowInput({ input, form }: { input: WorkflowInputSpec; form: WorkflowForm }) {
   const t = useT(M);
-  const label = fieldLabel(form.def.id, input.name, input.label);
+  const label = input.label;
   const values = form.files[input.name] ?? [];
   const max = input.maxCount ?? 1;
   return (
@@ -131,7 +130,7 @@ export function WorkflowParams({ def, form, chip = false }: { def: WorkflowDef; 
             const { [param.name]: _cleared, ...rest } = old;
             return rest;
           });
-        const caption = fieldLabel(def.id, param.name, param.label);
+        const caption = param.label;
         if (param.type === "select") {
           const options = param.default === undefined ? [{ value: "", label: t("auto") }, ...(param.options ?? [])] : (param.options ?? []);
           return (
@@ -264,7 +263,7 @@ export function Generate({ form }: { form: WorkflowForm }) {
   return (
     <div className="workflow-generate">
       {form.missing.length ? (
-        <p className="form-hint">{t("requiredList", { fields: form.missing.map((item) => fieldLabel(form.def.id, item.name, item.label)).join(", ") })}</p>
+        <p className="form-hint">{t("requiredList", { fields: form.missing.map((item) => item.label).join(", ") })}</p>
       ) : null}
       {form.spendReason ? <p className="form-hint spend-reason">{form.spendReason}</p> : null}
       {form.error ? (

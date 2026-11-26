@@ -3,7 +3,7 @@
  * routes/history.ts, routes/keys.ts). Only adapt.ts reads these; the rest of
  * the kit and every studio work with the UI-facing types in types.ts.
  */
-import type { MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask } from "./types.ts";
+import type { MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask, WorkflowText } from "./types.ts";
 
 export interface WireLogo {
   id: string;
@@ -149,6 +149,7 @@ export interface WireWorkflow {
   slots: readonly WireSlot[];
   tierField?: string;
   preset?: unknown;
+  i18n?: Readonly<Record<string, WorkflowText>>;
 }
 
 export interface WireStepEstimate {

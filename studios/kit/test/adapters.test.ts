@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { toCatalog, toKeyStatuses, toWireSubmit, fromWireJob, nameParts } from "../src/adapt.ts";
-import { toWorkflowDef, toWireRun, toEstimate } from "../src/adaptWorkflow.ts";
+import { toWorkflowDef, toWireRun, toEstimate, localizeWorkflow } from "../src/adaptWorkflow.ts";
 import { toHistoryPage, historyParams } from "../src/adaptHistory.ts";
 import { reduceJobEvent } from "../src/jobReducer.ts";
 import { wireCatalog } from "../src/fake/catalog.ts";
@@ -86,4 +86,15 @@ test("reducer applies planned, step, done and cancellation events", () => {
 test("a retiring model keeps a clean name and a retiring flag", () => {
   assert.deepEqual(nameParts("GPT Image 2 (deprecated)"), { label: "GPT Image 2", retiring: true });
   assert.deepEqual(nameParts("Seedance 2.5"), { label: "Seedance 2.5" });
+});
+
+test("a workflow reads in Korean from the server's i18n.ko, and stays English where nothing was translated", () => {
+  const def = toWorkflowDef(workflows.find((w) => w.id === "remix-object-swap")!);
+  const ko = localizeWorkflow(def, "ko");
+  assert.equal(ko.label, "리믹스: 사물 바꾸기");
+  assert.equal(ko.inputs.find((i) => i.name === "images")?.description, "공연할 사람이나 사물 이미지 1~8장, 순서대로.");
+  assert.deepEqual(ko.params.find((p) => p.name === "tier")?.options?.map((o) => [o.value, o.label]), [["standard", "표준"], ["lite", "라이트"]]);
+  assert.equal(ko.steps.find((s) => s.id === "render")?.label, "영상 만들기");
+  assert.equal(ko.id, def.id);
+  assert.equal(localizeWorkflow(def, "en"), def);
 });
