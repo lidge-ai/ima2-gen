@@ -54,8 +54,8 @@ test("video: a model without any key asks for one and cannot run", async ({ page
   await picker.getByLabel("Search models").fill("vidu");
   await expect(picker.getByText("Needs key")).toBeVisible();
   await picker.getByRole("button", { name: /Vidu Q4/ }).click();
-  await expect(page.getByText("Add an API key to run this model")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Vidu API" })).toHaveAttribute("href", "#/keys?focus=vidu");
+  await expect(page.getByText("Add a key to run this model")).toBeVisible();
+  await expect(page.getByRole("link", { name: "All API keys" })).toHaveAttribute("href", "#/keys?focus=vidu");
   await page.getByLabel("Prompt").fill("anything");
   await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
 });
@@ -69,7 +69,7 @@ test("video: choosing a route and settings changes the estimate", async ({ page 
   await expect(generate).toContainText("$0.75");
   await page.getByRole("button", { name: /^Run through: / }).click();
   await page.getByRole("dialog").getByRole("button", { name: /BytePlus ModelArk/ }).click();
-  await expect(page.getByText("Add an API key to run this model")).toBeVisible();
+  await expect(page.getByText("Add a key to run this model")).toBeVisible();
   await expect(generate).toBeDisabled();
 });
 
