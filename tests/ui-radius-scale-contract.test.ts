@@ -126,8 +126,9 @@ function keyOf(row: { file: string; atRule: string | null; selector: string }): 
 test("the frozen manifest covers every border-radius declaration exactly once", () => {
   const decls = radiusDecls().filter((d) => d.prop === "border-radius");
   // WP12s adds exactly three inspected sign-in panel/input/button declarations; the update
-  // indicator (ui/src/styles/update-indicator.css) adds five scale-token declarations.
-  assert.equal(MANIFEST.length, 487, "the manifest is frozen at 487 rows");
+  // indicator (ui/src/styles/update-indicator.css) adds five scale-token declarations; the media
+  // model picker adds two (.media-parameter input, .media-logo in form-controls.css).
+  assert.equal(MANIFEST.length, 489, "the manifest is frozen at 489 rows");
   assert.equal(decls.length, MANIFEST.length, "declaration count drifted from the manifest");
   const manifestKeys = new Set(MANIFEST.map(keyOf));
   assert.equal(manifestKeys.size, MANIFEST.length, "manifest keys must be unique");

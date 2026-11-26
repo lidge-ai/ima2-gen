@@ -353,6 +353,6 @@
 .media-link, .media-price { color: var(--text-muted); font: 11px/1.5 var(--mono); }
 .media-link { display: inline-block; align-self: flex-start; padding: 4px 0; text-align: left; text-decoration: underline; cursor: pointer; }
 .media-price a { color: inherit; text-decoration: underline; }
-.media-logo { display: flex; flex: 0 0 88px; width: 88px; height: 28px; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; background: #e8eaed; }
+.media-logo { display: flex; flex: 0 0 88px; width: 88px; height: 28px; align-items: center; justify-content: center; padding: 4px; border-radius: var(--r-xs); background: #e8eaed; }
 .media-logo img { display: block; max-width: 100%; max-height: 20px; width: auto; height: auto; object-fit: contain; filter: brightness(0); }
 .media-logo__fallback { font-size: 10px; overflow-wrap: anywhere; }
