@@ -159,7 +159,7 @@ test("waitUntil slices until terminal state or its absolute deadline", async () 
     assert.equal(alreadyDone.pollAfterSeconds, 0);
     statusCalls = -100;
     const timeout = await waitUntil(`http://127.0.0.1:${address.port}`, "id", { deadlineMs: Date.now() + 60, sliceMs: 20 });
-    assert.equal(timeout.timedOut, true);
+    assert.ok("timedOut" in timeout && timeout.timedOut);
   } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); }
 });
 
