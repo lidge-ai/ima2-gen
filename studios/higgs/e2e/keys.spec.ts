@@ -22,3 +22,17 @@ test("save, validate, search and remove a provider key", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Aggregators" })).toBeVisible();
   await expect(row).toHaveCount(0);
 });
+
+test("environment keys explain why removal is disabled", async ({ page }) => {
+  await page.route("**/api/media/keys", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.keys = body.keys.map((key: { keyVocabulary: string }) => key.keyVocabulary === "openai" ? { ...key, configured: true, source: "env" } : key);
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto("/#/keys?focus=openai");
+  const row = page.getByRole("article", { name: "OpenAI API" });
+  await expect(row.getByText("From environment")).toBeVisible();
+  await expect(row.getByRole("button", { name: "Remove" })).toBeDisabled();
+  await expect(row.getByText("Environment keys must be removed from the environment.")).toBeVisible();
+});
