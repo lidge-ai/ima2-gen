@@ -31,7 +31,7 @@ test("create video, cancel, handle errors and configure a key", async ({ page })
   const row = page.getByRole("article", { name: "Google Gemini API" });
   await row.getByLabel("API key").fill("fake-google-key");
   await row.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(row.getByText("Saved and validated")).toBeVisible();
+  await expect(row.getByText("Saved. The provider accepted the key.")).toBeVisible();
   await page.goto("/#/video");
   await page.getByRole("button", { name: /Model: Seedance 2.5/ }).click();
   await page.getByRole("button", { name: /Veo 3.1 Fast/ }).click();
