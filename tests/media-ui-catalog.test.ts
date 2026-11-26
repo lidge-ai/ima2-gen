@@ -235,7 +235,7 @@ test("making a result again restores its model, pinned route and settings agains
   const row = { provider: "media:fal", adapter: "fal", model: "acme/clip", mediaType: "video",
     media: { task: "text-to-video", durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true, inputRoles: [] } };
   assert.deepEqual(remakePlan(row, models), { ok: true, adjusted: [], inputsDropped: false,
-    selection: { kind: "video", model: "acme/clip", adapter: "fal", task: "text-to-video", routeMode: "pinned", label: "clip", vendor: "acme",
+    selection: { kind: "video", model: "acme/clip", adapter: "fal", task: "text-to-video", routeMode: "pinned", label: "clip", vendor: "acme", routeLabel: "fal",
       durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true } });
   // The route it ran on is gone: Automatic takes over and says which settings moved.
   const gone = remakePlan({ ...row, adapter: "replicate", provider: "media:replicate" }, models);
