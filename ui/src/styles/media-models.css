@@ -128,7 +128,7 @@
 .media-failure__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .media-failure__actions .modal__btn { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }
 .generate-row--media { row-gap: 6px; }
-.generate-row__media { grid-column: 1 / -1; margin: 0; color: var(--text-muted); font: 11px/1.45 var(--mono); overflow-wrap: anywhere; }
+.generate-row__media { grid-column: 1 / -1; margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 .generate-row__media--blocked { color: var(--text); }
 .generate-btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
 
