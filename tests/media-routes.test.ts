@@ -128,7 +128,7 @@ test("catalog lists models with every route, prices and key state, and never the
     assert.equal(fake.maskedKey, "fake..90");
     assert.deepEqual(clip.logo, { id: "acme", name: "Acme Media", urls: { primary: "/media-assets/vendors/acme.svg" }, source: "https://acme.example/brand" });
     assert.equal(clip.routes[0].logo.id, "acme", "the fake adapter id is a manifest alias");
-    assert.deepEqual(clip.routes[1].logo, clip.logo, "the aggregator falls back to its first model vendor logo");
+    assert.equal(clip.routes[1].logo, null, "an aggregator without its own logo does not use the model vendor logo");
     assert.equal(fake.logo.id, "acme");
     const svg = await fetch(`${base}${clip.logo.urls.primary}`);
     assert.equal(svg.status, 200);

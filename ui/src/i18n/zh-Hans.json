@@ -17,6 +17,7 @@
     "nativeAudio": "原生音频",
     "negativePrompt": "负面提示词",
     "seed": "种子",
+    "checked": "核查于 {date}",
     "documentation": "文档"
   },
   "media": {

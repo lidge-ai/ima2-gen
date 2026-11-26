@@ -3,6 +3,7 @@ import { useI18n } from "../i18n";
 import { allowedMediaValue, chooseMediaRoute, fetchMediaCatalog, formatMediaPrice, logoUrl, type MediaModel, type MediaRoute } from "../lib/mediaCatalog";
 import type { MediaSelection } from "../lib/mediaSelection";
 import { useAppStore } from "../store/useAppStore";
+import { Select } from "./controls/Select";
 
 type Selection = MediaSelection;
 function selectionFor(model: MediaModel, route: MediaRoute, previous?: Selection | null): Selection {
@@ -21,7 +22,7 @@ function Logo({ logo, label }: { logo: MediaModel["logo"]; label: string }) {
   const [failed, setFailed] = useState(false);
   const url = logoUrl(logo);
   useEffect(() => setFailed(false), [url]);
-  return url && !failed ? <img src={url} alt="" width={24} height={24} onError={() => setFailed(true)} /> : <span>{logo?.name || label}</span>;
+  return url && !failed ? <span className="media-logo"><img src={url} alt="" onError={() => setFailed(true)} /></span> : <span className="media-logo__fallback">{logo?.name || label}</span>;
 }
 function ModelList({ id, models, selection, changeModel, error }: { id: string; models: MediaModel[]; selection: Selection | null; changeModel: (value: string) => void; error: boolean }) {
   const { t } = useI18n();
@@ -42,7 +43,7 @@ function ModelList({ id, models, selection, changeModel, error }: { id: string; 
         </button>;
       })}
     </div>
-    {models.some((item) => item.routes.some((r) => !r.hasKey)) && <button type="button" onClick={() => openSettings("providers")}>{t("mediaPicker.settings")}</button>}
+    {models.some((item) => item.routes.some((r) => !r.hasKey)) && <button className="media-link" type="button" onClick={() => openSettings("providers")}>{t("mediaPicker.settings")}</button>}
   </>;
 }
 function RouteList({ id, model, route, selection, setSelection }: { id: string; model: MediaModel; route: MediaRoute; selection: Selection; setSelection: (selection: Selection | null) => void }) {
@@ -57,19 +58,29 @@ function RouteList({ id, model, route, selection, setSelection }: { id: string; 
       </div>
   </>;
 }
+function RouteSelect({ title, value, values, onChange }: { title: string; value: string; values: string[]; onChange: (value: string) => void }) {
+  const { t } = useI18n();
+  const tDefault = t("mediaPicker.default");
+  return <div className="media-parameter"><div className="section-title">{title}</div>
+    <Select ariaLabel={title} value={value} items={values.map((item) => ({ value: item, label: item || tDefault }))} onChange={onChange} portal />
+  </div>;
+}
 function RouteControls({ route, selection, setSelection }: { route: MediaRoute; selection: Selection; setSelection: (selection: Selection | null) => void }) {
   const { t } = useI18n();
-  return <>
-      <label>{t("mediaPicker.task")} <select value={selection.task} onChange={(event) => setSelection({ ...selection, task: event.target.value })}>{route.tasks.map((task) => <option key={task} value={task}>{task}</option>)}</select></label>
-      {route.params.durationsSec?.length ? <label>{t("mediaPicker.duration")} <select value={selection.durationSec ?? ""} onChange={(event) => setSelection({ ...selection, durationSec: event.target.value ? Number(event.target.value) : undefined })}><option value="">{t("mediaPicker.default")}</option>{route.params.durationsSec.map((value) => <option key={value} value={value}>{value}s</option>)}</select></label> : null}
-      {route.params.resolutions?.length ? <label>{t("mediaPicker.resolution")} <select value={selection.resolution ?? ""} onChange={(event) => setSelection({ ...selection, resolution: event.target.value || undefined })}><option value="">{t("mediaPicker.default")}</option>{route.params.resolutions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label> : null}
-      {route.params.aspectRatios?.length ? <label>{t("mediaPicker.aspect")} <select value={selection.aspectRatio ?? ""} onChange={(event) => setSelection({ ...selection, aspectRatio: event.target.value || undefined })}><option value="">{t("mediaPicker.default")}</option>{route.params.aspectRatios.map((value) => <option key={value} value={value}>{value}</option>)}</select></label> : null}
-      {route.params.nativeAudio && <label><input type="checkbox" checked={selection.audio ?? false} onChange={(event) => setSelection({ ...selection, audio: event.target.checked } as Selection)} />{t("mediaPicker.nativeAudio")}</label>}
-      {route.params.negativePrompt && <label>{t("mediaPicker.negativePrompt")} <input value={selection.negativePrompt ?? ""} onChange={(event) => setSelection({ ...selection, negativePrompt: event.target.value } as Selection)} /></label>}
-      {route.params.seed && <label>{t("mediaPicker.seed")} <input type="number" value={selection.seed ?? ""} onChange={(event) => setSelection({ ...selection, seed: event.target.value === "" ? undefined : Number(event.target.value) } as Selection)} /></label>}
-      {route.pricing.map((price, index) => <div key={index} title={price.source}>{formatMediaPrice(price)} · {price.checkedAt}</div>)}
-      {route.docsUrl && <a href={route.docsUrl} target="_blank" rel="noreferrer">{t("mediaPicker.documentation")}</a>}
-  </>;
+  const optional = (values: readonly (string | number)[]) => ["", ...values.map(String)];
+  const choice = (title: string, value: string, values: string[], update: (value: string) => void) =>
+    <RouteSelect title={title} value={value} values={values} onChange={update} />;
+  return <div className="media-controls">
+    {choice(t("mediaPicker.task"), selection.task, [...route.tasks], (task) => setSelection({ ...selection, task }))}
+    {route.params.durationsSec?.length ? choice(t("mediaPicker.duration"), String(selection.durationSec ?? ""), optional(route.params.durationsSec), (v) => setSelection({ ...selection, durationSec: v ? Number(v) : undefined })) : null}
+    {route.params.resolutions?.length ? choice(t("mediaPicker.resolution"), selection.resolution ?? "", optional(route.params.resolutions), (v) => setSelection({ ...selection, resolution: v || undefined })) : null}
+    {route.params.aspectRatios?.length ? choice(t("mediaPicker.aspect"), selection.aspectRatio ?? "", optional(route.params.aspectRatios), (v) => setSelection({ ...selection, aspectRatio: v || undefined })) : null}
+    {route.params.nativeAudio && <label className="media-toggle"><input type="checkbox" checked={selection.audio ?? false} onChange={(event) => setSelection({ ...selection, audio: event.target.checked })} />{t("mediaPicker.nativeAudio")}</label>}
+    {route.params.negativePrompt && <label className="media-parameter"><span className="section-title">{t("mediaPicker.negativePrompt")}</span><input className="video-topic-input" value={selection.negativePrompt ?? ""} onChange={(event) => setSelection({ ...selection, negativePrompt: event.target.value })} /></label>}
+    {route.params.seed && <label className="media-parameter"><span className="section-title">{t("mediaPicker.seed")}</span><input className="video-topic-input" type="number" value={selection.seed ?? ""} onChange={(event) => setSelection({ ...selection, seed: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>}
+    {route.pricing.map((price, index) => <div className="media-price" key={index}>{formatMediaPrice(price)} · <a href={price.source} target="_blank" rel="noreferrer">{t("mediaPicker.checked", { date: price.checkedAt })}</a></div>)}
+    {route.docsUrl && <a className="media-link" href={route.docsUrl} target="_blank" rel="noreferrer">{t("mediaPicker.documentation")}</a>}
+  </div>;
 }
 export function MediaModelPicker({ kind }: { kind?: "image" | "video" }) {
   const id = useId();

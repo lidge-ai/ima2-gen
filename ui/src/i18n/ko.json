@@ -17,6 +17,7 @@
     "nativeAudio": "기본 오디오",
     "negativePrompt": "네거티브 프롬프트",
     "seed": "시드",
+    "checked": "확인 {date}",
     "documentation": "문서"
   },
   "media": {
