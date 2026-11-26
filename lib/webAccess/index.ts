@@ -1,7 +1,7 @@
 import type { Express, NextFunction, Request, RequestHandler, Response } from "express";
 import { createAccessJwtVerifier, type AccessJwtResult } from "./accessJwt.js";
 import { loadWebAccessConfig, type WebAccessConfig } from "./config.js";
-import { createGoogleLogin } from "./googleLogin.js";
+import { createGoogleLogin, fromThisSite } from "./googleLogin.js";
 import { classifyWebRoute } from "./routePolicy.js";
 import { createSessionSigner } from "./session.js";
 import { createSpendGuard, type SpendGuard } from "./spendGuard.js";
@@ -59,7 +59,7 @@ export function createWebAccess(config: WebAccessConfig, deps: WebAccessDeps = {
   /** After sign-in: allow list, write origin, route policy, then the email on the request and the badge cookies. */
   function admit(req: Request, res: Response, next: NextFunction, email: string): void {
     if (!allowed(email)) return deny(res, 403, "WEB_ACCESS_FORBIDDEN", "This account is not allowed on this instance.");
-    if (config.mode === "google" && !READ_METHODS.has(req.method) && req.headers.origin !== config.publicOrigin) {
+    if (config.mode === "google" && !READ_METHODS.has(req.method) && !fromThisSite(req, config.publicOrigin)) {
       return deny(res, 403, "WEB_ORIGIN_REJECTED", "Changes must come from this site's own pages.");
     }
     res.locals.webUser = { email };

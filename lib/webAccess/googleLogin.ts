@@ -75,6 +75,18 @@ function sameText(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
+/**
+ * A state-changing request came from this site's own pages. Pages served with
+ * Referrer-Policy: no-referrer make browsers send Origin: null on form posts,
+ * so null (or no Origin) is accepted only with Sec-Fetch-Site: same-origin,
+ * which page scripts cannot set.
+ */
+export function fromThisSite(req: Request, origin: string): boolean {
+  const supplied = req.headers.origin;
+  if (supplied === origin) return true;
+  return (supplied === undefined || supplied === "null") && req.headers["sec-fetch-site"] === "same-origin";
+}
+
 export function createGoogleLogin(options: GoogleLoginOptions) {
   const now = options.now ?? Date.now;
   const get = options.fetch ?? globalThis.fetch;
@@ -147,7 +159,7 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
   }
 
   function logout(req: Request, res: Response): void {
-    if (req.headers.origin !== options.origin) {
+    if (!fromThisSite(req, options.origin)) {
       res.status(403).setHeader("Cache-Control", "no-store");
       res.type("text/plain").send("Origin not allowed");
       return;
