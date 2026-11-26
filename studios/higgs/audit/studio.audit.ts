@@ -81,6 +81,14 @@ const tab = (key: number): Act => async (page) => {
   for (let i = 0; i < key; i++) await page.keyboard.press("Tab");
 };
 /** Six showcase clips (the fake's two, repeated) so Home shows the grid, not the wide 1–2 clip cards. */
+const clips = (count: number): Act => async (page) => {
+  await page.route("**/api/showcase", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as { items: Record<string, unknown>[] };
+    const items = Array.from({ length: count }, (_, i) => ({ ...body.items[i % body.items.length]!, id: "audit-clip-" + i }));
+    await route.fulfill({ response, json: { items } });
+  });
+};
 const sixClips: Act = async (page) => {
   await page.route("**/api/showcase", async (route) => {
     const response = await route.fetch();
@@ -179,6 +187,7 @@ const PRISTINE: Cell[] = [
   },
   { id: "notfound__route", hash: "/does-not-exist" },
   { id: "home__showcase-grid", hash: "/", setup: sixClips, act: async (p) => p.mouse.move(0, 0) },
+  { id: "home__showcase-twelve", hash: "/", setup: clips(12), act: async (p) => p.mouse.move(0, 0) },
   {
     id: "remix__web-unpriced",
     hash: "/remix/remix-restyle",
