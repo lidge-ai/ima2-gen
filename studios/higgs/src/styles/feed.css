@@ -425,3 +425,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .job-progress-bar.is-indeterminate {
+    animation: none;
+  }
+}
