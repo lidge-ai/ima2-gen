@@ -1,3 +1,4 @@
+import { messages, useT } from "../i18n.ts";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { HistoryItem } from "@ima2/studio-kit";
 import { useStudioApi } from "../studio/context.tsx";
@@ -8,6 +9,11 @@ import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
 
+const M = messages(
+  { animate: "Animate", edit: "Edit", remix: "Remix", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt" },
+  { animate: "영상 만들기", edit: "편집", remix: "리믹스", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음" },
+);
+
 interface Props {
   item: HistoryItem | null;
   onClose: () => void;
@@ -15,12 +21,12 @@ interface Props {
 
 type Target = "video" | "remix" | "image";
 
-const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: string; icon: IconName }[]> = {
+const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: keyof typeof M.en; icon: IconName }[]> = {
   image: [
-    { target: "video", label: "Animate", icon: "video" },
-    { target: "image", label: "Edit", icon: "image" },
+    { target: "video", label: "animate", icon: "video" },
+    { target: "image", label: "edit", icon: "image" },
   ],
-  video: [{ target: "remix", label: "Remix", icon: "remix" }],
+  video: [{ target: "remix", label: "remix", icon: "remix" }],
   audio: [],
 };
 
@@ -48,6 +54,7 @@ function useItemActions(item: HistoryItem, onClose: () => void) {
 }
 
 function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => void }) {
+  const t = useT(M);
   const actions = useItemActions(item, onClose);
   const reuse = (target: Target) => {
     handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target });
@@ -57,20 +64,20 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
   return (
     <div className="lightbox-actions">
       <a className="btn" href={item.url} download={downloadName(item.url, item.historyId)}>
-        <Icon name="download" size={15} /> Download
+        <Icon name="download" size={15} /> {t("download")}
       </a>
       <button type="button" className="btn" aria-pressed={!!item.favorite} onClick={() => void actions.save()}>
-        <Icon name="heart" size={15} /> {item.favorite ? "Saved" : "Save"}
+        <Icon name="heart" size={15} /> {item.favorite ? t("saved") : t("save")}
       </button>
       {REUSE[item.kind].map((r) => (
         <button key={r.target} type="button" className="btn" onClick={() => reuse(r.target)}>
-          <Icon name={r.icon} size={15} /> {r.label}
+          <Icon name={r.icon} size={15} /> {t(r.label)}
         </button>
       ))}
       <button type="button" className="btn btn-danger" onClick={() => void actions.remove()}>
-        <Icon name="trash" size={15} /> Delete
+        <Icon name="trash" size={15} /> {t("delete")}
       </button>
-      {actions.error ? <p role="alert">Action failed: {actions.error}</p> : null}
+      {actions.error ? <p role="alert">{t("actionFailed", { error: actions.error })}</p> : null}
     </div>
   );
 }
@@ -85,28 +92,30 @@ function Meta({ term, children }: { term: string; children: ReactNode }) {
 }
 
 function MetaList({ item }: { item: HistoryItem }) {
+  const t = useT(M);
   return (
     <dl className="meta-list">
-      <Meta term="Model">
+      <Meta term={t("model")}>
         <ModelName id={item.model} />
       </Meta>
       {item.provider ? (
-        <Meta term="Ran through">
+        <Meta term={t("provider")}>
           <ProviderName id={item.provider} />
         </Meta>
       ) : null}
-      {item.workflow ? <Meta term="Workflow">{item.workflow}</Meta> : null}
-      <Meta term="Created">
+      {item.workflow ? <Meta term={t("workflow")}>{item.workflow}</Meta> : null}
+      <Meta term={t("created")}>
         <time dateTime={item.createdAt}>{timeAgo(item.createdAt)}</time>
       </Meta>
-      {item.width && item.height ? <Meta term="Size">{item.width + " x " + item.height}</Meta> : null}
-      {item.durationSec ? <Meta term="Length">{item.durationSec + "s"}</Meta> : null}
+      {item.width && item.height ? <Meta term={t("size")}>{item.width + " x " + item.height}</Meta> : null}
+      {item.durationSec ? <Meta term={t("length")}>{item.durationSec + "s"}</Meta> : null}
     </dl>
   );
 }
 
 /** Full view of one result with the actions a person takes next. */
 export function Lightbox({ item, onClose }: Props) {
+  const t = useT(M);
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -115,17 +124,17 @@ export function Lightbox({ item, onClose }: Props) {
     if (!item && dialog.open) dialog.close();
   }, [item]);
   return (
-    <dialog ref={ref} className="lightbox" onClose={onClose} aria-label="Result">
+    <dialog ref={ref} className="lightbox" onClose={onClose} aria-label={t("result")}>
       {item ? (
         <div className="lightbox-body">
           <div className="lightbox-media">
             <MediaView kind={item.kind} url={item.url} mimeType={item.mimeType} alt={item.prompt ?? item.model} />
           </div>
           <aside className="lightbox-side">
-            <button type="button" className="btn btn-ghost lightbox-close" onClick={onClose} aria-label="Close">
+            <button type="button" className="btn btn-ghost lightbox-close" onClick={onClose} aria-label={t("close")}>
               <Icon name="close" />
             </button>
-            <p className="lightbox-prompt">{item.prompt ?? "No prompt"}</p>
+            <p className="lightbox-prompt">{item.prompt ?? t("noPrompt")}</p>
             <MetaList item={item} />
             <LightboxActions item={item} onClose={onClose} />
           </aside>

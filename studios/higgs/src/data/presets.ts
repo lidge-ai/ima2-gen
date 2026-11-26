@@ -1,3 +1,5 @@
+import { messages, tr } from "../i18n.ts";
+
 /**
  * ima2's own starting points. A preset fills the prompt and settings; it never
  * hides what will be sent. Sample media under public/samples was made for ima2.
@@ -16,12 +18,17 @@ export interface Preset {
   sampleKind: "image" | "video";
 }
 
+const M = messages(
+  { slow: "Slow push in", orbit: "Orbit", crane: "Crane up", handheld: "Handheld follow", rain: "Neon rain", turn: "Product turntable", editorial: "Editorial portrait", room: "Isometric room", packshot: "Packshot", landscape: "Wide landscape", camera: "Camera", mood: "Mood", product: "Product", portrait: "Portrait", illustration: "Illustration", scene: "Scene" },
+  { slow: "천천히 다가가기", orbit: "회전", crane: "크레인 상승", handheld: "핸드헬드 추적", rain: "네온 빗길", turn: "제품 회전", editorial: "에디토리얼 인물", room: "아이소메트릭 방", packshot: "제품 사진", landscape: "넓은 풍경", camera: "카메라", mood: "분위기", product: "제품", portrait: "인물", illustration: "일러스트", scene: "장면" },
+);
+
 export const PRESETS: readonly Preset[] = [
   {
     id: "slow-push",
     kind: "video",
-    label: "Slow push in",
-    category: "Camera",
+    get label() { return tr(M, "slow"); },
+    get category() { return tr(M, "camera"); },
     prompt: "Slow dolly push toward the subject, shallow depth of field, steady framing",
     durationSec: 5,
     aspectRatio: "16:9",
@@ -31,8 +38,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "orbit",
     kind: "video",
-    label: "Orbit",
-    category: "Camera",
+    get label() { return tr(M, "orbit"); },
+    get category() { return tr(M, "camera"); },
     prompt: "Camera orbits 90 degrees around the subject at eye level, smooth parallax",
     durationSec: 5,
     aspectRatio: "16:9",
@@ -42,8 +49,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "crane-up",
     kind: "video",
-    label: "Crane up",
-    category: "Camera",
+    get label() { return tr(M, "crane"); },
+    get category() { return tr(M, "camera"); },
     prompt: "Camera rises from ground level to a high wide view, revealing the scene",
     durationSec: 5,
     aspectRatio: "16:9",
@@ -53,8 +60,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "handheld",
     kind: "video",
-    label: "Handheld follow",
-    category: "Camera",
+    get label() { return tr(M, "handheld"); },
+    get category() { return tr(M, "camera"); },
     prompt: "Handheld camera follows the subject from behind, natural sway",
     durationSec: 5,
     aspectRatio: "9:16",
@@ -64,8 +71,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "rain-neon",
     kind: "video",
-    label: "Neon rain",
-    category: "Mood",
+    get label() { return tr(M, "rain"); },
+    get category() { return tr(M, "mood"); },
     prompt: "Night street in light rain, neon reflections on wet asphalt, slow motion drops",
     durationSec: 5,
     aspectRatio: "16:9",
@@ -75,8 +82,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "product-turn",
     kind: "video",
-    label: "Product turntable",
-    category: "Product",
+    get label() { return tr(M, "turn"); },
+    get category() { return tr(M, "product"); },
     prompt: "Product rotates slowly on a seamless studio backdrop, soft key light",
     durationSec: 5,
     aspectRatio: "1:1",
@@ -86,8 +93,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "editorial",
     kind: "image",
-    label: "Editorial portrait",
-    category: "Portrait",
+    get label() { return tr(M, "editorial"); },
+    get category() { return tr(M, "portrait"); },
     prompt: "Editorial portrait, window light, muted palette, 85mm lens, film grain",
     aspectRatio: "3:4",
     sample: "samples/editorial.jpg",
@@ -96,8 +103,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "isometric",
     kind: "image",
-    label: "Isometric room",
-    category: "Illustration",
+    get label() { return tr(M, "room"); },
+    get category() { return tr(M, "illustration"); },
     prompt: "Isometric cutaway of a tiny studio apartment, clean soft shading, pastel palette",
     aspectRatio: "1:1",
     sample: "samples/isometric.jpg",
@@ -106,8 +113,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "packshot",
     kind: "image",
-    label: "Packshot",
-    category: "Product",
+    get label() { return tr(M, "packshot"); },
+    get category() { return tr(M, "product"); },
     prompt: "Minimal product packshot on colored paper, hard shadow, top light",
     aspectRatio: "4:5",
     sample: "samples/packshot.jpg",
@@ -116,8 +123,8 @@ export const PRESETS: readonly Preset[] = [
   {
     id: "landscape",
     kind: "image",
-    label: "Wide landscape",
-    category: "Scene",
+    get label() { return tr(M, "landscape"); },
+    get category() { return tr(M, "scene"); },
     prompt: "Wide landscape at blue hour, layered mountains, low fog, cinematic",
     aspectRatio: "16:9",
     sample: "samples/landscape.jpg",
