@@ -28,7 +28,7 @@ export const remixMotionTransfer: WorkflowDefinition = {
     const slot = models.render;
     if (!slot) throw new Error("render slot missing");
     checkRemixFit(env, slot.model, values, refsOf(values, "images").length);
-    const render = renderStep({ slot, values, dependsOn: [], instruction: instruction(refsOf(values, "images").length), includeUserImages: true });
+    const render = renderStep({ slot, values, dependsOn: [], instruction: instruction(refsOf(values, "images").length), includeUserImages: true, catalog: env.catalog });
     return { workflowId: "remix-motion-transfer", steps: finishRemix(values, [], render) };
   },
 };
