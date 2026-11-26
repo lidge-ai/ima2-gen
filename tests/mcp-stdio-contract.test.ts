@@ -49,7 +49,7 @@ async function fixture() {
   return { base, env, requests, streams, async close() {
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) => server.close((err) => err ? reject(err) : resolve()));
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   } };
 }
 

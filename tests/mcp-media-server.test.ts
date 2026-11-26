@@ -270,7 +270,7 @@ test("history cursor truncation and result saving expose encoded and local resou
   const history = await call(client, "media_history", { limit: 50 });
   assert.equal((history.structuredContent as Record<string, unknown>).truncated, true);
   assert.deepEqual((history.structuredContent as Record<string, unknown>).cursor, { before: 10, beforeFilename: "page-9" });
-  const root = await mkdtemp(join(tmpdir(), "ima2-mcp-test-")); closeAll.push(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(join(tmpdir(), "ima2-mcp-test-")); closeAll.push(() => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const result = await call(client, "media_result", { requestId: "req-1", saveDir: root });
   assert.equal(await readFile(join(root, filename), "utf8"), "fake image");
   assert.ok(content(result).includes(`${fake.base}/generated/${encodeURIComponent(filename)}`));
@@ -280,7 +280,7 @@ test("history cursor truncation and result saving expose encoded and local resou
 
 test("workflow values accept client paths, upload before estimate and reject ambiguous sources", async () => {
   const fake = await fixture(); const client = await connect(async () => fake.base); await client.listTools();
-  const root = await mkdtemp(join(tmpdir(), "ima2-mcp-input-")); closeAll.push(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(join(tmpdir(), "ima2-mcp-input-")); closeAll.push(() => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const path = join(root, "input.png"); await writeFile(path, "fake");
   const args = { id: workflow.id, values: { video: [{ path }] } };
   const valid = await call(client, "workflow_estimate", args); assert.equal(valid.isError, undefined, content(valid));
@@ -307,7 +307,7 @@ test("client cancellation closes the SSE wait without cancelling the billed job"
 test("cancellation during request ID check or upload prevents media and workflow submission", async () => {
   for (const [name, atUpload] of [["media_submit", false], ["media_submit", true], ["workflow_run", false], ["workflow_run", true]] as const) {
     const fake = await fixture(); const client = await connect(async () => fake.base); await client.listTools();
-    const root = await mkdtemp(join(tmpdir(), "ima2-mcp-cancel-")); closeAll.push(() => rm(root, { recursive: true, force: true }));
+    const root = await mkdtemp(join(tmpdir(), "ima2-mcp-cancel-")); closeAll.push(() => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
     const path = join(root, "source.png"); await writeFile(path, "fake");
     const args = name === "media_submit" ? { ...media, inputs: [{ role: "source-image", path }] } : { ...wf, values: { video: [{ path }] } };
     const barrier = gate(); fake.setHold(atUpload ? "/api/media/inputs" : `/api/media/jobs/${args.requestId}`, barrier);
@@ -403,7 +403,7 @@ test("offline descriptors revalidate online workflow schema before uploading", a
     return fake.base;
   });
   assert.equal((await client.listTools()).tools.length, 14); offline = false;
-  const root = await mkdtemp(join(tmpdir(), "ima2-mcp-offline-")); closeAll.push(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(join(tmpdir(), "ima2-mcp-offline-")); closeAll.push(() => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const path = join(root, "source.png"); await writeFile(path, "fake");
   const invalid = await call(client, "workflow_estimate", { id: workflow.id, values: { video: [{ path, ref: "asset://other" }] } });
   assert.equal(invalid.isError, true, content(invalid));
