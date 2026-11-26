@@ -181,6 +181,19 @@ const PRISTINE: Cell[] = [
   { id: "home__showcase-grid", hash: "/", setup: sixClips, act: async (p) => p.mouse.move(0, 0) },
   { id: "remix__web-unpriced", hash: "/remix/remix-restyle", setup: unpricedRestyle, act: async (p) => p.waitForTimeout(800) },
   { id: "video__web-over-cap", hash: "/video", setup: webCaps(0.1), act: prompt("over the per-run limit") },
+  {
+    id: "video__picker-after-keyless",
+    hash: "/video",
+    act: async (p) => {
+      // Pick a keyed model, then a keyless one, then reopen: Recent keeps only the keyed one.
+      for (const name of [/Seedance 2\.5 Flash|시댄스 2\.5 Flash/, /Vidu Q4/]) {
+        await p.getByRole("button", { name: /^(Model|모델): / }).click();
+        await p.getByRole("dialog").getByRole("button", { name }).first().click();
+      }
+      await p.getByRole("button", { name: /^(Model|모델): / }).click();
+      await p.waitForTimeout(400);
+    },
+  },
   { id: "home__showcase-hover", hash: "/", setup: sixClips, act: async (p) => { await showcaseTile(p).hover(); await p.waitForTimeout(400); } },
   {
     id: "home__showcase-tap",
