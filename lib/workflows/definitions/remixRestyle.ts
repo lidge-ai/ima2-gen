@@ -1,12 +1,13 @@
 import type { LocalStep, MediaStep, ModelSlot, ResolvedSlot, WorkflowDefinition, WorkflowValues } from "../types.js";
-import { finishRemix, REMIX_FIELDS_TAIL, renderSlot, renderStep, sourceOf, sourceVideoField } from "./remixShared.js";
+import { checkRemixFit, finishRemix, REMIX_FIELDS_TAIL, renderSlot, renderStep, sourceOf, sourceVideoField } from "./remixShared.js";
 import { joinPrompt, option, refsOf, textOf } from "./shared.js";
+import { checkReferenceLimit } from "../validate.js";
 import { STYLE_PRESETS } from "./styles.js";
 
 const STYLIZE_SLOT: ModelSlot = {
   name: "stylize", label: "Restyle the first frame", task: "image-to-image",
   defaultModel: "bytedance/seedream-5.5",
-  alternatives: ["openai/gpt-image-2.6", "google/nano-banana-pro", "black-forest-labs/flux-kontext-max"],
+  alternatives: ["openai/gpt-image-2.6", "google/nano-banana-pro", "black-forest-labs/flux-2-max", "black-forest-labs/flux-3-image", "black-forest-labs/flux-kontext-max"],
   rationale: "Volcengine Ark image API (https://docs.volcengine.com/docs/ark/image-generation-api?lang=en, read 2026-11-26): "
     + "Seedream 5.5 edits one source image with up to 10 references at a low per-image price.",
 };
@@ -70,10 +71,12 @@ export const remixRestyle: WorkflowDefinition = {
   check(values) {
     return values.style === undefined && values.styleImage === undefined ? "choose a style or add a style reference" : null;
   },
-  plan(values, models) {
+  plan(values, models, env) {
     const stylize = models.stylize;
     const render = models.render;
     if (!stylize || !render) throw new Error("restyle slots missing");
+    checkReferenceLimit(env, stylize.model, refsOf(values, "styleImage").length, "styleImage");
+    checkRemixFit(env, render.model, values, 1);
     const renderSpec = renderStep({
       slot: render, values, dependsOn: ["style-frame"], instruction: RENDER_INSTRUCTION, includeUserImages: false,
       async extraInputs(rt) {
@@ -85,3 +88,4 @@ export const remixRestyle: WorkflowDefinition = {
     return { workflowId: "remix-restyle", steps: finishRemix(values, [firstFrameStep(), stylizeStep(stylize, values)], renderSpec) };
   },
 };
+

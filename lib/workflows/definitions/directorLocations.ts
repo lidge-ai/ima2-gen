@@ -12,8 +12,9 @@ export const directorLocations: WorkflowDefinition = {
     resolutionField(["1k", "2k", "4k"]), countField, ...lookFields(),
   ],
   check: checkLook,
-  plan(values, models) {
+  plan(values, models, env) {
     return { workflowId: "director-locations", steps: [stillStep(values, models.image!,
-      "Show an empty film location with no people, dressed and lit as a shooting set. Use motivated practical lighting, believable scale and a wide establishing composition.", "16:9")] };
+      "Show an empty film location with no people, dressed and lit as a shooting set. Use motivated practical lighting, believable scale and a wide establishing composition.", "16:9", false, env)] };
   },
 };
+

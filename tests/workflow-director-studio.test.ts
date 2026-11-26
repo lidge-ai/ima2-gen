@@ -14,7 +14,7 @@ const studio = getWorkflow("director-studio");
 assert.ok(studio);
 const price = (variant: string, usd: number) => ({ unit: "second" as const, usd, variant, source: "https://example.test/p", checkedAt: "2026-11-26" });
 const specs = {
-  "bytedance/seedance-2.5": spec("bytedance/seedance-2.5", { params: { nativeAudio: true }, pricing: [price("720p", 0.2)] }),
+  "bytedance/seedance-2.5": spec("bytedance/seedance-2.5", { tasks: ["text-to-video", "reference-to-video"], params: { nativeAudio: true }, pricing: [price("720p", 0.2)] }),
   "bytedance/seedance-2": spec("bytedance/seedance-2", { params: { nativeAudio: true, durationsSec: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] }, pricing: [price("720p", 0.1)] }),
   "google/gemini-omni-flash-1.2": spec("google/gemini-omni-flash-1.2", { params: { nativeAudio: false } }),
 };
@@ -121,3 +121,10 @@ test("every workflow describes itself as JSON and marks models the gateway knows
   for (const w of WORKFLOWS) assert.doesNotThrow(() => JSON.parse(JSON.stringify(describeWorkflow(w))));
 });
 
+
+test("a still model's reference limit is enforced at planning", async () => {
+  const kontext = { "black-forest-labs/flux-kontext-max": { id: "black-forest-labs/flux-kontext-max", upstreamId: "k", vendor: "black-forest-labs", label: "k", kind: "image" as const, tasks: ["text-to-image", "image-to-image"] as const, params: { maxReferenceImages: 1 }, pricing: [], docsUrl: "https://docs.bfl.ai" } };
+  const cast = WORKFLOWS.find((w) => w.id === "director-cast")!;
+  const refs = [1, 2, 3].map((i) => ({ url: "https://img.example/" + i + ".png", mimeType: "image/png" }));
+  await assert.rejects(prepareWorkflow(cast, { values: { prompt: "hero", images: refs } }, { gateway: fakeGateway({}, kontext), local, allowedRoots: [root] }, new AbortController().signal), /at most 1 reference images/);
+});

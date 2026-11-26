@@ -63,8 +63,8 @@ export async function prepareWorkflow(definition: WorkflowDefinition, request: u
   if (Object.keys(rest).length > 0) throw inputError(Object.keys(rest)[0] ?? "request", "is not accepted");
   const checked = await validateValues(definition, rawValues ?? {}, { allowedRoots: deps.allowedRoots });
   const values = await probeMediaValues(definition, checked, deps.local, signal);
-  const slots = resolveSlots(definition, readSelection(rawSelection), values);
   const env = { catalog: (id: string) => deps.gateway.catalog(id) };
+  const slots = resolveSlots(definition, readSelection(rawSelection), values, env.catalog);
   const plan = definition.plan(values, slots, env);
   checkPlan(plan);
   return { definition, values, slots, plan, estimate: estimatePlan(plan, env) };
@@ -178,3 +178,4 @@ async function schedule(plan: WorkflowPlan, runStep: (s: WorkflowStep) => Promis
     }
   }
 }
+

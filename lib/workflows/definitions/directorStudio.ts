@@ -1,14 +1,18 @@
 import type { MediaInput, MediaModelSpec } from "../../providers/media/contract.js";
 import type { LocalStep, MediaStep, ModelSlot, PlanEnv, ResolvedSlot, StepRuntime, WorkflowDefinition, WorkflowStep, WorkflowValues } from "../types.js";
 import { fitDuration, maxShotSeconds, planShotsStep, shotPrompt, splitDuration } from "./directorShots.js";
-import { aspectField, checkLook, inputsFrom, intOf, joinPrompt, lookFields, lookPrompt, option, refsOf, textOf, videoResolutionField } from "./shared.js";
+import { aspectField, checkLook, checkModelFit, inputsFrom, intOf, joinPrompt, lookFields, lookPrompt, option, refsOf, textOf, videoResolutionField } from "./shared.js";
 
 const RENDER_SLOT: ModelSlot = {
   name: "render", label: "Video", task: "reference-to-video",
   defaultModel: "bytedance/seedance-2.5",
-  alternatives: ["bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini", "google/gemini-omni-flash-1.2"],
+  alternatives: [
+    "bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini",
+    "google/gemini-omni-flash-1.2", "xai/grok-imagine-video-1.5", "google/veo-3.1",
+  ],
   rationale: "Seedance 2.5 (seed.bytedance.com launch post; docs.volcengine.com/docs/ark/video-generation-tutorial, read 2026-11-26): "
-    + "up to 30 s per call with native audio and up to 30 images, 10 videos and 10 audio references.",
+    + "up to 30 s per call with native audio and up to 30 images, 10 videos and 10 audio references. "
+    + "Alternatives are split into shots by their listed clip lengths.",
 };
 
 const SOUND_SLOT: ModelSlot = {
@@ -112,6 +116,7 @@ function buildPlan(values: WorkflowValues, models: Readonly<Record<string, Resol
   const sound = models.sound;
   if (!render || !sound) throw new Error("director-studio slots missing");
   const spec: MediaModelSpec | undefined = env.catalog(render.model);
+  checkModelFit(env, render.model, values, refsOf(values, "images").length);
   const total = intOf(values, "duration", 5);
   const durations = splitDuration(total, maxShotSeconds(render.model, spec)).map((d) => fitDuration(d, spec));
   const shape: Shape = {
@@ -160,3 +165,4 @@ export const directorStudio: WorkflowDefinition = {
     return { workflowId: "director-studio", steps: buildPlan(values, models, env) };
   },
 };
+

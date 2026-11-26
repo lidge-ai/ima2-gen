@@ -9,6 +9,7 @@ import { directorStudio } from "./definitions/directorStudio.js";
 import { remixMotionTransfer } from "./definitions/remixMotionTransfer.js";
 import { remixObjectSwap } from "./definitions/remixObjectSwap.js";
 import { remixRestyle } from "./definitions/remixRestyle.js";
+import { slotModelAvailable } from "./validate.js";
 import type { ModelSlot, WorkflowDefinition, WorkflowField, WorkflowId, WorkflowGateway } from "./types.js";
 
 export const WORKFLOWS: readonly WorkflowDefinition[] = [
@@ -22,7 +23,7 @@ export function getWorkflow(id: string): WorkflowDefinition | undefined {
 
 export interface SlotDescription extends Omit<ModelSlot, "tierModels"> {
   tierModels?: Readonly<Record<string, string>>;
-  /** model id -> whether the gateway knows it (an adapter lists it). */
+  /** model id -> whether an adapter lists it with the slot's task. */
   available: Readonly<Record<string, boolean>>;
 }
 
@@ -40,7 +41,7 @@ export interface WorkflowDescription {
 export function describeWorkflow(def: WorkflowDefinition, gateway?: Pick<WorkflowGateway, "catalog">): WorkflowDescription {
   const slots = def.slots.map((slot) => {
     const models = [slot.defaultModel, ...slot.alternatives, ...Object.values(slot.tierModels ?? {})];
-    const available = Object.fromEntries(models.map((m) => [m, gateway ? gateway.catalog(m) !== undefined : false]));
+    const available = Object.fromEntries(models.map((m) => [m, gateway ? slotModelAvailable(slot, m, (id) => gateway.catalog(id)) : false]));
     return { ...slot, available };
   });
   const description: WorkflowDescription = {
@@ -55,3 +56,4 @@ export type { PreparedWorkflow, RunOptions, WorkflowDeps } from "./runner.js";
 export { createFfmpegLocalOps } from "./localOps.js";
 export { WorkflowError } from "./errors.js";
 export type * from "./types.js";
+
