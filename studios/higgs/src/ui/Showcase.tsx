@@ -259,17 +259,20 @@ function Tile({ item, hide = "" }: { item: ShowcaseItem; hide?: string }) {
               {costText(item, t)}
             </p>
             <NeedsLine item={item} workflow={workflow} />
-            <div className="showcase-actions">
-              <button type="button" className="btn btn-primary" onClick={make} disabled={!workflow} title={workflow ? undefined : t("unavailable")}>
-                <Icon name="remix" size={15} /> {t("make")}
-              </button>
-              {item.source || item.compare ? (
-                <button type="button" className="btn" aria-pressed={compare} onClick={() => setCompare(!compare)}>
-                  {t("compare")}
+            {/* A gallery-only clip (no workflow in showcase.json) is shown as made, with no buttons. */}
+            {item.workflow ? (
+              <div className="showcase-actions">
+                <button type="button" className="btn btn-primary" onClick={make} disabled={!workflow} title={workflow ? undefined : t("unavailable")}>
+                  <Icon name="remix" size={15} /> {t("make")}
                 </button>
-              ) : null}
-            </div>
-            {!workflow ? <p className="showcase-keys">{t("unavailable")}</p> : null}
+                {item.source || item.compare ? (
+                  <button type="button" className="btn" aria-pressed={compare} onClick={() => setCompare(!compare)}>
+                    {t("compare")}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {item.workflow && !workflow ? <p className="showcase-keys">{t("unavailable")}</p> : null}
           </div>
         </div>
       </div>

@@ -186,3 +186,15 @@ test("Home shows one full row of clips and the tools below it on the first scree
   expect(rows(await tops())).toEqual([3]);
   await expect(showcase.getByRole("link", { name: "All 10 clips" })).toBeVisible();
 });
+
+test("a gallery-only clip (no workflow) shows what it is and what it cost, with no buttons", async ({ page }) => {
+  const items = [{ id: "hero-train", title: { en: "Night train" }, result: "/generated/showcase-swap-result.mp4", source: "/generated/showcase-swap-source.mp4", models: ["kling/kling-3"], keys: ["fal"], estimate: { usd: 0.6 } }];
+  await page.route("**/api/showcase", (route) => route.fulfill({ json: { items } }));
+  await page.goto("/#/");
+  const tile = page.getByRole("region", { name: "Made with ima2" }).getByRole("article", { name: "Night train" });
+  await tile.hover();
+  await expect(tile).toContainText("About $0.60 when it was made");
+  await expect(tile.getByRole("button", { name: "Make one like this" })).toHaveCount(0);
+  await expect(tile.getByRole("button", { name: "Compare with source" })).toHaveCount(0);
+  await expect(tile).not.toContainText("This workflow is not on this server");
+});
