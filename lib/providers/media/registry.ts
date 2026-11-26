@@ -92,10 +92,34 @@ function routeError(code: MediaRouteErrorCode, status: number, message: string, 
   return { ok: false, code, status, message, candidates };
 }
 
+/** Lowest published price of a route, in the unit this kind of model is normally sold by when one is listed. */
+function lowestPrice(spec: MediaModelSpec): number {
+  const unit = spec.kind === "image" ? "image" : "second";
+  const comparable = spec.pricing.some((price) => price.unit === unit) ? spec.pricing.filter((price) => price.unit === unit) : spec.pricing;
+  return comparable.reduce((min, price) => Math.min(min, price.usd), Number.POSITIVE_INFINITY);
+}
+
 /**
- * Route rule (plan 261126): an explicit adapter is used as-is; otherwise the first
- * candidate with a usable key wins, direct before aggregator. A route without a
- * key is never chosen silently, and nothing here falls back after a failure.
+ * The one answer to "which route runs when none is named": a keyed direct route, otherwise the keyed
+ * aggregator with the lowest published price (unpublished prices last, registry order on ties).
+ * The catalog's defaultRoute and a request without an adapter both come from here.
+ */
+export function preferredCandidate(candidates: readonly MediaRouteCandidate[], hasKey: (adapter: MediaProviderAdapter) => boolean): MediaRouteCandidate | undefined {
+  const keyed = candidates.filter((c) => hasKey(c.adapter));
+  const direct = keyed.find((c) => c.adapter.route === "direct");
+  if (direct) return direct;
+  let best: { candidate: MediaRouteCandidate; usd: number } | undefined;
+  for (const candidate of keyed) {
+    const usd = lowestPrice(candidate.spec);
+    if (!best || usd < best.usd) best = { candidate, usd };
+  }
+  return best?.candidate;
+}
+
+/**
+ * Route rule (plan 261126): an explicit adapter is used as-is; otherwise preferredCandidate picks
+ * among the routes that can do the task. A route without a key is never chosen silently, and
+ * nothing here falls back after a failure.
  */
 export function selectMediaRoute(
   model: MediaCatalogModel | undefined,
@@ -116,7 +140,7 @@ export function selectMediaRoute(
   }
   const capable = model.candidates.filter((c) => c.spec.tasks.includes(options.task));
   if (capable.length === 0) return routeError("MEDIA_TASK_UNSUPPORTED", 400, `${model.id} does not support ${options.task}`, ids);
-  const keyed = capable.find((c) => options.hasKey(c.adapter));
+  const keyed = preferredCandidate(capable, options.hasKey);
   if (!keyed) {
     const names = capable.map((c) => c.adapter.id);
     return routeError("MEDIA_KEY_MISSING", 400, `No key saved for any route to ${model.id} (${names.join(", ")})`, names);
