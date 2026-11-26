@@ -146,3 +146,11 @@ test("Q4 catalog has official USD prices and distinct task sets", () => {
     for (const p of model.pricing) { assert.equal(p.unit, "second"); assert.equal(p.source, "https://platform.vidu.com/pricing"); assert.equal(p.checkedAt, "2026-11-26"); }
   }
 });
+
+test("Q4 reference audio is bounded and requires a prompt", async () => {
+  const { ctx, calls } = fake({ task_id: "job" });
+  const base = request("vidu/vidu-q4-reference", "reference-to-video", [image]);
+  const sound = { role: "reference-audio" as const, url: "https://example.com/a.mp3", mimeType: "audio/mpeg" };
+  for (const req of [{ ...base, prompt: undefined }, { ...base, inputs: [image, ...Array.from({ length: 4 }, () => sound)] }, { ...base, inputs: [image, { ...sound, mimeType: "audio/wav" }] }]) await assert.rejects(adapter.submit(ctx, req));
+  assert.equal(calls.length, 0);
+});

@@ -12,7 +12,12 @@ const refSeconds = seconds.slice(2);
 const resolutions = ["540p", "720p", "1080p"];
 const ratios = ["1:1", "9:16", "16:9", "3:4", "4:3"];
 const price = (usd: number, variant: string) => ({ unit: "second" as const, usd, variant, source: PRICE, checkedAt: "2026-11-26" });
+const q4Doc = "https://platform.vidu.com/docs/api-reference/video-models/vidu-q4-preview/";
+const q4Prices = [price(.045, "540p"), price(.095, "720p"), price(.12, "1080p"), price(.19, "2K"), price(.39, "4K")];
+// 이름 기준 매핑, Sume 공개 id 와 wire id 대응은 Vidu 문서에 명시 없음.
 const models: MediaModelSpec[] = [
+  { id: "vidu/vidu-q4", upstreamId: "viduq4-preview", vendor: "vidu", label: "Vidu Q4", kind: "video", tasks: ["image-to-video"], params: { durationsSec: refSeconds, resolutions: [...resolutions, "2K", "4K"], seed: true, nativeAudio: true }, pricing: q4Prices, docsUrl: `${q4Doc}image-to-video` },
+  { id: "vidu/vidu-q4-reference", upstreamId: "viduq4-preview", vendor: "vidu", label: "Vidu Q4 Reference", kind: "video", tasks: ["reference-to-video"], params: { durationsSec: refSeconds, resolutions: [...resolutions, "2K", "4K"], aspectRatios: ratios, maxReferenceImages: 15, seed: true, nativeAudio: true }, pricing: q4Prices, docsUrl: `${q4Doc}reference-to-video` },
   { id: "vidu/vidu-q3-pro", upstreamId: "viduq3-pro", vendor: "vidu", label: "Vidu Q3 Pro", kind: "video", tasks: ["text-to-video", "image-to-video"], params: { durationsSec: seconds, resolutions, aspectRatios: ratios, seed: true, nativeAudio: true }, pricing: [price(.05, "540p image/text/keyframe"), price(.10, "720p image/text/keyframe"), price(.12, "1080p image/text/keyframe")], docsUrl: DOC },
   { id: "vidu/vidu-q3-turbo", upstreamId: "viduq3-turbo", vendor: "vidu", label: "Vidu Q3 Turbo", kind: "video", tasks: ["text-to-video", "image-to-video", "reference-to-video"], params: { durationsSec: seconds, resolutions, aspectRatios: ratios, maxReferenceImages: 7, seed: true, nativeAudio: true }, pricing: [price(.04, "540p image/text/keyframe"), price(.06, "720p image/text/keyframe"), price(.07, "1080p image/text/keyframe"), price(.02, "540p reference"), price(.05, "720p reference"), price(.07, "1080p reference")], docsUrl: DOC },
   { id: "vidu/vidu-q3", upstreamId: "viduq3", vendor: "vidu", label: "Vidu Q3", kind: "video", tasks: ["reference-to-video"], params: { durationsSec: refSeconds, resolutions, aspectRatios: ratios, maxReferenceImages: 7, seed: true, nativeAudio: true }, pricing: [price(.04, "540p reference"), price(.06, "720p reference"), price(.08, "1080p reference")], docsUrl: DOC },
@@ -51,14 +56,15 @@ async function call(ctx: MediaAdapterContext, path: string, body?: unknown): Pro
   return result;
 }
 
-function inputImages(req: MediaSubmitRequest): { path: string; images: string[] } {
+function inputImages(req: MediaSubmitRequest, q4: boolean): { path: string; images: string[]; sounds: string[] } {
   const first = req.inputs.filter((i) => i.role === "first-frame" || i.role === "source-image");
   const last = req.inputs.filter((i) => i.role === "last-frame");
   const refs = req.inputs.filter((i) => i.role === "reference-image");
-  const valid = req.task === "text-to-video" ? req.inputs.length === 0 : req.task === "reference-to-video" ? refs.length === req.inputs.length && refs.length >= 1 && refs.length <= 7 : first.length === 1 && last.length <= 1 && first.length + last.length === req.inputs.length;
+  const sounds = req.inputs.filter((i) => i.role === "reference-audio");
+  const valid = req.task === "text-to-video" ? req.inputs.length === 0 : req.task === "reference-to-video" ? refs.length + sounds.length === req.inputs.length && refs.length >= 1 && refs.length <= (q4 ? 15 : 7) && (q4 ? sounds.length <= 3 && sounds.every((sound) => sound.mimeType === "audio/mpeg" || sound.mimeType === "audio/mp3") : sounds.length === 0) : first.length === 1 && last.length <= (q4 ? 0 : 1) && first.length + last.length === req.inputs.length;
   if (!valid) fail(PREFIX, "INVALID_INPUT", "invalid-request", "Invalid image inputs for task");
   const path = req.task === "text-to-video" ? "text2video" : req.task === "reference-to-video" ? "reference2video" : last.length ? "start-end2video" : "img2video";
-  return { path, images: (refs.length ? refs : [...first, ...last]).map((input) => urlOrDataUri(PREFIX, input)) };
+  return { path, images: (refs.length ? refs : [...first, ...last]).map((input) => urlOrDataUri(PREFIX, input)), sounds: sounds.map((input) => urlOrDataUri(PREFIX, input)) };
 }
 
 function payload(req: MediaSubmitRequest): { path: string; body: Record<string, unknown> } {
@@ -68,9 +74,13 @@ function payload(req: MediaSubmitRequest): { path: string; body: Record<string, 
   if (req.count !== undefined && req.count !== 1) fail(PREFIX, "INVALID_PARAM", "invalid-request", "count must be 1");
   if (req.aspectRatio && req.task === "image-to-video") fail(PREFIX, "INVALID_PARAM", "invalid-request", "aspectRatio is not supported for image-to-video");
   if (req.task === "reference-to-video" && req.durationSec !== undefined && req.durationSec < 3) fail(PREFIX, "INVALID_PARAM", "invalid-request", "reference duration must be at least 3 seconds");
-  const { path, images } = inputImages(req);
+  const q4 = model.id === "vidu/vidu-q4" || model.id === "vidu/vidu-q4-reference";
+  if (q4 && req.task === "reference-to-video" && !req.prompt) fail(PREFIX, "INVALID_PARAM", "invalid-request", "Q4 reference requires a prompt");
+  const { path, images, sounds } = inputImages(req, q4);
   const body: Record<string, unknown> = { model: model.upstreamId, ...options };
   if (images.length) body.images = images;
+  if (sounds.length) body.sounds = sounds;
+  if (q4 && req.task === "image-to-video" && req.prompt) body.is_rec = false;
   for (const [key, value] of Object.entries({ prompt: req.prompt, duration: req.durationSec, resolution: req.resolution, aspect_ratio: req.aspectRatio, seed: req.seed, audio: req.audio })) if (value !== undefined) body[key] = value;
   return { path, body };
 }
