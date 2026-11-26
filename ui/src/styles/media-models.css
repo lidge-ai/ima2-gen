@@ -158,7 +158,8 @@
   .media-tools__chips { flex-wrap: nowrap; margin: 0 -14px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
   .media-chip { flex: none; }
   /* Result bar on a phone: download, continue and make again; everything else opens from More. */
-  .result-actions > .action-btn { min-height: 44px; }
+  .result-actions { gap: 6px; }
+  .result-actions > .action-btn { min-height: 44px; padding-inline: 11px; }
   .result-actions > .action-btn--remake { order: 1; }
   .result-actions > .result-actions__toggle { display: inline-flex; align-items: center; order: 2; }
   .result-actions > .action-btn--more { order: 3; }

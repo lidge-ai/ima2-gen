@@ -195,7 +195,6 @@ for (const locale of LOCALES) {
         if (stage.mobile) {
           await app.page.locator(".result-actions__toggle:visible").first().click();
           await stage.shot("result-more");
-          await app.page.locator(".result-actions__toggle:visible").first().click();
         }
         await actions.locator(".action-btn", { hasText: /Info|정보/ }).first().click();
         await expect(app.page.locator("[aria-labelledby=metadata-modal-title]")).toBeVisible();
