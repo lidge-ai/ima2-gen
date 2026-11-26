@@ -1,6 +1,6 @@
 // ModelArk error vocabulary -> contract categories.
 // Source: https://docs.byteplus.com/en/docs/ModelArk/error-codes (read 2026-11-26).
-import type { MediaProviderError } from "../../../contract.js";
+import type { MediaProviderError } from "../../contract.js";
 import { categoryForStatus, mediaError, type ErrorCategory } from "../_l2/errors.js";
 
 export const ERROR_PREFIX = "BYTEPLUS";

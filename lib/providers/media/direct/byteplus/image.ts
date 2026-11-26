@@ -1,6 +1,6 @@
 // Seedream image generation on ModelArk (synchronous).
 // https://docs.byteplus.com/en/docs/ModelArk/image-generation-api (read 2026-11-26)
-import type { MediaModelSpec, MediaOutput, MediaSubmitRequest } from "../../../contract.js";
+import type { MediaModelSpec, MediaOutput, MediaSubmitRequest } from "../../contract.js";
 import { MediaAdapterError, fail } from "../_l2/errors.js";
 import { asArray, asRecord, asString } from "../_l2/http.js";
 import { urlOutput } from "../_l2/inputs.js";

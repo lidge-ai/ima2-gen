@@ -1,7 +1,7 @@
 // BytePlus ModelArk direct adapter: Seedance video (async tasks) and Seedream images (sync).
 // Auth: Authorization: Bearer <ARK_API_KEY>.
 // https://docs.byteplus.com/en/docs/ModelArk/base-url-and-authentication (read 2026-11-26)
-import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaOutput, MediaProviderAdapter } from "../../../contract.js";
+import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaOutput, MediaProviderAdapter } from "../../contract.js";
 import { MediaAdapterError, contextSecrets, fail, normalizeUnknownError, redactSecrets } from "../_l2/errors.js";
 import { asRecord, asString, joinUrl, sendJson, type JsonRequest, type JsonResponse } from "../_l2/http.js";
 import { assertTask, findModel } from "../_l2/validate.js";

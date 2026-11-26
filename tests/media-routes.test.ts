@@ -52,6 +52,7 @@ const noLocalOps = {
   frame: async () => { throw new Error("unused"); },
   muxAudio: async () => { throw new Error("unused"); },
   concat: async () => { throw new Error("unused"); },
+  cut: async () => { throw new Error("unused"); },
 };
 
 async function withApp(fn: (h: { base: string; root: string; configFile: string; events: { jobId: string; event: string; data: Record<string, unknown> }[]; adapter: ReturnType<typeof makeFakeAdapter>; calls: { url: string }[] }) => Promise<void>, opts: { keys?: Record<string, unknown>; states?: unknown[]; status?: (url: string) => number } = {}) {
@@ -63,7 +64,7 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
     extraFields: [{ name: "region", envVar: "FAKE_REGION", secret: false, required: false }, { name: "secretToken", envVar: "FAKE_SECRET_TOKEN", secret: true, required: false }],
     script: { states: (opts.states ?? [{ status: "running", progress: 0.5 }, { status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }]) as never },
   });
-  const aggregator = makeFakeAdapter({ id: "agg", route: "aggregator", models: [fakeSpec("acme/clip-1")] });
+  const aggregator = makeFakeAdapter({ id: "agg", route: "aggregator", models: [fakeSpec("acme/clip-1")], script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }] } });
   const registry = new MediaRegistry([adapter, aggregator]);
   const transport = fakeTransport({ downloads: { [VIDEO_URL]: { body: "mp4", type: "video/mp4" } }, ...(opts.status ? { status: opts.status } : {}) });
   const studiosRoot = join(root, "studios");
@@ -127,7 +128,7 @@ test("catalog lists models with every route, prices and key state, and never the
     assert.equal(fake.maskedKey, "fake..90");
     assert.deepEqual(clip.logo, { id: "acme", name: "Acme Media", urls: { primary: "/media-assets/vendors/acme.svg" }, source: "https://acme.example/brand" });
     assert.equal(clip.routes[0].logo.id, "acme", "the fake adapter id is a manifest alias");
-    assert.equal(clip.routes[1].logo, null, "no manifest entry and no alias: no logo");
+    assert.deepEqual(clip.routes[1].logo, clip.logo, "the aggregator falls back to its first model vendor logo");
     assert.equal(fake.logo.id, "acme");
     const svg = await fetch(`${base}${clip.logo.urls.primary}`);
     assert.equal(svg.status, 200);
