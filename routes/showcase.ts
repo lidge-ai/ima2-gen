@@ -29,6 +29,8 @@ export interface ShowcaseItem {
   keys: string[];
   estimate?: { usd: number | null; basis?: string };
   durationSec?: number;
+  /** Kind of clip ("motion-transfer", "restyle", "text-to-video"...); Home mixes kinds in its first row. */
+  type?: string;
 }
 
 const SAFE_FILE = /^[a-z0-9][a-z0-9._-]{0,120}\.(mp4|webm|mov|jpe?g|png|webp)$/i;
@@ -96,6 +98,7 @@ export function toShowcaseItem(dir: string, raw: unknown): ShowcaseItem | null {
   const e = estimate(r.estimate);
   if (e) item.estimate = e;
   if (typeof r.durationSec === "number" && r.durationSec > 0 && r.durationSec < 600) item.durationSec = r.durationSec;
+  if (typeof r.type === "string" && SAFE_ID.test(r.type)) item.type = r.type;
   return item;
 }
 
@@ -106,8 +109,15 @@ export function readShowcase(dir: string): ShowcaseItem[] {
     const parsed = JSON.parse(readFileSync(file, "utf8")) as { items?: unknown };
     const items = Array.isArray(parsed) ? parsed : Array.isArray(parsed.items) ? parsed.items : [];
     const seen = new Set<string>();
+    // "order" ascending sets the gallery order; items without it keep file order after those with it.
+    const rank = (raw: unknown) => {
+      const order = (raw as { order?: unknown } | null)?.order;
+      return typeof order === "number" && Number.isFinite(order) ? order : Number.POSITIVE_INFINITY;
+    };
     return items
-      .map((raw) => toShowcaseItem(dir, raw))
+      .map((raw, index) => ({ raw, index, rank: rank(raw) }))
+      .sort((a, b) => a.rank - b.rank || a.index - b.index)
+      .map(({ raw }) => toShowcaseItem(dir, raw))
       .filter((item): item is ShowcaseItem => item !== null && !seen.has(item.id) && !!seen.add(item.id));
   } catch {
     return [];

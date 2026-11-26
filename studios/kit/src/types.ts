@@ -33,6 +33,8 @@ export interface CatalogModel {
   id: string;
   vendor: string;
   label: string;
+  /** The catalog marks this model as being retired (its label carried "(deprecated)"). */
+  retiring?: boolean;
   kind: MediaKind;
   tasks: readonly MediaTask[];
   /** Union of what the routes accept; a route may accept less (see routeParams). */
@@ -301,4 +303,6 @@ export interface ShowcaseItem {
   /** What the example cost when it was made, or null when a price was not published. */
   estimate?: { usd: number | null; basis?: string };
   durationSec?: number;
+  /** Kind of clip, e.g. "motion-transfer", "restyle", "text-to-video". */
+  type?: string;
 }

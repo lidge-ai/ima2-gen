@@ -198,3 +198,12 @@ test("a gallery-only clip (no workflow) shows what it is and what it cost, with 
   await expect(tile.getByRole("button", { name: "Compare with source" })).toHaveCount(0);
   await expect(tile).not.toContainText("This workflow is not on this server");
 });
+
+test("Home's row shows one clip of each kind before repeating a kind", async ({ page }) => {
+  const kinds = ["motion-transfer", "motion-transfer", "motion-transfer", "object-swap", "restyle", "text-to-video", "restyle"];
+  const items = kinds.map((type, i) => ({ id: "k" + i, title: { en: "Kind " + i }, type, result: "/generated/showcase-swap-result.mp4", models: [], keys: [] }));
+  await page.route("**/api/showcase", (route) => route.fulfill({ json: { items } }));
+  await page.goto("/#/");
+  const titles = await page.getByRole("region", { name: "Made with ima2" }).getByRole("article").evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")));
+  expect(titles).toEqual(["Kind 0", "Kind 3", "Kind 4", "Kind 5"]);
+});

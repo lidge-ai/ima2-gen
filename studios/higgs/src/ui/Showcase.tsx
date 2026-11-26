@@ -289,12 +289,30 @@ function rowCuts(count: number, index: number): string {
   return [index >= keep(4, 4) ? "hide-4" : "", index >= keep(3, 3) ? "hide-3" : "", index >= keep(2, 4) ? "hide-2" : ""].filter(Boolean).join(" ");
 }
 
+/**
+ * Home's row shows range: the first clip of each kind (in the server's order) before a second of
+ * any kind, then the rest in order. Clips without a type count as one kind each.
+ */
+export function mixKinds(items: readonly ShowcaseItem[], want: number): ShowcaseItem[] {
+  const first: ShowcaseItem[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    if (first.length >= want) break;
+    const kind = item.type ?? "id:" + item.id;
+    if (!seen.has(kind)) {
+      seen.add(kind);
+      first.push(item);
+    }
+  }
+  return [...first, ...items.filter((item) => !first.includes(item))];
+}
+
 /** Showcase grid; renders nothing when the server has no showcase items. With a limit, links to the full gallery. */
 export function Showcase({ heading = true, limit }: { heading?: boolean; limit?: number }) {
   const t = useT(M);
   const all = useStudio((s) => s.showcase);
   if (!all.length) return null;
-  const items = limit ? all.slice(0, limit) : all;
+  const items = limit ? mixKinds(all, limit).slice(0, limit) : all;
   return (
     <section className="showcase" aria-labelledby={heading ? "showcase-title" : undefined} aria-label={heading ? undefined : t("title")}>
       {heading ? (

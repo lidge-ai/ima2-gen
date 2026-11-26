@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { toCatalog, toKeyStatuses, toWireSubmit, fromWireJob } from "../src/adapt.ts";
+import { toCatalog, toKeyStatuses, toWireSubmit, fromWireJob, nameParts } from "../src/adapt.ts";
 import { toWorkflowDef, toWireRun, toEstimate } from "../src/adaptWorkflow.ts";
 import { toHistoryPage, historyParams } from "../src/adaptHistory.ts";
 import { reduceJobEvent } from "../src/jobReducer.ts";
@@ -81,4 +81,12 @@ test("reducer applies planned, step, done and cancellation events", () => {
   assert.equal(done.job.status, "succeeded");
   assert.equal(done.job.outputs[0]?.historyId, "a.png");
   assert.equal(reduceJobEvent(started.job, "error", { ...base, code: "GENERATION_CANCELED" })?.job.status, "canceled");
+});
+
+test("a retiring model keeps a clean name and a retiring flag", () => {
+  assert.deepEqual(nameParts("GPT Image 2 (deprecated)"), { label: "GPT Image 2", retiring: true });
+  assert.deepEqual(nameParts("Seedance 2.5"), { label: "Seedance 2.5" });
+  assert.deepEqual(nameParts("Kling 3 (Legacy) "), { label: "Kling 3", retiring: true });
+  assert.deepEqual(nameParts("Veo 3.1 (fast)"), { label: "Veo 3.1 (fast)" });
+  assert.deepEqual(nameParts("(deprecated)"), { label: "(deprecated)" });
 });
