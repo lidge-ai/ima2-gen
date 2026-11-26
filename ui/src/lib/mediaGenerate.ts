@@ -69,7 +69,7 @@ export async function submitMediaJob(payload: Record<string, unknown>, id: strin
           finish(new Error(t("toast.generateFailed")));
         } else finish(undefined, data.outputs as MediaOutput[]);
       }
-      if (event === "error") finish(parseSseErrorPayload(data, "Media generation failed"));
+      if (event === "error") finish(parseSseErrorPayload(data, t("toast.generateFailed")));
     });
     const clearTimer = armStreamTimeout(() => {
       cancelRequested = true;

@@ -7,6 +7,6 @@ export function buildMediaSubmitBody(selection: MediaSelection, prompt: string, 
   sessionId: string | null, inputs: MediaInput[]): Record<string, unknown> {
   return { requestId, sessionId, prompt, model: selection.model, adapter: selection.adapter,
     task: selection.task, durationSec: selection.durationSec, resolution: selection.resolution,
-    aspectRatio: selection.aspectRatio, audio: selection.audio ?? selection.nativeAudio,
+    aspectRatio: selection.aspectRatio, audio: selection.audio,
     negativePrompt: selection.negativePrompt, seed: selection.seed, inputs };
 }

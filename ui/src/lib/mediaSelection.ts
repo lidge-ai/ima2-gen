@@ -7,7 +7,6 @@ export interface MediaSelection {
   durationSec?: number;
   resolution?: string;
   aspectRatio?: string;
-  nativeAudio?: boolean;
   audio?: boolean;
   negativePrompt?: string;
   seed?: number;
