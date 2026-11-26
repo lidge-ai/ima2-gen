@@ -208,6 +208,7 @@ test("Grok's edit is never asked for silence: the source sound replaces its soun
   await run("grok-sound", p, gateway);
   const req = grok.calls.find((c) => c.op === "submit")?.request;
   assert.equal(req && "audio" in req, false, "no audio flag for Grok's edit");
+  assert.equal(req && "resolution" in req, false, "the edit follows the source size");
   await assert.rejects(prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p", sound: "none" }, gateway, { combo: "subscription" }), /always returns sound/);
   await assert.rejects(prep("remix-restyle-open", { video: video(short), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" }), /always returns sound/);
 });

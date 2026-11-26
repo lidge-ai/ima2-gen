@@ -99,7 +99,9 @@ export function renderStep(spec: RenderSpec, env: PlanEnv): MediaStep {
         return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, ...(audio === undefined ? {} : { audio }), inputs };
       }
       const { inputs, prompt } = await editInputs(rt, spec);
-      return { model: slot.model, task: "video-to-video", prompt, resolution, ...(audio === undefined ? {} : { audio }), inputs };
+      // Grok's edit follows the source's length, size and sound; it refuses those parameters.
+      const shape = TEXT_ONLY_EDIT.has(slot.model) ? {} : { resolution };
+      return { model: slot.model, task: "video-to-video", prompt, ...shape, ...(audio === undefined ? {} : { audio }), inputs };
     },
   };
   if (slot.route) step.route = slot.route;
