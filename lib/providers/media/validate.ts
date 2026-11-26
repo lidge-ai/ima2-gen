@@ -15,14 +15,15 @@ export interface MediaJobBody extends Omit<MediaSubmitRequest, "inputs"> {
   inputs: readonly MediaInputRef[];
 }
 
-const MAX_PROMPT_CHARS = 20_000;
-const MAX_INPUTS = 16;
+export const MAX_PROMPT_CHARS = 20_000;
+export const MAX_INPUTS = 16;
+export const MAX_SHORT_STRING = 200;
 
 function invalid(message: string): MediaJobError {
   return new MediaJobError("MEDIA_INVALID_REQUEST", message);
 }
 
-function optString(body: Record<string, unknown>, key: string, max = 200): string | undefined {
+function optString(body: Record<string, unknown>, key: string, max = MAX_SHORT_STRING): string | undefined {
   const v = body[key];
   if (v === undefined || v === null || v === "") return undefined;
   if (typeof v !== "string" || v.length > max) throw invalid(`${key} must be a string up to ${max} characters`);

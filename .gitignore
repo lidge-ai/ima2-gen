@@ -35,6 +35,7 @@ __pycache__/
 /bin/ima2.js
 /bin/commands/**/*.js
 /bin/lib/*.js
+/bin/lib/media/*.js
 *.tgz
 
 # Test experiment outputs (generated images)

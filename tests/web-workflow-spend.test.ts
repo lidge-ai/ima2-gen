@@ -13,13 +13,19 @@ process.env.IMA2_CONFIG_DIR = isolatedConfigDir;
 const { config } = await import("../config.ts");
 const { MediaRegistry } = await import("../lib/providers/media/registry.ts");
 const { registerWorkflowRoutes } = await import("../routes/workflows.ts");
-const { _resetForTest: resetBus } = await import("../lib/eventBus.ts");
+const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts");
 const { _resetForTests: resetInflight } = await import("../lib/inflight.ts");
 const { createSpendGuard } = await import("../lib/webAccess/spendGuard.ts");
+const { closeDb } = await import("../lib/db.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter } = await import("./_mediaFakeAdapter.ts");
 type WorkflowDefinition = import("../lib/workflows/types.ts").WorkflowDefinition;
 
-test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
+// Jobs persist through lib/inflight into <config>/sessions.db; Windows refuses to unlink an open
+// SQLite file, so the handle is closed before the folder goes (same as tests/media-routes.test.ts).
+test.after(async () => {
+  closeDb();
+  await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
 test.afterEach(() => { resetBus(); resetInflight(); });
 
 const VIDEO_URL = "https://cdn.fake.example/out/clip.mp4";
@@ -79,8 +85,14 @@ test("workflow runs pass the spend guard: priced runs are charged with the email
   assert.equal((await long.json()).code, "WEB_SPEND_REQUEST_CAP");
   assert.equal(adapter.script.submitted!.length, 0, "refused runs never reach the provider");
 
+  const events: string[] = [];
+  const unsubscribe = subscribe((ev) => { if (ev.jobId === "wf-cheap") events.push(ev.event); });
+  t.after(unsubscribe);
   const ok = await run("cheap");
   assert.equal(ok.status, 202, await ok.clone().text());
+  // Let the background run finish before cleanup, so nothing still writes into the temp folders.
+  for (let i = 0; i < 4000 && !events.some((e) => e === "done" || e === "error"); i += 1) await new Promise((r) => setTimeout(r, 2));
+  assert.ok(events.includes("done"), events.join(","));
   const status = await spend.status();
   assert.equal(status.spentUsd, 0.25);
   assert.equal(status.entries[0]!.email, "jun@example.test");
