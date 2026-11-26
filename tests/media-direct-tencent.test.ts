@@ -60,3 +60,18 @@ test("key validation reads authenticated model list without generation", async (
   assert.deepEqual(await adapter.validateKey(ctx), { ok: true });
   assert.equal(calls[0]?.url, "https://example.test/v1/models"); assert.equal(calls[0]?.init.method, "GET");
 });
+test("arbitrary errors and transport errors never expose the key", async () => {
+  assert.doesNotMatch(adapter.normalizeError(new Error("sensitive-key-1234")).message, /sensitive-key/);
+  const ctx: MediaAdapterContext = { apiKey: "sensitive-key-1234", fetch: async () => { throw new TypeError("sensitive-key-1234"); } };
+  await assert.rejects(adapter.submit(ctx, request), (e: Error) => !e.message.includes(ctx.apiKey) && !adapter.normalizeError(e).message.includes(ctx.apiKey));
+});
+test("documented vendor errors and reference requests", async () => {
+  const { ctx, calls } = context({ id: "ref" });
+  await adapter.submit(ctx, { ...request, task: "reference-to-video", inputs: [{ role: "reference-image", url: "https://example.test/ref.png", mimeType: "image/png" }] });
+  assert.deepEqual(JSON.parse(String(calls[0]?.init.body)).content[1], { type: "image_url", image_url: { url: "https://example.test/ref.png" }, role: "reference_image" });
+  const state = await adapter.poll(context({ status: "failed", error: { code: "InternalError", message: "failure" } }).ctx, { providerJobId: "ref" });
+  assert.equal(state.status, "failed");
+  if (state.status === "failed") { assert.equal(state.error.code, "TENCENT_INTERNAL_ERROR"); assert.equal(state.error.category, "upstream"); assert.equal(state.error.retryable, true); }
+  const bad = context({ error: { code: "invalid_request_error", message: "bad request" } }, 400);
+  await assert.rejects(adapter.submit(bad.ctx, request), (e: Error) => adapter.normalizeError(e).category === "invalid-request");
+});
