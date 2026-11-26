@@ -50,5 +50,5 @@ test("a long per-token price never runs into the key state, in Korean too", asyn
     }).length,
   );
   expect(overlaps).toBe(0);
-  await expect(page.getByText(/$0.0057/1천 토큰/).first()).toBeVisible();
+  await expect(page.getByText(/\$0\.0057\/1천 토큰/).first()).toBeVisible();
 });
