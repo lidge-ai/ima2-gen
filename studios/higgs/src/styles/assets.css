@@ -1,0 +1,14 @@
+.assets-page { align-content: start; }
+.assets-page .page-head p { color: var(--text-muted); margin-top: 5px; }
+.assets-filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.assets-tabs { flex: 1; min-width: max-content; }
+.assets-tabs .tab { text-decoration: none; }
+.assets-tabs .tab[aria-current="page"] { color: var(--text); border-bottom: 2px solid var(--text); }
+.assets-model { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+.assets-model select { max-width: 210px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-s); color: var(--text); background: var(--surface-2); }
+.assets-density { display: flex; gap: 4px; }
+.assets-density [aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+@media (max-width: 760px) {
+  .assets-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }
+  .assets-tabs, .assets-model, .assets-density { flex: none; }
+}

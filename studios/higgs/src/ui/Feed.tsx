@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { isTerminal, type HistoryItem, type Job, type MediaKind } from "@ima2/studio-kit";
+import { type HistoryItem, type Job, type MediaKind } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../studio/context.tsx";
 import { JobCard } from "./JobCard.tsx";
 import { Lightbox } from "./Lightbox.tsx";
@@ -39,7 +39,7 @@ export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) 
   const loaded = useStudio((s) => s.historyLoaded);
   const [open, setOpen] = useState<HistoryItem | null>(null);
   const kindOf = (model: string) => catalog?.models.find((m) => m.id === model)?.kind;
-  const visibleJobs = jobs.filter((job) => jobMatches(job, kind, kindOf, workflow) && (!isTerminal(job) || job.status !== "succeeded"));
+  const visibleJobs = jobs.filter((job) => jobMatches(job, kind, kindOf, workflow));
   const items = history.filter((item) => (workflow ? !!item.workflow && workflow(item.workflow) : (!kind || item.kind === kind) && !item.workflow));
   if (loaded && visibleJobs.length === 0 && items.length === 0) return <>{empty}</>;
   return (
