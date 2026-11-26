@@ -45,3 +45,15 @@ export async function saveMediaKey(adapter: Pick<MediaAdapter, "keyVocabulary">,
     await jsonFetch(request.url, { method: request.method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(request.body) });
   }
 }
+
+export type KeySaveProblem = "rejected" | "unverified" | "format" | "extra" | "unknown";
+
+/** What went wrong saving a key, so the screen can say it in its own words and keep the provider's text for the details. */
+export function keySaveProblem(error: unknown): KeySaveProblem {
+  const code = (error as { code?: unknown } | null)?.code;
+  const message = error instanceof Error ? error.message : "";
+  if (code === "INVALID_KEY_FORMAT" || code === "KEY_TOO_SHORT" || code === "KEY_TOO_LARGE") return "format";
+  if (code === "MISSING_EXTRA" || code === "INVALID_EXTRA") return "extra";
+  if (code === "KEY_VALIDATION_FAILED") return /\b40[13]\b|invalid|unauthori[sz]ed|forbidden|incorrect/i.test(message) ? "rejected" : "unverified";
+  return "unknown";
+}

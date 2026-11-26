@@ -45,13 +45,14 @@ export async function retryMediaFailureImpl(set: StoreSet, get: StoreGet): Promi
 }
 
 /** A job that failed while the page was away: the terminal record has the code and, once the server sends them, the category and retryable flag. */
-export function recordTerminalMediaFailure(error: unknown, get: StoreGet): void {
+export function recordTerminalMediaFailure(error: unknown, get: StoreGet): boolean {
   const media = (error as { media?: { requestId: string; adapter: string; model?: string; prompt?: string } } | null)?.media;
-  if (!media || isCanceledGenerationError(error)) return;
+  if (!media || isCanceledGenerationError(error)) return false;
   const current = get().mediaSelection;
   const selection = current && current.model === media.model ? current : null;
   const { code, status, category, retryable } = error as { code?: unknown; status?: unknown; category?: unknown; retryable?: unknown };
   get().setMediaFailure(buildMediaFailure({ code, status, category, retryable }, { requestId: media.requestId, prompt: media.prompt ?? "", selection, adapter: media.adapter }));
+  return true;
 }
 
 /**
@@ -119,9 +120,9 @@ export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promis
     if (!(error instanceof Error && error.name === "AbortError") && !isCanceledGenerationError(error)) {
       const code = (error as { code?: unknown })?.code;
       const message = error instanceof Error ? error.message : String(error);
-      get().showToast(typeof code === "string" ? `${code}: ${message}` : message, true);
-      // Only a job the server answered for is kept: a local refusal (no key, wrong inputs) is already explained beside Generate.
+      // A job the server answered for is told once, by the failure card. A local refusal has no card and gets the toast.
       if (typeof code === "string") setMediaFailureImpl(buildMediaFailure(error, { requestId: id, prompt, selection: { ...selection, adapter }, adapter }), set);
+      else get().showToast(message, true);
     }
   } finally {
     clearFlightAbort(id);

@@ -167,13 +167,16 @@
       "save": "Check and save",
       "checking": "Checking with {provider}…",
       "saved": "{provider} key saved. You can generate now.",
-      "failed": "The key was not saved: {reason}",
+      "failed": "The key was not saved.",
       "short": "That is too short to be a key.",
       "prefix": "Keys for this provider start with {prefix}.",
       "extra": "Fill in the required fields.",
       "required": "(required)",
       "subscription": "ChatGPT and Grok sign-in models need no key. They run from the built-in providers.",
-      "fileOnly": "This provider signs in with a service-account file, which is added in Settings."
+      "fileOnly": "This provider signs in with a service-account file, which is added in Settings.",
+      "rejected": "{provider} did not accept this key. Check it and try again.",
+      "unverified": "The key could not be checked with {provider} just now. Try again in a moment.",
+      "formatWrong": "That does not look like a key for this provider."
     },
     "failure": {
       "title": "{model} did not finish",
@@ -189,8 +192,11 @@
       "actionKey": "Replace the key",
       "actionBilling": "Open {provider}",
       "actionRetry": "Try again with the same settings",
-      "actionPrompt": "Edit the prompt"
-    }
+      "actionPrompt": "Edit the prompt",
+      "hint": "{model} did not finish. The reason and what to do next are in the model settings."
+    },
+    "details": "Details",
+    "routeCheapestKey": "Cheapest route: {route}, {price}. Add its key instead"
   },
   "media": {
     "keysTitle": "Media providers",
@@ -1219,7 +1225,9 @@
     "remakeTitle": "Restore this result's model, route, settings and prompt. Nothing is sent until you press Generate.",
     "remakeReady": "Model, settings and prompt restored. Check the estimate, then press Generate.",
     "remakeNeedsImages": "Model, settings and prompt restored. This result was made from images: add them again before generating.",
-    "remakeModelGone": "This model is no longer in the catalog, so it cannot be made again here."
+    "remakeModelGone": "This model is no longer in the catalog, so it cannot be made again here.",
+    "moreActions": "More actions",
+    "fewerActions": "Fewer actions"
   },
   "session": {
     "switchTitle": "Switch session",

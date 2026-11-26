@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useI18n } from "../../i18n";
 import type { MediaAdapter, MediaModel, MediaRoute } from "../../lib/mediaCatalog";
-import { candidateRoutes, lowestPrice, resolveRoute, type ResolvedRoute } from "../../lib/mediaRoutes";
+import { candidateRoutes, cheapestRoute, lowestPrice, resolveRoute, type ResolvedRoute } from "../../lib/mediaRoutes";
 import { parseSeed, reconcileSelection, type Adjustment, type MediaSelection } from "../../lib/mediaSelection";
 import { inputLimits, inputProblem, modelTasks, type ClassicTask } from "../../lib/mediaTasks";
 import { useAppStore } from "../../store/useAppStore";
@@ -77,6 +77,8 @@ function RouteChoice({ model, selection, resolved, update }: { model: MediaModel
     const next = reconcileSelection(model, target, selection.task, selection, route ? "pinned" : "auto");
     update(next.selection, next.adjusted);
   };
+  // With no key anywhere, Automatic asks for the direct route's key; when another route is cheaper, say so and offer its key instead.
+  const cheaper = auto && resolved.state === "needs-key" ? cheapestRoute(model, selection.task) : undefined;
   return (
     <fieldset className="option-group media-routes">
       <legend className="section-title">{t("mediaPicker.route")}</legend>
@@ -92,6 +94,10 @@ function RouteChoice({ model, selection, resolved, update }: { model: MediaModel
           <RouteFacts route={route} kind={model.kind} />
         </label>
       ))}
+      {cheaper && cheaper.adapter !== resolved.route.adapter ? (
+        <button type="button" className="media-link" onClick={() => pin(cheaper)}>
+          {t("mediaPicker.routeCheapestKey", { route: cheaper.label, price: fromPrice(lowestPrice(cheaper, model.kind), t) })}</button>
+      ) : null}
     </fieldset>
   );
 }

@@ -49,6 +49,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
   // the request completes in one call rather than being tracked across a job lifecycle.
   const [editState, setEditState] = useState<"idle" | "pending" | "error">("idle");
   const [metadataOpen, setMetadataOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [upscaleOpen, setUpscaleOpen] = useState(false);
   const [upscalePending, setUpscalePending] = useState(false);
   const [runwayConnected, setRunwayConnected] = useState(false);
@@ -359,28 +360,28 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
   };
 
   return (
-    <div className="result-actions">
+    <div className={`result-actions${expanded ? " is-expanded" : ""}`}>
       <button type="button" className="action-btn" onClick={download}>
         {t("result.download")}
       </button>
-      <button type="button" className={`action-btn${isVideo ? " action-btn--frame" : ""}`} onClick={copyImage}>
+      <button type="button" className={`action-btn action-btn--more${isVideo ? " action-btn--frame" : ""}`} onClick={copyImage}>
         {t(isVideo ? "result.copyLastFrame" : "result.copyImage")}
       </button>
       {isVideo && (
         <>
-          <button type="button" className="action-btn action-btn--frame" onClick={copyFirstFrame}>
+          <button type="button" className="action-btn action-btn--more action-btn--frame" onClick={copyFirstFrame}>
             {t("result.copyFirstFrame")}
           </button>
-          <button type="button" className="action-btn action-btn--frame" onClick={copyMidFrame}>
+          <button type="button" className="action-btn action-btn--more action-btn--frame" onClick={copyMidFrame}>
             {t("result.copyMidFrame")}
           </button>
         </>
       )}
-      <button type="button" className="action-btn" onClick={() => void copyPrompt()}>
+      <button type="button" className="action-btn action-btn--more" onClick={() => void copyPrompt()}>
         {t("result.copyPrompt")}
       </button>
       <button
-        type="button" className="action-btn"
+        type="button" className="action-btn action-btn--more"
         onClick={() => {
           void (async () => {
             const ok = await saveToAssetsAction(actionImage);
@@ -400,7 +401,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       </button>
       {providerUrlAlive && (
         <button
-          type="button" className="action-btn"
+          type="button" className="action-btn action-btn--more"
           onClick={() => void newFromHereAsUrl()}
           title={t("result.continueAsUrlTitle")}
         >
@@ -409,7 +410,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       )}
       {canAnimate && (
         <button
-          type="button" className="action-btn"
+          type="button" className="action-btn action-btn--more"
           onClick={() => void animate()}
           disabled={animating}
           title={t("result.animateTitle")}
@@ -420,7 +421,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       {runwayConnected && actionImage.filename && (
         isVideo ? (
           <button
-            type="button" className="action-btn"
+            type="button" className="action-btn action-btn--more"
             disabled={upscalePending}
             onClick={() => void startUpscale({})}
             title={t("result.upscaleTitle")}
@@ -430,7 +431,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
         ) : (
           <>
             <button
-              type="button" className="action-btn"
+              type="button" className="action-btn action-btn--more"
               disabled={upscalePending}
               onClick={() => setUpscaleOpen((open) => !open)}
               title={t("result.upscaleTitle")}
@@ -450,7 +451,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       {canExtend && (
         <>
           <button
-            type="button" className="action-btn"
+            type="button" className="action-btn action-btn--more"
             onClick={extend}
             disabled={extendState === "pending" || extendState === "tracking-expired"}
             aria-busy={extendState === "pending"}
@@ -461,11 +462,11 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
               : extendState === "error" ? t("gallery.retry") : t("result.extend") ?? "이어가기"}
           </button>
           {extendState === "pending" && (
-            <button type="button" className="action-btn" onClick={cancelExtend}>{t("common.cancel")}</button>
+            <button type="button" className="action-btn action-btn--more" onClick={cancelExtend}>{t("common.cancel")}</button>
           )}
           <button
             type="button"
-            className="action-btn"
+            className="action-btn action-btn--more"
             onClick={editVideo}
             disabled={editState === "pending"}
             aria-busy={editState === "pending"}
@@ -476,12 +477,12 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
               : editState === "error" ? t("gallery.retry") : t("result.editVideo")}
           </button>
           {editState === "pending" && (
-            <button type="button" className="action-btn" onClick={cancelEdit}>{t("common.cancel")}</button>
+            <button type="button" className="action-btn action-btn--more" onClick={cancelEdit}>{t("common.cancel")}</button>
           )}
         </>
       )}
       <button
-        type="button" className="action-btn"
+        type="button" className="action-btn action-btn--more"
         onClick={generateAsFirstNode}
         title={t("result.firstNodeTitle")}
       >
@@ -489,7 +490,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       </button>
       {isMediaResult(actionImage) && (
         <button
-          type="button" className="action-btn"
+          type="button" className="action-btn action-btn--remake"
           onClick={() => void remakeMediaResult(actionImage)}
           title={t("result.remakeTitle")}
         >
@@ -497,7 +498,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
         </button>
       )}
       <button
-        type="button" className="action-btn"
+        type="button" className="action-btn action-btn--more"
         onClick={() => setMetadataOpen(true)}
         title={t("result.infoTitle")}
       >
@@ -505,7 +506,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       </button>
       {!canvasOpen && (
         <button
-          type="button" className="action-btn"
+          type="button" className="action-btn action-btn--more"
           onClick={openCanvas}
           title={t("canvas.open")}
           aria-label={t("canvas.openAria")}
@@ -518,13 +519,13 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       {actionImage.filename && (
         <>
           <button
-            type="button" className="action-btn action-btn--danger"
+            type="button" className="action-btn action-btn--more action-btn--danger"
             onClick={() => void deleteToTrash()}
             title={t("result.deleteTitle")}
           >
             {t("result.delete")}
           </button>
-          <details className="result-actions__more">
+          <details className="result-actions__more action-btn--more">
             <summary className="action-btn">{t("result.more")}</summary>
             <div className="result-actions__menu">
               {canExportToComfy && (
@@ -547,6 +548,10 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
           </details>
         </>
       )}
+      {/* Phones only (CSS): the bar keeps the main actions and this opens the rest. */}
+      <button type="button" className="action-btn result-actions__toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+        {t(expanded ? "result.fewerActions" : "result.moreActions")}
+      </button>
       {metadataOpen && (
         <ResultMetadataModal
           item={actionImage}

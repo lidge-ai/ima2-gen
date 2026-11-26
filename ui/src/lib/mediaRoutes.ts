@@ -53,3 +53,13 @@ export function resolveRoute(model: MediaModel, selection: { adapter?: string; r
 export function modelRunnable(model: MediaModel, task?: string): boolean {
   return autoRoute(model, task) !== undefined;
 }
+
+/** The route with the lowest published price for the task, keyed or not. Undefined when no route publishes one. */
+export function cheapestRoute(model: MediaModel, task?: string): MediaRoute | undefined {
+  let best: { route: MediaRoute; usd: number } | undefined;
+  for (const route of model.routes.filter((entry) => supports(entry, task))) {
+    const usd = lowestPrice(route, model.kind)?.usd;
+    if (usd !== undefined && (!best || usd < best.usd)) best = { route, usd };
+  }
+  return best?.route;
+}

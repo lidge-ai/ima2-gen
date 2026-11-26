@@ -167,13 +167,16 @@
       "save": "验证并保存",
       "checking": "正在向 {provider} 验证…",
       "saved": "已保存 {provider} 的密钥，现在可以生成了。",
-      "failed": "密钥未保存：{reason}",
+      "failed": "密钥未保存。",
       "short": "这太短了，不像密钥。",
       "prefix": "此提供商的密钥以 {prefix} 开头。",
       "extra": "请填写必填项。",
       "required": "（必填）",
       "subscription": "ChatGPT 和 Grok 的登录模型不需要密钥，它们由内置提供商运行。",
-      "fileOnly": "此提供商使用服务账号文件登录，请在设置中添加。"
+      "fileOnly": "此提供商使用服务账号文件登录，请在设置中添加。",
+      "rejected": "{provider} 没有接受此密钥，请检查后重试。",
+      "unverified": "暂时无法向 {provider} 验证密钥，请稍后重试。",
+      "formatWrong": "这不像是此提供商的密钥。"
     },
     "failure": {
       "title": "{model} 未能完成",
@@ -189,8 +192,11 @@
       "actionKey": "更换密钥",
       "actionBilling": "打开 {provider}",
       "actionRetry": "用相同设置重试",
-      "actionPrompt": "修改提示词"
-    }
+      "actionPrompt": "修改提示词",
+      "hint": "{model} 未能完成。原因和下一步操作在模型设置里。"
+    },
+    "details": "详情",
+    "routeCheapestKey": "最便宜的线路：{route}，{price}。改为填写它的密钥"
   },
   "media": {
     "keysTitle": "媒体提供商",
@@ -1219,7 +1225,9 @@
     "remakeTitle": "恢复此结果的模型、线路、设置和提示词。按下生成之前不会发送任何内容。",
     "remakeReady": "已恢复模型、设置和提示词。请确认预计费用后按生成。",
     "remakeNeedsImages": "已恢复模型、设置和提示词。此结果由图片生成，生成前请重新添加图片。",
-    "remakeModelGone": "目录里已没有此模型，无法在这里再次生成。"
+    "remakeModelGone": "目录里已没有此模型，无法在这里再次生成。",
+    "moreActions": "更多操作",
+    "fewerActions": "收起"
   },
   "session": {
     "switchTitle": "切换会话",

@@ -167,13 +167,16 @@
       "save": "驗證並儲存",
       "checking": "正在向 {provider} 驗證…",
       "saved": "已儲存 {provider} 的金鑰，現在可以生成了。",
-      "failed": "金鑰未儲存：{reason}",
+      "failed": "金鑰未儲存。",
       "short": "這太短了，不像金鑰。",
       "prefix": "此提供商的金鑰以 {prefix} 開頭。",
       "extra": "請填寫必填欄位。",
       "required": "（必填）",
       "subscription": "ChatGPT 和 Grok 的登入模型不需要金鑰，它們由內建提供商執行。",
-      "fileOnly": "此提供商使用服務帳號檔案登入，請在設定中新增。"
+      "fileOnly": "此提供商使用服務帳號檔案登入，請在設定中新增。",
+      "rejected": "{provider} 沒有接受此金鑰，請檢查後重試。",
+      "unverified": "暫時無法向 {provider} 驗證金鑰，請稍後重試。",
+      "formatWrong": "這不像是此提供商的金鑰。"
     },
     "failure": {
       "title": "{model} 未能完成",
@@ -189,8 +192,11 @@
       "actionKey": "更換金鑰",
       "actionBilling": "開啟 {provider}",
       "actionRetry": "用相同設定重試",
-      "actionPrompt": "修改提示詞"
-    }
+      "actionPrompt": "修改提示詞",
+      "hint": "{model} 未能完成。原因和下一步操作在模型設定裡。"
+    },
+    "details": "詳情",
+    "routeCheapestKey": "最便宜的線路：{route}，{price}。改為填寫它的金鑰"
   },
   "media": {
     "keysTitle": "媒體供應商",
@@ -1219,7 +1225,9 @@
     "remakeTitle": "還原此結果的模型、線路、設定和提示詞。按下生成之前不會傳送任何內容。",
     "remakeReady": "已還原模型、設定和提示詞。請確認預估費用後按生成。",
     "remakeNeedsImages": "已還原模型、設定和提示詞。此結果由圖片生成，生成前請重新加入圖片。",
-    "remakeModelGone": "目錄裡已沒有此模型，無法在這裡再次生成。"
+    "remakeModelGone": "目錄裡已沒有此模型，無法在這裡再次生成。",
+    "moreActions": "更多操作",
+    "fewerActions": "收合"
   },
   "session": {
     "switchTitle": "切換會話",
