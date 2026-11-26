@@ -9,6 +9,7 @@ import { VendorLogo, vendorDisplayName } from "./VendorLogo.tsx";
 const M = messages(
   {
     "audio": "Audio",
+    "retiring": "Retiring soon",
     "nonePrice": "No published price",
         "all": "All",
     "search": "Search models",
@@ -33,6 +34,7 @@ const M = messages(
   },
   {
     "audio": "오디오",
+    "retiring": "곧 종료",
     "nonePrice": "공개 가격 없음",
         "all": "전체",
     "search": "모델 검색",
@@ -110,6 +112,7 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
           <span className="model-row-label">
             {model.label}
             {model.params.nativeAudio ? <span className="tag">{t("audio")}</span> : null}
+            {model.retiring ? <span className="tag tag-retiring">{t("retiring")}</span> : null}
           </span>
           <span className="model-row-sub">
             {specChips(model).map((chip) => (

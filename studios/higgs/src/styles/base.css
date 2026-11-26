@@ -133,6 +133,10 @@ code {
   font-weight: 560;
   margin-left: 6px;
 }
+/* Being retired by the provider: a warning word, not a new accent. */
+.tag.tag-retiring {
+  color: var(--amber);
+}
 
 .btn {
   display: inline-flex;

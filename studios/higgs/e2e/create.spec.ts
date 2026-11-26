@@ -136,3 +136,19 @@ test("video: on a shared web server, a run above the per-run limit is explained 
   await expect(page.getByText(/above this server's \$0\.10 limit per run/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
 });
+
+test("a model being retired shows its plain name, with a 'Retiring soon' badge only in the picker", async ({ page }) => {
+  await page.route("**/api/media/catalog*", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const m of body.models) if (m.id === "openai/gpt-image-2") m.label = "GPT Image 2 (deprecated)";
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto("/#/image?model=openai%2Fgpt-image-2");
+  const chip = page.getByRole("button", { name: /^Model: / });
+  await expect(chip).toHaveAccessibleName("Model: GPT Image 2");
+  await chip.click();
+  const row = page.getByRole("dialog", { name: "Choose a model" }).getByRole("button", { name: /GPT Image 2(?!\.)/ }).first();
+  await expect(row).toContainText("Retiring soon");
+  await expect(page.getByText("(deprecated)")).toHaveCount(0);
+});
