@@ -265,6 +265,9 @@ async function waitForTerminal(
       if (outcome.kind === "error") throw outcome.error;
       if (outcome.kind === "replay-gap") return await recoverReplayGap(opts, signal);
       stream.close();
+      // Never reconnect after the deadline: a transport that ignores the aborted
+      // signal would otherwise hand back a fresh stream and loop forever.
+      if (signal.aborted) throw new McpJobError("MCP_JOB_ABORTED", "MCP job tracking was aborted");
       stream = await openSse(sseUrlWithCursor(opts.serverBase, "/api/events", lastEventId), { signal });
     }
   } catch (error) {
