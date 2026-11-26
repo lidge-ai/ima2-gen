@@ -68,6 +68,19 @@ test("normalizeMediaError maps plain errors and never leaks secrets", () => {
   assert.equal(redact("abc", ["abc"]), "abc", "values shorter than 6 chars are not treated as secrets");
 });
 
+test("normalizeMediaError scrubs common key shapes even without the key value", () => {
+  const samples = [
+    "sk-live-ABCDEFGHIJKLMNOP", "xai-ABCDEFGHIJKLMNOPQRSTUV", "AIzaSyA1234567890abcdefghijklmnopqrstu",
+    "Bearer eyJhbGciOiJSUzI1NiJ9.payload", "ya29.a0AfH6SMBabcdefghijklmnopqrstuvwxyz",
+  ];
+  for (const secret of samples) {
+    const out = normalizeMediaError("DEMO", new Error("upstream said " + secret + " is invalid"));
+    assert.ok(!out.message.includes(secret), secret);
+    assert.match(out.message, /upstream said \[redacted\] is invalid/);
+  }
+  assert.equal(normalizeMediaError("DEMO", new Error("video too long")).message, "video too long");
+});
+
 test("unknown vendorOptions are refused, known ones pass through", () => {
   const request = { model: "m", task: "lipsync", inputs: [], vendorOptions: { mode: "x", extra: 1 } } as MediaSubmitRequest;
   assert.throws(() => readVendorOptions(request, ["mode"]), /Unknown vendorOptions: extra/);

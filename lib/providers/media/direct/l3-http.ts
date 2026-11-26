@@ -126,12 +126,27 @@ export function invalidRequest(message: string, reason = "INVALID_REQUEST"): Med
   return new MediaHttpError({ message, reason, category: "invalid-request", retryable: false });
 }
 
+/**
+ * Key shapes scrubbed from every normalized message even without a context, as a
+ * second line behind the exact-value redaction done where errors are raised.
+ */
+const KEY_SHAPES: readonly RegExp[] = [
+  /\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/g,
+  /\b(?:sk|xai|vp|key)[-_][A-Za-z0-9_-]{12,}/g,
+  /\bAIza[0-9A-Za-z_-]{30,}/g,
+  /\bya29\.[0-9A-Za-z._-]{20,}/g,
+];
+
+export function scrubKeyShapes(text: string): string {
+  return KEY_SHAPES.reduce((out, shape) => out.replace(shape, "[redacted]"), text);
+}
+
 /** The shared half of every adapter's normalizeError. */
 export function normalizeMediaError(prefix: string, error: unknown, secrets: readonly string[] = []): MediaProviderError {
   if (error instanceof MediaHttpError) {
     return {
       code: prefix + "_" + error.reason,
-      message: redact(error.message, secrets),
+      message: scrubKeyShapes(redact(error.message, secrets)),
       ...(error.status !== undefined ? { status: error.status } : {}),
       retryable: error.retryable,
       category: error.category,
@@ -139,7 +154,7 @@ export function normalizeMediaError(prefix: string, error: unknown, secrets: rea
     };
   }
   const name = error instanceof Error ? error.name : "";
-  const message = redact(error instanceof Error ? error.message : String(error ?? "Unknown error"), secrets);
+  const message = scrubKeyShapes(redact(error instanceof Error ? error.message : String(error ?? "Unknown error"), secrets));
   if (name === "TimeoutError") return { code: prefix + "_TIMEOUT", message, retryable: true, category: "timeout" };
   if (name === "AbortError") return { code: prefix + "_ABORTED", message, retryable: false, category: "unknown" };
   if (error instanceof TypeError) return { code: prefix + "_NETWORK", message, retryable: true, category: "upstream" };
