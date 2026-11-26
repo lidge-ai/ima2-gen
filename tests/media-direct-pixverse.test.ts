@@ -46,7 +46,7 @@ test('HTTP and vendor errors are classified and redact secrets', async () => {
     const {ctx} = fake({message:'secret-key-123'},status);
     await assert.rejects(adapter.submit(ctx,request), e => { const error=adapter.normalizeError(e); assert.equal(error.category,category); assert.match(error.code,/^PIXVERSE_/); assert.ok(!error.message.includes(ctx.apiKey)); return true; });
   }
-  for (const [code,category] of [[10004,'auth'],[400017,'invalid-request'],[500044,'rate-limit']] as const) {
+  for (const [code,category] of [[10004,'auth'],[400017,'invalid-request'],[500044,'rate-limit'],[500090,'quota']] as const) {
     const {ctx} = fake({ErrCode:code,ErrMsg:'secret-key-123'});
     await assert.rejects(adapter.submit(ctx,request), e => { const error=adapter.normalizeError(e); assert.equal(error.category,category); assert.ok(!error.message.includes(ctx.apiKey)); return true; });
   }
@@ -61,4 +61,15 @@ test('catalog and free key validation conform to contract', async () => {
   assert.deepEqual(await adapter.validateKey(ctx),{ok:true});
   assert.equal(calls[0]?.url,'https://fake.test/openapi/v2/account/balance');
   assert.equal(calls[0]?.init.method,'GET');
+});
+
+test('normalizing unknown errors cannot expose credentials', () => {
+  for (const error of ['secret-key-123', new Error('secret-key-123')]) assert.ok(!adapter.normalizeError(error).message.includes('secret-key-123'));
+});
+
+test('validation errors redact a key supplied as a model or option name', async () => {
+  const {ctx} = fake({ErrCode:0});
+  for (const bad of [{model:ctx.apiKey}, {vendorOptions:{[ctx.apiKey]: true}}]) {
+    await assert.rejects(adapter.submit(ctx,{...request,...bad}), error => { assert.ok(!String(error).includes(ctx.apiKey)); assert.ok(!adapter.normalizeError(error).message.includes(ctx.apiKey)); return true; });
+  }
 });
