@@ -58,6 +58,12 @@ const M = messages(
     hour: "{n} h ago",
     day: "{n} d ago",
     second: "s",
+    image: "image",
+    request: "request",
+    megapixel: "MP",
+    "1k-tokens": "1K tokens",
+    minute: "min",
+    character: "char",
   },
   {
     from: "{price}부터",
@@ -67,6 +73,12 @@ const M = messages(
     hour: "{n}시간 전",
     day: "{n}일 전",
     second: "초",
+    image: "장",
+    request: "요청",
+    megapixel: "MP",
+    "1k-tokens": "1천 토큰",
+    minute: "분",
+    character: "자",
   },
 );
 
@@ -75,7 +87,9 @@ export function taskLabel(task: MediaTask): string {
 }
 
 function perUnit(price: MediaPrice): string {
-  return formatUsd({ usd: price.usd, basis: "" }) + "/" + (price.unit === "second" ? tr(M, "second") : price.unit);
+  const units = ["second", "image", "request", "megapixel", "1k-tokens", "minute", "character"] as const;
+  const unit = (units as readonly string[]).includes(price.unit) ? tr(M, price.unit as (typeof units)[number]) : price.unit;
+  return formatUsd({ usd: price.usd, basis: "" }) + "/" + unit;
 }
 
 /** "from $0.05/s" across every route, or null when nothing is published. */
