@@ -42,3 +42,15 @@
   color: var(--text);
   text-decoration: underline;
 }
+
+.web-account-badge__form {
+  display: contents;
+}
+
+button.web-account-badge__logout {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}

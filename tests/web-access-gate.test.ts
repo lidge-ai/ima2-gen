@@ -40,7 +40,7 @@ test("config: off unless IMA2_WEB_ACCESS=cloudflare, and incomplete settings sto
   assert.throws(() => loadWebAccessConfig({ IMA2_WEB_ACCESS: "yes" }, "/tmp/x"), /IMA2_WEB_ACCESS/);
   assert.throws(() => loadWebAccessConfig({ IMA2_WEB_ACCESS: "cloudflare", IMA2_CF_ACCESS_TEAM: "team", IMA2_CF_ACCESS_AUD: "a", IMA2_WEB_SPEND_DAILY_USD: "-1" }, "/tmp/x"), /IMA2_WEB_SPEND_DAILY_USD/);
   const config = loadWebAccessConfig({ IMA2_WEB_ACCESS: "cloudflare", IMA2_CF_ACCESS_TEAM: "team", IMA2_CF_ACCESS_AUD: "a", IMA2_WEB_ALLOWED_EMAILS: "A@x.test, b@x.test" }, "/tmp/x")!;
-  assert.equal(config.teamDomain, "team.cloudflareaccess.com");
+  assert.equal(config.mode === "cloudflare" ? config.teamDomain : null, "team.cloudflareaccess.com");
   assert.deepEqual(config.allowedEmails, ["a@x.test", "b@x.test"]);
   assert.equal(config.dailyCapUsd, 5);
   assert.equal(config.requestCapUsd, 1);

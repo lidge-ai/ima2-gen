@@ -1,67 +1,28 @@
-import { join } from "node:path";
-import type { Express, Request, RequestHandler, Response } from "express";
+import type { Express, NextFunction, Request, RequestHandler, Response } from "express";
 import { createAccessJwtVerifier, type AccessJwtResult } from "./accessJwt.js";
+import { loadWebAccessConfig, type WebAccessConfig } from "./config.js";
+import { createGoogleLogin } from "./googleLogin.js";
 import { classifyWebRoute } from "./routePolicy.js";
+import { createSessionSigner } from "./session.js";
 import { createSpendGuard, type SpendGuard } from "./spendGuard.js";
 
 export { classifyWebRoute } from "./routePolicy.js";
 export { estimateMediaUsd } from "./spendGuard.js";
+export { loadWebAccessConfig } from "./config.js";
+export type { WebAccessConfig } from "./config.js";
 
 /**
- * Web deployment behind Cloudflare Access (devlog L9). Off unless
- * IMA2_WEB_ACCESS=cloudflare; then every request must carry a valid Access
- * token, remote-unsafe routes close and priced media jobs pass a spend guard.
+ * Web deployment gate (devlog L9). Off unless IMA2_WEB_ACCESS is set.
+ * "cloudflare": every request carries a verified Cloudflare Access token.
+ * "google": this app's Google sign-in and a signed session cookie; writes must
+ * come from the public origin. Both then close remote-unsafe routes, put the
+ * email on the request and the UI, and send priced media jobs through the
+ * spend guard.
  */
-export interface WebAccessConfig {
-  teamDomain: string;
-  aud: string;
-  allowedEmails: readonly string[];
-  dailyCapUsd: number;
-  requestCapUsd: number;
-  timeZone: string;
-  ledgerFile: string;
-}
-
 type Env = Readonly<Record<string, string | undefined>>;
-const TEAM = /^[a-z0-9-]+$/;
-const TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
 const USER_COOKIE = "ima2_web_user";
-const LOGOUT_URL = "/cdn-cgi/access/logout";
-
-function positiveUsd(env: Env, name: string, fallback: number): number {
-  const raw = env[name];
-  if (raw === undefined || raw === "") return fallback;
-  const value = Number(raw);
-  if (!Number.isFinite(value) || value <= 0) throw new Error(name + " must be a positive dollar amount");
-  return value;
-}
-
-function teamDomain(raw: string | undefined): string {
-  const team = (raw ?? "").trim().toLowerCase();
-  if (TEAM_DOMAIN.test(team)) return team;
-  if (TEAM.test(team)) return team + ".cloudflareaccess.com";
-  throw new Error("IMA2_CF_ACCESS_TEAM must be a Cloudflare Access team name or <team>.cloudflareaccess.com");
-}
-
-export function loadWebAccessConfig(env: Env, configDir: string): WebAccessConfig | null {
-  const mode = (env.IMA2_WEB_ACCESS ?? "").trim().toLowerCase();
-  if (mode === "" || mode === "off") return null;
-  if (mode !== "cloudflare") throw new Error("IMA2_WEB_ACCESS must be \"cloudflare\" or \"off\"");
-  const aud = (env.IMA2_CF_ACCESS_AUD ?? "").trim();
-  const domain = teamDomain(env.IMA2_CF_ACCESS_TEAM);
-  if (!aud) throw new Error("IMA2_CF_ACCESS_AUD is required when IMA2_WEB_ACCESS=cloudflare");
-  const timeZone = env.IMA2_WEB_SPEND_TIMEZONE?.trim() || "UTC";
-  try { new Intl.DateTimeFormat("en-CA", { timeZone }); } catch { throw new Error("IMA2_WEB_SPEND_TIMEZONE is not a valid IANA time zone"); }
-  return {
-    teamDomain: domain,
-    aud,
-    allowedEmails: (env.IMA2_WEB_ALLOWED_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
-    dailyCapUsd: positiveUsd(env, "IMA2_WEB_SPEND_DAILY_USD", 5),
-    requestCapUsd: positiveUsd(env, "IMA2_WEB_SPEND_REQUEST_USD", 1),
-    timeZone,
-    ledgerFile: join(configDir, "web-spend-ledger.json"),
-  };
-}
+const MODE_COOKIE = "ima2_web_auth";
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 function deny(res: Response, status: number, code: string, message: string): void {
   res.setHeader("Cache-Control", "no-store");
@@ -83,38 +44,79 @@ export interface WebAccessDeps {
   now?: () => number;
 }
 
+function wantsPage(req: Request): boolean {
+  return (req.method === "GET" || req.method === "HEAD") && !/^\/(api|generated)(\/|$)/i.test(req.path)
+    && /text\/html/i.test(String(req.headers.accept ?? ""));
+}
+
 export function createWebAccess(config: WebAccessConfig, deps: WebAccessDeps = {}) {
   const clock = deps.now ? { now: deps.now } : {};
-  const verifier = deps.verifier ?? createAccessJwtVerifier({ teamDomain: config.teamDomain, aud: config.aud, ...(deps.fetch ? { fetch: deps.fetch } : {}), ...clock });
+  const fetchDep = deps.fetch ? { fetch: deps.fetch } : {};
   const spend: SpendGuard = createSpendGuard({ dailyCapUsd: config.dailyCapUsd, requestCapUsd: config.requestCapUsd, ledgerFile: config.ledgerFile, timeZone: config.timeZone, ...clock });
-  const gate: RequestHandler = async (req, res, next) => {
-    try {
-      const token = assertionHeader(req);
-      if (!token) return deny(res, 401, "WEB_ACCESS_REQUIRED", "Sign in through Cloudflare Access at this site's address.");
-      const result = await verifier.verify(token);
-      if (!result.ok) return deny(res, 401, "WEB_ACCESS_INVALID", "Your sign-in could not be verified. Sign in again.");
-      if (config.allowedEmails.length > 0 && !config.allowedEmails.includes(result.email)) {
-        return deny(res, 403, "WEB_ACCESS_FORBIDDEN", "This account is not allowed on this instance.");
-      }
-      res.locals.webUser = { email: result.email };
-      const route = classifyWebRoute(req.method, req.originalUrl || req.url);
-      if (route.action === "deny") return deny(res, 403, route.code, route.message);
-      if (req.method === "GET" && !/^\/(api|generated)(\/|$)/i.test(req.path)) {
-        res.cookie(USER_COOKIE, result.email, { path: "/", secure: true, sameSite: "strict", httpOnly: false, maxAge: 86_400_000 });
-      }
-      next();
-    } catch {
-      deny(res, 503, "WEB_ACCESS_UNAVAILABLE", "Sign-in verification is unavailable. Try again shortly.");
+  const allowed = (email: string) => config.allowedEmails.length === 0 || config.allowedEmails.includes(email);
+  const logout = config.mode === "google" ? { url: "/auth/logout", method: "POST" } : { url: "/cdn-cgi/access/logout", method: "GET" };
+
+  /** After sign-in: allow list, write origin, route policy, then the email on the request and the badge cookies. */
+  function admit(req: Request, res: Response, next: NextFunction, email: string): void {
+    if (!allowed(email)) return deny(res, 403, "WEB_ACCESS_FORBIDDEN", "This account is not allowed on this instance.");
+    if (config.mode === "google" && !READ_METHODS.has(req.method) && req.headers.origin !== config.publicOrigin) {
+      return deny(res, 403, "WEB_ORIGIN_REJECTED", "Changes must come from this site's own pages.");
     }
-  };
-  function registerRoutes(app: Express): void {
-    app.get("/api/web/session", async (_req: Request, res: Response) => {
-      const { entries: _entries, ...budget } = await spend.status();
-      res.setHeader("Cache-Control", "no-store");
-      res.json({ email: res.locals.webUser?.email ?? null, logoutUrl: LOGOUT_URL, spend: budget });
-    });
+    res.locals.webUser = { email };
+    const route = classifyWebRoute(req.method, req.originalUrl || req.url);
+    if (route.action === "deny") return deny(res, 403, route.code, route.message);
+    if (req.method === "GET" && !/^\/(api|generated)(\/|$)/i.test(req.path)) {
+      const badge = { path: "/", secure: true, sameSite: "strict" as const, httpOnly: false, maxAge: 86_400_000 };
+      res.cookie(USER_COOKIE, email, badge);
+      res.cookie(MODE_COOKIE, config.mode, badge);
+    }
+    next();
   }
-  return { config, spend, gate, registerRoutes };
+
+  let gate: RequestHandler;
+  if (config.mode === "cloudflare") {
+    const verifier = deps.verifier ?? createAccessJwtVerifier({ teamDomain: config.teamDomain, aud: config.aud, ...fetchDep, ...clock });
+    gate = async (req, res, next) => {
+      try {
+        const token = assertionHeader(req);
+        if (!token) return deny(res, 401, "WEB_ACCESS_REQUIRED", "Sign in through Cloudflare Access at this site's address.");
+        const result = await verifier.verify(token);
+        if (!result.ok) return deny(res, 401, "WEB_ACCESS_INVALID", "Your sign-in could not be verified. Sign in again.");
+        admit(req, res, next, result.email);
+      } catch {
+        deny(res, 503, "WEB_ACCESS_UNAVAILABLE", "Sign-in verification is unavailable. Try again shortly.");
+      }
+    };
+  } else {
+    const sessions = createSessionSigner({ secret: config.sessionSecret, revokedFile: config.revokedFile, ...clock });
+    const google = createGoogleLogin({ clientId: config.clientId, clientSecret: config.clientSecret, origin: config.publicOrigin, secret: config.sessionSecret, allowed, sessions, ...fetchDep, ...clock });
+    gate = async (req, res, next) => {
+      try {
+        if (await google.handle(req, res)) return;
+        const session = google.currentSession(req);
+        if (!session || !allowed(session.email)) {
+          if (wantsPage(req)) {
+            res.setHeader("Cache-Control", "no-store");
+            return res.redirect(302, "/auth/login?return=" + encodeURIComponent(req.originalUrl || req.url));
+          }
+          return deny(res, 401, "WEB_LOGIN_REQUIRED", "Sign in at this site's address first.");
+        }
+        admit(req, res, next, session.email);
+      } catch {
+        deny(res, 503, "WEB_ACCESS_UNAVAILABLE", "Sign-in is unavailable. Try again shortly.");
+      }
+    };
+  }
+
+  async function handleSession(_req: Request, res: Response): Promise<void> {
+    const { entries: _entries, ...budget } = await spend.status();
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ email: res.locals.webUser?.email ?? null, logoutUrl: logout.url, logoutMethod: logout.method, spend: budget });
+  }
+  function registerRoutes(app: Express): void {
+    app.get("/api/web/session", (req: Request, res: Response, next: NextFunction) => { handleSession(req, res).catch(next); });
+  }
+  return { config, spend, gate, handleSession, registerRoutes };
 }
 
 export type WebAccess = ReturnType<typeof createWebAccess>;
