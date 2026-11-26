@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
 
@@ -16,16 +16,20 @@ interface Props<T> {
   /** "tile" is the panel card; "chip" is the compact dock button. */
   variant?: "tile" | "chip";
   icon?: Parameters<typeof Icon>[0]["name"];
+  /** Chip text when the value alone is unclear, e.g. "via fal". */
+  chipText?: (label: string) => string;
 }
 
 /** A labelled setting that opens a single-choice menu. */
-export function SettingTile<T extends string | number>({ caption, value, options, onChange, variant = "tile", icon }: Props<T>) {
+export function SettingTile<T extends string | number>({ caption, value, options, onChange, variant = "tile", icon, chipText }: Props<T>) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
   const current = options.find((o) => o.value === value);
   return (
     <div className={"setting " + (variant === "chip" ? "setting-chip" : "setting-tile")}>
       <button
+        ref={trigger}
         type="button"
         className="setting-trigger"
         aria-haspopup="dialog"
@@ -35,10 +39,10 @@ export function SettingTile<T extends string | number>({ caption, value, options
       >
         {icon ? <Icon name={icon} size={15} /> : null}
         {variant === "tile" ? <span className="setting-caption">{caption}</span> : null}
-        <span className="setting-value">{current?.label ?? "-"}</span>
+        <span className="setting-value">{variant === "chip" && chipText ? chipText(current?.label ?? "-") : current?.label ?? "-"}</span>
         {variant === "tile" ? <Icon name="chevron" size={16} /> : null}
       </button>
-      <Popover open={open} onClose={() => setOpen(false)} label={caption} className="menu-popover">
+      <Popover open={open} onClose={() => setOpen(false)} label={caption} className="menu-popover" anchor={trigger} placement={variant === "chip" ? "top" : "bottom"}>
         <p className="menu-title" id={id}>{caption}</p>
         <div role="radiogroup" aria-labelledby={id} className="menu-list">
           {options.map((option) => (
