@@ -357,6 +357,8 @@ export interface StepSummary {
   label: string;
   kind: WorkflowStep["kind"];
   dependsOn: readonly string[];
+  /** Media steps: the definition slot this step runs (e.g. "subject" for "subject-first"). */
+  slot?: string;
   model?: string;
   route?: string;
   final: boolean;
