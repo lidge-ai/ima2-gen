@@ -63,6 +63,8 @@ test("sume image models go to the image router with image_urls", async () => {
     inputs: [{ role: "source-image", url: "https://x.test/a.png", mimeType: "image/png" }],
   }));
   assert.deepEqual(calls[0].body, { model: "gpt-image-2", prompt: "make it night", image_urls: ["https://x.test/a.png"] });
+  await adapter.submit(ctx(fetch), request({ model: "openai/gpt-image-2", task: "text-to-image", prompt: "cup", resolution: "1K", count: 2, vendorOptions: { quality: "low" } }));
+  assert.deepEqual(calls[1].body, { model: "gpt-image-2", prompt: "cup", resolution: "1K", num_images: 2, quality: "low" });
 });
 
 test("sume refuses unknown models, unsupported tasks and undocumented fields without calling", async () => {
@@ -113,6 +115,11 @@ test("sume error envelope is classified and the key never leaks", async () => {
     assert.equal(error.status, status);
     assert.ok(!JSON.stringify(error).includes(KEY));
   }
+  const detailed = fakeFetch([[/generate$/, () => json({ error: { code: "invalid_request", message: "Invalid request body.", details: { errors: [
+    { path: "image_size", message: "must be object" }, { path: "image_size", message: "must be object" },
+  ] } } }, 400)]]);
+  const withDetails = await errorOf(adapter.submit(ctx(detailed.fetch), request()));
+  assert.equal(withDetails.message, "Invalid request body. (image_size: must be object)");
 });
 
 test("sume cancel posts to the job and surfaces 409 when generation already started", async () => {

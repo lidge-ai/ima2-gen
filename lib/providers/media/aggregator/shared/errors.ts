@@ -1,7 +1,7 @@
 /**
  * Error vocabulary shared by the aggregator adapters (fal, Replicate, Sume, Atlas Cloud).
  *
- * Each adapter keeps its own prefix ("FAL_", "REPLICATE_") and may refine the
+ * Each adapter keeps its own prefix ("FAL", "REPLICATE") and may refine the
  * reason from the vendor body, but the HTTP status to category mapping and the
  * thrown error type are the same everywhere, so normalizeError behaves alike.
  */
@@ -48,6 +48,7 @@ export function categoryForStatus(status: number | undefined): ErrorCategory {
 }
 
 export interface ErrorInit {
+  /** Adapter errorPrefix without a trailing underscore ("FAL"); codes are "<PREFIX>_<REASON>". */
   prefix: string;
   category: ErrorCategory;
   message: string;
@@ -61,7 +62,7 @@ export interface ErrorInit {
 export function buildError(init: ErrorInit): MediaProviderError {
   const reason = init.reason ?? REASON_BY_CATEGORY[init.category];
   return {
-    code: `${init.prefix}${reason}`,
+    code: [init.prefix, reason].join("_"),
     message: init.message,
     ...(init.status === undefined ? {} : { status: init.status }),
     retryable: init.retryable ?? RETRYABLE.has(init.category),

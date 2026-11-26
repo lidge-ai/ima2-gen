@@ -10,7 +10,7 @@ import { endpointFromJsonSchema, requestSchemaFromOpenApi } from "../shared/open
 import { readFalError } from "./errors.js";
 
 const PLATFORM = "https://api.fal.ai/v1";
-const PREFIX = "FAL_";
+const PREFIX = "FAL";
 const PAGE_LIMIT = 100;
 const MAX_PAGES = 30;
 

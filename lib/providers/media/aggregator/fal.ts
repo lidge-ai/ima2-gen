@@ -21,7 +21,7 @@ import { adapterError, invalidRequest, MediaAdapterError, normalizeAdapterError 
 import { buildSchemaBody, paramsFromSchemas, type EndpointSchema } from "./shared/fields.js";
 import { asRecord, asString, httpError, joinUrl, readBody, requestJson } from "./shared/http.js";
 
-const PREFIX = "FAL_";
+const PREFIX = "FAL";
 const QUEUE_BASE = "https://queue.fal.run";
 export const FAL_PLATFORM_BASE = "https://api.fal.ai/v1";
 /** Any public endpoint id works; the pricing API only answers authenticated callers. */

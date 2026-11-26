@@ -18,7 +18,7 @@ import type { VendorErrorView } from "./shared/http.js";
 import { asArray, asNumber, asRecord, asString, joinUrl, requestJson } from "./shared/http.js";
 import { mimeFromUrl } from "./shared/inputs.js";
 
-const PREFIX = "OPENROUTER_";
+const PREFIX = "OPENROUTER";
 const BASE = "https://openrouter.ai/api/v1";
 const POLL_MS = 5000;
 

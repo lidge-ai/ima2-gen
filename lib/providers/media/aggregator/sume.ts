@@ -22,7 +22,7 @@ import { SUME_CATALOG } from "./sume/catalog.js";
 import { readSumeError } from "./sume/errors.js";
 import type { SumeCatalogEntry } from "./sume/types.js";
 
-const PREFIX = "SUME_";
+const PREFIX = "SUME";
 const BASE = "https://api.sume.com";
 
 const S: InputField = { type: "string" };
@@ -32,9 +32,14 @@ const VIDEO_FIELDS: Record<string, InputField> = {
   image_url: S, end_image_url: S, video_url: S, audio_url: S,
   reference_image_urls: URLS, reference_video_urls: URLS, reference_audio_urls: URLS,
   keep_original_sound: { type: "boolean" }, model_params: { type: "object" }, mode: S,
+  // Per-model option groups named in the router's constraints (vendorOptions only).
+  extend: { type: "boolean" }, upscale: { type: "object" }, sound: { type: "object" }, captions: { type: "object" },
+  dubbing: { type: "object" }, relight: { type: "object" },
 };
+/** https://www.sume.com/docs/images (2026-11-26): resolution is the 1K/2K/4K tier; image_size is a preset, WxH or object. */
 const IMAGE_FIELDS: Record<string, InputField> = {
-  prompt: S, image_urls: URLS, aspect_ratio: S, image_size: S, quality: S,
+  prompt: S, image_urls: URLS, aspect_ratio: S, resolution: S, image_size: {}, quality: S,
+  num_images: { type: "integer", minimum: 1 }, output_format: S, mask_url: S,
 };
 
 function headers(ctx: MediaAdapterContext): Record<string, string> {
@@ -48,7 +53,7 @@ function base(ctx: MediaAdapterContext): string {
 function toSpec(entry: SumeCatalogEntry): MediaModelSpec {
   return {
     id: entry.id, upstreamId: entry.wire, vendor: entry.vendor, label: entry.label, kind: entry.kind,
-    tasks: entry.tasks, params: {}, pricing: entry.pricing, docsUrl: entry.route === "image" ? "https://www.sume.com/docs/images" : "https://www.sume.com/docs/video",
+    tasks: entry.tasks, params: entry.params, pricing: entry.pricing, docsUrl: entry.route === "image" ? "https://www.sume.com/docs/images" : "https://www.sume.com/docs/video",
   };
 }
 

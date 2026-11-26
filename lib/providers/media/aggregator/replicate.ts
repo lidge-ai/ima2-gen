@@ -22,7 +22,7 @@ import { asArray, asRecord, asString, joinUrl, requestJson } from "./shared/http
 import { defaultMime, kindFromMime, mimeFromUrl } from "./shared/inputs.js";
 import { endpointFromJsonSchema } from "./shared/openapi.js";
 
-const PREFIX = "REPLICATE_";
+const PREFIX = "REPLICATE";
 const BASE = "https://api.replicate.com/v1";
 const API_HOST = "api.replicate.com";
 

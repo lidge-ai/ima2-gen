@@ -1,4 +1,4 @@
-import type { MediaKind, MediaPrice, MediaTask } from "../../contract.js";
+import type { MediaKind, MediaModelSpec, MediaPrice, MediaTask } from "../../contract.js";
 
 /** One model reachable through the user's own Sume API key. */
 export interface SumeCatalogEntry {
@@ -10,5 +10,7 @@ export interface SumeCatalogEntry {
   vendor: string;
   kind: MediaKind;
   tasks: readonly MediaTask[];
+  /** From the router's live capabilities (resolutions, durations, aspect ratios, audio). */
+  params: MediaModelSpec["params"];
   pricing: readonly MediaPrice[];
 }
