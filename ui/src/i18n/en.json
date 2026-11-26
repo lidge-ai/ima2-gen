@@ -1,4 +1,13 @@
 {
+  "media": {
+    "keysTitle": "Media providers",
+    "noProviders": "No media providers available.",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "apiKey": "API key",
+    "getKey": "Get a key",
+    "envImmutable": "Environment keys cannot be removed here."
+  },
   "imageOutput": {
     "title": "Output",
     "still": "Still image",

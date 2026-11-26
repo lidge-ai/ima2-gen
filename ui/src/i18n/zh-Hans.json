@@ -1,4 +1,13 @@
 {
+  "media": {
+    "keysTitle": "媒体提供商",
+    "noProviders": "没有可用的媒体提供商。",
+    "configured": "已配置",
+    "notConfigured": "未配置",
+    "apiKey": "API 密钥",
+    "getKey": "获取密钥",
+    "envImmutable": "无法在此删除环境变量中的密钥。"
+  },
   "imageOutput": {
     "title": "输出",
     "still": "静态图片",
