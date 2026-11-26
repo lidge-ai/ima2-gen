@@ -99,12 +99,13 @@ export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, o
       const prepared = await prepareMediaJob(d, body);
       const email = webUserEmail(res);
       const spend = ctx.webAccess?.spend;
+      const estimate = estimateMediaUsd(prepared.spec, prepared.request);
       if (spend) {
-        await spend.admit({ requestId, model: prepared.spec.id, email: email ?? "unknown", estimate: estimateMediaUsd(prepared.spec, prepared.request) });
+        await spend.admit({ requestId, model: prepared.spec.id, email: email ?? "unknown", estimate });
       }
       const { done } = launchMediaJob(d, prepared, {
         requestId, sessionId: optionalId(req.body?.sessionId), clientNodeId: optionalId(req.body?.clientNodeId),
-        ...(email ? { meta: { webUser: email } } : {}),
+        estimate, ...(email ? { meta: { webUser: email } } : {}),
       });
       done.catch(() => { /* published as an "error" event on the job */ });
       res.status(202).json({ requestId, model: prepared.spec.id, adapter: prepared.adapter.id });

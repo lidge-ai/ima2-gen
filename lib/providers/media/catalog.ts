@@ -1,4 +1,4 @@
-import type { MediaKind, MediaProviderAdapter } from "./contract.js";
+import type { MediaKind, MediaPrice, MediaProviderAdapter } from "./contract.js";
 import type { MediaKeySnapshot } from "./credentials.js";
 import type { MediaCatalogModel, MediaRegistry } from "./registry.js";
 import { VendorLogos } from "./vendorAssets.js";
@@ -33,6 +33,29 @@ function adapterEntry(adapter: MediaProviderAdapter, keys: MediaKeySnapshot, log
   };
 }
 
+/** Lowest published price of a route, in the unit this kind of model is normally sold by when one is listed. */
+function lowestPrice(pricing: readonly MediaPrice[], kind: MediaKind): number {
+  const unit = kind === "image" ? "image" : "second";
+  const comparable = pricing.some((price) => price.unit === unit) ? pricing.filter((price) => price.unit === unit) : pricing;
+  return comparable.reduce((min, price) => Math.min(min, price.usd), Number.POSITIVE_INFINITY);
+}
+
+/**
+ * The route a client should preselect: a keyed direct route, otherwise the keyed aggregator with the
+ * lowest published price (unpublished prices last, registry order on ties). Null when no route has a key.
+ */
+function defaultRouteOf(routes: readonly { adapter: string; route: "direct" | "aggregator"; hasKey: boolean; pricing: readonly MediaPrice[] }[], kind: MediaKind): string | null {
+  const keyed = routes.filter((route) => route.hasKey);
+  const direct = keyed.find((route) => route.route === "direct");
+  if (direct) return direct.adapter;
+  let best: { adapter: string; usd: number } | null = null;
+  for (const route of keyed) {
+    const usd = lowestPrice(route.pricing, kind);
+    if (!best || usd < best.usd) best = { adapter: route.adapter, usd };
+  }
+  return best?.adapter ?? null;
+}
+
 function modelEntry(model: MediaCatalogModel, keys: MediaKeySnapshot, logos: VendorLogos) {
   const routes = model.candidates.map(({ adapter, spec }) => ({
     adapter: adapter.id,
@@ -54,7 +77,7 @@ function modelEntry(model: MediaCatalogModel, keys: MediaKeySnapshot, logos: Ven
     kind: model.kind,
     tasks: model.tasks,
     routes,
-    defaultRoute: routes.find((r) => r.hasKey)?.adapter ?? null,
+    defaultRoute: defaultRouteOf(routes, model.kind),
   };
 }
 
