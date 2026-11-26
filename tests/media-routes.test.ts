@@ -25,8 +25,14 @@ type WorkflowDefinition = import("../lib/workflows/types.ts").WorkflowDefinition
 const { prepareWorkflow } = await import("../lib/workflows/index.ts");
 const { createWorkflowGateway } = await import("../lib/providers/media/workflowGateway.ts");
 const { launchWorkflowJob } = await import("../lib/providers/media/workflowJob.ts");
+const { closeDb } = await import("../lib/db.ts");
 
-test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
+// Jobs persist through lib/inflight into <config>/sessions.db; Windows refuses to unlink an open
+// SQLite file, so the handle is closed before the folder goes.
+test.after(async () => {
+  closeDb();
+  await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
 test.afterEach(() => { resetBus(); resetInflight(); });
 
 const VIDEO_URL = "https://cdn.fake.example/out/clip.mp4";
