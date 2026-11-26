@@ -44,11 +44,11 @@ test('poll processes status and validates result', async () => {
 test('HTTP and vendor errors are classified and redact secrets', async () => {
   for (const [status,category] of [[401,'auth'],[403,'auth'],[429,'rate-limit'],[500,'upstream']] as const) {
     const {ctx} = fake({message:'secret-key-123'},status);
-    await assert.rejects(adapter.submit(ctx,request), e => { const error=adapter.normalizeError(e); assert.equal(error.category,category); assert.match(error.code,/^PIXVERSE_/); assert.ok(!error.message.includes(ctx.apiKey)); return true; });
+    await assert.rejects(adapter.submit(ctx,request), e => { const error=adapter.normalizeError(e); assert.equal(error.category,category); assert.equal(error.code,`PIXVERSE_HTTP_${status}`); assert.equal(error.retryable, status === 429 || status === 500); assert.ok(!error.message.includes(ctx.apiKey)); return true; });
   }
   for (const [code,category] of [[10004,'auth'],[400017,'invalid-request'],[500044,'rate-limit'],[500090,'quota']] as const) {
     const {ctx} = fake({ErrCode:code,ErrMsg:'secret-key-123'});
-    await assert.rejects(adapter.submit(ctx,request), e => { const error=adapter.normalizeError(e); assert.equal(error.category,category); assert.ok(!error.message.includes(ctx.apiKey)); return true; });
+    await assert.rejects(adapter.submit(ctx,request), e => { const error=adapter.normalizeError(e); assert.equal(error.category,category); assert.equal(error.code,`PIXVERSE_VENDOR_${code}`); assert.equal(error.retryable, code === 500044); assert.ok(!error.message.includes(ctx.apiKey)); return true; });
   }
 });
 test('rejects unknown options and unsupported parameters', async () => {
