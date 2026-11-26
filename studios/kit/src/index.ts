@@ -15,6 +15,7 @@ export { chooseRoute, modelHasKey, type RouteChoice } from "./routing.ts";
 export {
   VENDOR_ALIASES,
   VENDOR_NAMES,
+  findVendor,
   pickLogo,
   vendorId,
   vendorName,

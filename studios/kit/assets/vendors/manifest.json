@@ -19,7 +19,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "alibaba",
@@ -37,7 +38,11 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://www.alibabacloud.com/"
+      "modifications": "extracted verbatim from inline SVG at https://www.alibabacloud.com/",
+      "aliases": [
+        "alibaba-cloud",
+        "dashscope"
+      ]
     },
     {
       "id": "tencent",
@@ -57,7 +62,11 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar"
+      "modifications": "none; GitHub org avatar",
+      "aliases": [
+        "tencent-cloud",
+        "hunyuan"
+      ]
     },
     {
       "id": "kling",
@@ -76,7 +85,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Referential use to identify Kling AI; no public brand kit located; used unaltered.",
-      "modifications": "none; app icon linked from the official site <head>"
+      "modifications": "none; app icon linked from the official site <head>",
+      "aliases": [
+        "kuaishou"
+      ]
     },
     {
       "id": "minimax",
@@ -102,7 +114,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Referential use to identify MiniMax as a model maker; no brand guideline page located; logo used unaltered.",
-      "modifications": "none; original WebP bytes as served by the official site header (dark variant: /assets/logo/minimax-horizontal-white.webp)"
+      "modifications": "none; original WebP bytes as served by the official site header (dark variant: /assets/logo/minimax-horizontal-white.webp)",
+      "aliases": [
+        "hailuo"
+      ]
     },
     {
       "id": "vidu",
@@ -120,7 +135,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "shengshu"
+      ]
     },
     {
       "id": "google",
@@ -144,7 +162,14 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "gemini",
+        "google-vertex",
+        "vertex",
+        "google-image",
+        "veo"
+      ]
     },
     {
       "id": "openai",
@@ -162,7 +187,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "https://openai.com/brand/ — direct relation to OpenAI services, follow guidelines, do not alter or imply endorsement.",
-      "modifications": "extracted verbatim from inline SVG at https://openai.com/brand/"
+      "modifications": "extracted verbatim from inline SVG at https://openai.com/brand/",
+      "aliases": [
+        "openai-oauth"
+      ]
     },
     {
       "id": "xai",
@@ -182,7 +210,11 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar"
+      "modifications": "none; GitHub org avatar",
+      "aliases": [
+        "xai-oauth",
+        "grok"
+      ]
     },
     {
       "id": "meta",
@@ -202,7 +234,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar"
+      "modifications": "none; GitHub org avatar",
+      "aliases": []
     },
     {
       "id": "black-forest-labs",
@@ -234,7 +267,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "See https://bfl.ai/brand for brand usage terms; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "bfl"
+      ]
     },
     {
       "id": "ideogram",
@@ -253,7 +289,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
-      "modifications": "none; GitHub org avatar (org name \"Ideogram\"); site header SVG is behind a bot challenge"
+      "modifications": "none; GitHub org avatar (org name \"Ideogram\"); site header SVG is behind a bot challenge",
+      "aliases": []
     },
     {
       "id": "recraft",
@@ -271,7 +308,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "pixverse",
@@ -301,7 +339,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "See https://pixverse.ai/brand for brand usage terms; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "heygen",
@@ -334,7 +373,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "https://www.heygen.com/brand-kit — use by authorized third parties; do not imply endorsement or alter marks.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "sand-ai",
@@ -352,7 +392,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "sand.ai"
+      ]
     },
     {
       "id": "veed",
@@ -370,7 +413,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://www.veed.io/"
+      "modifications": "extracted verbatim from inline SVG at https://www.veed.io/",
+      "aliases": []
     },
     {
       "id": "meigen",
@@ -389,7 +433,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
-      "modifications": "none; GitHub org avatar"
+      "modifications": "none; GitHub org avatar",
+      "aliases": []
     },
     {
       "id": "sync",
@@ -413,7 +458,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "sync-labs"
+      ]
     },
     {
       "id": "topaz-labs",
@@ -437,7 +485,12 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "topaz",
+        "topaz-image",
+        "topaz-video"
+      ]
     },
     {
       "id": "mirelo",
@@ -461,7 +514,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "elevenlabs",
@@ -485,7 +539,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "See https://elevenlabs.io/brand for brand usage terms; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "cartesia",
@@ -515,7 +570,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "See https://www.cartesia.ai/brand for brand usage terms; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": []
     },
     {
       "id": "stability-ai",
@@ -535,7 +591,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "stability"
+      ]
     },
     {
       "id": "ace-step",
@@ -554,7 +613,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
-      "modifications": "none; GitHub org avatar (org name \"ACEStep\")"
+      "modifications": "none; GitHub org avatar (org name \"ACEStep\")",
+      "aliases": []
     },
     {
       "id": "tripo",
@@ -574,7 +634,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar (VAST / Tripo)"
+      "modifications": "none; GitHub org avatar (VAST / Tripo)",
+      "aliases": []
     },
     {
       "id": "meshy",
@@ -594,7 +655,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar"
+      "modifications": "none; GitHub org avatar",
+      "aliases": []
     },
     {
       "id": "higgsfield",
@@ -614,7 +676,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar"
+      "modifications": "none; GitHub org avatar",
+      "aliases": []
     },
     {
       "id": "byteplus",
@@ -638,7 +701,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "byteplus-vision"
+      ]
     },
     {
       "id": "fal",
@@ -656,7 +722,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://fal.ai/"
+      "modifications": "extracted verbatim from inline SVG at https://fal.ai/",
+      "aliases": [
+        "fal-ai"
+      ]
     },
     {
       "id": "replicate",
@@ -680,7 +749,8 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://replicate.com/"
+      "modifications": "extracted verbatim from inline SVG at https://replicate.com/",
+      "aliases": []
     },
     {
       "id": "atlascloud",
@@ -698,7 +768,10 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none"
+      "modifications": "none",
+      "aliases": [
+        "atlas-cloud"
+      ]
     },
     {
       "id": "sume",
@@ -716,7 +789,31 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://sume.com/"
+      "modifications": "extracted verbatim from inline SVG at https://sume.com/",
+      "aliases": []
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "files": [
+        {
+          "file": "openrouter.svg",
+          "variant": "mark",
+          "format": "svg"
+        },
+        {
+          "file": "openrouter-dark.svg",
+          "variant": "dark",
+          "format": "svg"
+        }
+      ],
+      "sourceUrl": "https://openrouter.ai/images/icons/brands/openrouter.svg",
+      "pageUrl": "https://openrouter.ai/",
+      "firstParty": true,
+      "retrievedAt": "2026-11-26",
+      "license": "Referential use to identify OpenRouter as a route provider; brand icon served by openrouter.ai; used unaltered.",
+      "modifications": "none (dark variant: /images/icons/brands/openrouter-dark.svg)",
+      "aliases": []
     }
   ]
 }
