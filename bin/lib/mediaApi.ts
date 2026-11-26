@@ -17,10 +17,11 @@ async function call<T>(base: string, path: string, options?: RequestOptions, sec
 }
 const post = <T>(base: string, path: string, body: unknown) => call<T>(base, path, { method: "POST", body });
 const enc = encodeURIComponent;
+const INPUT_FIELDS = ["ref", "url", "filename", "path", "dataUrl", "mimeType"];
 export function normalizeMediaBody(body: Dict): Dict {
   return Object.fromEntries(Object.entries(body).flatMap(([key, value]) => {
     if (key !== "model" && key !== "task" && (value === null || value === "")) return [];
-    if (key === "inputs" && Array.isArray(value)) return [[key, value.map((entry: Dict) => Object.fromEntries(Object.entries(entry).filter(([k, v]) => !["ref", "url", "filename", "path", "data", "mimeType"].includes(k) || (v !== "" && v !== null))))]];
+    if (key === "inputs" && Array.isArray(value)) return [[key, value.map((entry: Dict) => Object.fromEntries(Object.entries(entry).filter(([k, v]) => !INPUT_FIELDS.includes(k) || (v !== "" && v !== null))))]];
     return [[key, value]];
   }));
 }
@@ -104,12 +105,19 @@ export async function submitMedia(base: string, body: Dict, options: SubmitOptio
   if (Array.isArray(normalized.inputs)) normalized.inputs = await uploadInputs(base, normalized.inputs as Input[]);
   return submit(base, "/api/media", normalized, options, true);
 }
+/** Waits up to timeoutMs (max 60 s) and returns the job status; timedOut marks a job that is still running. */
 export async function waitJob(base: string, id: string, options: WaitOptions) {
   const stream = await openMediaSse(base, options.signal);
   try {
     const status = await jobStatus(base, id);
     if (status.pollAfterSeconds === 0) return status;
-    await waitForJob(stream, id, { ...options, timeoutMs: Math.min(options.timeoutMs, 60000) });
+    try {
+      await waitForJob(stream, id, { ...options, timeoutMs: Math.min(options.timeoutMs, 60000) });
+    } catch (error) {
+      const code = (error as MediaApiError).code;
+      if (code === "MEDIA_WAIT_TIMEOUT") return { ...await jobStatus(base, id), timedOut: true };
+      if (code === "MEDIA_WAIT_ABORTED" || code === "MEDIA_EVENTS_GAP" || code === "SERVER_UNREACHABLE") throw error;
+    }
     return await jobStatus(base, id);
   } finally { stream.close(); }
 }
