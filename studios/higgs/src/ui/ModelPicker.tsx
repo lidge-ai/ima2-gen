@@ -1,5 +1,5 @@
 import { messages, useT } from "../i18n.ts";
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { modelHasKey, type CatalogModel, type MediaKind } from "@ima2/studio-kit";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
@@ -186,16 +186,19 @@ function MakerSelect({ vendors, vendor, setVendor }: { vendors: readonly string[
 }
 
 function Group({ title, models, value, onPick }: { title: string; models: readonly CatalogModel[]; value?: string; onPick: (id: string) => void }) {
+  const id = useId();
   if (!models.length) return null;
   return (
-    <>
-      <li className="model-group" role="presentation">
+    <li className="model-group-wrap">
+      <p className="model-group" id={id}>
         {title}
-      </li>
-      {models.map((model) => (
-        <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => onPick(model.id)} />
-      ))}
-    </>
+      </p>
+      <ul className="model-sublist" aria-labelledby={id}>
+        {models.map((model) => (
+          <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => onPick(model.id)} />
+        ))}
+      </ul>
+    </li>
   );
 }
 
