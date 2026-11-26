@@ -1,3 +1,4 @@
+import { messages, tr } from "../../i18n.ts";
 import {
   chooseRoute,
   type CatalogModel,
@@ -6,6 +7,21 @@ import {
   type RouteChoice,
 } from "@ima2/studio-kit";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
+
+const M = messages(
+  {
+    "model": "Choose a model.",
+    "video": "Add the video to edit.",
+    "inputs": "{model} cannot use these inputs. Remove an input or choose another model.",
+    "prompt": "Write a prompt.",
+  },
+  {
+    "model": "모델을 선택하세요.",
+    "video": "편집할 영상을 추가하세요.",
+    "inputs": "{model} 모델은 이 입력을 사용할 수 없어요. 입력을 삭제하거나 다른 모델을 선택하세요.",
+    "prompt": "프롬프트를 작성하세요.",
+  },
+);
 
 export interface CreateForm {
   model: string | undefined;
@@ -90,11 +106,11 @@ export function routeFor(model: CatalogModel | undefined, form: CreateForm): Rou
 }
 
 export function problem(model: CatalogModel | undefined, form: CreateForm): string | null {
-  if (!model) return "Choose a model.";
+  if (!model) return tr(M, "model");
   const task = taskFor(model, form);
-  if (!task && form.mode === "edit" && !form.sourceVideo) return "Add the video to edit.";
-  if (!task) return model.label + " cannot use these inputs. Remove an input or choose another model.";
-  if (!form.prompt.trim() && (task === "text-to-video" || task === "text-to-image")) return "Write a prompt.";
+  if (!task && form.mode === "edit" && !form.sourceVideo) return tr(M, "video");
+  if (!task) return tr(M, "inputs", { model: model.label });
+  if (!form.prompt.trim() && (task === "text-to-video" || task === "text-to-image")) return tr(M, "prompt");
   return null;
 }
 

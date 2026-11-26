@@ -1,3 +1,4 @@
+import { messages, useT } from "../i18n.ts";
 import { useEffect, useState } from "react";
 import type { Catalog } from "@ima2/studio-kit";
 import { findPreset, type Preset } from "../data/presets.ts";
@@ -10,6 +11,23 @@ import { VideoPanel } from "./create/VideoPanel.tsx";
 import { defaultModel } from "./create/defaults.ts";
 import { EDIT_TASKS, defaultsFor, emptyForm, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
+
+const M = messages(
+  {
+    "history": "History",
+    "presets": "Presets",
+    "guide": "How it works",
+    "views": "Video views",
+    "loading": "Loading models",
+  },
+  {
+    "history": "기록",
+    "presets": "프리셋",
+    "guide": "사용 방법",
+    "views": "영상 화면",
+    "loading": "모델을 불러오는 중이에요",
+  },
+);
 
 type View = "history" | "presets" | "guide";
 
@@ -26,10 +44,10 @@ function applyPreset(catalog: Catalog, form: CreateForm, preset: Preset | undefi
   };
 }
 
-const VIEWS: readonly { id: View; label: string; icon: "assets" | "presets" | "explore" }[] = [
-  { id: "history", label: "History", icon: "assets" },
-  { id: "presets", label: "Presets", icon: "presets" },
-  { id: "guide", label: "How it works", icon: "explore" },
+const VIEWS: readonly { id: View; label: "history" | "presets" | "guide"; icon: "assets" | "presets" | "explore" }[] = [
+  { id: "history", label: "history", icon: "assets" },
+  { id: "presets", label: "presets", icon: "presets" },
+  { id: "guide", label: "guide", icon: "explore" },
 ];
 
 interface StageProps {
@@ -57,20 +75,20 @@ function StageBody({ view, setView, form, set, catalog }: StageProps) {
 }
 
 function Stage(props: StageProps) {
+  const t = useT(M);
   return (
     <main className="stage">
       <div className="stage-head">
-        <div className="tabs" role="tablist" aria-label="Video views">
+        <div className="tabs" role="group" aria-label={t("views")}>
           {VIEWS.map((v) => (
             <button
               key={v.id}
               type="button"
-              role="tab"
               className="tab"
-              aria-selected={props.view === v.id}
+              aria-pressed={props.view === v.id}
               onClick={() => props.setView(v.id)}
             >
-              <Icon name={v.icon} size={15} /> {v.label}
+              <Icon name={v.icon} size={15} /> {t(v.label)}
             </button>
           ))}
         </div>
@@ -83,6 +101,7 @@ function Stage(props: StageProps) {
 }
 
 export function VideoPage({ preset, model: requested }: { preset?: string; model?: string }) {
+  const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
   const [form, setForm] = useState<CreateForm>(() => emptyForm());
   const [view, setView] = useState<View>("history");
@@ -104,7 +123,7 @@ export function VideoPage({ preset, model: requested }: { preset?: string; model
   if (!catalog)
     return (
       <div className="empty" role="status">
-        Loading models
+        {t("loading")}
       </div>
     );
   return (

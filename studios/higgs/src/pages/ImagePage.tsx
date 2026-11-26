@@ -1,14 +1,29 @@
+import { messages, useT } from "../i18n.ts";
 import { useEffect, useState } from "react";
 import { useStudio } from "../studio/context.tsx";
 import { Feed } from "../ui/Feed.tsx";
 import { ImageDock } from "./create/ImageDock.tsx";
-import { defaultModel } from "./create/defaults.ts";
+import { defaultModel, presetText } from "./create/defaults.ts";
 import { defaultsFor, emptyForm, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
 import { PRESETS, findPreset } from "../data/presets.ts";
 import { navigate } from "../router.ts";
 
+const M = messages(
+  {
+    "heading": "Describe it, pick a model, generate",
+    "intro": "Images save to Assets. Pick a starting point below or write your own prompt.",
+    "loading": "Loading models",
+  },
+  {
+    "heading": "설명하고 모델을 골라 생성해요",
+    "intro": "이미지는 에셋에 저장돼요. 아래 예시를 고르거나 직접 프롬프트를 작성하세요.",
+    "loading": "모델을 불러오는 중이에요",
+  },
+);
+
 function ImageEmpty() {
+  const t = useT(M);
   const samples = PRESETS.filter((p) => p.kind === "image");
   return (
     <section className="image-empty">
@@ -17,12 +32,12 @@ function ImageEmpty() {
           <img key={p.id} src={p.sample} alt="" />
         ))}
       </div>
-      <h1>Describe it, pick a model, generate</h1>
-      <p className="muted">Images save to Assets. Pick a starting point below or write your own prompt.</p>
+      <h1>{t("heading")}</h1>
+      <p className="muted">{t("intro")}</p>
       <div className="chip-row center">
         {samples.map((p) => (
           <button key={p.id} type="button" className="chip" onClick={() => navigate("image", { preset: p.id })}>
-            {p.label}
+            {presetText(p.id, p.label)}
           </button>
         ))}
       </div>
@@ -31,6 +46,7 @@ function ImageEmpty() {
 }
 
 export function ImagePage({ preset, model: requested }: { preset?: string; model?: string }) {
+  const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
   const [form, setForm] = useState<CreateForm>(() => emptyForm());
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
@@ -48,7 +64,7 @@ export function ImagePage({ preset, model: requested }: { preset?: string; model
   if (!catalog)
     return (
       <div className="empty" role="status">
-        Loading models
+        {t("loading")}
       </div>
     );
   return (
