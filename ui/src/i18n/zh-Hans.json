@@ -1,4 +1,8 @@
 {
+  "webAccess": {
+    "signedInAs": "已登录：{email}",
+    "logout": "退出登录"
+  },
   "mediaPicker": {
     "model": "媒体模型",
     "loadError": "无法加载媒体模型。",
