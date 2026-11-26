@@ -39,7 +39,11 @@ export function Tile({ item, onOpen }: { item: HistoryItem; onOpen: (item: Histo
   );
 }
 
-/** Live jobs on top, then saved results. Finished jobs show up as results. */
+/**
+ * Live jobs on top, then saved results. A job that finished in this tab keeps
+ * its card (result and Download) and is left out of the grid below; jobs the
+ * server lists without outputs (earlier sessions) show only as results.
+ */
 export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) {
   const studio = useStudioApi();
   const jobs = useStudio((s) => s.jobOrder.map((id) => s.jobs[id]).filter((j): j is Job => !!j));
@@ -49,9 +53,14 @@ export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) 
   const loaded = useStudio((s) => s.historyLoaded);
   const [open, setOpen] = useState<HistoryItem | null>(null);
   const kindOf = (model: string) => catalog?.models.find((m) => m.id === model)?.kind;
-  const visibleJobs = jobs.filter((job) => jobMatches(job, kind, kindOf, workflow));
-  const items = history.filter((item) =>
-    workflow ? !!item.workflow && workflow(item.workflow) : (!kind || item.kind === kind) && !item.workflow,
+  const visibleJobs = jobs.filter(
+    (job) => jobMatches(job, kind, kindOf, workflow) && (job.status !== "succeeded" || job.outputs.length > 0),
+  );
+  const carded = new Set(visibleJobs.slice(0, 12).map((job) => job.jobId));
+  const items = history.filter(
+    (item) =>
+      !carded.has(item.jobId) &&
+      (workflow ? !!item.workflow && workflow(item.workflow) : (!kind || item.kind === kind) && !item.workflow),
   );
   if (loaded && visibleJobs.length === 0 && items.length === 0) return <>{empty}</>;
   return (
