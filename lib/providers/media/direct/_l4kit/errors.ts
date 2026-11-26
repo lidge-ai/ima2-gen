@@ -47,6 +47,19 @@ export function fail(prefix: string, reason: string, message: string, options: M
   throw new MediaAdapterError(makeError(prefix, reason, message, options));
 }
 
+/**
+ * A transport failure from ctx.fetch with known secrets removed from the
+ * message. The error class and name survive so normalizeUnknownError still
+ * tells a network failure (retryable) from an abort; the original cause is
+ * dropped on purpose because it may carry request details.
+ */
+export function redactedTransportError(error: unknown, secrets: readonly (string | undefined)[]): Error {
+  const message = redactSecrets(error instanceof Error ? error.message : String(error), secrets);
+  const copy = error instanceof TypeError ? new TypeError(message) : new Error(message);
+  if (error instanceof Error) copy.name = error.name;
+  return copy;
+}
+
 export function categoryForStatus(status: number): MediaErrorCategory {
   if (status === 401 || status === 403) return "auth";
   if (status === 402) return "quota";

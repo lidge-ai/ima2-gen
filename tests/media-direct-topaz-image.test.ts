@@ -77,3 +77,27 @@ test("model-specific options are checked and serialized", async () => {
   assert.equal(adapter.cancel, undefined);
   assert.deepEqual(adapter.listModels().map((m) => m.pricing), [[], []]);
 });
+
+test("Redefine sends the request prompt; precision models refuse one", async () => {
+  const forms: FormData[] = [];
+  const ctx = context(async (_url, init) => {
+    forms.push(init?.body as FormData);
+    return json({ process_id: "abc" });
+  });
+  await adapter.submit(ctx, { ...request, model: "topaz-labs/topaz-upscale-creative", prompt: "sharp fur detail" });
+  assert.equal(forms[0]?.get("prompt"), "sharp fur detail");
+  await assert.rejects(adapter.submit(ctx, { ...request, prompt: "x" }),
+    (error: unknown) => adapter.normalizeError(error).code === "TOPAZ_IMAGE_INVALID_REQUEST");
+  assert.equal(forms.length, 1);
+});
+
+test("network failures stay retryable and never carry the key", async () => {
+  const ctx = context(async () => { throw new TypeError(`fetch failed for ${key}`); });
+  await assert.rejects(adapter.poll(ctx, { providerJobId: "abc" }), (error: unknown) => {
+    const e = adapter.normalizeError(error);
+    assert.equal(e.code, "TOPAZ_IMAGE_NETWORK");
+    assert.equal(e.retryable, true);
+    assert.ok(!e.message.includes(key));
+    return true;
+  });
+});
