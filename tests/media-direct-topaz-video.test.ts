@@ -77,6 +77,7 @@ function tinyMp4(brand = "isom"): Uint8Array {
   const stts = Buffer.alloc(16);
   stts.writeUInt32BE(1, 4); stts.writeUInt32BE(50, 8); stts.writeUInt32BE(40, 12);
   const stsz = Buffer.alloc(12);
+  stsz.writeUInt32BE(1, 4); // fixed sample_size, so no per-sample size table follows
   stsz.writeUInt32BE(50, 8);
   const stbl = box("stbl", box("stts", stts), box("stsz", stsz));
   const mdia = box("mdia", box("mdhd", mdhd), box("hdlr", hdlr), box("minf", stbl));
