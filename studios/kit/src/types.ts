@@ -238,6 +238,10 @@ export interface WorkflowStepSpec {
   pricingBasis?: string;
   /** model id -> whether a registered route can run it for this step. */
   available?: Readonly<Record<string, boolean>>;
+  /** model id -> whether it can run now: a saved key, or the step's signed-in session. Absent when the server cannot tell. */
+  runnable?: Readonly<Record<string, boolean>>;
+  /** Route the step uses by default when it is not a keyed provider route, e.g. a subscription session ("openai-oauth"). */
+  route?: string;
   /** Why the workflow uses this model, with its evidence. */
   rationale?: string;
 }

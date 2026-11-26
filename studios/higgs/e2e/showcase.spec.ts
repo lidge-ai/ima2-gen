@@ -1,4 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+/** Playing means the browser is advancing frames, not merely showing a poster or a stopped first frame. */
+const playing = (video: Locator) =>
+  expect
+    .poll(() => video.evaluate((el: HTMLVideoElement) => !el.paused && el.readyState >= 2 && el.currentTime > 0), { timeout: 10_000 })
+    .toBe(true);
 
 test("home shows showcase clips; one opens Remix with its settings", async ({ page }) => {
   await page.goto("/#/");
@@ -49,3 +55,75 @@ test("a subscription clip names the sign-in, not a key, and its zero cost as inc
   await expect(mixed.getByRole("link", { name: /oauth/ })).toHaveCount(0);
 });
 
+
+test("compare plays source and result; turning it off brings the result back playing", async ({ page }) => {
+  await page.goto("/#/");
+  const swap = page.getByRole("region", { name: "Made with ima2" }).getByRole("article", { name: "Swap the dancer" });
+  const toggle = swap.getByRole("button", { name: "Compare with source" });
+  await toggle.click();
+  await playing(swap.locator("video[aria-label='Source']"));
+  await playing(swap.locator("video[aria-label='Result']"));
+  await toggle.click();
+  await page.mouse.move(0, 0);
+  await playing(swap.locator("video[aria-label='Play Swap the dancer']"));
+});
+
+test("a single compare clip plays when switched on, and the result returns when switched off", async ({ page }) => {
+  // Registers the fake clip files, then serves an entry that has a ready-made comparison clip.
+  const real = (await (await page.request.get("/api/showcase")).json()) as { items: { result: string; source: string }[] };
+  const [first] = real.items;
+  const item = { id: "with-compare", title: { en: "With compare" }, workflow: "remix-object-swap", result: first!.result, compare: first!.source, models: [], keys: [] };
+  await page.route("**/api/showcase", (route) => route.fulfill({ json: { items: [item] } }));
+  await page.goto("/#/");
+  const tile = page.getByRole("article", { name: "With compare" });
+  const toggle = tile.getByRole("button", { name: "Compare with source" });
+  await toggle.click();
+  await playing(tile.locator("video[aria-label='Compare with source']"));
+  await toggle.click();
+  await page.mouse.move(0, 0);
+  await playing(tile.locator("video[aria-label='Play With compare']"));
+});
+
+/** Adds what a real server reports (runnable now, the default session route) to the fake's swap workflow. */
+async function swapRunnable(page: import("@playwright/test").Page, subjectRuns: Record<string, boolean>) {
+  await page.route("**/api/workflows", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as { workflows: { id: string; slots: Record<string, unknown>[] }[] };
+    const swap = body.workflows.find((w) => w.id === "remix-object-swap")!;
+    const render = swap.slots[0]!;
+    swap.slots = [
+      {
+        name: "subject",
+        label: "Subject frame",
+        task: "image-to-image",
+        defaultModel: "openai/gpt-image-2",
+        alternatives: ["bytedance/seedream-5.5"],
+        defaultRoute: "openai-oauth",
+        rationale: "test",
+        available: { "openai/gpt-image-2": true, "bytedance/seedream-5.5": true },
+        runnable: subjectRuns,
+      },
+      { ...render, runnable: Object.fromEntries(Object.keys(render.available as object).map((m) => [m, true])) },
+    ];
+    await route.fulfill({ response, json: body });
+  });
+}
+
+test("where the ChatGPT sign-in is off, the step that falls back to a keyed model is shown as ready", async ({ page }) => {
+  await swapRunnable(page, { "openai/gpt-image-2": false, "bytedance/seedream-5.5": true });
+  await page.goto("/#/");
+  const swap = page.getByRole("region", { name: "Made with ima2" }).getByRole("article", { name: "Swap the dancer" });
+  await expect(swap).toContainText("Ready to make:");
+  await expect(swap).not.toContainText("ChatGPT");
+  await expect(swap).not.toContainText("Needs:");
+  await expect(swap).not.toContainText("oauth");
+});
+
+test("a missing sign-in is named in words, next to what is already ready", async ({ page }) => {
+  await swapRunnable(page, { "openai/gpt-image-2": false, "bytedance/seedream-5.5": false });
+  await page.goto("/#/");
+  const swap = page.getByRole("region", { name: "Made with ima2" }).getByRole("article", { name: "Swap the dancer" });
+  await expect(swap).toContainText("Needs: ChatGPT sign-in");
+  await expect(swap).toContainText("Ready:");
+  await expect(swap).not.toContainText("oauth");
+});

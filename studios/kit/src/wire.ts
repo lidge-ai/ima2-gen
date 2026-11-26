@@ -136,6 +136,8 @@ export interface WireSlot {
   defaultRoute?: string;
   rationale: string;
   available: Readonly<Record<string, boolean>>;
+  /** model id -> can run now (a saved key, or the slot's signed-in session). Absent when the server cannot tell. */
+  runnable?: Readonly<Record<string, boolean>>;
 }
 
 export interface WireWorkflow {

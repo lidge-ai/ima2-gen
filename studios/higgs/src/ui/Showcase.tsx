@@ -6,6 +6,7 @@ import { useStudio } from "../studio/context.tsx";
 import { handOff } from "../studio/handoff.ts";
 import { Icon } from "./Icon.tsx";
 import { ModelName } from "./ModelName.tsx";
+import { SUBSCRIPTIONS, showcaseNeeds, type Need } from "./showcaseNeeds.ts";
 import "../styles/showcase.css";
 
 const M = messages(
@@ -19,8 +20,10 @@ const M = messages(
     cost: "About {usd} when it was made",
     noPrice: "Price not published",
     included: "Included in the {plans} subscription",
-    needs: "Needs a key:",
-    ready: "Your keys can run this",
+    needs: "Needs:",
+    ready: "Ready:",
+    readyAll: "Ready to make:",
+    signInName: "{name} sign-in",
     signIn: "Uses your {plans} sign-in",
     unavailable: "This workflow is not on this server",
     play: "Play {title}",
@@ -36,8 +39,10 @@ const M = messages(
     cost: "만들 때 약 {usd}",
     noPrice: "가격 비공개",
     included: "{plans} 구독에 포함",
-    needs: "필요한 키:",
-    ready: "내 키로 바로 만들 수 있어요",
+    needs: "필요:",
+    ready: "준비됨:",
+    readyAll: "바로 만들 수 있어요:",
+    signInName: "{name} 로그인",
     signIn: "{plans} 로그인으로 실행",
     unavailable: "이 서버에 없는 워크플로예요",
     play: "{title} 재생",
@@ -45,8 +50,6 @@ const M = messages(
   },
 );
 
-/** Showcase entries list subscription routes beside key vocabularies; those are sign-ins, not keys. */
-const SUBSCRIPTIONS: Readonly<Record<string, string>> = { "openai-oauth": "ChatGPT", "xai-oauth": "Grok" };
 
 function split(item: ShowcaseItem) {
   const plans = item.keys.filter((k) => k in SUBSCRIPTIONS).map((k) => SUBSCRIPTIONS[k]!);
@@ -63,14 +66,21 @@ function autoplayAllowed(): boolean {
 
 function Clip({ src, poster, label, active }: { src: string; poster?: string; label: string; active: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
+  // Runs on mount too: the compare toggle swaps which clips are mounted, and a fresh element with
+  // preload="none" never loads or plays unless it is told to (it sat at 0:00, or blank, before).
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
-    if (active) void video.play().catch(() => undefined);
-    else video.pause();
-  }, [active]);
+    if (!active) {
+      video.pause();
+      return;
+    }
+    if (video.readyState === 0) video.load();
+    void video.play().catch(() => undefined);
+  }, [active, src]);
   return (
     <video
+      key={src}
       ref={ref}
       src={src}
       poster={poster}
@@ -104,33 +114,35 @@ export function resolveWorkflow(item: ShowcaseItem, workflows: readonly Workflow
   return ids.map((x) => workflows.find((w) => w.id === x)).find(Boolean);
 }
 
-function KeysLine({ item }: { item: ShowcaseItem }) {
+function NeedsLine({ item, workflow }: { item: ShowcaseItem; workflow: WorkflowDef | undefined }) {
   const t = useT(M);
   const keys = useStudio((s) => s.keys);
-  const providers = useStudio((s) => s.catalog?.providers ?? []);
-  const needed = split(item);
-  const missing = needed.keys.filter((vocab) => !keys.some((k) => k.keyVocabulary === vocab && k.configured));
-  const signIn = needed.plans ? <p className="showcase-keys">{t("signIn", { plans: needed.plans })}</p> : null;
-  if (!needed.keys.length) return signIn;
-  if (!missing.length)
-    return (
-      <>
-        <p className="showcase-keys is-ready">{t("ready")}</p>
-        {signIn}
-      </>
-    );
+  const catalog = useStudio((s) => s.catalog);
+  const needs = showcaseNeeds(item, workflow, catalog, keys);
+  const name = (n: Need) => (n.signIn ? t("signInName", { name: n.label }) : n.label);
+  const ready = needs.filter((n) => n.ready === true);
+  const missing = needs.filter((n) => n.ready === false);
+  const unknown = needs.filter((n) => n.ready === null);
+  if (!needs.length) return null;
   return (
     <>
-      <p className="showcase-keys">
-        {t("needs")}{" "}
-        {missing.map((vocab, i) => (
-          <span key={vocab}>
-            {i ? ", " : ""}
-            <a href={href("keys", { focus: vocab })}>{providers.find((p) => p.keyVocabulary === vocab)?.label ?? vocab}</a>
-          </span>
-        ))}
-      </p>
-      {signIn}
+      {ready.length ? (
+        <p className="showcase-keys is-ready">
+          {t(missing.length ? "ready" : "readyAll")} {ready.map(name).join(", ")}
+        </p>
+      ) : null}
+      {missing.length ? (
+        <p className="showcase-keys">
+          {t("needs")}{" "}
+          {missing.map((n, i) => (
+            <span key={n.id}>
+              {i ? ", " : ""}
+              {n.href ? <a href={n.href}>{name(n)}</a> : name(n)}
+            </span>
+          ))}
+        </p>
+      ) : null}
+      {unknown.length ? <p className="showcase-keys">{t("signIn", { plans: unknown.map((n) => n.label).join(" · ") })}</p> : null}
     </>
   );
 }
@@ -161,15 +173,15 @@ function Tile({ item }: { item: ShowcaseItem }) {
     <article className="showcase-tile" ref={ref} aria-label={title} {...bind}>
       <div className={"showcase-media" + (compare && !item.compare && item.source ? " is-compare" : "")}>
         {compare && item.compare ? (
-          <Clip src={item.compare} label={t("compare")} active={active} />
+          <Clip src={item.compare} label={t("compare")} active={active || compare} />
         ) : compare && item.source ? (
           <>
             <figure>
-              <Clip src={item.source} label={t("source")} active={active} />
+              <Clip src={item.source} label={t("source")} active={active || compare} />
               <figcaption>{t("source")}</figcaption>
             </figure>
             <figure>
-              <Clip src={item.result} label={t("result")} active={active} />
+              <Clip src={item.result} label={t("result")} active={active || compare} />
               <figcaption>{t("result")}</figcaption>
             </figure>
           </>
@@ -187,7 +199,7 @@ function Tile({ item }: { item: ShowcaseItem }) {
         <p className="showcase-cost" title={item.estimate?.basis}>
           {costText(item, t)}
         </p>
-        <KeysLine item={item} />
+        <NeedsLine item={item} workflow={workflow} />
         <div className="showcase-actions">
           <button type="button" className="btn btn-primary" onClick={make} disabled={!workflow} title={workflow ? undefined : t("unavailable")}>
             <Icon name="remix" size={15} /> {t("make")}
