@@ -1,7 +1,7 @@
 // Seedance video tasks on ModelArk: request body and task-state parsing.
 // https://docs.byteplus.com/en/docs/ModelArk/create-video-generation-task-api (read 2026-11-26)
 // https://docs.byteplus.com/en/docs/ModelArk/get-video-generation-task-api (read 2026-11-26)
-import type { MediaInput, MediaJobState, MediaModelSpec, MediaOutput, MediaSubmitRequest } from "../../../contract.js";
+import type { MediaInput, MediaJobState, MediaModelSpec, MediaOutput, MediaSubmitRequest } from "../../contract.js";
 import { fail, mediaError } from "../_l2/errors.js";
 import { asRecord, asString } from "../_l2/http.js";
 import { urlOrDataUri } from "../_l2/inputs.js";

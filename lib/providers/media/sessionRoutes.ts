@@ -19,8 +19,8 @@ export interface SessionRoute {
 const OPENAI_API = "https://api.openai.com";
 
 function oauthTransport(ctx: RuntimeContext): typeof fetch {
-  return ((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input instanceof Request ? input.url : input);
+  return ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (!url.startsWith(`${OPENAI_API}/`)) return Promise.reject(new Error("GPT OAuth transport only reaches api.openai.com paths"));
     return oauthFetch({ oauthUrl: ctx.oauthUrl, oauthTransport: ctx.oauthTransport, config: ctx.config }, url.slice(OPENAI_API.length), init ?? {});
   }) as typeof fetch;
