@@ -6,6 +6,15 @@
       "name": "ByteDance",
       "files": [
         {
+          "file": "bytedance-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://lf3-static.bytednsdoc.com/obj/eden-cn/shjpmmv_ljuhklafi/ljhwZthlaukjlkulzlp/images/Pn04bTfD5oKbB3x1NFLcQ3Bxn1b-20261029135132-20261029150506.png",
+          "width": 300,
+          "height": 300,
+          "shape": "mark"
+        },
+        {
           "file": "bytedance.png",
           "variant": "dark",
           "format": "png",
@@ -20,7 +29,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark bytedance-mark.png from site-icon https://www.bytedance.com/en (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
@@ -53,6 +62,15 @@
       "name": "Tencent Hunyuan",
       "files": [
         {
+          "file": "tencent-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://cdn-front.hy.tencent.com/logo.svg",
+          "width": 31,
+          "height": 30,
+          "shape": "mark"
+        },
+        {
           "file": "tencent.png",
           "variant": "primary",
           "format": "png",
@@ -68,7 +86,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar",
+      "modifications": "none; GitHub org avatar; symbol mark tencent-mark.svg from site-icon https://hy.tencent.com/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": [
         "tencent-cloud",
         "hunyuan"
@@ -158,6 +176,15 @@
       "name": "Google AI",
       "files": [
         {
+          "file": "google-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://www.gstatic.com/marketing-cms/assets/images/33/52/d31eb4894f69969b24d075e0d33c/favicon.png=s180",
+          "width": 180,
+          "height": 180,
+          "shape": "mark"
+        },
+        {
           "file": "google.svg",
           "variant": "primary",
           "format": "svg",
@@ -181,7 +208,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark google-mark.png from site-icon https://about.google/ (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://about.google/brand-resource-center/",
       "aliases": [
         "gemini",
         "google-vertex",
@@ -194,6 +221,24 @@
       "id": "openai",
       "name": "OpenAI",
       "files": [
+        {
+          "file": "openai-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://cdn.openai.com/brand/openai-logos.zip",
+          "width": 716,
+          "height": 716,
+          "shape": "mark"
+        },
+        {
+          "file": "openai-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://cdn.openai.com/brand/openai-logos.zip",
+          "width": 716,
+          "height": 716,
+          "shape": "mark"
+        },
         {
           "file": "openai.svg",
           "variant": "primary",
@@ -209,7 +254,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "https://openai.com/brand/ — direct relation to OpenAI services, follow guidelines, do not alter or imply endorsement.",
-      "modifications": "extracted verbatim from inline SVG at https://openai.com/brand/",
+      "modifications": "extracted verbatim from inline SVG at https://openai.com/brand/; symbol mark openai-mark.svg from brand-kit https://openai.com/brand/ (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://openai.com/brand/; symbol mark openai-dark.svg from brand-kit https://openai.com/brand/ (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://openai.com/brand/",
       "aliases": [
         "openai-oauth"
       ]
@@ -310,6 +355,15 @@
       "name": "Ideogram",
       "files": [
         {
+          "file": "ideogram-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://ideogram.ai/favicon.svg?v=new-brand-20261020",
+          "width": 48,
+          "height": 48,
+          "shape": "mark"
+        },
+        {
           "file": "ideogram.jpg",
           "variant": "mark",
           "format": "jpg",
@@ -324,7 +378,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
-      "modifications": "none; GitHub org avatar (org name \"Ideogram\"); site header SVG is behind a bot challenge",
+      "modifications": "none; GitHub org avatar (org name \"Ideogram\"); site header SVG is behind a bot challenge; symbol mark ideogram-mark.svg from site-icon https://ideogram.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
@@ -437,6 +491,16 @@
       "name": "Sand AI",
       "files": [
         {
+          "file": "sand-ai-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://sand.ai/migrated/assets/svg/favicon.svg",
+          "width": 320,
+          "height": 320,
+          "shape": "mark",
+          "tile": true
+        },
+        {
           "file": "sand-ai.svg",
           "variant": "primary",
           "format": "svg",
@@ -451,7 +515,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark sand-ai-mark.svg from site-icon https://sand.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": [
         "sand.ai"
       ]
@@ -460,6 +524,16 @@
       "id": "veed",
       "name": "VEED",
       "files": [
+        {
+          "file": "veed-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://cdn.prod.website-files.com/616e938268c8f02f94b2b53c/66339f53b32f26dd15ad71c7_VEED.png",
+          "width": 256,
+          "height": 256,
+          "shape": "mark",
+          "tile": true
+        },
         {
           "file": "veed.svg",
           "variant": "primary",
@@ -475,7 +549,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://www.veed.io/",
+      "modifications": "extracted verbatim from inline SVG at https://www.veed.io/; symbol mark veed-mark.png from site-icon https://www.veed.io/newsroom (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
@@ -538,6 +612,16 @@
       "name": "Topaz Labs",
       "files": [
         {
+          "file": "topaz-labs-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/66207d48d19641ced6ae4796_tnb-favicon-256.png",
+          "width": 256,
+          "height": 256,
+          "shape": "mark",
+          "tile": true
+        },
+        {
           "file": "topaz-labs.svg",
           "variant": "dark",
           "format": "svg",
@@ -561,7 +645,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark topaz-labs-mark.png from site-icon https://www.topazlabs.com/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": [
         "topaz",
         "topaz-image",
@@ -604,6 +688,15 @@
       "name": "ElevenLabs",
       "files": [
         {
+          "file": "elevenlabs-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/a2ea339b-8b5e-41bb-b706-24eda8a4c9e3/elevenlabs-symbol.svg",
+          "width": 876,
+          "height": 876,
+          "shape": "mark"
+        },
+        {
           "file": "elevenlabs.svg",
           "variant": "primary",
           "format": "svg",
@@ -627,7 +720,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "See https://elevenlabs.io/brand for brand usage terms; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark elevenlabs-mark.svg from brand-kit https://elevenlabs.io/brand (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://elevenlabs.io/brand",
       "aliases": []
     },
     {
@@ -675,6 +768,15 @@
       "name": "Stability AI",
       "files": [
         {
+          "file": "stability-ai-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/804f0e8b-0028-4262-a8b0-b9f1c5de72c0/favicon.ico",
+          "width": 200,
+          "height": 200,
+          "shape": "mark"
+        },
+        {
           "file": "stability-ai.png",
           "variant": "dark",
           "format": "png",
@@ -689,7 +791,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark stability-ai-mark.png from site-icon https://stability.ai/ (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://drive.google.com/file/d/1NUVhoPd_TavV7kMl9y3AiTJchMPz0Eao/view",
       "aliases": [
         "stability"
       ]
@@ -721,6 +823,16 @@
       "name": "Tripo",
       "files": [
         {
+          "file": "tripo-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://studio.tripo3d.ai/favicon.svg",
+          "width": 128,
+          "height": 128,
+          "shape": "mark",
+          "tile": true
+        },
+        {
           "file": "tripo.png",
           "variant": "primary",
           "format": "png",
@@ -736,13 +848,31 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar (VAST / Tripo)",
+      "modifications": "none; GitHub org avatar (VAST / Tripo); symbol mark tripo-mark.svg from site-icon https://studio.tripo3d.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
       "id": "meshy",
       "name": "Meshy",
       "files": [
+        {
+          "file": "meshy-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://cdn.meshy.ai/landing-assets/media-kit/meshy-logo-light.svg",
+          "width": 128,
+          "height": 128,
+          "shape": "mark"
+        },
+        {
+          "file": "meshy-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://cdn.meshy.ai/landing-assets/media-kit/meshy-logo-dark.svg",
+          "width": 128,
+          "height": 128,
+          "shape": "mark"
+        },
         {
           "file": "meshy.png",
           "variant": "primary",
@@ -759,7 +889,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar",
+      "modifications": "none; GitHub org avatar; symbol mark meshy-mark.svg from brand-kit https://www.meshy.ai/media-kit (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://www.meshy.ai/media-kit; symbol mark meshy-dark.svg from brand-kit https://www.meshy.ai/media-kit (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://www.meshy.ai/media-kit",
       "aliases": []
     },
     {
@@ -823,6 +953,16 @@
       "name": "fal",
       "files": [
         {
+          "file": "fal-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://fal.ai/icon-512.png",
+          "width": 512,
+          "height": 512,
+          "shape": "mark",
+          "tile": true
+        },
+        {
           "file": "fal.svg",
           "variant": "primary",
           "format": "svg",
@@ -837,7 +977,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://fal.ai/",
+      "modifications": "extracted verbatim from inline SVG at https://fal.ai/; symbol mark fal-mark.png from site-icon https://fal.ai/manifest.webmanifest (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": [
         "fal-ai"
       ]
@@ -902,6 +1042,15 @@
       "name": "Sume",
       "files": [
         {
+          "file": "sume-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://www.sume.com/brand/sume/favicon/b1/sume-b1-v17.svg",
+          "width": 16,
+          "height": 16,
+          "shape": "mark"
+        },
+        {
           "file": "sume.svg",
           "variant": "primary",
           "format": "svg",
@@ -916,7 +1065,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "extracted verbatim from inline SVG at https://sume.com/",
+      "modifications": "extracted verbatim from inline SVG at https://sume.com/; symbol mark sume-mark.svg from site-icon https://www.sume.com/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
