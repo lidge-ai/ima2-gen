@@ -417,6 +417,21 @@ describe("runMcpJob", { timeout: STEP_TIMEOUT_MS }, () => {
     await assert.rejects(mcpModule.runMcpJob(mcpOpts("timeout-job", 80)), { code: "MCP_JOB_TIMEOUT" });
   });
 
+  // CI #448 run 45844317659: the case above sat for 30 s instead of rejecting at 80 ms.
+  // A response body that never ends and never sees the abort (what an undici body
+  // iterator can do under load) must not keep runMcpJob waiting past its deadline.
+  it("times out even when the event body ignores the abort", async (t) => {
+    t.mock.method(globalThis, "fetch", async (_input: unknown, init?: RequestInit) => {
+      if ((init?.method ?? "GET") === "POST") return new Response('{"ok":true}', { status: 202 });
+      return new Response(new ReadableStream<Uint8Array>({ start() { /* never enqueues, never closes */ } }), {
+        headers: { "Content-Type": "text/event-stream" },
+      });
+    });
+    const started = Date.now();
+    await assert.rejects(mcpModule.runMcpJob(mcpOpts("deaf-body-job", 80)), { code: "MCP_JOB_TIMEOUT" });
+    assert.ok(Date.now() - started < 5_000, "rejected near the deadline");
+  });
+
   it("reconnects with the last id and recovers a replay gap from inflight", async () => {
     const before = reconnectCursors.length;
     const result = await mcpModule.runMcpJob(mcpOpts("replay-job"));
