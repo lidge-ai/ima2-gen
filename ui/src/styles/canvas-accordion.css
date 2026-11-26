@@ -33,6 +33,18 @@
   padding: 8px 0;
 }
 
+.media-provider-keys,
+.media-provider-keys__provider {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.settings-row .media-provider-keys h4,
+.settings-row .media-provider-keys p {
+  order: initial;
+}
+
 /* Gemini auth mode section */
 .gemini-key-section__header {
   display: flex;

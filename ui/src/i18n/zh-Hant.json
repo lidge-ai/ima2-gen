@@ -1,4 +1,13 @@
 {
+  "media": {
+    "keysTitle": "媒體供應商",
+    "noProviders": "沒有可用的媒體供應商。",
+    "configured": "已設定",
+    "notConfigured": "未設定",
+    "apiKey": "API 金鑰",
+    "getKey": "取得金鑰",
+    "envImmutable": "無法在此移除環境變數中的金鑰。"
+  },
   "imageOutput": {
     "title": "輸出",
     "still": "靜態圖片",

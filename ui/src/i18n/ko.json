@@ -1,4 +1,13 @@
 {
+  "media": {
+    "keysTitle": "미디어 제공자",
+    "noProviders": "사용 가능한 미디어 제공자가 없습니다.",
+    "configured": "설정됨",
+    "notConfigured": "설정되지 않음",
+    "apiKey": "API 키",
+    "getKey": "키 발급받기",
+    "envImmutable": "환경 변수의 키는 여기서 삭제할 수 없습니다."
+  },
   "imageOutput": {
     "title": "출력",
     "still": "정지 이미지",
