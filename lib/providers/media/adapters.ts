@@ -2,11 +2,13 @@ import type { MediaProviderAdapter } from "./contract.js";
 import { adapter as byteplus } from "./direct/byteplus/index.js";
 import { adapter as byteplusVision } from "./direct/byteplus-vision.js";
 import { adapter as kling } from "./direct/kling/index.js";
+import { adapter as klingLegacy } from "./direct/kling-legacy/index.js";
 import { adapter as alibaba } from "./direct/alibaba.js";
 import { adapter as minimax } from "./direct/minimax.js";
 import { adapter as vidu } from "./direct/vidu.js";
 import { adapter as pixverse } from "./direct/pixverse.js";
 import { adapter as tencent } from "./direct/tencent.js";
+import { adapter as tencentVod } from "./direct/tencent-vod/index.js";
 import { adapter as google } from "./direct/google.js";
 import { adapter as googleVertex } from "./direct/google-vertex.js";
 import { adapter as xai } from "./direct/xai.js";
@@ -37,7 +39,7 @@ import { adapter as openrouter } from "./aggregator/openrouter.js";
  */
 export const BUILTIN_MEDIA_ADAPTERS: readonly MediaProviderAdapter[] = [
   // L2 direct (China-based makers)
-  byteplus, byteplusVision, kling, alibaba, minimax, vidu, pixverse, tencent,
+  byteplus, byteplusVision, kling, klingLegacy, alibaba, minimax, vidu, pixverse, tencent, tencentVod,
   // L3 direct video, audio and avatar
   google, googleVertex, xai, sync, heygen, veed, topazVideo, mirelo, elevenlabs, cartesia,
   // L4 direct image
