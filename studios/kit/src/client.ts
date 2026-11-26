@@ -1,8 +1,20 @@
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
 import { Http, type HttpOptions } from "./http.ts";
 import type {
-  Accepted, Catalog, HistoryItem, HistoryPage, HistoryQuery, Job, JobEvent, KeySaveBody, KeyStatus,
-  MediaSubmitBody, UploadedInput, WorkflowDef, WorkflowEstimate, WorkflowRunBody,
+  Accepted,
+  Catalog,
+  HistoryItem,
+  HistoryPage,
+  HistoryQuery,
+  Job,
+  JobEvent,
+  KeySaveBody,
+  KeyStatus,
+  MediaSubmitBody,
+  UploadedInput,
+  WorkflowDef,
+  WorkflowEstimate,
+  WorkflowRunBody,
 } from "./types.ts";
 
 export type { StreamStatus };
@@ -29,9 +41,15 @@ export function createStudioClient(options: HttpOptions = {}) {
     catalog: (signal?: AbortSignal) => http.request<Catalog>("GET", "/api/media/catalog", signal ? { signal } : {}),
     keys: {
       list: () => http.request<{ keys: KeyStatus[] }>("GET", "/api/media/keys").then((r) => r.keys),
-      save: (vocab: string, body: KeySaveBody) => http.request<{ key: KeyStatus; validation?: { ok: boolean; reason?: string } }>("PUT", "/api/media/keys/" + enc(vocab), { body }),
+      save: (vocab: string, body: KeySaveBody) =>
+        http.request<{ key: KeyStatus; validation?: { ok: boolean; reason?: string } }>(
+          "PUT",
+          "/api/media/keys/" + enc(vocab),
+          { body },
+        ),
       remove: (vocab: string) => http.request<void>("DELETE", "/api/media/keys/" + enc(vocab)),
-      validate: (vocab: string) => http.request<{ ok: boolean; reason?: string }>("POST", "/api/media/keys/" + enc(vocab) + "/validate"),
+      validate: (vocab: string) =>
+        http.request<{ ok: boolean; reason?: string }>("POST", "/api/media/keys/" + enc(vocab) + "/validate"),
     },
     uploads: {
       put: (data: Blob | Uint8Array, mimeType: string, filename?: string) =>
@@ -49,14 +67,18 @@ export function createStudioClient(options: HttpOptions = {}) {
         http.request<{ jobs: Job[] }>("GET", "/api/media/jobs", { query }).then((r) => r.jobs),
     },
     history: {
-      list: (query: HistoryQuery = {}) => http.request<HistoryPage>("GET", "/api/media/history", { query: { ...query } }),
+      list: (query: HistoryQuery = {}) =>
+        http.request<HistoryPage>("GET", "/api/media/history", { query: { ...query } }),
       remove: (historyId: string) => http.request<void>("DELETE", "/api/media/history/" + enc(historyId)),
       favorite: (historyId: string, favorite: boolean) =>
-        http.request<{ item: HistoryItem }>("POST", "/api/media/history/" + enc(historyId) + "/favorite", { body: { favorite } }),
+        http.request<{ item: HistoryItem }>("POST", "/api/media/history/" + enc(historyId) + "/favorite", {
+          body: { favorite },
+        }),
     },
     workflows: {
       list: () => http.request<{ workflows: WorkflowDef[] }>("GET", "/api/workflows").then((r) => r.workflows),
-      estimate: (id: string, body: WorkflowRunBody) => http.request<WorkflowEstimate>("POST", "/api/workflows/" + enc(id) + "/estimate", { body }),
+      estimate: (id: string, body: WorkflowRunBody) =>
+        http.request<WorkflowEstimate>("POST", "/api/workflows/" + enc(id) + "/estimate", { body }),
       run: (id: string, body: WorkflowRunBody) => http.request<Accepted>("POST", "/api/workflows/" + enc(id), { body }),
     },
     events: {
@@ -79,19 +101,41 @@ async function watchJob(client: StudioClient, jobId: string, watch: WatchOptions
     const accept = (job: Job) => {
       if (settled) return;
       watch.onUpdate?.(job);
-      if (isTerminal(job)) { settled = true; stop.abort(); resolve(job); }
+      if (isTerminal(job)) {
+        settled = true;
+        stop.abort();
+        resolve(job);
+      }
     };
-    const refresh = () => client.media.job(jobId).then(accept, (error: unknown) => {
-      if (!settled) { settled = true; stop.abort(); reject(error); }
-    });
+    const refresh = () =>
+      client.media.job(jobId).then(accept, (error: unknown) => {
+        if (!settled) {
+          settled = true;
+          stop.abort();
+          reject(error);
+        }
+      });
     void client.events.follow({
       signal: stop.signal,
-      onEvent: (event: JobEvent) => { if (event.jobId === jobId) accept(event.job); },
-      onGap: () => { void refresh(); },
-      onStatus: (status) => { if (status === "open") void refresh(); },
+      onEvent: (event: JobEvent) => {
+        if (event.jobId === jobId) accept(event.job);
+      },
+      onGap: () => {
+        void refresh();
+      },
+      onStatus: (status) => {
+        if (status === "open") void refresh();
+      },
     });
-    stop.signal.addEventListener("abort", () => {
-      if (!settled) { settled = true; reject(new DOMException("watch aborted", "AbortError")); }
-    }, { once: true });
+    stop.signal.addEventListener(
+      "abort",
+      () => {
+        if (!settled) {
+          settled = true;
+          reject(new DOMException("watch aborted", "AbortError"));
+        }
+      },
+      { once: true },
+    );
   });
 }

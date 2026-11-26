@@ -22,7 +22,9 @@ function Attach({ form, set, enabled }: Pick<Props, "form" | "set"> & { enabled:
     return (
       <span className="dock-attachment">
         <img src={form.sourceImage.upload.url} alt={form.sourceImage.name} />
-        <button type="button" aria-label="Remove image" onClick={() => set({ sourceImage: null })}><Icon name="close" size={12} /></button>
+        <button type="button" aria-label="Remove image" onClick={() => set({ sourceImage: null })}>
+          <Icon name="close" size={12} />
+        </button>
       </span>
     );
   }
@@ -37,10 +39,27 @@ function Attach({ form, set, enabled }: Pick<Props, "form" | "set"> & { enabled:
   };
   return (
     <>
-      <button type="button" className="dock-icon" aria-label="Add an image to edit" disabled={!enabled || busy} title={enabled ? "Add an image to edit" : "This model cannot edit images"} onClick={() => input.current?.click()}>
+      <button
+        type="button"
+        className="dock-icon"
+        aria-label="Add an image to edit"
+        disabled={!enabled || busy}
+        title={enabled ? "Add an image to edit" : "This model cannot edit images"}
+        onClick={() => input.current?.click()}
+      >
         <Icon name={busy ? "clock" : "plus"} size={16} />
       </button>
-      <input ref={input} type="file" accept="image/*" hidden aria-label="Image to edit" onChange={(e) => { void take(e.target.files?.[0]); e.target.value = ""; }} />
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        hidden
+        aria-label="Image to edit"
+        onChange={(e) => {
+          void take(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
     </>
   );
 }
@@ -48,9 +67,13 @@ function Attach({ form, set, enabled }: Pick<Props, "form" | "set"> & { enabled:
 function Count({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <span className="stepper" role="group" aria-label="Number of images">
-      <button type="button" aria-label="Fewer images" disabled={value <= 1} onClick={() => onChange(value - 1)}>-</button>
+      <button type="button" aria-label="Fewer images" disabled={value <= 1} onClick={() => onChange(value - 1)}>
+        -
+      </button>
       <span aria-live="polite">{value}/4</span>
-      <button type="button" aria-label="More images" disabled={value >= 4} onClick={() => onChange(value + 1)}>+</button>
+      <button type="button" aria-label="More images" disabled={value >= 4} onClick={() => onChange(value + 1)}>
+        +
+      </button>
     </span>
   );
 }
@@ -60,28 +83,56 @@ export function ImageDock({ catalog, form, set }: Props) {
   const create = useCreate(catalog, form, set);
   const { model } = create;
   return (
-    <form className="dock" aria-label="Create image" onSubmit={(e) => { e.preventDefault(); void create.submit(); }}>
-      {create.choice.kind === "needs-key" ? <KeyNotice routes={create.choice.candidates} providers={catalog.providers} /> : null}
-      {create.error ? <p className="form-error" role="alert">{create.error}</p> : null}
+    <form
+      className="dock"
+      aria-label="Create image"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void create.submit();
+      }}
+    >
+      {create.choice.kind === "needs-key" ? (
+        <KeyNotice routes={create.choice.candidates} providers={catalog.providers} />
+      ) : null}
+      {create.error ? (
+        <p className="form-error" role="alert">
+          {create.error}
+        </p>
+      ) : null}
       <div className="dock-main">
         <div className="dock-fields">
-          <label className="visually-hidden" htmlFor="image-prompt">Prompt</label>
+          <label className="visually-hidden" htmlFor="image-prompt">
+            Prompt
+          </label>
           <textarea
             id="image-prompt"
             rows={2}
             value={form.prompt}
             placeholder={form.sourceImage ? "Describe the change" : "Describe the image you want"}
             onChange={(e) => set({ prompt: e.target.value })}
-            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
+            }}
           />
           <div className="dock-chips">
             <Attach form={form} set={set} enabled={!!model?.tasks.includes("image-to-image")} />
-            <ModelPicker variant="chip" models={catalog.models} kind="image" value={form.model} onChange={create.pickModel} />
+            <ModelPicker
+              variant="chip"
+              models={catalog.models}
+              kind="image"
+              value={form.model}
+              onChange={create.pickModel}
+            />
             {model ? <ParamControls variant="chip" model={model} form={form} set={set} /> : null}
             <Count value={form.count} onChange={(count) => set({ count })} />
           </div>
         </div>
-        <button className="btn btn-primary dock-generate" type="submit" disabled={!create.canSend} title={create.blocked ?? create.cost.title}>
+        <button
+          className="btn btn-primary dock-generate"
+          type="submit"
+          disabled={!create.canSend}
+          title={create.blocked ?? create.cost.title}
+        >
           <span>{create.sending ? "Sending" : "Generate"}</span>
           <span className="btn-cost">{create.cost.text}</span>
         </button>

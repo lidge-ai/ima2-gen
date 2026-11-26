@@ -31,5 +31,16 @@ export function useCreate(catalog: Catalog, form: CreateForm, set: (patch: Parti
       setSending(false);
     }
   };
-  return { model, choice, route, blocked, cost, sending, error, pickModel, submit, canSend: !!model && !blocked && !!route && !sending };
+  return {
+    model,
+    choice,
+    route,
+    blocked,
+    cost,
+    sending,
+    error,
+    pickModel,
+    submit,
+    canSend: !!model && !blocked && !!route && !sending,
+  };
 }

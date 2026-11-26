@@ -1,3 +1,4 @@
+import brandMark from "../assets/brand-mark.svg?raw";
 /** Hand-drawn 24px stroke icons for the studio. No third-party icon set. */
 const PATHS: Record<string, string> = {
   explore: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm3.5 5.5-2 5-5 2 2-5 5-2Z",
@@ -55,10 +56,14 @@ export function Icon({ name, size = 18, title }: { name: IconName; size?: number
 
 export function Logo() {
   return (
-    <svg className="logo" width="56" height="20" viewBox="0 0 56 20" aria-label="ima2" role="img">
-      <rect x="0" y="2" width="16" height="16" rx="4.5" fill="currentColor" />
-      <path d="M5 13V8.5M5 6.2v.1M8.2 13V9.6c0-.9.6-1.5 1.4-1.5s1.3.6 1.3 1.5V13" stroke="var(--bg)" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-      <text x="21" y="15" fill="currentColor" fontSize="13.5" fontWeight="650" letterSpacing="-0.2" fontFamily="inherit">ima2</text>
-    </svg>
+    <span className="logo" role="img" aria-label="ima2 studio">
+      <span className="logo-mark" aria-hidden dangerouslySetInnerHTML={{ __html: brandMark }} />
+      <span className="logo-word" aria-hidden>
+        ima2
+      </span>
+      <span className="logo-sub" aria-hidden>
+        studio
+      </span>
+    </span>
   );
 }

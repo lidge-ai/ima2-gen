@@ -13,13 +13,17 @@ function ImageEmpty() {
   return (
     <section className="image-empty">
       <div className="image-empty-stack" aria-hidden>
-        {samples.map((p) => <img key={p.id} src={p.sample} alt="" />)}
+        {samples.map((p) => (
+          <img key={p.id} src={p.sample} alt="" />
+        ))}
       </div>
       <h1>Describe it, pick a model, generate</h1>
       <p className="muted">Images save to Assets. Pick a starting point below or write your own prompt.</p>
       <div className="chip-row center">
         {samples.map((p) => (
-          <button key={p.id} type="button" className="chip" onClick={() => navigate("image", { preset: p.id })}>{p.label}</button>
+          <button key={p.id} type="button" className="chip" onClick={() => navigate("image", { preset: p.id })}>
+            {p.label}
+          </button>
         ))}
       </div>
     </section>
@@ -40,7 +44,12 @@ export function ImagePage({ preset }: { preset?: string }) {
     const p = findPreset(preset);
     if (p) setForm((f) => ({ ...f, preset: p.id, prompt: p.prompt, aspectRatio: p.aspectRatio ?? f.aspectRatio }));
   }, [preset]);
-  if (!catalog) return <div className="empty" role="status">Loading models</div>;
+  if (!catalog)
+    return (
+      <div className="empty" role="status">
+        Loading models
+      </div>
+    );
   return (
     <div className="image-page">
       <main className="image-stage">

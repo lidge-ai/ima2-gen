@@ -1,4 +1,11 @@
-import { estimateCost, formatUsd, type CatalogModel, type CatalogRoute, type MediaPrice, type MediaTask } from "@ima2/studio-kit";
+import {
+  estimateCost,
+  formatUsd,
+  type CatalogModel,
+  type CatalogRoute,
+  type MediaPrice,
+  type MediaTask,
+} from "@ima2/studio-kit";
 
 const TASK_SHORT: Partial<Record<MediaTask, string>> = {
   "text-to-image": "Text to image",
@@ -38,14 +45,21 @@ export function routePrice(route: CatalogRoute): string {
   return (route.pricing.length > 1 ? "from " : "") + perUnit(cheapest);
 }
 
-export function estimateLabel(route: CatalogRoute | undefined, request: Parameters<typeof estimateCost>[1]): { text: string; title: string } {
+export function estimateLabel(
+  route: CatalogRoute | undefined,
+  request: Parameters<typeof estimateCost>[1],
+): { text: string; title: string } {
   if (!route) return { text: "-", title: "" };
   const estimate = estimateCost(route.pricing, request);
   return { text: formatUsd(estimate), title: estimate.basis };
 }
 
 export function modelKinds(model: CatalogModel): string {
-  return model.tasks.map(taskLabel).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3).join(" · ");
+  return model.tasks
+    .map(taskLabel)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .slice(0, 3)
+    .join(" · ");
 }
 
 export function timeAgo(iso: string, now = Date.now()): string {
@@ -57,5 +71,8 @@ export function timeAgo(iso: string, now = Date.now()): string {
 }
 
 export function vendorLabel(vendor: string): string {
-  return vendor.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+  return vendor
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { modelHasKey, type CatalogModel, type MediaKind } from "@ima2/studio-kit";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
-import { fromPrice, modelKinds, vendorLabel } from "./format.ts";
+import { fromPrice, modelKinds } from "./format.ts";
+import { VendorLogo, vendorDisplayName } from "./VendorLogo.tsx";
 
 interface Props {
   models: readonly CatalogModel[];
@@ -18,7 +19,10 @@ function matches(model: CatalogModel, query: string, vendor: string | null): boo
   if (vendor && model.vendor !== vendor) return false;
   if (!query) return true;
   const hay = (model.label + " " + model.id + " " + model.vendor).toLowerCase();
-  return query.toLowerCase().split(/\s+/).every((word) => hay.includes(word));
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .every((word) => hay.includes(word));
 }
 
 function specChips(model: CatalogModel): string[] {
@@ -35,15 +39,21 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
   return (
     <li>
       <button type="button" className="model-row" aria-current={selected} onClick={onPick}>
-        <span className="model-mark" aria-hidden>{model.vendor.charAt(0).toUpperCase()}</span>
+        <VendorLogo id={model.vendor} size={30} />
         <span className="model-row-main">
           <span className="model-row-label">
             {model.label}
             {model.params.nativeAudio ? <span className="tag">Audio</span> : null}
           </span>
           <span className="model-row-sub">
-            {specChips(model).map((chip) => <span key={chip} className="spec">{chip}</span>)}
-            <span>{vendorLabel(model.vendor)} · {modelKinds(model)}</span>
+            {specChips(model).map((chip) => (
+              <span key={chip} className="spec">
+                {chip}
+              </span>
+            ))}
+            <span>
+              {vendorDisplayName(model.vendor)} · {modelKinds(model)}
+            </span>
           </span>
         </span>
         <span className="model-row-meta">
@@ -58,6 +68,7 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
 
 export function ModelPicker({ models, kind, value, onChange, variant = "row", tasks }: Props) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState("");
   const [vendor, setVendor] = useState<string | null>(null);
   const ofKind = useMemo(
@@ -70,25 +81,68 @@ export function ModelPicker({ models, kind, value, onChange, variant = "row", ta
   const close = () => setOpen(false);
   return (
     <div className={"picker picker-" + variant}>
-      <button type="button" className="picker-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={"Model: " + (current?.label ?? "none")} onClick={() => setOpen(!open)}>
-        {variant === "row" ? <span className="setting-caption">Model</span> : <span className="model-mark small" aria-hidden>{current?.vendor.charAt(0).toUpperCase() ?? "?"}</span>}
-        <span className="setting-value">{current?.label ?? "Choose a model"}</span>
-        <Icon name={variant === "row" ? "chevron" : "chevron"} size={16} />
+      <button
+        ref={trigger}
+        type="button"
+        className="picker-trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={"Model: " + (current?.label ?? "none")}
+        onClick={() => setOpen(!open)}
+      >
+        {variant === "row" ? <span className="setting-caption">Model</span> : null}
+        <span className="setting-value picker-value">
+          {current ? <VendorLogo id={current.vendor} size={variant === "row" ? 18 : 16} /> : null}
+          {current?.label ?? "Choose a model"}
+        </span>
+        <Icon name="chevron" size={16} />
       </button>
-      <Popover open={open} onClose={close} label="Choose a model" className="model-popover">
+      <Popover
+        open={open}
+        onClose={close}
+        label="Choose a model"
+        className="model-popover"
+        anchor={trigger}
+        placement={variant === "row" ? "right" : "top"}
+      >
         <div className="popover-search">
           <Icon name="search" />
-          <input autoFocus type="search" placeholder="Search models" aria-label="Search models" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            autoFocus
+            type="search"
+            placeholder="Search models"
+            aria-label="Search models"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
         <div className="chip-row" role="group" aria-label="Filter by maker">
-          <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>All</button>
+          <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>
+            All
+          </button>
           {vendors.map((v) => (
-            <button key={v} type="button" className="chip" aria-pressed={vendor === v} onClick={() => setVendor(vendor === v ? null : v)}>{vendorLabel(v)}</button>
+            <button
+              key={v}
+              type="button"
+              className="chip"
+              aria-pressed={vendor === v}
+              onClick={() => setVendor(vendor === v ? null : v)}
+            >
+              <VendorLogo id={v} size={14} withName />
+            </button>
           ))}
         </div>
         <ul className="model-list" aria-label="Models">
           {shown.map((model) => (
-            <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => { onChange(model.id); close(); }} />
+            <ModelRow
+              key={model.id}
+              model={model}
+              selected={model.id === value}
+              onPick={() => {
+                onChange(model.id);
+                close();
+              }}
+            />
           ))}
           {shown.length === 0 ? <li className="empty-line">No model matches.</li> : null}
         </ul>

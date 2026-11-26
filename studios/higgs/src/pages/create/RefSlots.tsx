@@ -21,7 +21,9 @@ export function RefSlots({ values, max, onChange, label = "Reference", accept = 
           role="reference-image"
           accept={accept}
           value={value}
-          onChange={(next) => onChange(next ? filled.map((v, i) => (i === index ? next : v)) : filled.filter((_, i) => i !== index))}
+          onChange={(next) =>
+            onChange(next ? filled.map((v, i) => (i === index ? next : v)) : filled.filter((_, i) => i !== index))
+          }
         />
       ))}
       {showEmpty ? (
@@ -31,7 +33,9 @@ export function RefSlots({ values, max, onChange, label = "Reference", accept = 
           accept={accept}
           value={null}
           hint={"Up to " + max + " images"}
-          onChange={(next) => { if (next) onChange([...filled, next]); }}
+          onChange={(next) => {
+            if (next) onChange([...filled, next]);
+          }}
         />
       ) : null}
     </div>

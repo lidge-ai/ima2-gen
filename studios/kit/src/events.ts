@@ -2,7 +2,14 @@ import { readSse } from "./sse.ts";
 import type { Http } from "./http.ts";
 import type { Job, JobEvent, JobEventName } from "./types.ts";
 
-const JOB_EVENTS: ReadonlySet<string> = new Set<JobEventName>(["queued", "progress", "step", "done", "error", "canceled"]);
+const JOB_EVENTS: ReadonlySet<string> = new Set<JobEventName>([
+  "queued",
+  "progress",
+  "step",
+  "done",
+  "error",
+  "canceled",
+]);
 
 export type StreamStatus = "connecting" | "open" | "reconnecting" | "closed";
 
@@ -36,7 +43,14 @@ export function toJobEvent(message: { id?: string; event: string; data: string }
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
     const timer = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
   });
 }
 
@@ -50,7 +64,10 @@ async function readOnce(http: Http, options: SubscribeOptions, cursor: { id: num
   options.onStatus?.("open");
   for await (const message of readSse(response.body)) {
     if (message.id) cursor.id = Math.max(cursor.id, Number(message.id) || 0);
-    if (message.event === "replay-gap") { options.onGap?.(); continue; }
+    if (message.event === "replay-gap") {
+      options.onGap?.();
+      continue;
+    }
     const event = toJobEvent(message);
     if (event) options.onEvent(event);
   }

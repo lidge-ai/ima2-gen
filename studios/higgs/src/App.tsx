@@ -25,14 +25,23 @@ function TopBar({ route }: { route: Route }) {
   const keyed = useStudio((s) => s.keys.filter((k) => k.configured).length);
   return (
     <header className="topbar">
-      <a className="brand" href="#/" aria-label="ima2 studio home"><Logo /></a>
+      <a className="brand" href="#/" aria-label="ima2 studio home">
+        <Logo />
+      </a>
       <nav className="nav" aria-label="Main">
         {NAV.map((item) => (
-          <a key={item.label} href={"#/" + item.path} aria-current={item.match(route) ? "page" : undefined}>{item.label}</a>
+          <a key={item.label} href={"#/" + item.path} aria-current={item.match(route) ? "page" : undefined}>
+            {item.label}
+          </a>
         ))}
       </nav>
       <div className="topbar-right">
-        <span className={"stream-dot is-" + stream} role="status" aria-label={"Live updates: " + stream} title={"Live updates: " + stream} />
+        <span
+          className={"stream-dot is-" + stream}
+          role="status"
+          aria-label={"Live updates: " + stream}
+          title={"Live updates: " + stream}
+        />
         <a className="btn" href="#/keys" aria-current={route.page === "keys" ? "page" : undefined}>
           <Icon name="key" size={15} /> API keys <span className="key-count">{keyed}</span>
         </a>
@@ -43,14 +52,24 @@ function TopBar({ route }: { route: Route }) {
 
 function BottomBar({ route }: { route: Route }) {
   const item = (path: string, label: string, icon: IconName, current: boolean) => (
-    <a href={"#/" + path} aria-current={current ? "page" : undefined}><Icon name={icon} size={20} />{label}</a>
+    <a href={"#/" + path} aria-current={current ? "page" : undefined}>
+      <Icon name={icon} size={20} />
+      {label}
+    </a>
   );
   return (
     <nav className="bottombar" aria-label="Main">
       {item("", "Home", "explore", route.page === "explore")}
       {item("remix", "Remix", "remix", route.page === "remix")}
-      <a className="bottom-create" href="#/video" aria-current={route.page === "create" ? "page" : undefined} aria-label="Create">
-        <span className="create-pill"><Icon name="sparkle" size={20} /></span>
+      <a
+        className="bottom-create"
+        href="#/video"
+        aria-current={route.page === "create" ? "page" : undefined}
+        aria-label="Create"
+      >
+        <span className="create-pill">
+          <Icon name="sparkle" size={20} />
+        </span>
       </a>
       {item("assets", "Assets", "assets", route.page === "assets")}
       {item("keys", "Keys", "key", route.page === "keys")}
@@ -82,7 +101,9 @@ export function App() {
   return (
     <div className="app">
       <TopBar route={route} />
-      <div className="page"><Page route={route} /></div>
+      <div className="page">
+        <Page route={route} />
+      </div>
       <BottomBar route={route} />
     </div>
   );

@@ -26,21 +26,49 @@ function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateF
     <>
       {canFrames && canRefs ? (
         <div className="segmented-wide" role="radiogroup" aria-label="Input type">
-          <button type="button" role="radio" aria-checked={refMode === "frames"} onClick={() => set({ refMode: "frames", references: [] })}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={refMode === "frames"}
+            onClick={() => set({ refMode: "frames", references: [] })}
+          >
             <Icon name="image" size={15} /> Frames
           </button>
-          <button type="button" role="radio" aria-checked={refMode === "references"} onClick={() => set({ refMode: "references", firstFrame: null, lastFrame: null })}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={refMode === "references"}
+            onClick={() => set({ refMode: "references", firstFrame: null, lastFrame: null })}
+          >
             <Icon name="layers" size={15} /> References
           </button>
         </div>
       ) : null}
       {refMode === "frames" ? (
         <div className="slots">
-          <UploadSlot label="Start frame" role="first-frame" accept="image/*" value={form.firstFrame} onChange={(firstFrame) => set({ firstFrame })} hint="Optional" />
-          <UploadSlot label="End frame" role="last-frame" accept="image/*" value={form.lastFrame} onChange={(lastFrame) => set({ lastFrame })} hint="Optional" />
+          <UploadSlot
+            label="Start frame"
+            role="first-frame"
+            accept="image/*"
+            value={form.firstFrame}
+            onChange={(firstFrame) => set({ firstFrame })}
+            hint="Optional"
+          />
+          <UploadSlot
+            label="End frame"
+            role="last-frame"
+            accept="image/*"
+            value={form.lastFrame}
+            onChange={(lastFrame) => set({ lastFrame })}
+            hint="Optional"
+          />
         </div>
       ) : (
-        <RefSlots values={form.references} max={model.params.maxReferenceImages ?? 3} onChange={(references) => set({ references })} />
+        <RefSlots
+          values={form.references}
+          max={model.params.maxReferenceImages ?? 3}
+          onChange={(references) => set({ references })}
+        />
       )}
     </>
   );
@@ -49,14 +77,22 @@ function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateF
 function PromptCard({ model, form, set }: { model: CatalogModel | undefined; form: CreateForm; set: Props["set"] }) {
   return (
     <div className="prompt-card">
-      <label htmlFor="video-prompt" className="prompt-card-label">Prompt</label>
+      <label htmlFor="video-prompt" className="prompt-card-label">
+        Prompt
+      </label>
       <textarea
         id="video-prompt"
         value={form.prompt}
         onChange={(e) => set({ prompt: e.target.value })}
         rows={4}
-        placeholder={form.mode === "edit" ? "Describe the change: make it snow, turn day into night" : "Describe the shot: subject, motion, camera, light"}
-        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit(); }}
+        placeholder={
+          form.mode === "edit"
+            ? "Describe the change: make it snow, turn day into night"
+            : "Describe the shot: subject, motion, camera, light"
+        }
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
+        }}
       />
       {model?.params.nativeAudio ? (
         <div className="prompt-card-chips">
@@ -74,26 +110,80 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
   const { model } = create;
   const tasks = form.mode === "edit" ? EDIT_TASKS : ["text-to-video", "image-to-video", "reference-to-video"];
   return (
-    <form className="panel" aria-label="Create video" onSubmit={(e) => { e.preventDefault(); void create.submit(); }}>
+    <form
+      className="panel"
+      aria-label="Create video"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void create.submit();
+      }}
+    >
       <div className="panel-tabs" role="tablist" aria-label="Video mode">
-        <button type="button" role="tab" aria-selected={form.mode === "create"} onClick={() => set({ mode: "create", model: undefined })}>Create video</button>
-        <button type="button" role="tab" aria-selected={form.mode === "edit"} onClick={() => set({ mode: "edit", model: undefined })}>Edit video</button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={form.mode === "create"}
+          onClick={() => set({ mode: "create", model: undefined })}
+        >
+          Create video
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={form.mode === "edit"}
+          onClick={() => set({ mode: "edit", model: undefined })}
+        >
+          Edit video
+        </button>
       </div>
       <div className="panel-body">
-        {form.mode === "create" ? <PresetCard preset={findPreset(form.preset)} modelLabel={model?.label} onChange={onOpenPresets} /> : null}
-        {form.mode === "edit"
-          ? <UploadSlot label="Video to edit" role="source-video" accept="video/*" value={form.sourceVideo} onChange={(sourceVideo) => set({ sourceVideo })} hint="MP4 or MOV" />
-          : model ? <CreateInputs model={model} form={form} set={set} /> : null}
+        {form.mode === "create" ? (
+          <PresetCard
+            preset={findPreset(form.preset)}
+            modelLabel={model?.label}
+            vendor={model?.vendor}
+            onChange={onOpenPresets}
+          />
+        ) : null}
+        {form.mode === "edit" ? (
+          <UploadSlot
+            label="Video to edit"
+            role="source-video"
+            accept="video/*"
+            value={form.sourceVideo}
+            onChange={(sourceVideo) => set({ sourceVideo })}
+            hint="MP4 or MOV"
+          />
+        ) : model ? (
+          <CreateInputs model={model} form={form} set={set} />
+        ) : null}
         <PromptCard model={model} form={form} set={set} />
-        <ModelPicker models={catalog.models} kind="video" tasks={tasks} value={form.model} onChange={create.pickModel} />
+        <ModelPicker
+          models={catalog.models}
+          kind="video"
+          tasks={tasks}
+          value={form.model}
+          onChange={create.pickModel}
+        />
         {model ? <ParamControls model={model} form={form} set={set} /> : null}
         {model ? <AdvancedFields model={model} form={form} set={set} /> : null}
-        {create.choice.kind === "needs-key" ? <KeyNotice routes={create.choice.candidates} providers={catalog.providers} /> : null}
-        {create.error ? <p className="form-error" role="alert">{create.error}</p> : null}
+        {create.choice.kind === "needs-key" ? (
+          <KeyNotice routes={create.choice.candidates} providers={catalog.providers} />
+        ) : null}
+        {create.error ? (
+          <p className="form-error" role="alert">
+            {create.error}
+          </p>
+        ) : null}
       </div>
       <div className="panel-foot">
         {create.blocked && model ? <p className="form-hint">{create.blocked}</p> : null}
-        <button className="btn btn-primary btn-generate" type="submit" disabled={!create.canSend} title={create.cost.title}>
+        <button
+          className="btn btn-primary btn-generate"
+          type="submit"
+          disabled={!create.canSend}
+          title={create.cost.title}
+        >
           <span>{create.sending ? "Sending" : "Generate"}</span>
           <span className="btn-cost">{create.cost.text}</span>
         </button>
