@@ -8,6 +8,7 @@ import { launchWorkflowJob } from "../lib/providers/media/workflowJob.js";
 import { WORKFLOWS, WorkflowError, createFfmpegLocalOps, describeWorkflow, prepareWorkflow, summarizeSteps, type WorkflowDeps } from "../lib/workflows/index.js";
 import type { WorkflowDefinition, WorkflowGateway, WorkflowLocalOps } from "../lib/workflows/types.js";
 import { createOAuthPlanText } from "../lib/providers/media/workflowPlanner.js";
+import { createSessionRoutes, type SessionRoute } from "../lib/providers/media/sessionRoutes.js";
 import { logError } from "../lib/logger.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { mediaRunnerDeps, readRequestId, sendMediaError } from "./media.js";
@@ -18,6 +19,8 @@ export interface WorkflowRouteOptions {
   local?: WorkflowLocalOps;
   /** Text planner for Director shots; defaults to the GPT OAuth planner. */
   planText?: WorkflowGateway["planText"];
+  /** Subscription routes (xai-oauth, openai-oauth); defaults to the signed-in sessions. */
+  sessionRoutes?: Readonly<Record<string, SessionRoute>>;
 }
 
 function sendWorkflowError(res: Response, error: unknown): void {
@@ -51,7 +54,8 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
   const deps = () => mediaRunnerDeps(ctx, options.deps);
   const local = options.local ?? createFfmpegLocalOps();
   const planText = options.planText ?? createOAuthPlanText(ctx);
-  const engineDeps = async (d: MediaRunnerDeps): Promise<WorkflowDeps> => ({ gateway: await createWorkflowGateway(d, { planText }), local, allowedRoots: [d.inputsDir, d.generatedDir] });
+  const sessionRoutes = options.sessionRoutes ?? createSessionRoutes(ctx);
+  const engineDeps = async (d: MediaRunnerDeps): Promise<WorkflowDeps> => ({ gateway: await createWorkflowGateway(d, { planText, sessionRoutes }), local, allowedRoots: [d.inputsDir, d.generatedDir] });
   const find = (id: string) => {
     const def = workflows.find((w) => w.id === id);
     if (!def) throw new WorkflowError("WORKFLOW_UNKNOWN", `Unknown workflow: ${id}`, { status: 404, category: "not-found" });

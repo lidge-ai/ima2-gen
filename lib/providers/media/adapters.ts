@@ -17,6 +17,7 @@ import { adapter as topazImage } from "./direct/topaz-image.js";
 import { adapter as stability } from "./direct/stability.js";
 import { adapter as fal } from "./aggregator/fal.js";
 import { adapter as sume } from "./aggregator/sume.js";
+import { adapter as atlascloud } from "./aggregator/atlascloud.js";
 
 /**
  * Every media adapter the server can route to, in registration order. Within a
@@ -33,5 +34,5 @@ export const BUILTIN_MEDIA_ADAPTERS: readonly MediaProviderAdapter[] = [
   // L4 direct image
   bfl, ideogram, recraft, topazImage, stability,
   // L1 aggregators (after every direct route)
-  fal, sume,
+  fal, sume, atlascloud,
 ];

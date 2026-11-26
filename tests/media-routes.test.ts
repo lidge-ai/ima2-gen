@@ -38,8 +38,9 @@ const oneStep = {
   slots: [{ name: "render", label: "Render", task: "text-to-video", defaultModel: "acme/clip-1", alternatives: [], rationale: "test" }],
   plan(values: Record<string, unknown>, slots: Record<string, { model: string; route?: string }>) {
     const model = slots.render!.model;
+    const route = slots.render!.route;
     return { workflowId: "test-flow", steps: [{
-      id: "render", label: "Render", kind: "media", dependsOn: [], final: true, slot: "render", model, outputKind: "video",
+      id: "render", label: "Render", kind: "media", dependsOn: [], final: true, slot: "render", model, ...(route ? { route } : {}), outputKind: "video",
       units: { unit: "second", quantity: 5, variant: "720p" },
       build: async () => ({ model, task: "text-to-video", prompt: String(values.prompt), durationSec: 5, inputs: [] }),
     }] };
@@ -83,7 +84,10 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
   app.get("/", (_req, res) => { res.send("classic ui"); });
   app.use(express.json({ limit: "5mb" }));
   registerMediaRoutes(app, ctx as never, deps);
-  registerWorkflowRoutes(app, ctx as never, { deps, workflows: [oneStep], local: noLocalOps });
+  registerWorkflowRoutes(app, ctx as never, { deps, workflows: [oneStep], local: noLocalOps, sessionRoutes: {
+    "fake-oauth": { adapterId: "agg", label: "Fake subscription", open: async () => ({ apiKey: "session-token-abcdef" }) },
+    "dead-oauth": { adapterId: "agg", label: "Dead subscription", open: async () => { throw new Error("not signed in"); } },
+  } });
   registerStudioRoutes(app, ctx as never, { root: studiosRoot, env: {} });
   mountKeyRoutes(app, ctx as never, { mediaRegistry: registry, fetch: transport.fetch, env: {} });
   const server = await new Promise<import("node:http").Server>((resolve) => { const s = app.listen(0, "127.0.0.1", () => resolve(s)); });
@@ -221,6 +225,22 @@ test("workflows: list, estimate and a run through the L6 engine land the final c
     assert.ok(!JSON.stringify(mine).includes(FAKE_KEY));
     const unknown = await post("/api/workflows/nope", {});
     assert.equal(unknown.status, 404);
+  });
+});
+
+test("workflows: a session route runs a keyless adapter with the signed-in token, and a missing session fails clearly", async () => {
+  await withApp(async ({ base, events, calls }) => {
+    const post = (path: string, body: unknown) => fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const ok = await post("/api/workflows/test-flow", { requestId: "wf-sub", values: { prompt: "fox" }, selection: { routes: { render: "fake-oauth" } } });
+    assert.equal(ok.status, 202);
+    await waitFor(events, "wf-sub", ["done", "error"]);
+    assert.ok(events.some((e) => e.jobId === "wf-sub" && e.event === "done"), JSON.stringify(events.filter((e) => e.jobId === "wf-sub" && e.event === "error")));
+    const submit = calls.find((c) => c.url === "https://fake.example/v1/jobs") as { headers?: Record<string, string> } | undefined;
+    assert.equal(submit?.headers?.authorization, "Bearer session-token-abcdef");
+    assert.ok(!JSON.stringify(events).includes("session-token-abcdef"));
+    await post("/api/workflows/test-flow", { requestId: "wf-dead", values: { prompt: "fox" }, selection: { routes: { render: "dead-oauth" } } });
+    await waitFor(events, "wf-dead", ["done", "error"]);
+    assert.equal(events.find((e) => e.jobId === "wf-dead" && e.event === "error")?.data.code, "MEDIA_SESSION_MISSING");
   });
 });
 
