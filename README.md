@@ -340,6 +340,32 @@ Full reference: [docs/CLI.md](docs/CLI.md).
 
 </details>
 
+<details>
+<summary><b>Media models, keys and workflows</b></summary>
+
+| Command | Description |
+|---|---|
+| `ima2 media models` | Discover and filter models and routes |
+| `ima2 media estimate` | Estimate a model and task using published prices |
+| `ima2 media run` | Submit a billed media job |
+| `ima2 media status`, `wait`, `result` | Inspect, wait for or retrieve a job |
+| `ima2 media jobs`, `cancel` | List or cancel jobs |
+| `ima2 media keys` | List, set, validate or delete provider keys |
+| `ima2 media workflows` | List workflows |
+| `ima2 media workflow ID --schema` | Inspect workflow inputs |
+| `ima2 media workflow ID --estimate` | Estimate a workflow |
+| `ima2 media workflow ID` | Run a billed workflow |
+| `ima2 media studios`, `studio open NAME [--no-open]`, `studio default NAME` | List, open (or only print the URL) or select a studio |
+| `ima2 media tools` | List tool descriptors |
+
+Secrets are read from stdin. `models --max-usd` filters listed prices; it is not a spending limit. Run `ima2 media --help` for options.
+
+</details>
+
+### MCP server
+
+Configure Claude Code with `{"mcpServers":{"ima2":{"command":"ima2","args":["mcp"]}}}`. The `media_submit` and `workflow_run` tools are billed by the provider; estimate first.
+
 ## Configuration
 
 Config priority is `environment variables > ~/.ima2/config.json > built-in defaults`. Prompt Builder settings persist as `promptBuilder.backend` (`auto`, `oauth`, `grok`, `api` or `grok-api`) and `promptBuilder.model`. On Auto, Prompt Builder tries GPT OAuth, Grok, OpenAI API, then Grok API and uses the first ready lane; an explicit choice stays pinned and returns a typed error when unavailable.

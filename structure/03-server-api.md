@@ -53,6 +53,15 @@ graph TD
     CARD --> FILES
 ```
 
+## Media Tool Endpoints
+
+| Method | Path | Response | Description |
+|---|---|---|---|
+| `GET` | `/api/media/tools` | `{ version, tools }` | Media and workflow tool descriptors |
+| `POST` | `/api/media/estimate` | Estimate and route | Estimate published price without calling a provider |
+| `GET` | `/api/workflows/:id/schema` | `{ id, label, schema }` | Workflow values schema; unknown IDs return 404 `WORKFLOW_UNKNOWN` |
+| `POST` | `/api/keys/:vocabulary/validate` | `{ ok, vocabulary, valid, source }` | Validate a supplied or saved key without saving it |
+
 ## Status And Provider Endpoints
 
 | Method | Path | Response | Description |

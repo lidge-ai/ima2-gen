@@ -68,16 +68,26 @@ export async function validateKey(base: string, vocab: string, body: { apiKey?: 
   return scrubResult(response, secrets) as Dict;
 }
 export function deleteKey(base: string, vocab: string) { return call<Dict>(base, `/api/keys/${enc(vocab)}`, { method: "DELETE" }); }
-export async function uploadInputs(base: string, inputs: Input[]): Promise<Input[]> {
+function checkAbort(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new MediaApiError("MEDIA_WAIT_ABORTED", "If you cancel after the job was submitted, it keeps running; check media_job_status with your requestId.");
+}
+export async function uploadInputs(base: string, inputs: Input[], signal?: AbortSignal): Promise<Input[]> {
+  checkAbort(signal);
   for (const input of inputs) if (input.path && !existsSync(input.path)) throw new MediaApiError("MEDIA_INPUT_NOT_FOUND", `Input file not found: ${input.path}`);
-  return Promise.all(inputs.map(async (input) => {
+  const result = await Promise.all(inputs.map(async (input) => {
+    checkAbort(signal);
     if (!input.path) return input;
     const mime = mimeFromName(input.path);
     if (!mime) throw new MediaApiError("MEDIA_INPUT_INVALID", `Unknown input MIME type: ${input.path}`);
-    const uploaded = await call<{ ref: string }>(base, "/api/media/inputs", { method: "POST", raw: true, body: await readFile(input.path), headers: { "Content-Type": mime } });
+    const body = await readFile(input.path);
+    checkAbort(signal);
+    const uploaded = await call<{ ref: string }>(base, "/api/media/inputs", { method: "POST", raw: true, body, headers: { "Content-Type": mime } });
+    checkAbort(signal);
     const { path: _path, ...rest } = input;
     return { ...rest, ref: uploaded.ref };
   }));
+  checkAbort(signal);
+  return result;
 }
 export function estimate(base: string, body: Dict) { return post<Dict>(base, "/api/media/estimate", normalizeMediaBody(body)); }
 function terminal(status: unknown): boolean { return ["completed", "done", "error", "failed", "canceled", "cancelled"].includes(String(status)); }
@@ -88,12 +98,15 @@ export async function jobStatus(base: string, id: string) {
 }
 export function jobs(base: string, all = false) { return call<Dict>(base, `/api/media/jobs${all ? "?status=all" : ""}`); }
 export function cancel(base: string, id: string) { return post<Dict>(base, `/api/media/${enc(id)}/cancel`, {}); }
-export async function ensureRequestIdUnused(base: string, id: string): Promise<void> {
+export async function ensureRequestIdUnused(base: string, id: string, signal?: AbortSignal): Promise<void> {
+  checkAbort(signal);
   let found = false;
   try { await jobStatus(base, id); found = true; }
-  catch (error) { const e = toMediaApiError(error); if (e.code !== "MEDIA_JOB_UNKNOWN" || e.status !== 404) throw e; }
+  catch (error) { checkAbort(signal); const e = toMediaApiError(error); if (e.code !== "MEDIA_JOB_UNKNOWN" || e.status !== 404) throw e; }
+  checkAbort(signal);
   if (!found) {
     const history = await call<{ items: Dict[] }>(base, `/api/history?requestId=${enc(id)}&includeAudio=true`);
+    checkAbort(signal);
     found = history.items.length > 0;
   }
   if (found) throw new MediaApiError("REQUEST_ID_IN_USE", `requestId ${id} was already submitted; check media_job_status / media_result`, { category: "invalid-request" });
@@ -101,16 +114,26 @@ export async function ensureRequestIdUnused(base: string, id: string): Promise<v
 type SubmitOptions = WaitOptions & { requestId?: string; wait: boolean };
 async function submit(base: string, path: string, body: Dict, options: SubmitOptions, checked = false): Promise<Dict> {
   const id = options.requestId ?? `media_${randomUUID()}`;
-  if (options.requestId && !checked) await ensureRequestIdUnused(base, id);
-  if (!options.wait) return post<Dict>(base, path, { ...body, requestId: id });
-  const stream = await openMediaSse(base, options.signal);
-  try { await post(base, path, { ...body, requestId: id }); return await waitForJob(stream, id, options); }
+  checkAbort(options.signal);
+  if (options.requestId && !checked) await ensureRequestIdUnused(base, id, options.signal);
+  checkAbort(options.signal);
+  if (!options.wait) {
+    const response = await post<Dict>(base, path, { ...body, requestId: id });
+    checkAbort(options.signal);
+    return response;
+  }
+  let stream: Awaited<ReturnType<typeof openMediaSse>>;
+  try { stream = await openMediaSse(base, options.signal); } catch (error) { checkAbort(options.signal); throw error; }
+  try { checkAbort(options.signal); await post(base, path, { ...body, requestId: id }); checkAbort(options.signal); return await waitForJob(stream, id, options); }
   finally { stream.close(); }
 }
 export async function submitMedia(base: string, body: Dict, options: SubmitOptions) {
-  if (options.requestId) await ensureRequestIdUnused(base, options.requestId);
+  checkAbort(options.signal);
+  if (options.requestId) await ensureRequestIdUnused(base, options.requestId, options.signal);
+  checkAbort(options.signal);
   const normalized = normalizeMediaBody(body);
-  if (Array.isArray(normalized.inputs)) normalized.inputs = await uploadInputs(base, normalized.inputs as Input[]);
+  if (Array.isArray(normalized.inputs)) normalized.inputs = await uploadInputs(base, normalized.inputs as Input[], options.signal);
+  checkAbort(options.signal);
   return submit(base, "/api/media", normalized, options, true);
 }
 /** Waits up to timeoutMs (max 60 s) and returns the job status; timedOut marks a job that is still running. */
@@ -167,18 +190,24 @@ export async function history(base: string, options: { limit?: number; kind?: st
 }
 export function workflows(base: string) { return call<Dict>(base, "/api/workflows"); }
 export function workflowSchema(base: string, id: string) { return call<Dict>(base, `/api/workflows/${enc(id)}/schema`); }
-async function workflowValues(base: string, values: Dict): Promise<Dict> {
+async function workflowValues(base: string, values: Dict, signal?: AbortSignal): Promise<Dict> {
+  checkAbort(signal);
   const entries = await Promise.all(Object.entries(values).map(async ([key, value]) => {
     if (!Array.isArray(value)) return [key, value];
-    return [key, await uploadInputs(base, value.map((v: unknown) => v && typeof v === "object" ? v as Input : { value: v })).then((items) => items.map((v, i) => "value" in v && Object.keys(v).length === 1 ? value[i] : v))];
+    return [key, await uploadInputs(base, value.map((v: unknown) => v && typeof v === "object" ? v as Input : { value: v }), signal).then((items) => items.map((v, i) => "value" in v && Object.keys(v).length === 1 ? value[i] : v))];
   }));
+  checkAbort(signal);
   return Object.fromEntries(entries);
 }
 export async function workflowEstimate(base: string, id: string, values: Dict, selection: Dict) {
   return post<Dict>(base, `/api/workflows/${enc(id)}/estimate`, { values: await workflowValues(base, values), selection });
 }
 export async function workflowRun(base: string, id: string, values: Dict, selection: Dict, options: SubmitOptions) {
-  if (options.requestId) await ensureRequestIdUnused(base, options.requestId);
-  return submit(base, `/api/workflows/${enc(id)}`, { values: await workflowValues(base, values), selection }, options, true);
+  checkAbort(options.signal);
+  if (options.requestId) await ensureRequestIdUnused(base, options.requestId, options.signal);
+  checkAbort(options.signal);
+  const uploaded = await workflowValues(base, values, options.signal);
+  checkAbort(options.signal);
+  return submit(base, `/api/workflows/${enc(id)}`, { values: uploaded, selection }, options, true);
 }
 export function tools(base: string) { return call<Dict>(base, "/api/media/tools"); }
