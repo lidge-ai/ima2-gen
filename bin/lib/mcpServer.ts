@@ -52,7 +52,9 @@ function progressCallback(token: string | number | undefined, send: (value: numb
     const now = Date.now();
     if (lastAt && now - lastAt < 1000) return;
     const data = event.data && typeof event.data === "object" ? event.data as Dict : {};
-    const value = typeof data.progress === "number" && Number.isFinite(data.progress) ? data.progress : last;
+    // The media runner publishes 0..1; anything above 1 is already a percent.
+    const raw = typeof data.progress === "number" && Number.isFinite(data.progress) ? data.progress : undefined;
+    const value = raw === undefined ? last : raw <= 1 ? raw * 100 : raw;
     last = Math.max(last, Math.min(100, Math.max(0, value))); lastAt = now;
     send(last, event.event === "step" ? "Working on step" : "Working");
   };
