@@ -17,12 +17,16 @@ const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts"
 const { abortJob, _resetForTests: resetInflight } = await import("../lib/inflight.ts");
 const { configureLogger } = await import("../lib/logger.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter, FakeHttpError } = await import("./_mediaFakeAdapter.ts");
+const { closeDb } = await import("../lib/db.ts");
 type FakeAdapter = ReturnType<typeof makeFakeAdapter>;
 
 const logLines: string[] = [];
 configureLogger({ level: "debug", sink: { log: (l) => logLines.push(l), debug: (l) => logLines.push(l), info: (l) => logLines.push(l), warn: (l) => logLines.push(l), error: (l) => logLines.push(l) } });
 
 test.after(async () => {
+  // Jobs persist through lib/inflight into <config>/sessions.db (and its WAL/SHM files);
+  // Windows refuses to unlink them while the handle is open.
+  closeDb();
   await rm(isolatedConfigDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
