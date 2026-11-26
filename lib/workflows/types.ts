@@ -229,6 +229,8 @@ export interface WorkflowDefinition {
   id: WorkflowId;
   label: string;
   description: string;
+  /** Text in other languages. Korean is generated from lib/workflows/i18n/ko.ts; a definition may override parts here. */
+  i18n?: { ko?: WorkflowText };
   /** Public products this workflow matches in function (ids from Sume's public list). */
   equivalents: readonly string[];
   /** Set on variants that trade quality for running on particular accounts (e.g. subscriptions only). */
@@ -247,6 +249,20 @@ export interface WorkflowDefinition {
 export interface ResolvedSlot {
   model: string;
   route?: string;
+}
+
+/**
+ * One language's text for a workflow (GET /api/workflows i18n.<lang>). Every key is optional;
+ * clients fall back to the English fields. Keys follow the wire: field "help", option values,
+ * slot names, combo ids, preset route ids; preset losses align by index with preset.losses.
+ */
+export interface WorkflowText {
+  label?: string;
+  description?: string;
+  fields?: Record<string, { label?: string; help?: string; options?: Record<string, string> }>;
+  slots?: Record<string, string>;
+  preset?: { label?: string; requires?: Record<string, string>; losses?: (string | null)[]; billingNote?: string };
+  combos?: Record<string, { label?: string; note?: string }>;
 }
 
 /** What a preset variant needs and what it gives up, for the UI to show before a run. */
