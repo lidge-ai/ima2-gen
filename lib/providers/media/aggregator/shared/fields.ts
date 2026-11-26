@@ -32,14 +32,14 @@ export interface EndpointSchema {
 
 /** Field names tried in order for each input role. */
 const ROLE_FIELDS: Record<MediaInputRole, readonly string[]> = {
-  "first-frame": ["image_url", "start_image_url", "first_frame_url", "first_frame_image_url", "start_image", "first_frame", "image", "image_urls"],
-  "last-frame": ["end_image_url", "last_frame_url", "tail_image_url", "last_image_url", "end_image", "last_image", "last_frame", "tail_image"],
-  "reference-image": ["reference_image_urls", "image_urls", "reference_images", "image_references", "images", "reference_image_url", "image_url", "image"],
-  "reference-video": ["reference_video_urls", "video_urls", "reference_videos", "reference_video_url", "video_url", "video"],
+  "first-frame": ["image_url", "start_image_url", "first_frame_url", "first_frame_image_url", "first_frame_image", "start_image", "first_frame", "image", "image_urls"],
+  "last-frame": ["end_image_url", "last_frame_url", "tail_image_url", "last_image_url", "last_frame_image", "end_image", "last_image", "last_frame", "tail_image"],
+  "reference-image": ["reference_image_urls", "image_urls", "reference_images", "image_references", "image_input", "input_images", "images", "reference_image_url", "image_url", "image"],
+  "reference-video": ["reference_video_urls", "video_urls", "reference_videos", "reference_video_url", "reference_video", "video_url", "video"],
   "reference-audio": ["reference_audio_urls", "audio_urls", "reference_audios", "reference_audio_url", "audio_url", "audio"],
-  "source-image": ["image_url", "image_urls", "image", "images", "input_image", "input_image_url", "start_image_url"],
-  "source-video": ["video_url", "video", "input_video", "input_video_url", "video_urls"],
-  "source-audio": ["audio_url", "audio", "input_audio", "audio_urls"],
+  "source-image": ["image_url", "image_urls", "image", "images", "image_input", "input_images", "input_image", "input_image_url", "start_image_url"],
+  "source-video": ["video_url", "video", "base_video", "input_video", "input_video_url", "video_urls"],
+  "source-audio": ["audio_url", "audio", "audio_file", "input_audio", "audio_urls"],
   mask: ["mask_url", "mask_image_url", "mask", "mask_image"],
 };
 
@@ -159,7 +159,9 @@ function durationsOf(field: InputField | undefined): number[] {
   if (!field) return [];
   if (field.enum) return field.enum.map((v) => Number.parseInt(String(v), 10)).filter((n) => Number.isFinite(n) && n > 0);
   if (field.type === "integer" && field.minimum !== undefined && field.maximum !== undefined && field.maximum - field.minimum <= 60) {
-    return Array.from({ length: field.maximum - field.minimum + 1 }, (_, i) => (field.minimum as number) + i);
+    // Sentinels such as -1 ("model decides") are not durations.
+    const low = Math.max(1, field.minimum);
+    return Array.from({ length: Math.max(0, field.maximum - low + 1) }, (_, i) => low + i);
   }
   return [];
 }

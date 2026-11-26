@@ -38,11 +38,24 @@ export function toInputField(raw: unknown): InputField {
   return field;
 }
 
-/** Fields of one JSON schema object ({ properties, required }). */
-export function endpointFromJsonSchema(endpoint: string, task: MediaTask, schema: unknown): EndpointSchema {
+/**
+ * Replicate (Cog) schemas express enums as { allOf: [{ $ref: "#/components/schemas/x" }] };
+ * merge the referenced schema so the enum and type are visible.
+ */
+function dereference(prop: unknown, components: Record<string, unknown>): unknown {
+  const record = asRecord(prop);
+  const refs = asArray(record.allOf).map((part) => asString(asRecord(part).$ref) ?? "");
+  const name = refs.map((ref) => /#\/components\/schemas\/(.+)$/.exec(ref)?.[1]).find(Boolean);
+  if (!name || !components[name]) return prop;
+  const rest = Object.fromEntries(Object.entries(record).filter(([key]) => key !== "allOf"));
+  return { ...asRecord(components[name]), ...rest };
+}
+
+/** Fields of one JSON schema object ({ properties, required }); components resolves allOf refs. */
+export function endpointFromJsonSchema(endpoint: string, task: MediaTask, schema: unknown, components: Record<string, unknown> = {}): EndpointSchema {
   const record = asRecord(schema);
   const fields: Record<string, InputField> = {};
-  for (const [name, prop] of Object.entries(asRecord(record.properties))) fields[name] = toInputField(prop);
+  for (const [name, prop] of Object.entries(asRecord(record.properties))) fields[name] = toInputField(dereference(prop, components));
   const required = asArray(record.required).filter((v): v is string => typeof v === "string");
   return { endpoint, task, required, fields };
 }
