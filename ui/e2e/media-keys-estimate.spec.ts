@@ -68,11 +68,12 @@ test("L11-K2 the estimate follows the settings and is confirmed by the server fo
   await expect(estimate).toContainText("$2.37");
   await expect(estimate).toContainText("5 s × $0.473/s · text-to-video:720p");
   await expect(hint(page)).toHaveText("Seedance 2.5 · est. $2.37");
+  const estimates = () => media.calls.filter((call) => call.path === "/api/media/estimate").map((call) => call.body?.priceVariant);
+  await expect.poll(estimates).toEqual(["text-to-video:720p"]);
   await card(page).getByRole("button", { name: "480p", exact: true }).click();
   await expect(estimate).toContainText("$1.11");
   await expect(hint(page)).toHaveText("Seedance 2.5 · est. $1.11");
-  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").map((call) => call.body?.priceVariant))
-    .toEqual(["text-to-video:720p", "text-to-video:480p"]);
+  await expect.poll(estimates).toEqual(["text-to-video:720p", "text-to-video:480p"]);
   expect(media.calls.find((call) => call.path === "/api/media/estimate")?.body).toMatchObject({ model: "bytedance/seedance-2.5", adapter: "fal", task: "text-to-video", durationSec: 5 });
   // A price list with tiers this screen does not set is shown as a range, not as one number.
   await pick(page, "Image", "openai/gpt-image-2.5");

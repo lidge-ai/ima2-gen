@@ -110,7 +110,7 @@ test("L11-M3 switching model keeps what fits, names what moved, and a pinned rou
   await expect(card(page)).toContainText("Now: BytePlus ModelArk");
   await card(page).getByRole("button", { name: "1080p", exact: true }).click();
   await card(page).getByRole("radio", { name: /^Sume/ }).check();
-  await expect(card(page)).toContainText("Sume needs an API key before this can run.");
+  await expect(card(page).getByRole("region", { name: "Sume needs an API key" })).toBeVisible();
   await expect(card(page).getByRole("button", { name: "1080p", exact: true })).toHaveAttribute("aria-pressed", "true");
   await card(page).getByRole("button", { name: "Change model" }).click();
   await pick(page, "Video", "kling/kling-4.0-turbo");
