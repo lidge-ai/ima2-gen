@@ -27,6 +27,18 @@ function perSecond(rows: ReadonlyArray<readonly [string, number]>): MediaPrice[]
   }));
 }
 
+/**
+ * Seedance token rates (official "Video generation models" table, USD per 1M tokens; stored per 1K):
+ * [resolution, without video input, with video input]. Tokens = (input video s + output s) x output
+ * width x height x frame rate / 1024; inputs with video have a per-resolution minimum (same page).
+ */
+function perToken(rows: ReadonlyArray<readonly [string, number, number]>): MediaPrice[] {
+  return rows.flatMap(([resolution, noVideoIn, videoIn]): MediaPrice[] => [
+    { unit: "1k-tokens", usd: noVideoIn / 1000, variant: "no-video-in " + resolution, source: PRICE_SOURCE, checkedAt: CHECKED },
+    { unit: "1k-tokens", usd: videoIn / 1000, variant: "video-in " + resolution, source: PRICE_SOURCE, checkedAt: CHECKED },
+  ]);
+}
+
 function perImage(rows: ReadonlyArray<readonly [string, number]>): MediaPrice[] {
   return rows.map(([variant, usd]): MediaPrice => ({
     unit: "image",
@@ -173,7 +185,7 @@ export const MODELS: readonly MediaModelSpec[] = [
       ["720p", 0.231],
       ["1080p", 0.569],
       ["4k", 0.914],
-    ]),
+    ]).concat(perToken([["480p", 10.7, 6.4], ["720p", 10.7, 6.4], ["1080p", 11.7, 7.0], ["4k", 4.7, 2.9]])),
   ),
   seedance(
     "bytedance/seedance-2.5-flash",
@@ -184,7 +196,7 @@ export const MODELS: readonly MediaModelSpec[] = [
     perSecond([
       ["480p", 0.07],
       ["720p", 0.15],
-    ]),
+    ]).concat(perToken([["480p", 7.0, 4.3], ["720p", 7.0, 4.3]])),
   ),
   seedance(
     "bytedance/seedance-2",
@@ -197,7 +209,7 @@ export const MODELS: readonly MediaModelSpec[] = [
       ["720p", 0.15],
       ["1080p", 0.37],
       ["4k", 0.78],
-    ]),
+    ]).concat(perToken([["480p", 7.0, 4.3], ["720p", 7.0, 4.3], ["1080p", 7.7, 4.7], ["4k", 4.0, 2.4]])),
   ),
   seedance(
     "bytedance/seedance-2-fast",
@@ -208,7 +220,7 @@ export const MODELS: readonly MediaModelSpec[] = [
     perSecond([
       ["480p", 0.06],
       ["720p", 0.12],
-    ]),
+    ]).concat(perToken([["480p", 5.6, 3.3], ["720p", 5.6, 3.3]])),
   ),
   seedance(
     "bytedance/seedance-2-mini",
@@ -219,7 +231,7 @@ export const MODELS: readonly MediaModelSpec[] = [
     perSecond([
       ["480p", 0.04],
       ["720p", 0.08],
-    ]),
+    ]).concat(perToken([["480p", 3.5, 2.1], ["720p", 3.5, 2.1]])),
   ),
   seedream("bytedance/seedream-5.5", "dola-seedream-5-5-261028", "Seedream 5.5", ["1K", "1.5K", "2K"], 10, S55_PRICES),
   seedream(
