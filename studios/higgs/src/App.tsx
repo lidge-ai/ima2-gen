@@ -1,6 +1,7 @@
 import { useStudio } from "./studio/context.tsx";
 import { useRoute, type Route } from "./router.ts";
 import { Icon, Logo, type IconName } from "./ui/Icon.tsx";
+import { LOCALES, messages, setLocale, useLocale, useT } from "./i18n.ts";
 import { HomePage } from "./pages/HomePage.tsx";
 import { ImagePage } from "./pages/ImagePage.tsx";
 import { VideoPage } from "./pages/VideoPage.tsx";
@@ -11,27 +12,66 @@ import { AssetsPage } from "./pages/assets/AssetsPage.tsx";
 import { KeysPage } from "./pages/keys/KeysPage.tsx";
 import { ModelsPage } from "./pages/models/ModelsPage.tsx";
 
-const NAV: { path: string; label: string; icon: IconName; match: (r: Route) => boolean }[] = [
-  { path: "", label: "Home", icon: "explore", match: (r) => r.page === "explore" },
-  { path: "image", label: "Image", icon: "image", match: (r) => r.page === "create" && r.kind === "image" },
-  { path: "video", label: "Video", icon: "video", match: (r) => r.page === "create" && r.kind === "video" },
-  { path: "remix", label: "Remix", icon: "remix", match: (r) => r.page === "remix" },
-  { path: "director", label: "Director", icon: "director", match: (r) => r.page === "director" },
-  { path: "models", label: "Models", icon: "layers", match: (r) => r.page === "models" },
-  { path: "presets", label: "Presets", icon: "presets", match: (r) => r.page === "presets" },
-  { path: "assets", label: "Assets", icon: "assets", match: (r) => r.page === "assets" },
-];
+const M = messages(
+  {
+    home: "Home",
+    image: "Image",
+    video: "Video",
+    remix: "Remix",
+    director: "Director",
+    models: "Models",
+    presets: "Presets",
+    assets: "Assets",
+    keys: "Keys",
+    create: "Create",
+    main: "Main",
+    brand: "ima2 studio home",
+    apiKeys: "API keys",
+    addKey: "Add API key",
+    connecting: "Connecting",
+    reconnecting: "Reconnecting",
+    closed: "Offline",
+    language: "Language",
+  },
+  {
+    home: "홈",
+    image: "이미지",
+    video: "영상",
+    remix: "리믹스",
+    director: "디렉터",
+    models: "모델",
+    presets: "프리셋",
+    assets: "에셋",
+    keys: "키",
+    create: "만들기",
+    main: "주 메뉴",
+    brand: "ima2 스튜디오 홈",
+    apiKeys: "API 키",
+    addKey: "API 키 추가",
+    connecting: "연결 중",
+    reconnecting: "다시 연결 중",
+    closed: "연결 끊김",
+    language: "언어",
+  },
+);
+type Key = keyof typeof M.en;
 
-const STREAM_TEXT: Record<string, string> = {
-  connecting: "Connecting",
-  reconnecting: "Reconnecting",
-  closed: "Offline",
-};
+const NAV: { path: string; label: Key; icon: IconName; match: (r: Route) => boolean }[] = [
+  { path: "", label: "home", icon: "explore", match: (r) => r.page === "explore" },
+  { path: "image", label: "image", icon: "image", match: (r) => r.page === "create" && r.kind === "image" },
+  { path: "video", label: "video", icon: "video", match: (r) => r.page === "create" && r.kind === "video" },
+  { path: "remix", label: "remix", icon: "remix", match: (r) => r.page === "remix" },
+  { path: "director", label: "director", icon: "director", match: (r) => r.page === "director" },
+  { path: "models", label: "models", icon: "layers", match: (r) => r.page === "models" },
+  { path: "presets", label: "presets", icon: "presets", match: (r) => r.page === "presets" },
+  { path: "assets", label: "assets", icon: "assets", match: (r) => r.page === "assets" },
+];
 
 /** Says something only when live updates are not flowing; a working connection needs no badge. */
 function StreamStatus() {
+  const t = useT(M);
   const stream = useStudio((s) => s.stream);
-  const text = STREAM_TEXT[stream];
+  const text = stream === "open" ? null : t(stream);
   return (
     <span className={"stream-status is-" + stream} role="status">
       {text ? (
@@ -45,16 +85,17 @@ function StreamStatus() {
 }
 
 function KeysButton({ route }: { route: Route }) {
+  const t = useT(M);
   const loaded = useStudio((s) => s.catalog !== null);
   const keyed = useStudio((s) => s.keys.filter((k) => k.configured).length);
   return (
     <a className="btn" href="#/keys" aria-current={route.page === "keys" ? "page" : undefined}>
       <Icon name="key" size={15} />
       {loaded && keyed === 0 ? (
-        "Add API key"
+        t("addKey")
       ) : (
         <>
-          API keys{" "}
+          {t("apiKeys")}{" "}
           {keyed > 0 ? <span className="key-count">{keyed}</span> : null}
         </>
       )}
@@ -62,21 +103,41 @@ function KeysButton({ route }: { route: Route }) {
   );
 }
 
+/** Two languages, so one button names the other one. */
+function LanguageSwitch() {
+  const t = useT(M);
+  const locale = useLocale();
+  const next = LOCALES.find((l) => l.id !== locale)!;
+  return (
+    <button
+      type="button"
+      className="btn btn-ghost lang-switch"
+      lang={next.id}
+      aria-label={t("language") + ": " + next.label}
+      onClick={() => setLocale(next.id)}
+    >
+      {next.label}
+    </button>
+  );
+}
+
 function TopBar({ route }: { route: Route }) {
+  const t = useT(M);
   return (
     <header className="topbar">
-      <a className="brand" href="#/" aria-label="ima2 studio home">
+      <a className="brand" href="#/" aria-label={t("brand")}>
         <Logo />
       </a>
-      <nav className="nav" aria-label="Main">
+      <nav className="nav" aria-label={t("main")}>
         {NAV.map((item) => (
-          <a key={item.label} href={"#/" + item.path} aria-current={item.match(route) ? "page" : undefined}>
-            {item.label}
+          <a key={item.path} href={"#/" + item.path} aria-current={item.match(route) ? "page" : undefined}>
+            {t(item.label)}
           </a>
         ))}
       </nav>
       <div className="topbar-right">
         <StreamStatus />
+        <LanguageSwitch />
         <KeysButton route={route} />
       </div>
     </header>
@@ -84,28 +145,29 @@ function TopBar({ route }: { route: Route }) {
 }
 
 function BottomBar({ route }: { route: Route }) {
-  const item = (path: string, label: string, icon: IconName, current: boolean) => (
+  const t = useT(M);
+  const item = (path: string, label: Key, icon: IconName, current: boolean) => (
     <a href={"#/" + path} aria-current={current ? "page" : undefined}>
       <Icon name={icon} size={20} />
-      {label}
+      {t(label)}
     </a>
   );
   return (
-    <nav className="bottombar" aria-label="Main">
-      {item("", "Home", "explore", route.page === "explore")}
-      {item("remix", "Remix", "remix", route.page === "remix")}
+    <nav className="bottombar" aria-label={t("main")}>
+      {item("", "home", "explore", route.page === "explore")}
+      {item("remix", "remix", "remix", route.page === "remix")}
       <a
         className="bottom-create"
         href="#/video"
         aria-current={route.page === "create" ? "page" : undefined}
-        aria-label="Create"
+        aria-label={t("create")}
       >
         <span className="create-pill">
           <Icon name="sparkle" size={20} />
         </span>
       </a>
-      {item("assets", "Assets", "assets", route.page === "assets")}
-      {item("keys", "Keys", "key", route.page === "keys")}
+      {item("assets", "assets", "assets", route.page === "assets")}
+      {item("keys", "keys", "key", route.page === "keys")}
     </nav>
   );
 }
@@ -133,6 +195,9 @@ function Page({ route }: { route: Route }) {
 
 export function App() {
   const route = useRoute();
+  // Subscribing here re-renders the tree on a language change, so plain label helpers
+  // (tr) pick it up too, without remounting and losing what the user typed.
+  useLocale();
   return (
     <div className="app">
       <TopBar route={route} />
@@ -143,3 +208,4 @@ export function App() {
     </div>
   );
 }
+
