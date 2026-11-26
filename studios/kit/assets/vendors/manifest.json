@@ -24,26 +24,40 @@
     {
       "id": "alibaba",
       "name": "Alibaba Cloud",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "alibaba.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://www.alibabacloud.com/"
+        }
+      ],
+      "sourceUrl": "https://www.alibabacloud.com/",
       "pageUrl": "https://www.alibabacloud.com/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "modifications": "extracted verbatim from inline SVG at https://www.alibabacloud.com/"
     },
     {
       "id": "tencent",
-      "name": "Tencent Cloud",
-      "files": [],
-      "sourceUrl": null,
+      "name": "Tencent Hunyuan",
+      "files": [
+        {
+          "file": "tencent.png",
+          "variant": "primary",
+          "format": "png",
+          "sourceUrl": "https://github.com/Tencent-Hunyuan.png?size=460",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/Tencent-Hunyuan.png?size=460",
       "pageUrl": "https://www.tencentcloud.com/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
+      "modifications": "none; GitHub org avatar"
     },
     {
       "id": "kling",
@@ -55,7 +69,7 @@
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
       "modifications": "none",
-      "missing": "Page exposed icon-sized logo files and a payment logo; none was established as a standalone current brand asset rather than an app icon."
+      "missing": "https://klingai.com/ returned HTTP 200; header inline SVG is not well-formed XML (unquoted boolean attributes), and https://github.com/KlingAIResearch.png?size=460 returns JPEG bytes."
     },
     {
       "id": "minimax",
@@ -67,7 +81,7 @@
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
       "modifications": "none",
-      "missing": "Site links WebP logo images, not a standalone SVG or PNG discovered in this pass."
+      "missing": "https://www.minimax.io/ returned HTTP 200 with WebP header logos; https://github.com/MiniMax-AI.png?size=460 returned JPEG bytes. WebP would require changing the test outside the permitted directory."
     },
     {
       "id": "vidu",
@@ -89,51 +103,85 @@
     },
     {
       "id": "google",
-      "name": "Google",
-      "files": [],
-      "sourceUrl": null,
+      "name": "Google AI",
+      "files": [
+        {
+          "file": "google.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg"
+        },
+        {
+          "file": "google-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__dark.height-25.svg"
+        }
+      ],
+      "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg",
       "pageUrl": "https://ai.google.dev/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "The Google G on the developer page is linked as a favicon; the other Google SVG did not render as a complete recognizable logo in the local preview."
+      "modifications": "none"
     },
     {
       "id": "openai",
       "name": "OpenAI",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "openai.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://openai.com/brand/"
+        }
+      ],
+      "sourceUrl": "https://openai.com/brand/",
       "pageUrl": "https://openai.com/brand/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "https://openai.com/brand/ — direct relation to OpenAI services, follow guidelines, do not alter or imply endorsement.",
-      "modifications": "none",
-      "missing": "Brand page gives usage guidelines, but no standalone logo file was identified in the retrieved page."
+      "modifications": "extracted verbatim from inline SVG at https://openai.com/brand/"
     },
     {
       "id": "xai",
       "name": "xAI",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "xai.png",
+          "variant": "primary",
+          "format": "png",
+          "sourceUrl": "https://github.com/xai-org.png?size=460",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/xai-org.png?size=460",
       "pageUrl": "https://x.ai/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
+      "modifications": "none; GitHub org avatar"
     },
     {
       "id": "meta",
       "name": "Meta",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "meta.png",
+          "variant": "primary",
+          "format": "png",
+          "sourceUrl": "https://github.com/meta.png?size=460",
+          "width": 400,
+          "height": 400
+        }
+      ],
+      "sourceUrl": "https://github.com/meta.png?size=460",
       "pageUrl": "https://about.meta.com/brand/resources/meta/company-brand/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "Brand page returned an access/interstitial response to curl."
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
+      "modifications": "none; GitHub org avatar"
     },
     {
       "id": "black-forest-labs",
@@ -146,13 +194,25 @@
           "sourceUrl": "https://bfl.ai/brand/logotype-black.png",
           "width": 570,
           "height": 140
+        },
+        {
+          "file": "black-forest-labs-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://bfl.ai/brand/logotype-white.svg"
+        },
+        {
+          "file": "black-forest-labs-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://bfl.ai/brand/symbol-black.svg"
         }
       ],
       "sourceUrl": "https://bfl.ai/brand/logotype-black.png",
-      "pageUrl": "https://bfl.ai/",
+      "pageUrl": "https://bfl.ai/brand",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "license": "See https://bfl.ai/brand for brand usage terms; publication alone does not establish reuse permission.",
       "modifications": "none"
     },
     {
@@ -165,7 +225,7 @@
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
       "modifications": "none",
-      "missing": "Logo SVG URLs linked by the official page returned HTTP errors to curl."
+      "missing": "https://ideogram.ai/_astro/new-logo.wmOvXw7A.svg returned HTTP 403; https://github.com/ideogram-oss.png?size=460 returned JPEG bytes."
     },
     {
       "id": "recraft",
@@ -188,14 +248,32 @@
     {
       "id": "pixverse",
       "name": "PixVerse",
-      "files": [],
-      "sourceUrl": null,
-      "pageUrl": "https://pixverse.ai/",
-      "firstParty": false,
+      "files": [
+        {
+          "file": "pixverse.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg"
+        },
+        {
+          "file": "pixverse-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-light-20261103.svg"
+        },
+        {
+          "file": "pixverse-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-icon-dark.svg"
+        }
+      ],
+      "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg",
+      "pageUrl": "https://pixverse.ai/brand",
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "See https://pixverse.ai/brand for brand usage terms; publication alone does not establish reuse permission.",
+      "modifications": "none"
     },
     {
       "id": "heygen",
@@ -251,14 +329,20 @@
     {
       "id": "veed",
       "name": "VEED",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "veed.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://www.veed.io/"
+        }
+      ],
+      "sourceUrl": "https://www.veed.io/",
       "pageUrl": "https://www.veed.io/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "modifications": "extracted verbatim from inline SVG at https://www.veed.io/"
     },
     {
       "id": "meigen",
@@ -270,7 +354,7 @@
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
       "modifications": "none",
-      "missing": "Official project page did not expose an identifiable standalone logo file."
+      "missing": "https://github.com/MeiGen-AI/InfiniteTalk returned HTTP 200 and links a JPEG project logo; https://github.com/MeiGen-AI.png?size=460 returned JPEG bytes."
     },
     {
       "id": "sync",
@@ -305,6 +389,12 @@
           "variant": "primary",
           "format": "svg",
           "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg"
+        },
+        {
+          "file": "topaz-labs-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/68d1aa55ea71e44b7916c8e3_topaz-logo-(r)-white.svg"
         }
       ],
       "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg",
@@ -341,14 +431,26 @@
     {
       "id": "elevenlabs",
       "name": "ElevenLabs",
-      "files": [],
-      "sourceUrl": null,
-      "pageUrl": "https://elevenlabs.io/",
-      "firstParty": false,
+      "files": [
+        {
+          "file": "elevenlabs.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg"
+        },
+        {
+          "file": "elevenlabs-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-white.svg"
+        }
+      ],
+      "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg",
+      "pageUrl": "https://elevenlabs.io/brand",
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "See https://elevenlabs.io/brand for brand usage terms; publication alone does not establish reuse permission.",
+      "modifications": "none"
     },
     {
       "id": "cartesia",
@@ -359,13 +461,25 @@
           "variant": "primary",
           "format": "svg",
           "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg"
+        },
+        {
+          "file": "cartesia-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-white.svg"
+        },
+        {
+          "file": "cartesia-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://www.cartesia.ai/brand/black-archie.svg"
         }
       ],
       "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg",
-      "pageUrl": "https://cartesia.ai/",
+      "pageUrl": "https://www.cartesia.ai/brand",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "license": "See https://www.cartesia.ai/brand for brand usage terms; publication alone does not establish reuse permission.",
       "modifications": "none"
     },
     {
@@ -398,43 +512,67 @@
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
       "modifications": "none",
-      "missing": "Official project page exposed an organization logos image, not an identifiable standalone ACE-Step logo."
+      "missing": "https://github.com/ace-step/ACE-Step returned HTTP 200 with a combined organization-logos image; https://github.com/ace-step.png?size=460 returned JPEG bytes."
     },
     {
       "id": "tripo",
       "name": "Tripo",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "tripo.png",
+          "variant": "primary",
+          "format": "png",
+          "sourceUrl": "https://github.com/VAST-AI-Research.png?size=460",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/VAST-AI-Research.png?size=460",
       "pageUrl": "https://www.tripo3d.ai/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
+      "modifications": "none; GitHub org avatar (VAST / Tripo)"
     },
     {
       "id": "meshy",
       "name": "Meshy",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "meshy.png",
+          "variant": "primary",
+          "format": "png",
+          "sourceUrl": "https://github.com/meshy-dev.png?size=460",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "sourceUrl": "https://github.com/meshy-dev.png?size=460",
       "pageUrl": "https://www.meshy.ai/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
+      "modifications": "none; GitHub org avatar"
     },
     {
       "id": "higgsfield",
       "name": "Higgsfield",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "higgsfield.png",
+          "variant": "primary",
+          "format": "png",
+          "sourceUrl": "https://github.com/higgsfield-ai.png?size=460",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/higgsfield-ai.png?size=460",
       "pageUrl": "https://higgsfield.ai/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
+      "modifications": "none; GitHub org avatar"
     },
     {
       "id": "byteplus",
@@ -463,26 +601,44 @@
     {
       "id": "fal",
       "name": "fal",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "fal.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://fal.ai/"
+        }
+      ],
+      "sourceUrl": "https://fal.ai/",
       "pageUrl": "https://fal.ai/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "modifications": "extracted verbatim from inline SVG at https://fal.ai/"
     },
     {
       "id": "replicate",
       "name": "Replicate",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "replicate.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://replicate.com/"
+        },
+        {
+          "file": "replicate-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://replicate.com/"
+        }
+      ],
+      "sourceUrl": "https://replicate.com/",
       "pageUrl": "https://replicate.com/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "No identifiable standalone official SVG or PNG logo was located in the retrieved official page during this pass."
+      "modifications": "extracted verbatim from inline SVG at https://replicate.com/"
     },
     {
       "id": "atlascloud",
@@ -505,14 +661,20 @@
     {
       "id": "sume",
       "name": "Sume",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "sume.svg",
+          "variant": "primary",
+          "format": "svg",
+          "sourceUrl": "https://sume.com/"
+        }
+      ],
+      "sourceUrl": "https://sume.com/",
       "pageUrl": "https://sume.com/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "Site logo is inline SVG; no standalone non-favicon SVG or PNG was identified in the retrieved page."
+      "modifications": "extracted verbatim from inline SVG at https://sume.com/"
     }
   ]
 }
