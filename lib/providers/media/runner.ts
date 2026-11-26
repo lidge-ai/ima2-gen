@@ -125,7 +125,7 @@ async function runToCompletion(deps: MediaRunnerDeps, prepared: PreparedMediaJob
 
 async function executeMediaJob(deps: MediaRunnerDeps, prepared: PreparedMediaJob, opts: MediaLaunchOptions, controller: AbortController): Promise<MediaJobResult> {
   const { adapter, credential } = prepared;
-  const actx: MediaAdapterContext = { apiKey: credential.apiKey!, extra: credential.extra, fetch: deps.fetch ?? globalThis.fetch, signal: controller.signal };
+  const actx: MediaAdapterContext = { apiKey: credential.apiKey ?? "", extra: credential.extra, fetch: deps.fetch ?? globalThis.fetch, signal: controller.signal };
   const state: ExecState = { job: null, finish: {} };
   try {
     return await runToCompletion(deps, prepared, opts, actx, state);

@@ -1,5 +1,12 @@
 import type { MediaProviderAdapter } from "./contract.js";
 import { adapter as byteplus } from "./direct/byteplus/index.js";
+import { adapter as byteplusVision } from "./direct/byteplus-vision.js";
+import { adapter as kling } from "./direct/kling/index.js";
+import { adapter as alibaba } from "./direct/alibaba.js";
+import { adapter as minimax } from "./direct/minimax.js";
+import { adapter as vidu } from "./direct/vidu.js";
+import { adapter as pixverse } from "./direct/pixverse.js";
+import { adapter as tencent } from "./direct/tencent.js";
 import { adapter as google } from "./direct/google.js";
 import { adapter as googleVertex } from "./direct/google-vertex.js";
 import { adapter as xai } from "./direct/xai.js";
@@ -18,6 +25,8 @@ import { adapter as stability } from "./direct/stability.js";
 import { adapter as fal } from "./aggregator/fal.js";
 import { adapter as sume } from "./aggregator/sume.js";
 import { adapter as atlascloud } from "./aggregator/atlascloud.js";
+import { adapter as replicate } from "./aggregator/replicate.js";
+import { adapter as openrouter } from "./aggregator/openrouter.js";
 
 /**
  * Every media adapter the server can route to, in registration order. Within a
@@ -28,11 +37,11 @@ import { adapter as atlascloud } from "./aggregator/atlascloud.js";
  */
 export const BUILTIN_MEDIA_ADAPTERS: readonly MediaProviderAdapter[] = [
   // L2 direct (China-based makers)
-  byteplus,
+  byteplus, byteplusVision, kling, alibaba, minimax, vidu, pixverse, tencent,
   // L3 direct video, audio and avatar
   google, googleVertex, xai, sync, heygen, veed, topazVideo, mirelo, elevenlabs, cartesia,
   // L4 direct image
   bfl, ideogram, recraft, topazImage, stability,
   // L1 aggregators (after every direct route)
-  fal, sume, atlascloud,
+  fal, replicate, openrouter, atlascloud, sume,
 ];

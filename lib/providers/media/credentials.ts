@@ -12,6 +12,8 @@ export interface ResolvedMediaCredential {
   missingExtra: string[];
   /** Every secret value, for redaction. */
   secrets: string[];
+  /** A secret extra field has a value (some vendors authenticate with an access-key pair alone). */
+  hasSecretExtra: boolean;
 }
 
 export interface MediaKeyLookup {
@@ -59,22 +61,28 @@ export function resolveMediaCredential(spec: MediaCredentialSpec, lookup: MediaK
   const extraSources: Record<string, MediaKeySource> = {};
   const missingExtra: string[] = [];
   const secrets = key.apiKey ? [key.apiKey] : [];
+  let hasSecretExtra = false;
   for (const field of spec.extraFields ?? []) {
     const fromEnv = nonEmpty(lookup.env[field.envVar]);
     const value = fromEnv ?? nonEmpty(stored[field.name]);
     extraSources[field.name] = fromEnv ? "env" : value ? "config" : "none";
     if (value) {
       extra[field.name] = value;
-      if (field.secret) secrets.push(value);
+      if (field.secret) { secrets.push(value); hasSecretExtra = true; }
     } else if (field.required) {
       missingExtra.push(field.name);
     }
   }
-  return { apiKey: key.apiKey, source: key.source, extra, extraSources, missingExtra, secrets };
+  return { apiKey: key.apiKey, source: key.source, extra, extraSources, missingExtra, secrets, hasSecretExtra };
 }
 
+/**
+ * Usable when the main key or any secret extra field is set (L2: Kling's newer API key and
+ * Tencent's SecretId/SecretKey are extras), and no required extra is missing. The adapter
+ * reports a credential its chosen endpoint still lacks as its own auth error.
+ */
 export function credentialReady(resolved: ResolvedMediaCredential): boolean {
-  return Boolean(resolved.apiKey) && resolved.missingExtra.length === 0;
+  return (Boolean(resolved.apiKey) || resolved.hasSecretExtra) && resolved.missingExtra.length === 0;
 }
 
 /** One key-store entry per vocabulary; the first registered adapter defines it. */

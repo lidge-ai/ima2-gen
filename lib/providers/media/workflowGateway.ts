@@ -54,7 +54,7 @@ export async function createWorkflowGateway(deps: MediaRunnerDeps, extras: Gatew
         throw new WorkflowError("MEDIA_KEY_MISSING", `No key saved for ${chosen.adapter.label} (needed for ${modelId})`, { status: 400, category: "auth" });
       }
       const cred = keys.resolve(chosen.adapter);
-      return { adapter: chosen.adapter, ctx: { apiKey: cred.apiKey!, extra: cred.extra, fetch: fetchImpl } };
+      return { adapter: chosen.adapter, ctx: { apiKey: cred.apiKey ?? "", extra: cred.extra, fetch: fetchImpl } };
     },
     fetch: fetchImpl,
     ...(extras.planText ? { planText: extras.planText } : {}),

@@ -281,3 +281,25 @@ test("outputs served as octet-stream are typed from their bytes", async () => {
     await s.done();
   }
 });
+
+test("a secret extra field alone makes a route usable, and asset:// inputs reach the adapter untouched", async () => {
+  const submitted: { inputs: readonly { url?: string }[] }[] = [];
+  const adapter = makeFakeAdapter({
+    extraFields: [{ name: "accessKey", envVar: "FAKE_ACCESS_KEY", secret: true, required: false }],
+    script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }], submitted: submitted as never },
+  });
+  const s = await setup([adapter], { keys: {} });
+  try {
+    await assert.rejects(prepareMediaJob(s.deps, body()), { code: "MEDIA_KEY_MISSING" });
+    const deps = { ...s.deps, env: { FAKE_ACCESS_KEY: "access-secret-000111" } };
+    const req = body({ task: "image-to-video", inputs: [{ role: "first-frame", url: "asset://portrait-42" }] });
+    const prepared = await prepareMediaJob(deps, req);
+    assert.equal(prepared.credential.apiKey, undefined);
+    await launchMediaJob(deps, prepared, { requestId: "req-extra-only" }).done;
+    assert.equal(submitted[0]!.inputs[0]!.url, "asset://portrait-42");
+    assert.ok(!JSON.stringify(s.events).includes("access-secret-000111"));
+    await assert.rejects(prepareMediaJob(deps, body({ task: "image-to-video", inputs: [{ role: "first-frame", url: "file:///etc/hosts" }] })), { code: "MEDIA_INPUT_INVALID" });
+  } finally {
+    await s.done();
+  }
+});

@@ -13,7 +13,7 @@ export const VENDOR_ASSET_DIR = join("studios", "kit", "assets", "vendors");
 
 type Variant = "primary" | "dark" | "light" | "mark";
 const VARIANTS: readonly Variant[] = ["primary", "dark", "light", "mark"];
-const SAFE_FILE = /^[a-z0-9][a-z0-9._-]*\.(svg|png|webp)$/i;
+const SAFE_FILE = /^[a-z0-9][a-z0-9._-]*\.(svg|png|webp|jpe?g)$/i;
 
 interface ManifestVendor {
   id: string;

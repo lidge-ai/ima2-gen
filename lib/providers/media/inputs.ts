@@ -26,6 +26,7 @@ export interface MediaInputDirs {
   maxBytes: number;
 }
 
+const ASSET_URL = /^asset:\/\/[A-Za-z0-9._-]{1,200}$/;
 const INPUT_REF = /^input:([a-f0-9]{24}\.[a-z0-9]{2,4})$/;
 
 function invalid(message: string): MediaJobError {
@@ -83,7 +84,8 @@ function checkRef(raw: unknown): MediaInputRef {
 export async function resolveMediaInputRef(raw: unknown, dirs: MediaInputDirs): Promise<MediaInput> {
   const ref = checkRef(raw);
   if (ref.url) {
-    if (!/^https:\/\//i.test(ref.url)) throw invalid("Input url must be https");
+    // asset://<id> names a vendor-side asset (BytePlus portrait assets); the adapter decides if it accepts it.
+    if (!/^https:\/\//i.test(ref.url) && !ASSET_URL.test(ref.url)) throw invalid("Input url must be https or asset://<id>");
     return { role: ref.role, url: ref.url, mimeType: baseMime(ref.mimeType) || mimeFromName(ref.url) || "application/octet-stream" };
   }
   if (ref.dataUrl) {
