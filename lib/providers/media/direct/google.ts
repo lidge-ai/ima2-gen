@@ -15,11 +15,8 @@ const models: readonly MediaModelSpec[] = [{
 interface Interaction { id?: string; status?: string; steps?: Array<{ type?: string; content?: Array<{type?: string; data?: string; uri?: string; mime_type?: string}> }>; }
 function headers(ctx: MediaAdapterContext): Record<string, string> { return { 'x-goog-api-key': ctx.apiKey, 'Api-Revision':'2026-05-20' }; }
 async function call<T>(ctx: MediaAdapterContext, suffix: string, options: Parameters<typeof httpJson>[3]): Promise<T> {
-  try { return await httpJson<T>(ctx, 'Google request', url(ctx, suffix), options); }
-  catch (error) {
-    if (error instanceof MediaHttpError) throw new MediaHttpError({message:'Google request failed',reason:error.reason,category:error.category,retryable:error.retryable,...(error.status === undefined ? {} : {status:error.status})});
-    throw new Error('Google request failed');
-  }
+  // httpJson scrubs the key from vendor error bodies, so the detail can reach the user.
+  return await httpJson<T>(ctx, 'Google request', url(ctx, suffix), options);
 }
 function url(ctx: MediaAdapterContext, suffix: string): string { return (ctx.baseUrl ?? base).replace(/\/$/, '') + suffix; }
 function body(request: MediaSubmitRequest, spec: MediaModelSpec): Record<string, unknown> {
@@ -77,5 +74,5 @@ export const adapter: MediaProviderAdapter = {
     if (!/^[A-Za-z0-9_-]+$/.test(job.providerJobId)) throw invalidRequest('Invalid interaction id');
     await call(ctx, '/interactions/' + job.providerJobId + '/cancel', {method:'POST',headers:headers(ctx)});
   },
-  normalizeError(error) { return error instanceof MediaHttpError ? normalizeMediaError('GOOGLE', new MediaHttpError({message:'Google request failed',reason:error.reason,category:error.category,retryable:error.retryable,...(error.status === undefined ? {} : {status:error.status})})) : normalizeMediaError('GOOGLE', new Error('Google request failed')); },
+  normalizeError: (error) => normalizeMediaError('GOOGLE', error),
 };

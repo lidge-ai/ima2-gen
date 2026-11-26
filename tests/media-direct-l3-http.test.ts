@@ -94,3 +94,9 @@ test("a parked synchronous result is handed out once, then reads as expired", ()
   assert.equal(again.status, "failed");
   assert.equal(again.status === "failed" && again.error.code, "DEMO_RESULT_EXPIRED");
 });
+
+test("normalizeMediaError scrubs PEM private keys, including a truncated one", () => {
+  const pem = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n-----END PRIVATE KEY-----";
+  assert.ok(!normalizeMediaError("DEMO", new Error("bad " + pem + " here")).message.includes("MIIEvQ"));
+  assert.ok(!normalizeMediaError("DEMO", new Error("bad " + pem.slice(0, 50))).message.includes("MIIEvQ"));
+});

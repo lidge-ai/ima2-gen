@@ -131,6 +131,7 @@ export function invalidRequest(message: string, reason = "INVALID_REQUEST"): Med
  * second line behind the exact-value redaction done where errors are raised.
  */
 const KEY_SHAPES: readonly RegExp[] = [
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,
   /\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/g,
   /\b(?:sk|xai|vp|key)[-_][A-Za-z0-9_-]{12,}/g,
   /\bAIza[0-9A-Za-z_-]{30,}/g,

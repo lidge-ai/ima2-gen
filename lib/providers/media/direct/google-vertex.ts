@@ -1,6 +1,6 @@
 import { createHash, createSign } from 'node:crypto';
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from '../contract.js';
-import { assertAllowed, findModel, fromBase64, httpJson, invalidRequest, MediaHttpError, normalizeMediaError, protocolError, readVendorOptions, toBase64 } from './l3-http.js';
+import { assertAllowed, findModel, fromBase64, httpJson, invalidRequest, MediaHttpError, normalizeMediaError, protocolError, readVendorOptions, redact, toBase64 } from './l3-http.js';
 
 const docs='https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate';
 const models: readonly MediaModelSpec[] = ['veo-3.1','veo-3.1-fast','veo-3.1-lite'].map((name, i) => ({
@@ -8,6 +8,11 @@ const models: readonly MediaModelSpec[] = ['veo-3.1','veo-3.1-fast','veo-3.1-lit
  params:{durationsSec:[4,6,8],resolutions:i===0?['720p','1080p','4k']:['720p','1080p'],aspectRatios:['16:9','9:16'],nativeAudio:true,negativePrompt:true,seed:true},pricing:[],docsUrl:docs,
 }));
 interface Account { type: string; project_id: string; client_email: string; private_key: string }
+/** A context whose key and secret extras cover the token, the service JSON and its private key. */
+function scrubbingContext(ctx:MediaAdapterContext,a:Account,apiKey:string):MediaAdapterContext {
+ return {...ctx,apiKey,extra:{...(ctx.extra??{}),serviceJson:ctx.apiKey,privateKey:a.private_key}};
+}
+const SECRET_EXTRAS=['serviceJson','privateKey'] as const;
 const cache = new Map<string,{token:string; until:number}>();
 function account(ctx:MediaAdapterContext):Account {
  let a:Account;
@@ -31,17 +36,14 @@ async function token(ctx:MediaAdapterContext,a:Account):Promise<string> {
  const id=a.client_email+':'+createHash('sha256').update(ctx.apiKey).digest('hex'); const old=cache.get(id);
  if (old && old.until>Date.now()) return old.token;
  const assertion=jwt(a); const payload=new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion});
- let res:{access_token?:string;expires_in?:number};
- try { res=await httpJson(ctx,'Google token','https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:payload.toString()}); }
- catch (error) { if (error instanceof MediaHttpError) throw new MediaHttpError({message:'Google token request failed',reason:error.reason,category:error.category,retryable:error.retryable,...(error.status === undefined ? {} : {status:error.status})}); throw new Error('Google token request failed'); }
+ // Token errors (invalid_grant, disabled account) are actionable; the JSON, private key and assertion are scrubbed.
+ const res:{access_token?:string;expires_in?:number}=await httpJson(scrubbingContext(ctx,a,assertion),'Google token','https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:payload.toString(),secretExtras:SECRET_EXTRAS});
  if (!res.access_token || typeof res.expires_in !== 'number') throw protocolError('Token response missing credentials');
  cache.set(id,{token:res.access_token,until:Date.now()+Math.max(0,res.expires_in-60)*1000}); return res.access_token;
 }
 async function call<T>(ctx:MediaAdapterContext,a:Account,url:string,method:'GET'|'POST',json?:unknown):Promise<T> {
  const access=await token(ctx,a);
- const safeCtx:MediaAdapterContext={...ctx,apiKey:access,extra:{...(ctx.extra??{}),serviceJson:ctx.apiKey,privateKey:a.private_key}};
- try { return await httpJson<T>(safeCtx,'Vertex request',url,{method,headers:{Authorization:'Bearer '+access},...(json===undefined?{}:{json}),secretExtras:['serviceJson','privateKey']}); }
- catch (error) { if (error instanceof MediaHttpError) throw new MediaHttpError({message:'Vertex request failed',reason:error.reason,category:error.category,retryable:error.retryable,...(error.status === undefined ? {} : {status:error.status})}); throw new Error('Vertex request failed'); }
+ return await httpJson<T>(scrubbingContext(ctx,a,access),'Vertex request',url,{method,headers:{Authorization:'Bearer '+access},...(json===undefined?{}:{json}),secretExtras:SECRET_EXTRAS});
 }
 function payload(req:MediaSubmitRequest,spec:MediaModelSpec):unknown {
  readVendorOptions(req,[]); if (!spec.tasks.includes(req.task)) throw invalidRequest('Unsupported task');
@@ -56,11 +58,21 @@ function payload(req:MediaSubmitRequest,spec:MediaModelSpec):unknown {
  for (const [key,val] of Object.entries({durationSeconds:req.durationSec,resolution:req.resolution,aspectRatio:req.aspectRatio,negativePrompt:req.negativePrompt,seed:req.seed,sampleCount:req.count})) if (val!==undefined) parameters[key]=val;
  return {instances:[instance],parameters};
 }
-interface Operation {name?:string;done?:boolean;error?:unknown;response?:{videos?:Array<{bytesBase64Encoded?:string;mimeType?:string}>}}
-function operationState(op:Operation):MediaJobState {
+interface Operation {name?:string;done?:boolean;error?:{code?:number;message?:string};response?:{videos?:Array<{bytesBase64Encoded?:string;mimeType?:string}>;raiMediaFilteredCount?:number;raiMediaFilteredReasons?:string[]}}
+/** A finished operation's error (google.rpc.Status). Code 3 is INVALID_ARGUMENT, 8 RESOURCE_EXHAUSTED. */
+function operationError(error:NonNullable<Operation['error']>,secrets:readonly string[]):MediaJobState {
+ const detail=typeof error.message==='string'?redact(error.message,secrets).slice(0,300):'';
+ const message='Vertex operation failed'+(detail?': '+detail:'');
+ const category=error.code===3?'invalid-request':error.code===8?'rate-limit':'upstream';
+ return {status:'failed',error:normalizeMediaError('GOOGLE_VERTEX',new MediaHttpError({message,reason:category==='upstream'?'OPERATION_FAILED':category==='rate-limit'?'RESOURCE_EXHAUSTED':'INVALID_ARGUMENT',category,retryable:category==='rate-limit',providerState:'done'}))};
+}
+function operationState(op:Operation,secrets:readonly string[]):MediaJobState {
  if (!op.done) return {status:'running'};
- if (op.error) return {status:'failed',error:normalizeMediaError('GOOGLE_VERTEX',protocolError('Vertex operation failed'))};
+ if (op.error) return operationError(op.error,secrets);
  const videos=op.response?.videos;
+ if (!videos?.length && op.response?.raiMediaFilteredCount) {
+  return {status:'failed',error:{code:'GOOGLE_VERTEX_MODERATION',category:'moderation',retryable:false,message:'Vertex filtered the video'+(op.response.raiMediaFilteredReasons?.length?': '+op.response.raiMediaFilteredReasons.join('; ').slice(0,300):'')}};
+ }
  if (!videos?.length || videos.some(v=>!v.bytesBase64Encoded)) return {status:'failed',error:normalizeMediaError('GOOGLE_VERTEX',protocolError('Vertex returned no inline video'))};
  return {status:'succeeded',outputs:videos.map(v=>({kind:'video',bytes:fromBase64(v.bytesBase64Encoded!),mimeType:v.mimeType ?? 'video/mp4'}))};
 }
@@ -70,6 +82,6 @@ export const adapter:MediaProviderAdapter={
  listModels:()=>models,
  async validateKey(ctx) { const a=account(ctx),loc=location(ctx); try { await call(ctx,a,root(ctx,loc)+modelPath(a,loc,models[0]!.upstreamId),'GET'); return {ok:true}; } catch(error) { if(error instanceof MediaHttpError && (error.status===401 || error.status===403)) return {ok:false,reason:'Invalid or unauthorized service account'}; throw error; } },
  async submit(ctx,req) { const spec=findModel(models,req.model), data=payload(req,spec), a=account(ctx),loc=location(ctx),path=modelPath(a,loc,spec.upstreamId); const result=await call<Operation>(ctx,a,root(ctx,loc)+path+':predictLongRunning','POST',data); if(!result.name?.startsWith(path.slice(1)+'/operations/') || !/^[a-zA-Z0-9/_.-]+$/.test(result.name)) throw protocolError('Invalid operation name'); return {providerJobId:result.name,resume:{model:spec.upstreamId}}; },
- async poll(ctx,job:MediaJobRef) { const a=account(ctx),loc=location(ctx),spec=models.find(m=>m.upstreamId===job.resume?.model); if(!spec) throw invalidRequest('Invalid operation model'); const path=modelPath(a,loc,spec.upstreamId); if(!job.providerJobId.startsWith(path.slice(1)+'/operations/') || !/^[a-zA-Z0-9/_.-]+$/.test(job.providerJobId)) throw invalidRequest('Invalid operation name'); return operationState(await call<Operation>(ctx,a,root(ctx,loc)+path+':fetchPredictOperation','POST',{operationName:job.providerJobId})); },
- normalizeError(error) { return error instanceof MediaHttpError ? normalizeMediaError('GOOGLE_VERTEX',new MediaHttpError({message:'Vertex request failed',reason:error.reason,category:error.category,retryable:error.retryable,...(error.status === undefined ? {} : {status:error.status})})) : normalizeMediaError('GOOGLE_VERTEX',new Error('Vertex request failed')); },
+ async poll(ctx,job:MediaJobRef) { const a=account(ctx),loc=location(ctx),spec=models.find(m=>m.upstreamId===job.resume?.model); if(!spec) throw invalidRequest('Invalid operation model'); const path=modelPath(a,loc,spec.upstreamId); if(!job.providerJobId.startsWith(path.slice(1)+'/operations/') || !/^[a-zA-Z0-9/_.-]+$/.test(job.providerJobId)) throw invalidRequest('Invalid operation name'); return operationState(await call<Operation>(ctx,a,root(ctx,loc)+path+':fetchPredictOperation','POST',{operationName:job.providerJobId}),[ctx.apiKey,a.private_key]); },
+ normalizeError:(error)=>normalizeMediaError('GOOGLE_VERTEX',error),
 };

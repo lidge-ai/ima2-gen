@@ -67,3 +67,21 @@ test('serializes first frame as a Vertex image',async()=>{
  await adapter.submit(ctx,{...req,task:'image-to-video',inputs:[{role:'first-frame',bytes:new Uint8Array([97]),mimeType:'image/png'}]});
  assert.deepEqual(JSON.parse(String(calls[1]?.init?.body)),{instances:[{prompt:'a cat',image:{bytesBase64Encoded:'YQ==',mimeType:'image/png'}}],parameters:{}});
 });
+
+test('a failed operation keeps Google\'s reason but no part of the private key', async () => {
+ const job={providerJobId:'projects/test-project/locations/us-central1/publishers/google/models/veo-3.1-generate-001/operations/err',resume:{model:'veo-3.1-generate-001'}};
+ const pemBody=privateKey.split('\n')[1]!;
+ const {ctx}=fake([{body:{access_token:'err-token',expires_in:3600}},{body:{done:true,error:{code:3,message:'Prompt rejected. key='+privateKey}}},{body:{done:true,error:{code:8,message:'Quota exceeded'}}}]);
+ ctx.apiKey=JSON.stringify({type:'service_account',project_id:'test-project',client_email:'err@example.test',private_key:privateKey});
+ const invalid=await adapter.poll(ctx,job);
+ assert.equal(invalid.status,'failed');
+ if(invalid.status==='failed'){ assert.equal(invalid.error.category,'invalid-request'); assert.match(invalid.error.message,/Prompt rejected/); assert.ok(!invalid.error.message.includes(pemBody.slice(0,24))); }
+ const quota=await adapter.poll(ctx,job);
+ if(quota.status==='failed'){ assert.equal(quota.error.category,'rate-limit'); assert.equal(quota.error.retryable,true); assert.match(quota.error.message,/Quota exceeded/); }
+});
+
+test('HTTP error detail survives normalization once secrets are scrubbed', async () => {
+ const {ctx}=fake([{body:{access_token:'detail-token',expires_in:3600}},{status:400,body:{error:{message:'resolution 4k is not supported for this model'}}}]);
+ ctx.apiKey=JSON.stringify({type:'service_account',project_id:'test-project',client_email:'detail@example.test',private_key:privateKey});
+ await assert.rejects(adapter.submit(ctx,req),(error:Error)=>{ assert.match(adapter.normalizeError(error).message,/resolution 4k is not supported/); return true; });
+});
