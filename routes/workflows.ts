@@ -88,9 +88,15 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
     try {
       const requestId = readRequestId(req.body?.requestId);
       const { d, wfDeps, prepared } = await prepare(req, AbortSignal.timeout(60_000));
+      // Web instance (lib/webAccess): a run needs a complete published-price estimate inside the caps.
+      const webUser = typeof res.locals.webUser?.email === "string" ? res.locals.webUser.email as string : undefined;
+      if (ctx.webAccess?.spend) {
+        const usd = prepared.estimate.complete ? prepared.estimate.usd : null;
+        await ctx.webAccess.spend.admit({ requestId, model: "workflow:" + prepared.definition.id, email: webUser ?? "unknown", estimate: { usd, basis: "exact" } });
+      }
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
       const runsDir = join(ctx.config.storage.configDir, "workflow-runs");
-      void launchWorkflowJob(d, wfDeps, prepared, { requestId, sessionId, runsDir });
+      void launchWorkflowJob(d, wfDeps, prepared, { requestId, sessionId, runsDir, ...(webUser ? { meta: { webUser } } : {}) });
       res.status(202).json({ requestId, workflow: prepared.definition.id, estimate: prepared.estimate, steps: summarizeSteps(prepared.plan), notes: prepared.notes });
     } catch (error) {
       sendWorkflowError(res, error);

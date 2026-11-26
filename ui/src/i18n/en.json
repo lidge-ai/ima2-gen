@@ -1,4 +1,8 @@
 {
+  "webAccess": {
+    "signedInAs": "Signed in as {email}",
+    "logout": "Log out"
+  },
   "mediaPicker": {
     "model": "Media model",
     "loadError": "Could not load media models.",
