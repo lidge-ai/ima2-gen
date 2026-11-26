@@ -111,8 +111,12 @@
 }
 @media (max-width: 600px) {
   .director-form > .workflow-params {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+.director-form > .workflow-params > * {
+  min-width: 0;
+  word-break: keep-all;
 }
 @media (max-width: 900px) {
   .director-layout {
