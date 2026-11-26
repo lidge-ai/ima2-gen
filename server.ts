@@ -46,6 +46,7 @@ import { errInfo, thrownFields } from "./lib/errInfo.js";
 import { TEMPLATE_FILE_MAX_BYTES } from "./lib/nodeTemplateFile.js";
 import { templateImportBodyErrors } from "./routes/nodeTemplates.js";
 import { loadGrokCredentials } from "./lib/xaiAuth.js";
+import { webAccessFromEnv } from "./lib/webAccess/index.js";
 import {
   cleanupExpiredMcpTempReferences,
   MCP_TEMP_REFERENCE_JSON_BODY_LIMIT_BYTES,
@@ -274,6 +275,11 @@ export function buildApp(ctx: RuntimeContext) {
   configureApiCachePolicy(app);
   configureLogger({ level: ctx.config.log.level });
   app.use(createRequestLogger());
+  // Web deployment (IMA2_WEB_ACCESS): the Access gate runs before every other handler.
+  if (ctx.webAccess?.gate) {
+    app.use(ctx.webAccess.gate);
+    ctx.webAccess.registerRoutes?.(app);
+  }
   app.use(access.mediaHeaders);
   access.registerSessionRoutes(app, budget);
   app.use(access.guard);
@@ -463,6 +469,7 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
     vertexProjectId: loadedVertexKey.projectId ?? undefined,
     hasVertexKey: !!loadedVertexKey.json,
     geminiAuthMode,
+    webAccess: webAccessFromEnv(process.env, config.storage.configDir),
     oauthReadyPromise: oauthReadyPromise as unknown as Promise<void>,
     markOAuthReady: ({ url, port }: { url?: string; port?: number } = {}) => {
       if (url) ctx.oauthUrl = url;
@@ -493,6 +500,9 @@ export async function createRuntimeContext(overrides: StartServerOverrides = {})
 export async function startServer(overrides: StartServerOverrides = {}) {
   const ctx = await createRuntimeContext(overrides);
   assertLanAccessConfiguration(ctx.config.server.host, ctx.config.server.lanToken);
+  if (ctx.webAccess && !isLoopbackHost(ctx.config.server.host)) {
+    throw new Error("[server.security] IMA2_WEB_ACCESS expects IMA2_HOST=127.0.0.1 behind cloudflared.");
+  }
   // Validate the lazy origin configuration before any storage migration.
   void ctx.config.server.publicOrigins;
   await migrateGeneratedStorage(ctx);

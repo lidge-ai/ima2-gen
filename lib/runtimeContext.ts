@@ -3,6 +3,7 @@ import { config as runtimeConfigDefault } from "../config.js";
 import type { McpConnectionManager } from "./mcp/connectionManager.js";
 import type { ComfyWorkflowRecord } from "./comfyWorkflowStore.js";
 import type { Launcher } from "./runtimeIdentity.js";
+import type { WebAccess } from "./webAccess/index.js";
 
 export type AppConfig = typeof runtimeConfigDefault;
 export type ApiKeySource = "env" | "oauth" | "config" | "none" | undefined;
@@ -73,6 +74,8 @@ export interface RuntimeContext {
   vertexProjectId: string | undefined;
   hasVertexKey: boolean;
   geminiAuthMode?: string | undefined;
+  /** Cloudflare Access gate and spend guard for the shared web instance (IMA2_WEB_ACCESS); undefined locally. */
+  webAccess?: Pick<WebAccess, "spend"> & Partial<Pick<WebAccess, "gate" | "registerRoutes">> | undefined;
   /** Lazily attached by routes/mcpConnections.ts (030 WP3); undefined until MCP routes register. */
   mcpConnectionManager?: McpConnectionManager | undefined;
   /**

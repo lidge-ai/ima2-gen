@@ -11,6 +11,7 @@ import { getMediaRegistry } from "../lib/providers/media/registry.js";
 import { VENDOR_ASSET_DIR, VENDOR_ASSET_PREFIX, loadVendorLogos } from "../lib/providers/media/vendorAssets.js";
 import { launchMediaJob, prepareMediaJob, type MediaRunnerDeps } from "../lib/providers/media/runner.js";
 import { parseMediaJobBody } from "../lib/providers/media/validate.js";
+import { estimateMediaUsd } from "../lib/webAccess/spendGuard.js";
 import { abortJob, listJobs, listTerminalJobs } from "../lib/inflight.js";
 import { logError } from "../lib/logger.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
@@ -52,6 +53,12 @@ function optionalId(raw: unknown): string | null {
   return typeof raw === "string" && raw.length > 0 && raw.length <= 200 ? raw : null;
 }
 
+/** Signed-in email on the web instance (lib/webAccess); undefined on a local install. */
+function webUserEmail(res: Response): string | undefined {
+  const email = (res.locals.webUser as { email?: unknown } | undefined)?.email;
+  return typeof email === "string" ? email : undefined;
+}
+
 export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, overrides: Partial<MediaRunnerDeps> = {}) {
   const ctx = requireRuntimeContext(ctxRaw);
   const deps = () => mediaRunnerDeps(ctx, overrides);
@@ -90,7 +97,15 @@ export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, o
       const body = parseMediaJobBody(req.body);
       const d = deps();
       const prepared = await prepareMediaJob(d, body);
-      const { done } = launchMediaJob(d, prepared, { requestId, sessionId: optionalId(req.body?.sessionId), clientNodeId: optionalId(req.body?.clientNodeId) });
+      const email = webUserEmail(res);
+      const spend = ctx.webAccess?.spend;
+      if (spend) {
+        await spend.admit({ requestId, model: prepared.spec.id, email: email ?? "unknown", estimate: estimateMediaUsd(prepared.spec, prepared.request) });
+      }
+      const { done } = launchMediaJob(d, prepared, {
+        requestId, sessionId: optionalId(req.body?.sessionId), clientNodeId: optionalId(req.body?.clientNodeId),
+        ...(email ? { meta: { webUser: email } } : {}),
+      });
       done.catch(() => { /* published as an "error" event on the job */ });
       res.status(202).json({ requestId, model: prepared.spec.id, adapter: prepared.adapter.id });
     } catch (error) {

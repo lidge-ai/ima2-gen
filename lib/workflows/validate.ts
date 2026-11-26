@@ -1,5 +1,5 @@
 import { realpath } from "node:fs/promises";
-import { isAbsolute, sep } from "node:path";
+import { isAbsolute, resolve, sep } from "node:path";
 import { inputError, WorkflowError } from "./errors.js";
 import type {
   ColorsField, EnumField, IntegerField, MediaField, ModelSlot, PlanEnv, PlanNote, ResolvedSlot, TextField, WorkflowCombo,
@@ -47,9 +47,18 @@ function readColors(field: ColorsField, raw: unknown): readonly string[] | undef
   return (raw as string[]).map((c) => c.toLowerCase());
 }
 
+/** Windows paths compare case-insensitively; POSIX paths as written. */
+const fold = (path: string): string => (process.platform === "win32" ? path.toLowerCase() : path);
+
 function inside(path: string, roots: readonly string[]): boolean {
-  return roots.some((root) => path === root || path.startsWith(root.endsWith(sep) ? root : root + sep));
+  const p = fold(path);
+  return roots.some((raw) => {
+    const root = fold(raw);
+    return p === root || p.startsWith(root.endsWith(sep) ? root : root + sep);
+  });
 }
+
+const outside = (field: MediaField) => inputError(field.name, "file is outside the allowed folders");
 
 async function readMediaRef(field: MediaField, raw: unknown, options: ValidateOptions): Promise<WorkflowMediaRef> {
   if (!raw || typeof raw !== "object") throw inputError(field.name, "each item must be an object");
@@ -61,11 +70,16 @@ async function readMediaRef(field: MediaField, raw: unknown, options: ValidateOp
     return { url: item.url, mimeType };
   }
   if (typeof item.path !== "string" || !isAbsolute(item.path)) throw inputError(field.name, "needs an https url or a stored file");
+  // Check the written path first so a path outside the roots gets the same answer whether or not
+  // it exists (nothing about other folders leaks), then again after realpath so a link inside a
+  // root cannot point out of it.
+  const realRoots = await Promise.all(options.allowedRoots.map((r) => realpath(r).catch(() => resolve(r))));
+  const roots = [...new Set([...options.allowedRoots.map((r) => resolve(r)), ...realRoots])];
+  if (!inside(resolve(item.path), roots)) throw outside(field);
   const real = await realpath(item.path).catch(() => {
     throw inputError(field.name, "file not found");
   });
-  const roots = await Promise.all(options.allowedRoots.map((r) => realpath(r).catch(() => r)));
-  if (!inside(real, roots)) throw inputError(field.name, "file is outside the allowed folders");
+  if (!inside(real, realRoots)) throw outside(field);
   return { path: real, mimeType };
 }
 
