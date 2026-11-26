@@ -76,7 +76,7 @@ export type PersistedInFlight = {
   sessionId?: string | null;
   parentNodeId?: string | null;
   clientNodeId?: string | null;
-  kind?: "classic" | "node" | "multimode" | "video" | "mcp-image" | "mcp-video" | `mcp-action-${string}`;
+  kind?: "classic" | "node" | "multimode" | "image" | "video" | "mcp-image" | "mcp-video" | `mcp-action-${string}`;
 };
 
 export type ServerInFlightJob = {
@@ -250,7 +250,7 @@ export type PresetState = {
   restorePresetIds: (ids: string[]) => void;
 };
 
-export type AppState = PresetState & ReferenceTraySlice & {
+export type AppState = PresetState & ReferenceTraySlice & import("../lib/mediaSelection").MediaSelectionState & {
   // Element-mention catalog (higgsfield 110): full AssetItem records upserted
   // on selection so tray chips survive a fresh store; missing ids block
   // generation until removed or re-synced.
