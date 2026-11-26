@@ -108,6 +108,7 @@ function parseKeyframes(raw: unknown): KeyframeOption[] {
 
 /** Keyframes as xAI wants them, after the rules of lib/grokVideoPins.ts. */
 function keyframesPayload(request: MediaSubmitRequest, keyframes: readonly KeyframeOption[]): Body[] {
+  if (!keyframes.length) return [];
   if (keyframes.length > MAX_KEYFRAMES) throw invalidRequest("at most " + MAX_KEYFRAMES + " keyframes", "INVALID_KEYFRAMES");
   const duration = request.durationSec;
   if (duration === undefined) throw invalidRequest("keyframes need durationSec so their timestamps can be checked", "INVALID_KEYFRAMES");

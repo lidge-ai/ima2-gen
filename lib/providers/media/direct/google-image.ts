@@ -20,7 +20,6 @@ const PREFIX = "GOOGLE_IMAGE";
 const API = "https://generativelanguage.googleapis.com/v1beta";
 const API_REVISION = "2026-05-20";
 const PRICING = "https://aistudio.google.com/docs/pricing";
-const DOCS = "https://aistudio.google.com/docs/image-generation";
 const CHECKED = "2026-11-26";
 const WIDE_RATIOS = ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"];
 const RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"];
