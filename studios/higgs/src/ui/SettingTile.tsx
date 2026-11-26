@@ -60,7 +60,11 @@ function OptionMenu<T extends string | number>({ titleId, caption, value, option
   );
 }
 
-function valueText<T>(current: TileOption<T> | undefined, variant: "tile" | "chip", chipText?: (label: string) => string) {
+function valueText<T>(
+  current: TileOption<T> | undefined,
+  variant: "tile" | "chip",
+  chipText?: (label: string) => string,
+) {
   const label = current?.label ?? "-";
   return variant === "chip" && chipText ? chipText(label) : label;
 }

@@ -1,21 +1,49 @@
-import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { readFileSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
 
 const expectedIds = [
-  'bytedance', 'alibaba', 'tencent', 'kling', 'minimax', 'vidu', 'google',
-  'openai', 'xai', 'meta', 'black-forest-labs', 'ideogram', 'recraft',
-  'pixverse', 'heygen', 'sand-ai', 'veed', 'meigen', 'sync', 'topaz-labs',
-  'mirelo', 'elevenlabs', 'cartesia', 'stability-ai', 'ace-step', 'tripo',
-  'meshy', 'higgsfield', 'byteplus', 'fal', 'replicate', 'atlascloud', 'sume',
+  "bytedance",
+  "alibaba",
+  "tencent",
+  "kling",
+  "minimax",
+  "vidu",
+  "google",
+  "openai",
+  "xai",
+  "meta",
+  "black-forest-labs",
+  "ideogram",
+  "recraft",
+  "pixverse",
+  "heygen",
+  "sand-ai",
+  "veed",
+  "meigen",
+  "sync",
+  "topaz-labs",
+  "mirelo",
+  "elevenlabs",
+  "cartesia",
+  "stability-ai",
+  "ace-step",
+  "tripo",
+  "meshy",
+  "higgsfield",
+  "byteplus",
+  "fal",
+  "replicate",
+  "atlascloud",
+  "sume",
 ];
-const assets = join(dirname(fileURLToPath(import.meta.url)), '../assets/vendors');
+const assets = join(dirname(fileURLToPath(import.meta.url)), "../assets/vendors");
 type Asset = { file: string; variant: string; format: string };
 type Vendor = { id: string; files: Asset[]; missing?: string };
-const manifest = JSON.parse(readFileSync(join(assets, 'manifest.json'), 'utf8')) as {
+const manifest = JSON.parse(readFileSync(join(assets, "manifest.json"), "utf8")) as {
   vendors: Vendor[];
 };
 
@@ -32,24 +60,24 @@ for el in root.iter():
             assert not value.strip().lower().startswith(('http:', 'https:', '//')), 'external href'
 `;
 
-test('vendor manifest covers the supplier and route lists exactly once', () => {
+test("vendor manifest covers the supplier and route lists exactly once", () => {
   assert.deepEqual(manifest.vendors.map((vendor) => vendor.id).sort(), [...expectedIds].sort());
 });
 
-test('vendor files exist and SVG files are safe, well-formed documents', () => {
+test("vendor files exist and SVG files are safe, well-formed documents", () => {
   const seen = new Set<string>();
   for (const vendor of manifest.vendors) {
     assert.ok(vendor.files.length || vendor.missing?.trim(), `${vendor.id} needs a missing reason`);
     for (const file of vendor.files) {
-      assert.match(file.file, new RegExp(`^${vendor.id}(?:-(?:dark|light|mark))?\\.(?:svg|png)$`));
+      assert.match(file.file, new RegExp(`^${vendor.id}(?:-(?:dark|light|mark))?\\.(?:svg|png|jpg|webp)$`));
       assert.ok(!seen.has(file.file), `duplicate file ${file.file}`);
       seen.add(file.file);
-      assert.ok(['primary', 'dark', 'light', 'mark'].includes(file.variant));
+      assert.ok(["primary", "dark", "light", "mark"].includes(file.variant));
       assert.ok(file.file.endsWith(`.${file.format}`));
       const path = join(assets, file.file);
       assert.ok(statSync(path).size > 0, `${file.file} is empty`);
-      if (file.format === 'svg') execFileSync('python3', ['-c', checkSvg, path], { stdio: 'pipe' });
-      else assert.equal(file.format, 'png');
+      if (file.format === "svg") execFileSync("python3", ["-c", checkSvg, path], { stdio: "pipe" });
+      else assert.ok(["png", "jpg", "webp"].includes(file.format), "raster format " + file.format);
     }
   }
 });

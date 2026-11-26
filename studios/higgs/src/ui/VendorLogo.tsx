@@ -5,7 +5,7 @@ const manifests = import.meta.glob<VendorManifest>("../../../kit/assets/vendors/
   eager: true,
   import: "default",
 });
-const urls = import.meta.glob<string>("../../../kit/assets/vendors/*.{svg,png}", {
+const urls = import.meta.glob<string>("../../../kit/assets/vendors/*.{svg,png,jpg,webp}", {
   eager: true,
   query: "?url",
   import: "default",

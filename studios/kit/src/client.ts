@@ -34,23 +34,59 @@ function enc(value: string): string {
   return encodeURIComponent(value);
 }
 
+function keysApi(http: Http) {
+  return {
+    list: () => http.request<{ keys: KeyStatus[] }>("GET", "/api/media/keys").then((r) => r.keys),
+    save: (vocab: string, body: KeySaveBody) =>
+      http.request<{ key: KeyStatus; validation?: { ok: boolean; reason?: string } }>(
+        "PUT",
+        "/api/media/keys/" + enc(vocab),
+        {
+          body,
+        },
+      ),
+    remove: (vocab: string) => http.request<void>("DELETE", "/api/media/keys/" + enc(vocab)),
+    validate: (vocab: string) =>
+      http.request<{ ok: boolean; reason?: string }>("POST", "/api/media/keys/" + enc(vocab) + "/validate"),
+  };
+}
+
+function mediaApi(http: Http) {
+  return {
+    submit: (body: MediaSubmitBody) => http.request<Accepted>("POST", "/api/media", { body }),
+    job: (jobId: string) => http.request<Job>("GET", "/api/media/jobs/" + enc(jobId)),
+    cancel: (jobId: string) => http.request<{ job: Job }>("POST", "/api/media/jobs/" + enc(jobId) + "/cancel"),
+    jobs: (query: { status?: "active" | "all"; limit?: number } = {}) =>
+      http.request<{ jobs: Job[] }>("GET", "/api/media/jobs", { query }).then((r) => r.jobs),
+  };
+}
+
+function historyApi(http: Http) {
+  return {
+    list: (query: HistoryQuery = {}) => http.request<HistoryPage>("GET", "/api/media/history", { query: { ...query } }),
+    remove: (historyId: string) => http.request<void>("DELETE", "/api/media/history/" + enc(historyId)),
+    favorite: (historyId: string, favorite: boolean) =>
+      http.request<{ item: HistoryItem }>("POST", "/api/media/history/" + enc(historyId) + "/favorite", {
+        body: { favorite },
+      }),
+  };
+}
+
+function workflowsApi(http: Http) {
+  return {
+    list: () => http.request<{ workflows: WorkflowDef[] }>("GET", "/api/workflows").then((r) => r.workflows),
+    estimate: (id: string, body: WorkflowRunBody) =>
+      http.request<WorkflowEstimate>("POST", "/api/workflows/" + enc(id) + "/estimate", { body }),
+    run: (id: string, body: WorkflowRunBody) => http.request<Accepted>("POST", "/api/workflows/" + enc(id), { body }),
+  };
+}
+
 export function createStudioClient(options: HttpOptions = {}) {
   const http = new Http(options);
   const client = {
     http,
     catalog: (signal?: AbortSignal) => http.request<Catalog>("GET", "/api/media/catalog", signal ? { signal } : {}),
-    keys: {
-      list: () => http.request<{ keys: KeyStatus[] }>("GET", "/api/media/keys").then((r) => r.keys),
-      save: (vocab: string, body: KeySaveBody) =>
-        http.request<{ key: KeyStatus; validation?: { ok: boolean; reason?: string } }>(
-          "PUT",
-          "/api/media/keys/" + enc(vocab),
-          { body },
-        ),
-      remove: (vocab: string) => http.request<void>("DELETE", "/api/media/keys/" + enc(vocab)),
-      validate: (vocab: string) =>
-        http.request<{ ok: boolean; reason?: string }>("POST", "/api/media/keys/" + enc(vocab) + "/validate"),
-    },
+    keys: keysApi(http),
     uploads: {
       put: (data: Blob | Uint8Array, mimeType: string, filename?: string) =>
         http.request<UploadedInput>("POST", "/api/media/uploads", {
@@ -59,28 +95,9 @@ export function createStudioClient(options: HttpOptions = {}) {
           headers: filename ? { "X-Ima2-Filename": enc(filename) } : {},
         }),
     },
-    media: {
-      submit: (body: MediaSubmitBody) => http.request<Accepted>("POST", "/api/media", { body }),
-      job: (jobId: string) => http.request<Job>("GET", "/api/media/jobs/" + enc(jobId)),
-      cancel: (jobId: string) => http.request<{ job: Job }>("POST", "/api/media/jobs/" + enc(jobId) + "/cancel"),
-      jobs: (query: { status?: "active" | "all"; limit?: number } = {}) =>
-        http.request<{ jobs: Job[] }>("GET", "/api/media/jobs", { query }).then((r) => r.jobs),
-    },
-    history: {
-      list: (query: HistoryQuery = {}) =>
-        http.request<HistoryPage>("GET", "/api/media/history", { query: { ...query } }),
-      remove: (historyId: string) => http.request<void>("DELETE", "/api/media/history/" + enc(historyId)),
-      favorite: (historyId: string, favorite: boolean) =>
-        http.request<{ item: HistoryItem }>("POST", "/api/media/history/" + enc(historyId) + "/favorite", {
-          body: { favorite },
-        }),
-    },
-    workflows: {
-      list: () => http.request<{ workflows: WorkflowDef[] }>("GET", "/api/workflows").then((r) => r.workflows),
-      estimate: (id: string, body: WorkflowRunBody) =>
-        http.request<WorkflowEstimate>("POST", "/api/workflows/" + enc(id) + "/estimate", { body }),
-      run: (id: string, body: WorkflowRunBody) => http.request<Accepted>("POST", "/api/workflows/" + enc(id), { body }),
-    },
+    media: mediaApi(http),
+    history: historyApi(http),
+    workflows: workflowsApi(http),
     events: {
       follow: (subscribe: SubscribeOptions) => followEvents(http, subscribe),
     },

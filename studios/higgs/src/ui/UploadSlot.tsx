@@ -18,10 +18,9 @@ interface Props {
   hint?: string;
 }
 
-/** One drop zone for a single input file. Uploads immediately so submit only sends ids. */
-export function UploadSlot({ label, role, accept, value, onChange, hint }: Props) {
+/** Uploads one file right away and reports busy and error state. */
+function useSlotUpload(role: MediaInputRole, onChange: Props["onChange"]) {
   const studio = useStudioApi();
-  const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const take = async (file: File | undefined) => {
@@ -36,30 +35,59 @@ export function UploadSlot({ label, role, accept, value, onChange, hint }: Props
       setBusy(false);
     }
   };
+  return { busy, error, take };
+}
+
+function SlotPreview({ value, label, onRemove }: { value: SlotValue; label: string; onRemove: () => void }) {
+  const isVideo = value.upload.mimeType.startsWith("video/");
+  return (
+    <>
+      {isVideo ? (
+        <video className="slot-preview" src={value.upload.url} muted playsInline aria-label={value.name} />
+      ) : (
+        <img className="slot-preview" src={value.upload.url} alt={value.name} />
+      )}
+      <button type="button" className="slot-remove" aria-label={"Remove " + label} onClick={onRemove}>
+        <Icon name="close" size={14} />
+      </button>
+    </>
+  );
+}
+
+function SlotEmpty({
+  label,
+  hint,
+  busy,
+  onPick,
+}: {
+  label: string;
+  hint?: string | undefined;
+  busy: boolean;
+  onPick: () => void;
+}) {
+  return (
+    <button type="button" className="slot-empty" onClick={onPick} disabled={busy}>
+      <Icon name={busy ? "clock" : "upload"} />
+      <span>{busy ? "Uploading" : label}</span>
+      {hint ? <span className="slot-hint">{hint}</span> : null}
+    </button>
+  );
+}
+
+/** One drop zone for a single input file. Uploads immediately so submit only sends ids. */
+export function UploadSlot({ label, role, accept, value, onChange, hint }: Props) {
+  const input = useRef<HTMLInputElement>(null);
+  const { busy, error, take } = useSlotUpload(role, onChange);
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
     void take(event.dataTransfer.files[0]);
   };
-  const isVideo = value?.upload.mimeType.startsWith("video/");
   return (
     <div className={"slot" + (value ? " has-file" : "")} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       {value ? (
-        <>
-          {isVideo ? (
-            <video className="slot-preview" src={value.upload.url} muted playsInline aria-label={value.name} />
-          ) : (
-            <img className="slot-preview" src={value.upload.url} alt={value.name} />
-          )}
-          <button type="button" className="slot-remove" aria-label={"Remove " + label} onClick={() => onChange(null)}>
-            <Icon name="close" size={14} />
-          </button>
-        </>
+        <SlotPreview value={value} label={label} onRemove={() => onChange(null)} />
       ) : (
-        <button type="button" className="slot-empty" onClick={() => input.current?.click()} disabled={busy}>
-          <Icon name={busy ? "clock" : "upload"} />
-          <span>{busy ? "Uploading" : label}</span>
-          {hint ? <span className="slot-hint">{hint}</span> : null}
-        </button>
+        <SlotEmpty label={label} hint={hint} busy={busy} onPick={() => input.current?.click()} />
       )}
       <input
         ref={input}

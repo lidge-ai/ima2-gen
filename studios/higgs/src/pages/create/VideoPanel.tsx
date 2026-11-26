@@ -17,6 +17,52 @@ interface Props {
   onOpenPresets: () => void;
 }
 
+function InputTypeToggle({ refMode, set }: { refMode: CreateForm["refMode"]; set: Props["set"] }) {
+  return (
+    <div className="segmented-wide" role="radiogroup" aria-label="Input type">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={refMode === "frames"}
+        onClick={() => set({ refMode: "frames", references: [] })}
+      >
+        <Icon name="image" size={15} /> Frames
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={refMode === "references"}
+        onClick={() => set({ refMode: "references", firstFrame: null, lastFrame: null })}
+      >
+        <Icon name="layers" size={15} /> References
+      </button>
+    </div>
+  );
+}
+
+function FrameSlots({ form, set }: { form: CreateForm; set: Props["set"] }) {
+  return (
+    <div className="slots">
+      <UploadSlot
+        label="Start frame"
+        role="first-frame"
+        accept="image/*"
+        value={form.firstFrame}
+        onChange={(firstFrame) => set({ firstFrame })}
+        hint="Optional"
+      />
+      <UploadSlot
+        label="End frame"
+        role="last-frame"
+        accept="image/*"
+        value={form.lastFrame}
+        onChange={(lastFrame) => set({ lastFrame })}
+        hint="Optional"
+      />
+    </div>
+  );
+}
+
 function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateForm; set: Props["set"] }) {
   const canFrames = model.tasks.includes("image-to-video");
   const canRefs = model.tasks.includes("reference-to-video");
@@ -24,45 +70,9 @@ function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateF
   const refMode = canFrames && canRefs ? form.refMode : canRefs ? "references" : "frames";
   return (
     <>
-      {canFrames && canRefs ? (
-        <div className="segmented-wide" role="radiogroup" aria-label="Input type">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={refMode === "frames"}
-            onClick={() => set({ refMode: "frames", references: [] })}
-          >
-            <Icon name="image" size={15} /> Frames
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={refMode === "references"}
-            onClick={() => set({ refMode: "references", firstFrame: null, lastFrame: null })}
-          >
-            <Icon name="layers" size={15} /> References
-          </button>
-        </div>
-      ) : null}
+      {canFrames && canRefs ? <InputTypeToggle refMode={refMode} set={set} /> : null}
       {refMode === "frames" ? (
-        <div className="slots">
-          <UploadSlot
-            label="Start frame"
-            role="first-frame"
-            accept="image/*"
-            value={form.firstFrame}
-            onChange={(firstFrame) => set({ firstFrame })}
-            hint="Optional"
-          />
-          <UploadSlot
-            label="End frame"
-            role="last-frame"
-            accept="image/*"
-            value={form.lastFrame}
-            onChange={(lastFrame) => set({ lastFrame })}
-            hint="Optional"
-          />
-        </div>
+        <FrameSlots form={form} set={set} />
       ) : (
         <RefSlots
           values={form.references}
@@ -105,6 +115,99 @@ function PromptCard({ model, form, set }: { model: CatalogModel | undefined; for
   );
 }
 
+function ModeTabs({ mode, set }: { mode: CreateForm["mode"]; set: Props["set"] }) {
+  return (
+    <div className="panel-tabs" role="tablist" aria-label="Video mode">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "create"}
+        onClick={() => set({ mode: "create", model: undefined })}
+      >
+        Create video
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "edit"}
+        onClick={() => set({ mode: "edit", model: undefined })}
+      >
+        Edit video
+      </button>
+    </div>
+  );
+}
+
+type Create = ReturnType<typeof useCreate>;
+
+function PanelFoot({ create }: { create: Create }) {
+  return (
+    <div className="panel-foot">
+      {create.blocked && create.model ? <p className="form-hint">{create.blocked}</p> : null}
+      <button
+        className="btn btn-primary btn-generate"
+        type="submit"
+        disabled={!create.canSend}
+        title={create.cost.title}
+      >
+        <span>{create.sending ? "Sending" : "Generate"}</span>
+        <span className="btn-cost">{create.cost.text}</span>
+      </button>
+    </div>
+  );
+}
+
+function SourceInputs({
+  model,
+  form,
+  set,
+  onOpenPresets,
+}: {
+  model: CatalogModel | undefined;
+  form: CreateForm;
+  set: Props["set"];
+  onOpenPresets: () => void;
+}) {
+  if (form.mode === "edit") {
+    return (
+      <UploadSlot
+        label="Video to edit"
+        role="source-video"
+        accept="video/*"
+        value={form.sourceVideo}
+        onChange={(sourceVideo) => set({ sourceVideo })}
+        hint="MP4 or MOV"
+      />
+    );
+  }
+  return (
+    <>
+      <PresetCard
+        preset={findPreset(form.preset)}
+        modelLabel={model?.label}
+        vendor={model?.vendor}
+        onChange={onOpenPresets}
+      />
+      {model ? <CreateInputs model={model} form={form} set={set} /> : null}
+    </>
+  );
+}
+
+function PanelNotices({ create, catalog }: { create: Create; catalog: Catalog }) {
+  return (
+    <>
+      {create.choice.kind === "needs-key" ? (
+        <KeyNotice routes={create.choice.candidates} providers={catalog.providers} />
+      ) : null}
+      {create.error ? (
+        <p className="form-error" role="alert">
+          {create.error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
   const create = useCreate(catalog, form, set);
   const { model } = create;
@@ -118,45 +221,9 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
         void create.submit();
       }}
     >
-      <div className="panel-tabs" role="tablist" aria-label="Video mode">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={form.mode === "create"}
-          onClick={() => set({ mode: "create", model: undefined })}
-        >
-          Create video
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={form.mode === "edit"}
-          onClick={() => set({ mode: "edit", model: undefined })}
-        >
-          Edit video
-        </button>
-      </div>
+      <ModeTabs mode={form.mode} set={set} />
       <div className="panel-body">
-        {form.mode === "create" ? (
-          <PresetCard
-            preset={findPreset(form.preset)}
-            modelLabel={model?.label}
-            vendor={model?.vendor}
-            onChange={onOpenPresets}
-          />
-        ) : null}
-        {form.mode === "edit" ? (
-          <UploadSlot
-            label="Video to edit"
-            role="source-video"
-            accept="video/*"
-            value={form.sourceVideo}
-            onChange={(sourceVideo) => set({ sourceVideo })}
-            hint="MP4 or MOV"
-          />
-        ) : model ? (
-          <CreateInputs model={model} form={form} set={set} />
-        ) : null}
+        <SourceInputs model={model} form={form} set={set} onOpenPresets={onOpenPresets} />
         <PromptCard model={model} form={form} set={set} />
         <ModelPicker
           models={catalog.models}
@@ -167,27 +234,9 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
         />
         {model ? <ParamControls model={model} form={form} set={set} /> : null}
         {model ? <AdvancedFields model={model} form={form} set={set} /> : null}
-        {create.choice.kind === "needs-key" ? (
-          <KeyNotice routes={create.choice.candidates} providers={catalog.providers} />
-        ) : null}
-        {create.error ? (
-          <p className="form-error" role="alert">
-            {create.error}
-          </p>
-        ) : null}
+        <PanelNotices create={create} catalog={catalog} />
       </div>
-      <div className="panel-foot">
-        {create.blocked && model ? <p className="form-hint">{create.blocked}</p> : null}
-        <button
-          className="btn btn-primary btn-generate"
-          type="submit"
-          disabled={!create.canSend}
-          title={create.cost.title}
-        >
-          <span>{create.sending ? "Sending" : "Generate"}</span>
-          <span className="btn-cost">{create.cost.text}</span>
-        </button>
-      </div>
+      <PanelFoot create={create} />
     </form>
   );
 }

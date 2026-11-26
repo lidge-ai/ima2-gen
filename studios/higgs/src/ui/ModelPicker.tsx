@@ -72,14 +72,28 @@ interface PanelProps {
   onPick: (modelId: string) => void;
 }
 
-function VendorFilter({ vendors, vendor, setVendor }: { vendors: readonly string[]; vendor: string | null; setVendor: (v: string | null) => void }) {
+function VendorFilter({
+  vendors,
+  vendor,
+  setVendor,
+}: {
+  vendors: readonly string[];
+  vendor: string | null;
+  setVendor: (v: string | null) => void;
+}) {
   return (
     <div className="chip-row" role="group" aria-label="Filter by maker">
       <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>
         All
       </button>
       {vendors.map((v) => (
-        <button key={v} type="button" className="chip" aria-pressed={vendor === v} onClick={() => setVendor(vendor === v ? null : v)}>
+        <button
+          key={v}
+          type="button"
+          className="chip"
+          aria-pressed={vendor === v}
+          onClick={() => setVendor(vendor === v ? null : v)}
+        >
           <VendorLogo id={v} size={14} withName />
         </button>
       ))}
