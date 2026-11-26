@@ -89,7 +89,7 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   const tasks = routeTasks(route);
   const task: string = (tasks as string[]).includes(wantedTask) ? wantedTask : tasks[0] ?? route.tasks[0] ?? wantedTask;
   const params = route.params;
-  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: model.vendor };
+  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: model.logo?.name || model.vendor };
   const durationSec = keepDuration(previous?.durationSec, params.durationsSec);
   const resolution = keepLabel(previous?.resolution, params.resolutions, defaultResolution(params.resolutions));
   const aspectRatio = keepLabel(previous?.aspectRatio, params.aspectRatios, undefined);

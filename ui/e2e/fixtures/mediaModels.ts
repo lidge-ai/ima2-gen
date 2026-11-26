@@ -87,7 +87,10 @@ const MODELS: ModelSpec[] = [
   ] },
 ];
 
-const logo = (name: string, file: string) => ({ id: file.split(".")[0], name, urls: { primary: "/media-assets/vendors/" + file }, source: null });
+// Files drawn in white ink are listed as the "dark" variant in the kit manifest and get a dark plate.
+const WHITE_INK = new Set(["bytedance.png", "sync.svg"]);
+const logo = (name: string, file: string) => ({ id: file.split(".")[0], name,
+  urls: { [WHITE_INK.has(file) ? "dark" : "primary"]: "/media-assets/vendors/" + file }, source: null });
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 
 export interface MediaFixture {

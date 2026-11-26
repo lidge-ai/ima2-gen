@@ -90,6 +90,7 @@ async function captureAll(stage: Stage): Promise<void> {
 
   // A longer, sharper clip on one model, then a model that offers neither: the note says what moved.
   app.media.keys.add("byteplus");
+  await page.reload();
   await stage.openWindow();
   await stage.kind(1);
   await stage.pick("bytedance/seedance-2.5");
