@@ -202,14 +202,16 @@ describe("loadCliDefaults", { timeout: 60_000 }, () => {
         defaults: { image: "oauth/gpt-5.6-luna", video: 42 },
         oauth: { model: "ignored" },
       }));
+      // NODE_TEST_CONTEXT would make the child talk to this runner as if it were a test file.
+      const { NODE_TEST_CONTEXT: _testContext, ...parentEnv } = process.env;
       // Async with a hard kill: a hung child must not block the event loop (spawnSync
-      // would also block node:test's own timeout) and stdin is closed so it cannot wait on it.
+      // would also block node:test's own timeout from firing).
       const child = await execFileAsync(process.execPath, [
         "--import", "tsx",
         "--input-type=module",
         "--eval",
         `const { loadCliDefaults } = await import(${JSON.stringify(moduleUrl)}); console.log(JSON.stringify(loadCliDefaults()));`,
-      ], { encoding: "utf8", env: { ...process.env, IMA2_CONFIG_DIR: dir }, timeout: STEP_TIMEOUT_MS, killSignal: "SIGKILL" })
+      ], { encoding: "utf8", env: { ...parentEnv, IMA2_CONFIG_DIR: dir }, timeout: STEP_TIMEOUT_MS, killSignal: "SIGKILL" })
         .catch((error: Error & { killed?: boolean; stderr?: string }) => {
           throw new Error(`loadCliDefaults child failed${error.killed ? ` (killed after ${STEP_TIMEOUT_MS} ms)` : ""}: ${error.stderr ?? error.message}`);
         });
