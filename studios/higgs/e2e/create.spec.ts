@@ -52,10 +52,11 @@ test("video: a model without any key asks for one and cannot run", async ({ page
   await page.getByRole("button", { name: /^Model: / }).click();
   const picker = page.getByRole("dialog", { name: "Choose a model" });
   await picker.getByLabel("Search models").fill("vidu");
-  await expect(picker.getByText("Needs key")).toBeVisible();
+  await expect(picker.getByText("Needs a key (add it after picking)")).toBeVisible();
+  await expect(picker.getByText("Ready with your keys")).toHaveCount(0);
   await picker.getByRole("button", { name: /Vidu Q4/ }).click();
-  await expect(page.getByText("Add an API key to run this model")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Vidu API" })).toHaveAttribute("href", "#/keys?focus=vidu");
+  await expect(page.getByText("Add a key to run this model")).toBeVisible();
+  await expect(page.getByRole("link", { name: "All API keys" })).toHaveAttribute("href", "#/keys?focus=vidu");
   await page.getByLabel("Prompt").fill("anything");
   await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
 });
@@ -69,7 +70,7 @@ test("video: choosing a route and settings changes the estimate", async ({ page 
   await expect(generate).toContainText("$0.75");
   await page.getByRole("button", { name: /^Run through: / }).click();
   await page.getByRole("dialog").getByRole("button", { name: /BytePlus ModelArk/ }).click();
-  await expect(page.getByText("Add an API key to run this model")).toBeVisible();
+  await expect(page.getByText("Add a key to run this model")).toBeVisible();
   await expect(generate).toBeDisabled();
 });
 

@@ -242,7 +242,8 @@
           "width": 716,
           "height": 716,
           "shape": "mark",
-          "sourceKind": "brand-kit"
+          "sourceKind": "brand-kit",
+          "trim": 0.2
         },
         {
           "file": "openai-mark.svg",
@@ -252,7 +253,8 @@
           "width": 716,
           "height": 716,
           "shape": "mark",
-          "sourceKind": "brand-kit"
+          "sourceKind": "brand-kit",
+          "trim": 0.2
         },
         {
           "file": "openai.svg",
@@ -620,7 +622,8 @@
           "width": 92,
           "height": 92,
           "shape": "mark",
-          "sourceKind": "site-asset"
+          "sourceKind": "site-asset",
+          "trim": 0.24
         }
       ],
       "sourceUrl": "https://sync.so/sync-logo.svg",
@@ -726,7 +729,8 @@
           "width": 876,
           "height": 876,
           "shape": "mark",
-          "sourceKind": "brand-kit"
+          "sourceKind": "brand-kit",
+          "trim": 0.28
         },
         {
           "file": "elevenlabs.svg",
@@ -894,7 +898,8 @@
           "width": 128,
           "height": 128,
           "shape": "mark",
-          "sourceKind": "brand-kit"
+          "sourceKind": "brand-kit",
+          "trim": 0.1
         },
         {
           "file": "meshy-mark.svg",
@@ -904,7 +909,8 @@
           "width": 128,
           "height": 128,
           "shape": "mark",
-          "sourceKind": "brand-kit"
+          "sourceKind": "brand-kit",
+          "trim": 0.1
         }
       ],
       "sourceUrl": "https://cdn.meshy.ai/landing-assets/media-kit/meshy-logo-light.svg",
