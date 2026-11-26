@@ -1,4 +1,8 @@
 {
+  "webAccess": {
+    "signedInAs": "{email}(으)로 로그인됨",
+    "logout": "로그아웃"
+  },
   "mediaPicker": {
     "model": "미디어 모델",
     "loadError": "미디어 모델을 불러오지 못했어요.",
