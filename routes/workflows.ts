@@ -10,7 +10,7 @@ import type { WorkflowDefinition, WorkflowGateway, WorkflowLocalOps } from "../l
 import { createOAuthPlanText } from "../lib/providers/media/workflowPlanner.js";
 import { createSessionRoutes, type SessionRoute } from "../lib/providers/media/sessionRoutes.js";
 import { logError } from "../lib/logger.js";
-import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
+import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
 import { mediaRunnerDeps, readRequestId, sendMediaError } from "./media.js";
 
 export interface WorkflowRouteOptions {

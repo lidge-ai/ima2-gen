@@ -34,8 +34,8 @@ function perSecond(rows: ReadonlyArray<readonly [string, number]>): MediaPrice[]
  */
 function perToken(rows: ReadonlyArray<readonly [string, number, number]>): MediaPrice[] {
   return rows.flatMap(([resolution, noVideoIn, videoIn]): MediaPrice[] => [
-    { unit: "1k-tokens", usd: noVideoIn / 1000, variant: "no-video-in " + resolution, source: PRICE_SOURCE + "#video-generation-models", checkedAt: CHECKED },
-    { unit: "1k-tokens", usd: videoIn / 1000, variant: "video-in " + resolution, source: PRICE_SOURCE + "#video-generation-models", checkedAt: CHECKED },
+    { unit: "1k-tokens", usd: noVideoIn / 1000, variant: "no-video-in " + resolution, source: PRICE_SOURCE, checkedAt: CHECKED },
+    { unit: "1k-tokens", usd: videoIn / 1000, variant: "video-in " + resolution, source: PRICE_SOURCE, checkedAt: CHECKED },
   ]);
 }
 
