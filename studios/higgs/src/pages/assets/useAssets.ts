@@ -15,8 +15,12 @@ export function useAssetModels(client: StudioClient, history: readonly HistoryIt
       } while (next && active);
       if (active) setModels([...found].sort());
     }
-    void collect().catch(() => { if (active) setModels([]); });
-    return () => { active = false; };
+    void collect().catch(() => {
+      if (active) setModels([]);
+    });
+    return () => {
+      active = false;
+    };
   }, [client, history, revision]);
   return models;
 }
@@ -31,15 +35,25 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
   useEffect(() => {
     let active = true;
     setLoading(true);
-    client.history.list({ kind, model, favorite, limit: 40 }).then((page) => {
-      if (!active) return;
-      setItems(page.items);
-      setCursor(page.nextCursor);
-      setError("");
-    }, (err: unknown) => {
-      if (active) setError(err instanceof Error ? err.message : String(err));
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    client.history
+      .list({ kind, model, favorite, limit: 40 })
+      .then(
+        (page) => {
+          if (!active) return;
+          setItems(page.items);
+          setCursor(page.nextCursor);
+          setError("");
+        },
+        (err: unknown) => {
+          if (active) setError(err instanceof Error ? err.message : String(err));
+        },
+      )
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [client, kind, model, favorite, history, revision]);
   const loadMore = useCallback(async () => {
     if (!cursor) return;

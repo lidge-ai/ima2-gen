@@ -19,7 +19,10 @@ function matches(model: CatalogModel, query: string, vendor: string | null): boo
   if (vendor && model.vendor !== vendor) return false;
   if (!query) return true;
   const hay = (model.label + " " + model.id + " " + model.vendor).toLowerCase();
-  return query.toLowerCase().split(/\s+/).every((word) => hay.includes(word));
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .every((word) => hay.includes(word));
 }
 
 function specChips(model: CatalogModel): string[] {
@@ -43,8 +46,14 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
             {model.params.nativeAudio ? <span className="tag">Audio</span> : null}
           </span>
           <span className="model-row-sub">
-            {specChips(model).map((chip) => <span key={chip} className="spec">{chip}</span>)}
-            <span>{vendorDisplayName(model.vendor)} · {modelKinds(model)}</span>
+            {specChips(model).map((chip) => (
+              <span key={chip} className="spec">
+                {chip}
+              </span>
+            ))}
+            <span>
+              {vendorDisplayName(model.vendor)} · {modelKinds(model)}
+            </span>
           </span>
         </span>
         <span className="model-row-meta">
@@ -72,7 +81,15 @@ export function ModelPicker({ models, kind, value, onChange, variant = "row", ta
   const close = () => setOpen(false);
   return (
     <div className={"picker picker-" + variant}>
-      <button ref={trigger} type="button" className="picker-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={"Model: " + (current?.label ?? "none")} onClick={() => setOpen(!open)}>
+      <button
+        ref={trigger}
+        type="button"
+        className="picker-trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={"Model: " + (current?.label ?? "none")}
+        onClick={() => setOpen(!open)}
+      >
         {variant === "row" ? <span className="setting-caption">Model</span> : null}
         <span className="setting-value picker-value">
           {current ? <VendorLogo id={current.vendor} size={variant === "row" ? 18 : 16} /> : null}
@@ -80,20 +97,52 @@ export function ModelPicker({ models, kind, value, onChange, variant = "row", ta
         </span>
         <Icon name="chevron" size={16} />
       </button>
-      <Popover open={open} onClose={close} label="Choose a model" className="model-popover" anchor={trigger} placement={variant === "row" ? "right" : "top"}>
+      <Popover
+        open={open}
+        onClose={close}
+        label="Choose a model"
+        className="model-popover"
+        anchor={trigger}
+        placement={variant === "row" ? "right" : "top"}
+      >
         <div className="popover-search">
           <Icon name="search" />
-          <input autoFocus type="search" placeholder="Search models" aria-label="Search models" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            autoFocus
+            type="search"
+            placeholder="Search models"
+            aria-label="Search models"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
         <div className="chip-row" role="group" aria-label="Filter by maker">
-          <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>All</button>
+          <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>
+            All
+          </button>
           {vendors.map((v) => (
-            <button key={v} type="button" className="chip" aria-pressed={vendor === v} onClick={() => setVendor(vendor === v ? null : v)}><VendorLogo id={v} size={14} withName /></button>
+            <button
+              key={v}
+              type="button"
+              className="chip"
+              aria-pressed={vendor === v}
+              onClick={() => setVendor(vendor === v ? null : v)}
+            >
+              <VendorLogo id={v} size={14} withName />
+            </button>
           ))}
         </div>
         <ul className="model-list" aria-label="Models">
           {shown.map((model) => (
-            <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => { onChange(model.id); close(); }} />
+            <ModelRow
+              key={model.id}
+              model={model}
+              selected={model.id === value}
+              onPick={() => {
+                onChange(model.id);
+                close();
+              }}
+            />
           ))}
           {shown.length === 0 ? <li className="empty-line">No model matches.</li> : null}
         </ul>

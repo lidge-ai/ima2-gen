@@ -2,21 +2,11 @@ import type { HistoryItem, WorkflowDef } from "@ima2/studio-kit";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile } from "../../studio/handoff.ts";
 import { Feed } from "../../ui/Feed.tsx";
-import {
-  WorkflowInput,
-  WorkflowParams,
-  WorkflowSteps,
-  Generate,
-} from "../workflow/WorkflowFields.tsx";
+import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import "../../styles/director.css";
 
-const order = [
-  "director-studio",
-  "director-cinema",
-  "director-cast",
-  "director-locations",
-];
+const order = ["director-studio", "director-cinema", "director-cast", "director-locations"];
 
 function DirectorSidebar({
   def,
@@ -29,15 +19,11 @@ function DirectorSidebar({
 }) {
   const history = useStudio((s) => s.history);
   const elements = history.filter(
-    (item) =>
-      item.workflow === "director-cast" ||
-      item.workflow === "director-locations",
+    (item) => item.workflow === "director-cast" || item.workflow === "director-locations",
   );
   const attach = async (item: HistoryItem) => {
     const name = item.workflow === "director-cast" ? "cast" : "location";
-    const input = def.inputs.find(
-      (entry) => entry.name === name && entry.kind !== "text",
-    );
+    const input = def.inputs.find((entry) => entry.name === name && entry.kind !== "text");
     if (!input) {
       form.setError(`${def.label} does not accept ${name} attachments`);
       return;
@@ -57,26 +43,17 @@ function DirectorSidebar({
       const upload = await form.studio.upload(file);
       form.setFiles((old) => ({
         ...old,
-        [name]: [
-          ...(old[name] ?? []),
-          { role: input.role ?? "reference-image", upload, name: file.name },
-        ],
+        [name]: [...(old[name] ?? []), { role: input.role ?? "reference-image", upload, name: file.name }],
       }));
     } catch (err) {
-      form.setError(
-        err instanceof Error ? err.message : "Could not attach result",
-      );
+      form.setError(err instanceof Error ? err.message : "Could not attach result");
     }
   };
   return (
     <aside className="director-sidebar">
       <nav aria-label="Director workflows">
         {workflows.map((item) => (
-          <a
-            key={item.id}
-            href={`#/director/${item.id}`}
-            aria-current={def.id === item.id ? "page" : undefined}
-          >
+          <a key={item.id} href={`#/director/${item.id}`} aria-current={def.id === item.id ? "page" : undefined}>
             {item.label}
           </a>
         ))}
@@ -92,8 +69,7 @@ function DirectorSidebar({
                 void attach(item);
               }}
             >
-              Attach {item.workflow === "director-cast" ? "cast" : "location"}:{" "}
-              {item.prompt || item.model}
+              Attach {item.workflow === "director-cast" ? "cast" : "location"}: {item.prompt || item.model}
             </button>
           ))
         ) : (
@@ -104,13 +80,7 @@ function DirectorSidebar({
   );
 }
 
-function DirectorWorkspace({
-  def,
-  workflows,
-}: {
-  def: WorkflowDef;
-  workflows: readonly WorkflowDef[];
-}) {
+function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: readonly WorkflowDef[] }) {
   const form = useWorkflow(def);
   return (
     <div className="director-layout">
@@ -167,9 +137,7 @@ export function DirectorPage({ workflow }: { workflow?: string }) {
   if (!def)
     return (
       <div className="empty" role="status">
-        {loaded
-          ? "No director workflows available"
-          : "Loading director workflows"}
+        {loaded ? "No director workflows available" : "Loading director workflows"}
       </div>
     );
   return <DirectorWorkspace key={def.id} def={def} workflows={workflows} />;

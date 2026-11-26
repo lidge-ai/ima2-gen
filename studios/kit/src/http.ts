@@ -43,7 +43,18 @@ export class Http {
     return this.baseUrl + path + (qs ? "?" + qs : "");
   }
 
-  async request<T>(method: string, path: string, init: { body?: unknown; raw?: BodyInit; contentType?: string; headers?: Record<string, string>; signal?: AbortSignal; query?: Record<string, string | number | boolean | undefined> } = {}): Promise<T> {
+  async request<T>(
+    method: string,
+    path: string,
+    init: {
+      body?: unknown;
+      raw?: BodyInit;
+      contentType?: string;
+      headers?: Record<string, string>;
+      signal?: AbortSignal;
+      query?: Record<string, string | number | boolean | undefined>;
+    } = {},
+  ): Promise<T> {
     const headers: Record<string, string> = { Accept: "application/json", ...this.headers, ...init.headers };
     let body: BodyInit | undefined;
     if (init.raw !== undefined) {

@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 
 export type Placement = "bottom" | "top" | "right";
@@ -22,10 +30,18 @@ function place(anchor: DOMRect, panel: DOMRect, placement: Placement): CSSProper
   const side = placement === "right" && !fitsRight ? "bottom" : placement;
   const clampX = (x: number) => Math.max(MARGIN, Math.min(x, vw - panel.width - MARGIN));
   const clampY = (y: number) => Math.max(MARGIN, Math.min(y, vh - panel.height - MARGIN));
-  if (side === "right") return { left: anchor.right + 12, top: clampY(anchor.top + anchor.height / 2 - panel.height / 2) };
+  if (side === "right")
+    return { left: anchor.right + 12, top: clampY(anchor.top + anchor.height / 2 - panel.height / 2) };
   const below = anchor.bottom + 6;
   const above = anchor.top - 6 - panel.height;
-  const top = side === "top" ? (above >= MARGIN ? above : below) : below + panel.height <= vh - MARGIN ? below : Math.max(MARGIN, above);
+  const top =
+    side === "top"
+      ? above >= MARGIN
+        ? above
+        : below
+      : below + panel.height <= vh - MARGIN
+        ? below
+        : Math.max(MARGIN, above);
   return { left: clampX(anchor.left), top };
 }
 
@@ -50,7 +66,12 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
   useEffect(() => {
     if (!open) return;
     const trigger = anchor.current;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onClose();
+      }
+    };
     const onDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (!ref.current?.contains(target) && !trigger?.contains(target)) onClose();

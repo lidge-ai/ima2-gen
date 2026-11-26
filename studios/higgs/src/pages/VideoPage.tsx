@@ -16,7 +16,8 @@ type View = "history" | "presets" | "guide";
 function applyPreset(catalog: Catalog, form: CreateForm, preset: Preset | undefined): Partial<CreateForm> {
   if (!preset) return { preset: undefined };
   const model = catalog.models.find((m) => m.id === form.model);
-  const fits = <T,>(options: readonly T[] | undefined, value: T | undefined) => (value !== undefined && options?.includes(value) ? value : undefined);
+  const fits = <T,>(options: readonly T[] | undefined, value: T | undefined) =>
+    value !== undefined && options?.includes(value) ? value : undefined;
   return {
     preset: preset.id,
     prompt: preset.prompt,
@@ -25,20 +26,68 @@ function applyPreset(catalog: Catalog, form: CreateForm, preset: Preset | undefi
   };
 }
 
-function Stage({ view, setView, form, set, catalog }: { view: View; setView: (v: View) => void; form: CreateForm; set: (p: Partial<CreateForm>) => void; catalog: Catalog }) {
+function Stage({
+  view,
+  setView,
+  form,
+  set,
+  catalog,
+}: {
+  view: View;
+  setView: (v: View) => void;
+  form: CreateForm;
+  set: (p: Partial<CreateForm>) => void;
+  catalog: Catalog;
+}) {
   return (
     <main className="stage">
       <div className="stage-head">
         <div className="tabs" role="tablist" aria-label="Video views">
-          <button type="button" role="tab" className="tab" aria-selected={view === "history"} onClick={() => setView("history")}><Icon name="assets" size={15} /> History</button>
-          <button type="button" role="tab" className="tab" aria-selected={view === "presets"} onClick={() => setView("presets")}><Icon name="presets" size={15} /> Presets</button>
-          <button type="button" role="tab" className="tab" aria-selected={view === "guide"} onClick={() => setView("guide")}><Icon name="explore" size={15} /> How it works</button>
+          <button
+            type="button"
+            role="tab"
+            className="tab"
+            aria-selected={view === "history"}
+            onClick={() => setView("history")}
+          >
+            <Icon name="assets" size={15} /> History
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className="tab"
+            aria-selected={view === "presets"}
+            onClick={() => setView("presets")}
+          >
+            <Icon name="presets" size={15} /> Presets
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className="tab"
+            aria-selected={view === "guide"}
+            onClick={() => setView("guide")}
+          >
+            <Icon name="explore" size={15} /> How it works
+          </button>
         </div>
       </div>
       <div className="stage-body">
         {view === "presets" ? (
-          <PresetGallery kind="video" selected={form.preset} onPick={(preset) => { set(applyPreset(catalog, form, preset)); setView("history"); }} onClose={() => setView("history")} />
-        ) : view === "guide" ? <HowItWorks kind="video" /> : <Feed kind="video" empty={<HowItWorks kind="video" />} />}
+          <PresetGallery
+            kind="video"
+            selected={form.preset}
+            onPick={(preset) => {
+              set(applyPreset(catalog, form, preset));
+              setView("history");
+            }}
+            onClose={() => setView("history")}
+          />
+        ) : view === "guide" ? (
+          <HowItWorks kind="video" />
+        ) : (
+          <Feed kind="video" empty={<HowItWorks kind="video" />} />
+        )}
       </div>
     </main>
   );
@@ -49,7 +98,9 @@ export function VideoPage({ preset }: { preset?: string; model?: string }) {
   const [form, setForm] = useState<CreateForm>(() => emptyForm());
   const [view, setView] = useState<View>("history");
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
-  useHandOff("video", (upload, name) => set({ mode: "create", refMode: "frames", firstFrame: { role: "first-frame", upload, name } }));
+  useHandOff("video", (upload, name) =>
+    set({ mode: "create", refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
+  );
   useEffect(() => {
     if (!catalog || form.model) return;
     const tasks = form.mode === "edit" ? EDIT_TASKS : undefined;
@@ -59,7 +110,12 @@ export function VideoPage({ preset }: { preset?: string; model?: string }) {
       return f.preset === undefined && preset ? { ...next, ...applyPreset(catalog, next, findPreset(preset)) } : next;
     });
   }, [catalog, form.model, form.mode, preset]);
-  if (!catalog) return <div className="empty" role="status">Loading models</div>;
+  if (!catalog)
+    return (
+      <div className="empty" role="status">
+        Loading models
+      </div>
+    );
   return (
     <div className="workspace">
       <VideoPanel catalog={catalog} form={form} set={set} onOpenPresets={() => setView("presets")} />

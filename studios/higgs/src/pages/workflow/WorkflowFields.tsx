@@ -1,8 +1,4 @@
-import {
-  formatUsd,
-  type WorkflowDef,
-  type WorkflowInputSpec,
-} from "@ima2/studio-kit";
+import { formatUsd, type WorkflowDef, type WorkflowInputSpec } from "@ima2/studio-kit";
 import { useState } from "react";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
@@ -31,8 +27,7 @@ export function WorkflowInput({
               checked={enabled}
               onChange={(e) => {
                 setEnabled(e.target.checked);
-                if (!e.target.checked)
-                  form.setTexts((old) => ({ ...old, [input.name]: "" }));
+                if (!e.target.checked) form.setTexts((old) => ({ ...old, [input.name]: "" }));
               }}
             />
           </label>
@@ -64,47 +59,35 @@ export function WorkflowInput({
         {input.required ? " · Required" : " · Optional"}
       </span>
       <div className="workflow-slots">
-        {Array.from(
-          { length: Math.min(max, values.length + 1) },
-          (_, index) => (
-            <UploadSlot
-              key={index}
-              label={max > 1 ? `${input.label} ${index + 1}` : input.label}
-              role={input.role ?? "reference-image"}
-              accept={input.accept ?? `${input.kind}/*`}
-              value={values[index] ?? null}
-              hint={input.description}
-              onChange={(value) =>
-                form.setFiles((old) => {
-                  const next = [...(old[input.name] ?? [])];
-                  if (value) next[index] = value;
-                  else next.splice(index, 1);
-                  return { ...old, [input.name]: next };
-                })
-              }
-            />
-          ),
-        )}
+        {Array.from({ length: Math.min(max, values.length + 1) }, (_, index) => (
+          <UploadSlot
+            key={index}
+            label={max > 1 ? `${input.label} ${index + 1}` : input.label}
+            role={input.role ?? "reference-image"}
+            accept={input.accept ?? `${input.kind}/*`}
+            value={values[index] ?? null}
+            hint={input.description}
+            onChange={(value) =>
+              form.setFiles((old) => {
+                const next = [...(old[input.name] ?? [])];
+                if (value) next[index] = value;
+                else next.splice(index, 1);
+                return { ...old, [input.name]: next };
+              })
+            }
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-export function WorkflowParams({
-  def,
-  form,
-  chip = false,
-}: {
-  def: WorkflowDef;
-  form: WorkflowForm;
-  chip?: boolean;
-}) {
+export function WorkflowParams({ def, form, chip = false }: { def: WorkflowDef; form: WorkflowForm; chip?: boolean }) {
   return (
     <div className="workflow-params">
       {def.params.map((param) => {
         const value = form.params[param.name] ?? param.default ?? "";
-        const update = (next: string | number | boolean) =>
-          form.setParams((old) => ({ ...old, [param.name]: next }));
+        const update = (next: string | number | boolean) => form.setParams((old) => ({ ...old, [param.name]: next }));
         if (param.type === "select")
           return (
             <SettingTile
@@ -120,11 +103,7 @@ export function WorkflowParams({
           return (
             <label className="workflow-switch" key={param.name}>
               {param.label}
-              <input
-                type="checkbox"
-                checked={Boolean(value)}
-                onChange={(e) => update(e.target.checked)}
-              />
+              <input type="checkbox" checked={Boolean(value)} onChange={(e) => update(e.target.checked)} />
             </label>
           );
         return (
@@ -136,13 +115,7 @@ export function WorkflowParams({
               min={param.min}
               max={param.max}
               step={param.step}
-              onChange={(e) =>
-                update(
-                  param.type === "number"
-                    ? Number(e.target.value)
-                    : e.target.value,
-                )
-              }
+              onChange={(e) => update(param.type === "number" ? Number(e.target.value) : e.target.value)}
             />
           </label>
         );
@@ -151,20 +124,12 @@ export function WorkflowParams({
   );
 }
 
-export function WorkflowSteps({
-  def,
-  form,
-}: {
-  def: WorkflowDef;
-  form: WorkflowForm;
-}) {
+export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowForm }) {
   return (
     <div className="workflow-steps">
       <h3>Steps and estimated cost</h3>
       {def.steps.map((step) => {
-        const estimate = form.estimate?.steps.find(
-          (item) => item.id === step.id,
-        )?.estimate;
+        const estimate = form.estimate?.steps.find((item) => item.id === step.id)?.estimate;
         return (
           <div className="workflow-step" key={step.id}>
             {step.modelChoices?.length ? (
@@ -173,12 +138,9 @@ export function WorkflowSteps({
                 value={form.steps[step.id]?.model ?? step.model ?? ""}
                 options={step.modelChoices.map((id) => ({
                   value: id,
-                  label:
-                    form.catalog?.models.find((m) => m.id === id)?.label ?? id,
+                  label: form.catalog?.models.find((m) => m.id === id)?.label ?? id,
                 }))}
-                onChange={(model) =>
-                  form.setSteps((old) => ({ ...old, [step.id]: { model } }))
-                }
+                onChange={(model) => form.setSteps((old) => ({ ...old, [step.id]: { model } }))}
               />
             ) : (
               <span>{step.label}</span>
@@ -197,11 +159,7 @@ export function WorkflowSteps({
       })}
       {form.choices.map(({ step, choice }) =>
         choice?.kind === "needs-key" && form.catalog ? (
-          <KeyNotice
-            key={step.id}
-            routes={choice.candidates}
-            providers={form.catalog.providers}
-          />
+          <KeyNotice key={step.id} routes={choice.candidates} providers={form.catalog.providers} />
         ) : choice?.kind === "unavailable" || !choice ? (
           <p role="alert" key={step.id}>
             Model unavailable for {step.label}
@@ -220,9 +178,7 @@ export function Generate({ form }: { form: WorkflowForm }) {
   return (
     <div className="workflow-generate">
       {form.missing.length ? (
-        <p className="form-hint">
-          Required: {form.missing.map((item) => item.label).join(", ")}
-        </p>
+        <p className="form-hint">Required: {form.missing.map((item) => item.label).join(", ")}</p>
       ) : null}
       {form.error ? (
         <p role="alert" className="form-error">

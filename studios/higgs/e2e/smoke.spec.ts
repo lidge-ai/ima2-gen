@@ -20,7 +20,9 @@ test("create video, cancel, handle errors and configure a key", async ({ page })
   await expect(page.getByRole("article", { name: "Canceled: Cancel this cloud" })).toBeVisible();
   await prompt.fill("[fail:moderation] blocked cloud");
   await generate.click();
-  await expect(page.getByText("The provider's safety filter blocked this request. Change the prompt or inputs.")).toBeVisible();
+  await expect(
+    page.getByText("The provider's safety filter blocked this request. Change the prompt or inputs."),
+  ).toBeVisible();
   await page.getByRole("button", { name: /Model: Seedance 2.5/ }).click();
   await page.getByRole("button", { name: /Veo 3.1 Fast/ }).click();
   await expect(page.getByText("Add an API key to run this model")).toBeVisible();

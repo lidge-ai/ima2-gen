@@ -23,7 +23,15 @@ interface Props<T> {
 }
 
 /** A labelled setting that opens a single-choice menu. */
-export function SettingTile<T extends string | number>({ caption, value, options, onChange, variant = "tile", icon, chipText }: Props<T>) {
+export function SettingTile<T extends string | number>({
+  caption,
+  value,
+  options,
+  onChange,
+  variant = "tile",
+  icon,
+  chipText,
+}: Props<T>) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -43,12 +51,21 @@ export function SettingTile<T extends string | number>({ caption, value, options
         {variant === "tile" ? <span className="setting-caption">{caption}</span> : null}
         <span className="setting-value picker-value">
           {current?.icon}
-          {variant === "chip" && chipText ? chipText(current?.label ?? "-") : current?.label ?? "-"}
+          {variant === "chip" && chipText ? chipText(current?.label ?? "-") : (current?.label ?? "-")}
         </span>
         {variant === "tile" ? <Icon name="chevron" size={16} /> : null}
       </button>
-      <Popover open={open} onClose={() => setOpen(false)} label={caption} className="menu-popover" anchor={trigger} placement={variant === "chip" ? "top" : "bottom"}>
-        <p className="menu-title" id={id}>{caption}</p>
+      <Popover
+        open={open}
+        onClose={() => setOpen(false)}
+        label={caption}
+        className="menu-popover"
+        anchor={trigger}
+        placement={variant === "chip" ? "top" : "bottom"}
+      >
+        <p className="menu-title" id={id}>
+          {caption}
+        </p>
         <div role="radiogroup" aria-labelledby={id} className="menu-list">
           {options.map((option) => (
             <button
@@ -57,9 +74,15 @@ export function SettingTile<T extends string | number>({ caption, value, options
               role="radio"
               aria-checked={option.value === value}
               className="menu-item"
-              onClick={() => { onChange(option.value); setOpen(false); }}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
             >
-              <span className="menu-label">{option.icon}{option.label}</span>
+              <span className="menu-label">
+                {option.icon}
+                {option.label}
+              </span>
               {option.meta ? <span className="menu-meta">{option.meta}</span> : null}
               {option.value === value ? <Icon name="check" size={15} /> : null}
             </button>

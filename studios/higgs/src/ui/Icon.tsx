@@ -58,8 +58,12 @@ export function Logo() {
   return (
     <span className="logo" role="img" aria-label="ima2 studio">
       <span className="logo-mark" aria-hidden dangerouslySetInnerHTML={{ __html: brandMark }} />
-      <span className="logo-word" aria-hidden>ima2</span>
-      <span className="logo-sub" aria-hidden>studio</span>
+      <span className="logo-word" aria-hidden>
+        ima2
+      </span>
+      <span className="logo-sub" aria-hidden>
+        studio
+      </span>
     </span>
   );
 }

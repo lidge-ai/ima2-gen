@@ -36,15 +36,20 @@ export function UploadSlot({ label, role, accept, value, onChange, hint }: Props
       setBusy(false);
     }
   };
-  const onDrop = (event: DragEvent) => { event.preventDefault(); void take(event.dataTransfer.files[0]); };
+  const onDrop = (event: DragEvent) => {
+    event.preventDefault();
+    void take(event.dataTransfer.files[0]);
+  };
   const isVideo = value?.upload.mimeType.startsWith("video/");
   return (
     <div className={"slot" + (value ? " has-file" : "")} onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
       {value ? (
         <>
-          {isVideo
-            ? <video className="slot-preview" src={value.upload.url} muted playsInline aria-label={value.name} />
-            : <img className="slot-preview" src={value.upload.url} alt={value.name} />}
+          {isVideo ? (
+            <video className="slot-preview" src={value.upload.url} muted playsInline aria-label={value.name} />
+          ) : (
+            <img className="slot-preview" src={value.upload.url} alt={value.name} />
+          )}
           <button type="button" className="slot-remove" aria-label={"Remove " + label} onClick={() => onChange(null)}>
             <Icon name="close" size={14} />
           </button>
@@ -56,8 +61,22 @@ export function UploadSlot({ label, role, accept, value, onChange, hint }: Props
           {hint ? <span className="slot-hint">{hint}</span> : null}
         </button>
       )}
-      <input ref={input} type="file" accept={accept} hidden aria-label={label} onChange={(e) => { void take(e.target.files?.[0]); e.target.value = ""; }} />
-      {error ? <p className="slot-error" role="alert">{error}</p> : null}
+      <input
+        ref={input}
+        type="file"
+        accept={accept}
+        hidden
+        aria-label={label}
+        onChange={(e) => {
+          void take(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+      {error ? (
+        <p className="slot-error" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

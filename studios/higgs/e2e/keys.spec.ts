@@ -27,7 +27,9 @@ test("environment keys explain why removal is disabled", async ({ page }) => {
   await page.route("**/api/media/keys", async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    body.keys = body.keys.map((key: { keyVocabulary: string }) => key.keyVocabulary === "openai" ? { ...key, configured: true, source: "env" } : key);
+    body.keys = body.keys.map((key: { keyVocabulary: string }) =>
+      key.keyVocabulary === "openai" ? { ...key, configured: true, source: "env" } : key,
+    );
     await route.fulfill({ response, json: body });
   });
   await page.goto("/#/keys?focus=openai");

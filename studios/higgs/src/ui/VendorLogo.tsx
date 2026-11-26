@@ -1,8 +1,15 @@
 import { pickLogo, vendorId, vendorName, type VendorManifest } from "@ima2/studio-kit";
 
 // Optional at build time: the manifest and files arrive from studios/kit/assets/vendors.
-const manifests = import.meta.glob<VendorManifest>("../../../kit/assets/vendors/manifest.json", { eager: true, import: "default" });
-const urls = import.meta.glob<string>("../../../kit/assets/vendors/*.{svg,png}", { eager: true, query: "?url", import: "default" });
+const manifests = import.meta.glob<VendorManifest>("../../../kit/assets/vendors/manifest.json", {
+  eager: true,
+  import: "default",
+});
+const urls = import.meta.glob<string>("../../../kit/assets/vendors/*.{svg,png}", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
 const manifest = Object.values(manifests)[0];
 
 export function vendorDisplayName(id: string): string {
@@ -36,7 +43,11 @@ export function VendorLogo({ id, shape = "mark", size = 20, withName = false, cl
   const plate = pick?.file.variant === "dark" ? "plate-dark" : "plate-light";
   const cls = "vendor-logo vendor-" + vendorId(id) + " is-" + shape + " " + plate + (className ? " " + className : "");
   if (!url) {
-    return <span className={cls + " is-text"} title={name}>{shape === "mark" && !withName ? name.slice(0, 1) : name}</span>;
+    return (
+      <span className={cls + " is-text"} title={name}>
+        {shape === "mark" && !withName ? name.slice(0, 1) : name}
+      </span>
+    );
   }
   return (
     <span className={cls} title={name}>

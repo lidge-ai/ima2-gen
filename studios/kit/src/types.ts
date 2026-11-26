@@ -7,12 +7,15 @@
  * catalog routes with key state, uploads, jobs, events, history and workflows.
  */
 import type {
-  MediaInputRole, MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask,
+  MediaInputRole,
+  MediaKind,
+  MediaModelSpec,
+  MediaPrice,
+  MediaProviderError,
+  MediaTask,
 } from "../../../lib/providers/media/contract.ts";
 
-export type {
-  MediaInputRole, MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask,
-};
+export type { MediaInputRole, MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask };
 
 /** One adapter that can run a model: a direct maker API or an aggregator. */
 export interface CatalogRoute {
@@ -77,9 +80,7 @@ export interface UploadedInput {
   url: string;
 }
 
-export type SubmitInput =
-  | { role: MediaInputRole; inputId: string }
-  | { role: MediaInputRole; url: string };
+export type SubmitInput = { role: MediaInputRole; inputId: string } | { role: MediaInputRole; url: string };
 
 export interface MediaSubmitBody {
   model: string;

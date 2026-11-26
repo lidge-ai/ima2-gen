@@ -35,7 +35,9 @@ function ErrorBlock({ error }: { error: JobError }) {
       <Icon name="alert" />
       <div>
         <p>{ERROR_HINT[error.category] ?? "The job failed."}</p>
-        <p className="job-error-detail"><code>{error.code}</code> {error.message}</p>
+        <p className="job-error-detail">
+          <code>{error.code}</code> {error.message}
+        </p>
         {error.category === "auth" ? <a href={href("keys")}>Open API keys</a> : null}
       </div>
     </div>
@@ -60,8 +62,18 @@ function Steps({ job }: { job: Job }) {
 function Progress({ job }: { job: Job }) {
   const pct = Math.round((job.progress ?? 0) * 100);
   return (
-    <div className="job-progress" role="progressbar" aria-label="Progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={job.progress === undefined ? undefined : pct}>
-      <div className={"job-progress-bar" + (job.progress === undefined ? " is-indeterminate" : "")} style={{ width: job.progress === undefined ? undefined : pct + "%" }} />
+    <div
+      className="job-progress"
+      role="progressbar"
+      aria-label="Progress"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={job.progress === undefined ? undefined : pct}
+    >
+      <div
+        className={"job-progress-bar" + (job.progress === undefined ? " is-indeterminate" : "")}
+        style={{ width: job.progress === undefined ? undefined : pct + "%" }}
+      />
     </div>
   );
 }
@@ -76,15 +88,27 @@ export function JobCard({ job }: { job: Job }) {
         <span className={"status-pill is-" + job.status}>{STATUS_TEXT[job.status]}</span>
         <span className="job-target">
           {job.kind === "media" ? <ModelName id={job.target} /> : <span>{job.target}</span>}
-          {job.provider && job.provider !== "local" ? <span className="job-via">via <ProviderName id={job.provider} /></span> : null}
+          {job.provider && job.provider !== "local" ? (
+            <span className="job-via">
+              via <ProviderName id={job.provider} />
+            </span>
+          ) : null}
         </span>
-        <time className="job-time" dateTime={job.createdAt}>{timeAgo(job.createdAt)}</time>
+        <time className="job-time" dateTime={job.createdAt}>
+          {timeAgo(job.createdAt)}
+        </time>
       </header>
       <p className="job-prompt">{text}</p>
       <Steps job={job} />
       {active ? <Progress job={job} /> : null}
       {active ? (
-        <button type="button" className="btn btn-ghost" onClick={() => { void studio.cancel(job.jobId); }}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => {
+            void studio.cancel(job.jobId);
+          }}
+        >
           <Icon name="stop" size={14} /> Cancel
         </button>
       ) : null}

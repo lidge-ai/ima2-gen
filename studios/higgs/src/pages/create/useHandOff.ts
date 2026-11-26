@@ -11,9 +11,15 @@ export function useHandOff(target: HandOff["target"], accept: (upload: UploadedI
     if (!value) return;
     let live = true;
     void handOffFile(value)
-      .then((file) => studio.upload(file).then((upload) => { if (live) accept(upload, file.name); }))
+      .then((file) =>
+        studio.upload(file).then((upload) => {
+          if (live) accept(upload, file.name);
+        }),
+      )
       .catch(() => undefined);
-    return () => { live = false; };
+    return () => {
+      live = false;
+    };
     // Runs once per mount: a hand-off is consumed when read.
   }, []);
 }

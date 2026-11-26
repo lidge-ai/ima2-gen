@@ -4,12 +4,7 @@ import { PRESETS, type Preset } from "../../data/presets.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile, takeHandOff } from "../../studio/handoff.ts";
 import { Feed } from "../../ui/Feed.tsx";
-import {
-  WorkflowInput,
-  WorkflowParams,
-  WorkflowSteps,
-  Generate,
-} from "../workflow/WorkflowFields.tsx";
+import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import "../../styles/remix.css";
 
@@ -23,10 +18,7 @@ function MotionLibrary({ form }: { form: WorkflowForm }) {
     try {
       form.setError(null);
       const response = await fetch(new URL(item.sample, document.baseURI));
-      if (
-        !response.ok ||
-        !response.headers.get("content-type")?.startsWith("video/")
-      )
+      if (!response.ok || !response.headers.get("content-type")?.startsWith("video/"))
         throw new Error("Sample clip is unavailable");
       const file = new File([await response.blob()], item.id + ".mp4", {
         type: "video/mp4",
@@ -38,9 +30,7 @@ function MotionLibrary({ form }: { form: WorkflowForm }) {
       }));
       setSelected(item.id);
     } catch (err) {
-      form.setError(
-        err instanceof Error ? err.message : "Could not load sample clip",
-      );
+      form.setError(err instanceof Error ? err.message : "Could not load sample clip");
     }
   };
   return (
@@ -78,12 +68,7 @@ function MotionLibrary({ form }: { form: WorkflowForm }) {
               {broken.includes(item.id) ? (
                 <span className="remix-unavailable">Preview unavailable</span>
               ) : (
-                <video
-                  src={item.sample}
-                  muted
-                  playsInline
-                  onError={() => setBroken((old) => [...old, item.id])}
-                />
+                <video src={item.sample} muted playsInline onError={() => setBroken((old) => [...old, item.id])} />
               )}
               <span className="remix-clip-label">{item.label}</span>
             </button>
@@ -93,13 +78,7 @@ function MotionLibrary({ form }: { form: WorkflowForm }) {
   );
 }
 
-function RemixWorkspace({
-  def,
-  workflows,
-}: {
-  def: WorkflowDef;
-  workflows: readonly WorkflowDef[];
-}) {
+function RemixWorkspace({ def, workflows }: { def: WorkflowDef; workflows: readonly WorkflowDef[] }) {
   const form = useWorkflow(def);
   const [view, setView] = useState<"library" | "history">("library");
   useEffect(() => {
@@ -113,11 +92,7 @@ function RemixWorkspace({
           source: [{ role: "source-video", upload, name: handoff.name }],
         }));
       })
-      .catch((err: unknown) =>
-        form.setError(
-          err instanceof Error ? err.message : "Could not load video",
-        ),
-      );
+      .catch((err: unknown) => form.setError(err instanceof Error ? err.message : "Could not load video"));
   }, [form.studio, form.setFiles, form.setError]);
   return (
     <div className="workspace remix-workspace">
@@ -140,11 +115,7 @@ function RemixWorkspace({
           </div>
           <nav className="remix-modes" aria-label="Remix workflow">
             {workflows.map((item) => (
-              <a
-                key={item.id}
-                href={`#/remix/${item.id}`}
-                aria-current={item.id === def.id ? "page" : undefined}
-              >
+              <a key={item.id} href={`#/remix/${item.id}`} aria-current={item.id === def.id ? "page" : undefined}>
                 {item.label}
               </a>
             ))}

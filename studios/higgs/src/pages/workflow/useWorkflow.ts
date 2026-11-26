@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  chooseRoute,
-  type WorkflowDef,
-  type WorkflowEstimate,
-  type WorkflowRunBody,
-} from "@ima2/studio-kit";
+import { chooseRoute, type WorkflowDef, type WorkflowEstimate, type WorkflowRunBody } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 
@@ -13,14 +8,8 @@ export function useWorkflow(def: WorkflowDef) {
   const catalog = useStudio((s) => s.catalog);
   const [files, setFiles] = useState<Record<string, SlotValue[]>>({});
   const [texts, setTexts] = useState<Record<string, string>>({});
-  const [params, setParams] = useState<
-    Record<string, string | number | boolean>
-  >(() =>
-    Object.fromEntries(
-      def.params
-        .filter((p) => p.default !== undefined)
-        .map((p) => [p.name, p.default!]),
-    ),
+  const [params, setParams] = useState<Record<string, string | number | boolean>>(() =>
+    Object.fromEntries(def.params.filter((p) => p.default !== undefined).map((p) => [p.name, p.default!])),
   );
   const [steps, setSteps] = useState<Record<string, { model: string }>>({});
   const [estimate, setEstimate] = useState<WorkflowEstimate | null>(null);
@@ -46,32 +35,20 @@ export function useWorkflow(def: WorkflowDef) {
     [def, files, texts, params, steps],
   );
   const missing = def.inputs.filter(
-    (input) =>
-      input.required &&
-      (input.kind === "text"
-        ? !texts[input.name]?.trim()
-        : !files[input.name]?.length),
+    (input) => input.required && (input.kind === "text" ? !texts[input.name]?.trim() : !files[input.name]?.length),
   );
   useEffect(() => {
     let current = true;
     setEstimate(null);
     setEstimateError(null);
-    if (
-      def.inputs.some(
-        (input) => input.required && !body.inputs[input.name]?.length,
-      )
-    )
-      return;
+    if (def.inputs.some((input) => input.required && !body.inputs[input.name]?.length)) return;
     const timer = setTimeout(() => {
       void studio.client.workflows.estimate(def.id, body).then(
         (value) => {
           if (current) setEstimate(value);
         },
         (err: unknown) => {
-          if (current)
-            setEstimateError(
-              err instanceof Error ? err.message : "Could not estimate price",
-            );
+          if (current) setEstimateError(err instanceof Error ? err.message : "Could not estimate price");
         },
       );
     }, 250);
@@ -88,12 +65,7 @@ export function useWorkflow(def: WorkflowDef) {
   });
   const blocked =
     !catalog ||
-    choices.some(
-      (item) =>
-        !item.choice ||
-        item.choice.kind === "needs-key" ||
-        item.choice.kind === "unavailable",
-    );
+    choices.some((item) => !item.choice || item.choice.kind === "needs-key" || item.choice.kind === "unavailable");
   const submit = async () => {
     setError(null);
     setSending(true);

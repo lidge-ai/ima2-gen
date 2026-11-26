@@ -8,11 +8,15 @@ export function HowItWorks({ kind }: { kind: "image" | "video" }) {
   return (
     <section className="how" aria-label="How it works">
       <h1>{kind === "video" ? "Make a video from a frame or a sentence" : "Make an image from a sentence"}</h1>
-      <p className="how-lead">Every model here runs on your own API key at the provider's price. Nothing is billed by ima2.</p>
+      <p className="how-lead">
+        Every model here runs on your own API key at the provider's price. Nothing is billed by ima2.
+      </p>
       <ol className="how-steps">
         {STEPS.map((step, index) => (
           <li key={step.title}>
-            <span className="how-num" aria-hidden>{index + 1}</span>
+            <span className="how-num" aria-hidden>
+              {index + 1}
+            </span>
             <h2>{step.title}</h2>
             <p>{step.body}</p>
           </li>

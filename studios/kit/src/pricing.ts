@@ -18,7 +18,10 @@ function money(usd: number): string {
 /** Variant names are free text ("720p", "1080p+audio"); match on the tokens we know. */
 function variantScore(price: MediaPrice, request: PricedRequest): number {
   if (!price.variant) return 1;
-  const tokens = price.variant.toLowerCase().split(/[+,\s/]+/).filter(Boolean);
+  const tokens = price.variant
+    .toLowerCase()
+    .split(/[+,\s/]+/)
+    .filter(Boolean);
   let score = 2;
   for (const token of tokens) {
     if (token === "audio") score += request.audio ? 1 : -10;
@@ -34,7 +37,10 @@ export function pickPrice(pricing: readonly MediaPrice[], request: PricedRequest
   let bestScore = 0;
   for (const price of pricing) {
     const score = variantScore(price, request);
-    if (score > bestScore) { best = price; bestScore = score; }
+    if (score > bestScore) {
+      best = price;
+      bestScore = score;
+    }
   }
   return best;
 }
@@ -45,7 +51,9 @@ function unitsFor(price: MediaPrice, request: PricedRequest): { units: number; l
     case "second":
       return request.durationSec ? { units: request.durationSec * count, label: request.durationSec + " s" } : null;
     case "minute":
-      return request.durationSec ? { units: (request.durationSec / 60) * count, label: request.durationSec + " s" } : null;
+      return request.durationSec
+        ? { units: (request.durationSec / 60) * count, label: request.durationSec + " s" }
+        : null;
     case "image":
       return { units: count, label: count + " image" + (count > 1 ? "s" : "") };
     case "request":

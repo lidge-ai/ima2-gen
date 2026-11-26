@@ -16,7 +16,9 @@ export function KeyNotice({ routes, providers }: Props) {
       <Icon name="key" />
       <div>
         <p className="notice-title">Add an API key to run this model</p>
-        <p className="notice-body">ima2 calls each provider with your own key and their published price. Any one of these works:</p>
+        <p className="notice-body">
+          ima2 calls each provider with your own key and their published price. Any one of these works:
+        </p>
         <ul className="notice-list">
           {rows.map(({ route, provider }) => (
             <li key={route.providerId}>

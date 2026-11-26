@@ -15,7 +15,8 @@ export type RouteChoice =
 export function chooseRoute(model: CatalogModel, chosenProviderId?: string): RouteChoice {
   if (chosenProviderId) {
     const route = model.routes.find((r) => r.providerId === chosenProviderId);
-    if (route) return route.keyConfigured ? { kind: "chosen", route } : { kind: "needs-key", route, candidates: [route] };
+    if (route)
+      return route.keyConfigured ? { kind: "chosen", route } : { kind: "needs-key", route, candidates: [route] };
   }
   const keyed = model.routes.filter((r) => r.keyConfigured);
   const direct = keyed.find((r) => r.route === "direct");

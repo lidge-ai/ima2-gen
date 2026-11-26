@@ -11,8 +11,10 @@ interface Props {
   variant?: "tile" | "chip";
 }
 
-const opts = <T extends string | number>(values: readonly T[] | undefined, label: (v: T) => string = String): TileOption<T>[] =>
-  (values ?? []).map((value) => ({ value, label: label(value) }));
+const opts = <T extends string | number>(
+  values: readonly T[] | undefined,
+  label: (v: T) => string = String,
+): TileOption<T>[] => (values ?? []).map((value) => ({ value, label: label(value) }));
 
 export function routeOptions(model: CatalogModel): TileOption<string>[] {
   return [
@@ -21,7 +23,11 @@ export function routeOptions(model: CatalogModel): TileOption<string>[] {
       value: route.providerId,
       label: route.label,
       icon: <VendorLogo id={route.providerId} size={16} />,
-      meta: (route.route === "direct" ? "direct" : "aggregator") + " · " + routePrice(route) + (route.keyConfigured ? "" : " · no key"),
+      meta:
+        (route.route === "direct" ? "direct" : "aggregator") +
+        " · " +
+        routePrice(route) +
+        (route.keyConfigured ? "" : " · no key"),
     })),
   ];
 }
@@ -32,16 +38,44 @@ export function ParamControls({ model, form, set, variant = "tile" }: Props) {
   return (
     <div className={variant === "tile" ? "tiles" : "chips-inline"}>
       {p.durationsSec?.length && form.durationSec !== undefined ? (
-        <SettingTile variant={variant} icon={variant === "chip" ? "clock" : undefined} caption="Duration" value={form.durationSec} options={opts(p.durationsSec, (v) => v + "s")} onChange={(durationSec) => set({ durationSec })} />
+        <SettingTile
+          variant={variant}
+          icon={variant === "chip" ? "clock" : undefined}
+          caption="Duration"
+          value={form.durationSec}
+          options={opts(p.durationsSec, (v) => v + "s")}
+          onChange={(durationSec) => set({ durationSec })}
+        />
       ) : null}
       {p.aspectRatios?.length && form.aspectRatio ? (
-        <SettingTile variant={variant} icon={variant === "chip" ? "ratio" : undefined} caption="Aspect ratio" value={form.aspectRatio} options={opts(p.aspectRatios)} onChange={(aspectRatio) => set({ aspectRatio })} />
+        <SettingTile
+          variant={variant}
+          icon={variant === "chip" ? "ratio" : undefined}
+          caption="Aspect ratio"
+          value={form.aspectRatio}
+          options={opts(p.aspectRatios)}
+          onChange={(aspectRatio) => set({ aspectRatio })}
+        />
       ) : null}
       {p.resolutions?.length && form.resolution ? (
-        <SettingTile variant={variant} icon={variant === "chip" ? "layers" : undefined} caption="Resolution" value={form.resolution} options={opts(p.resolutions)} onChange={(resolution) => set({ resolution })} />
+        <SettingTile
+          variant={variant}
+          icon={variant === "chip" ? "layers" : undefined}
+          caption="Resolution"
+          value={form.resolution}
+          options={opts(p.resolutions)}
+          onChange={(resolution) => set({ resolution })}
+        />
       ) : null}
       {model.routes.length > 0 ? (
-        <SettingTile variant={variant} caption="Run through" chipText={(label) => "via " + label} value={form.provider} options={routeOptions(model)} onChange={(provider) => set({ provider })} />
+        <SettingTile
+          variant={variant}
+          caption="Run through"
+          chipText={(label) => "via " + label}
+          value={form.provider}
+          options={routeOptions(model)}
+          onChange={(provider) => set({ provider })}
+        />
       ) : null}
     </div>
   );
@@ -56,13 +90,22 @@ export function AdvancedFields({ model, form, set }: Omit<Props, "variant">) {
       {p.negativePrompt ? (
         <label className="field">
           <span>Avoid</span>
-          <input value={form.negativePrompt} onChange={(e) => set({ negativePrompt: e.target.value })} placeholder="What should not appear" />
+          <input
+            value={form.negativePrompt}
+            onChange={(e) => set({ negativePrompt: e.target.value })}
+            placeholder="What should not appear"
+          />
         </label>
       ) : null}
       {p.seed ? (
         <label className="field">
           <span>Seed</span>
-          <input inputMode="numeric" value={form.seed} onChange={(e) => set({ seed: e.target.value.replace(/\D/g, "") })} placeholder="Random" />
+          <input
+            inputMode="numeric"
+            value={form.seed}
+            onChange={(e) => set({ seed: e.target.value.replace(/\D/g, "") })}
+            placeholder="Random"
+          />
         </label>
       ) : null}
     </details>

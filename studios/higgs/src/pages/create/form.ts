@@ -1,4 +1,10 @@
-import { chooseRoute, type CatalogModel, type MediaSubmitBody, type MediaTask, type RouteChoice } from "@ima2/studio-kit";
+import {
+  chooseRoute,
+  type CatalogModel,
+  type MediaSubmitBody,
+  type MediaTask,
+  type RouteChoice,
+} from "@ima2/studio-kit";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 
 export interface CreateForm {
@@ -49,7 +55,7 @@ export function emptyForm(model?: CatalogModel): CreateForm {
 /** Keeps a setting when the new model supports it, else falls back to the model's first option. */
 export function defaultsFor(model: CatalogModel | undefined, keep?: Partial<CreateForm>) {
   const p = model?.params ?? {};
-  const pick = <T,>(options: readonly T[] | undefined, current: T | undefined) =>
+  const pick = <T>(options: readonly T[] | undefined, current: T | undefined) =>
     options && current !== undefined && options.includes(current) ? current : options?.[0];
   return {
     aspectRatio: pick(p.aspectRatios, keep?.aspectRatio),
@@ -93,7 +99,8 @@ export function problem(model: CatalogModel | undefined, form: CreateForm): stri
 }
 
 export function toBody(model: CatalogModel, form: CreateForm, provider: string | undefined): MediaSubmitBody {
-  const slots = form.mode === "edit" ? [form.sourceVideo] : [form.firstFrame, form.lastFrame, form.sourceImage, ...form.references];
+  const slots =
+    form.mode === "edit" ? [form.sourceVideo] : [form.firstFrame, form.lastFrame, form.sourceImage, ...form.references];
   const inputs = slots
     .filter((slot): slot is SlotValue => slot !== null)
     .map((slot) => ({ role: slot.role, inputId: slot.upload.inputId }));
@@ -103,7 +110,9 @@ export function toBody(model: CatalogModel, form: CreateForm, provider: string |
     ...(provider ? { provider } : {}),
     task: taskFor(model, form) ?? model.tasks[0] ?? "text-to-image",
     ...(form.prompt.trim() ? { prompt: form.prompt.trim() } : {}),
-    ...(form.negativePrompt.trim() && model.params.negativePrompt ? { negativePrompt: form.negativePrompt.trim() } : {}),
+    ...(form.negativePrompt.trim() && model.params.negativePrompt
+      ? { negativePrompt: form.negativePrompt.trim() }
+      : {}),
     ...(form.aspectRatio ? { aspectRatio: form.aspectRatio } : {}),
     ...(form.durationSec ? { durationSec: form.durationSec } : {}),
     ...(form.resolution ? { resolution: form.resolution } : {}),
