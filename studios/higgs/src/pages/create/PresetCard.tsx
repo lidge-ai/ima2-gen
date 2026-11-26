@@ -1,6 +1,23 @@
+import { messages, useT } from "../../i18n.ts";
+import { presetText } from "./defaults.ts";
 import type { Preset } from "../../data/presets.ts";
 import { Icon } from "../../ui/Icon.tsx";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
+
+const M = messages(
+  {
+    "general": "General",
+    "any": "Any model",
+    "change": "Change",
+    "presets": "Presets",
+  },
+  {
+    "general": "일반",
+    "any": "모든 모델",
+    "change": "변경",
+    "presets": "프리셋",
+  },
+);
 
 interface Props {
   preset: Preset | undefined;
@@ -10,26 +27,27 @@ interface Props {
 }
 
 export function PresetCard({ preset, modelLabel, vendor, onChange }: Props) {
+  const t = useT(M);
   return (
-    <div className="preset-card">
+    <div className="preset-feature">
       {preset ? (
         preset.sampleKind === "video" ? (
-          <video className="preset-card-media" src={preset.sample} muted loop autoPlay playsInline aria-hidden />
+          <video className="preset-feature-media" src={preset.sample} muted loop autoPlay playsInline aria-hidden />
         ) : (
-          <img className="preset-card-media" src={preset.sample} alt="" />
+          <img className="preset-feature-media" src={preset.sample} alt="" />
         )
       ) : (
-        <img className="preset-card-media" src="samples/landscape.jpg" alt="" />
+        <img className="preset-feature-media" src="samples/landscape.jpg" alt="" />
       )}
-      <div className="preset-card-text">
-        <span className="preset-card-title">{preset?.label ?? "General"}</span>
-        <span className="preset-card-sub">
+      <div className="preset-feature-text">
+        <span className="preset-feature-title">{preset ? presetText(preset.id, preset.label) : t("general")}</span>
+        <span className="preset-feature-sub">
           {vendor ? <VendorLogo id={vendor} size={14} /> : null}
-          {modelLabel ?? "Any model"}
+          {modelLabel ?? t("any")}
         </span>
       </div>
-      <button type="button" className="preset-card-change" onClick={onChange}>
-        <Icon name="presets" size={14} /> {preset ? "Change" : "Presets"}
+      <button type="button" className="preset-feature-change" onClick={onChange}>
+        <Icon name="presets" size={14} /> {t(preset ? "change" : "presets")}
       </button>
     </div>
   );

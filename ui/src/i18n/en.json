@@ -21,9 +21,27 @@
     "nativeAudio": "Native audio",
     "negativePrompt": "Negative prompt",
     "seed": "Seed",
-    "checked": "checked {date}",
+    "checked": "Price source · checked {date}",
     "documentation": "Documentation",
-    "open": "Media models · your API keys"
+    "open": "Media models · your API keys",
+    "loading": "Loading media models…",
+    "retry": "Try again",
+    "empty": "No media models are available.",
+    "price": "{amount} per {unit}",
+    "kind": {
+      "image": "Image",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "units": {
+      "second": "second",
+      "image": "image",
+      "request": "request",
+      "megapixel": "megapixel",
+      "1k-tokens": "1,000 tokens",
+      "minute": "minute",
+      "character": "character"
+    }
   },
   "media": {
     "keysTitle": "Media providers",
@@ -33,7 +51,11 @@
     "apiKey": "API key",
     "getKey": "Get a key",
     "envImmutable": "Environment keys cannot be removed here.",
-    "keysShow": "Show media provider keys"
+    "keysShow": "Show media provider keys",
+    "loading": "Loading media providers…",
+    "loadError": "Could not load media providers. Try again.",
+    "saveError": "Could not save the key. Check the values and try again.",
+    "removeError": "Could not remove the key. Try again."
   },
   "imageOutput": {
     "title": "Output",

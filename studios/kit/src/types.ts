@@ -266,3 +266,25 @@ export interface WorkflowEstimate {
   steps: readonly { id: string; label?: string; model?: string; estimate: CostEstimate }[];
   total: CostEstimate;
 }
+
+/** A finished example clip from the server's showcase folder (GET /api/showcase). */
+export interface ShowcaseItem {
+  id: string;
+  title: { en: string; ko?: string };
+  /** Workflow that made it; studios open this workflow to make one like it. */
+  workflow?: string;
+  preset?: string;
+  /** Field values to prefill (prompt, target, style...). */
+  values?: Record<string, string | number | boolean>;
+  /** Same-origin URLs. */
+  result: string;
+  source?: string;
+  poster?: string;
+  compare?: string;
+  /** Models used, and the key vocabularies needed to make one like it. */
+  models: readonly string[];
+  keys: readonly string[];
+  /** What the example cost when it was made, or null when a price was not published. */
+  estimate?: { usd: number | null; basis?: string };
+  durationSec?: number;
+}

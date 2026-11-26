@@ -46,6 +46,7 @@ import { mountKeyRoutes } from "./keys.js";
 import { registerMediaRoutes } from "./media.js";
 import { registerWorkflowRoutes } from "./workflows.js";
 import { registerStudioRoutes } from "./studios.js";
+import { registerShowcaseRoutes } from "./showcase.js";
 import { registerGenerationRequestLogRoutes } from "./generationRequestLog.js";
 import { type RouteRuntimeContext, requireRuntimeContext } from "../lib/runtimeContext.js";
 
@@ -98,5 +99,6 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   registerMediaRoutes(app, ctx);
   registerWorkflowRoutes(app, ctx);
   registerStudioRoutes(app, ctx);
+  registerShowcaseRoutes(app, ctx);
   registerGenerationRequestLogRoutes(app, ctx);
 }
