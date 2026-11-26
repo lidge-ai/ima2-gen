@@ -46,6 +46,7 @@ const noLocalOps = {
   muxAudio: async () => { throw new Error("unused"); },
   concat: async () => { throw new Error("unused"); },
   cut: async () => { throw new Error("unused"); },
+  scenes: async () => { throw new Error("unused"); },
 };
 
 test("workflow runs pass the spend guard: priced runs are charged with the email, others never start", async t => {
