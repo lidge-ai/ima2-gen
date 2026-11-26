@@ -56,10 +56,21 @@ const failing = (pattern: string): Act => async (page) => {
 const stalled = (pattern: string): Act => async (page) => {
   await page.route(pattern, () => undefined);
 };
-const click = (name: string | RegExp, role: "button" | "tab" | "link" = "button"): Act => async (page) => {
-  await page.getByRole(role, { name }).first().click();
-  await page.waitForTimeout(300);
+/** Click the first visible control with this name, whatever role the build gives it (tab, button, radio). */
+const click = (name: RegExp): Act => async (page) => {
+  for (const role of ["button", "tab", "radio", "link"] as const) {
+    const target = page.getByRole(role, { name }).filter({ visible: true }).first();
+    if (await target.count()) {
+      await target.click();
+      await page.waitForTimeout(300);
+      return;
+    }
+  }
+  throw new Error("No visible control named " + String(name));
 };
+const GENERATE = /^(Generate|생성)/;
+const SAVE = /^(Save|저장)/;
+const KEY_LABEL = /API key|API 키/;
 const prompt = (text: string): Act => async (page) => {
   await page.locator("textarea").first().fill(text);
 };
@@ -74,17 +85,17 @@ const PRISTINE: Cell[] = [
   { id: "home__loading", hash: "/", setup: stalled("**/api/media/catalog*") },
   { id: "home__error", hash: "/", setup: failing("**/api/media/catalog*") },
   { id: "image__empty", hash: "/image" },
-  { id: "image__picker", hash: "/image", act: click(/^Model:/) },
+  { id: "image__picker", hash: "/image", act: click(/^(Model|모델): /) },
   { id: "image__nokey", hash: "/image", setup: noKeys },
   { id: "image__longprompt", hash: "/image", act: prompt(LONG) },
   { id: "image__loading", hash: "/image", setup: stalled("**/api/media/catalog*") },
   { id: "video__empty", hash: "/video" },
-  { id: "video__picker", hash: "/video", act: click(/^Model:/) },
-  { id: "video__presets", hash: "/video", act: click(/^Presets$/) },
-  { id: "video__guide", hash: "/video", act: click(/^How it works$/) },
+  { id: "video__picker", hash: "/video", act: click(/^(Model|모델): /) },
+  { id: "video__presets", hash: "/video", act: click(/^(Presets|프리셋)$/) },
+  { id: "video__guide", hash: "/video", act: click(/^(How it works|사용 방법)$/) },
   { id: "video__nokey", hash: "/video", setup: noKeys },
   { id: "video__longprompt", hash: "/video", act: prompt(LONG) },
-  { id: "video__edit", hash: "/video", act: click(/^Edit video$|^Edit$/) },
+  { id: "video__edit", hash: "/video", act: click(/^(Edit video|Edit|영상 편집)$/) },
   { id: "video__focus", hash: "/video", act: tab(9) },
   { id: "presets__video", hash: "/presets/video" },
   { id: "presets__image", hash: "/presets/image" },
@@ -94,7 +105,7 @@ const PRISTINE: Cell[] = [
   { id: "remix__swap-sub", hash: "/remix/remix-object-swap-subscription" },
   { id: "remix__restyle", hash: "/remix/remix-restyle" },
   { id: "remix__restyle-sub", hash: "/remix/remix-restyle-subscription" },
-  { id: "remix__history-empty", hash: "/remix/remix-motion-transfer", act: click(/^History$/) },
+  { id: "remix__history-empty", hash: "/remix/remix-motion-transfer", act: click(/^(History|기록)$/) },
   { id: "remix__error", hash: "/remix", setup: failing("**/api/workflows") },
   { id: "remix__loading", hash: "/remix", setup: stalled("**/api/workflows") },
   { id: "director__studio", hash: "/director/director-studio" },
@@ -104,15 +115,15 @@ const PRISTINE: Cell[] = [
   { id: "director__error", hash: "/director", setup: failing("**/api/workflows") },
   { id: "models__all", hash: "/models" },
   { id: "models__heygen", hash: "/models/heygen" },
-  { id: "models__audio", hash: "/models", act: click(/^Audio$/) },
-  { id: "models__nomatch", hash: "/models", act: async (p) => p.getByLabel("Search models").fill("zzzz") },
+  { id: "models__audio", hash: "/models", act: click(/^(Audio|오디오)$/) },
+  { id: "models__nomatch", hash: "/models", act: async (p) => p.getByRole("searchbox").first().fill("zzzz") },
   { id: "models__loading", hash: "/models", setup: stalled("**/api/media/catalog*") },
   { id: "assets__empty", hash: "/assets" },
   { id: "assets__saved-empty", hash: "/assets/saved" },
   { id: "assets__error", hash: "/assets", setup: failing("**/api/history*") },
   { id: "keys__default", hash: "/keys" },
   { id: "keys__focus", hash: "/keys?focus=byteplus" },
-  { id: "keys__nomatch", hash: "/keys", act: async (p) => p.getByRole("searchbox", { name: /providers/i }).fill("zzzz") },
+  { id: "keys__nomatch", hash: "/keys", act: async (p) => p.getByRole("searchbox").first().fill("zzzz") },
   { id: "keys__loading", hash: "/keys", setup: stalled("**/api/media/catalog*") },
   { id: "keys__error", hash: "/keys", setup: failing("**/api/media/catalog*") },
   {
@@ -120,8 +131,8 @@ const PRISTINE: Cell[] = [
     hash: "/keys?focus=vidu",
     act: async (p) => {
       const row = p.getByRole("article", { name: "Vidu API" });
-      await row.getByLabel(/API key/).fill("rejected-by-provider");
-      await row.getByRole("button", { name: /^Save/ }).click();
+      await row.getByLabel(KEY_LABEL).fill("rejected-by-provider");
+      await row.getByRole("button", { name: SAVE }).click();
       await p.waitForTimeout(800);
     },
   },
@@ -183,8 +194,8 @@ const FILLED: Cell[] = [
     id: "video__running",
     hash: "/video",
     act: async (p) => {
-      await p.getByLabel("Prompt", { exact: true }).fill("Running sample: clouds over a ridge");
-      await p.getByRole("button", { name: /Generate/ }).click();
+      await p.locator("textarea").first().fill("Running sample: clouds over a ridge");
+      await p.getByRole("button", { name: GENERATE }).click();
       await p.waitForTimeout(600);
     },
   },
@@ -192,23 +203,23 @@ const FILLED: Cell[] = [
     id: "video__canceled",
     hash: "/video",
     act: async (p) => {
-      await p.getByLabel("Prompt", { exact: true }).fill("Canceled sample: a train at dawn");
-      await p.getByRole("button", { name: /Generate/ }).click();
-      await p.getByRole("article", { name: /Canceled sample/ }).getByRole("button", { name: /Cancel/ }).click();
+      await p.locator("textarea").first().fill("Canceled sample: a train at dawn");
+      await p.getByRole("button", { name: GENERATE }).click();
+      await p.getByRole("article", { name: /Canceled sample/ }).getByRole("button", { name: /Cancel|취소/ }).click();
       await p.waitForTimeout(600);
     },
   },
   { id: "assets__all", hash: "/assets" },
   { id: "assets__videos", hash: "/assets/videos" },
   { id: "assets__images", hash: "/assets/images" },
-  { id: "assets__compact", hash: "/assets", act: click("Compact") },
-  { id: "assets__lightbox", hash: "/assets", act: async (p) => p.getByRole("button", { name: /^Open / }).first().click() },
+  { id: "assets__compact", hash: "/assets", act: click(/^(Compact|촘촘하게)$/) },
+  { id: "assets__lightbox", hash: "/assets", act: async (p) => p.getByRole("button", { name: /^Open |열기$/ }).first().click() },
   { id: "director__with-cast", hash: "/director/director-studio" },
   { id: "director__cast-history", hash: "/director/director-cast" },
   { id: "keys__saved", hash: "/keys?focus=google", act: async (p) => {
       const row = p.getByRole("article", { name: /Google/ }).first();
-      await row.getByLabel(/API key/).fill("fake-google-key");
-      await row.getByRole("button", { name: /^Save/ }).click();
+      await row.getByLabel(KEY_LABEL).fill("fake-google-key");
+      await row.getByRole("button", { name: SAVE }).click();
       await p.waitForTimeout(800);
     } },
   { id: "home__keyed", hash: "/" },
