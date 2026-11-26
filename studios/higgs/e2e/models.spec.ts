@@ -9,10 +9,13 @@ test("models page shows makers, official names, routes and prices, and opens a m
   await expect(seedance).toContainText("$0.06/s");
   await page.getByRole("tab", { name: "Image" }).click();
   await expect(page.getByRole("article", { name: "Seedance 2.5", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("article", { name: "GPT Image 2" })).toBeVisible();
+  await expect(page.getByRole("article", { name: "GPT Image 2", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "All" }).click();
   await page.getByLabel("Search models").fill("veo 3.1 fast");
-  await page.getByRole("article", { name: "Veo 3.1 Fast" }).getByRole("link", { name: /Open and add a key|Use this model/ }).click();
+  await page
+    .getByRole("article", { name: "Veo 3.1 Fast" })
+    .getByRole("link", { name: /Open and add a key|Use this model/ })
+    .click();
   await expect(page).toHaveURL(/#\/video\?model=google%2Fveo-3.1-fast/);
   await expect(page.getByRole("button", { name: /^Model: / })).toContainText("Veo 3.1 Fast");
 });

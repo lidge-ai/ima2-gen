@@ -74,29 +74,6 @@ const T2V = ["text-to-video", "image-to-video"] as MediaTask[];
 const T2I = ["text-to-image", "image-to-image"] as MediaTask[];
 
 const MODELS: ModelRow[] = [
-  ["pixverse/pixverse-v6", "PixVerse V6", "video", T2V, V_SHORT, { pixverse: 0.06, fal: 0.08 }],
-  ["recraft/recraft-v4.1", "Recraft V4.1", "image", T2I, IMG, { recraft: 0.04, fal: 0.05 }],
-  ["heygen/heygen-avatar-6", "HeyGen Avatar 6", "video", ["avatar"], V_SHORT, { heygen: null }],
-  ["sync/sync-lipsync-3", "Sync Lipsync 3", "video", ["lipsync"], {}, { sync: 0.08, fal: 0.1 }],
-  [
-    "mirelo/mirelo-sfx-2.0",
-    "Mirelo SFX 2.0",
-    "audio",
-    ["text-to-audio", "video-to-audio"],
-    {},
-    { mirelo: 0.01, fal: 0.012 },
-  ],
-  ["xai/grok-imagine-video", "Grok Imagine Video", "video", ["video-to-video"], V_SHORT, { xai: 0.05 }],
-  ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }],
-  ["bytedance/seedance-2", "Seedance 2.0", "video", [...T2V, "video-to-video"], V_FULL, { byteplus: 0.06, fal: 0.075 }],
-  [
-    "bytedance/seedance-2-mini",
-    "Seedance 2.0 Mini",
-    "video",
-    [...T2V, "video-to-video"],
-    V_FULL,
-    { byteplus: 0.03, fal: 0.04 },
-  ],
   [
     "bytedance/seedance-2.5",
     "Seedance 2.5",
@@ -254,6 +231,29 @@ const MODELS: ModelRow[] = [
     ["video-to-audio", "text-to-audio"],
     { durationsSec: [5, 10] },
     { mirelo: 0.01, fal: 0.012 },
+  ],
+  ["pixverse/pixverse-v6", "PixVerse V6", "video", T2V, V_SHORT, { pixverse: 0.06, fal: 0.08 }],
+  ["recraft/recraft-v4.1", "Recraft V4.1", "image", T2I, IMG, { recraft: 0.04, fal: 0.05 }],
+  ["heygen/heygen-avatar-6", "HeyGen Avatar 6", "video", ["avatar"], V_SHORT, { heygen: null }],
+  ["sync/sync-lipsync-3", "Sync Lipsync 3", "video", ["lipsync"], {}, { sync: 0.08, fal: 0.1 }],
+  [
+    "mirelo/mirelo-sfx-2.0",
+    "Mirelo SFX 2.0",
+    "audio",
+    ["text-to-audio", "video-to-audio"],
+    {},
+    { mirelo: 0.01, fal: 0.012 },
+  ],
+  ["xai/grok-imagine-video", "Grok Imagine Video", "video", ["video-to-video"], V_SHORT, { xai: 0.05 }],
+  ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }],
+  ["bytedance/seedance-2", "Seedance 2.0", "video", [...T2V, "video-to-video"], V_FULL, { byteplus: 0.06, fal: 0.075 }],
+  [
+    "bytedance/seedance-2-mini",
+    "Seedance 2.0 Mini",
+    "video",
+    [...T2V, "video-to-video"],
+    V_FULL,
+    { byteplus: 0.03, fal: 0.04 },
   ],
 ];
 

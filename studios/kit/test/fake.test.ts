@@ -98,7 +98,7 @@ test("keys save, validate and remove without echoing the key", async () => {
     const job = await client.media.submit({
       model: "kling/kling-3",
       task: "text-to-video",
-      prompt: SECRET,
+      prompt: "a lighthouse at dusk",
       inputs: [],
     });
     await client.watchJob(job.jobId);
