@@ -77,6 +77,7 @@ test("a model without a keyed route fails before any submit; no other route is t
   const gateway = fakeGateway({ "v/other": other });
   const { result } = await run([media("render", "v/x", [], [], true)], gateway);
   assert.equal(result.status, "failed");
+  assert.equal(result.error?.code, "MEDIA_NO_KEYED_ROUTE", "a coded gateway error keeps its code");
   assert.match(result.error?.message ?? "", /no keyed route/);
   assert.deepEqual(gateway.resolved, [{ model: "v/x", route: undefined }]);
   assert.equal(other.calls.length, 0);

@@ -58,5 +58,11 @@ export function toErrorInfo(error: unknown, secrets: readonly string[] = []): Wo
     return info;
   }
   const message = error instanceof Error ? error.message : String(error);
+  const coded = error as { code?: unknown; category?: unknown; retryable?: unknown } | null;
+  if (coded && typeof coded.code === "string" && /^[A-Z][A-Z0-9_]+$/.test(coded.code)) {
+    const info: WorkflowErrorInfo = { code: coded.code, message: redact(message, secrets), retryable: coded.retryable === true };
+    if (typeof coded.category === "string") info.category = coded.category as WorkflowErrorInfo["category"] & string;
+    return info;
+  }
   return { code: "WORKFLOW_INTERNAL", message: redact(message, secrets), retryable: false };
 }
