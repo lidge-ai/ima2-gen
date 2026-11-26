@@ -205,6 +205,7 @@ describe("loadCliDefaults", { timeout: 60_000 }, () => {
       // Async with a hard kill: a hung child must not block the event loop (spawnSync
       // would also block node:test's own timeout) and stdin is closed so it cannot wait on it.
       const child = await execFileAsync(process.execPath, [
+        "--import", "tsx",
         "--input-type=module",
         "--eval",
         `const { loadCliDefaults } = await import(${JSON.stringify(moduleUrl)}); console.log(JSON.stringify(loadCliDefaults()));`,
