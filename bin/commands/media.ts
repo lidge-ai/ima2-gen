@@ -1,7 +1,7 @@
 import { parseArgs, type FlagDef, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { err, json, out } from "../lib/output.js";
-import { catalog, estimate, jobs, cancel, tools, workflows, workflowSchema, workflowEstimate } from "../lib/mediaApi.js";
+import { catalog, estimate, jobs, cancel, tools, workflows, workflowSchema, workflowEstimate, ensureRequestIdUnused } from "../lib/mediaApi.js";
 import { cliErrorJson, formatMediaError, toMediaApiError } from "../lib/mediaErrors.js";
 import { printModels } from "../lib/media/catalogCmd.js";
 import { runBody, pairs, type Dict } from "../lib/media/common.js";
@@ -28,19 +28,24 @@ const FLAGS: Record<string, FlagDef> = { server: string, json: boolean, help: { 
   "vendor-option": repeat, "no-wait": boolean, out: string, all: boolean, estimate: boolean, "key-stdin": boolean, extra: repeat,
   vendor: string, keyed: boolean, "max-usd": string, "price-variant": string, "vendor-json": string, "request-id": string,
   quiet: boolean, timeout: string, "stdin-json": boolean, yes: boolean, schema: boolean, "slot-model": repeat, "slot-route": repeat };
-const OLD = "kind model task prompt adapter duration resolution aspect seed audio no-audio negative count input vendor-option no-wait out all estimate key-stdin extra".split(" ");
-const NEW: Record<string, string[]> = {
-  models: ["vendor", "keyed", "max-usd"], estimate: ["price-variant", "vendor-json"], run: ["vendor-json", "request-id", "quiet"],
-  keys: ["stdin-json", "yes"], wait: ["timeout"], workflow: ["schema", "slot-model", "slot-route", "request-id", "quiet"],
+const RUN_FLAGS = "model task prompt adapter duration resolution aspect seed audio no-audio negative count input vendor-option".split(" ");
+const LEGACY = "kind model task prompt adapter duration resolution aspect seed audio no-audio negative count input vendor-option no-wait out all estimate key-stdin extra".split(" ");
+const ALLOWED: Record<string, string[]> = {
+  models: [...LEGACY, "vendor", "keyed", "max-usd"], run: [...LEGACY, "vendor-json", "request-id", "quiet"],
+  jobs: LEGACY, cancel: LEGACY, keys: [...LEGACY, "stdin-json", "yes"], workflows: LEGACY,
+  workflow: [...LEGACY, "schema", "slot-model", "slot-route", "request-id", "quiet"],
+  estimate: [...RUN_FLAGS, "price-variant", "vendor-json"], status: [], wait: ["timeout"], result: ["out"],
+  studios: [], studio: [], tools: [],
 };
 function validate(argv: string[], args: ParsedArgs): void {
   if (args._unknown.length) throw new Error(`Unknown option: ${args._unknown.join(", ")}`);
   if (argv.some((arg) => arg.startsWith("--yes="))) throw new Error("--yes does not take a value");
   const sub = args.positional[0] ?? "";
-  for (const flag of args._present) if (!["server", "json", "help", ...OLD, ...(NEW[sub] ?? [])].includes(flag)) throw new Error(`Invalid --${flag} for ${sub}`);
+  for (const flag of args._present) if (!["server", "json", "help", ...(ALLOWED[sub] ?? [])].includes(flag)) throw new Error(`Invalid --${flag} for ${sub}`);
 }
 async function workflow(base: string, id: string, args: ParsedArgs): Promise<unknown> {
   if (args.schema) return workflowSchema(base, id);
+  if (!args.estimate && args["request-id"]) await ensureRequestIdUnused(base, String(args["request-id"]));
   const values = await workflowInput(base, id, args.input);
   const selection = { models: pairs(args["slot-model"]), routes: pairs(args["slot-route"]) };
   if (args.estimate) return workflowEstimate(base, id, values, selection);
@@ -52,11 +57,15 @@ async function execute(base: string, args: ParsedArgs): Promise<unknown> {
     if (args.kind && !["image", "video", "audio"].includes(String(args.kind))) throw new Error("Invalid --kind");
     const maxUsd = args["max-usd"] === undefined ? undefined : Number(args["max-usd"]);
     if (maxUsd !== undefined && !Number.isFinite(maxUsd)) throw new Error("Invalid --max-usd");
-    return catalog(base, { kind: args.kind as string | undefined, vendor: args.vendor as string | undefined, task: args.task as string | undefined,
-      model: args.model as string | undefined, adapter: args.adapter as string | undefined, keyed: args.keyed ? true : undefined, maxUsd });
+    return catalog(base, { ...(args.kind && { kind: String(args.kind) }), ...(args.vendor && { vendor: String(args.vendor) }),
+      ...(args.task && { task: String(args.task) }), ...(args.model && { model: String(args.model) }),
+      ...(args.adapter && { adapter: String(args.adapter) }), ...(args.keyed && { keyed: true }), ...(maxUsd !== undefined && { maxUsd }) });
   }
   if (sub === "estimate") return estimate(base, { ...await runBody(base, args), ...(args["price-variant"] && { priceVariant: args["price-variant"] }) });
-  if (sub === "run") return submit(base, "/api/media", await runBody(base, args), args);
+  if (sub === "run") {
+    if (args["request-id"]) await ensureRequestIdUnused(base, String(args["request-id"]));
+    return submit(base, "/api/media", await runBody(base, args), args);
+  }
   if (sub === "jobs") return jobs(base, Boolean(args.all));
   if (sub === "cancel" && id) return cancel(base, id);
   if (["status", "wait", "result"].includes(sub ?? "") && id) return jobCommand(base, sub!, id, args);
@@ -92,6 +101,11 @@ export default async function mediaCmd(argv: string[]): Promise<void> {
     else if (args.positional[0] === "models") printModels(result);
     else if (args.positional[0] === "workflow" && args.schema) await printSchema(server.base, args.positional[1]!, result);
     else if (args.positional[0] === "studio" && args.positional[1] === "open") out(String(result.url));
+    else if (args.positional[0] === "studios") {
+      out(`defaultUi: ${String(result.defaultUi ?? "")}`);
+      out("name  built  url");
+      for (const studio of result.studios as Dict[]) out(`${String(studio.name)}  ${studio.built ? "yes" : "no"}  ${String(studio.url)}`);
+    }
     else if (Array.isArray(result.paths)) for (const path of result.paths as string[]) out(path);
     else out(JSON.stringify(result, null, 2));
   } catch (error) {

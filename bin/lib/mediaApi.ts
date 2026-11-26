@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { mimeFromName } from "../../lib/providers/media/mime.js";
 import { fetchServer, request, type RequestOptions } from "./client.js";
-import { MediaApiError, toMediaApiError } from "./mediaErrors.js";
+import { MediaApiError, scrub, toMediaApiError } from "./mediaErrors.js";
 import { openMediaSse, waitForJob, type WaitOptions } from "./mediaWait.js";
 export { waitForJob } from "./mediaWait.js";
 type Dict = Record<string, unknown>;
@@ -56,8 +56,16 @@ export async function keyStatus(base: string, options: { redact?: boolean } = {}
     return options.redact ? redactAdapter(item) : item;
   }) };
 }
-export function validateKey(base: string, vocab: string, body: { apiKey?: string; extra?: Record<string, string> }) {
-  return call<Dict>(base, `/api/keys/${enc(vocab)}/validate`, { method: "POST", body }, [body.apiKey ?? "", ...Object.values(body.extra ?? {})]);
+function scrubResult(value: unknown, secrets: string[]): unknown {
+  if (typeof value === "string") return scrub(value, secrets);
+  if (Array.isArray(value)) return value.map((entry) => scrubResult(entry, secrets));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, scrubResult(entry, secrets)]));
+  return value;
+}
+export async function validateKey(base: string, vocab: string, body: { apiKey?: string; extra?: Record<string, string> }) {
+  const secrets = [body.apiKey ?? "", ...Object.values(body.extra ?? {})];
+  const response = await call<Dict>(base, `/api/keys/${enc(vocab)}/validate`, { method: "POST", body }, secrets);
+  return scrubResult(response, secrets) as Dict;
 }
 export function deleteKey(base: string, vocab: string) { return call<Dict>(base, `/api/keys/${enc(vocab)}`, { method: "DELETE" }); }
 export async function uploadInputs(base: string, inputs: Input[]): Promise<Input[]> {
