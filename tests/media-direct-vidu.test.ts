@@ -110,3 +110,39 @@ test("secret-bearing validation and network failures are redacted", async () => 
     assert.doesNotMatch(String(err), /secret-key-1234/); assert.doesNotMatch(adapter.normalizeError(err).message, /secret-key-1234/); return true;
   });
 });
+
+test("Q4 image and reference send documented requests", async () => {
+  const img = fake({ task_id: "q4-image" });
+  await adapter.submit(img.ctx, { ...request("vidu/vidu-q4", "image-to-video", [{ ...image, role: "first-frame" }]), durationSec: 16, resolution: "4K", audio: false, seed: 9 });
+  assert.equal(img.calls[0]?.url, "https://test.invalid/ent/v2/img2video");
+  assert.equal(img.calls[0]?.init.method, "POST");
+  assert.equal((img.calls[0]?.init.headers as Record<string, string>).Authorization, "Token secret-key-1234");
+  assert.deepEqual(JSON.parse(String(img.calls[0]?.init.body)), { model: "viduq4-preview", images: [image.url], prompt: "test", duration: 16, resolution: "4K", audio: false, seed: 9, is_rec: false });
+  const ref = fake({ task_id: "q4-ref" });
+  const refs = Array.from({ length: 15 }, () => image);
+  await adapter.submit(ref.ctx, { ...request("vidu/vidu-q4-reference", "reference-to-video", [...refs, { role: "reference-audio", mimeType: "audio/mpeg", url: "https://example.com/audio.mp3" }]), resolution: "2K", aspectRatio: "9:16", audio: true });
+  assert.equal(ref.calls[0]?.url, "https://test.invalid/ent/v2/reference2video");
+  const body = JSON.parse(String(ref.calls[0]?.init.body)) as Record<string, unknown>;
+  assert.equal(body.model, "viduq4-preview"); assert.deepEqual(body.images, refs.map(() => image.url));
+  assert.deepEqual(body.sounds, ["https://example.com/audio.mp3"]); assert.equal(body.aspect_ratio, "9:16"); assert.equal(body.resolution, "2K"); assert.equal(body.audio, true);
+});
+
+test("Q4 rejects undocumented tasks and out-of-range inputs before fetch", async () => {
+  const { ctx, calls } = fake({ task_id: "job" });
+  const first = { ...image, role: "first-frame" as const };
+  const base = request("vidu/vidu-q4", "image-to-video", [first]);
+  const ref = request("vidu/vidu-q4-reference", "reference-to-video", [image]);
+  const invalid = [request("vidu/vidu-q4", "text-to-video"), { ...base, inputs: [first, { ...image, role: "last-frame" as const }] }, { ...base, durationSec: 2 }, { ...base, durationSec: 17 }, { ...base, resolution: "8K" }, { ...base, aspectRatio: "16:9" }, { ...ref, aspectRatio: "2:1" }, { ...ref, inputs: Array.from({ length: 16 }, () => image) }, { ...ref, inputs: [] }, { ...ref, vendorOptions: { unknown: true } }];
+  for (const req of invalid) await assert.rejects(adapter.submit(ctx, req));
+  assert.equal(calls.length, 0);
+});
+
+test("Q4 catalog has official USD prices and distinct task sets", () => {
+  for (const id of ["vidu/vidu-q4", "vidu/vidu-q4-reference"]) {
+    const model = adapter.listModels().find((m) => m.id === id);
+    assert.ok(model); assert.equal(model.upstreamId, "viduq4-preview");
+    assert.deepEqual(model.tasks, id.endsWith("reference") ? ["reference-to-video"] : ["image-to-video"]);
+    assert.deepEqual(model.pricing.map((p) => [p.variant, p.usd]), [["540p", .045], ["720p", .095], ["1080p", .12], ["2K", .19], ["4K", .39]]);
+    for (const p of model.pricing) { assert.equal(p.unit, "second"); assert.equal(p.source, "https://platform.vidu.com/pricing"); assert.equal(p.checkedAt, "2026-11-26"); }
+  }
+});
