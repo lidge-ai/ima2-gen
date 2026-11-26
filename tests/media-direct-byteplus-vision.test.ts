@@ -61,6 +61,9 @@ test('rejects unknown options and missing URL input before network', async () =>
   const ctx = context(async () => { throw new Error('unexpected network'); });
   await assert.rejects(adapter.submit(ctx, { ...request, vendorOptions: { unknown: true } }));
   await assert.rejects(adapter.submit(ctx, { ...request, inputs: [] }));
+  await assert.rejects(adapter.submit(ctx, { ...request, model: 'test-secret-key' }), (error: unknown) => {
+    assert.doesNotMatch(adapter.normalizeError(error).message, /test-secret-key/); return true;
+  });
 });
 
 test('catalog contains documented IDs and official dated pricing', () => {
