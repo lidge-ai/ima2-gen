@@ -30,16 +30,17 @@ function ImageEmpty() {
   );
 }
 
-export function ImagePage({ preset }: { preset?: string }) {
+export function ImagePage({ preset, model: requested }: { preset?: string; model?: string }) {
   const catalog = useStudio((s) => s.catalog);
   const [form, setForm] = useState<CreateForm>(() => emptyForm());
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
   useHandOff("image", (upload, name) => set({ sourceImage: { role: "source-image", upload, name } }));
   useEffect(() => {
     if (!catalog || form.model) return;
-    const model = defaultModel(catalog.models, "image", ["text-to-image", "image-to-image"]);
+    const asked = catalog.models.find((m) => m.id === requested && m.kind === "image");
+    const model = asked ?? defaultModel(catalog.models, "image", ["text-to-image", "image-to-image"]);
     setForm((f) => ({ ...f, model: model?.id, ...defaultsFor(model, f) }));
-  }, [catalog, form.model]);
+  }, [catalog, form.model, requested]);
   useEffect(() => {
     const p = findPreset(preset);
     if (p) setForm((f) => ({ ...f, preset: p.id, prompt: p.prompt, aspectRatio: p.aspectRatio ?? f.aspectRatio }));

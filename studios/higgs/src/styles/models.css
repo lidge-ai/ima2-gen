@@ -1,0 +1,99 @@
+.models-filters {
+  display: grid;
+  gap: 10px;
+}
+.models-filters .search-field {
+  width: min(320px, 100%);
+}
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+.model-card {
+  display: grid;
+  grid-template-rows: 96px auto;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.model-card-thumb {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 120% at 50% 0%, var(--surface-3), var(--surface-2));
+  border-bottom: 1px solid var(--line);
+}
+.model-card-thumb .vendor-logo.is-text {
+  height: 40px;
+  padding: 0 14px;
+  font-size: 16px;
+}
+.model-card-body {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  align-content: start;
+}
+.model-card-body h3 {
+  font-size: 16px;
+}
+.model-card-body .btn {
+  justify-self: start;
+}
+.route-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+}
+.route-line {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.route-line-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.route-line-price {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+.maker-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.maker-strip a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  text-decoration: none;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.maker-strip a:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+@media (max-width: 760px) {
+  .model-grid {
+    grid-template-columns: 1fr;
+  }
+  .route-line {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+  }
+  .route-line .tag,
+  .route-line .key-state {
+    display: none;
+  }
+}

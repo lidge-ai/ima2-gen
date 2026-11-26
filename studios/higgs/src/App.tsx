@@ -9,6 +9,7 @@ import { RemixPage } from "./pages/remix/RemixPage.tsx";
 import { DirectorPage } from "./pages/director/DirectorPage.tsx";
 import { AssetsPage } from "./pages/assets/AssetsPage.tsx";
 import { KeysPage } from "./pages/keys/KeysPage.tsx";
+import { ModelsPage } from "./pages/models/ModelsPage.tsx";
 
 const NAV: { path: string; label: string; icon: IconName; match: (r: Route) => boolean }[] = [
   { path: "", label: "Home", icon: "explore", match: (r) => r.page === "explore" },
@@ -16,6 +17,7 @@ const NAV: { path: string; label: string; icon: IconName; match: (r: Route) => b
   { path: "video", label: "Video", icon: "video", match: (r) => r.page === "create" && r.kind === "video" },
   { path: "remix", label: "Remix", icon: "remix", match: (r) => r.page === "remix" },
   { path: "director", label: "Director", icon: "director", match: (r) => r.page === "director" },
+  { path: "models", label: "Models", icon: "layers", match: (r) => r.page === "models" },
   { path: "presets", label: "Presets", icon: "presets", match: (r) => r.page === "presets" },
   { path: "assets", label: "Assets", icon: "assets", match: (r) => r.page === "assets" },
 ];
@@ -89,6 +91,8 @@ function Page({ route }: { route: Route }) {
       return <PresetsPage {...route} />;
     case "assets":
       return <AssetsPage {...route} />;
+    case "models":
+      return <ModelsPage {...route} />;
     case "keys":
       return <KeysPage {...route} />;
     default:

@@ -78,10 +78,44 @@ function Count({ value, onChange }: { value: number; onChange: (n: number) => vo
   );
 }
 
+type Create = ReturnType<typeof useCreate>;
+
+function DockFields({ catalog, form, set, create }: Props & { create: Create }) {
+  const { model } = create;
+  return (
+    <div className="dock-fields">
+      <label className="visually-hidden" htmlFor="image-prompt">
+        Prompt
+      </label>
+      <textarea
+        id="image-prompt"
+        rows={2}
+        value={form.prompt}
+        placeholder={form.sourceImage ? "Describe the change" : "Describe the image you want"}
+        onChange={(e) => set({ prompt: e.target.value })}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
+        }}
+      />
+      <div className="dock-chips">
+        <Attach form={form} set={set} enabled={!!model?.tasks.includes("image-to-image")} />
+        <ModelPicker
+          variant="chip"
+          models={catalog.models}
+          kind="image"
+          value={form.model}
+          onChange={create.pickModel}
+        />
+        {model ? <ParamControls variant="chip" model={model} form={form} set={set} /> : null}
+        <Count value={form.count} onChange={(count) => set({ count })} />
+      </div>
+    </div>
+  );
+}
+
 /** Bottom-docked prompt bar for images: prompt on top, settings chips and Generate below. */
 export function ImageDock({ catalog, form, set }: Props) {
   const create = useCreate(catalog, form, set);
-  const { model } = create;
   return (
     <form
       className="dock"
@@ -100,33 +134,7 @@ export function ImageDock({ catalog, form, set }: Props) {
         </p>
       ) : null}
       <div className="dock-main">
-        <div className="dock-fields">
-          <label className="visually-hidden" htmlFor="image-prompt">
-            Prompt
-          </label>
-          <textarea
-            id="image-prompt"
-            rows={2}
-            value={form.prompt}
-            placeholder={form.sourceImage ? "Describe the change" : "Describe the image you want"}
-            onChange={(e) => set({ prompt: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
-            }}
-          />
-          <div className="dock-chips">
-            <Attach form={form} set={set} enabled={!!model?.tasks.includes("image-to-image")} />
-            <ModelPicker
-              variant="chip"
-              models={catalog.models}
-              kind="image"
-              value={form.model}
-              onChange={create.pickModel}
-            />
-            {model ? <ParamControls variant="chip" model={model} form={form} set={set} /> : null}
-            <Count value={form.count} onChange={(count) => set({ count })} />
-          </div>
-        </div>
+        <DockFields catalog={catalog} form={form} set={set} create={create} />
         <button
           className="btn btn-primary dock-generate"
           type="submit"

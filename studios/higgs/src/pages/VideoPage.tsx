@@ -26,74 +26,63 @@ function applyPreset(catalog: Catalog, form: CreateForm, preset: Preset | undefi
   };
 }
 
-function Stage({
-  view,
-  setView,
-  form,
-  set,
-  catalog,
-}: {
+const VIEWS: readonly { id: View; label: string; icon: "assets" | "presets" | "explore" }[] = [
+  { id: "history", label: "History", icon: "assets" },
+  { id: "presets", label: "Presets", icon: "presets" },
+  { id: "guide", label: "How it works", icon: "explore" },
+];
+
+interface StageProps {
   view: View;
   setView: (v: View) => void;
   form: CreateForm;
   set: (p: Partial<CreateForm>) => void;
   catalog: Catalog;
-}) {
+}
+
+function StageBody({ view, setView, form, set, catalog }: StageProps) {
+  if (view === "guide") return <HowItWorks kind="video" />;
+  if (view === "history") return <Feed kind="video" empty={<HowItWorks kind="video" />} />;
+  return (
+    <PresetGallery
+      kind="video"
+      selected={form.preset}
+      onPick={(preset) => {
+        set(applyPreset(catalog, form, preset));
+        setView("history");
+      }}
+      onClose={() => setView("history")}
+    />
+  );
+}
+
+function Stage(props: StageProps) {
   return (
     <main className="stage">
       <div className="stage-head">
         <div className="tabs" role="tablist" aria-label="Video views">
-          <button
-            type="button"
-            role="tab"
-            className="tab"
-            aria-selected={view === "history"}
-            onClick={() => setView("history")}
-          >
-            <Icon name="assets" size={15} /> History
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className="tab"
-            aria-selected={view === "presets"}
-            onClick={() => setView("presets")}
-          >
-            <Icon name="presets" size={15} /> Presets
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className="tab"
-            aria-selected={view === "guide"}
-            onClick={() => setView("guide")}
-          >
-            <Icon name="explore" size={15} /> How it works
-          </button>
+          {VIEWS.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              role="tab"
+              className="tab"
+              aria-selected={props.view === v.id}
+              onClick={() => props.setView(v.id)}
+            >
+              <Icon name={v.icon} size={15} /> {v.label}
+            </button>
+          ))}
         </div>
       </div>
       <div className="stage-body">
-        {view === "presets" ? (
-          <PresetGallery
-            kind="video"
-            selected={form.preset}
-            onPick={(preset) => {
-              set(applyPreset(catalog, form, preset));
-              setView("history");
-            }}
-            onClose={() => setView("history")}
-          />
-        ) : view === "guide" ? (
-          <HowItWorks kind="video" />
-        ) : (
-          <Feed kind="video" empty={<HowItWorks kind="video" />} />
-        )}
+        <StageBody {...props} />
       </div>
     </main>
   );
 }
 
-export function VideoPage({ preset }: { preset?: string; model?: string }) {
+export function VideoPage({ preset, model: requested }: { preset?: string; model?: string }) {
   const catalog = useStudio((s) => s.catalog);
   const [form, setForm] = useState<CreateForm>(() => emptyForm());
   const [view, setView] = useState<View>("history");
@@ -104,12 +93,14 @@ export function VideoPage({ preset }: { preset?: string; model?: string }) {
   useEffect(() => {
     if (!catalog || form.model) return;
     const tasks = form.mode === "edit" ? EDIT_TASKS : undefined;
-    const model = defaultModel(catalog.models, "video", tasks);
+    const asked =
+      form.mode === "create" ? catalog.models.find((m) => m.id === requested && m.kind === "video") : undefined;
+    const model = asked ?? defaultModel(catalog.models, "video", tasks);
     setForm((f) => {
       const next = { ...f, model: model?.id, ...defaultsFor(model, f) };
       return f.preset === undefined && preset ? { ...next, ...applyPreset(catalog, next, findPreset(preset)) } : next;
     });
-  }, [catalog, form.model, form.mode, preset]);
+  }, [catalog, form.model, form.mode, preset, requested]);
   if (!catalog)
     return (
       <div className="empty" role="status">

@@ -7,7 +7,8 @@ export type Route =
   | { page: "director"; workflow?: string }
   | { page: "presets"; tab?: string }
   | { page: "assets"; kind?: string }
-  | { page: "keys"; focus?: string };
+  | { page: "keys"; focus?: string }
+  | { page: "models"; vendor?: string };
 
 export function parseHash(hash: string): Route {
   const [path = "", query = ""] = hash.replace(/^#\/?/, "").split("?");
@@ -26,6 +27,8 @@ export function parseHash(hash: string): Route {
       return clean({ page: "presets", tab: sub });
     case "assets":
       return clean({ page: "assets", kind: sub });
+    case "models":
+      return clean({ page: "models", vendor: sub || get("vendor") });
     case "keys":
       return clean({ page: "keys", focus: get("focus") });
     default:
