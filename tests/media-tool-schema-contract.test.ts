@@ -87,7 +87,8 @@ test("only workflow-dependent descriptors vary with the workflow catalog", () =>
   const populated = buildMediaToolDescriptors(WORKFLOWS);
   const dependent = new Set(["workflow_schema", "workflow_estimate", "workflow_run"]);
   assert.deepEqual(empty.filter((tool) => !dependent.has(tool.name)), populated.filter((tool) => !dependent.has(tool.name)));
-  assert.equal(WORKFLOWS.length, 10);
+  // The catalog grows as workflows land (dev added the open Remix variants); every one must get a branch.
+  assert.ok(WORKFLOWS.length >= 10);
   for (const name of dependent) {
     const blank = empty.find((tool) => tool.name === name)!.inputSchema as Schema;
     const full = populated.find((tool) => tool.name === name)!.inputSchema as Schema;
