@@ -8,7 +8,7 @@ export type LogoVariant = "primary" | "dark" | "light" | "mark";
 export interface VendorAssetFile {
   file: string;
   variant: LogoVariant;
-  format: "svg" | "png";
+  format: "svg" | "png" | "jpg" | "webp";
   width?: number;
   height?: number;
 }

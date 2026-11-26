@@ -69,7 +69,7 @@ test("vendor files exist and SVG files are safe, well-formed documents", () => {
   for (const vendor of manifest.vendors) {
     assert.ok(vendor.files.length || vendor.missing?.trim(), `${vendor.id} needs a missing reason`);
     for (const file of vendor.files) {
-      assert.match(file.file, new RegExp(`^${vendor.id}(?:-(?:dark|light|mark))?\\.(?:svg|png)$`));
+      assert.match(file.file, new RegExp(`^${vendor.id}(?:-(?:dark|light|mark))?\\.(?:svg|png|jpg|webp)$`));
       assert.ok(!seen.has(file.file), `duplicate file ${file.file}`);
       seen.add(file.file);
       assert.ok(["primary", "dark", "light", "mark"].includes(file.variant));
@@ -77,7 +77,7 @@ test("vendor files exist and SVG files are safe, well-formed documents", () => {
       const path = join(assets, file.file);
       assert.ok(statSync(path).size > 0, `${file.file} is empty`);
       if (file.format === "svg") execFileSync("python3", ["-c", checkSvg, path], { stdio: "pipe" });
-      else assert.equal(file.format, "png");
+      else assert.ok(["png", "jpg", "webp"].includes(file.format), "raster format " + file.format);
     }
   }
 });

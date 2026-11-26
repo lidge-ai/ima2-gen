@@ -62,26 +62,47 @@
     {
       "id": "kling",
       "name": "Kling AI",
-      "files": [],
-      "sourceUrl": null,
-      "pageUrl": "https://klingai.com/",
-      "firstParty": false,
+      "files": [
+        {
+          "file": "kling-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "width": 180,
+          "height": 180
+        }
+      ],
+      "sourceUrl": "https://s16-kling.klingai.com/kos/s101/nlav112918/kling-homepage-aio/logo-180x180.png",
+      "pageUrl": "https://klingai.com/global/",
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "https://klingai.com/ returned HTTP 200; header inline SVG is not well-formed XML (unquoted boolean attributes), and https://github.com/KlingAIResearch.png?size=460 returns JPEG bytes."
+      "license": "Referential use to identify Kling AI; no public brand kit located; used unaltered.",
+      "modifications": "none; app icon linked from the official site <head>"
     },
     {
       "id": "minimax",
       "name": "MiniMax",
-      "files": [],
-      "sourceUrl": null,
+      "files": [
+        {
+          "file": "minimax.webp",
+          "variant": "primary",
+          "format": "webp",
+          "width": 349,
+          "height": 128
+        },
+        {
+          "file": "minimax-dark.webp",
+          "variant": "dark",
+          "format": "webp",
+          "width": 349,
+          "height": 128
+        }
+      ],
+      "sourceUrl": "https://www.minimax.io/assets/logo/minimax-horizontal-brand-black.webp",
       "pageUrl": "https://www.minimax.io/",
-      "firstParty": false,
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "https://www.minimax.io/ returned HTTP 200 with WebP header logos; https://github.com/MiniMax-AI.png?size=460 returned JPEG bytes. WebP would require changing the test outside the permitted directory."
+      "license": "Referential use to identify MiniMax as a model maker; no brand guideline page located; logo used unaltered.",
+      "modifications": "none; original WebP bytes as served by the official site header (dark variant: /assets/logo/minimax-horizontal-white.webp)"
     },
     {
       "id": "vidu",
@@ -218,14 +239,21 @@
     {
       "id": "ideogram",
       "name": "Ideogram",
-      "files": [],
-      "sourceUrl": null,
-      "pageUrl": "https://ideogram.ai/",
-      "firstParty": false,
+      "files": [
+        {
+          "file": "ideogram.jpg",
+          "variant": "mark",
+          "format": "jpg",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/ideogram-ai.png?size=460",
+      "pageUrl": "https://github.com/ideogram-ai",
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "https://ideogram.ai/_astro/new-logo.wmOvXw7A.svg returned HTTP 403; https://github.com/ideogram-oss.png?size=460 returned JPEG bytes."
+      "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
+      "modifications": "none; GitHub org avatar (org name \"Ideogram\"); site header SVG is behind a bot challenge"
     },
     {
       "id": "recraft",
@@ -347,14 +375,21 @@
     {
       "id": "meigen",
       "name": "MeiGen-AI",
-      "files": [],
-      "sourceUrl": null,
-      "pageUrl": "https://github.com/MeiGen-AI/InfiniteTalk",
-      "firstParty": false,
+      "files": [
+        {
+          "file": "meigen.jpg",
+          "variant": "mark",
+          "format": "jpg",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/MeiGen-AI.png?size=460",
+      "pageUrl": "https://github.com/MeiGen-AI",
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "https://github.com/MeiGen-AI/InfiniteTalk returned HTTP 200 and links a JPEG project logo; https://github.com/MeiGen-AI.png?size=460 returned JPEG bytes."
+      "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
+      "modifications": "none; GitHub org avatar"
     },
     {
       "id": "sync",
@@ -505,14 +540,21 @@
     {
       "id": "ace-step",
       "name": "ACE-Step",
-      "files": [],
-      "sourceUrl": null,
-      "pageUrl": "https://github.com/ace-step/ACE-Step",
-      "firstParty": false,
+      "files": [
+        {
+          "file": "ace-step.jpg",
+          "variant": "mark",
+          "format": "jpg",
+          "width": 460,
+          "height": 460
+        }
+      ],
+      "sourceUrl": "https://github.com/ace-step.png?size=460",
+      "pageUrl": "https://github.com/ace-step",
+      "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
-      "missing": "https://github.com/ace-step/ACE-Step returned HTTP 200 with a combined organization-logos image; https://github.com/ace-step.png?size=460 returned JPEG bytes."
+      "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
+      "modifications": "none; GitHub org avatar (org name \"ACEStep\")"
     },
     {
       "id": "tripo",
