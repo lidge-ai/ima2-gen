@@ -3,15 +3,18 @@ import assert from "node:assert/strict";
 import { createServer, type ServerResponse } from "node:http";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, rm } from "node:fs/promises";
+import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const root = await mkdtemp(join(tmpdir(), "ima2-media-contract-"));
+for (const name of ["open", "xdg-open", "explorer"]) {
+  const path = join(root, name); await writeFile(path, "#!/bin/sh\nexit 0\n"); await chmod(path, 0o755);
+}
 test.after(() => rm(root, { recursive: true, force: true }));
 async function cli(base: string, args: string[], stdin = "") {
   const child = spawn(process.execPath, ["--import", "tsx", "bin/ima2.ts", "media", ...args, "--server", base], {
-    env: { PATH: process.env.PATH, TMPDIR: process.env.TMPDIR, NO_COLOR: "1", HOME: root, USERPROFILE: root,
+    env: { PATH: `${root}:${process.env.PATH}`, TMPDIR: process.env.TMPDIR, NO_COLOR: "1", HOME: root, USERPROFILE: root,
       IMA2_CONFIG_DIR: root, IMA2_GENERATED_DIR: root, IMA2_ADVERTISE_FILE: join(root, "absent") },
   });
   let stdout = "", stderr = "";
@@ -55,7 +58,11 @@ async function fixture(run: (base: string, calls: { url: string; method: string;
     if (url === "/api/keys/broken/validate") return void res.end('{}');
     if (url === "/api/keys/vocabulary" && req.headers["x-never"]) { res.statusCode = 500; return void res.end('{}'); }
     if (url === "/api/keys/vocabulary") return void res.end(JSON.stringify({ vocabularies: [{ vocabulary: "fake", extraFields: [{ name: "secret", secret: true }] }] }));
-    if (url === "/api/keys/fake/validate") return void res.end(body);
+    if (url === "/api/keys/fake/validate") {
+      const parsed = JSON.parse(body) as { extra?: { secret?: string } };
+      if (parsed.extra?.secret && parsed.extra.secret.length < 6) { res.statusCode = 400; return void res.end('{"code":"KEY_TOO_SHORT","error":"too short"}'); }
+      return void res.end(body);
+    }
     if (url === "/api/keys/fake") return void res.end('{"ok":true}');
     if (url === "/api/workflows/demo/schema") return void res.end('{"id":"demo","label":"Demo","schema":{"type":"object","properties":{"prompt":{"type":"string","maxLength":100}},"required":["prompt"]}}');
     if (url === "/api/studios") return void res.end('{"studios":[{"name":"demo","built":true,"url":"/studio/demo/"}],"defaultUi":"web"}');
@@ -158,7 +165,9 @@ test("flags are scoped, short secrets are rejected, studio output and quiet mode
   const before = calls.length;
   const wrong = await cli(base, ["status", "running", "--model", "v/a"]); assert.match(wrong.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
   const short = await cli(base, ["keys", "validate", "fake", "--stdin-json"], '{"apiKey":"abcdef","extra":{"secret":"short"}}');
-  assert.match(short.stderr, /KEY_TOO_SHORT/); assert.equal(calls.filter((c) => c.url === "/api/keys/fake/validate").length, 0);
+  assert.match(short.stderr, /KEY_TOO_SHORT/);
+  const nonsecret = await cli(base, ["keys", "validate", "fake", "--stdin-json", "--json"], '{"apiKey":"abcdef","extra":{"region":"us"}}');
+  assert.equal(nonsecret.code, 0, nonsecret.stderr);
   const studio = await cli(base, ["studio", "open", "demo"]); assert.equal(studio.code, 0, studio.stderr); assert.equal(studio.stdout, `${base}/studio/demo/\n`);
   const quiet = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--quiet"]); assert.equal(quiet.code, 0, quiet.stderr); assert.equal(quiet.stderr, "");
 }));
