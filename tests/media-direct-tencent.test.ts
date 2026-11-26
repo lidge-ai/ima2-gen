@@ -114,3 +114,23 @@ test("Mingmou running, failed and response envelope errors redact credentials", 
   const bad = context({ Response: { Error: { Code: "AuthFailure.SignatureFailure", Message: "secret-id-123 secret-key-456" } } }); bad.ctx.extra = extra;
   await assert.rejects(adapter.poll(bad.ctx, job), (e: Error) => { const normalized = adapter.normalizeError(e); return normalized.category === "auth" && !/secret-id-123|secret-key-456/.test(normalized.message); });
 });
+test("Mingmou extended failure codes are honored even if ErrCode is zero", async () => {
+  const extra = { secretId: "id-1234", secretKey: "key-1234", vodSubAppId: "123" };
+  const job = { providerJobId: "job", resume: { route: "vod", subAppId: "123" } };
+  for (const [code, expected] of [["RequestLimitExceeded", "rate-limit"], ["ContentModerationFailed", "moderation"], ["TaskTimeout", "timeout"], ["ResourceInsufficient", "quota"]] as const) {
+    const t = context({ Response: { AigcVideoTask: { Status: "FINISH", ErrCode: 0, ErrCodeExt: code, Message: "failed" } } }); t.ctx.extra = extra;
+    const state = await adapter.poll(t.ctx, job); assert.equal(state.status, "failed");
+    if (state.status === "failed") assert.equal(state.error.category, expected);
+  }
+  const canceled = context({ Response: { AigcVideoTask: { Status: "FINISH", ErrCode: 1, ErrCodeExt: "OperationCanceled" } } }); canceled.ctx.extra = extra;
+  assert.equal((await adapter.poll(canceled.ctx, job)).status, "canceled");
+});
+test("Mingmou rejects unsupported options and invalid credentials without transport", async () => {
+  const req: MediaSubmitRequest = { model: "tencent/mingmou-1", task: "text-to-video", prompt: "test", inputs: [] };
+  for (const patch of [{ durationSec: 5 }, { audio: true }, { vendorOptions: { arbitrary: true } }, { task: "image-to-video" as const }]) {
+    const t = context({}); t.ctx.extra = { secretId: "id-1234", secretKey: "key-1234", vodSubAppId: "1" };
+    await assert.rejects(adapter.submit(t.ctx, { ...req, ...patch })); assert.equal(t.calls.length, 0);
+  }
+  const noSub = context({}); noSub.ctx.extra = { secretId: "id-1234", secretKey: "key-1234" };
+  await assert.rejects(adapter.submit(noSub.ctx, req)); assert.equal(noSub.calls.length, 0);
+});

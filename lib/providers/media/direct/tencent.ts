@@ -1,3 +1,4 @@
+import { mingmou, pollVod, submitVod } from "./tencent/vod.js";
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
 import { MediaAdapterError, categoryForStatus, contextSecrets, fail, mediaError, normalizeUnknownError, redactSecrets } from "./_l2/errors.js";
 import { asRecord, asString, joinUrl, sendJson } from "./_l2/http.js";
@@ -13,10 +14,10 @@ const models: readonly MediaModelSpec[] = [{
   label: "WAND Vega Video 1.0 Lite", kind: "video", tasks: ["text-to-video", "image-to-video", "reference-to-video"],
   params: { durationsSec: Array.from({ length: 12 }, (_, i) => i + 4), resolutions: ["768P", "1080P", "2K", "4K"], aspectRatios: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16", "adaptive"], maxReferenceImages: 9, maxReferenceVideos: 3 },
   pricing: [], docsUrl: DOCS,
-}];
+}, mingmou];
 
 function safeMessage(ctx: MediaAdapterContext, message: string): string {
-  return redactSecrets(message, [...contextSecrets(ctx), ...(ctx.apiKey ? [ctx.apiKey] : [])]);
+  return redactSecrets(message, [...contextSecrets(ctx, ["secretId", "secretKey"]), ...[ctx.apiKey, ctx.extra?.secretId, ctx.extra?.secretKey].filter((v): v is string => Boolean(v))]);
 }
 function providerError(ctx: MediaAdapterContext, code: string, message: string, status?: number) {
   const category = code === "TaskTimeout" ? "timeout" : code === "InternalError" ? "upstream" : status ? categoryForStatus(status) : "unknown";
@@ -64,6 +65,7 @@ function requestBody(request: MediaSubmitRequest) {
 }
 async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Promise<MediaJobRef> {
   try {
+    if (request.model === mingmou.id || request.model === mingmou.upstreamId) return await submitVod(ctx, request);
     const data = await call(ctx, PATH, requestBody(request));
     const id = asString(data.id);
     if (!id) fail(PREFIX, "BAD_RESPONSE", "upstream", "Missing task id");
@@ -74,6 +76,7 @@ async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Pr
   }
 }
 async function poll(ctx: MediaAdapterContext, job: MediaJobRef): Promise<MediaJobState> {
+  if (job.resume?.route === "vod") return pollVod(ctx, job);
   const data = await call(ctx, `${PATH}/${encodeURIComponent(job.providerJobId)}`);
   const status = asString(data.status);
   if (status === "queued" || status === "running") return { status };
@@ -90,7 +93,7 @@ async function poll(ctx: MediaAdapterContext, job: MediaJobRef): Promise<MediaJo
 }
 export const adapter: MediaProviderAdapter = {
   id: "tencent", label: "Tencent Cloud TokenHub", route: "direct", errorPrefix: PREFIX,
-  credential: { keyVocabulary: "tencent", configKey: "tencentApiKey", envVars: ["TENCENT_TOKENHUB_API_KEY"], consoleUrl: "https://console.tencentcloud.com/lkeap" },
+  credential: { keyVocabulary: "tencent", configKey: "tencentApiKey", envVars: ["TENCENT_TOKENHUB_API_KEY"], consoleUrl: "https://console.tencentcloud.com/lkeap", extraFields: [{ name: "secretId", envVar: "TENCENTCLOUD_SECRET_ID", secret: true, required: false }, { name: "secretKey", envVar: "TENCENTCLOUD_SECRET_KEY", secret: true, required: false }, { name: "vodSubAppId", envVar: "TENCENT_VOD_SUBAPPID", secret: false, required: false }, { name: "region", envVar: "TENCENTCLOUD_REGION", secret: false, required: false }] },
   inputTransport: "url", listModels: () => models,
   async validateKey(ctx) {
     const data = await call(ctx, "/v1/models");
