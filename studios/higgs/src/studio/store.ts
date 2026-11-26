@@ -74,13 +74,19 @@ export class Studio {
     for (const listener of this.listeners) listener();
   }
 
-  start(): void {
-    void this.refreshCatalog();
-    void this.refreshKeys();
-    void this.client.workflows.list().then(
+  /** Loads the workflow list; screens call it again from their error state. */
+  refreshWorkflows(): Promise<void> {
+    this.set({ workflowsLoaded: false, workflowsError: null });
+    return this.client.workflows.list().then(
       (workflows) => this.set({ workflows, workflowsLoaded: true, workflowsError: null }),
       (error: unknown) => this.set({ workflowsLoaded: true, workflowsError: message(error) }),
     );
+  }
+
+  start(): void {
+    void this.refreshCatalog();
+    void this.refreshKeys();
+    void this.refreshWorkflows();
     void this.client.media.jobs({ status: "all" }).then(
       (jobs) => {
         for (const job of jobs.reverse()) this.upsertJob(job);

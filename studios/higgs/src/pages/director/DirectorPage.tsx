@@ -8,11 +8,12 @@ import { Feed } from "../../ui/Feed.tsx";
 import { ModelName } from "../../ui/ModelName.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
+import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
 import "../../styles/director.css";
 
 const M = messages(
   { noAttach: "{workflow} does not accept {kind} attachments", attachFailed: "Could not attach result", cast: "cast", location: "location", castLabel: "Cast", locationLabel: "Location", attach: "Attach {kind}: {name}", elements: "Your cast and locations", emptyElements: "Create cast or locations to reuse them here.", workflows: "Director workflows", workflow: "Director workflow", historyLabel: "Director history", history: "History", emptyHistory: "No director results yet", emptyHint: "Generate a result to see it here.", loadError: "Could not load workflows: {error}", none: "No director workflows available", loading: "Loading director workflows" },
-  { noAttach: "{workflow}에는 {kind}을 추가할 수 없어요", attachFailed: "결과를 추가하지 못했어요", cast: "인물", location: "장소", castLabel: "인물", locationLabel: "장소", attach: "{kind} 추가: {name}", elements: "내 인물과 장소", emptyElements: "인물이나 장소를 생성하면 여기서 다시 쓸 수 있어요.", workflows: "ëë í° 워크플로", workflow: "ëë í° 워크플로", historyLabel: "ëë í° 기록", history: "기록", emptyHistory: "아직 ëë í° 결과가 없어요", emptyHint: "결과를 생성하면 여기에 표시돼요.", loadError: "워크플로를 불러오지 못했어요: {error}", none: "사용할 수 있는 ëë í° 워크플로가 없어요", loading: "ëë í° 워크플로를 불러오는 중이에요" },
+  { noAttach: "{workflow}에는 {kind}을 추가할 수 없어요", attachFailed: "결과를 추가하지 못했어요", cast: "인물", location: "장소", castLabel: "인물", locationLabel: "장소", attach: "{kind} 추가: {name}", elements: "내 인물과 장소", emptyElements: "인물이나 장소를 생성하면 여기서 다시 쓸 수 있어요.", workflows: "디렉터 워크플로", workflow: "디렉터 워크플로", historyLabel: "디렉터 기록", history: "기록", emptyHistory: "아직 디렉터 결과가 없어요", emptyHint: "결과를 생성하면 여기에 표시돼요.", loadError: "워크플로를 불러오지 못했어요: {error}", none: "사용할 수 있는 디렉터 워크플로가 없어요", loading: "디렉터 워크플로를 불러오는 중이에요" },
 );
 
 const order = ["director-studio", "director-cinema", "director-cast", "director-locations"];
@@ -156,12 +157,7 @@ export function DirectorPage({ workflow }: { workflow?: string }) {
     .slice()
     .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   const def = workflows.find((item) => item.id === workflow) ?? workflows[0];
-  if (error)
-    return (
-      <div className="empty" role="alert">
-        {t("loadError", { error })}
-      </div>
-    );
+  if (error) return <WorkflowsError error={error} />;
   if (!def)
     return (
       <div className="empty" role="status">

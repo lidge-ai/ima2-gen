@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { HistoryItem, HistoryQuery, StudioClient } from "@ima2/studio-kit";
 
 export function useAssetModels(client: StudioClient, history: readonly HistoryItem[], revision: number) {
@@ -32,8 +32,17 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
   const { kind, model, favorite } = query;
+  // Results belong to one filter: a new filter starts empty, and a page that arrives for an
+  // older filter (a slow first page or load-more) is dropped instead of mixed in.
+  const key = JSON.stringify([kind, model, favorite]);
+  const current = useRef(key);
   useEffect(() => {
     let active = true;
+    if (current.current !== key) {
+      current.current = key;
+      setItems([]);
+      setCursor(null);
+    }
     setLoading(true);
     client.history
       .list({ kind, model, favorite, limit: 40 })
@@ -45,7 +54,10 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
           setError("");
         },
         (err: unknown) => {
-          if (active) setError(err instanceof Error ? err.message : String(err));
+          if (!active) return;
+          setItems([]);
+          setCursor(null);
+          setError(err instanceof Error ? err.message : String(err));
         },
       )
       .finally(() => {
@@ -54,20 +66,22 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
     return () => {
       active = false;
     };
-  }, [client, kind, model, favorite, history, revision]);
+  }, [client, key, kind, model, favorite, history, revision]);
   const loadMore = useCallback(async () => {
     if (!cursor) return;
+    const requested = key;
     setLoading(true);
     try {
       const page = await client.history.list({ kind, model, favorite, cursor, limit: 40 });
-      setItems((current) => [...current, ...page.items]);
+      if (current.current !== requested) return;
+      setItems((shown) => [...shown, ...page.items]);
       setCursor(page.nextCursor);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (current.current === requested) setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  }, [client, cursor, kind, model, favorite]);
+  }, [client, cursor, key, kind, model, favorite]);
   return { items, cursor, error, loading, revision, loadMore, retry: () => setRevision((v) => v + 1) };
 }

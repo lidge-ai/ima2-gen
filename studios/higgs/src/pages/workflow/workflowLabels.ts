@@ -9,7 +9,7 @@ const M = messages(
     directorPrompt: "", sceneImage: "", count: "", duration: "", generateAudio: "", continuity: "", anchors: "", resolution: "", sound: "", tier: "", style: "", aspectRatio: "", camera: "", lens: "", palette: "", paletteColors: "",
   },
   {
-    motion: "ë¦¬ë¯¹ì¤: 동작 따라하기", swap: "ë¦¬ë¯¹ì¤: 사물 바꾸기", restyle: "ë¦¬ë¯¹ì¤: 스타일 바꾸기", studio: "ëë í° 스튜디오", cinema: "ëë í° 시네마", cast: "ëë í° 인물", locations: "ëë í° 장소",
+    motion: "리믹스: 동작 따라하기", swap: "리믹스: 사물 바꾸기", restyle: "리믹스: 스타일 바꾸기", studio: "디렉터 스튜디오", cinema: "디렉터 시네마", cast: "디렉터 인물", locations: "디렉터 장소",
     motionDescription: "4~15초 영상의 동작을 피사체에 적용해요. 카메라, 타이밍과 소리는 원본을 따라가요.",
     swapDescription: "4~15초 영상에서 선택한 사람이나 사물을 바꾸고 나머지는 유지해요.",
     restyleDescription: "4~15초 영상의 동작과 소리를 유지하며 스타일을 바꿔요.",
