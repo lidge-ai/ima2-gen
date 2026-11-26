@@ -32,7 +32,7 @@ function ModelList({ id, models, selection, changeModel, error, loading, retry }
     {loading && <p role="status">{t("mediaPicker.loading")}</p>}
     {error && <div role="alert">{t("mediaPicker.loadError")} <button type="button" className="media-link" onClick={retry}>{t("mediaPicker.retry")}</button></div>}
     {!loading && !error && models.length === 0 && <p>{t("mediaPicker.empty")}</p>}
-    <div role="group" aria-labelledby={id} className="media-list">
+    <div role="group" aria-labelledby={id} className="media-list media-list--models">
       <button type="button" className={`option-btn media-list__classic${!selection ? " active" : ""}`} aria-pressed={!selection} onClick={() => changeModel("")}>
         {t("mediaPicker.classic")}
       </button>

@@ -26,7 +26,7 @@ export function MediaProviderKeys() {
   const [shown, setShown] = useState(false);
   const refresh = useCallback(async () => {
     try { setSnapshot(await loadKeys()); setError(""); }
-    catch { setError("load"); }
+    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }, []);
   // Loaded on request so opening Settings keeps its previous requests.
   useEffect(() => { if (shown) void refresh(); }, [shown, refresh]);
@@ -39,7 +39,7 @@ export function MediaProviderKeys() {
   }
   return <article className="media-provider-keys">
     <h4>{t("media.keysTitle")}</h4>
-    {error && <div className="api-key-error" role="alert">{t("media.loadError")} <button type="button" className="media-link" onClick={() => void refresh()}>{t("mediaPicker.retry")}</button></div>}
+    {error && <div className="api-key-error" role="alert">{t("media.loadError")} <span className="media-error-detail">{error}</span> <button type="button" className="media-link" onClick={() => void refresh()}>{t("mediaPicker.retry")}</button></div>}
     {!snapshot && !error && <p role="status">{t("media.loading")}</p>}
     {snapshot && entries.length === 0 && <p>{t("media.noProviders")}</p>}
     {snapshot && entries.map((v) => <MediaKeyForm key={v.vocabulary} vocabulary={v}
@@ -67,7 +67,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
         ...(method === "PUT" ? { body: JSON.stringify(v.legacy ? { extra } : { apiKey: key, extra }) } : {}),
       });
       setKey(""); setExtra({}); await refresh();
-    } catch { setError(method === "PUT" ? "save" : "remove"); }
+    } catch (e) { setError(`${method === "PUT" ? "save" : "remove"}\n${e instanceof Error ? e.message : String(e)}`); }
     finally { setBusy(false); }
   };
   return <section className="settings-row media-provider-keys__provider">
@@ -94,7 +94,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
           value={extra[field.name] ?? ""} onChange={(e) => setExtra({ ...extra, [field.name]: e.target.value })} />
           <button type="button" className="settings-action-btn" disabled={busy || !extra[field.name]?.trim() || (!v.legacy && !key.trim())} onClick={() => void save("PUT")}>{t("settings.apiKeys.save")}</button></div>
       </div>)}
-      {error && <p className="api-key-error" role="alert">{t(error === "save" ? "media.saveError" : "media.removeError")}</p>}
+      {error && <p className="api-key-error" role="alert">{t(error.startsWith("save") ? "media.saveError" : "media.removeError")} <span className="media-error-detail">{error.slice(error.indexOf("\n") + 1)}</span></p>}
     </div>
     <div className={`settings-status${status?.configured ? " is-ok" : ""}`}><span aria-hidden="true" />{status?.configured ? t("media.configured") : t("media.notConfigured")}</div>
   </section>;
