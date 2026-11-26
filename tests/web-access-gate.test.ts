@@ -109,7 +109,6 @@ test("remote-unsafe routes and unpriced generation are closed; everyday routes s
     ["POST", "/api/video/generate", "WEB_UNPRICED"],
     ["POST", "/api/agent/sessions", "WEB_UNPRICED"],
     ["POST", "/api/prompt-builder/chat", "WEB_UNPRICED"],
-    ["POST", "/api/workflows/director-studio", "WEB_UNPRICED"],
     ["POST", "/api/cardnews/generate", "WEB_UNPRICED"],
   ];
   for (const [method, path, code] of closed) {
@@ -119,7 +118,7 @@ test("remote-unsafe routes and unpriced generation are closed; everyday routes s
   }
   for (const [method, path] of [["GET", "/api/health"], ["GET", "/api/media/catalog"], ["POST", "/api/media"], ["POST", "/api/media/inputs"],
     ["POST", "/api/media/r1/cancel"], ["GET", "/api/keys/status"], ["POST", "/api/sessions"], ["PATCH", "/api/sessions/s1"],
-    ["POST", "/api/workflows/director-studio/estimate"], ["GET", "/api/history"], ["POST", "/api/history/favorite"], ["DELETE", "/api/inflight/r1"]]) {
+    ["POST", "/api/workflows/director-studio/estimate"], ["POST", "/api/workflows/director-studio"], ["GET", "/api/history"], ["POST", "/api/history/favorite"], ["DELETE", "/api/inflight/r1"]]) {
     const res = await call(path!, { method: method! });
     assert.equal(res.status, 200, method + " " + path);
   }
