@@ -9,7 +9,7 @@ import { anchorTimes, pinnedDuration, segmentPlan } from "../lib/workflows/defin
 import { fakeAdapter, fakeGateway, fakeLocal, instantPoll, spec, tempDir, writeFixture } from "./_workflowFakes.js";
 
 const root = tempDir("ima2-wf-sub-");
-after(() => rmSync(root, { recursive: true, force: true }));
+after(() => rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 const clip = writeFixture(root, "clip.mp4", "source-video");
 const short = writeFixture(root, "short.mp4", "short-video");
 const face = writeFixture(root, "face.png", "face");
@@ -62,7 +62,8 @@ test("subscription restyle cuts a 12.4 s clip into two edits on the Grok OAuth r
   assert.equal(result.status, "succeeded");
   assert.deepEqual(gateway.resolved.map((r) => r.route), ["xai-oauth", "xai-oauth"]);
   const sent = adapter.calls.filter((c) => c.op === "submit").map((c) => c.request);
-  assert.deepEqual(sent.map((r) => new TextDecoder().decode(r?.inputs[0]?.bytes)), ["cut:0.000+6.200", "cut:6.200+6.200"]);
+  // The two segment edits run in parallel, so their submit order is not fixed.
+  assert.deepEqual(sent.map((r) => new TextDecoder().decode(r?.inputs[0]?.bytes)).sort(), ["cut:0.000+6.200", "cut:6.200+6.200"]);
   assert.ok(sent.every((r) => r?.inputs.length === 1 && r.inputs[0]?.role === "source-video"), "edit sends only the segment");
   assert.match(sent[0]?.prompt ?? "", /Loose watercolor/);
   assert.equal(sent[0]?.prompt, sent[1]?.prompt, "one prompt for every segment");

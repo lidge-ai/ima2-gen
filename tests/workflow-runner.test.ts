@@ -7,7 +7,7 @@ import type { MediaStep, WorkflowEvent, WorkflowStep } from "../lib/workflows/ty
 import { fakeAdapter, fakeGateway, fakeLocal, instantPoll, SECRET, tempDir, videoOutput } from "./_workflowFakes.js";
 
 const dirs: string[] = [];
-after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
+after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 function workDir(): string {
   const d = tempDir();
   dirs.push(d);

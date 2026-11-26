@@ -2,7 +2,7 @@ import type { LocalStep, MediaStep, ResolvedSlot, WorkflowDefinition, WorkflowSt
 import { keepSoundStep, sourceOf, sourceVideoField } from "./remixShared.js";
 import { joinPrompt, option, textOf } from "./shared.js";
 import { STYLE_PRESETS } from "./styles.js";
-import { BILLING_NOTE, cappedVariant, GROK_EDIT_MAX_SEC, GROK_EDIT_SLOT, REQUIRES, segmentPlan } from "./subscription.js";
+import { BILLING_NOTE, cappedVariant, XAI_EDIT_MAX_SEC, XAI_EDIT_SLOT, REQUIRES, segmentPlan } from "./subscription.js";
 
 function prompt(values: WorkflowValues): string {
   const preset = STYLE_PRESETS[textOf(values, "style") ?? ""];
@@ -56,7 +56,7 @@ function joinStep(count: number): LocalStep {
 
 function plan(values: WorkflowValues, slot: ResolvedSlot): WorkflowStep[] {
   const source = sourceOf(values);
-  const segments = segmentPlan(source.durationSec ?? 0, GROK_EDIT_MAX_SEC);
+  const segments = segmentPlan(source.durationSec ?? 0, XAI_EDIT_MAX_SEC);
   const steps: WorkflowStep[] = [];
   segments.forEach((s, i) => steps.push(cutStep(i, s.startSec, s.durationSec), editStep(i, s.durationSec, slot, values)));
   let last: WorkflowStep;
@@ -92,7 +92,7 @@ export const remixRestyleSubscription: WorkflowDefinition = {
     { name: "prompt", type: "text", label: "Look", required: false, maxLength: 2000, multiline: true, help: "Describe the look; added after the style." },
     { name: "sound", type: "enum", label: "Sound", required: false, default: "source", options: [option("source", "Keep the source sound"), option("model", "Use the edit's sound")] },
   ],
-  slots: [GROK_EDIT_SLOT],
+  slots: [XAI_EDIT_SLOT],
   check(values) {
     return values.style === undefined && values.prompt === undefined ? "choose a style or describe the look" : null;
   },

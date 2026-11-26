@@ -3,7 +3,7 @@ import { checkReferenceLimit } from "../validate.js";
 import { keepSoundStep, referenceImagesField, sourceOf, sourceVideoField } from "./remixShared.js";
 import { inputsFrom, joinPrompt, option, refsOf, textOf } from "./shared.js";
 import {
-  anchorTimes, BILLING_NOTE, GPT_FRAME_SLOT, GROK_PIN_MAX_KEYFRAMES, GROK_PIN_SLOT, pinnedDuration, REQUIRES,
+  anchorTimes, BILLING_NOTE, GPT_FRAME_SLOT, XAI_PIN_MAX_KEYFRAMES, XAI_PIN_SLOT, pinnedDuration, REQUIRES,
 } from "./subscription.js";
 
 type Mode = "motion" | "swap";
@@ -14,7 +14,7 @@ interface Anchor { id: string; sourceSec: string; outputSec: number; role: "firs
 function anchors(values: WorkflowValues): { duration: number; list: Anchor[] } {
   const sourceSec = sourceOf(values).durationSec ?? 0;
   const duration = pinnedDuration(sourceSec);
-  const count = typeof values.anchors === "number" ? values.anchors : GROK_PIN_MAX_KEYFRAMES;
+  const count = typeof values.anchors === "number" ? values.anchors : XAI_PIN_MAX_KEYFRAMES;
   const scale = sourceSec / duration;
   const keys = anchorTimes(duration, count).map((t, i): Anchor => ({ id: "key-" + (i + 1), sourceSec: (t * scale).toFixed(3), outputSec: t, role: "key" }));
   return { duration, list: [{ id: "first", sourceSec: "first", outputSec: 0, role: "first" }, ...keys, { id: "last", sourceSec: "last", outputSec: duration, role: "last" }] };
@@ -120,7 +120,7 @@ function fields(mode: Mode): WorkflowField[] {
   if (mode === "swap") list.push({ name: "target", type: "text", label: "What to replace", required: false, maxLength: 500 });
   list.push(
     { name: "prompt", type: "text", label: "Notes", required: false, maxLength: 4000, multiline: true },
-    { name: "anchors", type: "integer", label: "Pinned keyframes", required: false, min: 0, max: GROK_PIN_MAX_KEYFRAMES, default: GROK_PIN_MAX_KEYFRAMES, help: "More keyframes follow the source motion more closely and cost one GPT edit each." },
+    { name: "anchors", type: "integer", label: "Pinned keyframes", required: false, min: 0, max: XAI_PIN_MAX_KEYFRAMES, default: XAI_PIN_MAX_KEYFRAMES, help: "More keyframes follow the source motion more closely and cost one GPT edit each." },
     { name: "resolution", type: "enum", label: "Resolution", required: false, default: "720p", options: [option("480p", "480p"), option("720p", "720p")] },
     { name: "sound", type: "enum", label: "Sound", required: false, default: "source", options: [option("source", "Keep the source sound"), option("model", "Let Grok make sound"), option("none", "Silent")] },
   );
@@ -137,10 +137,10 @@ function definition(mode: Mode): WorkflowDefinition {
     equivalents: mode === "motion" ? ["sume/sume-remix-motion-transfer"] : ["sume/sume-remix-object-swap"],
     preset: { id: "subscription", label: "Subscriptions only", basedOn, requires: REQUIRES, losses: LOSSES, billingNote: BILLING_NOTE },
     fields: fields(mode),
-    slots: [GPT_FRAME_SLOT, GROK_PIN_SLOT],
+    slots: [GPT_FRAME_SLOT, XAI_PIN_SLOT],
     plan(values, models, env) {
       const keyCount = anchors(values).list.filter((a) => a.role === "key").length;
-      checkReferenceLimit(env, models.render?.model ?? GROK_PIN_SLOT.defaultModel, refsOf(values, "images").length + keyCount, "images");
+      checkReferenceLimit(env, models.render?.model ?? XAI_PIN_SLOT.defaultModel, refsOf(values, "images").length + keyCount, "images");
       return { workflowId: id, steps: steps(mode, values, models) };
     },
   };
