@@ -1,3 +1,5 @@
+import { useT } from "../../i18n.ts";
+import { M } from "./messages.ts";
 import { useState } from "react";
 import type { HistoryItem, HistoryQuery, MediaKind } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
@@ -11,18 +13,16 @@ const tabs = ["all", "images", "videos", "audio", "saved"] as const;
 export type Tab = (typeof tabs)[number];
 const kinds: Partial<Record<Tab, MediaKind>> = { images: "image", videos: "video", audio: "audio" };
 
-function emptyText(tab: Tab, model: string) {
-  if (model) return "No assets match this model and filter.";
-  return tab === "saved"
-    ? "No saved assets yet. Save a result to find it here."
-    : `No ${tab === "all" ? "assets" : tab} yet.`;
-}
-
-function AssetEmpty({ tab, model }: { tab: Tab; model: string }) {
+function AssetEmpty({ tab, model, clearModel }: { tab: Tab; model: string; clearModel: () => void }) {
+  const t = useT(M);
+  const text = model ? t("noMatch") : t(({ all: "noAll", images: "noImages", videos: "noVideos", audio: "noAudio", saved: "noSaved" } as const)[tab]);
   return (
     <div className="empty">
-      <h2>{emptyText(tab, model)}</h2>
-      <a href={tab === "images" ? "#/image" : "#/video"}>{tab === "images" ? "Create an image" : "Create a video"}</a>
+      <h2>{text}</h2>
+      {model ? <button className="btn" type="button" onClick={clearModel}>{t("clearModel")}</button>
+        : tab === "saved" ? <a href="#/assets/all">{t("browse")}</a>
+        : tab === "audio" ? <><p>{t("audioNext")}</p><a href="#/assets/all">{t("browse")}</a></>
+        : <a href={tab === "images" ? "#/image" : "#/video"}>{t(tab === "images" ? "createImage" : "createVideo")}</a>}
     </div>
   );
 }
@@ -38,6 +38,16 @@ interface AssetResultsProps {
   retry: () => void;
   loadMore: () => Promise<void>;
   select: (id: string) => void;
+  clearModel: () => void;
+}
+
+function LoadMore({ loading, loadMore }: { loading: boolean; loadMore: () => Promise<void> }) {
+  const t = useT(M);
+  return (
+    <button type="button" className="btn load-more" disabled={loading} onClick={() => { void loadMore(); }}>
+      {t(loading ? "loadingMore" : "loadMore")}
+    </button>
+  );
 }
 
 function AssetResults({
@@ -51,41 +61,33 @@ function AssetResults({
   retry,
   loadMore,
   select,
+  clearModel,
 }: AssetResultsProps) {
+  const t = useT(M);
   return (
     <>
       {error ? (
         <div role="alert">
-          Could not load assets: {error}{" "}
+          {t("error", { error })}{" "}
           <button className="btn" onClick={retry}>
-            Retry
+            {t("retry")}
           </button>
         </div>
       ) : null}
-      {loading && !items.length ? <p role="status">Loading assets</p> : null}
-      {!loading && !error && !items.length ? <AssetEmpty tab={tab} model={model} /> : null}
-      <section className={"grid grid-" + density} aria-label="Assets results">
+      {loading && !items.length ? <p role="status">{t("loading")}</p> : null}
+      {!loading && !error && !items.length ? <AssetEmpty tab={tab} model={model} clearModel={clearModel} /> : null}
+      <section className={"grid grid-" + density} aria-label={t("results")}>
         {items.map((item) => (
           <Tile key={item.historyId} item={item} onOpen={(value) => select(value.historyId)} />
         ))}
       </section>
-      {cursor ? (
-        <button
-          type="button"
-          className="btn load-more"
-          disabled={loading}
-          onClick={() => {
-            void loadMore();
-          }}
-        >
-          {loading ? "Loading" : "Load more"}
-        </button>
-      ) : null}
+      {cursor ? <LoadMore loading={loading} loadMore={loadMore} /> : null}
     </>
   );
 }
 
 export function AssetsPage({ kind }: { kind?: string }) {
+  const t = useT(M);
   const tab: Tab = tabs.includes(kind as Tab) ? (kind as Tab) : "all";
   const studio = useStudioApi();
   const history = useStudio((s) => s.history);
@@ -104,8 +106,8 @@ export function AssetsPage({ kind }: { kind?: string }) {
     <main className="page-pad assets-page">
       <header className="page-head">
         <div>
-          <h1>Assets</h1>
-          <p>Browse your generated media.</p>
+          <h1>{t("title")}</h1>
+          <p>{t("intro")}</p>
         </div>
       </header>
       <AssetFilters
@@ -116,7 +118,7 @@ export function AssetsPage({ kind }: { kind?: string }) {
         density={density}
         setDensity={setDensity}
       />
-      <AssetResults {...pages} tab={tab} model={model} density={density} select={setSelected} />
+      <AssetResults {...pages} tab={tab} model={model} density={density} select={setSelected} clearModel={() => setModel("")} />
       <Lightbox item={open} onClose={() => setSelected(null)} />
     </main>
   );
