@@ -103,7 +103,7 @@ test('HTTP and vendor errors are classified and redact secrets', async () => {
       const detail = adapter.normalizeError(e);
       assert.equal(detail.category, category);
       assert.equal(detail.retryable, retryable);
-      assert.match(detail.code, /^MINIMAX_VIDEO_/);
+      assert.match(detail.code, /^MINIMAX_/);
       assert.ok(!detail.message.includes(key));
       return true;
     });
@@ -134,7 +134,7 @@ test('invalid inputs and unknown options are refused without network', async () 
 });
 
 test('catalog, prices, region and free key validation', async () => {
-  assert.equal(adapter.errorPrefix, 'MINIMAX_VIDEO');
+  assert.equal(adapter.errorPrefix, 'MINIMAX');
   assert.ok(adapter.normalizeError(new Error('x')).code.startsWith(adapter.errorPrefix + '_'));
   assert.equal(adapter.listModels().length, 5);
   for (const model of adapter.listModels()) {

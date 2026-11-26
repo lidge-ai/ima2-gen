@@ -4,7 +4,7 @@ import type {
   MediaProviderAdapter, MediaProviderError, MediaSubmitRequest,
 } from "../contract.js";
 import {
-  categoryForStatus, contextSecrets, fail, mediaError, normalizeUnknownError, redactSecrets,
+  categoryForStatus, contextSecrets, fail, mediaError, MediaAdapterError, normalizeUnknownError, redactSecrets,
 } from "./_l2/errors.js";
 import { asArray, asRecord, asString, joinUrl, sendJson } from "./_l2/http.js";
 import { urlOrDataUri, urlOutput } from "./_l2/inputs.js";
@@ -148,10 +148,12 @@ async function call(
   body?: unknown,
   asyncRequest = false,
 ): Promise<Record<string, unknown>> {
+  // Resolve the host first: a bad region is the caller's request error, not a transport failure.
+  const url = joinUrl(base(ctx), path);
   let response;
   try {
     response = await sendJson(ctx, PREFIX, {
-      url: joinUrl(base(ctx), path),
+      url,
       headers: {
         Authorization: `Bearer ${ctx.apiKey}`,
         ...(asyncRequest ? { "X-DashScope-Async": "enable" } : {}),
@@ -159,6 +161,7 @@ async function call(
       ...(body === undefined ? {} : { body }),
     });
   } catch (error) {
+    if (error instanceof MediaAdapterError) throw error;
     if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) throw error;
     return fail(PREFIX, "TRANSPORT", "upstream", "Provider transport failed");
   }

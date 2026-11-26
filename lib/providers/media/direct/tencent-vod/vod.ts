@@ -16,10 +16,10 @@ import {
 } from "../_l2/errors.js";
 import { asArray, asRecord, asString, sendJson } from "../_l2/http.js";
 import { urlOutput } from "../_l2/inputs.js";
-import { assertKnownOptions, assertTask } from "../_l2/validate.js";
+import { assertKnownOptions, assertTask, findModel } from "../_l2/validate.js";
 import { tc3Authorization } from "./tc3.js";
 
-const PREFIX = "TENCENT_";
+const PREFIX = "TENCENT_VOD_";
 const BASE = "https://vod.intl.tencentcloudapi.com";
 export const mingmou: MediaModelSpec = {
   id: "tencent/mingmou-1",
@@ -42,12 +42,12 @@ export const mingmou: MediaModelSpec = {
   docsUrl: "https://www.tencentcloud.com/document/api/266/76684",
 };
 function secrets(ctx: MediaAdapterContext): string[] {
-  return [...contextSecrets(ctx, ["secretId", "secretKey"]), ctx.apiKey, ctx.extra?.secretId ?? "",
+  return [...contextSecrets(ctx, ["secretKey"]), ctx.apiKey,
     ctx.extra?.secretKey ?? ""].filter(Boolean);
 }
 function safe(ctx: MediaAdapterContext, message: string): string { return redactSecrets(message, secrets(ctx)); }
 function credential(ctx: MediaAdapterContext) {
-  const secretId = ctx.extra?.secretId;
+  const secretId = ctx.apiKey;
   const secretKey = ctx.extra?.secretKey;
   if (!secretId || !secretKey) fail(PREFIX, "CREDENTIAL_MISSING", "auth",
     "Tencent VOD SecretId and SecretKey are required");
@@ -76,7 +76,7 @@ function throwDetail(error: MediaProviderError): never {
   return fail(PREFIX, error.code.slice(PREFIX.length), error.category, error.message, { status: error.status,
     retryable: error.retryable });
 }
-async function vodCall(ctx: MediaAdapterContext, action: string, body: Record<string, unknown>,
+export async function vodCall(ctx: MediaAdapterContext, action: string, body: Record<string, unknown>,
   region?: string): Promise<Record<string, unknown>> {
   const creds = credential(ctx);
   const url = new URL(ctx.baseUrl ?? BASE);
@@ -101,6 +101,7 @@ async function vodCall(ctx: MediaAdapterContext, action: string, body: Record<st
   }
 }
 function validateRequest(request: MediaSubmitRequest): void {
+  findModel(PREFIX, [mingmou], request.model);
   assertTask(PREFIX, mingmou, request); assertKnownOptions(PREFIX, request.vendorOptions, []);
   if (!request.prompt?.trim() || request.inputs.length || request.durationSec !== undefined ||
     request.resolution !== undefined || request.aspectRatio !== undefined || request.seed !== undefined ||
