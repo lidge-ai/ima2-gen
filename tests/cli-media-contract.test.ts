@@ -127,3 +127,19 @@ test("workflow selections, studios and invalid flag safety", async () => fixture
   const before = calls.length; const bad = await cli(base, ["keys", "delete", "fake", "--yes=false"]); assert.match(bad.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
   const badFlag = await cli(base, ["models", "--quiet"]); assert.match(badFlag.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
 }));
+
+
+test("waitUntil slices until terminal state or its absolute deadline", async () => {
+  const { waitUntil } = await import("../bin/lib/media/jobCmd.js");
+  let statusCalls = 0;
+  const server = createServer((req, res) => {
+    if (req.url === "/api/events") { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.flushHeaders(); return; }
+    statusCalls++; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ status: statusCalls >= 3 ? "completed" : "running" }));
+  });
+  server.listen(0, "127.0.0.1"); await once(server, "listening");
+  const address = server.address(); assert.ok(address && typeof address !== "string");
+  try {
+    const value = await waitUntil(`http://127.0.0.1:${address.port}`, "id", { deadlineMs: Date.now() + 1000, sliceMs: 20 });
+    assert.equal(value.pollAfterSeconds, 0); assert.ok(statusCalls >= 3);
+  } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); }
+});
