@@ -96,7 +96,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  max-height: 100%;
+  /* Open details leave the top of the clip in view (and its tap target reachable). */
+  max-height: 85%;
   overflow-y: auto;
   display: grid;
   padding: 10px 12px;
