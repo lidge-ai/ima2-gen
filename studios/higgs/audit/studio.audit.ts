@@ -80,6 +80,40 @@ const prompt = (text: string): Act => async (page) => {
 const tab = (key: number): Act => async (page) => {
   for (let i = 0; i < key; i++) await page.keyboard.press("Tab");
 };
+/** Six showcase clips (the fake's two, repeated) so Home shows the grid, not the wide 1–2 clip cards. */
+const clips = (count: number): Act => async (page) => {
+  await page.route("**/api/showcase", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as { items: Record<string, unknown>[] };
+    const items = Array.from({ length: count }, (_, i) => ({ ...body.items[i % body.items.length]!, id: "audit-clip-" + i }));
+    await route.fulfill({ response, json: { items } });
+  });
+};
+const sixClips: Act = async (page) => {
+  await page.route("**/api/showcase", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as { items: Record<string, unknown>[] };
+    const items = Array.from({ length: 6 }, (_, i) => ({ ...body.items[i % body.items.length]!, id: "audit-clip-" + i }));
+    await route.fulfill({ response, json: { items } });
+  });
+};
+const showcaseTile = (page: Page) => page.locator(".showcase-tile").nth(1);
+/** A shared web instance (L9 deployment): spend caps from /api/web/session. */
+const webCaps = (requestCapUsd: number): Act => async (page) => {
+  await page.route("**/api/web/session", (route) =>
+    route.fulfill({ json: { email: "member@example.com", spend: { day: "2026-11-27", spentUsd: 0, dailyCapUsd: 20, requestCapUsd } } }),
+  );
+};
+const unpricedRestyle: Act = async (page) => {
+  await webCaps(5)(page);
+  await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.estimate.complete = false;
+    body.estimate.steps[0].usd = null;
+    await route.fulfill({ response, json: body });
+  });
+};
 
 const PRISTINE: Cell[] = [
   { id: "home__nokeys", hash: "/", setup: noKeys },
@@ -152,6 +186,45 @@ const PRISTINE: Cell[] = [
     },
   },
   { id: "notfound__route", hash: "/does-not-exist" },
+  { id: "home__showcase-grid", hash: "/", setup: sixClips, act: async (p) => p.mouse.move(0, 0) },
+  { id: "home__showcase-twelve", hash: "/", setup: clips(12), act: async (p) => p.mouse.move(0, 0) },
+  {
+    id: "remix__web-unpriced",
+    hash: "/remix/remix-restyle",
+    setup: unpricedRestyle,
+    act: async (p) => {
+      // Earlier cells used up the first-visit example, so give the run its own source.
+      const remove = p.getByRole("button", { name: /^(Remove Source video|원본 영상 삭제|원본 영상 제거)/ });
+      if (await remove.count()) await remove.first().click();
+      await p.getByLabel(/^(Source video|원본 영상)$/).first().setInputFiles({ name: "source.mp4", mimeType: "video/mp4", buffer: Buffer.from("audit") });
+      await p.waitForTimeout(1500);
+    },
+  },
+  { id: "video__web-over-cap", hash: "/video", setup: webCaps(0.1), act: prompt("over the per-run limit") },
+  {
+    id: "video__picker-after-keyless",
+    hash: "/video",
+    act: async (p) => {
+      // Pick a keyed model, then a keyless one, then reopen: Recent keeps only the keyed one.
+      for (const name of [/Seedance 2\.5 Flash|시댄스 2\.5 Flash/, /Vidu Q4/]) {
+        await p.getByRole("button", { name: /^(Model|모델): / }).click();
+        await p.getByRole("dialog").getByRole("button", { name }).first().click();
+      }
+      await p.getByRole("button", { name: /^(Model|모델): / }).click();
+      await p.waitForTimeout(400);
+    },
+  },
+  { id: "home__showcase-hover", hash: "/", setup: sixClips, act: async (p) => { await showcaseTile(p).hover(); await p.waitForTimeout(400); } },
+  {
+    id: "home__showcase-tap",
+    hash: "/",
+    setup: sixClips,
+    act: async (p) => {
+      await showcaseTile(p).locator(".showcase-peek").click({ position: { x: 12, y: 12 } });
+      await p.mouse.move(0, 0);
+      await p.waitForTimeout(400);
+    },
+  },
 ];
 
 test("pristine screens", async ({ browser }) => {

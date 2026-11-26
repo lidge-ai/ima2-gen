@@ -45,6 +45,34 @@ test("video: provider failure shows a plain reason", async ({ page }) => {
   const card = page.getByRole("article", { name: new RegExp("Failed: .*crowd scene") });
   await expect(card.getByRole("alert")).toContainText("safety filter blocked this request");
   await expect(card.getByRole("alert")).toContainText("FAKE_MODERATION");
+  // Each failure offers one next step; a blocked prompt goes back to the prompt.
+  await card.getByRole("button", { name: "Edit the prompt" }).click();
+  await expect(page.getByLabel("Prompt")).toBeFocused();
+});
+
+test("video: out of credit links to the provider; a rate limit puts the job back to send again", async ({ page }) => {
+  await page.goto("/#/video");
+  const generate = page.getByRole("button", { name: /Generate/ });
+  const quota = unique("[fail:quota] harbor at dusk");
+  await page.getByLabel("Prompt").fill(quota);
+  await generate.click();
+  const broke = page.getByRole("article", { name: new RegExp("Failed: .*harbor at dusk") });
+  await expect(broke.getByRole("link", { name: /^Add credit at / })).toHaveAttribute("target", "_blank");
+  // The reason survives a reload, when the card comes from the job list instead of the live event.
+  await page.reload();
+  await expect(broke.getByRole("link", { name: /^Add credit at / })).toBeVisible();
+  await expect(broke.getByRole("alert")).toContainText("out of credit or quota");
+  const rate = unique("[fail:rate-limit] tram in snow");
+  await page.getByLabel("Prompt").fill(rate);
+  await generate.click();
+  const limited = page.getByRole("article", { name: new RegExp("Failed: .*tram in snow") });
+  await expect(limited).toHaveCount(1);
+  await page.getByLabel("Prompt").fill("something else");
+  await limited.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByLabel("Prompt")).toHaveValue(rate);
+  await expect(generate).toBeFocused();
+  await generate.click();
+  await expect(page.getByRole("article", { name: new RegExp("tram in snow") })).toHaveCount(2);
 });
 
 test("video: a model without any key asks for one and cannot run", async ({ page }) => {
@@ -59,6 +87,10 @@ test("video: a model without any key asks for one and cannot run", async ({ page
   await expect(page.getByRole("link", { name: "All API keys" })).toHaveAttribute("href", "#/keys?focus=vidu");
   await page.getByLabel("Prompt").fill("anything");
   await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
+  // Picked once, a keyless model is not promoted to Recent; it stays under "Needs a key".
+  await page.getByRole("button", { name: /^Model: / }).click();
+  await expect(picker.getByRole("list", { name: "Needs a key (add it after picking)" }).getByRole("button", { name: /Vidu Q4/ })).toBeVisible();
+  await expect(picker.getByRole("list", { name: "Recent" }).getByRole("button", { name: /Vidu Q4/ })).toHaveCount(0);
 });
 
 test("video: choosing a route and settings changes the estimate", async ({ page }) => {
@@ -93,4 +125,14 @@ test("image: dock generates an image that later opens in the viewer", async ({ p
   await page.reload();
   await page.getByRole("button", { name: "Open " + prompt }).click();
   await expect(page.getByRole("dialog", { name: "Result" }).getByRole("img", { name: prompt })).toBeVisible();
+});
+
+test("video: on a shared web server, a run above the per-run limit is explained before sending", async ({ page }) => {
+  await page.route("**/api/web/session", (route) =>
+    route.fulfill({ json: { email: "member@example.com", spend: { day: "2026-11-27", spentUsd: 0, dailyCapUsd: 20, requestCapUsd: 0.1 } } }),
+  );
+  await page.goto("/#/video");
+  await page.getByLabel("Prompt").fill("over the limit");
+  await expect(page.getByText(/above this server's \$0\.10 limit per run/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
 });

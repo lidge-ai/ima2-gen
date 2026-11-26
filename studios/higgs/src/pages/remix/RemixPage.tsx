@@ -77,6 +77,22 @@ function MotionClip({
   );
 }
 
+/**
+ * The first visit to Remix starts from an example clip instead of an empty form (once per tab,
+ * and never over a clip handed over from another screen); removing it leaves the form empty.
+ */
+function useSeededSource(form: WorkflowForm, clip: Preset | undefined, pick: (item: Preset) => Promise<void>) {
+  useEffect(() => {
+    const input = form.def.inputs.find((entry) => entry.kind === "video");
+    if (!clip || !input || form.files[input.name]?.length) return;
+    if (sessionStorage.getItem("ima2-studio-handoff") || sessionStorage.getItem("ima2-remix-seeded")) return;
+    sessionStorage.setItem("ima2-remix-seeded", "1");
+    void pick(clip);
+    // Once per mount of this workflow; later changes are the person's own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.def.id]);
+}
+
 function MotionLibrary({ form }: { form: WorkflowForm }) {
   const t = useT(M);
   const [category, setCategory] = useState("All");
@@ -84,6 +100,7 @@ function MotionLibrary({ form }: { form: WorkflowForm }) {
   const { selected, pick } = useMotionSelection(form);
   const clips = PRESETS.filter((item) => item.sampleKind === "video");
   const categories = ["All", ...new Set(clips.map((item) => item.category))];
+  useSeededSource(form, clips[0], pick);
   return (
     <div className="gallery">
       <div className="remix-intro">

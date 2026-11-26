@@ -10,8 +10,8 @@ import { VendorLogo } from "../../ui/VendorLogo.tsx";
 import type { WorkflowForm } from "./useWorkflow.ts";
 
 const M = messages(
-  { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable" },
-  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가" },
+  { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable", auto: "Auto", typeValue: "Type to set", on: "On", off: "Off" },
+  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐" },
 );
 
 function TextWorkflowInput({
@@ -79,7 +79,7 @@ function FileWorkflowInput({ input, form }: { input: WorkflowInputSpec; form: Wo
         {Array.from({ length: Math.min(max, values.length + 1) }, (_, index) => (
           <UploadSlot
             key={index}
-            label={max > 1 ? `${label} ${index + 1}` : label}
+            label={index > 0 ? `${label} ${index + 1}` : label}
             role={input.role ?? "reference-image"}
             accept={input.accept ?? `${input.kind}/*`}
             value={values[index] ?? null}
@@ -115,40 +115,59 @@ export function WorkflowInput({
   );
 }
 
+/**
+ * Every setting shows its name and value. A select without a server default starts on "Auto" and
+ * can go back to it, which leaves the value out of the request so the workflow decides.
+ */
 export function WorkflowParams({ def, form, chip = false }: { def: WorkflowDef; form: WorkflowForm; chip?: boolean }) {
-  useT(M);
+  const t = useT(M);
   return (
     <div className="workflow-params">
       {def.params.map((param) => {
         const value = form.params[param.name] ?? param.default ?? "";
-        const update = (next: string | number | boolean) => form.setParams((old) => ({ ...old, [param.name]: next }));
-        if (param.type === "select")
+        const update = (next: string | number | boolean) =>
+          form.setParams((old) => {
+            if (next !== "") return { ...old, [param.name]: next };
+            const { [param.name]: _cleared, ...rest } = old;
+            return rest;
+          });
+        const caption = fieldLabel(def.id, param.name, param.label);
+        if (param.type === "select") {
+          const options = param.default === undefined ? [{ value: "", label: t("auto") }, ...(param.options ?? [])] : (param.options ?? []);
           return (
             <SettingTile
               key={param.name}
-              caption={fieldLabel(def.id, param.name, param.label)}
+              caption={caption}
               variant={chip ? "chip" : "tile"}
               value={String(value)}
-              options={param.options ?? []}
+              options={options}
               onChange={update}
+              {...(chip ? { chipText: (label: string) => caption + ": " + label } : {})}
             />
           );
+        }
         if (param.type === "boolean")
           return (
             <label className="workflow-switch" key={param.name}>
-              {fieldLabel(def.id, param.name, param.label)}
-              <input type="checkbox" checked={Boolean(value)} onChange={(e) => update(e.target.checked)} />
+              <span className="workflow-switch-text">
+                <span className="setting-caption">{caption}</span>
+                <span className="setting-value" aria-hidden="true">
+                  {t(value ? "on" : "off")}
+                </span>
+              </span>
+              <input type="checkbox" aria-label={caption} checked={Boolean(value)} onChange={(e) => update(e.target.checked)} />
             </label>
           );
         return (
           <label className="field" key={param.name}>
-            {fieldLabel(def.id, param.name, param.label)}
+            {caption}
             <input
               type={param.type}
               value={String(value)}
               min={param.min}
               max={param.max}
               step={param.step}
+              placeholder={param.type === "text" ? t("typeValue") : undefined}
               onChange={(e) => update(param.type === "number" ? Number(e.target.value) : e.target.value)}
             />
           </label>
@@ -247,6 +266,7 @@ export function Generate({ form }: { form: WorkflowForm }) {
       {form.missing.length ? (
         <p className="form-hint">{t("requiredList", { fields: form.missing.map((item) => fieldLabel(form.def.id, item.name, item.label)).join(", ") })}</p>
       ) : null}
+      {form.spendReason ? <p className="form-hint spend-reason">{form.spendReason}</p> : null}
       {form.error ? (
         <p role="alert" className="form-error">
           {form.error}

@@ -126,7 +126,7 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
             void form.submit();
           }}
         >
-          <WorkflowParams def={def} form={form} chip />
+          <WorkflowParams def={def} form={form} />
           <div className="director-composer">
             {def.inputs.map((input) => (
               <WorkflowInput key={input.name} input={input} form={form} />

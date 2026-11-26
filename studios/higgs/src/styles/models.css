@@ -90,13 +90,19 @@
   min-width: 0;
 }
 .route-line-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Full provider names wrap instead of being cut ("BytePlus ModelArk", "Google Gemini API"). */
+  overflow-wrap: anywhere;
 }
 .route-line-name .tag {
   margin-left: 0;
   flex: none;
+}
+.route-line-name {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.model-card-maker .kind {
+  white-space: nowrap;
 }
 .route-line-price {
   font-variant-numeric: tabular-nums;

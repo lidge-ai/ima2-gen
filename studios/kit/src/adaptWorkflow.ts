@@ -55,6 +55,8 @@ export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
       model: slot.defaultModel,
       modelChoices: [slot.defaultModel, ...slot.alternatives].filter((m, i, all) => all.indexOf(m) === i),
       available: slot.available,
+      ...(slot.runnable ? { runnable: slot.runnable } : {}),
+      ...(slot.defaultRoute ? { route: slot.defaultRoute } : {}),
       rationale: slot.rationale,
     })),
   };

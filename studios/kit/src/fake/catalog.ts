@@ -174,7 +174,6 @@ const MODELS: ModelRow[] = [
     { resolutions: ["1080p", "4k"] },
     { topaz: null, fal: 0.08 },
   ],
-  ["sync/lipsync-3", "Sync Lipsync 3", "video", ["lipsync"], {}, { sync: 0.083, fal: 0.1 }],
   [
     "openai/gpt-image-2",
     "GPT Image 2",
