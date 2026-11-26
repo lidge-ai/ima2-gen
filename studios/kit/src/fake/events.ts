@@ -19,10 +19,11 @@ export class EventRing {
   connect(req: IncomingMessage, res: ServerResponse): void {
     res.writeHead(200, {'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});
     res.write(': connected\n\n');
-    const cursor = Number(req.headers['last-event-id'] ?? 0);
+    const header = req.headers['last-event-id'];
+    const cursor = header === undefined ? null : Number(header);
     const first = this.ring[0]?.id;
-    if (cursor > 0 && first !== undefined && cursor < first - 1) res.write('event: replay-gap\ndata: {}\n\n');
-    if (cursor > 0) for (const event of this.ring) if (event.id > cursor) res.write(this.wire(event.id,event.event,event.job));
+    if (cursor !== null && Number.isFinite(cursor) && first !== undefined && cursor < first - 1) res.write('event: replay-gap\ndata: {}\n\n');
+    if (cursor !== null && Number.isFinite(cursor)) for (const event of this.ring) if (event.id > cursor) res.write(this.wire(event.id,event.event,event.job));
     this.clients.add(res);
     const timer = setInterval(() => res.write(': ping\n\n'), 15000);
     res.on('close', () => { clearInterval(timer); this.clients.delete(res); });
