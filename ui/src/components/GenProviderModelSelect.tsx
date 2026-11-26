@@ -102,6 +102,8 @@ function laneStatusBadge(status: string, translate: (key: string) => string): st
 
 export function GenProviderModelSelect({ compact = false }: { compact?: boolean } = {}) {
   const { t } = useI18n();
+  const mediaSelection = useAppStore((state) => state.mediaSelection);
+  const setMediaSelection = useAppStore((state) => state.setMediaSelection);
   const provider = useAppStore((state) => state.provider);
   const imageModel = useAppStore((state) => state.imageModel);
   const videoModel = useAppStore((state) => state.videoModelSelected);
@@ -173,7 +175,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     () => providers.filter((entry) => entry.enabled && entry.status.state === "connected"),
     [providers],
   );
-  const providerValue = mcpProvider ? `${MCP_PREFIX}${mcpProvider}` : `${CORE_PREFIX}${provider}`;
+  const providerValue = mediaSelection ? `media:${mediaSelection.adapter}` : mcpProvider ? `${MCP_PREFIX}${mcpProvider}` : `${CORE_PREFIX}${provider}`;
   // This select is lane-scoped (onModelChange only sets the model): keep rows
   // for this lane so sibling-lane rows that share a model value (the Gemini
   // agy/api entries) can't shadow the right label or duplicate the list.
@@ -214,7 +216,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     comfyWorkflow,
     comfyVideoWorkflow,
   });
-  const modelValue = mcpProvider
+  const modelValue = mediaSelection ? `media:${mediaSelection.model}` : mcpProvider
     ? (mcpModel ? encodeMcpModelValue(mcpMediaKind, mcpModel) : "")
     : coreModelValue;
   const isGptFamily = !mcpProvider && (provider === "oauth" || provider === "api") && !videoModel;
@@ -229,7 +231,8 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
   const lockedNotice = selectedMcpRecord?.executable === false
     ? (selectedMcpRecord.lockReason ?? t("mcp.higgsfieldLocked"))
     : null;
-  const unavailableReason = !mcpProvider
+  // A selected media model replaces the MCP/core lane, so nothing about the lane blocks the menu.
+  const unavailableReason = !mcpProvider || mediaSelection
     ? null
     : !selectedMcpRecord
       ? t("mcp.unknownProvider", { provider: mcpProvider })
@@ -239,24 +242,31 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
           ? t("mcp.disabledProvider")
           : null;
 
+  // Write only when a media model is active: picking a lane must not touch store state otherwise.
+  const clearMediaSelection = () => { if (mediaSelection) setMediaSelection(null); };
+
   const onProviderChange = (value: string) => {
     if (value.startsWith(CORE_PREFIX)) {
       const laneId = value.slice(CORE_PREFIX.length);
       // Guard the cast: Provider is a generated literal union, and an id the
       // label map does not know is one setProviderImpl cannot route either.
       if (!KNOWN_PROVIDER_LABELS.has(laneId)) return;
+      clearMediaSelection();
       setProvider(laneId as Provider);
       return;
     }
     const next = value.slice(MCP_PREFIX.length);
     const record = providers.find((entry) => entry.id === next);
     if (!record || record.status.state !== "connected") return;
+    clearMediaSelection();
     applyMcpProvider(next);
   };
 
   const onModelChange = (value: string) => {
     const current = useAppStore.getState();
     if (current.provider !== provider || (current.mcpProvider ?? null) !== mcpProvider) return;
+    if (value.startsWith("media:")) return;
+    if (!value.startsWith(EFFORT_PREFIX)) clearMediaSelection();
     const currentSnapshot = getLaneCatalogSnapshot();
     if (current.mcpProvider) {
       if (value.startsWith(COMFY_VIDEO_PREFIX)) return;
@@ -319,6 +329,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
       }),
     },
   ];
+  if (mediaSelection) providerGroups.unshift({ items: [{ value: `media:${mediaSelection.adapter}`, label: mediaSelection.adapter, disabled: true }] });
   if (connectedMcpProviders.length > 0) {
     providerGroups.push({
       label: t("mcp.connectedProviders"),
@@ -436,6 +447,8 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     }
   }
 
+  if (mediaSelection) modelGroups.unshift({ items: [{ value: `media:${mediaSelection.model}`, label: mediaSelection.model, disabled: true }] });
+
   const currentEffort = REASONING_EFFORT_OPTIONS.find((option) => option.value === reasoningEffort);
   const comfyDisplay = provider === "comfy" && !mcpProvider
     ? deriveComfyDisplay(laneSnapshot, { comfyWorkflow, comfyVideoWorkflow })
@@ -476,11 +489,11 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
         placeholder={mcpProvider
           ? (modelsLoading ? t("mcp.loadingModels") : t("mcp.chooseModel"))
           : provider === "comfy" ? t("mcp.chooseModel") : undefined}
-        triggerSub={isGptFamily && currentEffort ? currentEffort.shortLabel : undefined}
+        triggerSub={!mediaSelection && isGptFamily && currentEffort ? currentEffort.shortLabel : undefined}
         portal
       />
 
-      {(unavailableReason || lockedNotice || error || catalogError || comfyCatalogMessage) ? (
+      {!mediaSelection && (unavailableReason || lockedNotice || error || catalogError || comfyCatalogMessage) ? (
         <span className={comfyDisplay ? "gen-provider-model__catalog-state" : "image-model-select__trigger-effort"} role="status">
           {comfyDisplay && comfyCatalogMessage ? (
             <>

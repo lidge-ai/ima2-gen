@@ -8,6 +8,7 @@ import { ApiKeyInput } from "./ApiKeyInput";
 import { GeminiKeySection } from "./GeminiKeySection";
 import { useKeyStatus } from "../hooks/useKeyStatus";
 import { useQuotaData, CodexQuota, GrokQuota, NaiQuota } from "./settings/QuotaCard";
+import { MediaProviderKeys } from "./settings/MediaProviderKeys";
 
 function OpenAIIcon() {
   return (
@@ -235,6 +236,7 @@ export function AccountSettings() {
                 keyStatus={keyStatus}
                 onSaved={mutateKeys}
               />
+              <MediaProviderKeys />
             </div>
           )}
         </article>

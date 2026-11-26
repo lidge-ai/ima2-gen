@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import type { RuntimeContext } from "../lib/runtimeContext.js";
 import { initVertexAuth, clearVertexAuth } from "../lib/vertexAuth.js";
 import { updateConfigFileAtomic } from "../lib/configFileStore.js";
+import { deleteMediaKey, mediaKeyStatuses, mediaVocabularyAdapter, putMediaKey, registerMediaKeyRoutes, type MediaKeyRouteOptions } from "./mediaKeys.js";
 
 type KeyProvider = "openai" | "xai" | "gemini" | "atlascloud" | "minimax" | "nai";
 
@@ -75,8 +76,9 @@ function keySourceForProvider(ctx: RuntimeContext, provider: KeyProvider): { key
   return { key: undefined, source: "none" };
 }
 
-export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
-  app.get("/api/keys/status", (_req: Request, res: Response) => {
+export function mountKeyRoutes(app: Express, ctx: RuntimeContext, mediaOptions: MediaKeyRouteOptions = {}) {
+  registerMediaKeyRoutes(app, ctx, mediaOptions);
+  app.get("/api/keys/status", async (_req: Request, res: Response) => {
     const status: Record<string, unknown> = {};
     for (const provider of ["openai", "xai", "gemini", "atlascloud", "minimax", "nai"] as const) {
       const { key, source } = keySourceForProvider(ctx, provider);
@@ -99,7 +101,8 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
     };
     status.geminiAuthMode = ctx.geminiAuthMode
       || (vertexJson && !ctx.geminiApiKey ? "vertex" : "apikey");
-    res.json(status);
+    // Media vocabularies come from adapter credentials (lib/providers/media), after the fixed six.
+    res.json({ ...await mediaKeyStatuses(ctx, mediaOptions), ...status });
   });
 
   // Persist the Gemini auth mode chosen in the settings dropdown, so reopening
@@ -185,6 +188,8 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
   app.put("/api/keys/:provider", async (req: Request<{ provider: string }>, res: Response) => {
     const { provider } = req.params;
     if (!isKeyProvider(provider)) {
+      const mediaAdapter = mediaVocabularyAdapter(provider, mediaOptions);
+      if (mediaAdapter) return putMediaKey(ctx, mediaAdapter, req.body, res, mediaOptions);
       return res.status(400).json({ ok: false, error: "Invalid provider", code: "INVALID_PROVIDER" });
     }
     const { apiKey } = req.body as { apiKey?: string };
@@ -295,6 +300,8 @@ export function mountKeyRoutes(app: Express, ctx: RuntimeContext) {
   app.delete("/api/keys/:provider", async (req: Request<{ provider: string }>, res: Response) => {
     const { provider } = req.params;
     if (!isKeyProvider(provider)) {
+      const mediaAdapter = mediaVocabularyAdapter(provider, mediaOptions);
+      if (mediaAdapter) return deleteMediaKey(ctx, mediaAdapter, res, mediaOptions);
       return res.status(400).json({ ok: false, error: "Invalid provider", code: "INVALID_PROVIDER" });
     }
     const { source } = keySourceForProvider(ctx, provider);

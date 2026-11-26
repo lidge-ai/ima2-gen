@@ -1,0 +1,204 @@
+/**
+ * Maps a MediaSubmitRequest onto one upstream endpoint's input schema.
+ *
+ * fal, Atlas Cloud and Replicate publish a JSON schema per endpoint, and their
+ * field names mostly follow the same conventions (prompt, image_url,
+ * aspect_ratio, generate_audio). Driving the body from the schema means every
+ * value lands on a field the endpoint declares; anything the endpoint cannot
+ * take is refused with an invalid-request error instead of being dropped, so a
+ * user is never billed for a different job than the one they asked for.
+ */
+import type { MediaInputRole, MediaModelSpec, MediaSubmitRequest, MediaTask } from "../../contract.js";
+import { invalidRequest } from "./errors.js";
+import { inputToUrl } from "./inputs.js";
+
+export interface InputField {
+  type?: string;
+  enum?: readonly (string | number)[];
+  minimum?: number;
+  maximum?: number;
+  /** Item type for arrays ("string" for URL lists). */
+  items?: string;
+  maxItems?: number;
+}
+
+export interface EndpointSchema {
+  /** Upstream endpoint or model id. */
+  endpoint: string;
+  task: MediaTask;
+  required: readonly string[];
+  fields: Readonly<Record<string, InputField>>;
+}
+
+/** Field names tried in order for each input role. */
+const ROLE_FIELDS: Record<MediaInputRole, readonly string[]> = {
+  "first-frame": ["image_url", "start_image_url", "first_frame_url", "first_frame_image_url", "first_frame_image", "start_image", "first_frame", "image", "image_urls"],
+  "last-frame": ["end_image_url", "last_frame_url", "tail_image_url", "last_image_url", "last_frame_image", "end_image", "last_image", "last_frame", "tail_image"],
+  "reference-image": ["reference_image_urls", "image_urls", "reference_images", "image_references", "image_input", "input_images", "images", "reference_image_url", "image_url", "image"],
+  "reference-video": ["reference_video_urls", "video_urls", "reference_videos", "reference_video_url", "reference_video", "video_url", "video"],
+  "reference-audio": ["reference_audio_urls", "audio_urls", "reference_audios", "reference_audio_url", "audio_url", "audio"],
+  "source-image": ["image_url", "image_urls", "image", "images", "image_input", "input_images", "input_image", "input_image_url", "start_image_url"],
+  "source-video": ["video_url", "video", "base_video", "input_video", "input_video_url", "video_urls"],
+  "source-audio": ["audio_url", "audio", "audio_file", "input_audio", "audio_urls"],
+  mask: ["mask_url", "mask_image_url", "mask", "mask_image"],
+};
+
+const SCALAR_FIELDS = {
+  prompt: ["prompt"],
+  negativePrompt: ["negative_prompt"],
+  durationSec: ["duration", "duration_seconds", "seconds"],
+  resolution: ["resolution", "image_size"],
+  aspectRatio: ["aspect_ratio", "ratio"],
+  seed: ["seed"],
+  audio: ["generate_audio", "enable_audio", "sound", "audio"],
+  count: ["num_images", "num_outputs", "number_of_images", "n"],
+} as const satisfies Record<string, readonly string[]>;
+
+type ScalarKey = keyof typeof SCALAR_FIELDS;
+
+type FieldFilter = (field: InputField) => boolean;
+
+/** Inputs are URLs: they can only land on string, untyped or array fields. */
+const URL_FIELD: FieldFilter = (field) => field.type === undefined || field.type === "string" || field.type === "array";
+/** "audio" doubles as an input name on some endpoints; the generate-audio flag must be boolean. */
+const SCALAR_FILTER: Partial<Record<ScalarKey, FieldFilter>> = { audio: (field) => field.type === undefined || field.type === "boolean" };
+
+function pickField(schema: EndpointSchema, names: readonly string[], used: ReadonlySet<string>, accept?: FieldFilter): string | undefined {
+  return names.find((name) => {
+    const field = schema.fields[name];
+    return field !== undefined && !used.has(name) && (!accept || accept(field));
+  });
+}
+
+function matchEnum(values: readonly (string | number)[], value: string | number): string | number | undefined {
+  const wanted = [String(value), `${value}s`].map((v) => v.toLowerCase());
+  return values.find((candidate) => wanted.includes(String(candidate).toLowerCase()));
+}
+
+/** Encodes a scalar for the declared field type; undefined means the value is not accepted. */
+export function encodeScalar(field: InputField, value: string | number | boolean): string | number | boolean | undefined {
+  if (field.type === "object" || field.type === "array") return undefined;
+  if (typeof value === "boolean") return field.type === undefined || field.type === "boolean" ? value : undefined;
+  if (field.enum && field.enum.length > 0) return matchEnum(field.enum, value);
+  if (field.type === "integer" || field.type === "number") {
+    const num = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(num) || (field.type === "integer" && !Number.isInteger(num))) return undefined;
+    if ((field.minimum !== undefined && num < field.minimum) || (field.maximum !== undefined && num > field.maximum)) return undefined;
+    return num;
+  }
+  return field.type === "string" ? String(value) : value;
+}
+
+function describeAllowed(field: InputField): string {
+  if (field.enum) return `allowed: ${field.enum.join(", ")}`;
+  if (field.minimum !== undefined || field.maximum !== undefined) return `range: ${field.minimum ?? "-"}..${field.maximum ?? "-"}`;
+  return `type: ${field.type ?? "any"}`;
+}
+
+function applyScalars(prefix: string, schema: EndpointSchema, request: MediaSubmitRequest, body: Record<string, unknown>, used: Set<string>): void {
+  for (const key of Object.keys(SCALAR_FIELDS) as ScalarKey[]) {
+    const raw = request[key];
+    if (raw === undefined || raw === "") continue;
+    const name = pickField(schema, SCALAR_FIELDS[key], used, SCALAR_FILTER[key]);
+    if (!name) throw invalidRequest(prefix, `${schema.endpoint} does not accept ${key}`, "UNSUPPORTED_OPTION");
+    const field = schema.fields[name] ?? {};
+    const encoded = encodeScalar(field, raw);
+    if (encoded === undefined) {
+      throw invalidRequest(prefix, `${schema.endpoint} does not accept ${key}=${String(raw)} (${describeAllowed(field)})`, "UNSUPPORTED_OPTION");
+    }
+    body[name] = encoded;
+    used.add(name);
+  }
+}
+
+function applyInputs(prefix: string, schema: EndpointSchema, request: MediaSubmitRequest, body: Record<string, unknown>, used: Set<string>): void {
+  const roles = [...new Set(request.inputs.map((input) => input.role))];
+  for (const role of roles) {
+    const inputs = request.inputs.filter((input) => input.role === role);
+    const name = pickField(schema, ROLE_FIELDS[role], used, URL_FIELD);
+    if (!name) throw invalidRequest(prefix, `${schema.endpoint} does not accept a ${role} input`, "UNSUPPORTED_INPUT");
+    const field = schema.fields[name] ?? {};
+    const urls = inputs.map((input) => inputToUrl(prefix, input));
+    if (field.type === "array") {
+      if (field.maxItems !== undefined && urls.length > field.maxItems) {
+        throw invalidRequest(prefix, `${schema.endpoint} accepts at most ${field.maxItems} ${role} inputs`, "TOO_MANY_INPUTS");
+      }
+      body[name] = urls;
+    } else {
+      if (urls.length > 1) throw invalidRequest(prefix, `${schema.endpoint} accepts one ${role} input`, "TOO_MANY_INPUTS");
+      body[name] = urls[0];
+    }
+    used.add(name);
+  }
+}
+
+function applyVendorOptions(prefix: string, schema: EndpointSchema, request: MediaSubmitRequest, body: Record<string, unknown>, used: Set<string>): void {
+  for (const [key, value] of Object.entries(request.vendorOptions ?? {})) {
+    if (!(key in schema.fields)) throw invalidRequest(prefix, `${schema.endpoint} has no option ${key}`, "UNSUPPORTED_OPTION");
+    if (used.has(key)) throw invalidRequest(prefix, `vendorOptions.${key} conflicts with a request field`, "UNSUPPORTED_OPTION");
+    body[key] = value;
+    used.add(key);
+  }
+}
+
+/** Builds the JSON input for one endpoint, refusing anything it does not declare. */
+export function buildSchemaBody(prefix: string, schema: EndpointSchema, request: MediaSubmitRequest): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  const used = new Set<string>();
+  applyScalars(prefix, schema, request, body, used);
+  applyInputs(prefix, schema, request, body, used);
+  applyVendorOptions(prefix, schema, request, body, used);
+  const missing = schema.required.filter((name) => !(name in body));
+  if (missing.length > 0) {
+    throw invalidRequest(prefix, `${schema.endpoint} requires: ${missing.join(", ")}`, "MISSING_INPUT");
+  }
+  return body;
+}
+
+function durationsOf(field: InputField | undefined): number[] {
+  if (!field) return [];
+  if (field.enum) return field.enum.map((v) => Number.parseInt(String(v), 10)).filter((n) => Number.isFinite(n) && n > 0);
+  if (field.type === "integer" && field.minimum !== undefined && field.maximum !== undefined && field.maximum - field.minimum <= 60) {
+    // Sentinels such as -1 ("model decides") are not durations.
+    const low = Math.max(1, field.minimum);
+    return Array.from({ length: Math.max(0, field.maximum - low + 1) }, (_, i) => low + i);
+  }
+  return [];
+}
+
+function stringsOf(field: InputField | undefined): string[] {
+  return field?.enum ? field.enum.map(String) : [];
+}
+
+function union<T>(lists: readonly T[][]): T[] {
+  return [...new Set(lists.flat())];
+}
+
+function maxArrayItems(schemas: readonly EndpointSchema[], role: MediaInputRole): number | undefined {
+  const counts = schemas.flatMap((schema) => {
+    const name = ROLE_FIELDS[role].find((n) => schema.fields[n]?.type === "array");
+    const field = name ? schema.fields[name] : undefined;
+    return field?.maxItems !== undefined ? [field.maxItems] : [];
+  });
+  return counts.length > 0 ? Math.max(...counts) : undefined;
+}
+
+/** Derives the advertised MediaModelSpec params from the endpoints that serve a model. */
+export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaModelSpec["params"] {
+  const has = (names: readonly string[]) => schemas.some((s) => names.some((n) => n in s.fields));
+  const durations = union(schemas.map((s) => durationsOf(s.fields.duration ?? s.fields.duration_seconds))).sort((a, b) => a - b);
+  const resolutions = union(schemas.map((s) => stringsOf(s.fields.resolution)));
+  const aspectRatios = union(schemas.map((s) => stringsOf(s.fields.aspect_ratio ?? s.fields.ratio)));
+  const maxRefImages = maxArrayItems(schemas, "reference-image");
+  const maxRefVideos = maxArrayItems(schemas, "reference-video");
+  return {
+    ...(durations.length > 0 ? { durationsSec: durations } : {}),
+    ...(resolutions.length > 0 ? { resolutions } : {}),
+    ...(aspectRatios.length > 0 ? { aspectRatios } : {}),
+    ...(maxRefImages !== undefined ? { maxReferenceImages: maxRefImages } : {}),
+    ...(maxRefVideos !== undefined ? { maxReferenceVideos: maxRefVideos } : {}),
+    ...(schemas.some((s) => SCALAR_FIELDS.audio.some((n) => s.fields[n] !== undefined && SCALAR_FILTER.audio?.(s.fields[n] as InputField))) ? { nativeAudio: true } : {}),
+    ...(has(SCALAR_FIELDS.negativePrompt) ? { negativePrompt: true } : {}),
+    ...(has(SCALAR_FIELDS.seed) ? { seed: true } : {}),
+  };
+}

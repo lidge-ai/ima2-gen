@@ -13,6 +13,7 @@ import { ProviderStatusSelect } from "./settings/ProviderStatusSelect";
 import { GrokSizePicker } from "./GrokSizePicker";
 import { GrokModelPicker } from "./GrokModelPicker";
 import { VideoControlsPanel } from "./VideoControlsPanel";
+import { MediaModelPicker } from "./MediaModelPicker";
 import { NaiControlsPanel } from "./settings/NaiControlsPanel";
 import { McpGenerationControls } from "./settings/McpGenerationControls";
 import { ComfyGenerationControls } from "./settings/ComfyGenerationControls";
@@ -111,6 +112,7 @@ export function GenerationControlsPanel() {
   const setCustomSize = useAppStore((s) => s.setCustomSize);
   const uiMode = useAppStore((s) => s.uiMode);
   const videoModelSelected = useAppStore((s) => s.videoModelSelected);
+  const mediaSelection = useAppStore((s) => s.mediaSelection);
   const mcpProvider = useAppStore((s) => s.mcpProvider ?? null);
   const { providers: mcpProviders } = useMcpProviders();
   const showMultimodeControls = uiMode === "classic";
@@ -192,7 +194,7 @@ export function GenerationControlsPanel() {
     }
   };
 
-  if (mcpProvider) {
+  if (mcpProvider && !mediaSelection) {
     return (
       <div className="right-panel-settings" role="tabpanel">
         <ProviderStatusSelect mcpProviders={mcpProviders} />
@@ -203,7 +205,7 @@ export function GenerationControlsPanel() {
     );
   }
 
-  if (isComfy) {
+  if (isComfy && !mediaSelection) {
     return (
       <div className="right-panel-settings" role="tabpanel">
         <ProviderStatusSelect mcpProviders={mcpProviders} />
@@ -214,7 +216,9 @@ export function GenerationControlsPanel() {
 
   return (
     <div className="right-panel-settings" role="tabpanel">
-      <ProviderStatusSelect mcpProviders={mcpProviders} />
+      {!mediaSelection && <ProviderStatusSelect mcpProviders={mcpProviders} />}
+      <MediaModelPicker />
+      {mediaSelection ? null : <>
       {provider === "oauth" && <p className="provider-helper">{t("provider.oauthImageHint")}</p>}
       <details className="provider-compat-details">
         <summary>{providerCompat.title}</summary>
@@ -241,7 +245,7 @@ export function GenerationControlsPanel() {
         </div>
       )}
       {videoModelSelected ? (
-        <VideoControlsPanel />
+        <VideoControlsPanel showMediaPicker={false} />
       ) : (
       <>
       {isAgyOnly ? null : isGrok ? (
@@ -438,6 +442,7 @@ export function GenerationControlsPanel() {
       {isNai ? null : <CostEstimate />}
       </>
       )}
+      </>}
     </div>
   );
 }

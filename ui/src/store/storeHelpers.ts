@@ -176,7 +176,7 @@ export function loadInFlight({ includeExpired = false }: { includeExpired?: bool
 
 export function normalizeInflightKind(value: unknown): PersistedInFlight["kind"] {
   if (
-    value === "classic" || value === "node" || value === "multimode" || value === "video" ||
+    value === "classic" || value === "node" || value === "multimode" || value === "image" || value === "video" ||
     value === "mcp-image" || value === "mcp-video"
   ) return value;
   return typeof value === "string" && value.startsWith("mcp-action-") ? value as `mcp-action-${string}` : undefined;

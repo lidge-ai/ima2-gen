@@ -1,3 +1,4 @@
+import { MediaModelPicker } from "./MediaModelPicker";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { Provider } from "../types";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -28,6 +29,8 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
   const imageModel = useAppStore((s) => s.imageModel);
   const provider = useAppStore((s) => s.provider);
   const setImageModel = useAppStore((s) => s.setImageModel);
+  const setMediaSelection = useAppStore((s) => s.setMediaSelection);
+  const mediaSelection = useAppStore((s) => s.mediaSelection);
   const setProvider = useAppStore((s) => s.setProvider);
   const videoModelSelected = useAppStore((s) => s.videoModelSelected);
   const selectVideoModel = useAppStore((s) => s.selectVideoModel);
@@ -54,6 +57,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
   };
 
   const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLSelectElement || event.target instanceof HTMLInputElement) return;
     const items = getMenuItems();
     if (items.length === 0) return;
 
@@ -161,7 +165,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
   }, [imageModel, modelOptions, open, variant]);
 
   if (variant === "sidebar") {
-    const triggerModel = videoModelSelected
+    const triggerModel = mediaSelection ? mediaSelection.model : videoModelSelected
       ? (VIDEO_MODEL_OPTIONS.find((o) => o.value === videoModelSelected)?.shortLabel ?? VIDEO_MODEL_OPTIONS[0].shortLabel)
       : current.shortLabel.split(" ")[0];
     const triggerEffort = isGeminiImageModel(imageModel)
@@ -206,6 +210,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
               zIndex: 160,
             }}
           >
+            <MediaModelPicker />
             <div className="image-model-select__section" role="group" aria-label={t("sidebar.imageSectionLabel")}>
               <div className="image-model-select__section-title">{t("sidebar.imageSectionLabel")}</div>
               <div className="image-model-select__subsection-title">{t("sidebar.gptImageSubLabel")}</div>
@@ -216,11 +221,12 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
                     menuItemRefs.current[index] = node;
                   }}
                   type="button"
-                  className={`image-model-select__item${option.value === imageModel && !videoModelSelected ? " is-active" : ""}`}
+                  className={`image-model-select__item${option.value === imageModel && !videoModelSelected && !mediaSelection ? " is-active" : ""}`}
                   role="menuitemradio"
-                  aria-checked={option.value === imageModel && !videoModelSelected}
+                  aria-checked={option.value === imageModel && !videoModelSelected && !mediaSelection}
                   tabIndex={-1}
                   onClick={() => {
+                    setMediaSelection(null);
                     setImageModel(option.value);
                     setOpen(false);
                   }}
@@ -237,11 +243,12 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
                     menuItemRefs.current[OPENAI_IMAGE_MODEL_OPTIONS.length + index] = node;
                   }}
                   type="button"
-                  className={`image-model-select__item${option.value === imageModel && !videoModelSelected ? " is-active" : ""}`}
+                  className={`image-model-select__item${option.value === imageModel && !videoModelSelected && !mediaSelection ? " is-active" : ""}`}
                   role="menuitemradio"
-                  aria-checked={option.value === imageModel && !videoModelSelected}
+                  aria-checked={option.value === imageModel && !videoModelSelected && !mediaSelection}
                   tabIndex={-1}
                   onClick={() => {
+                    setMediaSelection(null);
                     setImageModel(option.value);
                     setOpen(false);
                   }}
@@ -253,7 +260,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
               <div className="image-model-select__subsection-title">{t("sidebar.geminiImageSubLabel")}</div>
               {GEMINI_IMAGE_MODEL_OPTIONS.map((option, index) => {
                 const hint = option.providerHint;
-                const isActive = option.value === imageModel && hint === provider && !videoModelSelected;
+                const isActive = option.value === imageModel && hint === provider && !videoModelSelected && !mediaSelection;
                 return (
                   <button
                     key={`${option.value}-${hint || index}`}
@@ -267,6 +274,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
                     tabIndex={-1}
                     onClick={() => {
                       if (hint) setProvider(hint);
+                      setMediaSelection(null);
                       setImageModel(option.value);
                       setOpen(false);
                     }}
@@ -286,11 +294,12 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
                     menuItemRefs.current[modelOptions.length + index] = node;
                   }}
                   type="button"
-                  className={`image-model-select__item${videoModelSelected === option.value ? " is-active" : ""}`}
+                  className={`image-model-select__item${videoModelSelected === option.value && !mediaSelection ? " is-active" : ""}`}
                   role="menuitemradio"
-                  aria-checked={videoModelSelected === option.value}
+                  aria-checked={videoModelSelected === option.value && !mediaSelection}
                   tabIndex={-1}
                   onClick={() => {
+                    setMediaSelection(null);
                     selectVideoModel(option.value);
                     setOpen(false);
                   }}
@@ -355,6 +364,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
 
   return (
     <div className="image-model-select image-model-select--settings">
+      <MediaModelPicker kind="image" />
       <Select
         id={id}
         value={optionItemValue(current)}
@@ -362,6 +372,7 @@ export function ImageModelSelect({ variant }: ImageModelSelectProps) {
           const option = modelOptions.find((candidate) => optionItemValue(candidate) === value);
           if (!option) return;
           if (option.providerHint) setProvider(option.providerHint);
+          setMediaSelection(null);
           setImageModel(option.value);
         }}
         items={[

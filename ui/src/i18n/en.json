@@ -1,4 +1,36 @@
 {
+  "mediaPicker": {
+    "model": "Media model",
+    "loadError": "Could not load media models.",
+    "classic": "Classic",
+    "noKey": "API key required",
+    "settings": "Manage API keys",
+    "route": "Route",
+    "direct": "Direct",
+    "aggregator": "Aggregator",
+    "keyReady": "Key ready",
+    "task": "Task",
+    "duration": "Duration",
+    "default": "Default",
+    "resolution": "Resolution",
+    "aspect": "Aspect ratio",
+    "nativeAudio": "Native audio",
+    "negativePrompt": "Negative prompt",
+    "seed": "Seed",
+    "checked": "checked {date}",
+    "documentation": "Documentation",
+    "open": "Media models · your API keys"
+  },
+  "media": {
+    "keysTitle": "Media providers",
+    "noProviders": "No media providers available.",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "apiKey": "API key",
+    "getKey": "Get a key",
+    "envImmutable": "Environment keys cannot be removed here.",
+    "keysShow": "Show media provider keys"
+  },
   "imageOutput": {
     "title": "Output",
     "still": "Still image",

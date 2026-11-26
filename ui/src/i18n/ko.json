@@ -1,4 +1,36 @@
 {
+  "mediaPicker": {
+    "model": "미디어 모델",
+    "loadError": "미디어 모델을 불러오지 못했습니다.",
+    "classic": "기본",
+    "noKey": "API 키 필요",
+    "settings": "API 키 관리",
+    "route": "경로",
+    "direct": "직접",
+    "aggregator": "중개",
+    "keyReady": "키 설정됨",
+    "task": "작업",
+    "duration": "길이",
+    "default": "기본값",
+    "resolution": "해상도",
+    "aspect": "화면 비율",
+    "nativeAudio": "기본 오디오",
+    "negativePrompt": "네거티브 프롬프트",
+    "seed": "시드",
+    "checked": "확인 {date}",
+    "documentation": "문서",
+    "open": "미디어 모델 · 내 API 키"
+  },
+  "media": {
+    "keysTitle": "미디어 제공자",
+    "noProviders": "사용 가능한 미디어 제공자가 없습니다.",
+    "configured": "설정됨",
+    "notConfigured": "설정되지 않음",
+    "apiKey": "API 키",
+    "getKey": "키 발급받기",
+    "envImmutable": "환경 변수의 키는 여기서 삭제할 수 없습니다.",
+    "keysShow": "미디어 제공자 키 보기"
+  },
   "imageOutput": {
     "title": "출력",
     "still": "정지 이미지",

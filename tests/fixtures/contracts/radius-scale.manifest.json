@@ -1603,6 +1603,20 @@
     "important": false
   },
   {
+    "file": "ui/src/styles/form-controls.css",
+    "atRule": null,
+    "selector": ".media-parameter input",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/form-controls.css",
+    "atRule": null,
+    "selector": ".media-logo",
+    "expected": "var(--r-xs)",
+    "important": false
+  },
+  {
     "file": "ui/src/styles/gallery-controls.css",
     "atRule": null,
     "selector": ".gallery__scope",

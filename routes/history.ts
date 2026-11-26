@@ -28,8 +28,11 @@ function matchesHistoryFilters(
     requestId: string | null;
     favoritesOnly: boolean;
     favoriteSet: Set<string>;
+    /** Audio rows are opt-in: the classic UI renders every non-video row as an image. */
+    includeAudio: boolean;
   },
 ): boolean {
+  if (!params.includeAudio && row.mediaType === "audio") return false;
   if (Number.isFinite(params.sinceTs) && row.createdAt <= params.sinceTs) return false;
   if (Number.isFinite(params.beforeTs)) {
     if (row.createdAt > params.beforeTs) return false;
@@ -104,6 +107,7 @@ export function registerHistoryRoutes(app: Express, ctxRaw: RouteRuntimeContext)
         requestId,
         favoritesOnly,
         favoriteSet,
+        includeAudio: req.query.includeAudio === "1" || req.query.includeAudio === "true",
       });
 
       if (groupBy === "session") {

@@ -19,6 +19,7 @@ import { configureLogger, logError, logWarn } from "./lib/logger.js";
 import { createRequestLogger } from "./lib/requestLogger.js";
 import { configureApiCachePolicy } from "./lib/apiCachePolicy.js";
 import { configureRoutes } from "./routes/index.js";
+import { mountStudioUi } from "./routes/studios.js";
 import { quotaResetRouter } from "./routes/quotaReset.js";
 import { quotaResetSettingsRouter } from "./routes/quotaResetSettings.js";
 import type { ResetDependencies } from "./routes/quotaReset.js";
@@ -296,6 +297,8 @@ export function buildApp(ctx: RuntimeContext) {
   app.use(quotaResetSettingsRouter(resetDeps?.db ?? getDb(), watcher, accountId));
   const disposeAccess = locals.disposeLocalLanAccess;
   locals.disposeLocalLanAccess = () => { watcher.stop(); disposeAccess(); };
+  // Studios (studios/<name>/dist) and the default-UI redirect sit in front of the classic UI.
+  mountStudioUi(app, ctx);
   app.use(express.static(join(ctx.rootDir, "ui", "dist"), {
     setHeaders: setUiStaticHeaders,
   }));

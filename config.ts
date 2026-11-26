@@ -491,6 +491,11 @@ export const config = {
     // IMA2_PRESERVE_OUTSIDE_MASK=0 to keep the raw provider result.
     preserveOutsideMask: pickBool(env.IMA2_PRESERVE_OUTSIDE_MASK, fileCfg.features?.preserveOutsideMask, true),
   },
+  // Text planner for multi-step workflows (Director shot planning); GPT OAuth like the card-news planner.
+  workflowPlanner: {
+    model: pickStr(env.IMA2_WORKFLOW_PLANNER_MODEL, fileCfg.workflowPlanner?.model, "gpt-6-luna"),
+    timeoutMs: pickInt(env.IMA2_WORKFLOW_PLANNER_TIMEOUT_MS, fileCfg.workflowPlanner?.timeoutMs, 60_000),
+  },
   cardNewsPlanner: {
     enabled: pickBool(env.IMA2_CARD_NEWS_PLANNER, fileCfg.cardNewsPlanner?.enabled, true),
     model: pickStr(env.IMA2_CARD_NEWS_PLANNER_MODEL, fileCfg.cardNewsPlanner?.model, "gpt-6-luna"),

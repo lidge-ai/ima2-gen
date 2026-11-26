@@ -16,7 +16,7 @@ async function listImageFiles(baseDir: string) {
       const full = join(dir, entry.name);
       if (entry.isDirectory() && depth > 0) {
         await walk(full, depth - 1);
-      } else if (entry.isFile() && /\.(png|jpe?g|webp|gif|svg|mp4)$/i.test(entry.name) && !entry.name.endsWith(".thumb.jpg")) {
+      } else if (entry.isFile() && /\.(png|jpe?g|webp|gif|svg|mp4|webm|mov|mp3|wav|m4a|ogg|flac)$/i.test(entry.name) && !entry.name.endsWith(".thumb.jpg")) {
         out.push({ full, rel: full.slice(baseDir.length + 1), name: entry.name });
       }
     }
@@ -33,13 +33,15 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
   const rows = await Promise.all(imgs.map(async ({ full, rel, name }) => {
     const st = await stat(full).catch(() => null);
     const meta = await readImageMetadata(full, rel);
-    const isVideo = /\.mp4$/i.test(name);
+    const isVideo = /\.(mp4|webm|mov)$/i.test(name);
+    // Media adapters (ElevenLabs, Cartesia, Mirelo) save audio; it has no thumbnail.
+    const isAudio = /\.(mp3|wav|m4a|ogg|flac)$/i.test(name);
     const encodedUrl = `/generated/${rel.split("/").map(encodeURIComponent).join("/")}`;
     let thumb: string | null = null;
     if (isVideo) {
       const thumbExists = await stat(thumbPathForVideo(full)).then(() => true, () => false);
       if (thumbExists) thumb = thumbUrlForVideo(encodedUrl);
-    } else {
+    } else if (!isAudio) {
       const imgThumbExists = await stat(thumbPathForImage(full)).then(() => true, () => false);
       if (imgThumbExists) thumb = thumbUrlForImage(encodedUrl);
     }
@@ -47,7 +49,7 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
       filename: rel,
       url: `/generated/${rel.split("/").map(encodeURIComponent).join("/")}`,
       thumb,
-      mediaType: meta?.mediaType || (isVideo ? "video" : "image"),
+      mediaType: meta?.mediaType || (isVideo ? "video" : isAudio ? "audio" : "image"),
       video: meta?.video || null,
       videoSeries: meta?.videoSeries || null,
       videoContinuity: meta?.videoContinuity || null,
@@ -97,6 +99,10 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
       sequenceTotalRequested: Number.isFinite(meta?.sequenceTotalRequested) ? meta.sequenceTotalRequested : null,
       sequenceTotalReturned: Number.isFinite(meta?.sequenceTotalReturned) ? meta.sequenceTotalReturned : null,
       sequenceStatus: meta?.sequenceStatus || null,
+      // Media adapter and workflow provenance (lib/providers/media sidecars).
+      adapter: meta?.adapter || null,
+      workflow: meta?.workflow || null,
+      workflowStep: meta?.workflowStep || null,
     };
   }));
 
@@ -129,7 +135,7 @@ async function readImageSidecar(full: string, rel: string) {
 async function readImageMetadata(full: string, rel: string) {
   const sidecar = await readImageSidecar(full, rel);
   if (sidecar) return sidecar;
-  if (/\.mp4$/i.test(full)) return null;
+  if (!/\.(png|jpe?g|webp|gif|svg)$/i.test(full)) return null;
   try {
     const embedded = await readEmbeddedImageMetadataFromFile(full);
     return embedded.metadata;

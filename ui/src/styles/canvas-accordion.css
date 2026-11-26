@@ -33,6 +33,17 @@
   padding: 8px 0;
 }
 
+.media-provider-keys {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.settings-row .media-provider-keys h4,
+.settings-row .media-provider-keys p {
+  order: initial;
+}
+
 /* Gemini auth mode section */
 .gemini-key-section__header {
   display: flex;
@@ -447,4 +458,17 @@
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.35;
+}
+
+.media-provider-keys__field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.media-provider-keys__heading { display: flex; align-items: center; gap: 8px; }
+
+.media-provider-keys__provider .api-key-input {
+  min-width: 0;
+  width: 100%;
 }

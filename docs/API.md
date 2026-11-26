@@ -844,6 +844,27 @@ Analyze first and last frames from a generated `.mp4` using the configured plann
 
 Remote URLs and `data:` inputs are intentionally rejected to avoid server-side URL fetching through `ffmpeg`.
 
+## Media Providers (BYOK) and Workflows
+
+Bring-your-own-key generation across direct model makers and aggregators. Every adapter implements one contract (`lib/providers/media/contract.ts`); `lib/providers/media/adapters.ts` lists the registered ones. A model id is `<vendor>/<model>` (Sume's public id where one exists) and can have several routes. Route rule: an explicit `adapter` is used as-is; otherwise the first route with a saved key wins, direct before aggregator. A keyless route is never chosen, and a failed job never retries on another route.
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/media/catalog` | GET | `?kind=image\|video\|audio`. `{ models: [{ id, label, vendor, logo, kind, tasks, routes: [{ adapter, route, label, logo, upstreamId, tasks, params, pricing, docsUrl, hasKey }], defaultRoute }], adapters: [{ id, label, route, logo, keyVocabulary, consoleUrl, keyPrefix, hasKey, keySource, maskedKey, extraFields, modelCount }] }`. Prices carry their official `source` and `checkedAt`; a model without a public price has `pricing: []`. Never contains key values. |
+| `/api/media/vendors` | GET | `{ vendors: [{ id, name, urls: { primary?, dark?, light?, mark? }, source }] }` from `studios/kit/assets/vendors/manifest.json`. Files are served at `/media-assets/vendors/<file>`. |
+| `/api/media/inputs` | POST | Raw bytes with the media `Content-Type` (image, video or audio; up to 512 MB). `201 { ref: "input:<id>.<ext>", mimeType, bytes }`. Unsupported types: 415 `MEDIA_INPUT_TYPE`. |
+| `/api/media` | POST | `{ requestId?, model, adapter?, task, prompt?, negativePrompt?, durationSec?, resolution?, aspectRatio?, seed?, audio?, count?, inputs?: [{ role, ref \| filename \| url \| dataUrl, mimeType? }], vendorOptions?, sessionId?, clientNodeId? }` → `202 { requestId, model, adapter }`. Parameters outside the chosen route's spec are refused before anything is sent. Progress arrives on `/api/events` (`jobId = requestId`, `jobKind: "media"`): `submitted`, `progress` `{ status, progress }`, `done` `{ outputs: [{ filename, url, mediaType, mimeType, bytes }], filename, url, mediaType, elapsed, billed? }`, `error` `{ code, error, status, category, retryable }`. Outputs are downloaded at once and saved to history with a sidecar (`provider: "media:<adapter>"`). |
+| `/api/media/jobs` | GET | `?status=all&sessionId=` → `{ jobs, terminalJobs }` for media and workflow jobs (reattach after a reload). |
+| `/api/media/jobs/:requestId` | GET | `{ job }`, or 404 `MEDIA_JOB_UNKNOWN`. |
+| `/api/media/:requestId/cancel` | POST | Cancels a media or workflow job (same as `DELETE /api/inflight/:requestId`); the adapter's upstream cancel is called when it has one. |
+| `/api/workflows` | GET | `{ workflows: [{ id, label, description, equivalents, fields, slots, tierField?, preset? }] }` (Remix and Director, `lib/workflows`). `slots[].available` tells which models have an adapter. |
+| `/api/workflows/:id/estimate` | POST | `{ values, selection? }` → `{ estimate: { usd, complete, steps }, steps }`. Spends nothing. Media field values are lists of `{ ref \| filename \| url }`. |
+| `/api/workflows/:id` | POST | `{ requestId?, sessionId?, values, selection?: { models?, routes? } }` → `202 { requestId, workflow, estimate, steps }`. Events (`jobKind: "workflow"`): `planned`, `step` `{ stepId, status: started\|artifact\|done\|failed }`, `progress`, `done` `{ outputs, filename, url }` (final results saved to history), `error`. Routes `xai-oauth` and `openai-oauth` run a step on the signed-in Grok or ChatGPT session; without a session the step fails with `MEDIA_SESSION_MISSING`. Director shot planning uses `workflowPlanner.model` over GPT OAuth. |
+| `/api/keys/vocabulary` | GET | Key form entries derived from adapter credentials: `{ vocabularies: [{ vocabulary, label, logo, legacy, consoleUrl, keyPrefix, envVars, extraFields, adapters }] }`. Media vocabularies also appear in `/api/keys/status` and use `PUT/DELETE /api/keys/:provider` (body `{ apiKey, extra? }`; the adapter's free `validateKey` call runs before saving). |
+| `/api/keys/:vocabulary/extra` | PUT | `{ extra: { <field>: value } }` saves non-key fields (region, endpoint id) for any vocabulary. |
+| `/api/studios` | GET | `{ studios: [{ name, built, url }], defaultUi }`. Built studios (`studios/<name>/dist`) are served at `/studio/<name>/`. |
+| `/api/studios/default` | PUT | `{ name: "classic" \| <studio> }` saves `ui.defaultUi`; `GET /` then redirects to that studio (`/?ui=classic` always opens the classic UI; `IMA2_DEFAULT_UI` overrides). |
+
 ## Generation Request Log
 
 | Method | Path | Notes |
@@ -856,10 +877,11 @@ Remote URLs and `data:` inputs are intentionally rejected to avoid server-side U
 |---|---|---|
 | `GET` | `/api/history` | List generated assets |
 | `GET` | `/api/history?groupBy=session` | Group assets by session title |
+| `GET` | `/api/history?includeAudio=1` | Also return audio outputs (`mediaType: "audio"`); omitted by default because the classic UI renders every non-video row as an image |
 | `DELETE` | `/api/history/:filename` | Tombstone a generated asset |
 | `POST` | `/api/history/:filename/restore` | Restore a recently deleted asset |
 
-History rows can include node metadata such as `sessionId`, `nodeId`, `clientNodeId`, `requestId`, and `refsCount`.
+Media adapter and workflow results also carry `adapter`, `workflow` and `workflowStep`. History rows can include node metadata such as `sessionId`, `nodeId`, `clientNodeId`, `requestId`, and `refsCount`.
 
 ## Assets Library
 

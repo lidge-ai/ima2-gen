@@ -1,0 +1,218 @@
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .logo {
+  color: var(--text);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.nav {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 560;
+}
+.nav a:hover {
+  color: var(--text);
+}
+.nav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stream-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.stream-dot.is-open {
+  background: var(--green);
+}
+.stream-dot.is-reconnecting {
+  background: var(--amber);
+}
+.key-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+}
+.bottombar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .nav {
+    display: none;
+  }
+  .bottombar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: end;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+  }
+  .bottombar a {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 560;
+  }
+  .bottombar a[aria-current="page"] {
+    color: var(--text);
+  }
+  .bottombar a.bottom-create {
+    color: var(--primary-ink);
+  }
+  .bottombar a.bottom-create span.create-pill {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 40px;
+    border-radius: 14px;
+    background: var(--primary);
+  }
+  .page {
+    padding-bottom: 72px;
+  }
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+}
+.logo-mark {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+}
+.logo-mark svg {
+  width: 100%;
+  height: 100%;
+}
+.logo-word {
+  font-weight: 720;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.logo-sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 520;
+}
+
+.vendor-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  vertical-align: middle;
+}
+.vendor-logo-plate {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 6px;
+  padding: 3px;
+  box-sizing: border-box;
+}
+.vendor-logo.is-full .vendor-logo-plate {
+  padding: 3px 7px;
+}
+.vendor-logo.plate-light .vendor-logo-plate {
+  background: #f4f4f6;
+}
+.vendor-logo.plate-dark .vendor-logo-plate {
+  background: var(--surface-3);
+}
+.vendor-logo-plate img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.vendor-logo.is-mark .vendor-logo-plate img {
+  width: 100%;
+  height: 100%;
+}
+.vendor-logo-name {
+  font-weight: 560;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vendor-logo.is-text {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+}
+.model-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.model-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
