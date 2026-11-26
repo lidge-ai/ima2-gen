@@ -1,0 +1,205 @@
+import type { BrowserContext, Route } from "@playwright/test";
+import { startTrackingStream, type TrackingStream } from "./jobTrackingStream";
+
+// Synthetic media catalog for the classic model window. Shapes mirror GET /api/media/catalog;
+// names are real model families so screenshots read like the product, prices are made up.
+
+type Price = { unit: string; usd: number; variant?: string; source: string; checkedAt: string };
+type RouteSpec = { adapter: string; tasks: string[]; params?: Record<string, unknown>; pricing?: Price[] };
+type ModelSpec = { id: string; label: string; vendor: string; kind: "image" | "video"; routes: RouteSpec[] };
+
+const price = (usd: number, unit = "second", variant?: string): Price =>
+  ({ unit, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27", ...(variant ? { variant } : {}) });
+const seconds = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator"; vocabulary: string; logo?: string; extra?: { name: string; secret: boolean; required: boolean }[] }> = {
+  byteplus: { label: "BytePlus ModelArk", route: "direct", vocabulary: "byteplus", logo: "byteplus.svg", extra: [{ name: "region", secret: false, required: false }] },
+  google: { label: "Google Gemini API", route: "direct", vocabulary: "gemini", logo: "google.svg" },
+  kling: { label: "Kling", route: "direct", vocabulary: "kling", logo: "kling-mark.png" },
+  minimax: { label: "MiniMax", route: "direct", vocabulary: "minimax", logo: "minimax.webp" },
+  pixverse: { label: "PixVerse", route: "direct", vocabulary: "pixverse", logo: "pixverse.svg" },
+  bfl: { label: "Black Forest Labs", route: "direct", vocabulary: "bfl", logo: "black-forest-labs.png" },
+  openai: { label: "OpenAI", route: "direct", vocabulary: "openai", logo: "openai.svg" },
+  recraft: { label: "Recraft", route: "direct", vocabulary: "recraft", logo: "recraft.svg" },
+  "kling-legacy": { label: "Kling (access key)", route: "direct", vocabulary: "kling-legacy", logo: "kling-mark.png", extra: [{ name: "secretKey", secret: true, required: true }] },
+  fal: { label: "fal", route: "aggregator", vocabulary: "fal", logo: "fal.svg" },
+  replicate: { label: "Replicate", route: "aggregator", vocabulary: "replicate", logo: "replicate.svg" },
+  sume: { label: "Sume", route: "aggregator", vocabulary: "sume", logo: "sume.svg" },
+};
+const VENDOR_LOGO: Record<string, [string, string]> = {
+  bytedance: ["ByteDance", "bytedance.png"], google: ["Google", "google.svg"], kling: ["Kling", "kling-mark.png"],
+  minimax: ["MiniMax", "minimax.webp"], pixverse: ["PixVerse", "pixverse.svg"], "black-forest-labs": ["Black Forest Labs", "black-forest-labs.png"],
+  openai: ["OpenAI", "openai.svg"], recraft: ["Recraft", "recraft.svg"], sync: ["Sync", "sync.svg"], heygen: ["HeyGen", "heygen.svg"],
+};
+
+const VIDEO = ["text-to-video", "image-to-video"];
+const MODELS: ModelSpec[] = [
+  { id: "bytedance/seedance-2.5", label: "Seedance 2.5", vendor: "bytedance", kind: "video", routes: [
+    { adapter: "byteplus", tasks: [...VIDEO, "reference-to-video", "video-to-video"], params: { durationsSec: seconds(4, 15), resolutions: ["480p", "720p", "1080p"], aspectRatios: ["16:9", "9:16", "1:1", "adaptive"], maxReferenceImages: 4, nativeAudio: true },
+      pricing: [price(0.103, "second", "480p 16:9, no video input"), price(0.231, "second", "720p 16:9, no video input"), price(0.569, "second", "1080p 16:9, no video input")] },
+    { adapter: "fal", tasks: [...VIDEO, "reference-to-video"], params: { durationsSec: seconds(4, 12), resolutions: ["480p", "720p"], aspectRatios: ["auto", "16:9", "9:16"], nativeAudio: true, seed: true },
+      pricing: [price(0.2205, "second", "text-to-video:480p"), price(0.473, "second", "text-to-video:720p"), price(0.2205, "second", "image-to-video:480p"), price(0.473, "second", "image-to-video:720p")] },
+    { adapter: "sume", tasks: VIDEO, params: { durationsSec: seconds(4, 12), resolutions: ["480p", "720p", "1080p"], aspectRatios: ["16:9", "9:16"], nativeAudio: true },
+      pricing: [price(0.0977, "second", "480p"), price(0.2197, "second", "720p"), price(0.5402, "second", "1080p")] },
+  ] },
+  { id: "google/veo-4", label: "Veo 4", vendor: "google", kind: "video", routes: [
+    { adapter: "google", tasks: VIDEO, params: { durationsSec: [4, 6, 8], resolutions: ["720p", "1080p", "4k"], aspectRatios: ["16:9", "9:16"], nativeAudio: true, negativePrompt: true }, pricing: [price(0.4)] },
+    { adapter: "fal", tasks: VIDEO, params: { durationsSec: [4, 6, 8], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16"], nativeAudio: true }, pricing: [price(0.5)] },
+  ] },
+  { id: "minimax/hailuo-3", label: "Hailuo 3", vendor: "minimax", kind: "video", routes: [
+    { adapter: "minimax", tasks: VIDEO, params: { durationsSec: [6, 10], resolutions: ["768P", "1080P"] }, pricing: [price(0.045)] },
+    { adapter: "replicate", tasks: VIDEO, params: { durationsSec: [6, 10], resolutions: ["768p"], seed: true }, pricing: [price(0.06)] },
+  ] },
+  { id: "kling/kling-4.0", label: "Kling 4.0", vendor: "kling", kind: "video", routes: [
+    { adapter: "kling", tasks: VIDEO, params: { durationsSec: [5, 10], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16", "1:1"], negativePrompt: true }, pricing: [price(0.07, "second", "720p"), price(0.112, "second", "1080p")] },
+    { adapter: "kling-legacy", tasks: VIDEO, params: { durationsSec: [5, 10], resolutions: ["720p"] }, pricing: [] },
+  ] },
+  { id: "kling/kling-4.0-turbo", label: "Kling 4.0 Turbo", vendor: "kling", kind: "video", routes: [
+    { adapter: "fal", tasks: VIDEO, params: { durationsSec: [5, 10, 20], resolutions: ["720p"], aspectRatios: ["16:9", "9:16"] }, pricing: [price(0.035)] },
+  ] },
+  { id: "pixverse/v6", label: "PixVerse V6", vendor: "pixverse", kind: "video", routes: [
+    { adapter: "pixverse", tasks: VIDEO, params: { durationsSec: [5, 8], resolutions: ["540p", "720p", "1080p"] }, pricing: [] },
+  ] },
+  { id: "sync/lipsync-3", label: "Lipsync 3", vendor: "sync", kind: "video", routes: [{ adapter: "fal", tasks: ["lipsync"], pricing: [price(0.08)] }] },
+  { id: "heygen/avatar-5", label: "Avatar 5", vendor: "heygen", kind: "video", routes: [{ adapter: "fal", tasks: ["avatar"], pricing: [] }] },
+  { id: "black-forest-labs/flux-2-pro", label: "FLUX.2 Pro", vendor: "black-forest-labs", kind: "image", routes: [
+    { adapter: "bfl", tasks: ["text-to-image", "image-to-image"], params: { aspectRatios: ["1:1", "16:9", "9:16", "4:3", "3:4"], maxReferenceImages: 4, seed: true }, pricing: [price(0.03, "megapixel")] },
+    { adapter: "fal", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "2K"], aspectRatios: ["1:1", "16:9", "9:16"], maxReferenceImages: 4, seed: true }, pricing: [price(0.035, "image", "1K"), price(0.07, "image", "2K")] },
+    { adapter: "replicate", tasks: ["text-to-image"], params: { aspectRatios: ["1:1", "16:9"], seed: true }, pricing: [price(0.04, "image")] },
+  ] },
+  { id: "google/nano-banana-pro", label: "Nano Banana Pro", vendor: "google", kind: "image", routes: [
+    { adapter: "google", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "2K", "4K"], aspectRatios: ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9"], maxReferenceImages: 8 }, pricing: [price(0.134, "image", "1K"), price(0.134, "image", "2K"), price(0.24, "image", "4K")] },
+    { adapter: "fal", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "2K", "4K"], aspectRatios: ["1:1", "16:9", "9:16"], maxReferenceImages: 8 }, pricing: [price(0.15, "image", "1K"), price(0.15, "image", "2K"), price(0.3, "image", "4K")] },
+  ] },
+  { id: "bytedance/seedream-5.5", label: "Seedream 5.5", vendor: "bytedance", kind: "image", routes: [
+    { adapter: "byteplus", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "1.5K", "2K"], aspectRatios: ["1:1", "4:3", "3:4", "16:9", "9:16"], maxReferenceImages: 10 }, pricing: [price(0.02, "image", "up to 1.5K"), price(0.035, "image", "2K")] },
+    { adapter: "fal", tasks: ["text-to-image", "image-to-image"], params: {}, pricing: [price(0.0405, "image", "text-to-image:2k"), price(0.0405, "image", "image-to-image:2k")] },
+    { adapter: "sume", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "1.5K", "2K"], aspectRatios: ["1:1", "16:9", "9:16"] }, pricing: [price(0.02, "image", "1K"), price(0.02, "image", "1.5K"), price(0.035, "image", "2K")] },
+  ] },
+  { id: "bytedance/seedream-5.5-lite", label: "Seedream 5.5 Lite", vendor: "bytedance", kind: "image", routes: [
+    { adapter: "fal", tasks: ["text-to-image"], params: { resolutions: ["1K"], aspectRatios: ["1:1", "16:9"] }, pricing: [price(0.012, "image")] },
+  ] },
+  { id: "openai/gpt-image-2.5", label: "GPT Image 2.5", vendor: "openai", kind: "image", routes: [
+    { adapter: "openai", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1024x1024", "1536x1024", "1024x1536"], maxReferenceImages: 16 }, pricing: [price(0.011, "image", "low"), price(0.042, "image", "medium"), price(0.167, "image", "high")] },
+  ] },
+  { id: "recraft/v4", label: "Recraft V4", vendor: "recraft", kind: "image", routes: [
+    { adapter: "recraft", tasks: ["text-to-image"], params: { aspectRatios: ["1:1", "16:9", "9:16"] }, pricing: [price(0.04, "image")] },
+  ] },
+];
+
+const logo = (name: string, file: string) => ({ id: file.split(".")[0], name, urls: { primary: "/media-assets/vendors/" + file }, source: null });
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+
+export interface MediaFixture {
+  /** Key vocabularies that currently hold a key. */
+  keys: Set<string>;
+  catalogMode: "ready" | "error";
+  /** What the provider says when a key is validated. */
+  keyVerdict: "ok" | "reject";
+  /** Every request this fixture answered, in order. */
+  calls: { method: string; path: string; body: Record<string, unknown> | null }[];
+  submissions: Record<string, unknown>[];
+  /** Rows GET /api/history returns; empty leaves the base fixture's empty history. */
+  history: Record<string, unknown>[];
+  terminalJobs: Record<string, unknown>[];
+  stream: TrackingStream;
+  mediaReads(): number;
+  emit(event: string, requestId: string, data: Record<string, unknown>): void;
+  close(): Promise<void>;
+}
+
+function catalog(fixture: MediaFixture, kind: string | null) {
+  const hasKey = (adapter: string) => fixture.keys.has(ADAPTERS[adapter]!.vocabulary);
+  const models = MODELS.filter((model) => !kind || model.kind === kind).map((model) => {
+    const routes = model.routes.map((route) => ({ adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, label: ADAPTERS[route.adapter]!.label,
+      logo: ADAPTERS[route.adapter]!.logo ? logo(ADAPTERS[route.adapter]!.label, ADAPTERS[route.adapter]!.logo!) : null, upstreamId: model.id,
+      tasks: route.tasks, params: route.params ?? {}, pricing: route.pricing ?? [], docsUrl: "https://example.com/docs/" + route.adapter, hasKey: hasKey(route.adapter) }));
+    const vendor = VENDOR_LOGO[model.vendor];
+    return { id: model.id, label: model.label, vendor: model.vendor, logo: vendor ? logo(vendor[0], vendor[1]) : null, kind: model.kind,
+      tasks: [...new Set(routes.flatMap((route) => route.tasks))], routes,
+      defaultRoute: (routes.find((r) => r.hasKey && r.route === "direct") ?? routes.find((r) => r.hasKey))?.adapter ?? null };
+  });
+  const adapters = Object.entries(ADAPTERS).map(([id, a]) => ({ id, label: a.label, route: a.route, logo: a.logo ? logo(a.label, a.logo) : null,
+    keyVocabulary: a.vocabulary, consoleUrl: "https://example.com/keys/" + id, keyPrefix: null, hasKey: fixture.keys.has(a.vocabulary),
+    keySource: fixture.keys.has(a.vocabulary) ? "config" : "none", maskedKey: fixture.keys.has(a.vocabulary) ? "fixt..ey" : null,
+    extraFields: (a.extra ?? []).map((field) => ({ ...field, configured: false, source: "none" })), modelCount: 1 }));
+  return { models, adapters };
+}
+
+/** Mirrors lib/providers/media/estimate.ts: a price needs one row, or the named variant. */
+function estimate(fixture: MediaFixture, body: Record<string, unknown>) {
+  const model = MODELS.find((entry) => entry.id === body.model);
+  const route = model?.routes.find((entry) => entry.adapter === body.adapter) ?? model?.routes[0];
+  if (!model || !route) return { status: 404, json: { ok: false, code: "MEDIA_MODEL_UNKNOWN", error: "Unknown media model", category: "not-found", retryable: false } };
+  const pricing = route.pricing ?? [];
+  let unit = model.kind === "image" ? "image" : "second";
+  let quantity: number | null = model.kind === "image" ? (typeof body.count === "number" ? body.count : null) : (typeof body.durationSec === "number" ? body.durationSec : null);
+  if (!pricing.some((row) => row.unit === unit) && pricing.some((row) => row.unit === "request")) { unit = "request"; quantity = 1; }
+  const rows = pricing.filter((row) => row.unit === unit);
+  const row = typeof body.priceVariant === "string" ? rows.find((entry) => entry.variant === body.priceVariant) : rows.length === 1 && !rows[0]!.variant ? rows[0] : undefined;
+  const base = { model: model.id, adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, hasKey: fixture.keys.has(ADAPTERS[route.adapter]!.vocabulary), unit, quantity, prices: pricing };
+  if (rows.length === 0) return { status: 200, json: { ...base, usd: null, note: "no published price for " + unit } };
+  if (!row) return { status: 200, json: { ...base, usd: null, note: typeof body.priceVariant === "string" ? "priceVariant not found" : "several published variants: pass priceVariant" } };
+  if (quantity === null) return { status: 200, json: { ...base, usd: null, note: "quantity unknown: pass durationSec/count" } };
+  return { status: 200, json: { ...base, usd: Math.ceil(row.usd * quantity * 10000) / 10000 } };
+}
+
+async function answer(route: Route, fixture: MediaFixture): Promise<void> {
+  const request = route.request();
+  const url = new URL(request.url());
+  const method = request.method();
+  const path = url.pathname;
+  const media = path.startsWith("/api/media");
+  const keyWrite = /^\/api\/keys\/[^/]+(\/validate)?$/.test(path) && method !== "GET";
+  if (method === "GET" && path === "/api/events") return fixture.stream.routeEvents(route);
+  if (method === "GET" && path.startsWith("/generated/l11-")) return route.fulfill({ contentType: "image/png", body: PNG });
+  if (method === "GET" && path === "/api/history" && fixture.history.length && !url.searchParams.has("groupBy")) {
+    return route.fulfill({ json: { items: fixture.history, total: fixture.history.length, nextCursor: null } });
+  }
+  if (method === "GET" && path === "/api/inflight" && fixture.terminalJobs.length) {
+    return route.fulfill({ json: { jobs: [], terminalJobs: fixture.terminalJobs } });
+  }
+  if (!media && !keyWrite) return route.fallback();
+  let body: Record<string, unknown> | null = null;
+  try { body = method === "GET" ? null : request.postDataJSON() as Record<string, unknown>; } catch { body = null; }
+  fixture.calls.push({ method, path, body });
+  if (method === "GET" && path === "/api/media/catalog") {
+    if (fixture.catalogMode === "error") return route.fulfill({ status: 503, json: { error: "Fixture catalog unavailable" } });
+    return route.fulfill({ json: catalog(fixture, url.searchParams.get("kind")) });
+  }
+  if (method === "POST" && path === "/api/media/estimate") { const result = estimate(fixture, body ?? {}); return route.fulfill(result); }
+  if (method === "POST" && path === "/api/media/inputs") return route.fulfill({ status: 201, json: { ref: "input-" + fixture.calls.length } });
+  if (method === "POST" && path === "/api/media") {
+    fixture.submissions.push(body ?? {});
+    return route.fulfill({ status: 202, json: { requestId: body?.requestId, model: body?.model, adapter: body?.adapter } });
+  }
+  if (method === "POST" && /^\/api\/media\/[^/]+\/cancel$/.test(path)) return route.fulfill({ json: { ok: true } });
+  const vocabulary = decodeURIComponent(path.split("/")[3] ?? "");
+  if (keyWrite && method === "DELETE") { fixture.keys.delete(vocabulary); return route.fulfill({ json: { ok: true, provider: vocabulary, removed: true } }); }
+  if (keyWrite) {
+    if (fixture.keyVerdict === "reject") {
+      return route.fulfill({ status: 400, json: { ok: false, code: "KEY_VALIDATION_FAILED", error: "API key validation failed: HTTP 401: invalid api key", category: "auth" } });
+    }
+    if (method === "PUT") fixture.keys.add(vocabulary);
+    return route.fulfill({ json: path.endsWith("/validate") ? { ok: true, vocabulary, valid: true, source: "request" } : { ok: true, provider: vocabulary, source: "config", valid: true } });
+  }
+  return route.fulfill({ status: 404, json: { ok: false, code: "FIXTURE_UNKNOWN", error: "Unknown fixture path" } });
+}
+
+/**
+ * Layered over the J6 capture: this handler answers the media, key-write and event routes and
+ * passes everything else down, so the base fixture still refuses any API read it does not know.
+ */
+export async function installMediaFixture(context: BrowserContext, origin: string, options: { keys?: string[] } = {}): Promise<MediaFixture> {
+  const stream = await startTrackingStream(origin);
+  let frame = 0;
+  const fixture: MediaFixture = {
+    keys: new Set(options.keys ?? ["fal"]), catalogMode: "ready", keyVerdict: "ok", calls: [], submissions: [], history: [], terminalJobs: [], stream,
+    mediaReads: () => fixture.calls.filter((call) => call.path.startsWith("/api/media")).length,
+    emit: (event, requestId, data) => { frame += 1; stream.emit(event, { jobId: requestId, requestId, jobKind: "media", ...data }, frame); },
+    close: async () => { await context.unroute("**/*", handler); await stream.close(); },
+  };
+  const handler = (route: Route) => answer(route, fixture);
+  await context.route("**/*", handler);
+  return fixture;
+}
