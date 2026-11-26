@@ -43,7 +43,18 @@ export class Http {
     return this.baseUrl + path + (qs ? "?" + qs : "");
   }
 
-  async request<T>(method: string, path: string, init: { body?: unknown; raw?: BodyInit; contentType?: string; headers?: Record<string, string>; signal?: AbortSignal; query?: Record<string, string | number | boolean | undefined> } = {}): Promise<T> {
+  async request<T>(
+    method: string,
+    path: string,
+    init: {
+      body?: unknown;
+      raw?: BodyInit;
+      contentType?: string;
+      headers?: Record<string, string>;
+      signal?: AbortSignal;
+      query?: Record<string, string | number | boolean | undefined>;
+    } = {},
+  ): Promise<T> {
     const headers: Record<string, string> = { Accept: "application/json", ...this.headers, ...init.headers };
     let body: BodyInit | undefined;
     if (init.raw !== undefined) {
@@ -73,8 +84,19 @@ function safeJson(text: string): unknown {
   }
 }
 
+/** Accepts both { error: { code, message } } and the server's flat { ok:false, code, error, category }. */
 function errorBody(parsed: unknown, response: Response): ApiErrorBody["error"] {
-  const candidate = (parsed as Partial<ApiErrorBody> | undefined)?.error;
-  if (candidate && typeof candidate.code === "string" && typeof candidate.message === "string") return candidate;
+  const body = parsed as Record<string, unknown> | undefined;
+  const nested = body?.error as Partial<ApiErrorBody["error"]> | undefined;
+  if (nested && typeof nested === "object" && typeof nested.code === "string" && typeof nested.message === "string") {
+    return nested as ApiErrorBody["error"];
+  }
+  if (body && typeof body.code === "string") {
+    const out: ApiErrorBody["error"] = { code: body.code, message: typeof body.error === "string" ? body.error : body.code };
+    if (typeof body.category === "string") out.category = body.category as NonNullable<ApiErrorBody["error"]["category"]>;
+    if (body.field !== undefined) out.details = { field: body.field };
+    return out;
+  }
+  if (typeof body?.error === "string") return { code: "HTTP_" + response.status, message: body.error };
   return { code: "HTTP_" + response.status, message: response.statusText || "Request failed" };
 }
