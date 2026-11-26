@@ -149,6 +149,7 @@ test("object swap with Grok's text-only edit sends only the video and describes 
   const req = grok.calls.find((c) => c.op === "submit")?.request;
   assert.deepEqual(req?.inputs.map((i) => i.role), ["source-video"]);
   assert.match(req?.prompt ?? "", /the subject described as: a yellow rubber duck/);
+  assert.equal(req && "audio" in req, false, "Grok's edit takes no audio flag, even when the model's sound is asked for");
   await assert.rejects(prep("remix-object-swap-open", { video: video(long), images, target: "boat" }, gateway, { combo: "subscription" }), /edits clips up to 8.7 seconds/);
   await assert.rejects(prep("remix-object-swap-open", { video: video(short), images, target: "boat", resolution: "1080p" }, gateway, { combo: "subscription" }), /offers 480p, 720p/);
 });

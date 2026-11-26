@@ -95,9 +95,9 @@ export function renderStep(spec: RenderSpec, env: PlanEnv): MediaStep {
     units: tokens?.units ?? { unit: "second", quantity: seconds, variant: resolution + (sound === "model" ? "+audio" : "") },
     ...(tokens ? { unitsApproximate: tokens.note } : {}),
     async build(rt) {
-      // Grok's video edit always returns sound and refuses a silent request (checkRenderFit keeps silent
-      // outputs away from it); the sound step replaces that sound with the source's.
-      const audio = sound === "model" ? true : TEXT_ONLY_EDIT.has(slot.model) ? undefined : false;
+      // Grok's video edit follows the source's sound and refuses any audio flag (checkRenderFit keeps
+      // silent outputs away from it); the sound step, when asked, replaces it with the source's.
+      const audio = TEXT_ONLY_EDIT.has(slot.model) ? undefined : sound === "model";
       if (strategy === "pins") {
         const { inputs, prompt, keyframes } = await pinInputs(rt, spec);
         return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, ...(audio === undefined ? {} : { audio }), inputs, vendorOptions: { keyframes } };
