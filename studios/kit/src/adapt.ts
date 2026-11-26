@@ -43,9 +43,16 @@ function toModel(model: WireModel): CatalogModel {
  * Catalog labels mark a model being retired with a suffix ("GPT Image 2 (deprecated)"). The name is
  * kept clean everywhere; screens that choose a model read retiring and show their own badge.
  */
+const RETIRING = new Set(["deprecated", "legacy", "retiring"]);
+
 export function nameParts(label: string): { label: string; retiring?: true } {
-  const m = /^(.*?)\s*\((?:deprecated|legacy|retiring)\)\s*$/i.exec(label);
-  return m && m[1] ? { label: m[1], retiring: true } : { label };
+  // Plain string checks (no backtracking regex on catalog text).
+  const text = label.trimEnd();
+  const open = text.lastIndexOf("(");
+  if (!text.endsWith(")") || open <= 0) return { label };
+  const word = text.slice(open + 1, -1).trim().toLowerCase();
+  const name = text.slice(0, open).trimEnd();
+  return RETIRING.has(word) && name ? { label: name, retiring: true } : { label };
 }
 
 function toProvider(a: WireAdapter): CatalogProvider {

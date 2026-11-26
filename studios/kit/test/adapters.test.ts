@@ -86,4 +86,7 @@ test("reducer applies planned, step, done and cancellation events", () => {
 test("a retiring model keeps a clean name and a retiring flag", () => {
   assert.deepEqual(nameParts("GPT Image 2 (deprecated)"), { label: "GPT Image 2", retiring: true });
   assert.deepEqual(nameParts("Seedance 2.5"), { label: "Seedance 2.5" });
+  assert.deepEqual(nameParts("Kling 3 (Legacy) "), { label: "Kling 3", retiring: true });
+  assert.deepEqual(nameParts("Veo 3.1 (fast)"), { label: "Veo 3.1 (fast)" });
+  assert.deepEqual(nameParts("(deprecated)"), { label: "(deprecated)" });
 });
