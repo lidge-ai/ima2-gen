@@ -129,7 +129,7 @@ test("L11-M4 generate sends the shown route and only listed settings", run({}, a
   expect(sent).toMatchObject({ model: "bytedance/seedance-2.5", adapter: "fal", task: "text-to-video", prompt: PROMPT, durationSec: 5, resolution: "480p", inputs: [] });
   expect(Object.keys(sent)).not.toContain("aspectRatio");
   expect(Object.keys(sent)).not.toContain("routeMode");
-  media.emit("done", String(sent.requestId), { outputs: [{ filename: "l11-clip.png", url: "/generated/l11-clip.png", mediaType: "image" }] });
+  await media.emit(page, "done", String(sent.requestId), { outputs: [{ filename: "l11-clip.png", url: "/generated/l11-clip.png", mediaType: "image" }] });
   await expect(page.locator(".in-flight-item, .in-flight-rich-item")).toHaveCount(0);
 }));
 

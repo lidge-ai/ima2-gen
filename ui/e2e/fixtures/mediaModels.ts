@@ -1,5 +1,4 @@
-import type { BrowserContext, Route } from "@playwright/test";
-import { startTrackingStream, type TrackingStream } from "./jobTrackingStream";
+import type { BrowserContext, Page, Route } from "@playwright/test";
 
 // Synthetic media catalog for the classic model window. Shapes mirror GET /api/media/catalog;
 // names are real model families so screenshots read like the product, prices are made up.
@@ -102,9 +101,9 @@ export interface MediaFixture {
   /** Rows GET /api/history returns; empty leaves the base fixture's empty history. */
   history: Record<string, unknown>[];
   terminalJobs: Record<string, unknown>[];
-  stream: TrackingStream;
   mediaReads(): number;
-  emit(event: string, requestId: string, data: Record<string, unknown>): void;
+  /** Delivers a job event on the page's event channel, as /api/events would. */
+  emit(page: Page, event: string, requestId: string, data: Record<string, unknown>): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -151,7 +150,6 @@ async function answer(route: Route, fixture: MediaFixture): Promise<void> {
   const path = url.pathname;
   const media = path.startsWith("/api/media");
   const keyWrite = /^\/api\/keys\/[^/]+(\/validate)?$/.test(path) && method !== "GET";
-  if (method === "GET" && path === "/api/events") return fixture.stream.routeEvents(route);
   if (method === "GET" && path.startsWith("/generated/l11-")) return route.fulfill({ contentType: "image/png", body: PNG });
   if (method === "GET" && path === "/api/history" && fixture.history.length && !url.searchParams.has("groupBy")) {
     return route.fulfill({ json: { items: fixture.history, total: fixture.history.length, nextCursor: null } });
@@ -187,19 +185,51 @@ async function answer(route: Route, fixture: MediaFixture): Promise<void> {
 }
 
 /**
- * Layered over the J6 capture: this handler answers the media, key-write and event routes and
- * passes everything else down, so the base fixture still refuses any API read it does not know.
+ * The page's EventSource is replaced by one the test drives. A synthetic origin cannot hold a real
+ * stream open (a fulfilled route is one finished body), and the job events are what the tests assert on.
  */
-export async function installMediaFixture(context: BrowserContext, origin: string, options: { keys?: string[] } = {}): Promise<MediaFixture> {
-  const stream = await startTrackingStream(origin);
+function installEventChannel(): void {
+  const live = new Set<EventTarget>();
+  class FixtureEventSource extends EventTarget {
+    static readonly CONNECTING = 0; static readonly OPEN = 1; static readonly CLOSED = 2;
+    readonly CONNECTING = 0; readonly OPEN = 1; readonly CLOSED = 2;
+    readyState = 0; withCredentials = false;
+    onopen: ((event: Event) => void) | null = null;
+    onerror: ((event: Event) => void) | null = null;
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    constructor(readonly url: string) {
+      super();
+      live.add(this);
+      setTimeout(() => { if (this.readyState === 2) return; this.readyState = 1; const open = new Event("open"); this.onopen?.(open); this.dispatchEvent(open); }, 0);
+    }
+    close(): void { this.readyState = 2; live.delete(this); }
+  }
   let frame = 0;
+  Object.assign(window, { EventSource: FixtureEventSource,
+    l11Emit: (event: string, data: Record<string, unknown>) => {
+      frame += 1;
+      for (const source of live) source.dispatchEvent(new MessageEvent(event, { data: JSON.stringify(data), lastEventId: String(frame) }));
+      return live.size;
+    } });
+}
+
+/**
+ * Layered over a base route handler: this one answers the media and key-write routes and passes
+ * everything else down, so the base fixture still refuses any API read it does not know.
+ */
+export async function installMediaFixture(context: BrowserContext, options: { keys?: string[] } = {}): Promise<MediaFixture> {
   const fixture: MediaFixture = {
-    keys: new Set(options.keys ?? ["fal"]), catalogMode: "ready", keyVerdict: "ok", calls: [], submissions: [], history: [], terminalJobs: [], stream,
+    keys: new Set(options.keys ?? ["fal"]), catalogMode: "ready", keyVerdict: "ok", calls: [], submissions: [], history: [], terminalJobs: [],
     mediaReads: () => fixture.calls.filter((call) => call.path.startsWith("/api/media")).length,
-    emit: (event, requestId, data) => { frame += 1; stream.emit(event, { jobId: requestId, requestId, jobKind: "media", ...data }, frame); },
-    close: async () => { await context.unroute("**/*", handler); await stream.close(); },
+    emit: async (page, event, requestId, data) => {
+      const delivered = await page.evaluate(([name, payload]) => (window as unknown as { l11Emit(event: string, data: unknown): number }).l11Emit(name, payload),
+        [event, { jobId: requestId, requestId, jobKind: "media", ...data }] as const);
+      if (delivered < 1) throw new Error("No open event channel to deliver " + event);
+    },
+    close: async () => { await context.unroute("**/*", handler); },
   };
   const handler = (route: Route) => answer(route, fixture);
+  await context.addInitScript(installEventChannel);
   await context.route("**/*", handler);
   return fixture;
 }

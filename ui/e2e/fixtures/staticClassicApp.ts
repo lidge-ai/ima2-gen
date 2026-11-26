@@ -51,7 +51,7 @@ async function serve(route: Route, unexpected: string[]): Promise<void> {
   if (url.origin !== STATIC_ORIGIN) return refuse("other-origin");
   if (url.pathname.startsWith("/api/")) {
     if (method !== "GET") return refuse("mutation");
-    // 204 ends the EventSource without a reconnect loop; the media fixture replaces this with a live stream.
+    // The media fixture swaps EventSource for a driven one, so this is only reached if a page skips it.
     if (url.pathname === "/api/events") return route.fulfill({ status: 204, body: "" });
     if (url.pathname === "/api/history") {
       return route.fulfill({ json: url.searchParams.has("groupBy") ? { sessions: [], loose: [], total: 0, nextCursor: null } : { items: [], total: 0, nextCursor: null } });
@@ -89,11 +89,11 @@ export async function openStaticApp(browser: Browser, options: StaticAppOptions 
   const errors: string[] = [];
   const handler = (route: Route) => serve(route, unexpected).catch(async (error: unknown) => { unexpected.push("route-error " + String(error)); await route.abort("failed").catch(() => {}); });
   await context.route("**/*", handler);
-  const media = await installMediaFixture(context, STATIC_ORIGIN, options.keys ? { keys: options.keys } : {});
+  const media = await installMediaFixture(context, options.keys ? { keys: options.keys } : {});
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
   return { page, context, media, unexpected, errors,
-    close: async () => { for (const open of context.pages()) await open.close(); await media.close(); await context.close(); } };
+    close: async () => { await media.close(); await context.close(); } };
 }
 
 export const MODEL_CONTROL = "#sidebar-generation-model:visible";
