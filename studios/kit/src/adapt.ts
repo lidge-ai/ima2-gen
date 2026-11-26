@@ -2,7 +2,7 @@
  * Translates the server's wire shapes (wire.ts) into the UI-facing kit types
  * (types.ts) and back. Pure functions; client.ts does the I/O.
  */
-import type { Catalog, CatalogModel, CatalogProvider, Job, KeyStatus, MediaModelSpec, MediaSubmitBody, SubmitInput } from "./types.ts";
+import type { Catalog, CatalogModel, CatalogProvider, Job, JobError, KeyStatus, MediaModelSpec, MediaSubmitBody, SubmitInput } from "./types.ts";
 import type { WireAdapter, WireCatalog, WireJob, WireModel, WireRoute } from "./wire.ts";
 
 /* ---------- catalog and keys ---------- */
@@ -114,7 +114,14 @@ export function fromWireJob(wire: WireJob): Job {
   const provider = str("adapter");
   if (provider) job.provider = provider;
   if (status === "failed" && wire.errorCode) {
-    job.error = { code: wire.errorCode, message: wire.errorCode, category: "unknown", retryable: false };
+    // The live "error" event carries the category; a record read back after a reload only has it
+    // when the server stored it in meta. Without it the card falls back to the generic message.
+    const category = CATEGORIES.find((c) => c === str("category")) ?? "unknown";
+    job.error = { code: wire.errorCode, message: wire.errorCode, category, retryable: meta.retryable === true };
   }
   return job;
 }
+
+const CATEGORIES: readonly JobError["category"][] = [
+  "auth", "quota", "rate-limit", "invalid-request", "moderation", "not-found", "upstream", "timeout", "unknown",
+];

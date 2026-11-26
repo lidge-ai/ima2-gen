@@ -58,6 +58,10 @@ test("video: out of credit links to the provider; a rate limit puts the job back
   await generate.click();
   const broke = page.getByRole("article", { name: new RegExp("Failed: .*harbor at dusk") });
   await expect(broke.getByRole("link", { name: /^Add credit at / })).toHaveAttribute("target", "_blank");
+  // The reason survives a reload, when the card comes from the job list instead of the live event.
+  await page.reload();
+  await expect(broke.getByRole("link", { name: /^Add credit at / })).toBeVisible();
+  await expect(broke.getByRole("alert")).toContainText("out of credit or quota");
   const rate = unique("[fail:rate-limit] tram in snow");
   await page.getByLabel("Prompt").fill(rate);
   await generate.click();
