@@ -25,17 +25,15 @@ test("create video, cancel, handle errors and configure a key", async ({ page })
   ).toBeVisible();
   await page.getByRole("button", { name: /Model: Seedance 2.5/ }).click();
   await page.getByRole("button", { name: /Veo 3.1 Fast/ }).click();
-  await expect(page.getByText("Add an API key to run this model")).toBeVisible();
+  await expect(page.getByText("Add a key to run this model")).toBeVisible();
   await expect(generate).toBeDisabled();
-  await page.getByRole("link", { name: "Google Gemini API" }).click();
-  const row = page.getByRole("article", { name: "Google Gemini API" });
-  await row.getByLabel("API key").fill("fake-google-key");
-  await row.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(row.getByText("Saved. The provider accepted the key.")).toBeVisible();
-  await page.goto("/#/video");
-  await page.getByRole("button", { name: /Model: Seedance 2.5/ }).click();
-  await page.getByRole("button", { name: /Veo 3.1 Fast/ }).click();
+  // The key goes in on the same screen; the prompt typed before stays.
   await prompt.fill("Cloud after key setup");
+  const notice = page.getByRole("region", { name: "Add a key to run this model" });
+  await notice.getByLabel("API key").fill("fake-google-key");
+  await notice.getByRole("button", { name: "Save key" }).click();
+  await expect(page.getByText("Add a key to run this model")).toHaveCount(0);
+  await expect(prompt).toHaveValue("Cloud after key setup");
   await expect(generate).toBeEnabled();
   await page.goto("/#/assets/videos");
   await expect(page.getByRole("button", { name: "Open A moving cloud" })).toBeVisible();

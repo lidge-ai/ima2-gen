@@ -409,6 +409,56 @@
   color: var(--text);
   font-weight: 600;
 }
+.key-notice > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.key-entry {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.key-entry label {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.key-entry-row {
+  display: flex;
+  gap: 6px;
+}
+.key-entry input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+}
+.key-entry-extra {
+  display: grid;
+  gap: 4px;
+}
+.key-entry .btn-primary {
+  height: 36px;
+  font-size: 14px;
+  border-radius: var(--radius-s);
+}
+.key-entry > .btn {
+  justify-self: start;
+}
+.key-entry-ok {
+  color: var(--green);
+}
+.key-entry-error {
+  color: #ff9b9b;
+  overflow-wrap: anywhere;
+}
 .form-error {
   color: var(--red);
   font-size: 13px;
