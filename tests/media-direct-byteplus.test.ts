@@ -208,7 +208,9 @@ test("HTTP errors map to categories without leaking the key", async () => {
     [404, "ModelNotOpen", "auth", "BYTEPLUS_MODEL_NOT_ACTIVATED", false],
     [429, "ServerOverloaded", "rate-limit", "BYTEPLUS_RATE_LIMIT", true],
     [429, "SetLimitExceeded", "quota", "BYTEPLUS_QUOTA", false],
-    [400, "InputImageSensitiveContentDetected.PrivacyInformation", "moderation", "BYTEPLUS_MODERATION", false],
+    [400, "InputImageSensitiveContentDetected.PrivacyInformation", "moderation", "BYTEPLUS_REAL_PERSON_BLOCKED", false],
+    [400, "InputVideoSensitiveContentDetected.PrivacyInformation", "moderation", "BYTEPLUS_REAL_PERSON_BLOCKED", false],
+    [400, "OutputVideoSensitiveContentDetected", "moderation", "BYTEPLUS_MODERATION", false],
     [400, "InvalidParameter", "invalid-request", "BYTEPLUS_INVALID_REQUEST", false],
     [500, "InternalServiceError", "upstream", "BYTEPLUS_UPSTREAM", true],
   ];
@@ -288,4 +290,45 @@ test("credential names match the Ops key file", () => {
   assert.equal(adapter.credential.configKey, "byteplusApiKey");
   assert.equal(adapter.errorPrefix, "BYTEPLUS");
   assert.equal(adapter.inputTransport, "inline");
+});
+
+test("asset:// ids pass through untouched as the official real-person route", async () => {
+  const calls: Call[] = [];
+  await adapter.submit(ctxWith([{ body: { id: "cgt-a" } }], calls), req({
+    model: "bytedance/seedance-2.5", task: "reference-to-video", prompt: "the character waves",
+    inputs: [
+      { role: "reference-image", url: "asset://asset-20260410114236-8cdfz", mimeType: "image/png" },
+      { role: "reference-video", url: "asset://asset-20260410114236-v1dx0", mimeType: "video/mp4" },
+    ],
+  }));
+  const content = (calls[0]!.body as { content: unknown[] }).content;
+  assert.deepEqual(content.slice(1), [
+    { type: "image_url", image_url: { url: "asset://asset-20260410114236-8cdfz" }, role: "reference_image" },
+    { type: "video_url", video_url: { url: "asset://asset-20260410114236-v1dx0" }, role: "reference_video" },
+  ]);
+  const error = await rejection(adapter.submit(ctxWith([], calls), req({
+    model: "bytedance/seedance-2.5", task: "reference-to-video", prompt: "x",
+    inputs: [{ role: "reference-image", url: "ftp://example.com/a.png", mimeType: "image/png" }],
+  })));
+  assert.equal(error.detail.code, "BYTEPLUS_INPUT_INVALID");
+});
+
+test("a real-person block names the official alternatives, on submit and on a failed task", async () => {
+  const calls: Call[] = [];
+  const ctx = ctxWith([
+    { status: 400, body: { error: { code: "InputImageSensitiveContentDetected.PrivacyInformation", message: "The request failed because the input image may contain real person." } } },
+    { body: { id: "cgt-f", status: "failed", error: { code: "InputVideoSensitiveContentDetected.PrivacyInformation", message: "may contain real person" } } },
+  ], calls);
+  const submitError = await rejection(adapter.submit(ctx, req({ model: "bytedance/seedance-2", task: "reference-to-video", prompt: "x", inputs: [png("reference-image")] })));
+  for (const detail of [submitError.detail]) {
+    assert.equal(detail.code, "BYTEPLUS_REAL_PERSON_BLOCKED");
+    assert.equal(detail.category, "moderation");
+    assert.equal(detail.retryable, false);
+    assert.match(detail.message, /asset:\/\//);
+    assert.match(detail.message, /30 days/);
+    assert.match(detail.message, /seedance-portrait-asset-guide/);
+  }
+  const state = await adapter.poll(ctx, { providerJobId: "cgt-f", resume: { kind: "video", baseUrl: HOST } });
+  assert.ok(state.status === "failed");
+  assert.equal(state.error.code, "BYTEPLUS_REAL_PERSON_BLOCKED");
 });
