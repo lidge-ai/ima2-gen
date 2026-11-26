@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+import { Popover } from "./ui/Popover.tsx";
 import { useStudio } from "./studio/context.tsx";
 import { useRoute, type Route } from "./router.ts";
 import { Icon, Logo, type IconName } from "./ui/Icon.tsx";
@@ -146,6 +148,8 @@ function TopBar({ route }: { route: Route }) {
 
 function BottomBar({ route }: { route: Route }) {
   const t = useT(M);
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const item = (path: string, label: Key, icon: IconName, current: boolean) => (
     <a href={"#/" + path} aria-current={current ? "page" : undefined}>
       <Icon name={icon} size={20} />
@@ -156,16 +160,17 @@ function BottomBar({ route }: { route: Route }) {
     <nav className="bottombar" aria-label={t("main")}>
       {item("", "home", "explore", route.page === "explore")}
       {item("remix", "remix", "remix", route.page === "remix")}
-      <a
-        className="bottom-create"
-        href="#/video"
-        aria-current={route.page === "create" ? "page" : undefined}
-        aria-label={t("create")}
-      >
-        <span className="create-pill">
-          <Icon name="sparkle" size={20} />
-        </span>
-      </a>
+      <button ref={trigger} type="button" className="bottom-create" aria-label={t("create")}
+        aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="create-pill"><Icon name="sparkle" size={20} /></span>
+      </button>
+      <Popover open={open} onClose={() => setOpen(false)} label={t("create")} anchor={trigger} placement="top" className="mobile-create-menu">
+        {NAV.filter((entry) => ["image", "video", "remix", "director", "models", "presets"].includes(entry.path)).map((entry) => (
+          <a key={entry.path} href={"#/" + entry.path} aria-current={entry.match(route) ? "page" : undefined} onClick={() => setOpen(false)}>
+            <Icon name={entry.icon} size={18} /> {t(entry.label)}
+          </a>
+        ))}
+      </Popover>
       {item("assets", "assets", "assets", route.page === "assets")}
       {item("keys", "keys", "key", route.page === "keys")}
     </nav>
