@@ -22,9 +22,9 @@ const wf = { id: workflow.id, values: { video: [{ ref: "asset://source" }] }, re
 const closeAll: Array<() => Promise<void>> = [];
 afterEach(async () => { while (closeAll.length) await closeAll.pop()!(); });
 
-function deferred<T = void>() {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => { resolve = done; });
   return { promise, resolve };
 }
 type Gate = { entered: ReturnType<typeof deferred>; release: ReturnType<typeof deferred> };
@@ -50,80 +50,99 @@ function historyItem() {
     secret: secrets[0], metadata: { apiKey: secrets[1], extra: secrets[2] } };
 }
 
-async function fixture() {
-  const calls: Array<{ method: string; path: string; data: Record<string, unknown> }> = [];
+type FixtureState = {
+  calls: Array<{ method: string; path: string; data: Record<string, unknown> }>;
+  streams: Set<ServerResponse>;
+  streamOpened: ReturnType<typeof deferred>;
+  streamClosed: ReturnType<typeof deferred>;
+  hold?: { path: string; gate: Gate };
+  failure?: { path: string; status: number };
+  failToolsNetwork: boolean;
+  historyPages: boolean;
+  existing: boolean;
+  autoDone: boolean;
+  emptyDone: boolean;
+  redirectTools: boolean;
+  event: (name: string, data: object) => void;
+};
+
+function fixtureState(): FixtureState {
   const streams = new Set<ServerResponse>();
-  const streamOpened = deferred();
-  const streamClosed = deferred();
+  return { calls: [], streams, streamOpened: deferred(), streamClosed: deferred(),
+    failToolsNetwork: false, historyPages: false, existing: false, autoDone: true, emptyDone: false, redirectTools: false,
+    event: (name, data) => { for (const stream of streams) stream.write(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`); } };
+}
+
+function respondWorkflow(state: FixtureState, path: string, data: Record<string, unknown>, res: ServerResponse) {
+  if (path === "/api/workflows") return json(res, { workflows: [{ id: workflow.id, label: workflow.label }] });
+  if (path === `/api/workflows/${workflow.id}/schema`) return json(res, { id: workflow.id, label: workflow.label, schema: workflowValuesSchema(workflow.fields) });
+  if (path.endsWith("/estimate")) return json(res, { estimate: { usd: 1 }, steps: [] });
+  if (path === "/api/media" || path === `/api/workflows/${workflow.id}`) {
+    const requestId = String(data.requestId);
+    json(res, path === "/api/media" ? { requestId, model: "fake/image", adapter: "fake" } : { requestId, workflow: workflow.id, estimate: {}, steps: [] }, 202);
+    if (state.autoDone) queueMicrotask(() => {
+      state.event("progress", { jobId: requestId, progress: 20, phase: "working" });
+      state.event("step", { jobId: requestId, progress: 60, phase: "render" });
+      state.event("done", { jobId: requestId, requestId, model: "fake/image", adapter: "fake", outputs: state.emptyDone ? [] : [{ filename, url: `/generated/${encodeURIComponent(filename)}`, mediaType: "image", mimeType: "image/png" }], ...(state.emptyDone ? { filename: null, url: null, mediaType: null } : {}) });
+    });
+    return;
+  }
+  json(res, { code: "FAKE_NOT_FOUND", error: path }, 404);
+}
+
+function respondFixture(state: FixtureState, path: string, url: URL, data: Record<string, unknown>, res: ServerResponse) {
+  if (path === "/api/media/tools") return json(res, { version: 1, tools: descriptors });
+  if (path === "/api/media/catalog") return json(res, { models: [], adapters: [{ id: "fake", maskedKey: secrets[0], extraFields: [{ name: "extra", value: secrets[1] }], status: { maskedKey: secrets[2] } }] });
+  if (path === "/api/keys/vocabulary") return json(res, { vocabularies: [{ vocabulary: "fake", extraFields: [{ name: "x", value: secrets[0] }] }] });
+  if (path === "/api/keys/status") return json(res, { fake: { configured: true, source: "config", maskedKey: secrets[1], value: secrets[2] } });
+  if (path === "/api/media/estimate") return json(res, { model: "fake/image", adapter: "fake", usd: 1, prices: [] });
+  if (path === "/api/media/inputs") return json(res, { ref: "asset://uploaded" });
+  if (path === "/api/media/jobs") return json(res, { jobs: [projectJob("media"), projectJob("workflow")], terminalJobs: [projectJob("media", true), projectJob("workflow", true)] });
+  if (path.startsWith("/api/media/jobs/")) {
+    if (path.endsWith("running")) return json(res, { job: projectJob("media") });
+    if (state.existing) return json(res, { job: projectJob("media") });
+    return json(res, { code: "MEDIA_JOB_UNKNOWN", error: "unknown", status: 404 }, 404);
+  }
+  if (path.endsWith("/cancel")) return json(res, { ok: true, requestId: "running", active: true, aborted: true });
+  if (path === "/api/history") {
+    const page = Number(url.searchParams.get("before") ?? "0");
+    const items = url.searchParams.has("requestId") ? (state.existing ? [historyItem()] : []) : [historyItem()];
+    return json(res, { items, ...(state.historyPages ? { nextCursor: { before: page + 1, beforeFilename: `page-${page}` } } : {}) });
+  }
+  if (path.startsWith("/generated/")) { res.writeHead(200, { "content-type": "image/png" }); res.end("fake image"); return; }
+  return respondWorkflow(state, path, data, res);
+}
+
+async function handleFixtureRequest(state: FixtureState, req: IncomingMessage, res: ServerResponse) {
+  const url = new URL(req.url!, "http://localhost");
+  const path = url.pathname;
+  const data = req.method === "POST" ? await body(req) : {};
+  state.calls.push({ method: req.method!, path: path + url.search, data });
+  if (state.hold?.path === path) { const barrier = state.hold.gate; barrier.entered.resolve(); await barrier.release.promise; }
+  if (state.failure?.path === path) { json(res, { ok: false, code: "FAKE_ERROR", error: "fake error", category: "invalid-request", extra: secrets[0] }, state.failure.status); return; }
+  if (path === "/api/media/tools" && state.failToolsNetwork) { req.socket.destroy(); return; }
+  if (path === "/api/media/tools" && state.redirectTools) { res.writeHead(302, { location: "/elsewhere" }); res.end(); return; }
+  if (path === "/api/events") {
+    res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
+    res.write(": connected\n\n"); state.streams.add(res); state.streamOpened.resolve();
+    res.on("close", () => { state.streams.delete(res); state.streamClosed.resolve(); }); return;
+  }
+  return respondFixture(state, path, url, data, res);
+}
+
+async function fixture() {
+  const state = fixtureState();
   const logs: string[] = [];
-  let hold: { path: string; gate: Gate } | undefined;
-  let failure: { path: string; status: number } | undefined;
-  let failToolsNetwork = false;
-  let historyPages = false;
-  let existing = false;
-  let autoDone = true;
-  let emptyDone = false;
-  let redirectTools = false;
-  const event = (name: string, data: object) => {
-    for (const stream of streams) stream.write(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`);
-  };
-  const server = createServer(async (req, res) => {
-    const url = new URL(req.url!, "http://localhost");
-    const path = url.pathname;
-    const data = req.method === "POST" ? await body(req) : {};
-    calls.push({ method: req.method!, path: path + url.search, data });
-    if (hold?.path === path) { const barrier = hold.gate; barrier.entered.resolve(); await barrier.release.promise; }
-    if (failure?.path === path) { json(res, { ok: false, code: "FAKE_ERROR", error: "fake error", category: "invalid-request", extra: secrets[0] }, failure.status); return; }
-    if (path === "/api/media/tools" && failToolsNetwork) { req.socket.destroy(); return; }
-    if (path === "/api/media/tools" && redirectTools) { res.writeHead(302, { location: "/elsewhere" }); res.end(); return; }
-    if (path === "/api/events") {
-      res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
-      res.write(": connected\n\n"); streams.add(res); streamOpened.resolve();
-      res.on("close", () => { streams.delete(res); streamClosed.resolve(); }); return;
-    }
-    if (path === "/api/media/tools") return json(res, { version: 1, tools: descriptors });
-    if (path === "/api/media/catalog") return json(res, { models: [], adapters: [{ id: "fake", maskedKey: secrets[0], extraFields: [{ name: "extra", value: secrets[1] }], status: { maskedKey: secrets[2] } }] });
-    if (path === "/api/keys/vocabulary") return json(res, { vocabularies: [{ vocabulary: "fake", extraFields: [{ name: "x", value: secrets[0] }] }] });
-    if (path === "/api/keys/status") return json(res, { fake: { configured: true, source: "config", maskedKey: secrets[1], value: secrets[2] } });
-    if (path === "/api/media/estimate") return json(res, { model: "fake/image", adapter: "fake", usd: 1, prices: [] });
-    if (path === "/api/media/inputs") return json(res, { ref: "asset://uploaded" });
-    if (path === "/api/media/jobs") return json(res, { jobs: [projectJob("media"), projectJob("workflow")], terminalJobs: [projectJob("media", true), projectJob("workflow", true)] });
-    if (path.startsWith("/api/media/jobs/")) {
-      if (path.endsWith("running")) return json(res, { job: projectJob("media") });
-      if (existing) return json(res, { job: projectJob("media") });
-      return json(res, { code: "MEDIA_JOB_UNKNOWN", error: "unknown", status: 404 }, 404);
-    }
-    if (path.endsWith("/cancel")) return json(res, { ok: true, requestId: "running", active: true, aborted: true });
-    if (path === "/api/history") {
-      const page = Number(url.searchParams.get("before") ?? "0");
-      const items = url.searchParams.has("requestId") ? (existing ? [historyItem()] : []) : [historyItem()];
-      return json(res, { items, ...(historyPages ? { nextCursor: { before: page + 1, beforeFilename: `page-${page}` } } : {}) });
-    }
-    if (path.startsWith("/generated/")) { res.writeHead(200, { "content-type": "image/png" }); res.end("fake image"); return; }
-    if (path === "/api/workflows") return json(res, { workflows: [{ id: workflow.id, label: workflow.label }] });
-    if (path === `/api/workflows/${workflow.id}/schema`) return json(res, { id: workflow.id, label: workflow.label, schema: workflowValuesSchema(workflow.fields) });
-    if (path.endsWith("/estimate")) return json(res, { estimate: { usd: 1 }, steps: [] });
-    if (path === "/api/media" || path === `/api/workflows/${workflow.id}`) {
-      const requestId = String(data.requestId);
-      json(res, path === "/api/media" ? { requestId, model: "fake/image", adapter: "fake" } : { requestId, workflow: workflow.id, estimate: {}, steps: [] }, 202);
-      if (autoDone) queueMicrotask(() => {
-        event("progress", { jobId: requestId, progress: 20, phase: "working" });
-        event("step", { jobId: requestId, progress: 60, phase: "render" });
-        event("done", { jobId: requestId, requestId, model: "fake/image", adapter: "fake", outputs: emptyDone ? [] : [{ filename, url: `/generated/${encodeURIComponent(filename)}`, mediaType: "image", mimeType: "image/png" }], ...(emptyDone ? { filename: null, url: null, mediaType: null } : {}) });
-      });
-      return;
-    }
-    json(res, { code: "FAKE_NOT_FOUND", error: path }, 404);
-  });
+  const server = createServer((req, res) => handleFixtureRequest(state, req, res));
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  closeAll.push(async () => { for (const stream of streams) stream.destroy(); server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); });
+  closeAll.push(async () => { for (const stream of state.streams) stream.destroy(); server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); });
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  return { base, calls, logs, event, streamOpened, streamClosed,
-    setHold: (path: string, value: Gate) => { hold = { path, gate: value }; },
-    setFailure: (path: string, status: number) => { failure = { path, status }; },
-    setNetworkFailure: () => { failToolsNetwork = true; }, setHistoryPages: () => { historyPages = true; },
-    setRedirect: () => { redirectTools = true; },
-    setExisting: () => { existing = true; }, setEmptyDone: () => { emptyDone = true; }, setAutoDone: (value: boolean) => { autoDone = value; } };
+  return { base, calls: state.calls, logs, event: state.event, streamOpened: state.streamOpened, streamClosed: state.streamClosed,
+    setHold: (path: string, value: Gate) => { state.hold = { path, gate: value }; },
+    setFailure: (path: string, status: number) => { state.failure = { path, status }; },
+    setNetworkFailure: () => { state.failToolsNetwork = true; }, setHistoryPages: () => { state.historyPages = true; },
+    setRedirect: () => { state.redirectTools = true; },
+    setExisting: () => { state.existing = true; }, setEmptyDone: () => { state.emptyDone = true; }, setAutoDone: (value: boolean) => { state.autoDone = value; } };
 }
 async function connect(base: () => Promise<string>, logs: string[] = []) {
   const server = createMediaMcpServer({ resolveBase: base, version: "test", log: (message: string) => logs.push(message) });
