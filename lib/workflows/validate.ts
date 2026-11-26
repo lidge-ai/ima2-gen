@@ -207,7 +207,9 @@ export function resolveSlotPlan(def: WorkflowDefinition, selection: WorkflowSele
   const slots: Record<string, ResolvedSlot> = {};
   for (const slot of def.slots) {
     const route = selection?.routes?.[slot.name] ?? combo?.routes?.[slot.name] ?? slot.defaultRoute;
-    const pinned = selection?.models?.[slot.name] ?? combo?.models[slot.name];
+    // A tier the user picked (e.g. lite) is a model choice too: keep it rather than fall back to a pricier model.
+    const tierModel = typeof tier === "string" ? slot.tierModels?.[tier] : undefined;
+    const pinned = selection?.models?.[slot.name] ?? combo?.models[slot.name] ?? tierModel;
     if (pinned === undefined && combo && slot.optional) {
       ctx.notes.push({ slot: slot.name, kind: "skipped", message: slot.label + " is not part of " + combo.label });
       continue;
