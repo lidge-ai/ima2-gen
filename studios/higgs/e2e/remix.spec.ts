@@ -82,7 +82,9 @@ test("in Korean, Remix reads the server's Korean workflow text: name, field help
   await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
   await page.goto("/#/remix/remix-object-swap");
   await expect(page.getByRole("heading", { name: "리믹스: 사물 바꾸기", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "품질: 표준" })).toBeVisible();
+  await page.getByRole("button", { name: /^품질: / }).click();
+  await expect(page.getByRole("dialog", { name: "품질" }).getByRole("button", { name: "표준" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByText("공연할 사람이나 사물 이미지 1~8장, 순서대로.").first()).toBeAttached();
   await expect(page.getByText("1-8 images of the people or things")).toHaveCount(0);
   await expect(page.getByText("Standard", { exact: true })).toHaveCount(0);
