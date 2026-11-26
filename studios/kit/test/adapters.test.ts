@@ -31,6 +31,8 @@ test("catalog, key, submit and job adapters translate wire records", () => {
     },
   );
   assert.equal(fromWireJob({ requestId: "r", kind: "media", startedAt: 0, status: "canceled" }).status, "canceled");
+  // A job read back after it finished (no events seen) still reads as complete.
+  assert.equal(fromWireJob({ requestId: "r", kind: "media", startedAt: 0, status: "completed" }).progress, 1);
 });
 test("workflow and history adapters translate values, estimates and cursors", () => {
   const wire = workflows.find((w) => w.id === "director-cast")!,
