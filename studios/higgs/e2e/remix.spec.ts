@@ -23,6 +23,8 @@ test("remix switches modes and subscription variants", async ({ page }) => {
 
 test("restyle accepts the real source and style reference fields", async ({ page }) => {
   await page.goto("/#/remix/remix-restyle");
+  // The first visit starts from an example clip; replace it with the person's own source.
+  await page.getByRole("button", { name: "Remove Source video" }).click();
   await page.getByLabel("Source video", { exact: true }).setInputFiles({
     name: "source.mp4",
     mimeType: "video/mp4",

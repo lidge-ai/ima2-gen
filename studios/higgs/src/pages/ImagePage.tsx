@@ -6,6 +6,7 @@ import { ImageDock } from "./create/ImageDock.tsx";
 import { defaultModel, presetText } from "./create/defaults.ts";
 import { defaultsFor, emptyForm, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
+import { readDraft, syncModelToUrl, writeDraft } from "../studio/draft.ts";
 import { PRESETS, findPreset } from "../data/presets.ts";
 import { navigate } from "../router.ts";
 
@@ -48,8 +49,10 @@ function ImageEmpty() {
 export function ImagePage({ preset, model: requested }: { preset?: string; model?: string }) {
   const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
-  const [form, setForm] = useState<CreateForm>(() => emptyForm());
+  const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("image") }));
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
+  useEffect(() => writeDraft("image", form.prompt), [form.prompt]);
+  useEffect(() => syncModelToUrl("image", form.model), [form.model]);
   useHandOff("image", (upload, name) => set({ sourceImage: { role: "source-image", upload, name } }));
   useEffect(() => {
     if (!catalog || form.model) return;

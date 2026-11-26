@@ -11,6 +11,7 @@ import { VideoPanel } from "./create/VideoPanel.tsx";
 import { defaultModel } from "./create/defaults.ts";
 import { EDIT_TASKS, defaultsFor, emptyForm, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
+import { readDraft, syncModelToUrl, writeDraft } from "../studio/draft.ts";
 
 const M = messages(
   {
@@ -103,9 +104,11 @@ function Stage(props: StageProps) {
 export function VideoPage({ preset, model: requested }: { preset?: string; model?: string }) {
   const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
-  const [form, setForm] = useState<CreateForm>(() => emptyForm());
+  const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("video") }));
   const [view, setView] = useState<View>("history");
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
+  useEffect(() => writeDraft("video", form.prompt), [form.prompt]);
+  useEffect(() => syncModelToUrl("video", form.model), [form.model]);
   useHandOff("video", (upload, name) =>
     set({ mode: "create", refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
   );
