@@ -3,19 +3,13 @@ import { chooseRoute, type WorkflowDef, type WorkflowEstimate, type WorkflowRunB
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 
-export function useWorkflow(def: WorkflowDef) {
-  const studio = useStudioApi();
-  const catalog = useStudio((s) => s.catalog);
+function useWorkflowForm(def: WorkflowDef) {
   const [files, setFiles] = useState<Record<string, SlotValue[]>>({});
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [params, setParams] = useState<Record<string, string | number | boolean>>(() =>
     Object.fromEntries(def.params.filter((p) => p.default !== undefined).map((p) => [p.name, p.default!])),
   );
   const [steps, setSteps] = useState<Record<string, { model: string }>>({});
-  const [estimate, setEstimate] = useState<WorkflowEstimate | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [estimateError, setEstimateError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
   const body = useMemo<WorkflowRunBody>(
     () => ({
       inputs: Object.fromEntries(
@@ -37,6 +31,13 @@ export function useWorkflow(def: WorkflowDef) {
   const missing = def.inputs.filter(
     (input) => input.required && (input.kind === "text" ? !texts[input.name]?.trim() : !files[input.name]?.length),
   );
+  return { files, setFiles, texts, setTexts, params, setParams, steps, setSteps, body, missing };
+}
+
+function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
+  const studio = useStudioApi();
+  const [estimate, setEstimate] = useState<WorkflowEstimate | null>(null);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
     setEstimate(null);
@@ -57,8 +58,35 @@ export function useWorkflow(def: WorkflowDef) {
       clearTimeout(timer);
     };
   }, [studio, def, body]);
+  return { estimate, estimateError };
+}
+
+function useWorkflowRun(def: WorkflowDef, body: WorkflowRunBody) {
+  const studio = useStudioApi();
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const submit = async () => {
+    setError(null);
+    setSending(true);
+    try {
+      await studio.runWorkflow(def.id, { ...body, clientRequestId: crypto.randomUUID() });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start workflow");
+    } finally {
+      setSending(false);
+    }
+  };
+  return { error, setError, sending, submit };
+}
+
+export function useWorkflow(def: WorkflowDef) {
+  const studio = useStudioApi();
+  const catalog = useStudio((s) => s.catalog);
+  const form = useWorkflowForm(def);
+  const estimate = useWorkflowEstimate(def, form.body);
+  const run = useWorkflowRun(def, form.body);
   const choices = def.steps.flatMap((step) => {
-    const id = steps[step.id]?.model ?? step.model;
+    const id = form.steps[step.id]?.model ?? step.model;
     if (!id) return [];
     const model = catalog?.models.find((item) => item.id === id);
     return [{ step, model, choice: model ? chooseRoute(model) : null }];
@@ -66,40 +94,6 @@ export function useWorkflow(def: WorkflowDef) {
   const blocked =
     !catalog ||
     choices.some((item) => !item.choice || item.choice.kind === "needs-key" || item.choice.kind === "unavailable");
-  const submit = async () => {
-    setError(null);
-    setSending(true);
-    try {
-      await studio.runWorkflow(def.id, {
-        ...body,
-        clientRequestId: crypto.randomUUID(),
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start workflow");
-    } finally {
-      setSending(false);
-    }
-  };
-  return {
-    studio,
-    catalog,
-    files,
-    setFiles,
-    texts,
-    setTexts,
-    params,
-    setParams,
-    steps,
-    setSteps,
-    estimate,
-    estimateError,
-    error,
-    setError,
-    sending,
-    missing,
-    blocked,
-    choices,
-    submit,
-  };
+  return { studio, catalog, ...form, ...estimate, ...run, blocked, choices };
 }
 export type WorkflowForm = ReturnType<typeof useWorkflow>;

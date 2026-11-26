@@ -2,26 +2,15 @@ import type { HistoryItem, WorkflowDef } from "@ima2/studio-kit";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile } from "../../studio/handoff.ts";
 import { Feed } from "../../ui/Feed.tsx";
+import { ModelName } from "../../ui/ModelName.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import "../../styles/director.css";
 
 const order = ["director-studio", "director-cinema", "director-cast", "director-locations"];
 
-function DirectorSidebar({
-  def,
-  workflows,
-  form,
-}: {
-  def: WorkflowDef;
-  workflows: readonly WorkflowDef[];
-  form: WorkflowForm;
-}) {
-  const history = useStudio((s) => s.history);
-  const elements = history.filter(
-    (item) => item.workflow === "director-cast" || item.workflow === "director-locations",
-  );
-  const attach = async (item: HistoryItem) => {
+function useAttachElement(def: WorkflowDef, form: WorkflowForm) {
+  return async (item: HistoryItem) => {
     const name = item.workflow === "director-cast" ? "cast" : "location";
     const input = def.inputs.find((entry) => entry.name === name && entry.kind !== "text");
     if (!input) {
@@ -49,6 +38,51 @@ function DirectorSidebar({
       form.setError(err instanceof Error ? err.message : "Could not attach result");
     }
   };
+}
+
+function DirectorElements({ def, form }: { def: WorkflowDef; form: WorkflowForm }) {
+  const history = useStudio((s) => s.history);
+  const jobs = useStudio((s) => s.jobs);
+  const elements = history.filter(
+    (item) => item.workflow === "director-cast" || item.workflow === "director-locations",
+  );
+  const attach = useAttachElement(def, form);
+  return (
+    <div className="director-elements">
+      <h3>Your cast and locations</h3>
+      {elements.length ? (
+        elements.map((item) => (
+          <button
+            type="button"
+            key={item.historyId}
+            aria-label={`Attach ${item.workflow === "director-cast" ? "cast" : "location"}: ${item.prompt || item.model}`}
+            onClick={() => {
+              void attach(item);
+            }}
+          >
+            Attach {item.workflow === "director-cast" ? "cast" : "location"}:{" "}
+            {item.prompt || (item.workflow === "director-cast" ? "Cast" : "Location")}
+            {jobs[item.jobId]?.steps?.find((step) => step.model)?.model ? (
+              <ModelName id={jobs[item.jobId]!.steps!.find((step) => step.model)!.model!} />
+            ) : null}
+          </button>
+        ))
+      ) : (
+        <p className="muted">Create cast or locations to reuse them here.</p>
+      )}
+    </div>
+  );
+}
+
+function DirectorSidebar({
+  def,
+  workflows,
+  form,
+}: {
+  def: WorkflowDef;
+  workflows: readonly WorkflowDef[];
+  form: WorkflowForm;
+}) {
   return (
     <aside className="director-sidebar">
       <nav aria-label="Director workflows">
@@ -58,24 +92,7 @@ function DirectorSidebar({
           </a>
         ))}
       </nav>
-      <div className="director-elements">
-        <h3>Your cast and locations</h3>
-        {elements.length ? (
-          elements.map((item) => (
-            <button
-              type="button"
-              key={item.historyId}
-              onClick={() => {
-                void attach(item);
-              }}
-            >
-              Attach {item.workflow === "director-cast" ? "cast" : "location"}: {item.prompt || item.model}
-            </button>
-          ))
-        ) : (
-          <p className="muted">Create cast or locations to reuse them here.</p>
-        )}
-      </div>
+      <DirectorElements def={def} form={form} />
     </aside>
   );
 }

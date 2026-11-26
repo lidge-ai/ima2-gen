@@ -15,6 +15,11 @@ test("asset filters, favorites and deletion", async ({ page, request }) => {
     .toBeTruthy();
   await page.goto("/#/assets/videos");
   await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Filter by model", exact: true }).click();
+  await page.getByRole("radio", { name: "Seedance 2.5", exact: true }).click();
+  await expect(page.getByRole("button", { name: `Open ${prompt}` })).toBeVisible();
+  await page.getByRole("button", { name: "Filter by model", exact: true }).click();
+  await page.getByRole("radio", { name: "All models", exact: true }).click();
   await page.getByRole("button", { name: `Open ${prompt}` }).click();
   const dialog = page.getByRole("dialog", { name: "Result" });
   await expect(dialog.getByRole("link", { name: "Download" })).toBeVisible();
