@@ -84,8 +84,9 @@ export interface WebAccessDeps {
 }
 
 export function createWebAccess(config: WebAccessConfig, deps: WebAccessDeps = {}) {
-  const verifier = deps.verifier ?? createAccessJwtVerifier({ teamDomain: config.teamDomain, aud: config.aud, fetch: deps.fetch, now: deps.now });
-  const spend: SpendGuard = createSpendGuard({ dailyCapUsd: config.dailyCapUsd, requestCapUsd: config.requestCapUsd, ledgerFile: config.ledgerFile, timeZone: config.timeZone, now: deps.now });
+  const clock = deps.now ? { now: deps.now } : {};
+  const verifier = deps.verifier ?? createAccessJwtVerifier({ teamDomain: config.teamDomain, aud: config.aud, ...(deps.fetch ? { fetch: deps.fetch } : {}), ...clock });
+  const spend: SpendGuard = createSpendGuard({ dailyCapUsd: config.dailyCapUsd, requestCapUsd: config.requestCapUsd, ledgerFile: config.ledgerFile, timeZone: config.timeZone, ...clock });
   const gate: RequestHandler = async (req, res, next) => {
     try {
       const token = assertionHeader(req);
