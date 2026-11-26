@@ -34,7 +34,7 @@ function enc(value: string): string {
 }
 
 /** Job snapshots built from events, merged with what the job endpoints report. */
-class JobCache {
+export class JobCache {
   readonly jobs = new Map<string, Job>();
 
   remember(job: Job): Job {
@@ -48,7 +48,14 @@ class JobCache {
     const known = this.jobs.get(fresh.jobId);
     if (!known) return this.remember(fresh);
     if (isTerminal(known) || !isTerminal(fresh)) return known;
-    return this.remember({ ...known, status: fresh.status, updatedAt: fresh.updatedAt, ...(fresh.error ? { error: fresh.error } : {}) });
+    // The record says it finished: take its status, error and final progress over what events showed.
+    return this.remember({
+      ...known,
+      status: fresh.status,
+      updatedAt: fresh.updatedAt,
+      ...(fresh.error ? { error: fresh.error } : {}),
+      ...(fresh.progress !== undefined ? { progress: fresh.progress } : {}),
+    });
   }
 }
 

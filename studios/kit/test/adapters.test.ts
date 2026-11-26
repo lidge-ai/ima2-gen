@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { toCatalog, toKeyStatuses, toWireSubmit, fromWireJob, nameParts } from "../src/adapt.ts";
+import { JobCache } from "../src/client.ts";
 import { toWorkflowDef, toWireRun, toEstimate, localizeWorkflow } from "../src/adaptWorkflow.ts";
 import { toHistoryPage, historyParams } from "../src/adaptHistory.ts";
 import { reduceJobEvent } from "../src/jobReducer.ts";
@@ -112,4 +113,13 @@ test("an estimate carries the model and route the server planned for each step",
   assert.equal(est.steps[0]?.model, "bytedance/seedream-5.5");
   assert.equal(est.steps[0]?.route, "byteplus");
   assert.equal(est.steps[0]?.slot, "subject");
+});
+
+test("a running job that the server reports finished reads as complete, whatever events showed", () => {
+  const cache = new JobCache();
+  const running = fromWireJob({ requestId: "r", kind: "media", startedAt: 0, phase: "running", meta: { model: "m" } });
+  cache.remember({ ...running, progress: 0.4 });
+  const merged = cache.merge({ requestId: "r", kind: "media", startedAt: 0, status: "completed", finishedAt: 10, meta: { model: "m" } });
+  assert.equal(merged.status, "succeeded");
+  assert.equal(merged.progress, 1);
 });
