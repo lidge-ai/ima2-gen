@@ -231,7 +231,8 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
   const lockedNotice = selectedMcpRecord?.executable === false
     ? (selectedMcpRecord.lockReason ?? t("mcp.higgsfieldLocked"))
     : null;
-  const unavailableReason = !mcpProvider
+  // A selected media model replaces the MCP/core lane, so nothing about the lane blocks the menu.
+  const unavailableReason = !mcpProvider || mediaSelection
     ? null
     : !selectedMcpRecord
       ? t("mcp.unknownProvider", { provider: mcpProvider })
@@ -241,20 +242,23 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
           ? t("mcp.disabledProvider")
           : null;
 
+  // Write only when a media model is active: picking a lane must not touch store state otherwise.
+  const clearMediaSelection = () => { if (mediaSelection) setMediaSelection(null); };
+
   const onProviderChange = (value: string) => {
     if (value.startsWith(CORE_PREFIX)) {
       const laneId = value.slice(CORE_PREFIX.length);
       // Guard the cast: Provider is a generated literal union, and an id the
       // label map does not know is one setProviderImpl cannot route either.
       if (!KNOWN_PROVIDER_LABELS.has(laneId)) return;
-      setMediaSelection(null);
+      clearMediaSelection();
       setProvider(laneId as Provider);
       return;
     }
     const next = value.slice(MCP_PREFIX.length);
     const record = providers.find((entry) => entry.id === next);
     if (!record || record.status.state !== "connected") return;
-    setMediaSelection(null);
+    clearMediaSelection();
     applyMcpProvider(next);
   };
 
@@ -262,7 +266,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     const current = useAppStore.getState();
     if (current.provider !== provider || (current.mcpProvider ?? null) !== mcpProvider) return;
     if (value.startsWith("media:")) return;
-    if (!value.startsWith(EFFORT_PREFIX)) setMediaSelection(null);
+    if (!value.startsWith(EFFORT_PREFIX)) clearMediaSelection();
     const currentSnapshot = getLaneCatalogSnapshot();
     if (current.mcpProvider) {
       if (value.startsWith(COMFY_VIDEO_PREFIX)) return;
@@ -464,7 +468,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
         value={providerValue}
         onChange={onProviderChange}
         ariaLabel={t("mcp.providerLabel")}
-        title={mediaSelection ? t("mcp.providerLabel") : unavailableReason ?? t("mcp.providerLabel")}
+        title={unavailableReason ?? t("mcp.providerLabel")}
         // The closed control says which lane is selected, not why another one
         // cannot run. State belongs in the open list, where it informs the
         // choice; on the trigger it would just crowd a control that is already
@@ -480,8 +484,8 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
         value={modelValue}
         onChange={onModelChange}
         ariaLabel={t("mcp.modelLabel")}
-        title={mediaSelection ? t("mcp.modelLabel") : unavailableReason ?? t("mcp.modelLabel")}
-        disabled={!mediaSelection && Boolean(unavailableReason)}
+        title={unavailableReason ?? t("mcp.modelLabel")}
+        disabled={Boolean(unavailableReason)}
         placeholder={mcpProvider
           ? (modelsLoading ? t("mcp.loadingModels") : t("mcp.chooseModel"))
           : provider === "comfy" ? t("mcp.chooseModel") : undefined}
