@@ -1,4 +1,24 @@
 {
+  "mediaPicker": {
+    "model": "媒體模型",
+    "loadError": "無法載入媒體模型。",
+    "classic": "經典",
+    "noKey": "需要 API 金鑰",
+    "settings": "管理 API 金鑰",
+    "route": "路線",
+    "direct": "直連",
+    "aggregator": "聚合",
+    "keyReady": "金鑰已設定",
+    "task": "任務",
+    "duration": "時長",
+    "default": "預設",
+    "resolution": "解析度",
+    "aspect": "長寬比",
+    "nativeAudio": "原生音訊",
+    "negativePrompt": "負面提示詞",
+    "seed": "種子",
+    "documentation": "文件"
+  },
   "media": {
     "keysTitle": "媒體供應商",
     "noProviders": "沒有可用的媒體供應商。",
