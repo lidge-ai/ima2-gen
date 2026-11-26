@@ -1,4 +1,3 @@
-import { mingmou, pollVod, submitVod } from "./tencent/vod.js";
 import type {
   MediaAdapterContext,
   MediaJobRef,
@@ -42,7 +41,6 @@ const models: readonly MediaModelSpec[] = [
     pricing: [],
     docsUrl: DOCS,
   },
-  mingmou,
 ];
 
 function safeMessage(ctx: MediaAdapterContext, message: string): string {
@@ -127,7 +125,6 @@ function requestBody(request: MediaSubmitRequest) {
 }
 async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Promise<MediaJobRef> {
   try {
-    if (request.model === mingmou.id || request.model === mingmou.upstreamId) return await submitVod(ctx, request);
     const data = await call(ctx, PATH, requestBody(request));
     const id = asString(data.id);
     if (!id) fail(PREFIX, "BAD_RESPONSE", "upstream", "Missing task id");
@@ -139,7 +136,6 @@ async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Pr
   }
 }
 async function poll(ctx: MediaAdapterContext, job: MediaJobRef): Promise<MediaJobState> {
-  if (job.resume?.route === "vod") return pollVod(ctx, job);
   const data = await call(ctx, `${PATH}/${encodeURIComponent(job.providerJobId)}`);
   const status = asString(data.status);
   if (status === "queued" || status === "running") return { status };
@@ -164,12 +160,6 @@ export const adapter: MediaProviderAdapter = {
     configKey: "tencentApiKey",
     envVars: ["TENCENT_TOKENHUB_API_KEY"],
     consoleUrl: "https://console.tencentcloud.com/lkeap",
-    extraFields: [
-      { name: "secretId", envVar: "TENCENTCLOUD_SECRET_ID", secret: true, required: false },
-      { name: "secretKey", envVar: "TENCENTCLOUD_SECRET_KEY", secret: true, required: false },
-      { name: "vodSubAppId", envVar: "TENCENT_VOD_SUBAPPID", secret: false, required: false },
-      { name: "region", envVar: "TENCENTCLOUD_REGION", secret: false, required: false },
-    ],
   },
   inputTransport: "url",
   listModels: () => models,
