@@ -50,7 +50,8 @@ test("registered media adapters build one registry without id clashes", () => {
 for (const adapter of subjects) {
   test(`${adapter.id}: identity, credential and transport follow the contract`, () => {
     assert.match(adapter.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-    assert.match(adapter.errorPrefix, /^[A-Z][A-Z0-9_]*$/);
+    // Codes are "<ERROR_PREFIX>_<REASON>" (contract.ts), so the prefix itself has no trailing underscore.
+    assert.match(adapter.errorPrefix, /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/, "errorPrefix like FAL or TOPAZ_VIDEO, without a trailing underscore");
     assert.ok(adapter.label.trim());
     assert.ok(adapter.route === "direct" || adapter.route === "aggregator");
     assert.ok(["url", "inline", "upload"].includes(adapter.inputTransport));
