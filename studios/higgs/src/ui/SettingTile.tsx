@@ -23,20 +23,54 @@ interface Props<T> {
   chipText?: (label: string) => string;
 }
 
+interface MenuProps<T> {
+  titleId: string;
+  caption: string;
+  value: T;
+  options: readonly TileOption<T>[];
+  onPick: (value: T) => void;
+}
+
+function OptionMenu<T extends string | number>({ titleId, caption, value, options, onPick }: MenuProps<T>) {
+  return (
+    <>
+      <p className="menu-title" id={titleId}>
+        {caption}
+      </p>
+      <div role="radiogroup" aria-labelledby={titleId} className="menu-list">
+        {options.map((option) => (
+          <button
+            key={String(option.value)}
+            type="button"
+            role="radio"
+            aria-checked={option.value === value}
+            className="menu-item"
+            onClick={() => onPick(option.value)}
+          >
+            <span className="menu-label">
+              {option.icon}
+              {option.label}
+            </span>
+            {option.meta ? <span className="menu-meta">{option.meta}</span> : null}
+            {option.value === value ? <Icon name="check" size={15} /> : null}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function valueText<T>(current: TileOption<T> | undefined, variant: "tile" | "chip", chipText?: (label: string) => string) {
+  const label = current?.label ?? "-";
+  return variant === "chip" && chipText ? chipText(label) : label;
+}
+
 /** A labelled setting that opens a single-choice menu. */
-export function SettingTile<T extends string | number>({
-  caption,
-  accessibleLabel,
-  value,
-  options,
-  onChange,
-  variant = "tile",
-  icon,
-  chipText,
-}: Props<T>) {
+export function SettingTile<T extends string | number>(props: Props<T>) {
+  const { caption, accessibleLabel, value, options, onChange, variant = "tile", icon, chipText } = props;
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
-  const id = useId();
+  const titleId = useId();
   const current = options.find((o) => o.value === value);
   return (
     <div className={"setting " + (variant === "chip" ? "setting-chip" : "setting-tile")}>
@@ -53,7 +87,7 @@ export function SettingTile<T extends string | number>({
         {variant === "tile" ? <span className="setting-caption">{caption}</span> : null}
         <span className="setting-value picker-value">
           {current?.icon}
-          {variant === "chip" && chipText ? chipText(current?.label ?? "-") : (current?.label ?? "-")}
+          {valueText(current, variant, chipText)}
         </span>
         {variant === "tile" ? <Icon name="chevron" size={16} /> : null}
       </button>
@@ -65,31 +99,16 @@ export function SettingTile<T extends string | number>({
         anchor={trigger}
         placement={variant === "chip" ? "top" : "bottom"}
       >
-        <p className="menu-title" id={id}>
-          {caption}
-        </p>
-        <div role="radiogroup" aria-labelledby={id} className="menu-list">
-          {options.map((option) => (
-            <button
-              key={String(option.value)}
-              type="button"
-              role="radio"
-              aria-checked={option.value === value}
-              className="menu-item"
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-            >
-              <span className="menu-label">
-                {option.icon}
-                {option.label}
-              </span>
-              {option.meta ? <span className="menu-meta">{option.meta}</span> : null}
-              {option.value === value ? <Icon name="check" size={15} /> : null}
-            </button>
-          ))}
-        </div>
+        <OptionMenu
+          titleId={titleId}
+          caption={caption}
+          value={value}
+          options={options}
+          onPick={(next) => {
+            onChange(next);
+            setOpen(false);
+          }}
+        />
       </Popover>
     </div>
   );
