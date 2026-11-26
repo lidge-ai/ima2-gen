@@ -30,5 +30,5 @@ test("media help is pure before parsing or side effects", async () => {
     }
     assert.equal(requests, 0);
     await assert.rejects(() => import("node:fs/promises").then(({ stat }) => stat(join(root, "opened"))));
-  } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); await rm(root, { recursive: true, force: true }); }
+  } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });

@@ -159,7 +159,7 @@ test("workflow paths are uploaded before submission", async () => {
   try {
     await workflowRun(server.base, "wf", { images: [{ path }] }, {}, { requestId: "w", wait: false, timeoutMs: 1000 });
     assert.deepEqual(payload.values, { images: [{ ref: "asset://uploaded" }] });
-  } finally { server.close(); await rm(dir, { recursive: true, force: true }); }
+  } finally { server.close(); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 });
 
 test("history resumes after ten pages with both cursor fields", async () => {
