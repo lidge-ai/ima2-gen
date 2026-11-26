@@ -31,7 +31,9 @@ export function Tile({ item, onOpen }: { item: HistoryItem; onOpen: (item: Histo
 /** Live jobs on top, then saved results. Finished jobs show up as results. */
 export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) {
   const studio = useStudioApi();
-  const jobs = useStudio((s) => s.jobOrder.map((id) => s.jobs[id]).filter((j): j is Job => !!j));
+  const jobOrder = useStudio((s) => s.jobOrder);
+  const jobsById = useStudio((s) => s.jobs);
+  const jobs = jobOrder.map((id) => jobsById[id]).filter((j): j is Job => !!j);
   const catalog = useStudio((s) => s.catalog);
   const history = useStudio((s) => s.history);
   const cursor = useStudio((s) => s.historyCursor);
