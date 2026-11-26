@@ -25,7 +25,7 @@ async function cli(base: string, args: string[], stdin = "") {
   const [code] = await once(child, "close"); clearTimeout(timer);
   return { code, stdout, stderr };
 }
-async function fixture(run: (base: string, calls: { url: string; method: string; body: string }[]) => Promise<void>) {
+async function fixture(run: (base: string, calls: { url: string; method: string; body: string }[]) => Promise<void>, failVocabulary = false) {
   const calls: { url: string; method: string; body: string }[] = [];
   let stream: ServerResponse | undefined;
   const server = createServer(async (req, res) => {
@@ -56,7 +56,7 @@ async function fixture(run: (base: string, calls: { url: string; method: string;
     if (url === "/api/media/estimate") return void res.end(body);
     if (url === "/api/media/tools") return void res.end(JSON.stringify({ tools: Array.from({ length: 14 }, (_, i) => ({ name: `tool${i}` })) }));
     if (url === "/api/keys/broken/validate") return void res.end('{}');
-    if (url === "/api/keys/vocabulary" && req.headers["x-never"]) { res.statusCode = 500; return void res.end('{}'); }
+    if (url === "/api/keys/vocabulary" && failVocabulary) { res.statusCode = 500; return void res.end('{}'); }
     if (url === "/api/keys/vocabulary") return void res.end(JSON.stringify({ vocabularies: [{ vocabulary: "fake", extraFields: [{ name: "secret", secret: true }] }] }));
     if (url === "/api/keys/fake/validate") {
       const parsed = JSON.parse(body) as { extra?: { secret?: string } };
@@ -179,3 +179,17 @@ test("flags are scoped, short secrets are rejected, studio output and quiet mode
   const studio = await cli(base, ["studio", "open", "demo"]); assert.equal(studio.code, 0, studio.stderr); assert.equal(studio.stdout, `${base}/studio/demo/\n`);
   const quiet = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--quiet"]); assert.equal(quiet.code, 0, quiet.stderr); assert.equal(quiet.stderr, "");
 }));
+
+
+test("extra metadata failures and unknown fields never mutate credentials", async () => {
+  await fixture(async (base, calls) => {
+    const result = await cli(base, ["keys", "set", "fake", "--key-stdin", "--extra", "unknown=value"], "abc");
+    assert.match(result.stderr, /MEDIA_SECRET_ON_ARGV/); assert.equal(calls.filter((c) => c.method === "PUT").length, 0);
+  });
+  await fixture(async (base, calls) => {
+    for (const action of ["set", "validate"]) {
+      const result = await cli(base, ["keys", action, "fake", "--key-stdin", "--extra", "region=us"], "abcdef");
+      assert.notEqual(result.code, 0); assert.equal(calls.filter((c) => c.method === "PUT" || c.method === "POST").length, 0);
+    }
+  }, true);
+});
