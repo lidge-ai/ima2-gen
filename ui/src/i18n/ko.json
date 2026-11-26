@@ -1,7 +1,7 @@
 {
   "mediaPicker": {
     "model": "미디어 모델",
-    "loadError": "미디어 모델을 불러오지 못했습니다.",
+    "loadError": "미디어 모델을 불러오지 못했어요.",
     "classic": "기본",
     "noKey": "API 키 필요",
     "settings": "API 키 관리",
@@ -17,19 +17,41 @@
     "nativeAudio": "기본 오디오",
     "negativePrompt": "네거티브 프롬프트",
     "seed": "시드",
-    "checked": "확인 {date}",
+    "checked": "가격 출처 · {date} 확인",
     "documentation": "문서",
-    "open": "미디어 모델 · 내 API 키"
+    "open": "미디어 모델 · 내 API 키",
+    "loading": "미디어 모델을 불러오는 중이에요.",
+    "retry": "다시 시도",
+    "empty": "사용할 수 있는 미디어 모델이 없어요.",
+    "price": "{unit}당 {amount}",
+    "kind": {
+      "image": "이미지",
+      "video": "영상",
+      "audio": "오디오"
+    },
+    "units": {
+      "second": "초",
+      "image": "이미지",
+      "request": "요청",
+      "megapixel": "메가픽셀",
+      "1k-tokens": "토큰 1,000개",
+      "minute": "분",
+      "character": "문자"
+    }
   },
   "media": {
-    "keysTitle": "미디어 제공자",
-    "noProviders": "사용 가능한 미디어 제공자가 없습니다.",
+    "keysTitle": "미디어 제공업체",
+    "noProviders": "사용할 수 있는 미디어 제공업체가 없어요.",
     "configured": "설정됨",
     "notConfigured": "설정되지 않음",
     "apiKey": "API 키",
-    "getKey": "키 발급받기",
-    "envImmutable": "환경 변수의 키는 여기서 삭제할 수 없습니다.",
-    "keysShow": "미디어 제공자 키 보기"
+    "getKey": "키 발급",
+    "envImmutable": "환경 변수의 키는 여기서 삭제할 수 없어요.",
+    "keysShow": "미디어 제공업체 키 보기",
+    "loading": "미디어 제공업체를 불러오는 중이에요.",
+    "loadError": "미디어 제공업체를 불러오지 못했어요. 다시 시도해 주세요.",
+    "saveError": "키를 저장하지 못했어요. 입력값을 확인하고 다시 시도해 주세요.",
+    "removeError": "키를 삭제하지 못했어요. 다시 시도해 주세요."
   },
   "imageOutput": {
     "title": "출력",

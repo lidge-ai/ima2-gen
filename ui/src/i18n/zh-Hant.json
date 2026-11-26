@@ -17,9 +17,27 @@
     "nativeAudio": "原生音訊",
     "negativePrompt": "負面提示詞",
     "seed": "種子",
-    "checked": "查核於 {date}",
+    "checked": "價格來源 · 核對日期：{date}",
     "documentation": "文件",
-    "open": "媒體模型 · 使用你的 API 金鑰"
+    "open": "媒體模型 · 使用你的 API 金鑰",
+    "loading": "正在載入媒體模型…",
+    "retry": "重試",
+    "empty": "沒有可用的媒體模型。",
+    "price": "每{unit} {amount}",
+    "kind": {
+      "image": "圖片",
+      "video": "影片",
+      "audio": "音訊"
+    },
+    "units": {
+      "second": "秒",
+      "image": "張圖片",
+      "request": "次請求",
+      "megapixel": "百萬像素",
+      "1k-tokens": "1,000 個權杖",
+      "minute": "分鐘",
+      "character": "個字元"
+    }
   },
   "media": {
     "keysTitle": "媒體供應商",
@@ -29,7 +47,11 @@
     "apiKey": "API 金鑰",
     "getKey": "取得金鑰",
     "envImmutable": "無法在此移除環境變數中的金鑰。",
-    "keysShow": "顯示媒體供應商金鑰"
+    "keysShow": "顯示媒體供應商金鑰",
+    "loading": "正在載入媒體供應商…",
+    "loadError": "無法載入媒體供應商，請重試。",
+    "saveError": "無法儲存金鑰，請檢查輸入後重試。",
+    "removeError": "無法移除金鑰，請重試。"
   },
   "imageOutput": {
     "title": "輸出",
