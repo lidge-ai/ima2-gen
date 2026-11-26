@@ -55,7 +55,8 @@ export function fetchMediaCatalog(kind: "image" | "video") {
 }
 
 export function logoUrl(logo: MediaLogo | null | undefined): string | undefined {
-  return logo?.urls.mark ?? logo?.urls.primary;
+  // The light plate renders logos with brightness(0), so a file drawn for dark backgrounds works too.
+  return logo?.urls.mark ?? logo?.urls.primary ?? logo?.urls.dark ?? logo?.urls.light;
 }
 
 export function formatMediaPrice(price: MediaPrice): string {

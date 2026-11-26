@@ -7,7 +7,7 @@
       "files": [
         {
           "file": "bytedance.png",
-          "variant": "primary",
+          "variant": "dark",
           "format": "png",
           "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/bytedance-logo-white.png",
           "width": 160,
@@ -442,7 +442,7 @@
       "files": [
         {
           "file": "sync.svg",
-          "variant": "primary",
+          "variant": "dark",
           "format": "svg",
           "sourceUrl": "https://sync.so/sync-logo.svg"
         },
@@ -469,7 +469,7 @@
       "files": [
         {
           "file": "topaz-labs.svg",
-          "variant": "primary",
+          "variant": "dark",
           "format": "svg",
           "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg"
         },
@@ -579,7 +579,7 @@
       "files": [
         {
           "file": "stability-ai.png",
-          "variant": "primary",
+          "variant": "dark",
           "format": "png",
           "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/8346fca1-a188-450e-8c75-e487e0ff3fae/stability-ai-white-dot-logo-mobile.png",
           "width": 249,
@@ -691,7 +691,7 @@
         },
         {
           "file": "byteplus-mark.svg",
-          "variant": "mark",
+          "variant": "dark",
           "format": "svg",
           "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/byteplus_logo_footer.svg"
         }
