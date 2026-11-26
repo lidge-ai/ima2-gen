@@ -18,7 +18,8 @@
     "negativePrompt": "네거티브 프롬프트",
     "seed": "시드",
     "checked": "확인 {date}",
-    "documentation": "문서"
+    "documentation": "문서",
+    "open": "미디어 모델 · 내 API 키"
   },
   "media": {
     "keysTitle": "미디어 제공자",
@@ -27,7 +28,8 @@
     "notConfigured": "설정되지 않음",
     "apiKey": "API 키",
     "getKey": "키 발급받기",
-    "envImmutable": "환경 변수의 키는 여기서 삭제할 수 없습니다."
+    "envImmutable": "환경 변수의 키는 여기서 삭제할 수 없습니다.",
+    "keysShow": "미디어 제공자 키 보기"
   },
   "imageOutput": {
     "title": "출력",

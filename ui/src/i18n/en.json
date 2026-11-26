@@ -18,7 +18,8 @@
     "negativePrompt": "Negative prompt",
     "seed": "Seed",
     "checked": "checked {date}",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "open": "Media models · your API keys"
   },
   "media": {
     "keysTitle": "Media providers",
@@ -27,7 +28,8 @@
     "notConfigured": "Not configured",
     "apiKey": "API key",
     "getKey": "Get a key",
-    "envImmutable": "Environment keys cannot be removed here."
+    "envImmutable": "Environment keys cannot be removed here.",
+    "keysShow": "Show media provider keys"
   },
   "imageOutput": {
     "title": "Output",

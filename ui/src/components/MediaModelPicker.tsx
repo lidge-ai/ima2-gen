@@ -86,14 +86,25 @@ export function MediaModelPicker({ kind }: { kind?: "image" | "video" }) {
   const id = useId();
   const selection = useAppStore((s) => s.mediaSelection) as Selection | null;
   const setSelection = useAppStore((s) => s.setMediaSelection);
+  const { t } = useI18n();
   const [models, setModels] = useState<MediaModel[]>([]);
   const [error, setError] = useState(false);
+  const [opened, setOpened] = useState(false);
+  // The classic UI makes no media requests until the user opens the picker or a media model is
+  // already selected; the default classic flow keeps exactly its old network traffic.
+  const active = opened || selection !== null;
   useEffect(() => {
-    let active = true;
+    if (!active) return undefined;
+    let live = true;
     const kinds = kind ? [kind] : ["image", "video"] as const;
-    Promise.all(kinds.map(fetchMediaCatalog)).then((results) => { if (active) setModels(results.flatMap((result) => result.models)); }).catch(() => { if (active) setError(true); });
-    return () => { active = false; };
-  }, [kind]);
+    Promise.all(kinds.map(fetchMediaCatalog)).then((results) => { if (live) setModels(results.flatMap((result) => result.models)); }).catch(() => { if (live) setError(true); });
+    return () => { live = false; };
+  }, [kind, active]);
+  if (!active) {
+    return <div className="option-group">
+      <button type="button" className="option-btn media-picker__open" onClick={() => setOpened(true)}>{t("mediaPicker.open")}</button>
+    </div>;
+  }
   const model = models.find((item) => item.id === selection?.model && item.kind === selection.kind);
   const route = model && chooseMediaRoute(model, selection?.adapter);
   const changeModel = (value: string) => {

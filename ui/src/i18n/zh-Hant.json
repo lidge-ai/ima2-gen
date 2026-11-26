@@ -18,7 +18,8 @@
     "negativePrompt": "負面提示詞",
     "seed": "種子",
     "checked": "查核於 {date}",
-    "documentation": "文件"
+    "documentation": "文件",
+    "open": "媒體模型 · 使用你的 API 金鑰"
   },
   "media": {
     "keysTitle": "媒體供應商",
@@ -27,7 +28,8 @@
     "notConfigured": "未設定",
     "apiKey": "API 金鑰",
     "getKey": "取得金鑰",
-    "envImmutable": "無法在此移除環境變數中的金鑰。"
+    "envImmutable": "無法在此移除環境變數中的金鑰。",
+    "keysShow": "顯示媒體供應商金鑰"
   },
   "imageOutput": {
     "title": "輸出",

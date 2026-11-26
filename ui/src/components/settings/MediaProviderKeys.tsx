@@ -22,12 +22,20 @@ export function MediaProviderKeys() {
   const { t } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
+  const [shown, setShown] = useState(false);
   const refresh = useCallback(async () => {
     try { setSnapshot(await loadKeys()); setError(""); }
     catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  // Loaded on request so opening Settings keeps its previous requests.
+  useEffect(() => { if (shown) void refresh(); }, [shown, refresh]);
   const entries = snapshot?.vocabularies.filter((v) => !v.legacy || v.extraFields.length > 0) ?? [];
+  if (!shown) {
+    return <article className="media-provider-keys">
+      <h4>{t("media.keysTitle")}</h4>
+      <button type="button" className="option-btn" onClick={() => setShown(true)}>{t("media.keysShow")}</button>
+    </article>;
+  }
   return <article className="media-provider-keys">
     <h4>{t("media.keysTitle")}</h4>
     {error && <p className="api-key-error" role="alert">{error}</p>}

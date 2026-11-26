@@ -18,7 +18,8 @@
     "negativePrompt": "负面提示词",
     "seed": "种子",
     "checked": "核查于 {date}",
-    "documentation": "文档"
+    "documentation": "文档",
+    "open": "媒体模型 · 使用你的 API 密钥"
   },
   "media": {
     "keysTitle": "媒体提供商",
@@ -27,7 +28,8 @@
     "notConfigured": "未配置",
     "apiKey": "API 密钥",
     "getKey": "获取密钥",
-    "envImmutable": "无法在此删除环境变量中的密钥。"
+    "envImmutable": "无法在此删除环境变量中的密钥。",
+    "keysShow": "显示媒体服务商密钥"
   },
   "imageOutput": {
     "title": "输出",
