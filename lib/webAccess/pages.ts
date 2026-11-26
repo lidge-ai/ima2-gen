@@ -22,7 +22,10 @@ export function loginPage(res: Response, returnTo: string): void {
 }
 
 export function refusedPage(res: Response, kind: "not-allowed" | "cancelled" | "expired" | "failed", email?: string): void {
-  const text = kind === "not-allowed" ? escape(email ?? "This account") + " is not allowed on this site."
+  // Cloudflare's Email Address Obfuscation rewrites bare addresses into a script-decoded link that the
+  // page CSP blocks; email_off keeps the address readable.
+  const who = email ? "<!--email_off-->" + escape(email) + "<!--/email_off-->" : "This account";
+  const text = kind === "not-allowed" ? who + " is not allowed on this site."
     : kind === "cancelled" ? "Sign-in was cancelled."
     : kind === "expired" ? "The sign-in took too long or started in another browser. Start again."
     : "Sign-in could not be verified. Start again.";
