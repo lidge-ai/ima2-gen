@@ -3498,5 +3498,19 @@
     "selector": ".media-row--skeleton span",
     "expected": "var(--r-xs)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-mark",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-route__key",
+    "expected": "var(--r-xs)",
+    "important": false
   }
 ]

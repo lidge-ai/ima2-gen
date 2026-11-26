@@ -11,24 +11,24 @@ const price = (usd: number, unit = "second", variant?: string): Price =>
   ({ unit, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27", ...(variant ? { variant } : {}) });
 const seconds = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator"; vocabulary: string; logo?: string; extra?: { name: string; secret: boolean; required: boolean }[] }> = {
-  byteplus: { label: "BytePlus ModelArk", route: "direct", vocabulary: "byteplus", logo: "byteplus.svg", extra: [{ name: "region", secret: false, required: false }] },
-  google: { label: "Google Gemini API", route: "direct", vocabulary: "gemini", logo: "google.svg" },
+const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator"; vocabulary: string; logo?: string | null; extra?: { name: string; secret: boolean; required: boolean }[] }> = {
+  byteplus: { label: "BytePlus ModelArk", route: "direct", vocabulary: "byteplus", logo: null, extra: [{ name: "region", secret: false, required: false }] },
+  google: { label: "Google Gemini API", route: "direct", vocabulary: "gemini", logo: "google-mark.png" },
   kling: { label: "Kling", route: "direct", vocabulary: "kling", logo: "kling-mark.png" },
-  minimax: { label: "MiniMax", route: "direct", vocabulary: "minimax", logo: "minimax.webp" },
-  pixverse: { label: "PixVerse", route: "direct", vocabulary: "pixverse", logo: "pixverse.svg" },
-  bfl: { label: "Black Forest Labs", route: "direct", vocabulary: "bfl", logo: "black-forest-labs.png" },
-  openai: { label: "OpenAI", route: "direct", vocabulary: "openai", logo: "openai.svg" },
-  recraft: { label: "Recraft", route: "direct", vocabulary: "recraft", logo: "recraft.svg" },
+  minimax: { label: "MiniMax", route: "direct", vocabulary: "minimax", logo: "minimax-mark.png" },
+  pixverse: { label: "PixVerse", route: "direct", vocabulary: "pixverse", logo: "pixverse-mark.svg" },
+  bfl: { label: "Black Forest Labs", route: "direct", vocabulary: "bfl", logo: "black-forest-labs-mark.svg" },
+  openai: { label: "OpenAI", route: "direct", vocabulary: "openai", logo: "openai-mark.svg" },
+  recraft: { label: "Recraft", route: "direct", vocabulary: "recraft", logo: null },
   "kling-legacy": { label: "Kling (access key)", route: "direct", vocabulary: "kling-legacy", logo: "kling-mark.png", extra: [{ name: "secretKey", secret: true, required: true }] },
-  fal: { label: "fal", route: "aggregator", vocabulary: "fal", logo: "fal.svg" },
-  replicate: { label: "Replicate", route: "aggregator", vocabulary: "replicate", logo: "replicate.svg" },
-  sume: { label: "Sume", route: "aggregator", vocabulary: "sume", logo: "sume.svg" },
+  fal: { label: "fal", route: "aggregator", vocabulary: "fal", logo: "fal-mark.png" },
+  replicate: { label: "Replicate", route: "aggregator", vocabulary: "replicate", logo: "replicate-mark.svg" },
+  sume: { label: "Sume", route: "aggregator", vocabulary: "sume", logo: "sume-mark.svg" },
 };
-const VENDOR_LOGO: Record<string, [string, string]> = {
-  bytedance: ["ByteDance", "bytedance.png"], google: ["Google", "google.svg"], kling: ["Kling", "kling-mark.png"],
-  minimax: ["MiniMax", "minimax.webp"], pixverse: ["PixVerse", "pixverse.svg"], "black-forest-labs": ["Black Forest Labs", "black-forest-labs.png"],
-  openai: ["OpenAI", "openai.svg"], recraft: ["Recraft", "recraft.svg"], sync: ["Sync", "sync.svg"], heygen: ["HeyGen", "heygen.svg"],
+const VENDOR_LOGO: Record<string, [string, string | null]> = {
+  bytedance: ["ByteDance", "bytedance-mark.png"], google: ["Google", "google-mark.png"], kling: ["Kling", "kling-mark.png"],
+  minimax: ["MiniMax", "minimax-mark.png"], pixverse: ["PixVerse", "pixverse-mark.svg"], "black-forest-labs": ["Black Forest Labs", "black-forest-labs-mark.svg"],
+  openai: ["OpenAI", "openai-mark.svg"], recraft: ["Recraft", null], sync: ["Sync", null], heygen: ["HeyGen", "heygen-mark.svg"],
 };
 
 const VIDEO = ["text-to-video", "image-to-video"];
@@ -87,10 +87,9 @@ const MODELS: ModelSpec[] = [
   ] },
 ];
 
-// Files drawn in white ink are listed as the "dark" variant in the kit manifest and get a dark plate.
-const WHITE_INK = new Set(["bytedance.png", "sync.svg"]);
-const logo = (name: string, file: string) => ({ id: file.split(".")[0], name,
-  urls: { [WHITE_INK.has(file) ? "dark" : "primary"]: "/media-assets/vendors/" + file }, source: null });
+// The catalog offers a square symbol as urls.mark when the kit manifest has one; makers without one get a monogram in the UI.
+const logo = (name: string, mark: string | null) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name,
+  urls: mark ? { mark: "/media-assets/vendors/" + mark } : {}, source: null });
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 
 export interface MediaFixture {
@@ -116,14 +115,14 @@ function catalog(fixture: MediaFixture, kind: string | null) {
   const hasKey = (adapter: string) => fixture.keys.has(ADAPTERS[adapter]!.vocabulary);
   const models = MODELS.filter((model) => !kind || model.kind === kind).map((model) => {
     const routes = model.routes.map((route) => ({ adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, label: ADAPTERS[route.adapter]!.label,
-      logo: ADAPTERS[route.adapter]!.logo ? logo(ADAPTERS[route.adapter]!.label, ADAPTERS[route.adapter]!.logo!) : null, upstreamId: model.id,
+      logo: logo(ADAPTERS[route.adapter]!.label, ADAPTERS[route.adapter]!.logo ?? null), upstreamId: model.id,
       tasks: route.tasks, params: route.params ?? {}, pricing: route.pricing ?? [], docsUrl: "https://example.com/docs/" + route.adapter, hasKey: hasKey(route.adapter) }));
     const vendor = VENDOR_LOGO[model.vendor];
     return { id: model.id, label: model.label, vendor: model.vendor, logo: vendor ? logo(vendor[0], vendor[1]) : null, kind: model.kind,
       tasks: [...new Set(routes.flatMap((route) => route.tasks))], routes,
       defaultRoute: (routes.find((r) => r.hasKey && r.route === "direct") ?? routes.find((r) => r.hasKey))?.adapter ?? null };
   });
-  const adapters = Object.entries(ADAPTERS).map(([id, a]) => ({ id, label: a.label, route: a.route, logo: a.logo ? logo(a.label, a.logo) : null,
+  const adapters = Object.entries(ADAPTERS).map(([id, a]) => ({ id, label: a.label, route: a.route, logo: logo(a.label, a.logo ?? null),
     keyVocabulary: a.vocabulary, consoleUrl: "https://example.com/keys/" + id, keyPrefix: null, hasKey: fixture.keys.has(a.vocabulary),
     keySource: fixture.keys.has(a.vocabulary) ? "config" : "none", maskedKey: fixture.keys.has(a.vocabulary) ? "fixt..ey" : null,
     extraFields: (a.extra ?? []).map((field) => ({ ...field, configured: false, source: "none" })), modelCount: 1 }));

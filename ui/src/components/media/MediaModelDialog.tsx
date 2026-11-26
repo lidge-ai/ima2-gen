@@ -93,8 +93,10 @@ function ModelList({ models, kind, task, narrowing, selectedId, onPick, onBuilti
   const narrowed = narrowing.query !== "" || narrowing.vendor !== "" || narrowing.features.length > 0;
   const shown = useMemo(() => sortModels(filterModels(models, { kind, task, query: narrowing.query, vendor: narrowing.vendor || null, features: narrowing.features }), narrowing.sort, task),
     [models, kind, task, narrowing]);
-  const groups = groupModels(shown, narrowed ? [] : loadRecentModels(), task);
   const suggestions = narrowed || narrowing.sort !== "catalog" ? [] : suggestModels(ofTask, task);
+  // A suggested model is listed once, in the suggestions; the groups below hold the rest.
+  const suggested = new Set(suggestions.map((entry) => entry.model));
+  const groups = groupModels(shown.filter((model) => !suggested.has(model)), narrowed ? [] : loadRecentModels(), task);
   return (
     <>
       <p className="media-count" role="status">{t("mediaPicker.count", { n: shown.length, total: ofTask.length })}</p>

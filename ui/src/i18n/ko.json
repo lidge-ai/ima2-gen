@@ -48,7 +48,7 @@
     "browseAll": "모든 모델 보기…",
     "nodeNote": "노드 모드는 아직 이 모델을 쓰지 않아요. 노드는 기본 제공자로 실행돼요.",
     "dialogTitle": "모델 선택",
-    "dialogIntro": "내 API 키로 실행하고 제공업체 가격 그대로 내요. 키가 없는 모델도 먼저 고르고 바로 이어서 키를 넣을 수 있어요.",
+    "dialogIntro": "내 API 키로 실행하고 제공업체 가격 그대로 내요.",
     "close": "닫기",
     "kindLabel": "만들 것",
     "tasks": {
@@ -140,7 +140,11 @@
     "seedPlaceholder": "무작위",
     "seedInvalid": "0부터 2147483647까지의 정수를 넣어 주세요.",
     "prices": "가격표와 출처",
-    "missingModel": "이 모델은 이제 카탈로그에 없어요. 다른 모델을 골라 주세요."
+    "missingModel": "이 모델은 이제 카탈로그에 없어요. 다른 모델을 골라 주세요.",
+    "routeAutoNowDirect": "지금: {route} (제작사 직결)",
+    "routeAutoNowNoDirectKey": "지금: {route} ({direct} 직결은 키 필요)",
+    "routeAutoNowCheapest": "지금: {route} (직결 경로 없음, 키 있는 가장 싼 경로)",
+    "routeAutoNone": "아직 키가 있는 경로가 없어요"
   },
   "media": {
     "keysTitle": "미디어 제공업체",

@@ -48,7 +48,7 @@
     "browseAll": "查看全部模型…",
     "nodeNote": "節點模式暫不使用此模型，節點仍由內建提供商執行。",
     "dialogTitle": "選擇模型",
-    "dialogIntro": "這些模型用你自己的 API 金鑰執行，按提供商的價格計費。沒有金鑰的模型也可以先選，選完馬上填寫金鑰。",
+    "dialogIntro": "用你自己的 API 金鑰執行，按提供商的原價計費。",
     "close": "關閉",
     "kindLabel": "生成內容",
     "tasks": {
@@ -140,7 +140,11 @@
     "seedPlaceholder": "隨機",
     "seedInvalid": "請輸入 0 到 2147483647 之間的整數。",
     "prices": "價格與來源",
-    "missingModel": "目錄裡已沒有此模型，請選擇其他模型。"
+    "missingModel": "目錄裡已沒有此模型，請選擇其他模型。",
+    "routeAutoNowDirect": "目前：{route}（直連）",
+    "routeAutoNowNoDirectKey": "目前：{route}（{direct} 直連需要金鑰）",
+    "routeAutoNowCheapest": "目前：{route}（無直連線路，有金鑰的最便宜線路）",
+    "routeAutoNone": "還沒有帶金鑰的線路"
   },
   "media": {
     "keysTitle": "媒體供應商",

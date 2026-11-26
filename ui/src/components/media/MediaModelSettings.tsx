@@ -35,6 +35,26 @@ function AdjustmentNote() {
   );
 }
 
+/** Why Automatic is on this route: it is the direct one, or the direct one has no key, or there is none. */
+function autoReason(model: MediaModel, task: string, resolved: ResolvedRoute, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  const route = resolved.route.label;
+  if (resolved.state === "needs-key") return t("mediaPicker.routeAutoNone");
+  if (resolved.route.route === "direct") return t("mediaPicker.routeAutoNowDirect", { route });
+  const direct = candidateRoutes(model, task).find((candidate) => candidate.route === "direct");
+  return direct ? t("mediaPicker.routeAutoNowNoDirectKey", { route, direct: direct.label }) : t("mediaPicker.routeAutoNowCheapest", { route });
+}
+
+function RouteFacts({ route, kind }: { route: MediaRoute; kind: MediaModel["kind"] }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <span className="media-route__main"><span>{route.label}</span>
+        <small>{t(`mediaPicker.${route.route}`)} · {fromPrice(lowestPrice(route, kind), t)}</small></span>
+      <span className={"media-route__key" + (route.hasKey ? " media-route__key--ready" : "")}>{t(route.hasKey ? "mediaPicker.keyReady" : "mediaPicker.noKey")}</span>
+    </>
+  );
+}
+
 function RouteChoice({ model, selection, resolved, update }: { model: MediaModel; selection: MediaSelection; resolved: ResolvedRoute; update: Update }) {
   const { t } = useI18n();
   const name = useId();
@@ -44,8 +64,7 @@ function RouteChoice({ model, selection, resolved, update }: { model: MediaModel
     return (
       <div className="option-group">
         <div className="section-title">{t("mediaPicker.route")}</div>
-        <p className="media-route media-route--single"><MediaLogo logo={only.logo} label={only.label} size="sm" /><span className="media-route__main"><span>{only.label}</span>
-          <small>{t(`mediaPicker.${only.route}`)} · {fromPrice(lowestPrice(only, model.kind), t)}</small></span></p>
+        <p className="media-route media-route--single"><MediaLogo logo={only.logo} label={only.label} size="sm" /><RouteFacts route={only} kind={model.kind} /></p>
       </div>
     );
   }
@@ -62,14 +81,13 @@ function RouteChoice({ model, selection, resolved, update }: { model: MediaModel
       <label className="media-route">
         <input type="radio" name={name} checked={auto} onChange={() => pin(null)} />
         <span className="media-route__main"><span>{t("mediaPicker.routeAuto")}</span>
-          <small>{auto ? t("mediaPicker.routeAutoNow", { route: resolved.route.label }) : t("mediaPicker.routeAutoHint")}</small></span>
+          <small>{auto ? autoReason(model, selection.task, resolved, t) : t("mediaPicker.routeAutoHint")}</small></span>
       </label>
       {routes.map((route) => (
         <label key={route.adapter} className="media-route">
           <input type="radio" name={name} checked={!auto && route.adapter === resolved.route.adapter} onChange={() => pin(route)} />
           <MediaLogo logo={route.logo} label={route.label} size="sm" />
-          <span className="media-route__main"><span>{route.label}</span>
-            <small>{t(`mediaPicker.${route.route}`)} · {fromPrice(lowestPrice(route, model.kind), t)} · {t(route.hasKey ? "mediaPicker.keyReady" : "mediaPicker.noKey")}</small></span>
+          <RouteFacts route={route} kind={model.kind} />
         </label>
       ))}
     </fieldset>

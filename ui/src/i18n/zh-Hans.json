@@ -48,7 +48,7 @@
     "browseAll": "查看全部模型…",
     "nodeNote": "节点模式暂不使用此模型，节点仍由内置提供商运行。",
     "dialogTitle": "选择模型",
-    "dialogIntro": "这些模型用你自己的 API 密钥运行，按提供商的价格计费。没有密钥的模型也可以先选，选完马上填写密钥。",
+    "dialogIntro": "用你自己的 API 密钥运行，按提供商的原价计费。",
     "close": "关闭",
     "kindLabel": "生成内容",
     "tasks": {
@@ -140,7 +140,11 @@
     "seedPlaceholder": "随机",
     "seedInvalid": "请输入 0 到 2147483647 之间的整数。",
     "prices": "价格与来源",
-    "missingModel": "目录里已没有此模型，请选择其他模型。"
+    "missingModel": "目录里已没有此模型，请选择其他模型。",
+    "routeAutoNowDirect": "当前：{route}（直连）",
+    "routeAutoNowNoDirectKey": "当前：{route}（{direct} 直连需要密钥）",
+    "routeAutoNowCheapest": "当前：{route}（无直连线路，有密钥的最便宜线路）",
+    "routeAutoNone": "还没有带密钥的线路"
   },
   "media": {
     "keysTitle": "媒体提供商",

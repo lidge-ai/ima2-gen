@@ -62,7 +62,7 @@ test("L11-M1 no media request before the model window opens; picking a model kee
   await expect(card(page)).toContainText("Seedance 2.5");
   // Only the saved fal key exists, so Automatic runs fal and says so.
   await expect(card(page).getByRole("radio", { name: /^Automatic/ })).toBeChecked();
-  await expect(card(page)).toContainText("Now: fal");
+  await expect(card(page)).toContainText("Now: fal (BytePlus ModelArk direct needs a key)");
   // Settings list only what the fal route publishes: 480p and 720p, no 1080p.
   await expect(card(page).getByRole("button", { name: "720p", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(card(page).getByRole("button", { name: "1080p", exact: true })).toHaveCount(0);
@@ -78,6 +78,11 @@ test("L11-M2 search, feature chips and sorting narrow the list; suggestions say 
   await expect(count(page)).toHaveText("6 of 6");
   const suggested = dialog(page).getByRole("region", { name: "Suggested" });
   await expect(suggested.locator('[data-model="kling/kling-4.0-turbo"]')).toContainText("Lowest price your keys can run");
+  // A suggested model is listed once: six models, six rows.
+  await expect(dialog(page).locator(".media-row[data-model]")).toHaveCount(6);
+  // Every row starts with the same square mark, symbol or monogram.
+  const marks = await dialog(page).locator(".media-row .media-mark").evaluateAll((items) => [...new Set(items.map((item) => item.clientWidth + "x" + item.clientHeight))]);
+  expect(marks).toEqual(["32x32"]);
   await dialog(page).getByRole("searchbox", { name: "Search models" }).fill("kling");
   await expect(count(page)).toHaveText("2 of 6");
   await expect(suggested).toHaveCount(0);

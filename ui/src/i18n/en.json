@@ -48,7 +48,7 @@
     "browseAll": "All models…",
     "nodeNote": "Node mode does not use this model yet; nodes run on the built-in provider.",
     "dialogTitle": "Choose a model",
-    "dialogIntro": "These run on your own API key at the provider's price. You can pick a model before you have its key and add the key right after.",
+    "dialogIntro": "Runs on your own API key, at the provider's own price.",
     "close": "Close",
     "kindLabel": "Output",
     "tasks": {
@@ -140,7 +140,11 @@
     "seedPlaceholder": "Random",
     "seedInvalid": "Use a whole number from 0 to 2147483647.",
     "prices": "Prices and sources",
-    "missingModel": "This model is no longer in the catalog. Choose another one."
+    "missingModel": "This model is no longer in the catalog. Choose another one.",
+    "routeAutoNowDirect": "Now: {route} (direct)",
+    "routeAutoNowNoDirectKey": "Now: {route} ({direct} direct needs a key)",
+    "routeAutoNowCheapest": "Now: {route} (no direct route; cheapest with a key)",
+    "routeAutoNone": "No route has a key yet"
   },
   "media": {
     "keysTitle": "Media providers",
