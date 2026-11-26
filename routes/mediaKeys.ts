@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import type { MediaProviderAdapter } from "../lib/providers/media/contract.js";
 import { LEGACY_KEY_VOCABULARIES, mediaKeyVocabularies, readConfigFileSafe, resolveMediaCredential, storedExtras } from "../lib/providers/media/credentials.js";
 import { redactSecrets } from "../lib/providers/media/redact.js";
+import { loadVendorLogos, type VendorLogos } from "../lib/providers/media/vendorAssets.js";
 import { getMediaRegistry, type MediaRegistry } from "../lib/providers/media/registry.js";
 import { updateConfigFileAtomic } from "../lib/configFileStore.js";
 import type { RuntimeContext } from "../lib/runtimeContext.js";
@@ -59,10 +60,11 @@ export async function mediaKeyStatuses(ctx: RuntimeContext, options: MediaKeyRou
   return out;
 }
 
-function vocabularyList(options: MediaKeyRouteOptions) {
+function vocabularyList(options: MediaKeyRouteOptions, logos: VendorLogos) {
   return [...mediaKeyVocabularies(registryOf(options).listAdapters())].map(([vocabulary, adapter]) => ({
     vocabulary,
     label: adapter.label,
+    logo: logos.find(vocabulary) ?? logos.forAdapter(adapter),
     legacy: isLegacy(vocabulary),
     consoleUrl: adapter.credential.consoleUrl,
     keyPrefix: adapter.credential.keyPrefix ?? null,
@@ -137,8 +139,8 @@ export async function deleteMediaKey(ctx: RuntimeContext, adapter: MediaProvider
 
 /** Routes that do not collide with routes/keys.ts's /api/keys/:provider handlers. */
 export function registerMediaKeyRoutes(app: Express, ctx: RuntimeContext, options: MediaKeyRouteOptions = {}) {
-  app.get("/api/keys/vocabulary", (_req: Request, res: Response) => {
-    res.json({ vocabularies: vocabularyList(options) });
+  app.get("/api/keys/vocabulary", async (_req: Request, res: Response) => {
+    res.json({ vocabularies: vocabularyList(options, await loadVendorLogos(ctx.rootDir)) });
   });
   // Extra fields alone (region, endpoint id), for any vocabulary including the legacy six.
   app.put("/api/keys/:vocabulary/extra", async (req: Request<{ vocabulary: string }>, res: Response) => {

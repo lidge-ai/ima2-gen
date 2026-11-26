@@ -69,6 +69,11 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
   await mkdir(join(studiosRoot, "higgs", "dist", "assets"), { recursive: true });
   await writeFile(join(studiosRoot, "higgs", "dist", "index.html"), "<html>higgs studio</html>");
   await writeFile(join(studiosRoot, "higgs", "dist", "assets", "app.js"), "console.log(1)");
+  await mkdir(join(studiosRoot, "kit", "assets", "vendors"), { recursive: true });
+  await writeFile(join(studiosRoot, "kit", "assets", "vendors", "acme.svg"), "<svg xmlns='http://www.w3.org/2000/svg'/>");
+  await writeFile(join(studiosRoot, "kit", "assets", "vendors", "manifest.json"), JSON.stringify({ generatedAt: "2026-11-26", vendors: [
+    { id: "acme", name: "Acme Media", aliases: ["fake"], files: [{ file: "acme.svg", variant: "primary", format: "svg" }, { file: "../escape.svg", variant: "dark", format: "svg" }], sourceUrl: "https://acme.example/brand" },
+  ] }));
   await mkdir(join(studiosRoot, "kit", "dist"), { recursive: true });
   await writeFile(join(studiosRoot, "kit", "dist", "index.html"), "kit");
   const ctx = { rootDir: root, packageVersion: "test", config: { ...config, storage: { ...config.storage, configFile, configDir: root, generatedDir: join(root, "generated") }, log: { ...config.log, level: "silent" } } };
@@ -116,6 +121,17 @@ test("catalog lists models with every route, prices and key state, and never the
     const fake = body.adapters.find((a: { id: string }) => a.id === "fake");
     assert.equal(fake.hasKey, true);
     assert.equal(fake.maskedKey, "fake..90");
+    assert.deepEqual(clip.logo, { id: "acme", name: "Acme Media", urls: { primary: "/media-assets/vendors/acme.svg" }, source: "https://acme.example/brand" });
+    assert.equal(clip.routes[0].logo.id, "acme", "the fake adapter id is a manifest alias");
+    assert.equal(clip.routes[1].logo, null, "no manifest entry and no alias: no logo");
+    assert.equal(fake.logo.id, "acme");
+    const svg = await fetch(`${base}${clip.logo.urls.primary}`);
+    assert.equal(svg.status, 200);
+    assert.match(String(svg.headers.get("content-security-policy")), /default-src 'none'/);
+    assert.equal(svg.headers.get("x-content-type-options"), "nosniff");
+    assert.equal((await fetch(`${base}/media-assets/vendors/missing.svg`)).status, 404);
+    const vendors = await (await fetch(`${base}/api/media/vendors`)).json();
+    assert.deepEqual(vendors.vendors.map((v: { id: string }) => v.id), ["acme"]);
     const videoOnly = await (await fetch(`${base}/api/media/catalog?kind=image`)).json();
     assert.deepEqual(videoOnly.models.map((m: { id: string }) => m.id), ["acme/still-1"]);
   });
@@ -236,6 +252,7 @@ test("keys: media vocabularies are validated by the adapter, saved with extras, 
     const vocab = await (await fetch(`${base}/api/keys/vocabulary`)).json();
     const fake = vocab.vocabularies.find((v: { vocabulary: string }) => v.vocabulary === "fake");
     assert.deepEqual(fake.extraFields.map((f: { name: string }) => f.name), ["region", "secretToken"]);
+    assert.equal(fake.logo.urls.primary, "/media-assets/vendors/acme.svg", "key settings use the same logo files");
     const put = await fetch(`${base}/api/keys/agg`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ apiKey: "agg-secret-value-123", extra: {} }) });
     assert.equal(put.status, 200);
     assert.ok(calls.some((c) => c.url === "https://fake.example/v1/me"));

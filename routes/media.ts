@@ -8,6 +8,7 @@ import { MediaKeySnapshot } from "../lib/providers/media/credentials.js";
 import { MediaJobError, mediaErrorBody } from "../lib/providers/media/errors.js";
 import { storeMediaInput } from "../lib/providers/media/inputs.js";
 import { getMediaRegistry } from "../lib/providers/media/registry.js";
+import { VENDOR_ASSET_DIR, VENDOR_ASSET_PREFIX, loadVendorLogos } from "../lib/providers/media/vendorAssets.js";
 import { launchMediaJob, prepareMediaJob, type MediaRunnerDeps } from "../lib/providers/media/runner.js";
 import { parseMediaJobBody } from "../lib/providers/media/validate.js";
 import { abortJob, listJobs, listTerminalJobs } from "../lib/inflight.js";
@@ -59,7 +60,19 @@ export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, o
     const d = deps();
     const kind = KINDS.find((k) => k === req.query.kind);
     const keys = await MediaKeySnapshot.load(d.configFile, d.env ?? process.env);
-    res.json(buildMediaCatalog(d.registry, keys, kind));
+    res.json(buildMediaCatalog(d.registry, keys, kind, await loadVendorLogos(ctx.rootDir)));
+  });
+
+  // Logos for every UI, served from the one folder the studio kit owns. SVGs are
+  // locked down so a logo file can never run script on this origin.
+  app.use(VENDOR_ASSET_PREFIX, (_req: Request, res: Response, next) => {
+    res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src data:");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    next();
+  }, express.static(join(ctx.rootDir, VENDOR_ASSET_DIR), { fallthrough: false, index: false, dotfiles: "deny", maxAge: "1d" }));
+
+  app.get("/api/media/vendors", async (_req: Request, res: Response) => {
+    res.json({ vendors: (await loadVendorLogos(ctx.rootDir)).all() });
   });
 
   app.post("/api/media/inputs", express.raw({ type: () => true, limit: "512mb" }), async (req: Request, res: Response) => {
