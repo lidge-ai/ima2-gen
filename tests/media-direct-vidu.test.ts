@@ -82,3 +82,31 @@ test("catalog metadata and free key check", async () => {
   assert.equal(calls[0]?.url, "https://test.invalid/ent/v2/credits");
   assert.equal(calls[0]?.init.method, "GET");
 });
+
+test("provider codes and cancellation behavior", async () => {
+  const { ctx } = fake({ state: "failed", err_code: "TaskPromptPolicyViolation" });
+  const state = await adapter.poll(ctx, { providerJobId: "job" });
+  assert.equal(state.status, "failed");
+  if (state.status === "failed") { assert.equal(state.error.code, "VIDU_TASK_PROMPT_POLICY_VIOLATION"); assert.equal(state.error.category, "moderation"); assert.equal(state.error.retryable, false); }
+  const canceled = fake({ state: "failed", err_code: "UserCancelled" });
+  assert.equal((await adapter.poll(canceled.ctx, { providerJobId: "job" })).status, "canceled");
+  const c = fake({});
+  await adapter.cancel!(c.ctx, { providerJobId: "job" });
+  assert.equal(c.calls[0]?.url, "https://test.invalid/ent/v2/tasks/job/cancel");
+  assert.equal(c.calls[0]?.init.method, "POST");
+  assert.deepEqual(JSON.parse(String(c.calls[0]?.init.body)), { id: "job" });
+});
+
+test("secret-bearing validation and network failures are redacted", async () => {
+  const { ctx } = fake({});
+  for (const req of [{ ...request("secret-key-1234", "text-to-video") }, { ...request("vidu/vidu-q3-pro", "text-to-video"), vendorOptions: { "secret-key-1234": true } }]) {
+    await assert.rejects(adapter.submit(ctx, req), (err: unknown) => {
+      assert.doesNotMatch(String(err), /secret-key-1234/);
+      assert.doesNotMatch(adapter.normalizeError(err).message, /secret-key-1234/); return true;
+    });
+  }
+  ctx.fetch = async () => { throw new TypeError("failed secret-key-1234"); };
+  await assert.rejects(adapter.submit(ctx, request("vidu/vidu-q3-pro", "text-to-video")), (err: unknown) => {
+    assert.doesNotMatch(String(err), /secret-key-1234/); assert.doesNotMatch(adapter.normalizeError(err).message, /secret-key-1234/); return true;
+  });
+});
