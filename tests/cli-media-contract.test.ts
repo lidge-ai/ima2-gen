@@ -179,7 +179,9 @@ test("flags are scoped, short secrets are rejected, studio output and quiet mode
   assert.match(short.stderr, /KEY_TOO_SHORT/);
   const nonsecret = await cli(base, ["keys", "validate", "fake", "--stdin-json", "--json"], '{"apiKey":"abcdef","extra":{"region":"us"}}');
   assert.equal(nonsecret.code, 0, nonsecret.stderr);
-  const studio = await cli(base, ["studio", "open", "demo"]); assert.equal(studio.code, 0, studio.stderr); assert.equal(studio.stdout, `${base}/studio/demo/\n`);
+  // --no-open: on Windows a real launch goes through powershell.exe, which no PATH stub intercepts and can exceed the child timeout.
+  const studio = await cli(base, ["studio", "open", "demo", "--no-open"]); assert.equal(studio.code, 0, studio.stderr); assert.equal(studio.stdout, `${base}/studio/demo/\n`);
+  const misplaced = await cli(base, ["studios", "--no-open"]); assert.match(misplaced.stderr, /Invalid --no-open for studios/);
   const quiet = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--quiet"]); assert.equal(quiet.code, 0, quiet.stderr); assert.equal(quiet.stderr, "");
 }));
 
