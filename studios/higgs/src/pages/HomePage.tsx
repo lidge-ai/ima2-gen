@@ -99,7 +99,7 @@ function ToolRow() {
       {TOOLS.map((tool) => (
         <a key={tool.path} className="tool-card" href={href(tool.path)}>
           {tool.video ? (
-            <video key={String(reduce)} src={tool.sample} muted loop={!reduce} autoPlay={!reduce} playsInline aria-hidden />
+            <video key={String(reduce)} src={tool.sample} poster={posterOf(tool.sample)} preload="metadata" muted loop={!reduce} autoPlay={!reduce} playsInline aria-hidden />
           ) : (
             <img src={tool.sample} alt="" />
           )}
