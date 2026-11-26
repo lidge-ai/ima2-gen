@@ -66,10 +66,32 @@ test("poll states, moderation, failure reason and unknown status are safe", asyn
 
 test("rejects unsupported fields, URLs and options without fetching", async () => {
   const { ctx, calls } = fake([]);
-  for (const req of [request({ vendorOptions: { surprise: true } }), request({ durationSec: 5 }), request({ task: "image-to-image", inputs: [{ role: "source-image", url: "https://example.com/a.png", mimeType: "image/png" }] })]) {
+  for (const req of [
+    request({ vendorOptions: { surprise: true } }),
+    request({ durationSec: 5 }),
+    request({ task: "image-to-image", inputs: [{ role: "source-image", url: "http://insecure.example/a.png", mimeType: "image/png" }] }),
+    request({ task: "image-to-image", inputs: [image], vendorOptions: { image_weight: 101 } }),
+    request({ vendorOptions: { image_weight: 50 } }),
+  ]) {
     await assert.rejects(adapter.submit(ctx, req));
   }
   assert.equal(calls.length, 0);
+});
+
+test("a public https input is downloaded and uploaded as a file; remix takes image_weight", async () => {
+  const calls: { url: string; init: RequestInit }[] = [];
+  const responses = [new Response(new Uint8Array([5, 6]), { headers: { "content-type": "image/png" } }), Response.json({ generation_id: "job_2" })];
+  const ctx = { apiKey: KEY, fetch: (async (url: RequestInfo | URL, init: RequestInit = {}) => { calls.push({ url: String(url), init }); return responses.shift()!; }) as typeof fetch };
+  await adapter.submit(ctx, request({
+    task: "image-to-image", vendorOptions: { image_weight: 40 },
+    inputs: [{ role: "source-image", url: "https://cdn.example/a.png", mimeType: "image/png" }],
+  }));
+  assert.equal(calls[0]?.url, "https://cdn.example/a.png");
+  assert.equal(calls[0]?.init.headers, undefined);
+  assert.equal(calls[1]?.url, "https://api.ideogram.ai/v2/image/remix/ideogram-3");
+  const form = calls[1]?.init.body as FormData;
+  assert.deepEqual([...new Uint8Array(await (form.get("image") as Blob).arrayBuffer())], [5, 6]);
+  assert.equal(form.get("image_weight"), "40");
 });
 
 test("HTTP classification and free key validation redact echoed secrets", async () => {

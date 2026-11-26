@@ -50,8 +50,17 @@ export function buildIdeogramBody(model: MediaModelSpec, request: MediaSubmitReq
   if (request.aspectRatio !== undefined) form.set("aspect_ratio", request.aspectRatio.replace(":", "x"));
   if (request.negativePrompt !== undefined) form.set("negative_prompt", request.negativePrompt);
   appendInputs(form, request, path);
-  const allowed = vector ? ["mode", "shape_density", "color_variety", "use_gradient", "private"] : v3 ? ["rendering_speed", "magic_prompt", "style_type"] : masked ? ["quality", "context_window"] : ["quality", "magic_prompt", "background"];
+  const allowed = optionNames(vector, v3, masked, request.task === "image-to-image");
   optionFields(form, request, allowed);
+  const weight = form.get("image_weight");
+  if (weight !== null && !/^(?:[1-9]\d?|100)$/.test(String(weight))) invalid("image_weight must be an integer from 1 to 100");
   if (!v3 && !vector && !request.inputs.length && form.get("quality") === "very_low") invalid("very_low requires source images");
   return { path, form, mimeType: vector ? "image/svg+xml" : "application/octet-stream" };
+}
+
+/** vendorOptions per route, from the v2 OpenAPI request schemas. */
+function optionNames(vector: boolean, v3: boolean, masked: boolean, edit: boolean): readonly string[] {
+  if (vector) return ["mode", "shape_density", "color_variety", "use_gradient", "private"];
+  if (v3) return edit && !masked ? ["rendering_speed", "magic_prompt", "style_type", "image_weight"] : ["rendering_speed", "magic_prompt", "style_type"];
+  return masked ? ["quality", "context_window"] : ["quality", "magic_prompt", "background"];
 }
