@@ -29,7 +29,7 @@ function oauthTransport(ctx: RuntimeContext): typeof fetch {
 export function createSessionRoutes(ctx: RuntimeContext): Record<string, SessionRoute> {
   return {
     "xai-oauth": {
-      adapterId: "xai",
+      adapterId: "xai-video",
       label: "Grok subscription (Grok OAuth)",
       async open(signal) {
         const credential = await resolveGrokCredential(ctx, "grok", { signal });

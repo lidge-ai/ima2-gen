@@ -91,7 +91,7 @@ routes/
 | `routes/videoExtended.ts` | 488 | Video edit, extension, frame extraction, and configured-planner first/last-frame analysis (Grok 4.5 default) |
 | `routes/nodes.ts` | 28 | Node generation and node fetch route wiring |
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
-| `routes/history.ts` | 235 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
+| `routes/history.ts` | 239 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
 | `routes/health.ts` | 154 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
 | `routes/mcpConnections.ts` | 164 | MCP provider list/status/connect/callback/refresh/disconnect/model routes; truthful state-to-HTTP mapping and secret-free responses |
@@ -179,7 +179,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
 | `lib/generationErrors.ts` | 271 | Generation error normalization, retry classification, status mapping |
-| `lib/historyList.ts` | 225 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
+| `lib/historyList.ts` | 231 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
 | `lib/videoContinuity.ts` | 193 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 100 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
 | `lib/videoGenerationRequest.ts` | 166 | Shared generate-request contract: mode inference, mutually-exclusive source guard, and duration/resolution/aspect defaults for UI, CLI, agent, and route |
