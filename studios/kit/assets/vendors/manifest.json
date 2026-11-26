@@ -298,7 +298,7 @@
       "files": [
         {
           "file": "recraft.svg",
-          "variant": "primary",
+          "variant": "dark",
           "format": "svg",
           "sourceUrl": "https://static.recraft.ai/apps/images/home/logo.svg"
         }
@@ -448,7 +448,7 @@
         },
         {
           "file": "sync-mark.svg",
-          "variant": "mark",
+          "variant": "dark",
           "format": "svg",
           "sourceUrl": "https://sync.so/landing/footer-logo.svg"
         }

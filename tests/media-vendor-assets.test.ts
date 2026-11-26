@@ -10,10 +10,10 @@ const DIR = "studios/kit/assets/vendors";
 const manifest = JSON.parse(readFileSync(join(DIR, "manifest.json"), "utf8")) as {
   vendors: { id: string; files: { file: string; variant: string }[] }[];
 };
-const WHITE = new Set(["#fff", "#ffffff", "white", "#fefefe", "#fffffe", "#fafafa"]);
+const WHITE = new Set(["#fff", "#ffffff", "white", "#fefefe", "#fffffe", "#fafafa", "rgb(255,255,255)", "rgba(255,255,255,1)"]);
 
 function inkColors(svg: string): string[] {
-  return [...svg.matchAll(/(?:fill|stroke|stop-color)\s*[=:]\s*"?\s*(#[0-9a-fA-F]{3,8}|white|black)/g)].map((m) => m[1]!.toLowerCase());
+  return [...svg.matchAll(/(?:fill|stroke|stop-color)\s*[=:]\s*"?\s*(#[0-9a-fA-F]{3,8}|white|black|rgba?\([^)]*\))/g)].map((m) => m[1]!.toLowerCase().replace(/\s+/g, ""));
 }
 
 test("every manifest file exists under a name the server serves", () => {
