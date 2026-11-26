@@ -43,6 +43,9 @@ const PROVIDERS: Record<string, ProviderDef> = {
   topaz: { label: "Topaz Labs API", route: "direct", consoleUrl: "https://www.topazlabs.com/api" },
   sync: { label: "Sync Labs", route: "direct", consoleUrl: "https://sync.so/keys" },
   mirelo: { label: "Mirelo", route: "direct", consoleUrl: "https://mirelo.ai/" },
+  pixverse: { label: "PixVerse", route: "direct", consoleUrl: "https://pixverse.ai/" },
+  recraft: { label: "Recraft", route: "direct", consoleUrl: "https://www.recraft.ai/" },
+  heygen: { label: "HeyGen", route: "direct", consoleUrl: "https://www.heygen.com/" },
   fal: { label: "fal", route: "aggregator", consoleUrl: "https://fal.ai/dashboard/keys" },
   replicate: { label: "Replicate", route: "aggregator", consoleUrl: "https://replicate.com/account/api-tokens" },
 };
@@ -71,11 +74,34 @@ const T2V = ["text-to-video", "image-to-video"] as MediaTask[];
 const T2I = ["text-to-image", "image-to-image"] as MediaTask[];
 
 const MODELS: ModelRow[] = [
+  ["pixverse/pixverse-v6", "PixVerse V6", "video", T2V, V_SHORT, { pixverse: 0.06, fal: 0.08 }],
+  ["recraft/recraft-v4.1", "Recraft V4.1", "image", T2I, IMG, { recraft: 0.04, fal: 0.05 }],
+  ["heygen/heygen-avatar-6", "HeyGen Avatar 6", "video", ["avatar"], V_SHORT, { heygen: null }],
+  ["sync/sync-lipsync-3", "Sync Lipsync 3", "video", ["lipsync"], {}, { sync: 0.08, fal: 0.1 }],
+  [
+    "mirelo/mirelo-sfx-2.0",
+    "Mirelo SFX 2.0",
+    "audio",
+    ["text-to-audio", "video-to-audio"],
+    {},
+    { mirelo: 0.01, fal: 0.012 },
+  ],
+  ["xai/grok-imagine-video", "Grok Imagine Video", "video", ["video-to-video"], V_SHORT, { xai: 0.05 }],
+  ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }],
+  ["bytedance/seedance-2", "Seedance 2.0", "video", [...T2V, "video-to-video"], V_FULL, { byteplus: 0.06, fal: 0.075 }],
+  [
+    "bytedance/seedance-2-mini",
+    "Seedance 2.0 Mini",
+    "video",
+    [...T2V, "video-to-video"],
+    V_FULL,
+    { byteplus: 0.03, fal: 0.04 },
+  ],
   [
     "bytedance/seedance-2.5",
     "Seedance 2.5",
     "video",
-    [...T2V, "reference-to-video"],
+    [...T2V, "reference-to-video", "video-to-video"],
     V_FULL,
     { byteplus: 0.06, fal: 0.075, replicate: 0.08 },
   ],
@@ -279,3 +305,44 @@ export function makeCatalog(keyed: ReadonlySet<string>): Catalog {
 
 /** Providers keyed at start unless the caller overrides it: one direct, one aggregator, so both UI states show. */
 export const DEFAULT_KEYED: readonly string[] = ["openai", "fal"];
+
+/** Translate the reusable fixture data into L0's wire catalog. */
+export function wireCatalog(keys: import("./keys.ts").Keys) {
+  const catalog = makeCatalog(keys.keyed);
+  const models = catalog.models.map((model) => ({
+    id: model.id,
+    label: model.label,
+    vendor: model.vendor,
+    kind: model.kind,
+    tasks: model.tasks,
+    routes: model.routes.map((route) => ({
+      adapter: route.providerId,
+      route: route.route,
+      label: route.label,
+      upstreamId: route.upstreamId,
+      tasks: model.tasks,
+      params: model.params,
+      pricing: route.pricing,
+      docsUrl: route.docsUrl,
+      hasKey: route.keyConfigured,
+    })),
+    defaultRoute: model.routes.find((route) => route.keyConfigured)?.providerId ?? null,
+  }));
+  const adapters = catalog.providers.map((provider) => ({
+    id: provider.id,
+    label: provider.label,
+    route: provider.route,
+    keyVocabulary: provider.keyVocabulary,
+    consoleUrl: provider.consoleUrl,
+    keyPrefix: provider.keyPrefix ?? null,
+    hasKey: provider.keyConfigured,
+    keySource: keys.env.has(provider.id) ? "env" : provider.keyConfigured ? "config" : null,
+    maskedKey: null,
+    extraFields: (provider.extraFields ?? []).map((field) => ({
+      ...field,
+      configured: keys.extras.get(provider.id)?.has(field.name) ?? false,
+    })),
+    modelCount: models.filter((model) => model.routes.some((route) => route.adapter === provider.id)).length,
+  }));
+  return { models, adapters };
+}
