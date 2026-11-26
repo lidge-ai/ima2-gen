@@ -93,6 +93,10 @@ test("L11-P4 on a phone the result bar shows the main actions, the rest behind M
   await more.click();
   await expect(bar.getByRole("button", { name: "Info", exact: true })).toBeVisible();
   await expect(bar.getByRole("button", { name: "Fewer actions", exact: true })).toHaveAttribute("aria-expanded", "true");
+  // Opened, the last row can still be brought clear of the tab bar.
+  const last = bar.locator(":scope > button:visible, :scope > details:visible summary").last();
+  await last.scrollIntoViewIfNeeded();
+  expect(await last.evaluate((button) => { const r = button.getBoundingClientRect(); return button.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); })).toBe(true);
 }));
 
 test("L11-P5 with no key anywhere, Automatic offers the cheapest route's key entry", run({ keys: [] }, async (page) => {
