@@ -15,7 +15,8 @@ test.use({ deviceScaleFactor: 2 });
 test("logo sheet", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/audit/logos.html");
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForTimeout(700);
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: join(dir(), "logos__sheet__1440__en.png"), fullPage: true });
   const slots = await page.evaluate(() =>
@@ -64,7 +65,8 @@ test("logo slots in context", async ({ page }) => {
   ] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/#" + hash);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(700);
     if (act) await page.getByRole("button", { name: /^Model:/ }).first().click();
     await page.waitForTimeout(400);
     await page.screenshot({ path: join(dir(), "logos__" + name + "__1440__en.jpg"), type: "jpeg", quality: 80, fullPage: !act });

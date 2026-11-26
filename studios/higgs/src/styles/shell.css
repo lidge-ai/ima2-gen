@@ -219,6 +219,9 @@
   font-weight: 700;
   line-height: 1;
 }
+.vendor-logo.is-monogram .vendor-logo-box::before {
+  content: attr(data-monogram);
+}
 .vendor-logo-name {
   font-weight: 560;
   white-space: nowrap;

@@ -16,7 +16,8 @@ for (const locale of (process.env.AUDIT_LOCALES ?? "en,ko").split(",")) {
     await context.addInitScript((value) => localStorage.setItem("ima2.locale", value), locale);
     const page = await context.newPage();
     await page.goto(URL!);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(700);
     await page.keyboard.press("Escape");
     const open = page.getByRole("button", { name: /Media models|미디어 모델|媒體模型|媒体模型/ }).first();
     try {
