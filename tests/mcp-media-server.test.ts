@@ -382,6 +382,20 @@ test("progress is opt-in, bounded and monotonic for a held submission", async ()
   for (const secret of secrets) assert.ok(!content(progress).includes(secret));
 });
 
+test("server progress fractions (0..1) are reported as percent of 100", async () => {
+  const fake = await fixture(); fake.setAutoDone(false); const client = await connect(async () => fake.base); await client.listTools();
+  const submission = gate(); fake.setHold("/api/media", submission);
+  const progress: Array<{ progress: number; total?: number }> = [];
+  const pending = client.callTool({ name: "media_submit", arguments: { ...media, requestId: "media-fraction-1", wait: true } }, undefined, {
+    onprogress: (value) => { progress.push(value); },
+  });
+  await submission.entered.promise; submission.release.resolve();
+  fake.event("progress", { jobId: "media-fraction-1", status: "running", progress: 0.5 });
+  fake.event("done", { jobId: "media-fraction-1", requestId: "media-fraction-1", model: media.model, adapter: "fake", outputs: [] });
+  const result = await pending; assert.equal(result.isError, undefined, content(result));
+  assert.equal(progress[0]?.progress, 50);
+});
+
 test("offline descriptors revalidate online workflow schema before uploading", async () => {
   const fake = await fixture(); let offline = true;
   const client = await connect(async () => {
