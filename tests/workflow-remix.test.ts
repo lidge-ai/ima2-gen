@@ -8,7 +8,7 @@ import type { MediaStep, WorkflowDefinition, WorkflowEvent } from "../lib/workfl
 import { fakeAdapter, fakeGateway, fakeLocal, instantPoll, spec, tempDir, writeFixture } from "./_workflowFakes.js";
 
 const root = tempDir("ima2-wf-remix-");
-after(() => rmSync(root, { recursive: true, force: true }));
+after(() => rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 const clip = writeFixture(root, "clip.mp4", "source-video");
 const silent = writeFixture(root, "silent.mp4", "silent-video");
 const long = writeFixture(root, "long.mp4", "long-video");

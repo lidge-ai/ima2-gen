@@ -9,15 +9,15 @@
  */
 import type { ModelSlot, WorkflowPreset } from "../types.js";
 
-export const GROK_OAUTH_ROUTE = "xai-oauth";
+export const XAI_OAUTH_ROUTE = "xai-oauth";
 export const GPT_OAUTH_ROUTE = "openai-oauth";
-export const GROK_EDIT_MAX_SEC = 8.7;
-export const GROK_PIN_MAX_KEYFRAMES = 4;
-export const GROK_PIN_MAX_SEC = 15;
+export const XAI_EDIT_MAX_SEC = 8.7;
+export const XAI_PIN_MAX_KEYFRAMES = 4;
+export const XAI_PIN_MAX_SEC = 15;
 
 export const REQUIRES: WorkflowPreset["requires"] = [
   { route: GPT_OAUTH_ROUTE, label: "ChatGPT subscription (GPT OAuth) for still-frame edits" },
-  { route: GROK_OAUTH_ROUTE, label: "Grok subscription (Grok OAuth) for video" },
+  { route: XAI_OAUTH_ROUTE, label: "Grok subscription (Grok OAuth) for video" },
 ];
 
 export const BILLING_NOTE = "xAI's pricing page says paid plans include API access billed separately from the plan's usage pool "
@@ -31,16 +31,16 @@ export const GPT_FRAME_SLOT: ModelSlot = {
     + "ChatGPT has no video model since Sora's API shut down (developers.openai.com video-generation guide, read 2026-11-26).",
 };
 
-export const GROK_PIN_SLOT: ModelSlot = {
+export const XAI_PIN_SLOT: ModelSlot = {
   name: "render", label: "Regenerate the clip between pinned frames (Grok 1.5)", task: "reference-to-video",
-  defaultModel: "xai/grok-imagine-video-1.5", alternatives: [], defaultRoute: GROK_OAUTH_ROUTE,
+  defaultModel: "xai/grok-imagine-video-1.5", alternatives: [], defaultRoute: XAI_OAUTH_ROUTE,
   rationale: "Grok Imagine Video 1.5 reference-to-video pins a first frame, a last frame and up to 4 keyframes "
     + "(lib/grokVideoPins.ts; docs.x.ai reference-to-video, read 2026-11-26), up to 14 reference images, 720p.",
 };
 
-export const GROK_EDIT_SLOT: ModelSlot = {
+export const XAI_EDIT_SLOT: ModelSlot = {
   name: "edit", label: "Restyle each segment (Grok edit)", task: "video-to-video",
-  defaultModel: "xai/grok-imagine-video", alternatives: [], defaultRoute: GROK_OAUTH_ROUTE,
+  defaultModel: "xai/grok-imagine-video", alternatives: [], defaultRoute: XAI_OAUTH_ROUTE,
   rationale: "Grok's video edit takes a prompt and a source of up to 8.7 s, output capped at 720p "
     + "(docs.x.ai video editing, read 2026-11-26; base model only per skills/ima2/SKILL.md).",
 };
@@ -54,7 +54,7 @@ export function segmentPlan(totalSec: number, maxSec: number): { startSec: numbe
 
 /** Output length for pinned regeneration: whole seconds, 1-15. */
 export function pinnedDuration(sourceSec: number): number {
-  return Math.min(GROK_PIN_MAX_SEC, Math.max(1, Math.round(sourceSec)));
+  return Math.min(XAI_PIN_MAX_SEC, Math.max(1, Math.round(sourceSec)));
 }
 
 /**

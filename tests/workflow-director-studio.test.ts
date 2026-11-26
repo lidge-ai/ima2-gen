@@ -9,7 +9,7 @@ import { fitDuration, maxShotSeconds, splitDuration } from "../lib/workflows/def
 import { fakeAdapter, fakeGateway, fakeLocal, instantPoll, spec, tempDir, writeFixture } from "./_workflowFakes.js";
 
 const root = tempDir("ima2-wf-studio-");
-after(() => rmSync(root, { recursive: true, force: true }));
+after(() => rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 const studio = getWorkflow("director-studio");
 assert.ok(studio);
 const price = (variant: string, usd: number) => ({ unit: "second" as const, usd, variant, source: "https://example.test/p", checkedAt: "2026-11-26" });
