@@ -56,6 +56,7 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
       setStyle(place(anchor.current.getBoundingClientRect(), ref.current.getBoundingClientRect(), placement));
     };
     update();
+    ref.current?.querySelector<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)")?.focus();
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
     return () => {
@@ -70,6 +71,7 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
       if (event.key === "Escape") {
         event.stopPropagation();
         onClose();
+        trigger?.focus();
       }
     };
     const onDown = (event: PointerEvent) => {
