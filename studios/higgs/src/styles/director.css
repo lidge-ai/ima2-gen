@@ -81,6 +81,10 @@
   outline: 2px solid var(--text);
   outline-offset: 2px;
 }
+.director-form > .workflow-params > .field input::placeholder {
+  color: var(--text-muted);
+  font-weight: 500;
+}
 .director-form > .workflow-params > .field input:focus-visible {
   outline: none;
 }
@@ -104,6 +108,11 @@
   max-width: 960px;
   display: grid;
   gap: 16px;
+}
+@media (max-width: 600px) {
+  .director-form > .workflow-params {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 900px) {
   .director-layout {
