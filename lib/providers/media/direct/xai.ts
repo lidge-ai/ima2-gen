@@ -15,12 +15,8 @@ const base = (ctx: MediaAdapterContext) => (ctx.baseUrl ?? "https://api.x.ai").r
 const headers = (ctx: MediaAdapterContext) => ({ Authorization: `Bearer ${ctx.apiKey}` });
 
 async function call(ctx: MediaAdapterContext, path: string, json?: unknown): Promise<Record<string, unknown>> {
-  try {
-    return await httpJson(ctx, "xAI", base(ctx) + path, { headers: headers(ctx), ...(json === undefined ? {} : { method: "POST" as const, json }) });
-  } catch (error) {
-    const normalized = normalizeMediaError("XAI", error, contextSecrets(ctx));
-    throw new MediaHttpError({ ...normalized, message: "xAI request failed", reason: normalized.code.slice(4) });
-  }
+  // httpJson scrubs the key from vendor error bodies, so the detail can reach the user.
+  return await httpJson(ctx, "xAI", base(ctx) + path, { headers: headers(ctx), ...(json === undefined ? {} : { method: "POST" as const, json }) });
 }
 function validate(request: MediaSubmitRequest, model: MediaModelSpec): void {
   readVendorOptions(request, []);
@@ -89,7 +85,6 @@ export const adapter: MediaProviderAdapter = {
   },
   async poll(ctx, job: MediaJobRef) { return state(ctx, await call(ctx, `/v1/videos/${encodeURIComponent(job.providerJobId)}`)); },
   normalizeError(error) {
-    const normalized = normalizeMediaError("XAI", error);
-    return { ...normalized, message: "xAI request failed" };
+    return normalizeMediaError("XAI", error);
   },
 };

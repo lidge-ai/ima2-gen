@@ -130,5 +130,6 @@ export const adapter: MediaProviderAdapter = {
     try { await httpJson(ctx, 'HeyGen key validation', base(ctx) + '/v3/users/me', { headers: headers(ctx) }); return { ok: true }; }
     catch (error) { if (error instanceof MediaHttpError && (error.status === 401 || error.status === 403)) return { ok: false, reason: 'Invalid or unauthorized API key' }; throw error; }
   },
-  normalizeError(error) { return normalizeMediaError('HEYGEN', error instanceof MediaHttpError ? error : new Error('HeyGen request failed')); },
+  // Vendor messages are scrubbed where they are raised; keep network and timeout classes too.
+  normalizeError: (error) => normalizeMediaError('HEYGEN', error),
 };
