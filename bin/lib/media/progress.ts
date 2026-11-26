@@ -11,7 +11,7 @@ export function createProgress(id: string): (event: string, data: Dict) => void 
       const n = typeof data.progress === "number" ? data.progress : undefined;
       text = `${state}${n === undefined ? "" : ` ${Math.round(n <= 1 ? n * 100 : n)}%`}`;
     } else if (event === "step") text = `step ${String(data.stepId)} ${String(data.status)}`;
-    else if (event === "done" && typeof data.elapsedSec === "number") text = `done in ${data.elapsedSec}s`;
+    else if (event === "done" && typeof data.elapsed === "number") text = `done in ${data.elapsed}s`;
     if (text && text !== last) { last = text; err(`[${id}] ${text}`); }
   };
 }

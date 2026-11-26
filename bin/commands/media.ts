@@ -80,8 +80,9 @@ async function execute(base: string, args: ParsedArgs): Promise<unknown> {
 async function printSchema(base: string, id: string, data: Dict): Promise<void> {
   const list = await request<{ workflows: Dict[] }>(base, "/api/workflows");
   const fields = (list.workflows.find((w) => w.id === id)?.fields ?? []) as Dict[];
-  const properties = (data.properties ?? {}) as Dict;
-  const required = Array.isArray(data.required) ? data.required : [];
+  const schema = (data.schema ?? data) as Dict;
+  const properties = (schema.properties ?? {}) as Dict;
+  const required = Array.isArray(schema.required) ? schema.required : [];
   out("name  type  required  constraints  help");
   for (const [name, value] of Object.entries(properties)) {
     const prop = value as Dict, field = fields.find((f) => f.name === name);
