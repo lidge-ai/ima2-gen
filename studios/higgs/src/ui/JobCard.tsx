@@ -51,7 +51,11 @@ function Steps({ job }: { job: Job }) {
       {job.steps.map((step) => (
         <li key={step.id} className={"job-step is-" + step.status}>
           <span className="job-step-dot" aria-hidden />
-          <span>{step.label}</span>
+          <span>
+            {step.label}
+            {step.model ? <ModelName id={step.model} /> : null}
+            {step.provider ? <ProviderName id={step.provider} /> : null}
+          </span>
           <span className="job-step-status">{STATUS_TEXT[step.status]}</span>
         </li>
       ))}
@@ -78,26 +82,32 @@ function Progress({ job }: { job: Job }) {
   );
 }
 
+function JobHeader({ job }: { job: Job }) {
+  return (
+    <header className="job-head">
+      <span className={"status-pill is-" + job.status}>{STATUS_TEXT[job.status]}</span>
+      <span className="job-target">
+        {job.kind === "media" ? <ModelName id={job.target} /> : <span>{job.target}</span>}
+        {job.provider && job.provider !== "local" ? (
+          <span className="job-via">
+            via <ProviderName id={job.provider} />
+          </span>
+        ) : null}
+      </span>
+      <time className="job-time" dateTime={job.createdAt}>
+        {timeAgo(job.createdAt)}
+      </time>
+    </header>
+  );
+}
+
 export function JobCard({ job }: { job: Job }) {
   const studio = useStudioApi();
   const active = !isTerminal(job);
   const text = prompt(job);
   return (
     <article className={"job-card is-" + job.status} aria-label={STATUS_TEXT[job.status] + ": " + text}>
-      <header className="job-head">
-        <span className={"status-pill is-" + job.status}>{STATUS_TEXT[job.status]}</span>
-        <span className="job-target">
-          {job.kind === "media" ? <ModelName id={job.target} /> : <span>{job.target}</span>}
-          {job.provider && job.provider !== "local" ? (
-            <span className="job-via">
-              via <ProviderName id={job.provider} />
-            </span>
-          ) : null}
-        </span>
-        <time className="job-time" dateTime={job.createdAt}>
-          {timeAgo(job.createdAt)}
-        </time>
-      </header>
+      <JobHeader job={job} />
       <p className="job-prompt">{text}</p>
       <Steps job={job} />
       {active ? <Progress job={job} /> : null}
