@@ -158,7 +158,7 @@ test("submit, workflow media, and history expose client-only paths and cursor", 
     }
   }
   const history = descriptor("media_history").inputSchema;
-  assert.equal(check(history, { limit: 50, cursor: { before: "2026-01-01T00:00:00Z", beforeFilename: "a.png" } }), true);
+  assert.equal(check(history, { limit: 50, cursor: { before: 1767225600000, beforeFilename: "a.png" } }), true);
   assert.equal(check(history, { limit: 51 }), false);
   assert.equal(check(history, { unexpected: true }), false);
 });
