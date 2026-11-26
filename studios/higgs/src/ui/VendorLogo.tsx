@@ -61,14 +61,14 @@ export function VendorLogo({ id, shape = "mark", size = 20, withName = false, cl
       );
     return (
       <span className={base + " is-monogram"} title={name}>
+        {/* The letter is drawn by CSS (attr), so it never joins the text of a row like "via fal". */}
         <span
           className="vendor-logo-box"
+          data-monogram={vendorMonogram(name)}
           style={{ ...box, fontSize: Math.max(9, Math.round(size * 0.5)) }}
           role={label ? "img" : undefined}
           aria-label={label}
-        >
-          <span aria-hidden="true">{vendorMonogram(name)}</span>
-        </span>
+        />
         <Name name={name} show={withName} />
       </span>
     );

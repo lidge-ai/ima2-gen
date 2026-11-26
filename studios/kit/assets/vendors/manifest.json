@@ -12,7 +12,8 @@
           "sourceUrl": "https://lf3-static.bytednsdoc.com/obj/eden-cn/shjpmmv_ljuhklafi/ljhwZthlaukjlkulzlp/images/Pn04bTfD5oKbB3x1NFLcQ3Bxn1b-20261029135132-20261029150506.png",
           "width": 300,
           "height": 300,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "bytedance.png",
@@ -21,7 +22,8 @@
           "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/bytedance-logo-white.png",
           "width": 160,
           "height": 28,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/bytedance-logo-white.png",
@@ -43,7 +45,8 @@
           "sourceUrl": "https://www.alibabacloud.com/",
           "width": 295.93,
           "height": 37.28,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://www.alibabacloud.com/",
@@ -68,25 +71,16 @@
           "sourceUrl": "https://cdn-front.hy.tencent.com/logo.svg",
           "width": 31,
           "height": 30,
-          "shape": "mark"
-        },
-        {
-          "file": "tencent.png",
-          "variant": "primary",
-          "format": "png",
-          "sourceUrl": "https://github.com/Tencent-Hunyuan.png?size=460",
-          "width": 460,
-          "height": 460,
           "shape": "mark",
-          "tile": true
+          "sourceKind": "site-asset"
         }
       ],
-      "sourceUrl": "https://github.com/Tencent-Hunyuan.png?size=460",
+      "sourceUrl": "https://cdn-front.hy.tencent.com/logo.svg",
       "pageUrl": "https://www.tencentcloud.com/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar; symbol mark tencent-mark.svg from site-icon https://hy.tencent.com/ (retrieved 2026-11-26 via Aside, original bytes)",
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "modifications": "none (files saved as served); symbol mark tencent-mark.svg from site-icon https://hy.tencent.com/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": [
         "tencent-cloud",
         "hunyuan"
@@ -103,7 +97,8 @@
           "width": 180,
           "height": 180,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://s16-kling.klingai.com/kos/s101/nlav112918/kling-homepage-aio/logo-180x180.png",
@@ -126,7 +121,8 @@
           "format": "webp",
           "width": 349,
           "height": 128,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "minimax-dark.webp",
@@ -134,7 +130,8 @@
           "format": "webp",
           "width": 349,
           "height": 128,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://www.minimax.io/assets/logo/minimax-horizontal-brand-black.webp",
@@ -158,7 +155,8 @@
           "sourceUrl": "https://www.vidu.com/logo.svg",
           "width": 64,
           "height": 64,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://www.vidu.com/logo.svg",
@@ -182,7 +180,8 @@
           "sourceUrl": "https://www.gstatic.com/marketing-cms/assets/images/33/52/d31eb4894f69969b24d075e0d33c/favicon.png=s180",
           "width": 180,
           "height": 180,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "google.svg",
@@ -191,7 +190,8 @@
           "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg",
           "width": 79,
           "height": 20,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "google-dark.svg",
@@ -200,7 +200,8 @@
           "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__dark.height-25.svg",
           "width": 79,
           "height": 20,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://storage.googleapis.com/gdm-deepmind-com-prod-public/media/images/0xBk-c8kzB5UTrWs/nav__gai-lockup__light.height-25.svg",
@@ -228,7 +229,8 @@
           "sourceUrl": "https://cdn.openai.com/brand/openai-logos.zip",
           "width": 716,
           "height": 716,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "brand-kit"
         },
         {
           "file": "openai-mark.svg",
@@ -237,7 +239,8 @@
           "sourceUrl": "https://cdn.openai.com/brand/openai-logos.zip",
           "width": 716,
           "height": 716,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "brand-kit"
         },
         {
           "file": "openai.svg",
@@ -246,7 +249,8 @@
           "sourceUrl": "https://openai.com/brand/",
           "width": 292,
           "height": 78,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://openai.com/brand/",
@@ -262,51 +266,29 @@
     {
       "id": "xai",
       "name": "xAI",
-      "files": [
-        {
-          "file": "xai.png",
-          "variant": "primary",
-          "format": "png",
-          "sourceUrl": "https://github.com/xai-org.png?size=460",
-          "width": 460,
-          "height": 460,
-          "shape": "mark",
-          "tile": true
-        }
-      ],
-      "sourceUrl": "https://github.com/xai-org.png?size=460",
+      "files": [],
       "pageUrl": "https://x.ai/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar",
+      "license": "https://x.ai/legal/brand-guidelines requires logos to be used exactly as provided; the official files could not be downloaded, so no logo is used.",
+      "modifications": "none; no logo file is used",
       "aliases": [
         "xai-oauth",
         "grok"
-      ]
+      ],
+      "missing": "없음: 공식 브랜드 자산 미확보(https://x.ai/legal/brand-guidelines). The official logo download returned 403 on 2026-11-26; until the brand kit is obtained studios show the name and a monogram."
     },
     {
       "id": "meta",
       "name": "Meta",
-      "files": [
-        {
-          "file": "meta.png",
-          "variant": "primary",
-          "format": "png",
-          "sourceUrl": "https://github.com/meta.png?size=460",
-          "width": 400,
-          "height": 400,
-          "shape": "mark",
-          "tile": true
-        }
-      ],
-      "sourceUrl": "https://github.com/meta.png?size=460",
+      "files": [],
       "pageUrl": "https://about.meta.com/brand/resources/meta/company-brand/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar",
-      "aliases": []
+      "license": "https://www.meta.com/brand/resources/meta/company-brand/ requires approval for every use of the Meta logo; no logo is used.",
+      "modifications": "none; no logo file is used",
+      "aliases": [],
+      "missing": "없음: 사용 승인 필요(https://www.meta.com/brand/resources/meta/company-brand/). Meta brand pages state that every use of the logo needs approval, so studios show the name and a monogram."
     },
     {
       "id": "black-forest-labs",
@@ -319,7 +301,8 @@
           "sourceUrl": "https://bfl.ai/brand/logotype-black.png",
           "width": 570,
           "height": 140,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "black-forest-labs-dark.svg",
@@ -328,7 +311,8 @@
           "sourceUrl": "https://bfl.ai/brand/logotype-white.svg",
           "width": 571,
           "height": 141,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "black-forest-labs-mark.svg",
@@ -337,7 +321,8 @@
           "sourceUrl": "https://bfl.ai/brand/symbol-black.svg",
           "width": 196,
           "height": 140,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://bfl.ai/brand/logotype-black.png",
@@ -361,24 +346,16 @@
           "sourceUrl": "https://ideogram.ai/favicon.svg?v=new-brand-20261020",
           "width": 48,
           "height": 48,
-          "shape": "mark"
-        },
-        {
-          "file": "ideogram.jpg",
-          "variant": "mark",
-          "format": "jpg",
-          "width": 460,
-          "height": 460,
           "shape": "mark",
-          "tile": true
+          "sourceKind": "site-asset"
         }
       ],
-      "sourceUrl": "https://github.com/ideogram-ai.png?size=460",
+      "sourceUrl": "https://ideogram.ai/favicon.svg?v=new-brand-20261020",
       "pageUrl": "https://github.com/ideogram-ai",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Referential use; avatar of the official GitHub organization; used unaltered.",
-      "modifications": "none; GitHub org avatar (org name \"Ideogram\"); site header SVG is behind a bot challenge; symbol mark ideogram-mark.svg from site-icon https://ideogram.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "modifications": "none (files saved as served); site header SVG is behind a bot challenge; symbol mark ideogram-mark.svg from site-icon https://ideogram.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
@@ -392,7 +369,8 @@
           "sourceUrl": "https://static.recraft.ai/apps/images/home/logo.svg",
           "width": 40,
           "height": 40,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://static.recraft.ai/apps/images/home/logo.svg",
@@ -414,7 +392,8 @@
           "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg",
           "width": 1024,
           "height": 213,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "pixverse-dark.svg",
@@ -423,7 +402,8 @@
           "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-light-20261103.svg",
           "width": 1024,
           "height": 213,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "pixverse-mark.svg",
@@ -432,7 +412,8 @@
           "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-icon-dark.svg",
           "width": 1024,
           "height": 1024,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://media.pixverse.ai/asset/media/pixverse-logo-horizontal-color-black-20261103.svg",
@@ -455,7 +436,8 @@
           "archiveEntry": "heygen-brandkit/heygen-full-black-logo.svg",
           "width": 241,
           "height": 143,
-          "shape": "stacked"
+          "shape": "stacked",
+          "sourceKind": "site-asset"
         },
         {
           "file": "heygen-dark.svg",
@@ -465,7 +447,8 @@
           "archiveEntry": "heygen-brandkit/heygen-full-white-logo.svg",
           "width": 241,
           "height": 143,
-          "shape": "stacked"
+          "shape": "stacked",
+          "sourceKind": "site-asset"
         },
         {
           "file": "heygen-mark.svg",
@@ -475,7 +458,8 @@
           "archiveEntry": "heygen-brandkit/heygen-symbol-black-logo.svg",
           "width": 132,
           "height": 132,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://dynamic.heygen.ai/Heygen%20Brand-kit/heygen-brandkit.zip",
@@ -498,7 +482,8 @@
           "width": 320,
           "height": 320,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         },
         {
           "file": "sand-ai.svg",
@@ -507,7 +492,8 @@
           "sourceUrl": "https://sand.ai/migrated/assets/svg/logo.svg",
           "width": 86,
           "height": 30,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://sand.ai/migrated/assets/svg/logo.svg",
@@ -532,7 +518,8 @@
           "width": 256,
           "height": 256,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         },
         {
           "file": "veed.svg",
@@ -541,7 +528,8 @@
           "sourceUrl": "https://www.veed.io/",
           "width": 115,
           "height": 24,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://www.veed.io/",
@@ -563,7 +551,8 @@
           "width": 460,
           "height": 460,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "github-avatar"
         }
       ],
       "sourceUrl": "https://github.com/MeiGen-AI.png?size=460",
@@ -585,7 +574,8 @@
           "sourceUrl": "https://sync.so/sync-logo.svg",
           "width": 1178,
           "height": 291,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "sync-mark.svg",
@@ -594,7 +584,8 @@
           "sourceUrl": "https://sync.so/landing/footer-logo.svg",
           "width": 92,
           "height": 92,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://sync.so/sync-logo.svg",
@@ -619,7 +610,8 @@
           "width": 256,
           "height": 256,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         },
         {
           "file": "topaz-labs.svg",
@@ -628,7 +620,8 @@
           "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg",
           "width": 125,
           "height": 22,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "topaz-labs-dark.svg",
@@ -637,7 +630,8 @@
           "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/68d1aa55ea71e44b7916c8e3_topaz-logo-(r)-white.svg",
           "width": 97,
           "height": 21,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://cdn.prod.website-files.com/6005fac27a49a9cd477afb63/6601fc8dee8587f460410ed3_topaz-logo-wicon.svg",
@@ -663,7 +657,8 @@
           "sourceUrl": "https://mirelo.ai/mirelo-logo-text-light.svg",
           "width": 514,
           "height": 128,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "mirelo-mark.svg",
@@ -672,7 +667,8 @@
           "sourceUrl": "https://mirelo.ai/mirelo-logo-icon-light.svg?v=b66a685",
           "width": 152,
           "height": 152,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://mirelo.ai/mirelo-logo-text-light.svg",
@@ -694,7 +690,8 @@
           "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/a2ea339b-8b5e-41bb-b706-24eda8a4c9e3/elevenlabs-symbol.svg",
           "width": 876,
           "height": 876,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "brand-kit"
         },
         {
           "file": "elevenlabs.svg",
@@ -703,7 +700,8 @@
           "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg",
           "width": 694,
           "height": 90,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "elevenlabs-dark.svg",
@@ -712,7 +710,8 @@
           "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-white.svg",
           "width": 694,
           "height": 90,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://11labs-nonprd-15f22c1d.s3.eu-west-3.amazonaws.com/0b9cd3e1-9fad-4a5b-b3a0-c96b0a1f1d2b/elevenlabs-logo-black.svg",
@@ -734,7 +733,8 @@
           "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg",
           "width": 579,
           "height": 83,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "cartesia-dark.svg",
@@ -743,7 +743,8 @@
           "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-white.svg",
           "width": 579,
           "height": 83,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "cartesia-mark.svg",
@@ -752,7 +753,8 @@
           "sourceUrl": "https://www.cartesia.ai/brand/black-archie.svg",
           "width": 90,
           "height": 83,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://www.cartesia.ai/brand/cartesia-logo-black.svg",
@@ -774,7 +776,8 @@
           "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/804f0e8b-0028-4262-a8b0-b9f1c5de72c0/favicon.ico",
           "width": 200,
           "height": 200,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "stability-ai.png",
@@ -783,7 +786,8 @@
           "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/8346fca1-a188-450e-8c75-e487e0ff3fae/stability-ai-white-dot-logo-mobile.png",
           "width": 249,
           "height": 49,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://images.squarespace-cdn.com/content/v1/6213c340453c3f502425776e/8346fca1-a188-450e-8c75-e487e0ff3fae/stability-ai-white-dot-logo-mobile.png",
@@ -807,7 +811,8 @@
           "width": 460,
           "height": 460,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "github-avatar"
         }
       ],
       "sourceUrl": "https://github.com/ace-step.png?size=460",
@@ -830,25 +835,16 @@
           "width": 128,
           "height": 128,
           "shape": "mark",
-          "tile": true
-        },
-        {
-          "file": "tripo.png",
-          "variant": "primary",
-          "format": "png",
-          "sourceUrl": "https://github.com/VAST-AI-Research.png?size=460",
-          "width": 460,
-          "height": 460,
-          "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         }
       ],
-      "sourceUrl": "https://github.com/VAST-AI-Research.png?size=460",
+      "sourceUrl": "https://studio.tripo3d.ai/favicon.svg",
       "pageUrl": "https://www.tripo3d.ai/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar (VAST / Tripo); symbol mark tripo-mark.svg from site-icon https://studio.tripo3d.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "modifications": "none (files saved as served); symbol mark tripo-mark.svg from site-icon https://studio.tripo3d.ai/ (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
@@ -862,7 +858,8 @@
           "sourceUrl": "https://cdn.meshy.ai/landing-assets/media-kit/meshy-logo-light.svg",
           "width": 128,
           "height": 128,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "brand-kit"
         },
         {
           "file": "meshy-mark.svg",
@@ -871,25 +868,16 @@
           "sourceUrl": "https://cdn.meshy.ai/landing-assets/media-kit/meshy-logo-dark.svg",
           "width": 128,
           "height": 128,
-          "shape": "mark"
-        },
-        {
-          "file": "meshy.png",
-          "variant": "primary",
-          "format": "png",
-          "sourceUrl": "https://github.com/meshy-dev.png?size=460",
-          "width": 256,
-          "height": 256,
           "shape": "mark",
-          "tile": true
+          "sourceKind": "brand-kit"
         }
       ],
-      "sourceUrl": "https://github.com/meshy-dev.png?size=460",
+      "sourceUrl": "https://cdn.meshy.ai/landing-assets/media-kit/meshy-logo-light.svg",
       "pageUrl": "https://www.meshy.ai/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar; symbol mark meshy-mark.svg from brand-kit https://www.meshy.ai/media-kit (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://www.meshy.ai/media-kit; symbol mark meshy-dark.svg from brand-kit https://www.meshy.ai/media-kit (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://www.meshy.ai/media-kit",
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "modifications": "none (files saved as served); symbol mark meshy-mark.svg from brand-kit https://www.meshy.ai/media-kit (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://www.meshy.ai/media-kit; symbol mark meshy-dark.svg from brand-kit https://www.meshy.ai/media-kit (retrieved 2026-11-26 via Aside, original bytes); usage terms: https://www.meshy.ai/media-kit",
       "aliases": []
     },
     {
@@ -897,22 +885,23 @@
       "name": "Higgsfield",
       "files": [
         {
-          "file": "higgsfield.png",
-          "variant": "primary",
+          "file": "higgsfield-mark.png",
+          "variant": "mark",
           "format": "png",
-          "sourceUrl": "https://github.com/higgsfield-ai.png?size=460",
-          "width": 460,
-          "height": 460,
+          "sourceUrl": "https://higgsfield.ai/icon.png",
+          "width": 192,
+          "height": 192,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         }
       ],
-      "sourceUrl": "https://github.com/higgsfield-ai.png?size=460",
+      "sourceUrl": "https://higgsfield.ai/icon.png",
       "pageUrl": "https://higgsfield.ai/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission. GitHub org avatar; usage terms not established.",
-      "modifications": "none; GitHub org avatar",
+      "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
+      "modifications": "none (files saved as served); symbol mark higgsfield-mark.png from the site icon https://higgsfield.ai/icon.png (retrieved 2026-11-26 via Aside, original bytes)",
       "aliases": []
     },
     {
@@ -926,7 +915,8 @@
           "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/images/bp-logo-colored.svg",
           "width": 104,
           "height": 24,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "byteplus-mark.svg",
@@ -935,7 +925,8 @@
           "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/navigation/byteplus_logo_footer.svg",
           "width": 41,
           "height": 32,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://sf-bpcms.bytepluscdn.com/obj/byteplus-assets/images/bp-logo-colored.svg",
@@ -960,7 +951,8 @@
           "width": 512,
           "height": 512,
           "shape": "mark",
-          "tile": true
+          "tile": true,
+          "sourceKind": "site-asset"
         },
         {
           "file": "fal.svg",
@@ -969,7 +961,8 @@
           "sourceUrl": "https://fal.ai/",
           "width": 120,
           "height": 48,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://fal.ai/",
@@ -993,7 +986,8 @@
           "sourceUrl": "https://replicate.com/",
           "width": 512,
           "height": 120,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "replicate-mark.svg",
@@ -1002,7 +996,8 @@
           "sourceUrl": "https://replicate.com/",
           "width": 1000,
           "height": 1000,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://replicate.com/",
@@ -1024,7 +1019,8 @@
           "sourceUrl": "https://www.atlascloud.ai/logo.svg",
           "width": 163,
           "height": 26,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://www.atlascloud.ai/logo.svg",
@@ -1048,7 +1044,8 @@
           "sourceUrl": "https://www.sume.com/brand/sume/favicon/b1/sume-b1-v17.svg",
           "width": 16,
           "height": 16,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "sume.svg",
@@ -1057,7 +1054,8 @@
           "sourceUrl": "https://sume.com/",
           "width": 69.56,
           "height": 20,
-          "shape": "wordmark"
+          "shape": "wordmark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://sume.com/",
@@ -1078,7 +1076,8 @@
           "format": "svg",
           "width": 401.4,
           "height": 401.4,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         },
         {
           "file": "openrouter-dark.svg",
@@ -1086,7 +1085,8 @@
           "format": "svg",
           "width": 401.4,
           "height": 401.4,
-          "shape": "mark"
+          "shape": "mark",
+          "sourceKind": "site-asset"
         }
       ],
       "sourceUrl": "https://openrouter.ai/images/icons/brands/openrouter.svg",

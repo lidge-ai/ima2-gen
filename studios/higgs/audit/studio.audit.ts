@@ -32,7 +32,8 @@ async function cell(page: Page, locale: string, c: Cell) {
     await page.unrouteAll({ behavior: "ignoreErrors" });
     if (c.setup) await c.setup(page);
     await page.goto("/#" + c.hash);
-    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(700);
     if (c.act) await c.act(page);
     await shoot(page, c.id, locale);
     if (locale === LOCALES[0]) saveText(c.id + ".html", await page.content());

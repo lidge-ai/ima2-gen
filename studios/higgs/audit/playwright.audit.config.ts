@@ -14,7 +14,15 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],
-  use: { baseURL: "http://127.0.0.1:" + APP_PORT, trace: "off", reducedMotion: "reduce" },
+  // The live-updates stream keeps a request open, so never wait for network idle; bounded
+  // action and navigation timeouts make a stuck cell fail (and get recorded) instead of hanging.
+  use: {
+    baseURL: "http://127.0.0.1:" + APP_PORT,
+    trace: "off",
+    reducedMotion: "reduce",
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
+  },
   projects: [
     { name: "studio", testIgnore: "classic.audit.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "classic", testMatch: "classic.audit.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
