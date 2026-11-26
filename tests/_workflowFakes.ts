@@ -92,7 +92,10 @@ export interface FakeGateway extends WorkflowGateway {
   planned: TextPlanRequest[];
 }
 
-export function fakeGateway(adapters: Record<string, MediaProviderAdapter>, specs: Record<string, MediaModelSpec> = {}, planner?: (r: TextPlanRequest) => unknown): FakeGateway {
+export function fakeGateway(
+  adapters: Record<string, MediaProviderAdapter>, specs: Record<string, MediaModelSpec> = {}, planner?: (r: TextPlanRequest) => unknown,
+  canRun?: (modelId: string, route: string | undefined) => boolean,
+): FakeGateway {
   const fetched: FakeGateway["fetched"] = [];
   const resolved: FakeGateway["resolved"] = [];
   const planned: TextPlanRequest[] = [];
@@ -116,6 +119,7 @@ export function fakeGateway(adapters: Record<string, MediaProviderAdapter>, spec
       return planner(request);
     };
   }
+  if (canRun) gateway.canRun = canRun;
   return gateway;
 }
 
@@ -124,7 +128,7 @@ export interface FakeLocal extends WorkflowLocalOps {
 }
 
 /** Local ops that copy files instead of running ffmpeg; probe answers from a table keyed by path. */
-export function fakeLocal(probes: Record<string, ProbeResult>): FakeLocal {
+export function fakeLocal(probes: Record<string, ProbeResult>, sceneCuts: Record<string, number[]> = {}): FakeLocal {
   const ops: FakeLocal["ops"] = [];
   return {
     ops,
@@ -149,6 +153,10 @@ export function fakeLocal(probes: Record<string, ProbeResult>): FakeLocal {
     async cut(video, start, length, out) {
       ops.push({ op: "cut", args: [video, start.toFixed(3), length.toFixed(3), out] });
       writeFileSync(out, "cut:" + start.toFixed(3) + "+" + length.toFixed(3));
+    },
+    async scenes(video, threshold) {
+      ops.push({ op: "scenes", args: [video, String(threshold)] });
+      return sceneCuts[Object.keys(sceneCuts).find((suffix) => video.endsWith(suffix)) ?? ""] ?? [];
     },
   };
 }

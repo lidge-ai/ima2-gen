@@ -16,9 +16,18 @@ function outputText(json: unknown): string {
   return "";
 }
 
+function userContent(request: TextPlanRequest): unknown {
+  if (!request.images?.length) return request.user;
+  return [
+    { type: "input_text", text: request.user },
+    ...request.images.map((image) => ({ type: "input_image", image_url: "data:" + image.mimeType + ";base64," + Buffer.from(image.bytes).toString("base64") })),
+  ];
+}
+
 /**
  * gateway.planText for the L6 engine (Director shot planning): one JSON-mode call
- * on the GPT OAuth transport the rest of ima2 already uses for planners.
+ * on the GPT OAuth transport the rest of ima2 already uses for planners. Images (Remix
+ * captions) go in as input_image parts.
  */
 export function createOAuthPlanText(ctx: Pick<RuntimeContext, "oauthUrl" | "oauthTransport" | "config">) {
   const { model, timeoutMs } = ctx.config.workflowPlanner;
@@ -30,7 +39,7 @@ export function createOAuthPlanText(ctx: Pick<RuntimeContext, "oauthUrl" | "oaut
       body: JSON.stringify({
         model,
         stream: false,
-        input: [{ role: "system", content: `${request.system}\nReply with JSON only.` }, { role: "user", content: request.user }],
+        input: [{ role: "system", content: `${request.system}\nReply with JSON only.` }, { role: "user", content: userContent(request) }],
         text: { format: { type: "json_object" } },
       }),
     });

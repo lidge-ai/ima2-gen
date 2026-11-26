@@ -57,6 +57,7 @@ const noLocalOps = {
   muxAudio: async () => { throw new Error("unused"); },
   concat: async () => { throw new Error("unused"); },
   cut: async () => { throw new Error("unused"); },
+  scenes: async () => { throw new Error("unused"); },
 };
 
 async function withApp(fn: (h: { base: string; root: string; configFile: string; events: { jobId: string; event: string; data: Record<string, unknown> }[]; adapter: ReturnType<typeof makeFakeAdapter>; calls: { url: string }[] }) => Promise<void>, opts: { keys?: Record<string, unknown>; states?: unknown[]; status?: (url: string) => number } = {}) {

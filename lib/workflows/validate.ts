@@ -2,7 +2,7 @@ import { realpath } from "node:fs/promises";
 import { isAbsolute, sep } from "node:path";
 import { inputError, WorkflowError } from "./errors.js";
 import type {
-  ColorsField, EnumField, IntegerField, MediaField, ModelSlot, PlanEnv, ResolvedSlot, TextField,
+  ColorsField, EnumField, IntegerField, MediaField, ModelSlot, PlanEnv, PlanNote, ResolvedSlot, TextField, WorkflowCombo,
   WorkflowDefinition, WorkflowField, WorkflowLocalOps, WorkflowMediaRef, WorkflowSelection,
   WorkflowValue, WorkflowValues,
 } from "./types.js";
@@ -148,32 +148,88 @@ export function slotModelAvailable(slot: ModelSlot, model: string, catalog: Plan
   return catalog(model)?.tasks.includes(slot.task) === true;
 }
 
-function defaultFor(slot: ModelSlot, tier: unknown, catalog: PlanEnv["catalog"] | undefined): string {
+function slotCandidates(slot: ModelSlot, tier: unknown): string[] {
   const preferred = (typeof tier === "string" ? slot.tierModels?.[tier] : undefined) ?? slot.defaultModel;
-  // A slot bound to a route (e.g. a subscription) keeps its model; another model would not fit that route.
-  if (!catalog || slot.defaultRoute || slotModelAvailable(slot, preferred, catalog)) return preferred;
-  return [...slot.alternatives, ...Object.values(slot.tierModels ?? {})].find((m) => slotModelAvailable(slot, m, catalog)) ?? preferred;
+  return [...new Set([preferred, slot.defaultModel, ...slot.alternatives, ...Object.values(slot.tierModels ?? {})])];
+}
+
+interface SlotContext {
+  env: PlanEnv | undefined;
+  notes: PlanNote[];
+}
+
+function runnable(slot: ModelSlot, model: string, route: string | undefined, ctx: SlotContext): boolean {
+  if (!ctx.env) return true;
+  // A slot bound to a route (subscription, local session) is judged by that route alone.
+  if (!route && !slotModelAvailable(slot, model, ctx.env.catalog)) return false;
+  return ctx.env.canRun ? ctx.env.canRun(model, route) : true;
+}
+
+/** Picks a model for a slot the user did not set: the first listed one that can run now. */
+function pickDefault(slot: ModelSlot, tier: unknown, route: string | undefined, ctx: SlotContext): string | undefined {
+  const candidates = slotCandidates(slot, tier);
+  const preferred = candidates[0] ?? slot.defaultModel;
+  const hit = candidates.find((m) => runnable(slot, m, route, ctx));
+  if (hit) {
+    if (hit !== preferred) ctx.notes.push({ slot: slot.name, kind: "fallback", message: preferred + " cannot run now; using " + hit });
+    return hit;
+  }
+  const needs = "needs a key or sign-in for one of: " + candidates.join(", ");
+  if (slot.optional) {
+    ctx.notes.push({ slot: slot.name, kind: "skipped", message: slot.label + " left out; " + needs });
+    return undefined;
+  }
+  ctx.notes.push({ slot: slot.name, kind: "needs-key", message: slot.label + " " + needs });
+  return ctx.env ? candidates.find((m) => slotModelAvailable(slot, m, ctx.env!.catalog)) ?? preferred : preferred;
+}
+
+function comboOf(def: WorkflowDefinition, selection: WorkflowSelection | undefined): WorkflowCombo | undefined {
+  if (!selection?.combo) return undefined;
+  const combo = def.combos?.find((c) => c.id === selection.combo);
+  if (!combo) throw inputError("selection.combo", selection.combo + " is not a combination of " + def.id);
+  return combo;
+}
+
+export interface SlotPlan {
+  slots: Record<string, ResolvedSlot>;
+  notes: PlanNote[];
 }
 
 /**
- * Applies the user's model and route choices; a model outside the slot's list is refused.
- * Without a choice the slot default is used, or, when no adapter offers it yet, the first
- * listed alternative that one does (the plan and estimate name the model either way).
+ * Model and route per slot: the user's choice, else the named combination, else the first
+ * listed model that can run now (env.canRun). An optional slot with nothing runnable is left
+ * out; a required one keeps its model and a note says which key it needs.
  */
-export function resolveSlots(def: WorkflowDefinition, selection: WorkflowSelection | undefined, values: WorkflowValues, catalog?: PlanEnv["catalog"]): Record<string, ResolvedSlot> {
+export function resolveSlotPlan(def: WorkflowDefinition, selection: WorkflowSelection | undefined, values: WorkflowValues, env?: PlanEnv): SlotPlan {
   const tier = def.tierField ? values[def.tierField] : undefined;
-  const resolved: Record<string, ResolvedSlot> = {};
+  const combo = comboOf(def, selection);
+  const ctx: SlotContext = { env, notes: [] };
+  const slots: Record<string, ResolvedSlot> = {};
   for (const slot of def.slots) {
-    const chosen = selection?.models?.[slot.name] ?? defaultFor(slot, tier, catalog);
-    const allowed = [slot.defaultModel, ...slot.alternatives, ...Object.values(slot.tierModels ?? {})];
-    if (!allowed.includes(chosen)) throw inputError("selection.models." + slot.name, chosen + " cannot run this step");
-    const route = selection?.routes?.[slot.name] ?? slot.defaultRoute;
-    resolved[slot.name] = route ? { model: chosen, route } : { model: chosen };
+    const route = selection?.routes?.[slot.name] ?? combo?.routes?.[slot.name] ?? slot.defaultRoute;
+    const pinned = selection?.models?.[slot.name] ?? combo?.models[slot.name];
+    if (pinned === undefined && combo && slot.optional) {
+      ctx.notes.push({ slot: slot.name, kind: "skipped", message: slot.label + " is not part of " + combo.label });
+      continue;
+    }
+    if (pinned !== undefined && !slotCandidates(slot, tier).includes(pinned)) {
+      throw inputError("selection.models." + slot.name, pinned + " cannot run this step");
+    }
+    if (pinned !== undefined && !runnable(slot, pinned, route, ctx)) {
+      ctx.notes.push({ slot: slot.name, kind: "needs-key", message: pinned + " needs a key or sign-in" + (route ? " on " + route : "") });
+    }
+    const chosen = pinned ?? pickDefault(slot, tier, route, ctx);
+    if (chosen !== undefined) slots[slot.name] = route ? { model: chosen, route } : { model: chosen };
   }
   const extra = Object.keys(selection?.models ?? {}).concat(Object.keys(selection?.routes ?? {}))
     .filter((name) => !def.slots.some((s) => s.name === name));
   if (extra.length > 0) throw inputError("selection", extra[0] + " is not a step of " + def.id);
-  return resolved;
+  return { slots, notes: ctx.notes };
+}
+
+/** Slot models only (see resolveSlotPlan). Kept for callers that pass a bare catalog. */
+export function resolveSlots(def: WorkflowDefinition, selection: WorkflowSelection | undefined, values: WorkflowValues, catalog?: PlanEnv["catalog"]): Record<string, ResolvedSlot> {
+  return resolveSlotPlan(def, selection, values, catalog ? { catalog } : undefined).slots;
 }
 
 /** Refuses more reference images than the chosen model takes (when its adapter says). */
@@ -181,3 +237,4 @@ export function checkReferenceLimit(env: PlanEnv, model: string, count: number, 
   const max = env.catalog(model)?.params.maxReferenceImages;
   if (max !== undefined && count > max) throw inputError(field, model + " takes at most " + max + " reference images");
 }
+

@@ -43,6 +43,15 @@ export async function createWorkflowGateway(deps: MediaRunnerDeps, extras: Gatew
       const model = deps.registry.getModel(modelId);
       return model ? pick(model, keys, undefined)?.spec : undefined;
     },
+    canRun(modelId: string, route: string | undefined): boolean {
+      const session = route ? extras.sessionRoutes?.[route] : undefined;
+      const model = deps.registry.getModel(modelId);
+      if (!model) return false;
+      // A session route is offered when its adapter lists the model; sign-in is checked when the step opens it.
+      if (session) return model.candidates.some((c) => c.adapter.id === session.adapterId);
+      const chosen = pick(model, keys, route);
+      return chosen ? keys.hasKey(chosen.adapter) : false;
+    },
     async resolve(modelId: string, route: string | undefined): Promise<ResolvedRoute> {
       const session = route ? extras.sessionRoutes?.[route] : undefined;
       if (session) return resolveSession(deps, modelId, route!, session, fetchImpl);
