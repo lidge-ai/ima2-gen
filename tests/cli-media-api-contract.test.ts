@@ -5,7 +5,11 @@ import { once } from "node:events";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Ajv } from "ajv";
+import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
 import { normalizeMediaBody, filterCatalog, publicCatalog, uploadInputs, submitMedia, waitJob, result, history, workflowRun } from "../bin/lib/mediaApi.js";
+import { buildMediaToolDescriptors } from "../lib/providers/media/toolSchema.js";
+import { parseMediaJobBody } from "../lib/providers/media/validate.js";
 
 async function fake(handler: (req: IncomingMessage, res: ServerResponse) => void) {
   const server = createServer(handler);
@@ -46,7 +50,7 @@ test("duplicate request IDs and server failures never submit", async () => {
   } finally { server.close(); }
 });
 
-test("wait timeout and result status are reported", async () => {
+test("wait timeout returns the job status and result status is reported", async () => {
   let status = "running";
   const server = await fake((req, res) => {
     if (req.url === "/api/events") { res.writeHead(200, { "content-type": "text/event-stream" }); res.write(": connected\n\n"); return; }
@@ -54,11 +58,67 @@ test("wait timeout and result status are reported", async () => {
     json(res, { requestId: "a", status });
   });
   try {
-    await assert.rejects(waitJob(server.base, "a", { timeoutMs: 30 }), { code: "MEDIA_WAIT_TIMEOUT" });
+    const waited = await waitJob(server.base, "a", { timeoutMs: 30 });
+    assert.equal(waited.timedOut, true);
+    assert.equal(waited.pollAfterSeconds, 5);
     await assert.rejects(result(server.base, "a"), { code: "MEDIA_RESULT_PENDING" });
     status = "done";
     await assert.rejects(result(server.base, "a"), { code: "MEDIA_RESULT_MISSING" });
   } finally { server.close(); }
+});
+
+test("wait returns the job status when the job fails", async () => {
+  let stream: ServerResponse | undefined;
+  let status = "running";
+  const server = await fake((req, res) => {
+    if (req.url === "/api/events") {
+      stream = res; res.writeHead(200, { "content-type": "text/event-stream" }); res.write(": ready\n\n");
+      setTimeout(() => { status = "error"; stream?.write('event: error\ndata: {"jobId":"a","code":"BYTEPLUS_REAL_PERSON_BLOCKED","error":"blocked","category":"moderation"}\n\n'); }, 20);
+      return;
+    }
+    json(res, { job: { requestId: "a", status } });
+  });
+  try {
+    const waited = await waitJob(server.base, "a", { timeoutMs: 2000 });
+    assert.equal(waited.pollAfterSeconds, 0);
+    assert.equal(waited.timedOut, undefined);
+  } finally { server.close(); }
+});
+
+test("a recently finished request ID is refused without posting", async () => {
+  let posts = 0;
+  const server = await fake((req, res) => {
+    if (req.method === "POST") { posts++; json(res, {}); return; }
+    if (req.url?.startsWith("/api/media/jobs/")) return json(res, { job: { requestId: "done-1", status: "completed" } });
+    json(res, { items: [] });
+  });
+  try {
+    await assert.rejects(submitMedia(server.base, { model: "m", task: "text-to-image" }, { requestId: "done-1", wait: false, timeoutMs: 100 }), { code: "REQUEST_ID_IN_USE" });
+    assert.equal(posts, 0);
+  } finally { server.close(); }
+});
+
+test("every parser-accepted body passes the published schema after client normalization", () => {
+  const estimate = buildMediaToolDescriptors([]).find((tool) => tool.name === "media_estimate");
+  assert.ok(estimate);
+  const check = new AjvJsonSchemaValidator(new Ajv({ strict: false })).getValidator(estimate.inputSchema as never);
+  const base = { model: "m", task: "text-to-image" };
+  const accepted: Record<string, unknown>[] = [
+    { ...base, seed: "", count: "", durationSec: "", prompt: null, adapter: "", audio: null, vendorOptions: null, inputs: null },
+    { ...base, durationSec: -1, prompt: "x".repeat(20000) },
+    { ...base, inputs: [{ role: "source-image", ref: "", url: "HTTPS://example.test/a.png" }] },
+    { ...base, inputs: [{ role: "reference-image", url: "asset://abc_1", mimeType: "" }] },
+    { ...base, inputs: [{ role: "source-image", dataUrl: "data:image/png;base64,YQ==", filename: "" }] },
+    { ...base, inputs: Array.from({ length: 16 }, () => ({ role: "reference-image", filename: "a.png" })) },
+  ];
+  for (const body of accepted) {
+    assert.doesNotThrow(() => parseMediaJobBody(body), JSON.stringify(body).slice(0, 80));
+    const normalized = normalizeMediaBody(body);
+    assert.equal(check(normalized).valid, true, JSON.stringify(normalized).slice(0, 120));
+    const withoutInputs = (value: Record<string, unknown>) => { const { inputs: _inputs, ...rest } = value; return rest; };
+    assert.deepEqual(withoutInputs({ ...parseMediaJobBody(normalized) }), withoutInputs({ ...parseMediaJobBody(body) }));
+  }
+  assert.deepEqual(normalizeMediaBody({ ...base, inputs: [{ role: "source-image", dataUrl: "", ref: "input:a.png" }] }).inputs, [{ role: "source-image", ref: "input:a.png" }]);
 });
 
 test("history follows cursors through non-media pages", async () => {
@@ -125,7 +185,7 @@ test("normalization retains parser boundary samples", () => {
   for (const input of [
     { role: "source", url: "HTTPS://example.test/a", ref: null, mimeType: "" },
     { role: "source", ref: "asset://abc_1", url: "" },
-    { role: "source", data: "data:image/png;base64,YQ==" },
+    { role: "source", dataUrl: "data:image/png;base64,YQ==" },
   ]) assert.deepEqual(normalizeMediaBody({ model: "m", task: "t", prompt: null, inputs: [input] }).inputs, [Object.fromEntries(Object.entries(input).filter(([, v]) => v !== null && v !== ""))]);
   assert.deepEqual(normalizeMediaBody({ model: "", task: "", inputs: null }), { model: "", task: "" });
   assert.equal((normalizeMediaBody({ model: "m", prompt: "x".repeat(20000), inputs: Array(16).fill({ role: "source", ref: "asset://abc_1" }), durationSec: -1 }).inputs as unknown[]).length, 16);
