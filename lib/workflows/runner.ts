@@ -4,10 +4,10 @@ import { inputError, toErrorInfo, WorkflowError } from "./errors.js";
 import { DEFAULT_POLL_POLICY, isAbort, runMediaStep, type PollPolicy } from "./mediaStep.js";
 import { ArtifactStore, createStepRuntime } from "./runtime.js";
 import type {
-  ResolvedSlot, StepSummary, WorkflowArtifact, WorkflowDefinition, WorkflowEstimate, WorkflowEvent,
+  PlanEnv, PlanNote, ResolvedSlot, StepSummary, WorkflowArtifact, WorkflowDefinition, WorkflowEstimate, WorkflowEvent,
   WorkflowGateway, WorkflowLocalOps, WorkflowPlan, WorkflowSelection, WorkflowStep, WorkflowValues, WorkflowResult,
 } from "./types.js";
-import { probeMediaValues, resolveSlots, validateValues } from "./validate.js";
+import { probeMediaValues, resolveSlotPlan, validateValues } from "./validate.js";
 
 export interface WorkflowDeps {
   gateway: WorkflowGateway;
@@ -22,13 +22,16 @@ export interface PreparedWorkflow {
   slots: Readonly<Record<string, ResolvedSlot>>;
   plan: WorkflowPlan;
   estimate: WorkflowEstimate;
+  /** Slot fallbacks, skipped optional steps and missing keys, for the UI before a run. */
+  notes: readonly PlanNote[];
 }
 
 function readSelection(raw: unknown): WorkflowSelection | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== "object" || Array.isArray(raw)) throw inputError("selection", "must be an object");
-  const { models, routes, ...rest } = raw as Record<string, unknown>;
-  if (Object.keys(rest).length > 0) throw inputError("selection", "only models and routes are accepted");
+  const { combo, models, routes, ...rest } = raw as Record<string, unknown>;
+  if (Object.keys(rest).length > 0) throw inputError("selection", "only combo, models and routes are accepted");
+  if (combo !== undefined && typeof combo !== "string") throw inputError("selection.combo", "must be a string");
   const map = (name: string, value: unknown): Readonly<Record<string, string>> | undefined => {
     if (value === undefined) return undefined;
     if (!value || typeof value !== "object" || Object.values(value).some((v) => typeof v !== "string")) {
@@ -37,6 +40,7 @@ function readSelection(raw: unknown): WorkflowSelection | undefined {
     return value as Record<string, string>;
   };
   const selection: WorkflowSelection = {};
+  if (typeof combo === "string") selection.combo = combo;
   const m = map("models", models);
   const r = map("routes", routes);
   if (m) selection.models = m;
@@ -63,11 +67,15 @@ export async function prepareWorkflow(definition: WorkflowDefinition, request: u
   if (Object.keys(rest).length > 0) throw inputError(Object.keys(rest)[0] ?? "request", "is not accepted");
   const checked = await validateValues(definition, rawValues ?? {}, { allowedRoots: deps.allowedRoots });
   const values = await probeMediaValues(definition, checked, deps.local, signal);
-  const env = { catalog: (id: string) => deps.gateway.catalog(id) };
-  const slots = resolveSlots(definition, readSelection(rawSelection), values, env.catalog);
+  const env: PlanEnv = {
+    catalog: (id: string) => deps.gateway.catalog(id),
+    canPlanText: typeof deps.gateway.planText === "function",
+    ...(deps.gateway.canRun ? { canRun: (id: string, route: string | undefined) => deps.gateway.canRun!(id, route) } : {}),
+  };
+  const { slots, notes: slotNotes } = resolveSlotPlan(definition, readSelection(rawSelection), values, env);
   const plan = definition.plan(values, slots, env);
   checkPlan(plan);
-  return { definition, values, slots, plan, estimate: estimatePlan(plan, env) };
+  return { definition, values, slots, plan, estimate: estimatePlan(plan, env), notes: [...slotNotes, ...(plan.notes ?? [])] };
 }
 
 export function summarizeSteps(plan: WorkflowPlan): StepSummary[] {
@@ -108,7 +116,7 @@ export async function runWorkflow(options: RunOptions): Promise<WorkflowResult> 
   const store = new ArtifactStore(options.workDir);
   const secrets: string[] = [];
   const poll: PollPolicy = { ...DEFAULT_POLL_POLICY, ...options.poll };
-  emit({ type: "workflow.planned", runId, workflowId: prepared.plan.workflowId, estimate: prepared.estimate, steps: summarizeSteps(prepared.plan) });
+  emit({ type: "workflow.planned", runId, workflowId: prepared.plan.workflowId, estimate: prepared.estimate, steps: summarizeSteps(prepared.plan), notes: prepared.notes });
   const runStep = async (step: WorkflowStep): Promise<void> => {
     emit({ type: "step.started", runId, stepId: step.id });
     const rt = createStepRuntime(step, { values: prepared.values, workDir: options.workDir, signal: internal.signal, local: deps.local, gateway: deps.gateway, store });
@@ -178,4 +186,5 @@ async function schedule(plan: WorkflowPlan, runStep: (s: WorkflowStep) => Promis
     }
   }
 }
+
 

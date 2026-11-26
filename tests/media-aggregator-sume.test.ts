@@ -149,3 +149,15 @@ test("sume discoverModels adds router models the catalog does not name, routable
   assert.deepEqual(extra.map((spec) => spec.id), ["sume/video/brand-new-video"]);
   await adapter.submit(ctx(fetch), request({ model: "sume/video/brand-new-video" }));
 });
+
+test("sume image edits send the source first and its references after it in image_urls", async () => {
+  const { fetch, calls } = fakeFetch([[`${API}/v1/image-router/generate`, () => json(receipt, 202)]]);
+  await adapter.submit(ctx(fetch), request({
+    model: "bytedance/seedream-5.5", task: "image-to-image", prompt: "put image 2 into image 1",
+    inputs: [
+      { role: "reference-image", url: "https://x.test/ref.png", mimeType: "image/png" },
+      { role: "source-image", url: "https://x.test/frame.png", mimeType: "image/png" },
+    ],
+  }));
+  assert.deepEqual((calls[0].body as { image_urls: string[] }).image_urls, ["https://x.test/frame.png", "https://x.test/ref.png"]);
+});

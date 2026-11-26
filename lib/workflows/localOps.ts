@@ -102,7 +102,25 @@ async function concat(paths: readonly string[], outPath: string, signal: AbortSi
 }
 
 export function createFfmpegLocalOps(): WorkflowLocalOps {
-  return { probe, frame, muxAudio, concat, cut };
+  return { probe, frame, muxAudio, concat, cut, scenes };
+}
+
+/**
+ * Shot-cut times in seconds: ffmpeg's scene score above threshold (0-1), read from showinfo
+ * on stderr. A single-shot clip returns [].
+ */
+async function scenes(videoPath: string, threshold: number, signal: AbortSignal): Promise<number[]> {
+  if (!(threshold > 0 && threshold < 1)) throw new WorkflowError("WORKFLOW_LOCAL_STEP_FAILED", "scene threshold must be between 0 and 1", { status: 500 });
+  let stderr = "";
+  try {
+    const result = await exec("ffmpeg", ["-hide_banner", "-i", videoPath, "-an", "-filter:v", "select='gt(scene," + threshold + ")',showinfo", "-f", "null", "-"], {
+      signal, timeout, killSignal: process.platform === "win32" ? "SIGTERM" : "SIGKILL", maxBuffer: 16 * 1024 * 1024,
+    });
+    stderr = result.stderr;
+  } catch (error) {
+    translate(error, signal);
+  }
+  return [...stderr.matchAll(/pts_time:([0-9.]+)/g)].map((m) => Number(m[1])).filter((t) => Number.isFinite(t));
 }
 
 /** Frame-accurate cut: seek before the input, re-encode, drop audio (the edit model replaces it). */
