@@ -1662,7 +1662,7 @@ Run these commands against a running ima2 server. Use `--server URL` to select i
 | `ima2 media workflow ID --schema` | Inspect workflow inputs | No |
 | `ima2 media workflow ID --estimate` | Estimate workflow steps | No |
 | `ima2 media workflow ID` | Run a workflow | Yes |
-| `ima2 media studios`, `studio open NAME`, `studio default NAME` | List studios, open one or set the default | No |
+| `ima2 media studios`, `studio open NAME [--no-open]`, `studio default NAME` | List studios, open one (`--no-open` prints the URL only) or set the default | No |
 | `ima2 media tools` | List tool descriptors | No |
 
 Discover a model, estimate, then submit and inspect the job:
@@ -1694,6 +1694,7 @@ ima2 media workflow WORKFLOW_ID --input name=value --estimate
 ima2 media workflow WORKFLOW_ID --input name=value --request-id workflow-001 --no-wait
 ima2 media studios
 ima2 media studio open NAME
+ima2 media studio open NAME --no-open   # print the URL, do not launch a browser
 ima2 media studio default NAME
 ```
 

@@ -355,7 +355,7 @@ Full reference: [docs/CLI.md](docs/CLI.md).
 | `ima2 media workflow ID --schema` | Inspect workflow inputs |
 | `ima2 media workflow ID --estimate` | Estimate a workflow |
 | `ima2 media workflow ID` | Run a billed workflow |
-| `ima2 media studios`, `studio open NAME`, `studio default NAME` | List, open or select a studio |
+| `ima2 media studios`, `studio open NAME [--no-open]`, `studio default NAME` | List, open (or only print the URL) or select a studio |
 | `ima2 media tools` | List tool descriptors |
 
 Secrets are read from stdin. `models --max-usd` filters listed prices; it is not a spending limit. Run `ima2 media --help` for options.
