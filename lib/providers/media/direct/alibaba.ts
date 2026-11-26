@@ -148,7 +148,7 @@ export const adapter: MediaProviderAdapter = {
   credential: { keyVocabulary: "alibaba", envVars: ["DASHSCOPE_API_KEY"], configKey: "alibabaApiKey", consoleUrl: "https://modelstudio.console.alibabacloud.com/", extraFields: [{ name: "region", envVar: "DASHSCOPE_REGION", secret: false, required: false }] },
   inputTransport: "inline", listModels: () => models, submit, poll,
   async validateKey(ctx) {
-    try { const result = await call(ctx, "/api/v1/models"); return result.success === true ? { ok: true } : { ok: false, reason: "Unexpected model-list response" }; }
+    try { const result = await call(ctx, "/api/v1/models"); return result.success === true && Array.isArray(asRecord(result.output).models) ? { ok: true } : { ok: false, reason: "Unexpected model-list response" }; }
     catch (error) { return { ok: false, reason: redactSecrets(normalizeUnknownError(PREFIX, error).message, contextSecrets(ctx)) }; }
   },
   normalizeError(error) {

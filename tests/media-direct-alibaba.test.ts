@@ -74,11 +74,22 @@ test("rejects unknown options, unsupported tasks and parameters", async () => {
   assert.equal(calls.length, 0);
 });
 
-test("validateKey uses a non-generation model-list request", async () => {
+test("validateKey uses the documented model list on the shared Singapore host without generation", async () => {
   const { ctx, calls } = fake({ success: true, output: { models: [] } });
-  assert.deepEqual(await adapter.validateKey(ctx), { ok: true });
-  assert.equal(calls[0]?.url, `${baseUrl}/api/v1/models`);
+  const { baseUrl: _unused, ...sharedCtx } = ctx;
+  assert.deepEqual(await adapter.validateKey(sharedCtx), { ok: true });
+  assert.equal(calls[0]?.url, "https://dashscope-intl.aliyuncs.com/api/v1/models");
   assert.equal(calls[0]?.init.method, "GET");
+  assert.equal((calls[0]?.init.headers as Record<string, string>).Authorization, `Bearer ${ctx.apiKey}`);
+});
+
+test("validateKey rejects HTTP errors and malformed successful responses", async () => {
+  for (const [body, status] of [[{ code: "InvalidApiKey", message: "sk-private-test-key" }, 401], [{ code: "NotFound", message: "not found" }, 404], [{ success: true }, 200], [{}, 200]] as const) {
+    const { ctx } = fake(body, status);
+    const result = await adapter.validateKey(ctx);
+    assert.equal(result.ok, false);
+    assert.doesNotMatch(JSON.stringify(result), /sk-private-test-key/);
+  }
 });
 
 test("image and reference video map their media and task-specific HappyHorse wire IDs", async () => {
