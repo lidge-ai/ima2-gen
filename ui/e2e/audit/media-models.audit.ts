@@ -190,7 +190,7 @@ for (const locale of LOCALES) {
         await expect(actions).toBeVisible();
         await stage.shot("result");
         await actions.locator(".action-btn", { hasText: /Info|정보/ }).first().click();
-        await expect(app.page.locator(".metadata-modal")).toBeVisible();
+        await expect(app.page.locator("[aria-labelledby=metadata-modal-title]")).toBeVisible();
         await stage.shot("result-details");
         await app.page.keyboard.press("Escape");
         await actions.locator(".action-btn", { hasText: /Make again|다시 만들기/ }).first().click();
