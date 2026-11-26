@@ -110,6 +110,7 @@ code {
   color: var(--text-muted);
 }
 .muted-link {
+  min-height: 24px;
   color: var(--text-muted);
   text-decoration: none;
   display: inline-flex;
@@ -296,7 +297,8 @@ code {
   color: var(--green);
 }
 .status-pill.is-failed {
-  color: var(--red);
+  /* --red is 3.7:1 on the pill surface; this tint keeps the hue at 6.7:1 (WCAG 1.4.3). */
+  color: #ff8a8a;
 }
 
 @media (prefers-reduced-motion: reduce) {
