@@ -84,3 +84,22 @@
     width: 100%;
   }
 }
+
+.key-row > *,
+.key-info h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.key-info a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.key-new-tab {
+  font-size: 12px;
+}
+.key-result-error {
+  color: var(--danger, #ff9b9b);
+  overflow-wrap: anywhere;
+}
