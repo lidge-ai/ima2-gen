@@ -10,11 +10,11 @@ const rows = [
   ["eleven-turbo-v2.5", "eleven_turbo_v2_5", 0.04],
 ] as const;
 const models: MediaModelSpec[] = rows.map(([slug, upstreamId, price]) => ({
-  id: `elevenlabs/${slug}`, upstreamId, vendor: "ElevenLabs", label: slug, kind: "audio", tasks: ["text-to-audio"], params: {},
+  id: `elevenlabs/${slug}`, upstreamId, vendor: "elevenlabs", label: slug, kind: "audio", tasks: ["text-to-audio"], params: {},
   pricing: [{ unit: "character", usd: price / 1000, variant: `$${price} per 1K characters`, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: docs,
 }));
-models.push({ id: "elevenlabs/elevenlabs-music-2.5", upstreamId: "music_v2_5", vendor: "ElevenLabs", label: "Eleven Music 2.5", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [{ unit: "minute", usd: 0.15, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: "https://elevenlabs.io/docs/api-reference/music/compose" });
-models.push({ id: "elevenlabs/eleven-text-to-sound-v3", upstreamId: "eleven_text_to_sound_v3", vendor: "ElevenLabs", label: "Eleven Sound Effects v3", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [{ unit: "minute", usd: 0.12, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: "https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert" });
+models.push({ id: "elevenlabs/elevenlabs-music-2.5", upstreamId: "music_v2_5", vendor: "elevenlabs", label: "Eleven Music 2.5", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [{ unit: "minute", usd: 0.15, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: "https://elevenlabs.io/docs/api-reference/music/compose" });
+models.push({ id: "elevenlabs/eleven-text-to-sound-v3", upstreamId: "eleven_text_to_sound_v3", vendor: "elevenlabs", label: "Eleven Sound Effects v3", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [{ unit: "minute", usd: 0.12, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: "https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert" });
 const formats = ["mp3_44100_128", "mp3_44100_192", "mp3_22050_32", "wav_24000"] as const;
 function headers(ctx: MediaAdapterContext): Record<string, string> { return { "xi-api-key": ctx.apiKey }; }
 function base(ctx: MediaAdapterContext): string { return (ctx.baseUrl ?? "https://api.elevenlabs.io").replace(/\/$/, ""); }
@@ -60,6 +60,7 @@ async function safe<T>(ctx: MediaAdapterContext, work: () => Promise<T>): Promis
     if (error instanceof MediaHttpError) {
       throw new MediaHttpError({ message: redact(error.message, [ctx.apiKey]), reason: error.reason, category: error.category, retryable: error.retryable, ...(error.status === undefined ? {} : { status: error.status }) });
     }
+    // eslint-disable-next-line preserve-caught-error -- the original error can carry the key; it is rebuilt scrubbed.
     if (error instanceof TypeError) throw new TypeError("Network request failed");
     const sanitized = new Error("Provider request failed");
     if (error instanceof Error) sanitized.name = error.name;
@@ -75,5 +76,6 @@ export const adapter: MediaProviderAdapter = {
     catch (error) { if (error instanceof MediaHttpError && (error.status === 401 || error.status === 403)) return { ok: false, reason: "Invalid or unauthorized key" }; throw error; }
   }); },
   async submit(ctx, request) { return safe(ctx, () => submit(ctx, request)); }, async poll(_ctx, job) { return takeSyncResult(prefix, job); },
-  normalizeError(error) { const result = normalizeMediaError(prefix, error instanceof MediaHttpError ? error : new Error("ElevenLabs request failed")); return { ...result, message: "Provider request failed" }; },
+  // Messages are scrubbed where they are raised (safe, httpRaw); keep the vendor detail.
+  normalizeError: (error) => normalizeMediaError(prefix, error),
 };

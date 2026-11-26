@@ -11,6 +11,7 @@ function safeContext(ctx: MediaAdapterContext): MediaAdapterContext {
     try { return await ctx.fetch(input, init); }
     catch (error) {
       const message = redact(error instanceof Error ? error.message : String(error), contextSecrets(ctx));
+      // eslint-disable-next-line preserve-caught-error -- the original error can carry the key; it is rebuilt scrubbed.
       if (error instanceof TypeError) throw new TypeError(message);
       const safe = new Error(message);
       if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) safe.name = error.name;
@@ -100,10 +101,6 @@ export const adapter: MediaProviderAdapter = {
     throw protocolError("Topaz returned an unknown status");
   },
   async cancel(ctx, job) { ctx = safeContext(ctx); await httpRaw(ctx, "Topaz cancel", path(ctx, job.providerJobId), { method: "DELETE", headers: headers(ctx) }); },
-  normalizeError(error) {
-    if (error instanceof MediaHttpError) return normalizeMediaError(prefix, error);
-    const safe = error instanceof TypeError ? new TypeError("Topaz network error") : new Error("Topaz request failed");
-    if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) safe.name = error.name;
-    return normalizeMediaError(prefix, safe);
-  },
+  // safeContext and httpRaw scrub the key where errors are raised; keep the detail.
+  normalizeError: (error) => normalizeMediaError(prefix, error),
 };

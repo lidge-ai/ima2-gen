@@ -4,7 +4,7 @@ import { assertAllowed, findModel, httpRaw, invalidRequest, MediaHttpError, norm
 const prefix = "CARTESIA";
 const docs = "https://docs.cartesia.ai/api-reference/tts/bytes";
 const models: MediaModelSpec[] = ["sonic-3.6", "sonic-3.5", "sonic-3"].map((id) => ({
-  id: `cartesia/${id}`, upstreamId: id, label: id, vendor: "Cartesia", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [], docsUrl: docs,
+  id: `cartesia/${id}`, upstreamId: id, label: id, vendor: "cartesia", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [], docsUrl: docs,
 }));
 function base(ctx: MediaAdapterContext): string { return (ctx.baseUrl ?? "https://api.cartesia.ai").replace(/\/$/, ""); }
 function headers(ctx: MediaAdapterContext): Record<string, string> { return { Authorization: `Bearer ${ctx.apiKey}`, "Cartesia-Version": "2026-08-14" }; }
@@ -26,6 +26,7 @@ async function safe<T>(ctx: MediaAdapterContext, work: () => Promise<T>): Promis
     if (error instanceof MediaHttpError) {
       throw new MediaHttpError({ message: redact(error.message, [ctx.apiKey]), reason: error.reason, category: error.category, retryable: error.retryable, ...(error.status === undefined ? {} : { status: error.status }) });
     }
+    // eslint-disable-next-line preserve-caught-error -- the original error can carry the key; it is rebuilt scrubbed.
     if (error instanceof TypeError) throw new TypeError("Network request failed");
     const sanitized = new Error("Provider request failed");
     if (error instanceof Error) sanitized.name = error.name;
@@ -41,5 +42,6 @@ export const adapter: MediaProviderAdapter = {
     catch (error) { if (error instanceof MediaHttpError && (error.status === 401 || error.status === 403)) return { ok: false, reason: "Invalid or unauthorized key" }; throw error; }
   }); },
   async submit(ctx, request) { return safe(ctx, () => submit(ctx, request)); }, async poll(_ctx, job) { return takeSyncResult(prefix, job); },
-  normalizeError(error) { const result = normalizeMediaError(prefix, error instanceof MediaHttpError ? error : new Error("Cartesia request failed")); return { ...result, message: "Provider request failed" }; },
+  // Messages are scrubbed where they are raised (safe, httpRaw); keep the vendor detail.
+  normalizeError: (error) => normalizeMediaError(prefix, error),
 };
