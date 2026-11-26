@@ -268,3 +268,24 @@ test("removing an email from the allow list ends its existing sessions", async t
   const narrowed = await withApp(t, { IMA2_WEB_ALLOWED_EMAILS: "someone-else@example.test" });
   assert.equal((await narrowed.call("/api/health", { headers: { cookie: sessionCookie } })).status, 401);
 });
+
+test("a same-origin form POST from a no-referrer page (Origin: null) can log out; cross-site cannot", async t => {
+  const h = await withApp(t);
+  const { sessionCookie } = await login(h);
+  const post = (headers: Record<string, string>) => h.call("/auth/logout", { method: "POST", headers: { cookie: sessionCookie, ...headers } });
+  assert.equal((await post({ origin: "null", "sec-fetch-site": "cross-site" })).status, 403);
+  assert.equal((await post({ origin: "null" })).status, 403);
+  assert.equal((await h.call("/api/health", { headers: { cookie: sessionCookie } })).status, 200);
+  const out = await post({ origin: "null", "sec-fetch-site": "same-origin" });
+  assert.equal(out.status, 303);
+  assert.equal((await h.call("/api/health", { headers: { cookie: sessionCookie } })).status, 401);
+});
+
+test("writes with Origin: null pass only with Sec-Fetch-Site: same-origin", async t => {
+  const h = await withApp(t);
+  const { sessionCookie } = await login(h);
+  const post = (headers: Record<string, string>) => h.call("/api/sessions", { method: "POST", headers: { cookie: sessionCookie, ...headers } });
+  assert.equal((await post({ origin: "null", "sec-fetch-site": "same-site" })).status, 403);
+  assert.equal((await post({ origin: "null", "sec-fetch-site": "same-origin" })).status, 200);
+  assert.equal((await post({ origin: "https://evil.example", "sec-fetch-site": "same-origin" })).status, 403);
+});
