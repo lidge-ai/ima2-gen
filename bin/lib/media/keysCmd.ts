@@ -46,7 +46,7 @@ export async function keyCommand(base: string, args: ParsedArgs): Promise<unknow
   const input = await readInput(args);
   if (action === "set" && !args["key-stdin"] && !args["stdin-json"]) throw new Error("keys set requires stdin");
   const secrets = [input.apiKey ?? "", ...Object.values(input.extra ?? {})].filter(Boolean);
-  if (action === "validate" && secrets.some((secret) => secret.length < 6)) throw new MediaApiError("KEY_TOO_SHORT", "Credential is too short");
+  if (action === "validate" && input.apiKey && input.apiKey.length < 6) throw new MediaApiError("KEY_TOO_SHORT", "Credential is too short");
   const body = { ...(input.apiKey !== undefined && { apiKey: input.apiKey }), extra: { ...input.extra, ...extra } };
   try {
     if (action === "validate") return scrubValue(await validateKey(base, name, body), secrets);

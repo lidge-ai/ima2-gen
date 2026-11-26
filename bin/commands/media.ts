@@ -41,6 +41,7 @@ function validate(argv: string[], args: ParsedArgs): void {
   if (args._unknown.length) throw new Error(`Unknown option: ${args._unknown.join(", ")}`);
   if (argv.some((arg) => arg.startsWith("--yes="))) throw new Error("--yes does not take a value");
   const sub = args.positional[0] ?? "";
+  if (sub === "keys" && args.yes && args.positional[1] !== "delete") throw new Error("--yes requires keys delete");
   for (const flag of args._present) if (!["server", "json", "help", ...(ALLOWED[sub] ?? [])].includes(flag)) throw new Error(`Invalid --${flag} for ${sub}`);
 }
 async function workflow(base: string, id: string, args: ParsedArgs): Promise<unknown> {
