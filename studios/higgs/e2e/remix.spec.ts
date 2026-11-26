@@ -4,7 +4,7 @@ test("remix switches modes and subscription variants", async ({ page }) => {
   await page.goto("/#/remix/remix-motion-transfer");
   await expect(page.getByRole("heading", { name: "Remix: motion transfer", exact: true })).toBeVisible();
   await expect(page.getByText(/4-15 second clip/).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: /Reference images 1/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reference images", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Object swap" }).click();
   await expect(page).toHaveURL(/#\/remix\/remix-object-swap$/);
   await expect(page.getByLabel("What to replace")).toBeVisible();

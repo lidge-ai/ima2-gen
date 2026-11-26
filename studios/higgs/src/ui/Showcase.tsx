@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { ShowcaseItem, WorkflowDef } from "@ima2/studio-kit";
 import { messages, useLocale, useT } from "../i18n.ts";
 import { href, navigate } from "../router.ts";
@@ -27,6 +27,7 @@ const M = messages(
     signIn: "Uses your {plans} sign-in",
     unavailable: "This workflow is not on this server",
     play: "Play {title}",
+    details: "Details for {title}",
     all: "All {count} clips",
   },
   {
@@ -46,6 +47,7 @@ const M = messages(
     signIn: "{plans} 로그인으로 실행",
     unavailable: "이 서버에 없는 워크플로예요",
     play: "{title} 재생",
+    details: "{title} 자세히 보기",
     all: "영상 {count}개 모두 보기",
   },
 );
@@ -169,8 +171,51 @@ function Tile({ item }: { item: ShowcaseItem }) {
     if (item.source) handOff({ url: item.source, mimeType: "video/mp4", name: item.id + "-source.mp4", target: "remix", ...(item.values ? { values: item.values } : {}) });
     navigate("remix/" + workflow.id);
   };
+  // Details sit over the clip: open while hovered or while focus is inside (keyboard), toggled by
+  // tapping the clip on touch screens, and Escape hides them until the pointer or focus leaves.
+  const [open, setOpen] = useState(false);
+  const [quiet, setQuiet] = useState(false);
+  const detailsId = useId();
+  const [pointer, setPointer] = useState(false);
+  // Hover content must close without moving the pointer (WCAG 1.4.13): while the pointer is over
+  // the tile, Escape anywhere hides the details until the pointer leaves.
+  useEffect(() => {
+    if (!pointer) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setQuiet(true);
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pointer]);
+  const cls = ["showcase-tile", open ? "is-open" : "", quiet ? "is-quiet" : "", compare ? "is-comparing" : ""].filter(Boolean).join(" ");
   return (
-    <article className="showcase-tile" ref={ref} aria-label={title} {...bind}>
+    <article
+      className={cls}
+      ref={ref}
+      aria-label={title}
+      {...bind}
+      onMouseEnter={() => {
+        bind.onMouseEnter();
+        setPointer(true);
+      }}
+      onMouseLeave={() => {
+        bind.onMouseLeave();
+        setPointer(false);
+        setQuiet(false);
+      }}
+      onBlur={(event) => {
+        bind.onBlur();
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setQuiet(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || pointer) return;
+        setQuiet(true);
+        setOpen(false);
+      }}
+    >
       <div className={"showcase-media" + (compare && !item.compare && item.source ? " is-compare" : "")}>
         {compare && item.compare ? (
           <Clip src={item.compare} label={t("compare")} active={active || compare} />
@@ -188,29 +233,45 @@ function Tile({ item }: { item: ShowcaseItem }) {
         ) : (
           <Clip src={item.result} poster={item.poster} label={t("play", { title })} active={active} />
         )}
+        <button
+          type="button"
+          className="showcase-peek"
+          aria-expanded={open}
+          aria-controls={detailsId}
+          onClick={() => {
+            setQuiet(false);
+            setOpen(!open);
+          }}
+        >
+          <span className="visually-hidden">{t("details", { title })}</span>
+        </button>
       </div>
       <div className="showcase-body">
         <h3>{title}</h3>
-        <p className="showcase-models">
-          {item.models.slice(0, 2).map((id) => (
-            <ModelName key={id} id={id} />
-          ))}
-        </p>
-        <p className="showcase-cost" title={item.estimate?.basis}>
-          {costText(item, t)}
-        </p>
-        <NeedsLine item={item} workflow={workflow} />
-        <div className="showcase-actions">
-          <button type="button" className="btn btn-primary" onClick={make} disabled={!workflow} title={workflow ? undefined : t("unavailable")}>
-            <Icon name="remix" size={15} /> {t("make")}
-          </button>
-          {item.source || item.compare ? (
-            <button type="button" className="btn" aria-pressed={compare} onClick={() => setCompare(!compare)}>
-              {t("compare")}
-            </button>
-          ) : null}
+        <div className="showcase-details" id={detailsId}>
+          <div className="showcase-details-inner">
+            <p className="showcase-models">
+              {item.models.slice(0, 2).map((id) => (
+                <ModelName key={id} id={id} />
+              ))}
+            </p>
+            <p className="showcase-cost" title={item.estimate?.basis}>
+              {costText(item, t)}
+            </p>
+            <NeedsLine item={item} workflow={workflow} />
+            <div className="showcase-actions">
+              <button type="button" className="btn btn-primary" onClick={make} disabled={!workflow} title={workflow ? undefined : t("unavailable")}>
+                <Icon name="remix" size={15} /> {t("make")}
+              </button>
+              {item.source || item.compare ? (
+                <button type="button" className="btn" aria-pressed={compare} onClick={() => setCompare(!compare)}>
+                  {t("compare")}
+                </button>
+              ) : null}
+            </div>
+            {!workflow ? <p className="showcase-keys">{t("unavailable")}</p> : null}
+          </div>
         </div>
-        {!workflow ? <p className="showcase-keys">{t("unavailable")}</p> : null}
       </div>
     </article>
   );

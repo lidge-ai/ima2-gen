@@ -49,6 +49,7 @@ test("a subscription clip names the sign-in, not a key, and its zero cost as inc
   await expect(grok).toContainText("Uses your Grok sign-in");
   await expect(grok.getByRole("link")).toHaveCount(0);
   const mixed = showcase.getByRole("article", { name: "swap-mixed" });
+  await mixed.hover();
   await expect(mixed).toContainText("About $1.39 when it was made");
   await expect(mixed).toContainText("Uses your ChatGPT sign-in");
   await expect(mixed.getByRole("link", { name: "BytePlus ModelArk" })).toBeVisible();
@@ -126,4 +127,41 @@ test("a missing sign-in is named in words, next to what is already ready", async
   await expect(swap).toContainText("Needs: ChatGPT sign-in");
   await expect(swap).toContainText("Ready:");
   await expect(swap).not.toContainText("oauth");
+});
+
+test("clip details stay out of the way: hover, keyboard focus or a tap opens them, Escape closes them", async ({ page }) => {
+  const items = Array.from({ length: 6 }, (_, i) => ({
+    id: "clip-" + i,
+    title: { en: "Clip " + i },
+    workflow: "remix-object-swap",
+    result: "/generated/showcase-swap-result.mp4",
+    models: [],
+    keys: ["byteplus"],
+    estimate: { usd: 0.5 },
+  }));
+  await page.route("**/api/showcase", (route) => route.fulfill({ json: { items } }));
+  await page.goto("/#/");
+  const tile = page.getByRole("region", { name: "Made with ima2" }).getByRole("article", { name: "Clip 1" });
+  const details = tile.locator(".showcase-details");
+  const height = () => details.evaluate((el) => el.getBoundingClientRect().height);
+  await page.mouse.move(0, 0);
+  await expect(tile.getByRole("heading", { name: "Clip 1" })).toBeVisible();
+  await expect.poll(height).toBe(0);
+  await tile.hover();
+  await expect.poll(height).toBeGreaterThan(40);
+  await expect(tile.getByRole("link", { name: "BytePlus ModelArk" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect.poll(height).toBe(0);
+  await page.mouse.move(0, 0);
+  // Tap path: the clip itself toggles the details.
+  const peek = tile.getByRole("button", { name: "Details for Clip 1" });
+  await peek.click();
+  await expect(peek).toHaveAttribute("aria-expanded", "true");
+  await peek.click();
+  await expect(peek).toHaveAttribute("aria-expanded", "false");
+  await page.mouse.move(0, 0);
+  // Keyboard path: tabbing into the details (the key link comes first) opens them.
+  await page.keyboard.press("Tab");
+  await expect(tile.getByRole("link", { name: "BytePlus ModelArk" })).toBeFocused();
+  await expect.poll(height).toBeGreaterThan(40);
 });
