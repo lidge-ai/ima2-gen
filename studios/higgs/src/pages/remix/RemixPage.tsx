@@ -13,6 +13,8 @@ function useMotionSelection(form: WorkflowForm) {
   const pick = async (item: Preset) => {
     try {
       form.setError(null);
+      const input = form.def.inputs.find((entry) => entry.kind === "video");
+      if (!input) throw new Error("This workflow has no source video input");
       const response = await fetch(new URL(item.sample, document.baseURI));
       if (!response.ok || !response.headers.get("content-type")?.startsWith("video/"))
         throw new Error("Sample clip is unavailable");
@@ -22,7 +24,7 @@ function useMotionSelection(form: WorkflowForm) {
       const upload = await form.studio.upload(file);
       form.setFiles((old) => ({
         ...old,
-        source: [{ role: "source-video", upload, name: item.label }],
+        [input.name]: [{ role: input.role ?? "source-video", upload, name: item.label }],
       }));
       setSelected(item.id);
     } catch (err) {
@@ -109,6 +111,8 @@ function MotionLibrary({ form }: { form: WorkflowForm }) {
 
 function useRemixHandOff(form: WorkflowForm) {
   useEffect(() => {
+    const input = form.def.inputs.find((entry) => entry.kind === "video");
+    if (!input) return;
     const handoff = takeHandOff("remix");
     if (!handoff) return;
     void handOffFile(handoff)
@@ -116,22 +120,49 @@ function useRemixHandOff(form: WorkflowForm) {
       .then((upload) => {
         form.setFiles((old) => ({
           ...old,
-          source: [{ role: "source-video", upload, name: handoff.name }],
+          [input.name]: [{ role: input.role ?? "source-video", upload, name: handoff.name }],
         }));
       })
       .catch((err: unknown) => form.setError(err instanceof Error ? err.message : "Could not load video"));
-  }, [form.studio, form.setFiles, form.setError]);
+  }, [form.def, form.studio, form.setFiles, form.setError]);
 }
 
+const modes = [
+  { id: "remix-motion-transfer", label: "Motion transfer" },
+  { id: "remix-object-swap", label: "Object swap" },
+  { id: "remix-restyle", label: "Restyle" },
+];
+
 function RemixModes({ def, workflows }: { def: WorkflowDef; workflows: readonly WorkflowDef[] }) {
+  const base = def.id.replace(/-subscription$/, "");
+  const subscription = def.id.endsWith("-subscription");
+  const has = (id: string) => workflows.some((item) => item.id === id);
   return (
-    <nav className="remix-modes" aria-label="Remix workflow">
-      {workflows.map((item) => (
-        <a key={item.id} href={`#/remix/${item.id}`} aria-current={item.id === def.id ? "page" : undefined}>
-          {item.label}
-        </a>
-      ))}
-    </nav>
+    <>
+      <nav className="remix-modes" aria-label="Remix workflow">
+        {modes
+          .filter((mode) => has(mode.id) || has(mode.id + "-subscription"))
+          .map((mode) => (
+            <a
+              key={mode.id}
+              href={`#/remix/${subscription && has(mode.id + "-subscription") ? mode.id + "-subscription" : has(mode.id) ? mode.id : mode.id + "-subscription"}`}
+              aria-current={mode.id === base ? "page" : undefined}
+            >
+              {mode.label}
+            </a>
+          ))}
+      </nav>
+      {has(base) && has(base + "-subscription") ? (
+        <nav className="remix-modes" aria-label="Run on">
+          <a href={`#/remix/${base}`} aria-current={!subscription ? "page" : undefined}>
+            API keys
+          </a>
+          <a href={`#/remix/${base}-subscription`} aria-current={subscription ? "page" : undefined}>
+            Subscription
+          </a>
+        </nav>
+      ) : null}
+    </>
   );
 }
 
@@ -169,7 +200,7 @@ function RemixPanel({
             key={input.name}
             input={input}
             form={form}
-            optionalSwitch={input.kind === "text" && !input.required}
+            optionalSwitch={input.kind === "text" && !input.required && /^(notes|prompt)$/i.test(input.label)}
           />
         ))}
         <WorkflowParams def={def} form={form} />
@@ -251,7 +282,10 @@ export function RemixPage({ workflow }: { workflow?: string }) {
   const loaded = useStudio((s) => s.workflowsLoaded);
   const error = useStudio((s) => s.workflowsError);
   const workflows = all.filter((item) => item.family === "remix");
-  const def = workflows.find((item) => item.id === workflow) ?? workflows[0];
+  const def =
+    workflows.find((item) => item.id === workflow) ??
+    workflows.find((item) => item.id === modes[0]?.id) ??
+    workflows[0];
   if (error)
     return (
       <div className="empty" role="alert">

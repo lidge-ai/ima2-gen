@@ -5,6 +5,7 @@ import { JobCard } from "./JobCard.tsx";
 import { Lightbox } from "./Lightbox.tsx";
 import { MediaView } from "./MediaView.tsx";
 import { ModelName } from "./ModelName.tsx";
+import { historyWorkflow } from "../studio/historyWorkflow.ts";
 
 interface Props {
   kind?: MediaKind;
@@ -45,14 +46,16 @@ export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) 
   const jobs = useStudio((s) => s.jobOrder.map((id) => s.jobs[id]).filter((j): j is Job => !!j));
   const catalog = useStudio((s) => s.catalog);
   const history = useStudio((s) => s.history);
+  const jobsById = useStudio((s) => s.jobs);
   const cursor = useStudio((s) => s.historyCursor);
   const loaded = useStudio((s) => s.historyLoaded);
   const [open, setOpen] = useState<HistoryItem | null>(null);
   const kindOf = (model: string) => catalog?.models.find((m) => m.id === model)?.kind;
   const visibleJobs = jobs.filter((job) => jobMatches(job, kind, kindOf, workflow));
-  const items = history.filter((item) =>
-    workflow ? !!item.workflow && workflow(item.workflow) : (!kind || item.kind === kind) && !item.workflow,
-  );
+  const items = history.filter((item) => {
+    const id = historyWorkflow(item, jobsById);
+    return workflow ? !!id && workflow(id) : (!kind || item.kind === kind) && !id;
+  });
   if (loaded && visibleJobs.length === 0 && items.length === 0) return <>{empty}</>;
   return (
     <div className="feed">

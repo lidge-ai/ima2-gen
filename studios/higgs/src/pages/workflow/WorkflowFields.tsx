@@ -157,7 +157,6 @@ export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowF
     <div className="workflow-steps">
       <h3>Steps and estimated cost</h3>
       {def.steps.map((step) => {
-        const estimate = form.estimate?.steps.find((item) => item.id === step.id)?.estimate;
         return (
           <div className="workflow-step" key={step.id}>
             {step.modelChoices?.length ? (
@@ -168,6 +167,8 @@ export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowF
                   value: id,
                   label: form.catalog?.models.find((m) => m.id === id)?.label ?? id,
                   icon: <StepModelIcon id={id} form={form} />,
+                  disabled: step.available?.[id] === false,
+                  meta: step.available?.[id] === false ? "No route" : undefined,
                 }))}
                 onChange={(model) => form.setSteps((old) => ({ ...old, [step.id]: { model } }))}
               />
@@ -177,27 +178,44 @@ export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowF
                 {step.model ? <ModelName id={step.model} /> : null}
               </span>
             )}
-            <span className="muted">
-              {estimate
-                ? price(estimate)
-                : form.missing.length
-                  ? "Add required inputs to estimate"
-                  : form.estimateError
-                    ? "Estimate unavailable"
-                    : "Estimating"}
-            </span>
+            {step.rationale ? <p className="form-hint">{step.rationale}</p> : null}
           </div>
         );
       })}
-      {form.choices.map(({ step, choice }) =>
-        choice?.kind === "needs-key" && form.catalog ? (
+      <WorkflowCosts form={form} />
+      {form.choices.map(({ step, choice, available }) =>
+        available !== true && choice?.kind === "needs-key" && form.catalog ? (
           <KeyNotice key={step.id} routes={choice.candidates} providers={form.catalog.providers} />
-        ) : choice?.kind === "unavailable" || !choice ? (
+        ) : available === false || (available === undefined && (choice?.kind === "unavailable" || !choice)) ? (
           <p role="alert" key={step.id}>
             Model unavailable for {step.label}
           </p>
         ) : null,
       )}
+    </div>
+  );
+}
+
+function WorkflowCosts({ form }: { form: WorkflowForm }) {
+  if (!form.estimate)
+    return (
+      <p className="form-hint">
+        {form.missing.length
+          ? "Add required inputs to estimate"
+          : form.estimateError
+            ? "Estimate unavailable"
+            : "Estimating"}
+      </p>
+    );
+  return (
+    <div className="workflow-steps" aria-label="Cost breakdown">
+      {form.estimate.steps.map((step) => (
+        <div className="workflow-step" key={step.id}>
+          <span>{step.label ?? step.id}</span>
+          {step.model ? <ModelName id={step.model} /> : null}
+          <span className="muted">{price(step.estimate)}</span>
+        </div>
+      ))}
     </div>
   );
 }
