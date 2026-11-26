@@ -206,8 +206,13 @@
   background: #f4f4f6;
 }
 .vendor-logo.plate-dark .vendor-logo-box {
-  background: var(--surface-3);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: #000;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+/* App icons and avatars bring their own background; a ring keeps a dark one off a dark page. */
+.vendor-logo.plate-tile .vendor-logo-box {
+  outline: 1px solid var(--line-strong);
+  outline-offset: -1px;
 }
 .vendor-logo.plate-tile .vendor-logo-box img {
   object-fit: cover;

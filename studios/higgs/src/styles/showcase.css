@@ -94,6 +94,22 @@
   font-size: 14px;
   border-radius: var(--radius-s);
 }
+/* One or two clips: wide cards, clip beside the details, so the row is not half empty. */
+.showcase-grid.is-few {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+}
+.showcase-grid.is-few .showcase-tile {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: none;
+}
+.showcase-grid.is-few .showcase-media {
+  aspect-ratio: auto;
+  min-height: 300px;
+}
+.showcase-grid.is-few .showcase-body {
+  align-content: center;
+  padding: 16px 18px;
+}
 @media (max-width: 600px) {
   .showcase-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -107,6 +123,20 @@
   }
   .showcase-actions .btn {
     width: 100%;
+  }
+  .showcase-grid.is-few {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .showcase-grid.is-few .showcase-tile {
+    grid-template-columns: none;
+    grid-template-rows: auto 1fr;
+  }
+  .showcase-grid.is-few .showcase-media {
+    aspect-ratio: 3 / 4;
+    min-height: 0;
+  }
+  .showcase-grid.is-few .showcase-body {
+    padding: 10px;
   }
 }
 

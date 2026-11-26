@@ -102,11 +102,15 @@ export function estimateLabel(
 }
 
 export function modelKinds(model: CatalogModel): string {
+  return modelKindList(model).join(" · ");
+}
+
+/** Up to three distinct task labels, for places that lay each one out on its own. */
+export function modelKindList(model: CatalogModel): string[] {
   return model.tasks
     .map(taskLabel)
     .filter((v, i, a) => a.indexOf(v) === i)
-    .slice(0, 3)
-    .join(" · ");
+    .slice(0, 3);
 }
 
 export function timeAgo(iso: string, now = Date.now()): string {

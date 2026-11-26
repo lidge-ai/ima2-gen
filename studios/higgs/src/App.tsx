@@ -88,19 +88,12 @@ function StreamStatus() {
 
 function KeysButton({ route }: { route: Route }) {
   const t = useT(M);
-  const loaded = useStudio((s) => s.catalog !== null);
   const keyed = useStudio((s) => s.keys.filter((k) => k.configured).length);
+  // One first action when no key is saved: Home's banner asks for it, so this stays a plain link.
   return (
     <a className="btn" href="#/keys" aria-current={route.page === "keys" ? "page" : undefined}>
       <Icon name="key" size={15} />
-      {loaded && keyed === 0 ? (
-        t("addKey")
-      ) : (
-        <>
-          {t("apiKeys")}{" "}
-          {keyed > 0 ? <span className="key-count">{keyed}</span> : null}
-        </>
-      )}
+      {t("apiKeys")} {keyed > 0 ? <span className="key-count">{keyed}</span> : null}
     </a>
   );
 }

@@ -187,7 +187,7 @@ export function Showcase({ heading = true }: { heading?: boolean }) {
           </div>
         </div>
       ) : null}
-      <div className="showcase-grid">
+      <div className={"showcase-grid" + (items.length <= 2 ? " is-few" : "")}>
         {items.map((item) => (
           <Tile key={item.id} item={item} />
         ))}

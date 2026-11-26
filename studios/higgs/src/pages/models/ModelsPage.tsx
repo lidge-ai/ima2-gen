@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { modelHasKey, type CatalogModel, type CatalogRoute, type MediaKind } from "@ima2/studio-kit";
 import { href } from "../../router.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
 import { VendorLogo, vendorDisplayName } from "../../ui/VendorLogo.tsx";
-import { modelKinds, routePrice } from "../../ui/format.ts";
+import { modelKindList, routePrice } from "../../ui/format.ts";
 import { messages, tr, useT } from "../../i18n.ts";
 import "../../styles/models.css";
 
@@ -84,7 +84,7 @@ function RouteLine({ route }: { route: CatalogRoute }) {
     <li className="route-line">
       <VendorLogo id={route.providerId} size={18} />
       <span className="route-line-name">
-        <span className="route-line-label">{route.label}</span>
+        <span className="route-line-label" title={route.label}>{route.label}</span>
         {route.route === "direct" ? <span className="tag">{t("direct")}</span> : null}
       </span>
       <span className={"route-line-price" + (priced ? "" : " is-none")} title={priceSource(route)}>
@@ -107,7 +107,12 @@ function ModelCard({ model }: { model: CatalogModel }) {
         <div>
           <h3 id={"model-" + model.id}>{model.label}</h3>
           <p className="model-card-maker">
-            {vendorDisplayName(model.vendor)} · {modelKinds(model)}
+            {[vendorDisplayName(model.vendor), ...modelKindList(model)].map((part, i) => (
+              <Fragment key={part}>
+                {i ? " · " : ""}
+                <span className="kind">{part}</span>
+              </Fragment>
+            ))}
           </p>
         </div>
       </header>
