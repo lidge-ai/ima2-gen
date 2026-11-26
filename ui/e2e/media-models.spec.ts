@@ -53,8 +53,8 @@ test("L11-M1 no media request before the model window opens; picking a model kee
   await expect(needsKey.locator('[data-model="openai/gpt-image-2.5"]')).toBeVisible();
   await expect(needsKey.locator('[data-model="black-forest-labs/flux-2-pro"]')).toHaveCount(0);
   // Each row carries the same comparable facts.
-  await expect(ready.locator('[data-model="google/nano-banana-pro"]')).toContainText("from $0.15/image");
-  await expect(ready.locator('[data-model="google/nano-banana-pro"]')).toContainText("1K–4K");
+  await expect(row(page, "google/nano-banana-pro")).toContainText("from $0.15/image");
+  await expect(row(page, "google/nano-banana-pro")).toContainText("1K–4K");
 
   await pick(page, "Video", "bytedance/seedance-2.5");
   await expect(page.locator(MODEL_TRIGGER + " .ctl-select__value")).toHaveText("Seedance 2.5");
