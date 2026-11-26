@@ -89,9 +89,9 @@ export function useWorkflow(def: WorkflowDef) {
   const form = useWorkflowForm(def);
   const estimate = useWorkflowEstimate(def, form.body);
   const run = useWorkflowRun(def, form.body);
-  // What the server planned for a slot (plan steps are named after their slot: "subject", "subject-first").
+  // What the server planned for a slot: steps name their slot; older servers only by id ("subject-first").
   const planned = (slot: string) =>
-    estimate.estimate?.steps.find((s) => (s.id === slot || s.id.startsWith(slot + "-")) && s.model)?.model;
+    estimate.estimate?.steps.find((s) => s.model && (s.slot ? s.slot === slot : s.id === slot || s.id.startsWith(slot + "-")))?.model;
   /** The model a slot runs: the person's choice, else the server's plan, else the workflow default. */
   const slotModel = (slot: string, fallback?: string) => form.steps[slot]?.model ?? planned(slot) ?? fallback;
   const choices = def.steps.flatMap((step) => {

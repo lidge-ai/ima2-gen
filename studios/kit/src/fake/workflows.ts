@@ -277,6 +277,7 @@ export function estimateWorkflow(
       catalog.models.find((m) => m.id === (models[slot.name] ?? slot.defaultModel))?.routes.find((r) => r.keyConfigured)
         ?.providerId ??
       "fal",
+    slot: slot.name,
     final: index === def.slots.length - 1,
   }));
   const estimates = steps.map((step) => {

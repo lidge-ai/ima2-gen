@@ -129,6 +129,7 @@ export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
       ...(summary ? { label: summary.label } : {}),
       ...(e.model ? { model: e.model } : summary?.model ? { model: summary.model } : {}),
       ...(summary?.route ? { route: summary.route } : {}),
+      ...(summary?.slot ? { slot: summary.slot } : {}),
       estimate: { usd: e.usd, basis: e.usd === null ? "No published price" : basis },
     };
   });

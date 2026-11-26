@@ -95,8 +95,9 @@ test("a step shows the model the server's estimate planned, not the workflow def
   await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    for (const s of body.estimate.steps) if (s.stepId === "stylize") s.model = "openai/gpt-image-2";
-    for (const s of body.steps) if (s.id === "stylize") s.model = "openai/gpt-image-2";
+    // The plan step's id need not match the slot; the server names the slot on each step.
+    for (const s of body.estimate.steps) if (s.stepId === "stylize") Object.assign(s, { stepId: "frame-one", model: "openai/gpt-image-2" });
+    for (const s of body.steps) if (s.id === "stylize") Object.assign(s, { id: "frame-one", slot: "stylize", model: "openai/gpt-image-2" });
     await route.fulfill({ response, json: body });
   });
   await page.goto("/#/remix/remix-restyle");

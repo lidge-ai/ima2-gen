@@ -169,6 +169,8 @@ export interface WireStepSummary {
   dependsOn: readonly string[];
   model?: string;
   route?: string;
+  /** Workflow slot this media step fills (servers with step slots). */
+  slot?: string;
   final: boolean;
 }
 

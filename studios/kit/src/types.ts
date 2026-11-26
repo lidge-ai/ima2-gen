@@ -283,7 +283,7 @@ export interface WorkflowRunBody {
 
 export interface WorkflowEstimate {
   /** Per planned step: the model and route the server will actually use (its plan, not the defaults). */
-  steps: readonly { id: string; label?: string; model?: string; route?: string; estimate: CostEstimate }[];
+  steps: readonly { id: string; label?: string; model?: string; route?: string; slot?: string; estimate: CostEstimate }[];
   total: CostEstimate;
 }
 
