@@ -105,3 +105,26 @@ export async function resolveMediaInputRef(raw: unknown, dirs: MediaInputDirs): 
   const mimeType = baseMime(ref.mimeType) || mimeFromName(name) || "application/octet-stream";
   return { role: ref.role, bytes: new Uint8Array(bytes), mimeType };
 }
+
+/** For engines that read files themselves (L6 workflows): a ref or filename becomes an absolute path, a url stays a url. */
+export function resolveMediaRefPath(raw: unknown, dirs: { generatedDir: string; inputsDir: string }, field: string): { path?: string; url?: string; mimeType: string } {
+  if (!raw || typeof raw !== "object") throw invalid(field + ": each item must be an object");
+  const ref = raw as Omit<MediaInputRef, "role">;
+  if (sourceCount({ ...ref, role: "source-image" }) !== 1 || ref.dataUrl) throw invalid(field + ": each item needs exactly one of ref, filename, url");
+  if (ref.url) {
+    if (!/^https:\/\//i.test(ref.url)) throw invalid(field + ": url must be https");
+    return { url: ref.url, mimeType: baseMime(ref.mimeType) || mimeFromName(ref.url) || "application/octet-stream" };
+  }
+  let path: string;
+  let name: string;
+  if (ref.ref) {
+    const m = INPUT_REF.exec(ref.ref);
+    if (!m) throw invalid(field + ": unknown input ref");
+    name = m[1]!;
+    path = join(dirs.inputsDir, name);
+  } else {
+    name = ref.filename!;
+    path = insideRoot(dirs.generatedDir, name);
+  }
+  return { path, mimeType: baseMime(ref.mimeType) || mimeFromName(name) || "application/octet-stream" };
+}

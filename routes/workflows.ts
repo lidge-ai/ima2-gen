@@ -1,58 +1,91 @@
 import type { Express, Request, Response } from "express";
+import { join } from "node:path";
 import { MediaJobError } from "../lib/providers/media/errors.js";
+import { resolveMediaRefPath } from "../lib/providers/media/inputs.js";
 import type { MediaRunnerDeps } from "../lib/providers/media/runner.js";
-import { launchWorkflow, validateWorkflowInput } from "../lib/providers/media/workflowRunner.js";
-import { BUILTIN_MEDIA_WORKFLOWS, findMediaWorkflow } from "../lib/providers/media/workflows.js";
-import type { MediaWorkflow } from "../lib/providers/media/workflow.js";
+import { createWorkflowGateway } from "../lib/providers/media/workflowGateway.js";
+import { launchWorkflowJob } from "../lib/providers/media/workflowJob.js";
+import { WORKFLOWS, WorkflowError, createFfmpegLocalOps, describeWorkflow, prepareWorkflow, summarizeSteps, type WorkflowDeps } from "../lib/workflows/index.js";
+import type { WorkflowDefinition, WorkflowLocalOps } from "../lib/workflows/types.js";
+import { logError } from "../lib/logger.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { mediaRunnerDeps, readRequestId, sendMediaError } from "./media.js";
 
 export interface WorkflowRouteOptions {
   deps?: Partial<MediaRunnerDeps>;
-  workflows?: readonly MediaWorkflow[];
+  workflows?: readonly WorkflowDefinition[];
+  local?: WorkflowLocalOps;
 }
 
-function totalUsd(steps: readonly { usd?: number }[]): number | null {
-  if (steps.length === 0 || steps.some((s) => typeof s.usd !== "number")) return null;
-  return +steps.reduce((sum, s) => sum + (s.usd ?? 0), 0).toFixed(4);
+function sendWorkflowError(res: Response, error: unknown): void {
+  if (error instanceof WorkflowError) {
+    res.status(error.status).json({ ok: false, code: error.code, error: error.message, status: error.status, category: error.options.category ?? "invalid-request", retryable: error.options.retryable ?? false, ...(error.options.field ? { field: error.options.field } : {}) });
+    return;
+  }
+  if (error instanceof MediaJobError) return sendMediaError(res, error, "workflow");
+  logError("workflow", "unexpected", error);
+  res.status(500).json({ ok: false, code: "WORKFLOW_INTERNAL", error: "Internal error" });
+}
+
+/** Media values arrive as { ref | filename | url, mimeType? }; the engine wants { path | url, mimeType }. */
+async function toEngineValues(definition: WorkflowDefinition, raw: unknown, deps: MediaRunnerDeps): Promise<Record<string, unknown>> {
+  if (raw === undefined || raw === null) return {};
+  if (typeof raw !== "object" || Array.isArray(raw)) throw new WorkflowError("WORKFLOW_INPUT_INVALID", "values: must be an object", { field: "values" });
+  const values: Record<string, unknown> = { ...(raw as Record<string, unknown>) };
+  const dirs = { generatedDir: deps.generatedDir, inputsDir: deps.inputsDir };
+  for (const field of definition.fields) {
+    if (field.type !== "media" || values[field.name] === undefined) continue;
+    const list = values[field.name];
+    if (!Array.isArray(list)) throw new WorkflowError("WORKFLOW_INPUT_INVALID", `${field.name}: must be a list of media`, { field: field.name });
+    values[field.name] = list.map((item: unknown) => resolveMediaRefPath(item, dirs, field.name));
+  }
+  return values;
 }
 
 export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext, options: WorkflowRouteOptions = {}) {
   const ctx = requireRuntimeContext(ctxRaw);
-  const workflows = options.workflows ?? BUILTIN_MEDIA_WORKFLOWS;
+  const workflows = options.workflows ?? WORKFLOWS;
   const deps = () => mediaRunnerDeps(ctx, options.deps);
+  const local = options.local ?? createFfmpegLocalOps();
+  const engineDeps = async (d: MediaRunnerDeps): Promise<WorkflowDeps> => ({ gateway: await createWorkflowGateway(d), local, allowedRoots: [d.inputsDir, d.generatedDir] });
   const find = (id: string) => {
-    const wf = findMediaWorkflow(id, workflows);
-    if (!wf) throw new MediaJobError("WORKFLOW_UNKNOWN", `Unknown workflow: ${id}`, { status: 404, category: "not-found" });
-    return wf;
+    const def = workflows.find((w) => w.id === id);
+    if (!def) throw new WorkflowError("WORKFLOW_UNKNOWN", `Unknown workflow: ${id}`, { status: 404, category: "not-found" });
+    return def;
+  };
+  const prepare = async (req: Request<{ id: string }>, signal: AbortSignal) => {
+    const def = find(req.params.id);
+    const d = deps();
+    const wfDeps = await engineDeps(d);
+    const values = await toEngineValues(def, req.body?.values ?? req.body?.input, d);
+    const request = { values, ...(req.body?.selection !== undefined ? { selection: req.body.selection } : {}) };
+    return { d, wfDeps, prepared: await prepareWorkflow(def, request, wfDeps, signal) };
   };
 
-  app.get("/api/workflows", (_req: Request, res: Response) => {
-    res.json({ workflows: workflows.map((w) => ({ id: w.id, label: w.label, description: w.description, inputs: w.inputs })) });
+  app.get("/api/workflows", async (_req: Request, res: Response) => {
+    const gateway = await createWorkflowGateway(deps());
+    res.json({ workflows: workflows.map((w) => describeWorkflow(w, gateway)) });
   });
 
-  app.post("/api/workflows/:id/estimate", (req: Request<{ id: string }>, res: Response) => {
+  app.post("/api/workflows/:id/estimate", async (req: Request<{ id: string }>, res: Response) => {
     try {
-      const wf = find(req.params.id);
-      const input = req.body?.input && typeof req.body.input === "object" ? req.body.input as Record<string, unknown> : {};
-      const steps = wf.estimate(input, deps().registry);
-      res.json({ steps, totalUsd: totalUsd(steps) });
+      const { prepared } = await prepare(req, AbortSignal.timeout(60_000));
+      res.json({ estimate: prepared.estimate, steps: summarizeSteps(prepared.plan) });
     } catch (error) {
-      sendMediaError(res, error, "workflow");
+      sendWorkflowError(res, error);
     }
   });
 
-  app.post("/api/workflows/:id", (req: Request<{ id: string }>, res: Response) => {
+  app.post("/api/workflows/:id", async (req: Request<{ id: string }>, res: Response) => {
     try {
-      const wf = find(req.params.id);
       const requestId = readRequestId(req.body?.requestId);
-      const input = validateWorkflowInput(wf, req.body?.input);
+      const { d, wfDeps, prepared } = await prepare(req, AbortSignal.timeout(60_000));
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
-      const { done } = launchWorkflow(deps(), wf, { requestId, input, sessionId });
-      done.catch(() => { /* published as an "error" event on the job */ });
-      res.status(202).json({ requestId, workflow: wf.id });
+      const runsDir = join(ctx.config.storage.configDir, "workflow-runs");
+      void launchWorkflowJob(d, wfDeps, prepared, { requestId, sessionId, runsDir });
+      res.status(202).json({ requestId, workflow: prepared.definition.id, estimate: prepared.estimate, steps: summarizeSteps(prepared.plan) });
     } catch (error) {
-      sendMediaError(res, error, "workflow");
+      sendWorkflowError(res, error);
     }
   });
 }

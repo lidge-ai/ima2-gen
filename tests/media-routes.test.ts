@@ -20,24 +20,37 @@ const { mountKeyRoutes } = await import("../routes/keys.ts");
 const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts");
 const { _resetForTests: resetInflight } = await import("../lib/inflight.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter } = await import("./_mediaFakeAdapter.ts");
-type MediaWorkflow = import("../lib/providers/media/workflow.ts").MediaWorkflow;
+type WorkflowDefinition = import("../lib/workflows/types.ts").WorkflowDefinition;
 
 test.after(async () => { await rm(isolatedConfigDir, { recursive: true, force: true }); });
 test.afterEach(() => { resetBus(); resetInflight(); });
 
 const VIDEO_URL = "https://cdn.fake.example/out/clip.mp4";
 
-const twoStep: MediaWorkflow = {
-  id: "two-step",
-  label: "Two step",
-  description: "image then video",
-  inputs: [{ name: "prompt", label: "Prompt", type: "text", required: true }],
-  estimate: (_input, catalog) => [{ id: "clip", label: "Clip", model: "acme/clip-1", usd: catalog.getModel("acme/clip-1") ? 0.25 : undefined }],
-  async run(ctx) {
-    const first = await ctx.runStep("clip", { model: "acme/clip-1", task: "text-to-video", prompt: String(ctx.input.prompt), durationSec: 5, inputs: [] });
-    const second = await ctx.runStep("clip", { model: "acme/clip-1", task: "image-to-video", prompt: "again", durationSec: 5, inputs: [ctx.asInput({ filename: first.outputs[0]!.filename }, "first-frame")] });
-    return { outputs: second.outputs };
+// A one-step L6 workflow on the fake adapter: the bridge resolves its route and key
+// through the media registry, runs it, and copies the final artifact into history.
+const oneStep = {
+  id: "test-flow",
+  label: "Test flow",
+  description: "one fake clip",
+  equivalents: [],
+  fields: [{ type: "text", name: "prompt", label: "Prompt", required: true, maxLength: 200 }],
+  slots: [{ name: "render", label: "Render", task: "text-to-video", defaultModel: "acme/clip-1", alternatives: [], rationale: "test" }],
+  plan(values: Record<string, unknown>, slots: Record<string, { model: string; route?: string }>) {
+    const model = slots.render!.model;
+    return { workflowId: "test-flow", steps: [{
+      id: "render", label: "Render", kind: "media", dependsOn: [], final: true, slot: "render", model, outputKind: "video",
+      units: { unit: "second", quantity: 5, variant: "720p" },
+      build: async () => ({ model, task: "text-to-video", prompt: String(values.prompt), durationSec: 5, inputs: [] }),
+    }] };
   },
+} as unknown as WorkflowDefinition;
+
+const noLocalOps = {
+  probe: async () => { throw new Error("no media fields"); },
+  frame: async () => { throw new Error("unused"); },
+  muxAudio: async () => { throw new Error("unused"); },
+  concat: async () => { throw new Error("unused"); },
 };
 
 async function withApp(fn: (h: { base: string; root: string; configFile: string; events: { jobId: string; event: string; data: Record<string, unknown> }[]; adapter: ReturnType<typeof makeFakeAdapter>; calls: { url: string }[] }) => Promise<void>, opts: { keys?: Record<string, unknown>; states?: unknown[]; status?: (url: string) => number } = {}) {
@@ -65,7 +78,7 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
   app.get("/", (_req, res) => { res.send("classic ui"); });
   app.use(express.json({ limit: "5mb" }));
   registerMediaRoutes(app, ctx as never, deps);
-  registerWorkflowRoutes(app, ctx as never, { deps, workflows: [twoStep] });
+  registerWorkflowRoutes(app, ctx as never, { deps, workflows: [oneStep], local: noLocalOps });
   registerStudioRoutes(app, ctx as never, { root: studiosRoot, env: {} });
   mountKeyRoutes(app, ctx as never, { mediaRegistry: registry, fetch: transport.fetch, env: {} });
   const server = await new Promise<import("node:http").Server>((resolve) => { const s = app.listen(0, "127.0.0.1", () => resolve(s)); });
@@ -82,7 +95,7 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
 }
 
 async function waitFor(events: { jobId: string; event: string }[], jobId: string, names: string[]) {
-  for (let i = 0; i < 2000; i += 1) {
+  for (let i = 0; i < 4000; i += 1) {
     if (events.some((e) => e.jobId === jobId && names.includes(e.event))) return;
     await new Promise((r) => setTimeout(r, 2));
   }
@@ -168,22 +181,29 @@ test("cancel route stops a running job", async () => {
   }, { states: [{ status: "running" }] });
 });
 
-test("workflows: list, estimate, and a two-step run with child jobs and step events", async () => {
-  await withApp(async ({ base, events }) => {
+test("workflows: list, estimate and a run through the L6 engine land the final clip in history", async () => {
+  await withApp(async ({ base, events, root }) => {
     const list = await (await fetch(`${base}/api/workflows`)).json();
-    assert.equal(list.workflows[0].id, "two-step");
-    const est = await (await fetch(`${base}/api/workflows/two-step/estimate`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
-    assert.equal(est.totalUsd, 0.25);
-    const missing = await fetch(`${base}/api/workflows/two-step`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ input: {} }) });
+    assert.equal(list.workflows[0].id, "test-flow");
+    assert.equal(list.workflows[0].slots[0].available["acme/clip-1"], true);
+    const post = (path: string, body: unknown) => fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const est = await (await post("/api/workflows/test-flow/estimate", { values: { prompt: "fox" } })).json();
+    assert.equal(est.estimate.usd, 0.25);
+    assert.equal(est.estimate.complete, true);
+    const missing = await post("/api/workflows/test-flow", { values: {} });
     assert.equal(missing.status, 400);
-    const res = await fetch(`${base}/api/workflows/two-step`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: "wf1", input: { prompt: "fox" } }) });
+    assert.equal((await missing.json()).code, "WORKFLOW_INPUT_INVALID");
+    const res = await post("/api/workflows/test-flow", { requestId: "wf1", values: { prompt: "fox" } });
     assert.equal(res.status, 202);
     await waitFor(events, "wf1", ["done", "error"]);
-    const steps = events.filter((e) => e.jobId === "wf1" && e.event === "step").map((e) => `${e.data.childRequestId}:${e.data.status}`);
-    assert.deepEqual(steps, ["wf1.clip:started", "wf1.clip:done", "wf1.clip-2:started", "wf1.clip-2:done"]);
-    assert.ok(events.some((e) => e.jobId === "wf1.clip-2" && e.event === "done"));
-    assert.equal(events.find((e) => e.jobId === "wf1" && e.event === "done")!.data.workflow, "two-step");
-    const unknown = await fetch(`${base}/api/workflows/nope`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const mine = events.filter((e) => e.jobId === "wf1");
+    assert.deepEqual(mine.filter((e) => e.event === "step").map((e) => e.data.status), ["started", "artifact", "done"]);
+    const done = mine.find((e) => e.event === "done")!;
+    assert.equal(done.data.jobKind, "workflow");
+    assert.equal(await readFile(join(root, "generated", String(done.data.filename)), "utf8"), "mp4");
+    assert.ok(!JSON.stringify(mine).includes(root), "server paths stay on the server");
+    assert.ok(!JSON.stringify(mine).includes(FAKE_KEY));
+    const unknown = await post("/api/workflows/nope", {});
     assert.equal(unknown.status, 404);
   });
 });
