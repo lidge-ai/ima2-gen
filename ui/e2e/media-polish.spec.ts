@@ -56,7 +56,7 @@ test("L11-P2 a rejected key is said in plain words with the provider's answer un
   await entry.getByLabel("API key").fill("kling-key-wrong");
   await entry.getByRole("button", { name: "Check and save" }).click();
   const alert = entry.getByRole("alert");
-  await expect(alert.locator("p")).toHaveText("Kling did not accept this key. Check it and try again.");
+  await expect(alert.locator("p").first()).toHaveText("Kling did not accept this key. Check it and try again.");
   await expect(alert.getByText("HTTP 401")).toBeHidden();
   await alert.locator("summary").click();
   await expect(alert).toContainText("API key validation failed: HTTP 401: invalid api key");
