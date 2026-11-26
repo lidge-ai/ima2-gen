@@ -45,6 +45,5 @@ export function useMediaQuote(route: MediaRoute | undefined, selection: MediaSel
     return () => { live = false; clearTimeout(timer); };
   }, [key]);
   const server = answer && answer.key === key ? answer.usd : null;
-  // The server figure wins when it really differs; a difference below two hundredths of a cent is rounding, not a price.
-  return { quote, usd: priced ? (server !== null && Math.abs(server - quote.usd) > 0.0002 ? server : quote.usd) : null };
+  return { quote, usd: priced ? server ?? quote.usd : null };
 }

@@ -14,6 +14,9 @@ export interface MediaSelection {
   /** Names kept with the selection so the closed controls can show them without loading the catalog. */
   label?: string;
   vendor?: string;
+  /** The running route's provider name and square mark, for the same reason. */
+  routeLabel?: string;
+  routeMark?: string;
   durationSec?: number;
   resolution?: string;
   aspectRatio?: string;
@@ -99,7 +102,8 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   const tasks = routeTasks(route);
   const task: string = (tasks as string[]).includes(wantedTask) ? wantedTask : tasks[0] ?? route.tasks[0] ?? wantedTask;
   const params = route.params;
-  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: model.logo?.name || model.vendor };
+  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: model.logo?.name || model.vendor, routeLabel: route.label };
+  if (route.logo?.urls.mark) next.routeMark = route.logo.urls.mark;
   const durationSec = keepDuration(previous?.durationSec, params.durationsSec);
   const resolution = keepLabel(previous?.resolution, params.resolutions, defaultResolution(params.resolutions));
   const aspectRatio = keepLabel(previous?.aspectRatio, params.aspectRatios, undefined);

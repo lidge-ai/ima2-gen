@@ -14,6 +14,8 @@
 .media-mark { border-radius: var(--r-sm); }
 .media-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .media-mark--sm { width: 24px; height: 24px; padding: 3px; }
+.media-lane { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.media-lane .media-mark--sm { width: 18px; height: 18px; padding: 2px; }
 .media-mark--monogram { padding: 0; border: 1px solid var(--hairline); background: var(--surface-3); color: var(--text); font-size: 14px; font-weight: 600; line-height: 1; }
 .media-mark--sm.media-mark--monogram { font-size: 11px; }
 

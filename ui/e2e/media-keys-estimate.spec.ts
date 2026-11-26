@@ -61,6 +61,10 @@ test("L11-K1 a key is entered beside the model, checked before it is saved, and 
   await expect(generate(page)).not.toHaveAttribute("aria-disabled", "true");
   await expect(composer(page)).toHaveValue(PROMPT);
   await expect(card(page)).toContainText("Now: Kling");
+  // The sidebar names the provider as the catalog does, with its mark, not by an internal id.
+  const lane = page.locator("#sidebar-generation-provider:visible");
+  await expect(lane).toContainText("Kling");
+  await expect(lane.locator(".media-mark")).toHaveCount(1);
 }));
 
 test("L11-K2 the estimate follows the settings and is confirmed by the server for the route that runs", run({}, async (page, media) => {
