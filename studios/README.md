@@ -54,8 +54,12 @@ const job = await client.watchJob(jobId, { onUpdate: (j) => console.log(j.status
 5. Show prices with `estimateCost` / `formatUsd`. A price is only ever the
    provider's published number; `usd: null` means none is published.
 6. Show makers and providers with their logos from `kit/assets/vendors`
-   (`pickLogo(manifest, id, { background, shape })`). If a vendor has no file, show
-   its name as text. Do not redraw or recolor logos.
+   (`pickLogo(manifest, id, { background, shape })`). Each manifest file records its
+   `shape` (`mark`, `wordmark`, `stacked`) and size: small square slots (chips, list
+   rows, 16-32 px) take only `mark` files, and `pickLogo` returns null rather than
+   squeezing a wordmark into a square. Show `vendorMonogram(name)` in that case, and the
+   name as text when a wordmark slot has no file. Give every logo box a fixed height and
+   a maximum width so no file can grow past it. Do not redraw or recolor logos.
 7. Put the studio's screen tests next to it (Playwright against `kit`'s fake server,
    see `higgs/playwright.config.ts`).
 

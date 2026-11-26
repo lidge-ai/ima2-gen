@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "../../i18n";
 import { jsonFetch } from "../../lib/api-core";
+import { logoPlate, logoUrl } from "../../lib/mediaCatalog";
 import { extraFieldStatus, type MediaKeyAdapter, type MediaKeyStatus, type MediaVocabulary } from "../../lib/mediaKeys";
 
 interface Snapshot {
@@ -54,7 +55,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const fields = extraFieldStatus(v, status, adapters);
-  const logo = v.logo?.urls.mark ?? v.logo?.urls.primary ?? v.logo?.urls.dark ?? v.logo?.urls.light;
+  const logo = logoUrl(v.logo);
   const save = async (method: "PUT" | "DELETE") => {
     setBusy(true); setError("");
     try {
@@ -70,7 +71,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
   return <section className="settings-row media-provider-keys__provider">
     <div className="settings-row__copy">
       <p className="settings-eyebrow">{status?.source === "env" ? t("settings.apiKeys.envSource") : t("settings.apiKeys.configSource")}</p>
-      <h4 className="media-provider-keys__heading">{logo && <span className="media-logo"><img src={logo} alt="" /></span>}{v.label}</h4>
+      <h4 className="media-provider-keys__heading">{logo && <span className={`media-logo media-logo--${logoPlate(v.logo)}`}><img src={logo} alt="" /></span>}{v.label}</h4>
       {!v.legacy && <>
         <div className="api-key-input-group">
           <input className="api-key-input" type="password" autoComplete="off" aria-label={t("media.apiKey")}

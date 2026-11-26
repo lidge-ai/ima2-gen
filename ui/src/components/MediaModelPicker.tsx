@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useI18n } from "../i18n";
-import { allowedMediaValue, chooseMediaRoute, fetchMediaCatalog, formatMediaPrice, logoUrl, type MediaModel, type MediaRoute } from "../lib/mediaCatalog";
+import { allowedMediaValue, chooseMediaRoute, fetchMediaCatalog, formatMediaPrice, logoPlate, logoUrl, type MediaModel, type MediaRoute } from "../lib/mediaCatalog";
 import type { MediaSelection } from "../lib/mediaSelection";
 import { useAppStore } from "../store/useAppStore";
 import { Select } from "./controls/Select";
@@ -22,7 +22,7 @@ function Logo({ logo, label }: { logo: MediaModel["logo"]; label: string }) {
   const [failed, setFailed] = useState(false);
   const url = logoUrl(logo);
   useEffect(() => setFailed(false), [url]);
-  return url && !failed ? <span className="media-logo"><img src={url} alt="" onError={() => setFailed(true)} /></span> : <span className="media-logo__fallback">{logo?.name || label}</span>;
+  return url && !failed ? <span className={`media-logo media-logo--${logoPlate(logo)}`}><img src={url} alt="" onError={() => setFailed(true)} /></span> : <span className="media-logo media-logo__fallback">{logo?.name || label}</span>;
 }
 function ModelList({ id, models, selection, changeModel, error }: { id: string; models: MediaModel[]; selection: Selection | null; changeModel: (value: string) => void; error: boolean }) {
   const { t } = useI18n();

@@ -9,6 +9,7 @@
   --text: #f4f4f6;
   --text-dim: #b6b6c2;
   --text-muted: #90909d;
+  /* Decoration only (dots, rules): fails 4.5:1 for text, so text uses --text-muted. */
   --text-faint: #55555f;
   --primary: #f4f4f6;
   --primary-ink: #0b0b0f;
@@ -199,8 +200,9 @@ code {
   color: var(--primary-ink);
   border-color: transparent;
 }
-.chip:hover {
+.chip:not([aria-pressed="true"], [aria-selected="true"]):hover {
   color: var(--text);
+  border-color: var(--line-strong);
 }
 
 .tabs {
@@ -222,11 +224,12 @@ code {
   text-decoration: none;
 }
 .tab[aria-selected="true"],
+.tab[aria-pressed="true"],
 .tab[aria-current="page"] {
   background: var(--surface-2);
   color: var(--text);
 }
-.tab:hover {
+.tab:not([aria-selected="true"], [aria-pressed="true"], [aria-current="page"]):hover {
   color: var(--text);
 }
 
