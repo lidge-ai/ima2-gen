@@ -140,7 +140,7 @@ export function createGoogleLogin(options: GoogleLoginOptions) {
     try { token = await exchange(code, pending.v); } catch { token = null; }
     if (!token) return refuse("token exchange failed");
     const verified = await verifyIdToken(token, pending.n);
-    if (!verified.ok) return refuse(verified.reason, verified.reason === "not allowed" ? "not-allowed" : "failed", verified.email);
+    if ("reason" in verified) return refuse(verified.reason, verified.reason === "not allowed" ? "not-allowed" : "failed", verified.email);
     res.setHeader("Cache-Control", "no-store");
     res.cookie(SESSION_COOKIE, options.sessions.issue(verified.email), { ...sessionCookie, maxAge: SESSION_TTL_MS });
     res.redirect(302, safeReturn(pending.r));
