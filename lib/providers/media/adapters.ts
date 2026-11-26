@@ -10,6 +10,7 @@ import { adapter as pixverse } from "./direct/pixverse.js";
 import { adapter as tencent } from "./direct/tencent.js";
 import { adapter as tencentVod } from "./direct/tencent-vod/index.js";
 import { adapter as google } from "./direct/google.js";
+import { adapter as googleImage } from "./direct/google-image.js";
 import { adapter as googleVertex } from "./direct/google-vertex.js";
 import { adapter as xai } from "./direct/xai.js";
 import { adapter as sync } from "./direct/sync.js";
@@ -42,7 +43,7 @@ export const BUILTIN_MEDIA_ADAPTERS: readonly MediaProviderAdapter[] = [
   // L2 direct (China-based makers)
   byteplus, byteplusVision, kling, klingLegacy, alibaba, minimax, vidu, pixverse, tencent, tencentVod,
   // L3 direct video, audio and avatar
-  google, googleVertex, xai, sync, heygen, veed, topazVideo, mirelo, elevenlabs, cartesia,
+  google, googleImage, googleVertex, xai, sync, heygen, veed, topazVideo, mirelo, elevenlabs, cartesia,
   // L4 direct image
   bfl, ideogram, recraft, topazImage, stability,
   // L1 aggregators (after every direct route)
