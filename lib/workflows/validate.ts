@@ -2,7 +2,7 @@ import { realpath } from "node:fs/promises";
 import { isAbsolute, sep } from "node:path";
 import { inputError, WorkflowError } from "./errors.js";
 import type {
-  ColorsField, EnumField, IntegerField, MediaField, ResolvedSlot, TextField,
+  ColorsField, EnumField, IntegerField, MediaField, ModelSlot, PlanEnv, ResolvedSlot, TextField,
   WorkflowDefinition, WorkflowField, WorkflowLocalOps, WorkflowMediaRef, WorkflowSelection,
   WorkflowValue, WorkflowValues,
 } from "./types.js";
@@ -143,20 +143,41 @@ async function probeRef(field: MediaField, ref: WorkflowMediaRef, local: Workflo
   return { ...ref, durationSec: info.durationSec, hasAudio: info.hasAudio, width: info.width, height: info.height };
 }
 
-/** Applies the user's model and route choices; a model outside the slot's list is refused. */
-export function resolveSlots(def: WorkflowDefinition, selection: WorkflowSelection | undefined, values: WorkflowValues): Record<string, ResolvedSlot> {
+/** True when an adapter lists the model and the model supports the slot's task. */
+export function slotModelAvailable(slot: ModelSlot, model: string, catalog: PlanEnv["catalog"]): boolean {
+  return catalog(model)?.tasks.includes(slot.task) === true;
+}
+
+function defaultFor(slot: ModelSlot, tier: unknown, catalog: PlanEnv["catalog"] | undefined): string {
+  const preferred = (typeof tier === "string" ? slot.tierModels?.[tier] : undefined) ?? slot.defaultModel;
+  // A slot bound to a route (e.g. a subscription) keeps its model; another model would not fit that route.
+  if (!catalog || slot.defaultRoute || slotModelAvailable(slot, preferred, catalog)) return preferred;
+  return [...slot.alternatives, ...Object.values(slot.tierModels ?? {})].find((m) => slotModelAvailable(slot, m, catalog)) ?? preferred;
+}
+
+/**
+ * Applies the user's model and route choices; a model outside the slot's list is refused.
+ * Without a choice the slot default is used, or, when no adapter offers it yet, the first
+ * listed alternative that one does (the plan and estimate name the model either way).
+ */
+export function resolveSlots(def: WorkflowDefinition, selection: WorkflowSelection | undefined, values: WorkflowValues, catalog?: PlanEnv["catalog"]): Record<string, ResolvedSlot> {
   const tier = def.tierField ? values[def.tierField] : undefined;
   const resolved: Record<string, ResolvedSlot> = {};
   for (const slot of def.slots) {
-    const tierDefault = typeof tier === "string" ? slot.tierModels?.[tier] : undefined;
-    const chosen = selection?.models?.[slot.name] ?? tierDefault ?? slot.defaultModel;
+    const chosen = selection?.models?.[slot.name] ?? defaultFor(slot, tier, catalog);
     const allowed = [slot.defaultModel, ...slot.alternatives, ...Object.values(slot.tierModels ?? {})];
     if (!allowed.includes(chosen)) throw inputError("selection.models." + slot.name, chosen + " cannot run this step");
-    const route = selection?.routes?.[slot.name];
+    const route = selection?.routes?.[slot.name] ?? slot.defaultRoute;
     resolved[slot.name] = route ? { model: chosen, route } : { model: chosen };
   }
   const extra = Object.keys(selection?.models ?? {}).concat(Object.keys(selection?.routes ?? {}))
     .filter((name) => !def.slots.some((s) => s.name === name));
   if (extra.length > 0) throw inputError("selection", extra[0] + " is not a step of " + def.id);
   return resolved;
+}
+
+/** Refuses more reference images than the chosen model takes (when its adapter says). */
+export function checkReferenceLimit(env: PlanEnv, model: string, count: number, field: string): void {
+  const max = env.catalog(model)?.params.maxReferenceImages;
+  if (max !== undefined && count > max) throw inputError(field, model + " takes at most " + max + " reference images");
 }

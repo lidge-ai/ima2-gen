@@ -1,5 +1,5 @@
 import type { WorkflowDefinition } from "../types.js";
-import { finishRemix, imageList, referenceImagesField, REMIX_FIELDS_TAIL, renderSlot, renderStep, sourceVideoField, tierField } from "./remixShared.js";
+import { checkRemixFit, finishRemix, imageList, referenceImagesField, REMIX_FIELDS_TAIL, renderSlot, renderStep, sourceVideoField, tierField } from "./remixShared.js";
 import { joinPrompt, refsOf, textOf } from "./shared.js";
 
 function instruction(count: number, target: string | undefined): string {
@@ -25,11 +25,13 @@ export const remixObjectSwap: WorkflowDefinition = {
   ],
   slots: [renderSlot(true)],
   tierField: "tier",
-  plan(values, models) {
+  plan(values, models, env) {
     const slot = models.render;
     if (!slot) throw new Error("render slot missing");
+    checkRemixFit(env, slot.model, values, refsOf(values, "images").length);
     const text = instruction(refsOf(values, "images").length, textOf(values, "target"));
     const render = renderStep({ slot, values, dependsOn: [], instruction: text, includeUserImages: true });
     return { workflowId: "remix-object-swap", steps: finishRemix(values, [], render) };
   },
 };
+

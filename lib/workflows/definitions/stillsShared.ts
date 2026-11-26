@@ -1,9 +1,12 @@
-import type { MediaStep, ModelSlot, ResolvedSlot, WorkflowField, WorkflowValues } from "../types.js";
-import { inputsFrom, intOf, joinPrompt, lookPrompt, option, refsOf, textOf } from "./shared.js";
+import type { MediaStep, ModelSlot, PlanEnv, ResolvedSlot, WorkflowField, WorkflowValues } from "../types.js";
+import { checkModelFit, inputsFrom, intOf, joinPrompt, lookPrompt, option, refsOf, textOf } from "./shared.js";
 
 export const imageSlot: ModelSlot = {
   name: "image", label: "Image", task: "text-to-image", defaultModel: "google/nano-banana-pro",
-  alternatives: ["bytedance/seedream-5.5", "openai/gpt-image-2.6", "kling/kling-image-3-omni", "black-forest-labs/flux-kontext-max"],
+  alternatives: [
+    "bytedance/seedream-5.5", "openai/gpt-image-2.6", "black-forest-labs/flux-2-max", "black-forest-labs/flux-3-image",
+    "ideogram/ideogram-v4.5", "kling/kling-image-3-omni", "black-forest-labs/flux-kontext-max",
+  ],
   rationale: "Google's image-generation guide describes up to 14 reference images and 1K/2K/4K output: https://ai.google.dev/gemini-api/docs/image-generation (read 2026-11-26).",
 };
 
@@ -14,11 +17,12 @@ export const resolutionField = (sizes: readonly string[]): WorkflowField => ({
   options: sizes.map((size) => option(size, size.toUpperCase())), default: "2k",
 });
 
-export function stillStep(values: WorkflowValues, slot: ResolvedSlot, framing: string, defaultAspect: string, fixedCount = false): MediaStep {
+export function stillStep(values: WorkflowValues, slot: ResolvedSlot, framing: string, defaultAspect: string, fixedCount = false, env?: PlanEnv): MediaStep {
   const count = fixedCount ? 1 : intOf(values, "n", 1);
   const resolution = textOf(values, "resolution") ?? "2k";
   const aspectRatio = textOf(values, "aspectRatio") ?? defaultAspect;
   const refs = [...refsOf(values, "images"), ...refsOf(values, "characterImage")];
+  if (env) checkModelFit(env, slot.model, values, refs.length);
   return {
     id: "render", label: "Render", kind: "media", dependsOn: [], final: true,
     slot: "image", model: slot.model, ...(slot.route !== undefined && { route: slot.route }), outputKind: "image",
@@ -32,3 +36,4 @@ export function stillStep(values: WorkflowValues, slot: ResolvedSlot, framing: s
     },
   };
 }
+

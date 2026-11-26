@@ -1,5 +1,7 @@
 import type { MediaInput } from "../../providers/media/contract.js";
-import type { EnumField, StepRuntime, WorkflowField, WorkflowMediaRef, WorkflowValues } from "../types.js";
+import { inputError } from "../errors.js";
+import type { EnumField, PlanEnv, StepRuntime, WorkflowField, WorkflowMediaRef, WorkflowValues } from "../types.js";
+import { checkReferenceLimit } from "../validate.js";
 
 export function option(value: string, label: string): { value: string; label: string } {
   return { value, label };
@@ -103,3 +105,18 @@ export function lookPrompt(values: WorkflowValues): string {
 export function joinPrompt(...parts: (string | undefined)[]): string {
   return parts.filter((p): p is string => typeof p === "string" && p.trim().length > 0).join("\n\n");
 }
+
+/** Refuses a resolution the chosen model does not list (when its adapter lists any). */
+export function checkResolution(env: PlanEnv, model: string, resolution: string | undefined): void {
+  const listed = env.catalog(model)?.params.resolutions;
+  if (resolution && listed && listed.length > 0 && !listed.includes(resolution)) {
+    throw inputError("resolution", model + " offers " + listed.join(", "));
+  }
+}
+
+/** Reference-count and resolution checks every definition runs at plan time. */
+export function checkModelFit(env: PlanEnv, model: string, values: WorkflowValues, referenceCount: number, field = "images"): void {
+  checkReferenceLimit(env, model, referenceCount, field);
+  checkResolution(env, model, textOf(values, "resolution"));
+}
+

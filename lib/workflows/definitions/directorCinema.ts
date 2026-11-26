@@ -13,8 +13,8 @@ export const directorCinema: WorkflowDefinition = {
     resolutionField(["1k", "2k"]), ...lookFields(),
   ],
   check: checkLook,
-  plan(values, models) {
+  plan(values, models, env) {
     return { workflowId: "director-cinema", steps: [stillStep(values, models.image!,
-      "Create a single cinematic film still, like a frame from a feature film, with deliberate composition, depth and lighting.", "1:1", true)] };
+      "Create a single cinematic film still, like a frame from a feature film, with deliberate composition, depth and lighting.", "1:1", true, env)] };
   },
 };

@@ -14,6 +14,7 @@ import type {
 
 export type WorkflowId =
   | "remix-motion-transfer" | "remix-object-swap" | "remix-restyle"
+  | "remix-motion-transfer-subscription" | "remix-object-swap-subscription" | "remix-restyle-subscription"
   | "director-studio" | "director-cast" | "director-locations" | "director-cinema";
 
 /* ---------- Input schema: rendered by any UI, validated by the server ---------- */
@@ -71,6 +72,8 @@ export interface ModelSlot {
   alternatives: readonly string[];
   /** Default per tier value (see WorkflowDefinition.tierField), e.g. { lite: "bytedance/seedance-2.5-flash" }. */
   tierModels?: Readonly<Record<string, string>>;
+  /** Adapter id used when the user pins none, e.g. a subscription route. */
+  defaultRoute?: string;
   /** Why this model fits, with the evidence source; shown to users and reviewers. */
   rationale: string;
 }
@@ -195,6 +198,8 @@ export interface WorkflowDefinition {
   description: string;
   /** Public products this workflow matches in function (ids from Sume's public list). */
   equivalents: readonly string[];
+  /** Set on variants that trade quality for running on particular accounts (e.g. subscriptions only). */
+  preset?: WorkflowPreset;
   fields: readonly WorkflowField[];
   slots: readonly ModelSlot[];
   /** An enum field whose value picks ModelSlot.tierModels defaults. */
@@ -207,6 +212,20 @@ export interface WorkflowDefinition {
 export interface ResolvedSlot {
   model: string;
   route?: string;
+}
+
+/** What a preset variant needs and what it gives up, for the UI to show before a run. */
+export interface WorkflowPreset {
+  id: "subscription";
+  label: string;
+  /** The full-quality workflow this variant approximates. */
+  basedOn: WorkflowId;
+  /** Accounts the variant runs on; route is the adapter id its slots default to. */
+  requires: readonly { route: string; label: string }[];
+  /** What the result loses compared with basedOn. */
+  losses: readonly { aspect: "motion" | "length" | "resolution" | "identity" | "style" | "audio"; detail: string }[];
+  /** Open questions about how the accounts are billed. */
+  billingNote?: string;
 }
 
 /* ---------- Gateway and local operations: injected by the caller ---------- */
@@ -249,6 +268,8 @@ export interface WorkflowLocalOps {
   /** Copies the audio of audioSource onto video (trimmed to the video). Video stream is copied. */
   muxAudio(videoPath: string, audioSource: string, outPath: string, signal: AbortSignal): Promise<void>;
   concat(paths: readonly string[], outPath: string, signal: AbortSignal): Promise<void>;
+  /** Cuts [startSec, startSec + durationSec) into a new MP4 (re-encoded, video only, frame-accurate). */
+  cut(videoPath: string, startSec: number, durationSec: number, outPath: string, signal: AbortSignal): Promise<void>;
 }
 
 /* ---------- Events and results ---------- */

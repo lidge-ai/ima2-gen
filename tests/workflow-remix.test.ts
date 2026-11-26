@@ -119,3 +119,24 @@ test("restyle run passes the first frame to the image model and the styled frame
   assert.deepEqual(edit?.inputs.map((i) => [i.role, new TextDecoder().decode(i.bytes)]), [["source-video", "source-video"], ["reference-image", "styled"]]);
   assert.equal(readFileSync(result.artifacts[0]?.path ?? "", "utf8"), "bytes-of https://cdn.example/out.mp4");
 });
+
+test("without a choice, a slot whose default has no adapter uses the first listed alternative that has one", async () => {
+  const grokOnly = { "xai/grok-imagine-video": spec("xai/grok-imagine-video", { params: { resolutions: ["480p", "720p"], maxReferenceImages: 7 } }) };
+  const gateway = fakeGateway({}, grokOnly);
+  const deps = { gateway, local, allowedRoots: [root] };
+  const short = writeFixture(root, "short.mp4", "short");
+  const nine = writeFixture(root, "nine.mp4", "nine");
+  const shortLocal = fakeLocal({
+    "short.mp4": { durationSec: 6, width: 720, height: 720, hasAudio: false },
+    "nine.mp4": { durationSec: 9.5, width: 720, height: 720, hasAudio: false },
+  });
+  const p = await prepareWorkflow(def("remix-object-swap"), { values: { video: video(short), images } }, { ...deps, local: shortLocal }, new AbortController().signal);
+  assert.equal((p.plan.steps[0] as MediaStep).model, "xai/grok-imagine-video");
+  const pinned = await prepareWorkflow(def("remix-object-swap"), { values: { video: video(short), images }, selection: { models: { render: "bytedance/seedance-2.5" } } }, { ...deps, local: shortLocal }, new AbortController().signal);
+  assert.equal((pinned.plan.steps[0] as MediaStep).model, "bytedance/seedance-2.5", "an explicit choice is kept even without an adapter");
+  await assert.rejects(prepareWorkflow(def("remix-object-swap"), { values: { video: video(nine), images } }, { ...deps, local: shortLocal }, new AbortController().signal), /edits clips up to 8.7 seconds/);
+  await assert.rejects(prepareWorkflow(def("remix-object-swap"), { values: { video: video(short), images, resolution: "1080p" } }, { ...deps, local: shortLocal }, new AbortController().signal), /offers 480p, 720p/);
+  const many = Array.from({ length: 8 }, () => images[1]);
+  await assert.rejects(prepareWorkflow(def("remix-object-swap"), { values: { video: video(short), images: many } }, { ...deps, local: shortLocal }, new AbortController().signal), /at most 7 reference images/);
+});
+

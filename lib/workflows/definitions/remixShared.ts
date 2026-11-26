@@ -1,9 +1,10 @@
 import type { MediaInput } from "../../providers/media/contract.js";
+import { inputError } from "../errors.js";
 import type {
-  LocalStep, MediaStep, ModelSlot, ResolvedSlot, StepRuntime, WorkflowField, WorkflowMediaRef,
+  LocalStep, MediaStep, ModelSlot, PlanEnv, ResolvedSlot, StepRuntime, WorkflowField, WorkflowMediaRef,
   WorkflowStep, WorkflowValues,
 } from "../types.js";
-import { inputsFrom, joinPrompt, option, refsOf, textOf, videoResolutionField, wholeSeconds } from "./shared.js";
+import { checkModelFit, inputsFrom, joinPrompt, option, refsOf, textOf, videoResolutionField, wholeSeconds } from "./shared.js";
 
 /** Source limits shared by every Remix workflow (4-15 s, 200 MB), matching Sume's public Remix schema. */
 export function sourceVideoField(): WorkflowField {
@@ -36,14 +37,26 @@ export const REMIX_FIELDS_TAIL: readonly WorkflowField[] = [videoResolutionField
 
 const RENDER_EVIDENCE = "BytePlus ModelArk Seedance 2.5 guide (https://docs.byteplus.com/en/docs/ModelArk/seedance-2-5, read 2026-11-26): "
   + "explicit edit mode on a 4-30 s source video with up to 30 reference images; output follows the source length (up to 0.4 s shorter). "
-  + "BytePlus restricts direct upload of real human faces; see the portrait workflow there.";
+  + "BytePlus restricts direct upload of real human faces; see the portrait workflow there. "
+  + "Grok Imagine Video edits (https://docs.x.ai/developers/rest-api-reference/inference/videos, read 2026-11-26) take clips up to 8.7 s at up to 720p.";
+
+/** Longest source each edit model accepts, from its maker's docs. */
+const EDIT_SOURCE_MAX_SEC: Readonly<Record<string, number>> = { "xai/grok-imagine-video": 8.7 };
+
+/** Plan-time fit checks for a Remix edit: source length, reference count, resolution. */
+export function checkRemixFit(env: PlanEnv, model: string, values: WorkflowValues, referenceCount: number): void {
+  const max = EDIT_SOURCE_MAX_SEC[model];
+  const seconds = sourceOf(values).durationSec ?? 0;
+  if (max !== undefined && seconds > max + 0.05) throw inputError("video", model + " edits clips up to " + max + " seconds");
+  checkModelFit(env, model, values, referenceCount);
+}
 
 /** The video edit slot used by every Remix workflow. */
 export function renderSlot(withLite: boolean): ModelSlot {
   const slot: ModelSlot = {
     name: "render", label: "Video edit", task: "video-to-video",
     defaultModel: "bytedance/seedance-2.5",
-    alternatives: ["bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini", "google/gemini-omni-flash-1.2"],
+    alternatives: ["bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini", "xai/grok-imagine-video"],
     rationale: RENDER_EVIDENCE,
   };
   if (withLite) slot.tierModels = { lite: "bytedance/seedance-2.5-flash" };
@@ -117,3 +130,4 @@ export function finishRemix(values: WorkflowValues, before: readonly WorkflowSte
 export function imageList(count: number): string {
   return Array.from({ length: count }, (_, i) => "image " + (i + 1)).join(", ");
 }
+
