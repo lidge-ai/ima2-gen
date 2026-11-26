@@ -38,7 +38,7 @@ test("estimates use the exact published variant, or the highest price when the v
 
 async function guardFixture(t: import("node:test").TestContext, opts: { daily?: number; perRequest?: number } = {}) {
   const dir = await mkdtemp(join(tmpdir(), "ima2-web-spend-"));
-  t.after(() => rm(dir, { recursive: true, force: true }));
+  t.after(() => rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   let now = Date.parse("2026-11-26T10:00:00Z");
   const ledgerFile = join(dir, "web-spend-ledger.json");
   const make = () => createSpendGuard({ dailyCapUsd: opts.daily ?? 5, requestCapUsd: opts.perRequest ?? 1, ledgerFile, timeZone: "Asia/Seoul", now: () => now });

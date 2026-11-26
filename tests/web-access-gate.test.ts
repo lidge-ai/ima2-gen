@@ -23,7 +23,7 @@ async function withGate(t: import("node:test").TestContext, allowedEmails: reado
   web.registerRoutes(app);
   app.use((req, res) => { res.json({ reached: req.method + " " + req.path, email: res.locals.webUser?.email ?? null }); });
   const server = await new Promise<import("node:http").Server>(resolve => { const s = app.listen(0, "127.0.0.1", () => resolve(s)); });
-  t.after(async () => { await new Promise<void>(r => server.close(() => r())); await rm(dir, { recursive: true, force: true }); });
+  t.after(async () => { await new Promise<void>(r => server.close(() => r())); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
   const base = "http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port;
   const call = (path: string, init: RequestInit & { token?: string | null } = {}) => {
     const headers = new Headers(init.headers);
