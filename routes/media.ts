@@ -10,12 +10,16 @@ import { storeMediaInput } from "../lib/providers/media/inputs.js";
 import { getMediaRegistry } from "../lib/providers/media/registry.js";
 import { launchMediaJob, prepareMediaJob, type MediaRunnerDeps } from "../lib/providers/media/runner.js";
 import { parseMediaJobBody } from "../lib/providers/media/validate.js";
-import { abortJob } from "../lib/inflight.js";
+import { abortJob, listJobs, listTerminalJobs } from "../lib/inflight.js";
 import { logError } from "../lib/logger.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
 
 const KINDS: readonly MediaKind[] = ["image", "video", "audio"];
 const REQUEST_ID = /^[A-Za-z0-9_.:-]{1,128}$/;
+
+function isMediaJob(job: { kind: string; meta?: Record<string, unknown> }): boolean {
+  return job.kind === "workflow" || typeof job.meta?.adapter === "string";
+}
 
 export function mediaRunnerDeps(ctx: RuntimeContext, overrides: Partial<MediaRunnerDeps> = {}): MediaRunnerDeps {
   return {
@@ -79,6 +83,21 @@ export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, o
     } catch (error) {
       sendMediaError(res, error, "media");
     }
+  });
+
+  // Active and recent media/workflow jobs, so a reloaded UI can reattach to /api/events.
+  app.get("/api/media/jobs", (req: Request, res: Response) => {
+    const sessionId = typeof req.query.sessionId === "string" && req.query.sessionId ? req.query.sessionId : undefined;
+    const active = listJobs({ sessionId }).filter(isMediaJob);
+    const recent = req.query.status === "all" ? listTerminalJobs({ sessionId }).filter(isMediaJob).slice(0, 100) : [];
+    res.json({ jobs: active, terminalJobs: recent });
+  });
+
+  app.get("/api/media/jobs/:requestId", (req: Request<{ requestId: string }>, res: Response) => {
+    const id = req.params.requestId;
+    const job = listJobs().find((j) => j.requestId === id && isMediaJob(j)) ?? listTerminalJobs().find((j) => j.requestId === id && isMediaJob(j));
+    if (!job) return res.status(404).json({ ok: false, code: "MEDIA_JOB_UNKNOWN", error: "Unknown job" });
+    return res.json({ job });
   });
 
   app.post("/api/media/:requestId/cancel", (req: Request<{ requestId: string }>, res: Response) => {

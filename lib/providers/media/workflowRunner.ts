@@ -19,7 +19,7 @@ export interface WorkflowLaunchOptions {
 
 function emitFor(requestId: string) {
   return (event: string, data: Record<string, unknown>) => {
-    const payload = { requestId, ...data };
+    const payload = { requestId, jobKind: "workflow", ...data };
     if (event === "done" || event === "error") publishJobEvent(requestId, event, payload);
     else publish(requestId, event, payload);
   };

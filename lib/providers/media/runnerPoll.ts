@@ -60,7 +60,8 @@ async function pollOnce(args: PollLoopArgs, failures: number): Promise<{ state?:
 export async function pollUntilTerminal(args: PollLoopArgs): Promise<TerminalState> {
   const sleep = args.deps.sleep ?? abortableSleep;
   const deadline = Date.now() + (args.deps.maxWaitMs ?? DEFAULT_MAX_WAIT_MS);
-  let delay = clampPollMs(args.job.pollAfterMs);
+  // A job ref with pollAfterMs 0 already holds its result (synchronous upstream): poll at once.
+  let delay = args.job.pollAfterMs === 0 ? 0 : clampPollMs(args.job.pollAfterMs);
   let failures = 0;
   for (;;) {
     await sleep(delay, args.signal);

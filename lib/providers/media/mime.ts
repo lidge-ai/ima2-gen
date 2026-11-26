@@ -49,6 +49,23 @@ export function extFromMime(mime: string | null | undefined): string | undefined
   return EXT_BY_MIME[baseMime(mime)];
 }
 
+/** Recognizes common media containers from their first bytes, for outputs served as octet-stream. */
+export function sniffMime(bytes: Uint8Array): string | undefined {
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.subarray(from, to));
+  if (bytes.length < 12) return undefined;
+  if (bytes[0] === 0x89 && ascii(1, 4) === "PNG") return "image/png";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WAVE") return "audio/wav";
+  if (ascii(0, 4) === "GIF8") return "image/gif";
+  if (ascii(4, 8) === "ftyp") return ascii(8, 11) === "qt " ? "video/quicktime" : ascii(8, 11) === "M4A" ? "audio/mp4" : "video/mp4";
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  if (ascii(0, 3) === "ID3" || (bytes[0] === 0xff && (bytes[1]! & 0xe0) === 0xe0)) return "audio/mpeg";
+  if (ascii(0, 4) === "OggS") return "audio/ogg";
+  if (ascii(0, 4) === "fLaC") return "audio/flac";
+  return undefined;
+}
+
 export function isMediaMime(mime: string): boolean {
   return extFromMime(mime) !== undefined;
 }

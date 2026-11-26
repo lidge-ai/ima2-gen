@@ -20,7 +20,7 @@ export interface MediaKeyLookup {
 }
 
 /** Legacy vocabularies keep the key names the server already reads (routes/keys.ts). */
-export const LEGACY_KEY_VOCABULARIES = ["openai", "xai", "gemini", "atlascloud", "minimax", "nai"] as const;
+export const LEGACY_KEY_VOCABULARIES = ["openai", "xai", "gemini", "atlascloud", "minimax", "nai", "vertex"] as const;
 
 export async function readConfigFileSafe(path: string): Promise<Record<string, unknown>> {
   try {

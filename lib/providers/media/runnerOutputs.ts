@@ -3,7 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { MediaKind, MediaOutput } from "./contract.js";
 import { MediaJobError } from "./errors.js";
-import { baseMime, extFromMime, mimeFromName } from "./mime.js";
+import { baseMime, extFromMime, mimeFromName, sniffMime } from "./mime.js";
 import { DEFAULT_MAX_DOWNLOAD_BYTES, type MediaRunnerDeps, type SavedMediaOutput } from "./runnerTypes.js";
 import { persistVideoArtifact } from "../../videoArtifactPersistence.js";
 import { generateVideoThumbnail } from "../../videoThumb.js";
@@ -44,12 +44,16 @@ async function fetchOutput(deps: MediaRunnerDeps, out: MediaOutput, signal: Abor
 
 /** Bytes for one output; vendor URLs expire, so this runs as soon as the job succeeds. */
 export async function materializeOutput(deps: MediaRunnerDeps, out: MediaOutput, signal: AbortSignal): Promise<{ buffer: Buffer; mimeType: string }> {
-  if (out.bytes) return { buffer: Buffer.from(out.bytes), mimeType: baseMime(out.mimeType) };
+  if (out.bytes) {
+    const declared = baseMime(out.mimeType);
+    return { buffer: Buffer.from(out.bytes), mimeType: extFromMime(declared) ? declared : sniffMime(out.bytes) ?? declared };
+  }
   if (!out.url) throw downloadFailed("Provider output has neither url nor bytes");
   const got = await fetchOutput(deps, out, signal);
   const declared = baseMime(out.mimeType);
-  const mimeType = extFromMime(declared) ? declared : extFromMime(got.mimeType) ? got.mimeType : mimeFromName(out.url) ?? declared;
   if (got.buffer.length === 0) throw downloadFailed("Provider output is empty");
+  const candidates = [declared, got.mimeType, mimeFromName(out.url), sniffMime(got.buffer)];
+  const mimeType = candidates.find((m) => m && extFromMime(m)) ?? declared;
   return { buffer: got.buffer, mimeType };
 }
 

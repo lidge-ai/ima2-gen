@@ -263,3 +263,21 @@ test("listing saved outputs: files land in the history folder only once per outp
     await s.done();
   }
 });
+
+test("outputs served as octet-stream are typed from their bytes", async () => {
+  const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+  const url = "https://cdn.fake.example/out/blob";
+  const adapter = makeFakeAdapter({ models: [fakeSpec("acme/still-1", { kind: "image", tasks: ["text-to-image"], params: {} })], script: { states: [{ status: "succeeded", outputs: [{ kind: "image", url, mimeType: "application/octet-stream", downloadHeaders: { "x-goog-api-key": "header-secret-abcdef" } }] }] } });
+  const s = await setup([adapter], { transport: fakeTransport({ downloads: { [url]: { body: PNG, type: "application/octet-stream" } } }) });
+  try {
+    const req = parseMediaJobBody({ model: "acme/still-1", task: "text-to-image", prompt: "x" });
+    const r = await launchMediaJob(s.deps, await prepareMediaJob(s.deps, req), { requestId: "req-sniff" }).done;
+    assert.match(r.outputs[0]!.filename, /\.png$/);
+    assert.equal(r.outputs[0]!.mimeType, "image/png");
+    assert.ok(!JSON.stringify(s.events).includes("header-secret-abcdef"));
+    const sidecar = await readFile(join(s.deps.generatedDir, r.outputs[0]!.filename + ".json"), "utf8");
+    assert.ok(!sidecar.includes("header-secret-abcdef"));
+  } finally {
+    await s.done();
+  }
+});

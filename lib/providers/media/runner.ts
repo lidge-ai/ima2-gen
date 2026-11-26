@@ -49,7 +49,7 @@ export async function prepareMediaJob(deps: MediaRunnerDeps, body: MediaJobBody)
 
 function emitter(requestId: string, secrets: readonly string[]) {
   return (event: string, data: Record<string, unknown>) => {
-    const safe = redactDeep({ requestId, ...data }, secrets);
+    const safe = redactDeep({ requestId, jobKind: "media", ...data }, secrets);
     if (event === "done" || event === "error") publishJobEvent(requestId, event, safe);
     else publish(requestId, event, safe);
   };
@@ -105,6 +105,8 @@ async function runToCompletion(deps: MediaRunnerDeps, prepared: PreparedMediaJob
   // A failed state already carries a normalized error; only strip secrets from its message.
   if (terminal.status === "failed") throw mediaJobErrorFromProvider({ ...terminal.error, message: redactSecrets(String(terminal.error.message ?? ""), credential.secrets) });
   if (terminal.status === "canceled") throw new MediaJobError("MEDIA_UPSTREAM_CANCELED", "The provider canceled the job", { status: 502, category: "upstream" });
+  // Download headers can carry the key (Gemini file URIs); never let them reach events or logs.
+  for (const out of terminal.outputs) credential.secrets.push(...Object.values(out.downloadHeaders ?? {}));
   setJobPhase(opts.requestId, "decoding");
   const elapsed = +((Date.now() - startedAt) / 1000).toFixed(1);
   const outputs: SavedMediaOutput[] = [];

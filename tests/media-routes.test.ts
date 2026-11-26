@@ -115,6 +115,11 @@ test("POST /api/media answers 202 and the job finishes on /api/events", async ()
     assert.deepEqual(await res.json(), { requestId: "r1", model: "acme/clip-1", adapter: "fake" });
     await waitFor(events, "r1", ["done", "error"]);
     const done = events.find((e) => e.jobId === "r1" && e.event === "done")!;
+    assert.equal(done.data.jobKind, "media");
+    const jobs = await (await fetch(`${base}/api/media/jobs?status=all`)).json();
+    assert.ok(jobs.terminalJobs.some((j: { requestId: string }) => j.requestId === "r1"));
+    assert.equal((await (await fetch(`${base}/api/media/jobs/r1`)).json()).job.requestId, "r1");
+    assert.equal((await fetch(`${base}/api/media/jobs/nope`)).status, 404);
     assert.equal(await readFile(join(root, "generated", String(done.data.filename)), "utf8"), "mp4");
     assert.ok(!JSON.stringify(events).includes(FAKE_KEY));
   });
