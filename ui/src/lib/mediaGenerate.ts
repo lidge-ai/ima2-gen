@@ -1,7 +1,8 @@
 import { fetchApi, jsonFetch } from "./api-core";
 import { armStreamTimeout, subscribe, whenConnected } from "./eventChannel";
 import { parseSseErrorPayload } from "./sseStreamError";
-import { chooseMediaRoute, fetchMediaCatalog } from "./mediaCatalog";
+import { fetchMediaCatalog } from "./mediaCatalog";
+import { resolveRoute } from "./mediaRoutes";
 import type { MediaSelection } from "./mediaSelection";
 import type { MediaInput, MediaInputRole } from "./mediaSubmitBody";
 import { inputProblem, inputRoles } from "./mediaTasks";
@@ -26,17 +27,18 @@ async function inputFor(value: string, role: MediaInputRole, signal: AbortSignal
   return { role, ref: uploaded.ref };
 }
 
-export async function prepareMediaInputs(selection: MediaSelection, references: string[], signal: AbortSignal): Promise<MediaInput[]> {
+export async function prepareMediaInputs(selection: MediaSelection, references: string[], signal: AbortSignal): Promise<{ inputs: MediaInput[]; adapter: string }> {
   const catalog = await fetchMediaCatalog(selection.kind);
   const model = catalog.models.find((item) => item.id === selection.model);
-  const route = model && chooseMediaRoute(model, selection.adapter);
-  if (!route || !route.tasks.includes(selection.task)) throw new Error(t("mediaPicker.loadError"));
-  if (!route.hasKey) throw new Error(t("mediaPicker.noKey"));
+  const resolved = model && resolveRoute(model, selection);
+  if (!resolved || !resolved.route.tasks.includes(selection.task)) throw new Error(t("mediaPicker.loadError"));
+  if (resolved.state === "needs-key") throw new Error(t("mediaPicker.noKey"));
+  const route = resolved.route;
   // The settings panel already explains a tray that does not fit; this is the last check before upload.
   const problem = inputProblem(selection.task, route, references.length);
   if (problem) throw new Error(`${t("toast.generateFailed")} (${selection.task}: ${problem.have}/${problem.min}–${problem.max})`);
   const roles = inputRoles(selection.task, references.length);
-  return Promise.all(references.map((value, index) => inputFor(value, roles[index]!, signal)));
+  return { inputs: await Promise.all(references.map((value, index) => inputFor(value, roles[index]!, signal))), adapter: route.adapter };
 }
 
 export async function submitMediaJob(payload: Record<string, unknown>, id: string, signal: AbortSignal,

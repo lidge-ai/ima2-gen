@@ -24,7 +24,15 @@ export interface MediaSelection {
 
 export interface MediaSelectionState {
   mediaSelection: MediaSelection | null;
-  setMediaSelection: (selection: MediaSelection | null) => void;
+  /** Sets and saves the selection. `adjusted` replaces the "changed to fit" note; omit it to leave the note as it is. */
+  setMediaSelection: (selection: MediaSelection | null, adjusted?: Adjustment[]) => void;
+  /** Settings the last model or route change could not keep. */
+  mediaAdjustments: Adjustment[];
+  dismissMediaAdjustments: () => void;
+  /** The model window; `kind` limits it to one output type. Null when closed. */
+  mediaPicker: { kind?: "image" | "video" } | null;
+  openMediaPicker: (kind?: "image" | "video") => void;
+  closeMediaPicker: () => void;
 }
 
 export type AdjustedField = "task" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed" | "negativePrompt";

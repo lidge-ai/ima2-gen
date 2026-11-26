@@ -64,6 +64,7 @@ const MCP_OWNED_LANES = new Set(["runway", "higgsfield"]);
 const MCP_PREFIX = "mcp:";
 const CORE_PREFIX = "core:";
 const EFFORT_PREFIX = "effort:";
+const MEDIA_BROWSE = "media:browse";
 // Re-exported from the resolver module so the option rows below and the
 // selected-value computation can never drift onto two different encodings.
 const VIDEO_PREFIX = VIDEO_VALUE_PREFIX;
@@ -104,6 +105,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
   const { t } = useI18n();
   const mediaSelection = useAppStore((state) => state.mediaSelection);
   const setMediaSelection = useAppStore((state) => state.setMediaSelection);
+  const openMediaPicker = useAppStore((state) => state.openMediaPicker);
   const provider = useAppStore((state) => state.provider);
   const imageModel = useAppStore((state) => state.imageModel);
   const videoModel = useAppStore((state) => state.videoModelSelected);
@@ -265,6 +267,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
   const onModelChange = (value: string) => {
     const current = useAppStore.getState();
     if (current.provider !== provider || (current.mcpProvider ?? null) !== mcpProvider) return;
+    if (value === MEDIA_BROWSE) { openMediaPicker(); return; }
     if (value.startsWith("media:")) return;
     if (!value.startsWith(EFFORT_PREFIX)) clearMediaSelection();
     const currentSnapshot = getLaneCatalogSnapshot();
@@ -447,7 +450,10 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     }
   }
 
-  if (mediaSelection) modelGroups.unshift({ items: [{ value: `media:${mediaSelection.model}`, label: mediaSelection.model, disabled: true }] });
+  if (mediaSelection) modelGroups.unshift({ items: [{ value: `media:${mediaSelection.model}`, label: mediaSelection.label ?? mediaSelection.model, disabled: true }] });
+  // Last, after every lane's own models: the way into the media model window. Opening it is what loads the catalog.
+  // An empty list stays empty (and its control disabled): that state belongs to the lane, not to this entry.
+  if (modelGroups.length > 0) modelGroups.push({ items: [{ value: MEDIA_BROWSE, label: t("mediaPicker.browseAll") }] });
 
   const currentEffort = REASONING_EFFORT_OPTIONS.find((option) => option.value === reasoningEffort);
   const comfyDisplay = provider === "comfy" && !mcpProvider

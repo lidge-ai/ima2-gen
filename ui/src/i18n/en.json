@@ -4,7 +4,7 @@
     "logout": "Log out"
   },
   "mediaPicker": {
-    "model": "Media model",
+    "model": "Model",
     "loadError": "Could not load media models.",
     "classic": "Classic",
     "noKey": "API key required",
@@ -18,12 +18,12 @@
     "default": "Default",
     "resolution": "Resolution",
     "aspect": "Aspect ratio",
-    "nativeAudio": "Native audio",
+    "nativeAudio": "Generate sound",
     "negativePrompt": "Negative prompt",
     "seed": "Seed",
     "checked": "Price source · checked {date}",
     "documentation": "Documentation",
-    "open": "Media models · your API keys",
+    "open": "Browse models",
     "loading": "Loading media models…",
     "retry": "Try again",
     "empty": "No media models are available.",
@@ -41,7 +41,106 @@
       "1k-tokens": "1,000 tokens",
       "minute": "minute",
       "character": "character"
-    }
+    },
+    "cardIdle": "Run image and video models with your own API keys, at the provider's own price.",
+    "change": "Change model",
+    "useBuiltin": "Back to built-in",
+    "browseAll": "All models…",
+    "nodeNote": "Node mode does not use this model yet; nodes run on the built-in provider.",
+    "dialogTitle": "Choose a model",
+    "dialogIntro": "These run on your own API key at the provider's price. You can pick a model before you have its key and add the key right after.",
+    "close": "Close",
+    "kindLabel": "Output",
+    "tasks": {
+      "text-to-image": "From text",
+      "image-to-image": "Edit an image",
+      "text-to-video": "From text",
+      "image-to-video": "From an image",
+      "reference-to-video": "From references"
+    },
+    "taskNeeds": {
+      "text-to-image": "Uses the prompt only.",
+      "image-to-image": "Edits the first image in the composer; a model that takes more uses the rest as references.",
+      "text-to-video": "Uses the prompt only.",
+      "image-to-video": "Uses one composer image as the first frame.",
+      "reference-to-video": "Uses the composer images as references for a new scene."
+    },
+    "search": "Search models",
+    "maker": "Maker",
+    "allMakers": "All makers",
+    "sortLabel": "Sort",
+    "sort": {
+      "catalog": "Default order",
+      "price": "Lowest price",
+      "resolution": "Highest resolution",
+      "duration": "Longest clip"
+    },
+    "filters": "Show only",
+    "feature": {
+      "mine": "Runs with my keys",
+      "audio": "Sound",
+      "sharp": {
+        "video": "1080p or higher",
+        "image": "2K or higher"
+      },
+      "long": "10 s or longer"
+    },
+    "count": "{n} of {total}",
+    "group": {
+      "suggested": "Suggested",
+      "recent": "Recent",
+      "ready": "Ready with your keys",
+      "builtin": "Built-in providers",
+      "needsKey": "Needs a key (add it after picking)",
+      "unsupported": "Not available in this composer ({n})"
+    },
+    "unsupportedWhy": "These models need a video or audio input, and this composer only sends a prompt and images.",
+    "reason": {
+      "cheapest": "Lowest price your keys can run",
+      "sharpest": "Highest resolution your keys can run",
+      "longest": "Longest clip your keys can run"
+    },
+    "from": "from {price}",
+    "perUnit": "{amount}/{unit}",
+    "unitShort": {
+      "second": "s",
+      "image": "image",
+      "request": "request",
+      "megapixel": "MP",
+      "1k-tokens": "1K tokens",
+      "minute": "min",
+      "character": "char"
+    },
+    "noPrice": "No published price",
+    "audioTag": "Sound",
+    "seconds": "{n} s",
+    "secondsRange": "{min}–{max} s",
+    "emptyFiltered": "No model matches.",
+    "clearFilters": "Clear search and filters",
+    "emptyTask": "No model in the catalog does this yet.",
+    "builtinTitle": "ChatGPT, Grok, Gemini and the other built-in providers",
+    "builtinBody": "Sign-in subscriptions and the providers you already set up. Uses the provider and model at the top of the sidebar.",
+    "selected": "Selected",
+    "loadErrorBuiltin": "The built-in providers still work.",
+    "routeAuto": "Automatic",
+    "routeAutoHint": "Direct first, then the cheapest route with a key",
+    "routeAutoNow": "Direct first, then cheapest. Now: {route}",
+    "routeNeedsKey": "{route} needs an API key before this can run.",
+    "adjustedTitle": "Changed to fit this model",
+    "adjustedTo": "{field}: {from} → {to}",
+    "adjustedDropped": "{field}: not available here",
+    "dismiss": "Dismiss",
+    "inputsOk": "Composer images: {have} of up to {max}",
+    "problem": {
+      "needsImages": "This task needs at least {min} image in the composer (now {have}).",
+      "tooManyImages": "This route takes up to {max} images (now {have}). Remove some or pick another route.",
+      "noImages": "This task uses the prompt only. Remove the {have} composer images or switch the task.",
+      "unsupported": "This route does not list how many reference images it takes, so it cannot run this task here."
+    },
+    "seedPlaceholder": "Random",
+    "seedInvalid": "Use a whole number from 0 to 2147483647.",
+    "prices": "Prices and sources",
+    "missingModel": "This model is no longer in the catalog. Choose another one."
   },
   "media": {
     "keysTitle": "Media providers",

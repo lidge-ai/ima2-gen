@@ -4,7 +4,7 @@
     "logout": "登出"
   },
   "mediaPicker": {
-    "model": "媒體模型",
+    "model": "模型",
     "loadError": "無法載入媒體模型。",
     "classic": "經典",
     "noKey": "需要 API 金鑰",
@@ -18,12 +18,12 @@
     "default": "預設",
     "resolution": "解析度",
     "aspect": "長寬比",
-    "nativeAudio": "原生音訊",
+    "nativeAudio": "同時生成聲音",
     "negativePrompt": "負面提示詞",
     "seed": "種子",
     "checked": "價格來源 · 核對日期：{date}",
     "documentation": "文件",
-    "open": "媒體模型 · 使用你的 API 金鑰",
+    "open": "瀏覽模型",
     "loading": "正在載入媒體模型…",
     "retry": "重試",
     "empty": "沒有可用的媒體模型。",
@@ -41,7 +41,106 @@
       "1k-tokens": "1,000 個權杖",
       "minute": "分鐘",
       "character": "個字元"
-    }
+    },
+    "cardIdle": "用你自己的 API 金鑰執行圖片與影片模型，按提供商的原價計費。",
+    "change": "更換模型",
+    "useBuiltin": "回到內建提供商",
+    "browseAll": "查看全部模型…",
+    "nodeNote": "節點模式暫不使用此模型，節點仍由內建提供商執行。",
+    "dialogTitle": "選擇模型",
+    "dialogIntro": "這些模型用你自己的 API 金鑰執行，按提供商的價格計費。沒有金鑰的模型也可以先選，選完馬上填寫金鑰。",
+    "close": "關閉",
+    "kindLabel": "生成內容",
+    "tasks": {
+      "text-to-image": "文字生成",
+      "image-to-image": "編輯圖片",
+      "text-to-video": "文字生成",
+      "image-to-video": "圖片生成",
+      "reference-to-video": "參考圖生成"
+    },
+    "taskNeeds": {
+      "text-to-image": "只使用提示詞。",
+      "image-to-image": "編輯輸入區的第一張圖片；支援多張的模型會把其餘圖片當作參考。",
+      "text-to-video": "只使用提示詞。",
+      "image-to-video": "把輸入區的一張圖片作為首幀。",
+      "reference-to-video": "參考輸入區的圖片生成新場景。"
+    },
+    "search": "搜尋模型",
+    "maker": "廠商",
+    "allMakers": "全部廠商",
+    "sortLabel": "排序",
+    "sort": {
+      "catalog": "預設順序",
+      "price": "價格由低到高",
+      "resolution": "解析度由高到低",
+      "duration": "長度由長到短"
+    },
+    "filters": "只看",
+    "feature": {
+      "mine": "我的金鑰可執行",
+      "audio": "有聲音",
+      "sharp": {
+        "video": "1080p 以上",
+        "image": "2K 以上"
+      },
+      "long": "10 秒以上"
+    },
+    "count": "共 {total} 個，顯示 {n} 個",
+    "group": {
+      "suggested": "推薦",
+      "recent": "最近使用",
+      "ready": "我的金鑰可直接執行",
+      "builtin": "內建提供商",
+      "needsKey": "需要金鑰（選完再填）",
+      "unsupported": "此輸入區無法執行的模型（{n}）"
+    },
+    "unsupportedWhy": "這些模型需要影片或音訊輸入，而此輸入區只傳送提示詞和圖片。",
+    "reason": {
+      "cheapest": "我的金鑰可執行的模型中價格最低",
+      "sharpest": "我的金鑰可執行的模型中解析度最高",
+      "longest": "我的金鑰可執行的模型中長度最長"
+    },
+    "from": "{price} 起",
+    "perUnit": "{amount}/{unit}",
+    "unitShort": {
+      "second": "秒",
+      "image": "張",
+      "request": "次",
+      "megapixel": "MP",
+      "1k-tokens": "千 token",
+      "minute": "分鐘",
+      "character": "字元"
+    },
+    "noPrice": "未公布價格",
+    "audioTag": "聲音",
+    "seconds": "{n} 秒",
+    "secondsRange": "{min}–{max} 秒",
+    "emptyFiltered": "沒有符合的模型。",
+    "clearFilters": "清除搜尋與篩選",
+    "emptyTask": "目錄裡還沒有支援此任務的模型。",
+    "builtinTitle": "ChatGPT、Grok、Gemini 等內建提供商",
+    "builtinBody": "使用登入訂閱和已設定好的提供商，沿用側邊欄頂部選擇的提供商與模型。",
+    "selected": "已選擇",
+    "loadErrorBuiltin": "內建提供商仍可使用。",
+    "routeAuto": "自動",
+    "routeAutoHint": "優先直連，否則選有金鑰且最便宜的線路",
+    "routeAutoNow": "優先直連，否則選最便宜的線路。目前：{route}",
+    "routeNeedsKey": "需要 {route} 的 API 金鑰才能執行。",
+    "adjustedTitle": "已依此模型調整的設定",
+    "adjustedTo": "{field}：{from} → {to}",
+    "adjustedDropped": "{field}：此模型不支援",
+    "dismiss": "關閉",
+    "inputsOk": "輸入區圖片 {have} 張（最多 {max} 張）",
+    "problem": {
+      "needsImages": "此任務需要輸入區至少有 {min} 張圖片（目前 {have} 張）。",
+      "tooManyImages": "此線路最多接收 {max} 張圖片（目前 {have} 張）。請移除幾張或換一條線路。",
+      "noImages": "此任務只使用提示詞。請移除輸入區的 {have} 張圖片，或更換任務。",
+      "unsupported": "此線路未公布可接收的參考圖數量，無法在這裡執行此任務。"
+    },
+    "seedPlaceholder": "隨機",
+    "seedInvalid": "請輸入 0 到 2147483647 之間的整數。",
+    "prices": "價格與來源",
+    "missingModel": "目錄裡已沒有此模型，請選擇其他模型。"
   },
   "media": {
     "keysTitle": "媒體供應商",

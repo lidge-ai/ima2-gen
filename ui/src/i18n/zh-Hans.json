@@ -4,7 +4,7 @@
     "logout": "退出登录"
   },
   "mediaPicker": {
-    "model": "媒体模型",
+    "model": "模型",
     "loadError": "无法加载媒体模型。",
     "classic": "经典",
     "noKey": "需要 API 密钥",
@@ -18,12 +18,12 @@
     "default": "默认",
     "resolution": "分辨率",
     "aspect": "宽高比",
-    "nativeAudio": "原生音频",
+    "nativeAudio": "同时生成声音",
     "negativePrompt": "负面提示词",
     "seed": "种子",
     "checked": "价格来源 · 核对日期：{date}",
     "documentation": "文档",
-    "open": "媒体模型 · 使用你的 API 密钥",
+    "open": "浏览模型",
     "loading": "正在加载媒体模型…",
     "retry": "重试",
     "empty": "没有可用的媒体模型。",
@@ -41,7 +41,106 @@
       "1k-tokens": "1,000 个令牌",
       "minute": "分钟",
       "character": "个字符"
-    }
+    },
+    "cardIdle": "用你自己的 API 密钥运行图片和视频模型，按提供商的原价计费。",
+    "change": "更换模型",
+    "useBuiltin": "回到内置提供商",
+    "browseAll": "查看全部模型…",
+    "nodeNote": "节点模式暂不使用此模型，节点仍由内置提供商运行。",
+    "dialogTitle": "选择模型",
+    "dialogIntro": "这些模型用你自己的 API 密钥运行，按提供商的价格计费。没有密钥的模型也可以先选，选完马上填写密钥。",
+    "close": "关闭",
+    "kindLabel": "生成内容",
+    "tasks": {
+      "text-to-image": "文字生成",
+      "image-to-image": "编辑图片",
+      "text-to-video": "文字生成",
+      "image-to-video": "图片生成",
+      "reference-to-video": "参考图生成"
+    },
+    "taskNeeds": {
+      "text-to-image": "只使用提示词。",
+      "image-to-image": "编辑输入区的第一张图片；支持多张的模型会把其余图片当作参考。",
+      "text-to-video": "只使用提示词。",
+      "image-to-video": "把输入区的一张图片作为首帧。",
+      "reference-to-video": "参考输入区的图片生成新场景。"
+    },
+    "search": "搜索模型",
+    "maker": "厂商",
+    "allMakers": "全部厂商",
+    "sortLabel": "排序",
+    "sort": {
+      "catalog": "默认顺序",
+      "price": "价格从低到高",
+      "resolution": "分辨率从高到低",
+      "duration": "时长从长到短"
+    },
+    "filters": "只看",
+    "feature": {
+      "mine": "我的密钥可运行",
+      "audio": "带声音",
+      "sharp": {
+        "video": "1080p 及以上",
+        "image": "2K 及以上"
+      },
+      "long": "10 秒及以上"
+    },
+    "count": "共 {total} 个，显示 {n} 个",
+    "group": {
+      "suggested": "推荐",
+      "recent": "最近使用",
+      "ready": "我的密钥可直接运行",
+      "builtin": "内置提供商",
+      "needsKey": "需要密钥（选完再填）",
+      "unsupported": "此输入区无法运行的模型（{n}）"
+    },
+    "unsupportedWhy": "这些模型需要视频或音频输入，而此输入区只发送提示词和图片。",
+    "reason": {
+      "cheapest": "我的密钥可运行的模型中价格最低",
+      "sharpest": "我的密钥可运行的模型中分辨率最高",
+      "longest": "我的密钥可运行的模型中时长最长"
+    },
+    "from": "{price} 起",
+    "perUnit": "{amount}/{unit}",
+    "unitShort": {
+      "second": "秒",
+      "image": "张",
+      "request": "次",
+      "megapixel": "MP",
+      "1k-tokens": "千 token",
+      "minute": "分钟",
+      "character": "字符"
+    },
+    "noPrice": "未公布价格",
+    "audioTag": "声音",
+    "seconds": "{n} 秒",
+    "secondsRange": "{min}–{max} 秒",
+    "emptyFiltered": "没有匹配的模型。",
+    "clearFilters": "清除搜索和筛选",
+    "emptyTask": "目录里还没有支持此任务的模型。",
+    "builtinTitle": "ChatGPT、Grok、Gemini 等内置提供商",
+    "builtinBody": "使用登录订阅和已设置好的提供商，沿用侧边栏顶部选择的提供商和模型。",
+    "selected": "已选择",
+    "loadErrorBuiltin": "内置提供商仍可使用。",
+    "routeAuto": "自动",
+    "routeAutoHint": "优先直连，否则选有密钥且最便宜的线路",
+    "routeAutoNow": "优先直连，否则选最便宜的线路。当前：{route}",
+    "routeNeedsKey": "需要 {route} 的 API 密钥才能运行。",
+    "adjustedTitle": "已按此模型调整的设置",
+    "adjustedTo": "{field}：{from} → {to}",
+    "adjustedDropped": "{field}：此模型不支持",
+    "dismiss": "关闭",
+    "inputsOk": "输入区图片 {have} 张（最多 {max} 张）",
+    "problem": {
+      "needsImages": "此任务需要输入区至少有 {min} 张图片（当前 {have} 张）。",
+      "tooManyImages": "此线路最多接收 {max} 张图片（当前 {have} 张）。请移除几张或换一条线路。",
+      "noImages": "此任务只使用提示词。请移除输入区的 {have} 张图片，或更换任务。",
+      "unsupported": "此线路未公布可接收的参考图数量，无法在这里运行此任务。"
+    },
+    "seedPlaceholder": "随机",
+    "seedInvalid": "请输入 0 到 2147483647 之间的整数。",
+    "prices": "价格与来源",
+    "missingModel": "目录里已没有此模型，请选择其他模型。"
   },
   "media": {
     "keysTitle": "媒体提供商",

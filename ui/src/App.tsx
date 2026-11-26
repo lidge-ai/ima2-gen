@@ -12,6 +12,7 @@ import "./styles/web-account-badge.css";
 import { ErrorCard } from "./components/ErrorCard";
 import { GalleryModal } from "./components/GalleryModal";
 import { CustomSizeConfirmModal } from "./components/CustomSizeConfirmModal";
+import { MediaModelDialog } from "./components/media/MediaModelDialog";
 import { MetadataRestoreDialog } from "./components/MetadataRestoreDialog";
 import { ProviderReadinessPopup } from "./components/ProviderReadinessPopup";
 import { OnboardingPopup } from "./components/OnboardingPopup";
@@ -223,6 +224,7 @@ export default function App() {
         {isMobile ? null : uiMode === "agent" ? null : uiMode === "card-news" ? null : uiMode === "assets" ? null : uiMode === "asset-gen" ? null : uiMode === "home" ? null : <RightPanel />}
       </div>
       <CustomSizeConfirmModal />
+      <MediaModelDialog />
       <TrashUndoToast />
       <Toast />
       <UpdateNoticeHost />
