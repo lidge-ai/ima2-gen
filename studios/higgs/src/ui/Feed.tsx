@@ -1,3 +1,4 @@
+import { messages, useT } from "../i18n.ts";
 import { useState, type ReactNode } from "react";
 import { type HistoryItem, type Job, type MediaKind } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../studio/context.tsx";
@@ -6,6 +7,9 @@ import { Lightbox } from "./Lightbox.tsx";
 import { MediaView } from "./MediaView.tsx";
 import { ModelName } from "./ModelName.tsx";
 import { historyWorkflow } from "../studio/historyWorkflow.ts";
+
+const M = messages({ open: "Open {name}", jobs: "In progress and recent", results: "Results", more: "Load more", loading: "Loading results" },
+  { open: "{name} 열기", jobs: "진행 중 및 최근 작업", results: "결과", more: "더 보기", loading: "결과 불러오는 중" });
 
 interface Props {
   kind?: MediaKind;
@@ -27,12 +31,13 @@ function jobMatches(
 }
 
 export function Tile({ item, onOpen }: { item: HistoryItem; onOpen: (item: HistoryItem) => void }) {
+  const t = useT(M);
   return (
     <button
       type="button"
       className={"tile tile-" + item.kind}
       onClick={() => onOpen(item)}
-      aria-label={"Open " + (item.prompt ?? item.model)}
+      aria-label={t("open", { name: item.prompt ?? item.model })}
     >
       <MediaView kind={item.kind} url={item.thumbUrl ?? item.url} alt={item.prompt ?? item.model} variant="tile" />
       <span className="tile-caption">{item.workflow ? item.workflow : <ModelName id={item.model} size={14} />}</span>
@@ -46,6 +51,7 @@ export function Tile({ item, onOpen }: { item: HistoryItem; onOpen: (item: Histo
  * server lists without outputs (earlier sessions) show only as results.
  */
 export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) {
+  const t = useT(M);
   const studio = useStudioApi();
   const jobs = useStudio((s) => s.jobOrder.map((id) => s.jobs[id]).filter((j): j is Job => !!j));
   const catalog = useStudio((s) => s.catalog);
@@ -67,14 +73,15 @@ export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) 
   if (loaded && visibleJobs.length === 0 && items.length === 0) return <>{empty}</>;
   return (
     <div className="feed">
+      {!loaded ? <p role="status">{t("loading")}</p> : null}
       {visibleJobs.length > 0 ? (
-        <section className="job-list" aria-label="In progress and recent">
+        <section className="job-list" aria-label={t("jobs")}>
           {visibleJobs.slice(0, 12).map((job) => (
             <JobCard key={job.jobId} job={job} />
           ))}
         </section>
       ) : null}
-      <section className={"grid grid-" + density} aria-label="Results">
+      <section className={"grid grid-" + density} aria-label={t("results")}>
         {items.map((item) => (
           <Tile key={item.historyId} item={item} onOpen={setOpen} />
         ))}
@@ -87,7 +94,7 @@ export function Feed({ kind, workflow, empty, density = "comfortable" }: Props) 
             void studio.loadHistory();
           }}
         >
-          Load more
+          {t("more")}
         </button>
       ) : null}
       <Lightbox item={open} onClose={() => setOpen(null)} />

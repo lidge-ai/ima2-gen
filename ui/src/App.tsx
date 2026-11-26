@@ -7,6 +7,8 @@ import { HistoryStrip } from "./components/HistoryStrip";
 import { Toast } from "./components/Toast";
 import { UpdateNoticeHost } from "./components/UpdateNoticeHost";
 import "./styles/update-indicator.css";
+import { WebAccountBadge } from "./components/WebAccountBadge";
+import "./styles/web-account-badge.css";
 import { ErrorCard } from "./components/ErrorCard";
 import { GalleryModal } from "./components/GalleryModal";
 import { CustomSizeConfirmModal } from "./components/CustomSizeConfirmModal";
@@ -232,6 +234,7 @@ export default function App() {
       <StarPrompt />
       <MobileComposeSheet />
       <MobileSettingsToggle />
+      <WebAccountBadge />
       {uiMode === "card-news" ? (
         <Suspense fallback={null}>
           <LazyPromptLibraryPanel />

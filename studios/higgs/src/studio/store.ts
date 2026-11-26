@@ -7,6 +7,7 @@ import {
   type KeySaveBody,
   type KeyStatus,
   type MediaSubmitBody,
+  type ShowcaseItem,
   type StreamStatus,
   type StudioClient,
   type UploadedInput,
@@ -28,6 +29,8 @@ export interface StudioState {
   historyCursor: string | null;
   historyLoaded: boolean;
   stream: StreamStatus;
+  /** Example clips from the server's showcase folder; empty hides the showcase. */
+  showcase: readonly ShowcaseItem[];
 }
 
 const initial: StudioState = {
@@ -43,6 +46,7 @@ const initial: StudioState = {
   historyCursor: null,
   historyLoaded: false,
   stream: "connecting",
+  showcase: [],
 };
 
 function message(error: unknown): string {
@@ -74,12 +78,22 @@ export class Studio {
     for (const listener of this.listeners) listener();
   }
 
+  /** Loads the workflow list; screens call it again from their error state. */
+  refreshWorkflows(): Promise<void> {
+    this.set({ workflowsLoaded: false, workflowsError: null });
+    return this.client.workflows.list().then(
+      (workflows) => this.set({ workflows, workflowsLoaded: true, workflowsError: null }),
+      (error: unknown) => this.set({ workflowsLoaded: true, workflowsError: message(error) }),
+    );
+  }
+
   start(): void {
     void this.refreshCatalog();
     void this.refreshKeys();
-    void this.client.workflows.list().then(
-      (workflows) => this.set({ workflows, workflowsLoaded: true, workflowsError: null }),
-      (error: unknown) => this.set({ workflowsLoaded: true, workflowsError: message(error) }),
+    void this.refreshWorkflows();
+    void this.client.showcase.list().then(
+      (showcase) => this.set({ showcase }),
+      () => undefined,
     );
     void this.client.media.jobs({ status: "all" }).then(
       (jobs) => {

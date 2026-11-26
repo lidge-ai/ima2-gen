@@ -100,3 +100,6 @@
     padding: 24px 0;
   }
 }
+
+.director-sidebar, .director-elements button, .director-heading { min-width: 0; overflow-wrap: anywhere; }
+.director-sidebar nav a:focus-visible, .director-elements button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }

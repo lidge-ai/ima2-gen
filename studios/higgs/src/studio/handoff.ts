@@ -7,6 +7,8 @@ export interface HandOff {
   mimeType: string;
   name: string;
   target: "video" | "remix" | "image";
+  /** Field values to prefill on the target screen (prompt, target, style...). */
+  values?: Record<string, string | number | boolean>;
 }
 
 const KEY = "ima2-studio-handoff";

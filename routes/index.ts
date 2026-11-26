@@ -47,6 +47,7 @@ import { registerMediaRoutes } from "./media.js";
 import { registerWorkflowRoutes } from "./workflows.js";
 import { registerMediaToolRoutes } from "./mediaTools.js";
 import { registerStudioRoutes } from "./studios.js";
+import { registerShowcaseRoutes } from "./showcase.js";
 import { registerGenerationRequestLogRoutes } from "./generationRequestLog.js";
 import { type RouteRuntimeContext, requireRuntimeContext } from "../lib/runtimeContext.js";
 
@@ -100,5 +101,6 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   registerWorkflowRoutes(app, ctx);
   registerMediaToolRoutes(app, ctx);
   registerStudioRoutes(app, ctx);
+  registerShowcaseRoutes(app, ctx);
   registerGenerationRequestLogRoutes(app, ctx);
 }

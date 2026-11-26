@@ -1,4 +1,20 @@
+import { messages, useT } from "../../i18n.ts";
 import { UploadSlot, type SlotValue } from "../../ui/UploadSlot.tsx";
+
+const M = messages(
+  {
+    "reference": "Reference",
+    "add": "Add references",
+    "another": "Add another",
+    "upTo": "Up to {max} images",
+  },
+  {
+    "reference": "레퍼런스",
+    "add": "레퍼런스 추가",
+    "another": "추가",
+    "upTo": "이미지 최대 {max}개",
+  },
+);
 
 interface Props {
   values: readonly SlotValue[];
@@ -9,7 +25,8 @@ interface Props {
 }
 
 /** A growing row of single-file slots, up to max. */
-export function RefSlots({ values, max, onChange, label = "Reference", accept = "image/*" }: Props) {
+export function RefSlots({ values, max, onChange, label, accept = "image/*" }: Props) {
+  const t = useT(M);
   const filled = values.slice(0, max);
   const showEmpty = filled.length < max;
   return (
@@ -17,7 +34,7 @@ export function RefSlots({ values, max, onChange, label = "Reference", accept = 
       {filled.map((value, index) => (
         <UploadSlot
           key={value.upload.inputId}
-          label={label + " " + (index + 1)}
+          label={(label ?? t("reference")) + " " + (index + 1)}
           role="reference-image"
           accept={accept}
           value={value}
@@ -28,11 +45,11 @@ export function RefSlots({ values, max, onChange, label = "Reference", accept = 
       ))}
       {showEmpty ? (
         <UploadSlot
-          label={filled.length === 0 ? "Add references" : "Add another"}
+          label={t(filled.length === 0 ? "add" : "another")}
           role="reference-image"
           accept={accept}
           value={null}
-          hint={"Up to " + max + " images"}
+          hint={t("upTo", { max })}
           onChange={(next) => {
             if (next) onChange([...filled, next]);
           }}

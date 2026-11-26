@@ -4,13 +4,19 @@
  * manifest and picks a file, so any UI can show the same logos.
  */
 export type LogoVariant = "primary" | "dark" | "light" | "mark";
+/** What the file draws: a square symbol, a horizontal wordmark, or a symbol stacked over text. */
+export type LogoShape = "mark" | "wordmark" | "stacked";
 
 export interface VendorAssetFile {
   file: string;
+  /** Background the file is drawn for ("dark" = white ink); "mark" = a symbol for any background. */
   variant: LogoVariant;
   format: "svg" | "png" | "jpg" | "webp";
   width?: number;
   height?: number;
+  shape?: LogoShape;
+  /** The file is a full tile with its own background (an app icon or organisation avatar). */
+  tile?: boolean;
 }
 
 export interface VendorAsset {
@@ -106,12 +112,29 @@ export function vendorName(idOrAlias: string, manifest?: VendorManifest): string
   return findVendor(manifest, idOrAlias)?.name ?? VENDOR_NAMES[vendorId(idOrAlias)] ?? idOrAlias;
 }
 
-const ORDER: Record<"dark" | "light", Record<"mark" | "full", readonly LogoVariant[]>> = {
-  dark: { mark: ["mark", "dark", "primary"], full: ["dark", "primary", "mark"] },
-  light: { mark: ["mark", "light", "primary"], full: ["light", "primary", "mark"] },
+const ORDER: Record<"dark" | "light", readonly LogoVariant[]> = {
+  // Ink drawn for this background first, then neutral marks, then the other files.
+  dark: ["dark", "mark", "primary", "light"],
+  light: ["light", "mark", "primary", "dark"],
 };
 
-/** Best file for a background and shape, or null when the manifest has none for this vendor. */
+/** The file's shape, from the manifest or, for older entries, from its proportions. */
+export function logoShape(file: VendorAssetFile): LogoShape {
+  if (file.shape) return file.shape;
+  if (file.width && file.height) return file.width / file.height > 1.6 ? "wordmark" : "mark";
+  return file.variant === "mark" ? "mark" : "wordmark";
+}
+
+const SHAPES: Record<"mark" | "full", readonly LogoShape[]> = {
+  // A wordmark squeezed into a square is unreadable, so a mark slot takes only real symbols.
+  mark: ["mark"],
+  full: ["wordmark", "stacked", "mark"],
+};
+
+/**
+ * Best file for a background and slot shape, or null when the vendor has no file of a
+ * fitting shape (a UI then shows a monogram for "mark" or the name for "full").
+ */
 export function pickLogo(
   manifest: VendorManifest | undefined,
   idOrAlias: string,
@@ -119,9 +142,17 @@ export function pickLogo(
 ): { asset: VendorAsset; file: VendorAssetFile } | null {
   const asset = findVendor(manifest, idOrAlias);
   if (!asset || asset.files.length === 0) return null;
-  for (const variant of ORDER[options.background][options.shape]) {
-    const file = asset.files.find((f) => f.variant === variant);
-    if (file) return { asset, file };
+  for (const shape of SHAPES[options.shape]) {
+    for (const variant of ORDER[options.background]) {
+      const file = asset.files.find((f) => f.variant === variant && logoShape(f) === shape);
+      if (file) return { asset, file };
+    }
   }
-  return { asset, file: asset.files[0]! };
+  return null;
+}
+
+/** One or two letters for a vendor without a symbol: "ByteDance" → "B", "fal" → "F", "sync." → "S". */
+export function vendorMonogram(name: string): string {
+  const letters = name.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
+  return (letters[0] ?? "?").toUpperCase();
 }

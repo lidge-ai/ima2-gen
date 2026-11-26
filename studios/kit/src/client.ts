@@ -4,7 +4,7 @@ import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
 import { Http, type HttpOptions } from "./http.ts";
 import type {
-  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, KeySaveBody, KeyStatus, MediaSubmitBody, UploadedInput,
+  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, KeySaveBody, KeyStatus, MediaSubmitBody, ShowcaseItem, UploadedInput,
   WorkflowDef, WorkflowEstimate, WorkflowRunBody,
 } from "./types.ts";
 import type { WireAccepted, WireCatalog, WireEstimateResponse, WireHistoryPage, WireInput, WireJob, WireWorkflow } from "./wire.ts";
@@ -164,6 +164,11 @@ export function createStudioClient(options: StudioClientOptions = {}) {
     media: mediaApi(http, cache, options.sessionId),
     history: historyApi(http, options.browserId),
     workflows: workflowsApi(http, cache, options.sessionId),
+    /** Example clips from the server's showcase folder; empty when the operator added none. */
+    showcase: {
+      list: async (): Promise<ShowcaseItem[]> =>
+        (await http.request<{ items: ShowcaseItem[] }>("GET", "/api/showcase")).items ?? [],
+    },
     events: {
       follow: (subscribe: SubscribeOptions) => followEvents(http, subscribe, cache.jobs),
     },

@@ -1,4 +1,8 @@
 {
+  "webAccess": {
+    "signedInAs": "已登录：{email}",
+    "logout": "退出登录"
+  },
   "mediaPicker": {
     "model": "媒体模型",
     "loadError": "无法加载媒体模型。",
@@ -17,9 +21,27 @@
     "nativeAudio": "原生音频",
     "negativePrompt": "负面提示词",
     "seed": "种子",
-    "checked": "核查于 {date}",
+    "checked": "价格来源 · 核对日期：{date}",
     "documentation": "文档",
-    "open": "媒体模型 · 使用你的 API 密钥"
+    "open": "媒体模型 · 使用你的 API 密钥",
+    "loading": "正在加载媒体模型…",
+    "retry": "重试",
+    "empty": "没有可用的媒体模型。",
+    "price": "每{unit} {amount}",
+    "kind": {
+      "image": "图片",
+      "video": "视频",
+      "audio": "音频"
+    },
+    "units": {
+      "second": "秒",
+      "image": "张图片",
+      "request": "次请求",
+      "megapixel": "百万像素",
+      "1k-tokens": "1,000 个令牌",
+      "minute": "分钟",
+      "character": "个字符"
+    }
   },
   "media": {
     "keysTitle": "媒体提供商",
@@ -29,7 +51,11 @@
     "apiKey": "API 密钥",
     "getKey": "获取密钥",
     "envImmutable": "无法在此删除环境变量中的密钥。",
-    "keysShow": "显示媒体服务商密钥"
+    "keysShow": "显示媒体提供商密钥",
+    "loading": "正在加载媒体提供商…",
+    "loadError": "无法加载媒体提供商，请重试。",
+    "saveError": "无法保存密钥，请检查输入后重试。",
+    "removeError": "无法删除密钥，请重试。"
   },
   "imageOutput": {
     "title": "输出",

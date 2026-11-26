@@ -17,7 +17,7 @@ test("remix switches modes and subscription variants", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Style reference" })).toBeVisible();
   await page.getByRole("switch", { name: "Prompt" }).check();
   await page.getByLabel("Notes").fill("A soft watercolor look");
-  await page.getByRole("tab", { name: "History" }).click();
+  await page.getByRole("button", { name: "History" }).click();
   await expect(page.getByText("No remix results yet")).toBeVisible();
 });
 

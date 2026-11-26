@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { chooseRoute, type WorkflowDef, type WorkflowEstimate, type WorkflowRunBody } from "@ima2/studio-kit";
+import { messages, tr } from "../../i18n.ts";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
+
+const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요" });
 
 function useWorkflowForm(def: WorkflowDef) {
   const [files, setFiles] = useState<Record<string, SlotValue[]>>({});
@@ -49,7 +52,7 @@ function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
           if (current) setEstimate(value);
         },
         (err: unknown) => {
-          if (current) setEstimateError(err instanceof Error ? err.message : "Could not estimate price");
+          if (current) setEstimateError(err instanceof Error ? err.message : tr(M, "estimate"));
         },
       );
     }, 250);
@@ -71,7 +74,7 @@ function useWorkflowRun(def: WorkflowDef, body: WorkflowRunBody) {
     try {
       await studio.runWorkflow(def.id, { ...body, clientRequestId: crypto.randomUUID() });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start workflow");
+      setError(err instanceof Error ? err.message : tr(M, "start"));
     } finally {
       setSending(false);
     }
