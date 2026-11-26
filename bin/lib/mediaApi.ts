@@ -106,7 +106,7 @@ export async function submitMedia(base: string, body: Dict, options: SubmitOptio
   return submit(base, "/api/media", normalized, options, true);
 }
 /** Waits up to timeoutMs (max 60 s) and returns the job status; timedOut marks a job that is still running. */
-export async function waitJob(base: string, id: string, options: WaitOptions) {
+export async function waitJob(base: string, id: string, options: WaitOptions): Promise<Dict & { pollAfterSeconds: number; timedOut?: boolean }> {
   const stream = await openMediaSse(base, options.signal);
   try {
     const status = await jobStatus(base, id);
