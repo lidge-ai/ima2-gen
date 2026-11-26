@@ -36,14 +36,14 @@ async function fixture(run: (base: string, calls: { url: string; method: string;
       res.end(JSON.stringify({ requestId: data.requestId }));
       const error = data.model.startsWith("error-");
       stream?.write(`event: ${error ? "error" : "running"}\ndata: ${JSON.stringify(error ? { jobId: data.requestId, code: data.model.slice(6), error: "failed", category: "auth" } : { jobId: data.requestId, progress: 42 })}\n\n`);
-      if (!error) stream?.write(`event: done\ndata: ${JSON.stringify({ jobId: data.requestId, outputs: [{ filename: "result.png" }] })}\n\n`);
+      if (!error) stream?.write(`event: done\ndata: ${JSON.stringify({ jobId: data.requestId, outputs: [{ filename: "result.png" }], elapsed: 1.2 })}\n\n`);
       return;
     }
     if (url === "/api/media/jobs/used") return void res.end('{"status":"completed"}');
     if (url === "/api/media/jobs/running") return void res.end('{"status":"running"}');
     if (url.startsWith("/api/history") && url.includes("requestId=result")) return void res.end('{"items":[{"filename":"result.png"}]}');
     if (url === "/generated/result.png") return void res.end("saved");
-    if (url === "/api/workflows") return void res.end('{"workflows":[{"id":"demo","fields":[]}]}');
+    if (url === "/api/workflows") return void res.end('{"workflows":[{"id":"demo","fields":[{"name":"prompt","type":"string","help":"Describe it"}]}]}');
     if (url === "/api/workflows/demo" || url === "/api/workflows/demo/estimate") return void res.end(body);
     if (url === "/api/studios/default") return void res.end(body);
     if (url === "/api/health") return void res.end('{"ok":true}');
@@ -57,7 +57,7 @@ async function fixture(run: (base: string, calls: { url: string; method: string;
     if (url === "/api/keys/vocabulary") return void res.end(JSON.stringify({ vocabularies: [{ vocabulary: "fake", extraFields: [{ name: "secret", secret: true }] }] }));
     if (url === "/api/keys/fake/validate") return void res.end(body);
     if (url === "/api/keys/fake") return void res.end('{"ok":true}');
-    if (url === "/api/workflows/demo/schema") return void res.end('{"type":"object","properties":{"prompt":{"type":"string"}}}');
+    if (url === "/api/workflows/demo/schema") return void res.end('{"id":"demo","label":"Demo","schema":{"type":"object","properties":{"prompt":{"type":"string","maxLength":100}},"required":["prompt"]}}');
     if (url === "/api/studios") return void res.end('{"studios":[{"name":"demo","built":true,"url":"/studio/demo/"}],"defaultUi":"web"}');
     if (url.startsWith("/api/media/jobs/")) { res.statusCode = 404; return void res.end('{"code":"MEDIA_JOB_UNKNOWN","error":"missing"}'); }
     if (url.startsWith("/api/history")) return void res.end('{"items":[]}');
@@ -87,7 +87,9 @@ test("keys reject argv secrets and redact validation response", async () => fixt
 }));
 test("schema, tools and unknown studio", async () => fixture(async (base) => {
   const schema = await cli(base, ["workflow", "demo", "--schema", "--json"]);
-  assert.equal(schema.code, 0, schema.stderr); assert.equal(JSON.parse(schema.stdout).type, "object");
+  assert.equal(schema.code, 0, schema.stderr); assert.equal(JSON.parse(schema.stdout).schema.type, "object");
+  const human = await cli(base, ["workflow", "demo", "--schema"]); assert.equal(human.code, 0, human.stderr);
+  assert.match(human.stdout, /prompt.*string.*yes.*100.*Describe it/);
   const tools = await cli(base, ["tools", "--json"]); assert.equal(tools.code, 0, tools.stderr); assert.equal(JSON.parse(tools.stdout).tools.length, 14);
   const unknown = await cli(base, ["studio", "open", "nope"]); assert.match(unknown.stderr, /STUDIO_UNKNOWN/);
 }));
@@ -95,7 +97,7 @@ test("schema, tools and unknown studio", async () => fixture(async (base) => {
 
 test("run progress, SSE error bytes, id reuse and vendor option merge", async () => fixture(async (base, calls) => {
   const run = await cli(base, ["run", "--model", "v/a", "--task", "generate", "--vendor-json", '{"x":"old","y":1}', "--vendor-option", "x=new"]);
-  assert.equal(run.code, 0, run.stderr); assert.equal(run.stdout, `${join(root, "result.png")}\n`); assert.match(run.stderr, /running/);
+  assert.equal(run.code, 0, run.stderr); assert.equal(run.stdout, `${join(root, "result.png")}\n`); assert.match(run.stderr, /running/); assert.match(run.stderr, /done in 1.2s/);
   assert.deepEqual(JSON.parse(calls.find((c) => c.url === "/api/media")!.body).vendorOptions, { x: "new", y: 1 });
   for (const code of ["MEDIA_KEY_MISSING", "CREDIT", "MODERATION", "MEDIA_ROUTE_UNKNOWN"]) {
     const failure = await cli(base, ["run", "--model", `error-${code}`, "--task", "generate"]);
