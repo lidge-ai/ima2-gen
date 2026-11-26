@@ -33,10 +33,10 @@ export interface EndpointSchema {
 /** Field names tried in order for each input role. */
 const ROLE_FIELDS: Record<MediaInputRole, readonly string[]> = {
   "first-frame": ["image_url", "start_image_url", "first_frame_url", "first_frame_image_url", "start_image", "first_frame", "image", "image_urls"],
-  "last-frame": ["end_image_url", "last_frame_url", "tail_image_url", "last_image_url", "end_image", "last_frame", "tail_image"],
-  "reference-image": ["reference_image_urls", "image_urls", "reference_images", "images", "reference_image_url", "image_url", "image"],
-  "reference-video": ["reference_video_urls", "video_urls", "reference_video_url", "video_url", "video"],
-  "reference-audio": ["reference_audio_urls", "audio_urls", "reference_audio_url", "audio_url", "audio"],
+  "last-frame": ["end_image_url", "last_frame_url", "tail_image_url", "last_image_url", "end_image", "last_image", "last_frame", "tail_image"],
+  "reference-image": ["reference_image_urls", "image_urls", "reference_images", "image_references", "images", "reference_image_url", "image_url", "image"],
+  "reference-video": ["reference_video_urls", "video_urls", "reference_videos", "reference_video_url", "video_url", "video"],
+  "reference-audio": ["reference_audio_urls", "audio_urls", "reference_audios", "reference_audio_url", "audio_url", "audio"],
   "source-image": ["image_url", "image_urls", "image", "images", "input_image", "input_image_url", "start_image_url"],
   "source-video": ["video_url", "video", "input_video", "input_video_url", "video_urls"],
   "source-audio": ["audio_url", "audio", "input_audio", "audio_urls"],
@@ -48,16 +48,26 @@ const SCALAR_FIELDS = {
   negativePrompt: ["negative_prompt"],
   durationSec: ["duration", "duration_seconds", "seconds"],
   resolution: ["resolution", "image_size"],
-  aspectRatio: ["aspect_ratio"],
+  aspectRatio: ["aspect_ratio", "ratio"],
   seed: ["seed"],
-  audio: ["generate_audio", "enable_audio"],
+  audio: ["generate_audio", "enable_audio", "sound", "audio"],
   count: ["num_images", "num_outputs", "number_of_images", "n"],
 } as const satisfies Record<string, readonly string[]>;
 
 type ScalarKey = keyof typeof SCALAR_FIELDS;
 
-function pickField(schema: EndpointSchema, names: readonly string[], used: ReadonlySet<string>): string | undefined {
-  return names.find((name) => name in schema.fields && !used.has(name));
+type FieldFilter = (field: InputField) => boolean;
+
+/** Inputs are URLs: they can only land on string, untyped or array fields. */
+const URL_FIELD: FieldFilter = (field) => field.type === undefined || field.type === "string" || field.type === "array";
+/** "audio" doubles as an input name on some endpoints; the generate-audio flag must be boolean. */
+const SCALAR_FILTER: Partial<Record<ScalarKey, FieldFilter>> = { audio: (field) => field.type === undefined || field.type === "boolean" };
+
+function pickField(schema: EndpointSchema, names: readonly string[], used: ReadonlySet<string>, accept?: FieldFilter): string | undefined {
+  return names.find((name) => {
+    const field = schema.fields[name];
+    return field !== undefined && !used.has(name) && (!accept || accept(field));
+  });
 }
 
 function matchEnum(values: readonly (string | number)[], value: string | number): string | number | undefined {
@@ -89,7 +99,7 @@ function applyScalars(prefix: string, schema: EndpointSchema, request: MediaSubm
   for (const key of Object.keys(SCALAR_FIELDS) as ScalarKey[]) {
     const raw = request[key];
     if (raw === undefined || raw === "") continue;
-    const name = pickField(schema, SCALAR_FIELDS[key], used);
+    const name = pickField(schema, SCALAR_FIELDS[key], used, SCALAR_FILTER[key]);
     if (!name) throw invalidRequest(prefix, `${schema.endpoint} does not accept ${key}`, "UNSUPPORTED_OPTION");
     const field = schema.fields[name] ?? {};
     const encoded = encodeScalar(field, raw);
@@ -105,7 +115,7 @@ function applyInputs(prefix: string, schema: EndpointSchema, request: MediaSubmi
   const roles = [...new Set(request.inputs.map((input) => input.role))];
   for (const role of roles) {
     const inputs = request.inputs.filter((input) => input.role === role);
-    const name = pickField(schema, ROLE_FIELDS[role], used);
+    const name = pickField(schema, ROLE_FIELDS[role], used, URL_FIELD);
     if (!name) throw invalidRequest(prefix, `${schema.endpoint} does not accept a ${role} input`, "UNSUPPORTED_INPUT");
     const field = schema.fields[name] ?? {};
     const urls = inputs.map((input) => inputToUrl(prefix, input));
@@ -147,7 +157,7 @@ export function buildSchemaBody(prefix: string, schema: EndpointSchema, request:
 
 function durationsOf(field: InputField | undefined): number[] {
   if (!field) return [];
-  if (field.enum) return field.enum.map((v) => Number.parseInt(String(v), 10)).filter((n) => Number.isFinite(n));
+  if (field.enum) return field.enum.map((v) => Number.parseInt(String(v), 10)).filter((n) => Number.isFinite(n) && n > 0);
   if (field.type === "integer" && field.minimum !== undefined && field.maximum !== undefined && field.maximum - field.minimum <= 60) {
     return Array.from({ length: field.maximum - field.minimum + 1 }, (_, i) => (field.minimum as number) + i);
   }
@@ -176,7 +186,7 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
   const has = (names: readonly string[]) => schemas.some((s) => names.some((n) => n in s.fields));
   const durations = union(schemas.map((s) => durationsOf(s.fields.duration ?? s.fields.duration_seconds))).sort((a, b) => a - b);
   const resolutions = union(schemas.map((s) => stringsOf(s.fields.resolution)));
-  const aspectRatios = union(schemas.map((s) => stringsOf(s.fields.aspect_ratio)));
+  const aspectRatios = union(schemas.map((s) => stringsOf(s.fields.aspect_ratio ?? s.fields.ratio)));
   const maxRefImages = maxArrayItems(schemas, "reference-image");
   const maxRefVideos = maxArrayItems(schemas, "reference-video");
   return {
@@ -185,7 +195,7 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
     ...(aspectRatios.length > 0 ? { aspectRatios } : {}),
     ...(maxRefImages !== undefined ? { maxReferenceImages: maxRefImages } : {}),
     ...(maxRefVideos !== undefined ? { maxReferenceVideos: maxRefVideos } : {}),
-    ...(has(SCALAR_FIELDS.audio) ? { nativeAudio: true } : {}),
+    ...(schemas.some((s) => SCALAR_FIELDS.audio.some((n) => s.fields[n] !== undefined && SCALAR_FILTER.audio?.(s.fields[n] as InputField))) ? { nativeAudio: true } : {}),
     ...(has(SCALAR_FIELDS.negativePrompt) ? { negativePrompt: true } : {}),
     ...(has(SCALAR_FIELDS.seed) ? { seed: true } : {}),
   };
