@@ -877,10 +877,11 @@ Bring-your-own-key generation across direct model makers and aggregators. Every 
 |---|---|---|
 | `GET` | `/api/history` | List generated assets |
 | `GET` | `/api/history?groupBy=session` | Group assets by session title |
+| `GET` | `/api/history?includeAudio=1` | Also return audio outputs (`mediaType: "audio"`); omitted by default because the classic UI renders every non-video row as an image |
 | `DELETE` | `/api/history/:filename` | Tombstone a generated asset |
 | `POST` | `/api/history/:filename/restore` | Restore a recently deleted asset |
 
-History rows can include node metadata such as `sessionId`, `nodeId`, `clientNodeId`, `requestId`, and `refsCount`.
+Media adapter and workflow results also carry `adapter`, `workflow` and `workflowStep`. History rows can include node metadata such as `sessionId`, `nodeId`, `clientNodeId`, `requestId`, and `refsCount`.
 
 ## Assets Library
 
