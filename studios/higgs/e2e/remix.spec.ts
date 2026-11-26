@@ -13,7 +13,7 @@ test("remix switches modes and subscription variants", async ({ page }) => {
   await expect(page.getByText("Pinned keyframes")).toBeVisible();
   await page.getByRole("link", { name: "Restyle" }).click();
   await expect(page).toHaveURL(/#\/remix\/remix-restyle-subscription$/);
-  await page.getByRole("link", { name: "API keys" }).click();
+  await page.getByRole("navigation", { name: "Run on" }).getByRole("link", { name: "API keys", exact: true }).click();
   await expect(page.getByRole("button", { name: "Style reference" })).toBeVisible();
   await page.getByRole("switch", { name: "Prompt" }).check();
   await page.getByLabel("Notes").fill("A soft watercolor look");
