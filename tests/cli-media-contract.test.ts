@@ -136,6 +136,9 @@ test("workflow selections, studios and invalid flag safety", async () => fixture
   const wf = await cli(base, ["workflow", "demo", "--estimate", "--slot-model", "one=v/a", "--slot-route", "one=direct", "--json"]);
   assert.equal(wf.code, 0, wf.stderr); const body = JSON.parse(calls.find((c) => c.url === "/api/workflows/demo/estimate")!.body);
   assert.match(JSON.stringify(body.selection), /v\/a/); assert.match(JSON.stringify(body.selection), /direct/);
+  const plain = await cli(base, ["workflow", "demo", "--estimate", "--input", "prompt=hi", "--json"]); assert.equal(plain.code, 0, plain.stderr);
+  const plainBody = JSON.parse(calls.filter((c) => c.url === "/api/workflows/demo/estimate").at(-1)!.body);
+  assert.deepEqual(Object.keys(plainBody), ["values"], "legacy workflow body carries no empty selection");
   const studios = await cli(base, ["studios", "--json"]); assert.equal(studios.code, 0, studios.stderr);
   const def = await cli(base, ["studio", "default", "classic", "--json"]); assert.equal(def.code, 0, def.stderr);
   const before = calls.length; const bad = await cli(base, ["keys", "delete", "fake", "--yes=false"]); assert.match(bad.stderr, /MEDIA_CLI_ERROR/); assert.equal(calls.length, before);
