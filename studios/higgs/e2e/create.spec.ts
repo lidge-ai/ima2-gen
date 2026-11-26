@@ -65,10 +65,10 @@ test("video: choosing a route and settings changes the estimate", async ({ page 
   await page.getByLabel("Prompt").fill("estimate check");
   const generate = page.getByRole("button", { name: /Generate/ });
   await page.getByRole("button", { name: /^Duration: / }).click();
-  await page.getByRole("radio", { name: /^10s/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /^10s/ }).click();
   await expect(generate).toContainText("$0.75");
   await page.getByRole("button", { name: /^Run through: / }).click();
-  await page.getByRole("radio", { name: /BytePlus ModelArk/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /BytePlus ModelArk/ }).click();
   await expect(page.getByText("Add an API key to run this model")).toBeVisible();
   await expect(generate).toBeDisabled();
 });
