@@ -17,7 +17,7 @@ ima2 media run --model ID --task TASK [--prompt TEXT] [--adapter ID] [--duration
 ima2 media status ID | wait ID [--timeout SEC] | result ID [--out DIR] | jobs [--all] | cancel ID
 ima2 media keys | keys set VOCABULARY (--key-stdin | --stdin-json) [--extra name=value]... | keys validate VOCABULARY [--key-stdin | --stdin-json] [--extra name=value]... | keys delete VOCABULARY [--yes]
 ima2 media workflows | workflow ID --schema | workflow ID [--input name=value]... [--slot-model slot=model]... [--slot-route slot=route]... [--estimate] [--request-id ID] [--no-wait] [--quiet] [--out DIR]
-ima2 media studios | studio open NAME | studio default NAME
+ima2 media studios | studio open NAME [--no-open] | studio default NAME
 ima2 media tools
 All commands accept --server URL and --json. Secrets are read from stdin only and never printed; --extra takes non-secret fields only.
 Billed: run, and workflow without --estimate. --max-usd on models filters by the cheapest published price; it is not a spending limit.`;
@@ -27,7 +27,8 @@ const FLAGS: Record<string, FlagDef> = { server: string, json: boolean, help: { 
   seed: string, audio: boolean, "no-audio": boolean, negative: string, count: string, input: repeat,
   "vendor-option": repeat, "no-wait": boolean, out: string, all: boolean, estimate: boolean, "key-stdin": boolean, extra: repeat,
   vendor: string, keyed: boolean, "max-usd": string, "price-variant": string, "vendor-json": string, "request-id": string,
-  quiet: boolean, timeout: string, "stdin-json": boolean, yes: boolean, schema: boolean, "slot-model": repeat, "slot-route": repeat };
+  quiet: boolean, timeout: string, "stdin-json": boolean, yes: boolean, schema: boolean, "slot-model": repeat, "slot-route": repeat,
+  "no-open": boolean };
 const RUN_FLAGS = "model task prompt adapter duration resolution aspect seed audio no-audio negative count input vendor-option".split(" ");
 const LEGACY = "kind model task prompt adapter duration resolution aspect seed audio no-audio negative count input vendor-option no-wait out all estimate key-stdin extra".split(" ");
 const ALLOWED: Record<string, string[]> = {
@@ -35,7 +36,7 @@ const ALLOWED: Record<string, string[]> = {
   jobs: LEGACY, cancel: LEGACY, keys: [...LEGACY, "stdin-json", "yes"], workflows: LEGACY,
   workflow: [...LEGACY, "schema", "slot-model", "slot-route", "request-id", "quiet"],
   estimate: [...RUN_FLAGS, "price-variant", "vendor-json"], status: [], wait: ["timeout"], result: ["out"],
-  studios: [], studio: [], tools: [],
+  studios: [], studio: ["no-open"], tools: [],
 };
 function validate(argv: string[], args: ParsedArgs): void {
   if (args._unknown.length) throw new Error(`Unknown option: ${args._unknown.join(", ")}`);

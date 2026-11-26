@@ -14,6 +14,6 @@ export async function studioCommand(base: string, args: ParsedArgs): Promise<unk
   const studio = list.studios.find((item) => item.name === name && item.built && typeof item.url === "string");
   if (!studio) throw new MediaApiError("STUDIO_UNKNOWN", `Unknown or unbuilt studio: ${name}`);
   const url = new URL(String(studio.url), base).href;
-  openUrl(url);
+  if (args["no-open"] !== true) openUrl(url);
   return { url };
 }
