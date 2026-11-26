@@ -68,14 +68,59 @@ test('rejects unknown options and missing URL input before network', async () =>
 
 test('catalog contains documented IDs and official dated pricing', () => {
   const models = adapter.listModels();
-  assert.deepEqual(models.map(m => m.id), ['bytedance/omnihuman-1.5']);
+  assert.deepEqual(models.map(m => m.id), ['bytedance/omnihuman-1.5', 'bytedance/omnihuman-2']);
+  assert.equal(models[1]?.upstreamId, 'realman_avatar_picture_omni20_cv');
+  assert.deepEqual(models[1]?.pricing, []);
   assert.equal(models[0]?.upstreamId, 'realman_avatar_picture_omni15_cv');
   assert.equal(models[0]?.pricing[0]?.usd, 0.12);
   assert.match(models[0]?.pricing[0]?.source ?? '', /^https:\/\/docs\.byteplus\.com\//);
   assert.equal(models[0]?.pricing[0]?.checkedAt, '2026-11-26');
 });
 
-test('key validation does not call a potentially billable endpoint', async () => {
-  const result = await adapter.validateKey(context(async () => { throw new Error('unexpected network'); }));
-  assert.equal(result.ok, false);
+test('validates keys with signed result lookup and distinguishes auth from service failures', async () => {
+  for (const [body, status, ok] of [
+    [{ code: 10000, data: { status: 'not_found' } }, 200, true],
+    [{ code: 50215, message: 'invalid task' }, 400, true],
+    [{ code: 50400 }, 200, false],
+    [{ ResponseMetadata: { Error: { Code: 'SignatureDoesNotMatch', CodeN: 100010 } } }, 200, false],
+    [{ ResponseMetadata: { Error: { Code: 'InvalidAuthorization', CodeN: 100024 } } }, 400, false],
+    [{ ResponseMetadata: { Error: { Code: 'InvalidCredential' } } }, 400, false],
+    [{ code: 50215 }, 403, false],
+    [{ code: 50500 }, 500, false],
+  ] as const) {
+    const ctx = context(async (url, init) => {
+      assert.equal(String(url), 'https://cv.byteplusapi.com/?Action=CVGetResult&Version=2024-06-06');
+      assert.deepEqual(JSON.parse(String(init?.body)), { req_key: 'realman_avatar_picture_omni15_cv', task_id: 'ima2-key-check' });
+      assert.match(new Headers(init?.headers).get('authorization') ?? '', /^HMAC-SHA256 /);
+      return response(body, status);
+    });
+    assert.equal((await adapter.validateKey(ctx)).ok, ok);
+  }
+});
+
+test('official OpenAPI signing vector uses the provider signer', async () => {
+  const { signatureFromSigningKey, canonicalRequest } = await import('../lib/providers/media/direct/byteplus-vision/signature.js');
+  const payload = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  const canonical = canonicalRequest('GET', '/', 'Action=ListUsers&Limit=10&Offset=0&Version=2018-01-01', 'application/x-www-form-urlencoded; charset=utf-8', 'iam.byteplusapi.com', payload, '20201230T081805Z');
+  const { createHash } = await import('node:crypto');
+  assert.equal(createHash('sha256').update(canonical).digest('hex'), '4809ff4a3260bb6714f750191275cfcf0c16466951fcfd99187e69644b6ae020');
+  const signature = signatureFromSigningKey(Buffer.from('e7d2eb478084eaaaf8f85c161de16f13d97e52e77bd0415f33e7feb561cccffd', 'hex'), '20201230T081805Z', '20201230/ap-singapore-1/iam/request', canonical);
+  assert.equal(signature, '28eeabbbd726b87002e0fe58ad8c1c768e619b06e2646f35b6ad7ed029a6d8a7');
+});
+
+test('OmniHuman 2 uses its own wire protocol and resumable req_key', async () => {
+  const ctx = context(async (url, init) => {
+    assert.match(String(url), /Action=CVSync2AsyncSubmitTask/);
+    assert.deepEqual(JSON.parse(String(init?.body)), { req_key: 'realman_avatar_picture_omni20_cv', image_urls: ['https://example.com/a.jpg'], audio_url: 'https://example.com/a.mp3', prompt: 'wave', enable_watermark: false });
+    return response({ code: 10000, data: { task_id: 'job-2' } });
+  });
+  const job = await adapter.submit(ctx, { ...request, model: 'bytedance/omnihuman-2', resolution: undefined, seed: undefined, vendorOptions: { enable_watermark: false } });
+  assert.equal(job.resume?.req_key, 'realman_avatar_picture_omni20_cv');
+  const result = await adapter.poll(context(async (url, init) => {
+    assert.match(String(url), /Action=CVSync2AsyncGetResult/);
+    assert.deepEqual(JSON.parse(String(init?.body)), { req_key: 'realman_avatar_picture_omni20_cv', task_id: 'job-2' });
+    return response({ code: 10000, data: { status: 'done', video_url: 'https://example.com/v2.mp4' } });
+  }), job);
+  assert.equal(result.status, 'succeeded');
+  if (result.status === 'succeeded') assert.equal(result.outputs[0]?.url, 'https://example.com/v2.mp4');
 });
