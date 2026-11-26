@@ -169,3 +169,22 @@ test("estimate routing coexists with media submission and cancellation in either
     }, { mediaFirst });
   }
 });
+
+test("an estimate carries no binary-fraction error and still rounds a real fraction of a hundredth of a cent up", async () => {
+  const { estimateMediaJob } = await import("../lib/providers/media/estimate.ts");
+  const { MediaKeySnapshot } = await import("../lib/providers/media/credentials.ts");
+  const one = (usd: number, unit: "image" | "second") => [{ unit, usd, ...priceSource }];
+  const registry = new MediaRegistry([makeFakeAdapter({ models: [
+    fakeSpec("acme/still-7", { kind: "image", tasks: ["text-to-image"], params: {}, pricing: one(0.07, "image") }),
+    fakeSpec("acme/still-tiny", { kind: "image", tasks: ["text-to-image"], params: {}, pricing: one(0.00011, "image") }),
+    fakeSpec("acme/clip-10c", { pricing: one(0.1, "second") }),
+    fakeSpec("acme/clip-third", { pricing: one(0.0333, "second") }),
+  ] })]);
+  const keys = new MediaKeySnapshot({ env: {}, fileConfig: {} });
+  const usd = (body: Record<string, unknown>) => estimateMediaJob(registry, keys, body as never).usd;
+  assert.equal(usd({ model: "acme/still-7", task: "text-to-image", inputs: [], count: 1 }), 0.07, "0.07 x 1 is 0.07, not 0.0701");
+  assert.equal(usd({ model: "acme/clip-10c", task: "text-to-video", inputs: [], durationSec: 3 }), 0.3, "0.1 x 3 is 0.3, not 0.3001");
+  assert.equal(usd({ model: "acme/still-7", task: "text-to-image", inputs: [], count: 3 }), 0.21);
+  assert.equal(usd({ model: "acme/still-tiny", task: "text-to-image", inputs: [], count: 1 }), 0.0002, "a real 0.00011 still rounds up");
+  assert.equal(usd({ model: "acme/clip-third", task: "text-to-video", inputs: [], durationSec: 5 }), 0.1665);
+});
