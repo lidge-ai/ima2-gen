@@ -15,7 +15,7 @@ test("media help is pure before parsing or side effects", async () => {
   for (const name of ["open", "xdg-open", "explorer"]) {
     const path = join(root, name); await writeFile(path, `#!/bin/sh\necho called >> "${join(root, "opened")}"\n`); await chmod(path, 0o755);
   }
-  const advertise = join(root, "advertise.json"); await writeFile(advertise, JSON.stringify({ port: address.port, host: "127.0.0.1" }));
+  const advertise = join(root, "advertise.json"); await writeFile(advertise, JSON.stringify({ url: `http://127.0.0.1:${address.port}` }));
   try {
     for (const args of [[], ["--help"], ["run", "--help"], ["keys", "set", "x", "--key-stdin", "--help"],
       ["keys", "set", "x", "--extra", "--help"], ["keys", "delete", "x", "--help"],

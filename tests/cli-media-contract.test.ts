@@ -79,6 +79,9 @@ async function fixture(run: (base: string, calls: { url: string; method: string;
 test("catalog filters and estimate use the shared API", async () => fixture(async (base, calls) => {
   const filtered = await cli(base, ["models", "--vendor", "v", "--task", "generate", "--adapter", "direct", "--keyed", "--max-usd", "0.2", "--json"]);
   assert.equal(filtered.code, 0, filtered.stderr); assert.deepEqual(JSON.parse(filtered.stdout).models.map((m: { id: string }) => m.id), ["v/a"]);
+  for (const [flag, value] of [["--vendor", "missing"], ["--task", "missing"], ["--model", "missing"], ["--adapter", "missing"], ["--max-usd", "0.01"]]) {
+    const absent = await cli(base, ["models", flag!, value!, "--json"]); assert.equal(absent.code, 0, absent.stderr); assert.deepEqual(JSON.parse(absent.stdout).models, []);
+  }
   const estimate = await cli(base, ["estimate", "--model", "v/a", "--task", "generate", "--price-variant", "large", "--json"]);
   assert.equal(estimate.code, 0, estimate.stderr);
   assert.equal(JSON.parse(calls.find((call) => call.url === "/api/media/estimate")!.body).priceVariant, "large");
@@ -152,6 +155,11 @@ test("waitUntil slices until terminal state or its absolute deadline", async () 
   try {
     const value = await waitUntil(`http://127.0.0.1:${address.port}`, "id", { deadlineMs: Date.now() + 1000, sliceMs: 20 });
     assert.equal(value.pollAfterSeconds, 0); assert.ok(statusCalls >= 3);
+    const alreadyDone = await waitUntil(`http://127.0.0.1:${address.port}`, "id", { deadlineMs: Date.now() + 1000, sliceMs: 20 });
+    assert.equal(alreadyDone.pollAfterSeconds, 0);
+    statusCalls = -100;
+    const timeout = await waitUntil(`http://127.0.0.1:${address.port}`, "id", { deadlineMs: Date.now() + 60, sliceMs: 20 });
+    assert.equal(timeout.timedOut, true);
   } finally { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); }
 });
 
