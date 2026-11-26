@@ -179,7 +179,18 @@ const PRISTINE: Cell[] = [
   },
   { id: "notfound__route", hash: "/does-not-exist" },
   { id: "home__showcase-grid", hash: "/", setup: sixClips, act: async (p) => p.mouse.move(0, 0) },
-  { id: "remix__web-unpriced", hash: "/remix/remix-restyle", setup: unpricedRestyle, act: async (p) => p.waitForTimeout(800) },
+  {
+    id: "remix__web-unpriced",
+    hash: "/remix/remix-restyle",
+    setup: unpricedRestyle,
+    act: async (p) => {
+      // Earlier cells used up the first-visit example, so give the run its own source.
+      const remove = p.getByRole("button", { name: /^(Remove Source video|원본 영상 삭제|원본 영상 제거)/ });
+      if (await remove.count()) await remove.first().click();
+      await p.getByLabel(/^(Source video|원본 영상)$/).first().setInputFiles({ name: "source.mp4", mimeType: "video/mp4", buffer: Buffer.from("audit") });
+      await p.waitForTimeout(1500);
+    },
+  },
   { id: "video__web-over-cap", hash: "/video", setup: webCaps(0.1), act: prompt("over the per-run limit") },
   {
     id: "video__picker-after-keyless",
