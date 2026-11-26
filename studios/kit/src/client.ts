@@ -4,7 +4,7 @@ import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
 import { Http, StudioApiError, type HttpOptions } from "./http.ts";
 import type {
-  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, KeySaveBody, KeyStatus, MediaSubmitBody, ShowcaseItem, UploadedInput,
+  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, JobOutput, KeySaveBody, KeyStatus, MediaSubmitBody, ShowcaseItem, UploadedInput,
   WebSpend, WorkflowDef, WorkflowEstimate, WorkflowRunBody,
 } from "./types.ts";
 import type { WireAccepted, WireCatalog, WireEstimateResponse, WireHistoryPage, WireInput, WireJob, WireWorkflow } from "./wire.ts";
@@ -202,6 +202,31 @@ export function createStudioClient(options: StudioClientOptions = {}) {
 
 export type StudioClient = ReturnType<typeof createStudioClient>;
 
+/**
+ * Outputs of a finished media job from history (rows carry the job's request id). The server
+ * saves files before it marks the job finished; a short retry covers a slow index.
+ */
+async function withSavedOutputs(client: StudioClient, job: Job): Promise<Job> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const page = await client.history.list({ limit: 40 });
+      const outputs: JobOutput[] = page.items
+        .filter((item) => item.jobId === job.jobId)
+        .map((item) => ({
+          kind: item.kind, mimeType: item.mimeType, url: item.url, historyId: item.historyId,
+          ...(item.width !== undefined ? { width: item.width } : {}),
+          ...(item.height !== undefined ? { height: item.height } : {}),
+          ...(item.durationSec !== undefined ? { durationSec: item.durationSec } : {}),
+        }));
+      if (outputs.length) return { ...job, outputs };
+    } catch {
+      // History is a best effort here; the job itself already finished.
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return job;
+}
+
 async function watchJob(client: StudioClient, jobId: string, watch: WatchOptions): Promise<Job> {
   const stop = new AbortController();
   const outer = watch.signal;
@@ -214,7 +239,13 @@ async function watchJob(client: StudioClient, jobId: string, watch: WatchOptions
       if (isTerminal(job)) {
         settled = true;
         stop.abort();
-        resolve(job);
+        // A job that finished before the stream opened resolves from its record, which has no outputs.
+        if (job.status === "succeeded" && job.outputs.length === 0 && job.kind === "media") {
+          void withSavedOutputs(client, job).then((full) => {
+            if (full !== job) watch.onUpdate?.(full);
+            resolve(full);
+          });
+        } else resolve(job);
       }
     };
     const refresh = () =>
