@@ -90,15 +90,20 @@ async function ensureUnused(base: string, id: string): Promise<void> {
   if (found) throw new MediaApiError("REQUEST_ID_IN_USE", `requestId ${id} was already submitted; check media_job_status / media_result`, { category: "invalid-request" });
 }
 type SubmitOptions = WaitOptions & { requestId?: string; wait: boolean };
-async function submit(base: string, path: string, body: Dict, options: SubmitOptions): Promise<Dict> {
+async function submit(base: string, path: string, body: Dict, options: SubmitOptions, checked = false): Promise<Dict> {
   const id = options.requestId ?? `media_${randomUUID()}`;
-  if (options.requestId) await ensureUnused(base, id);
+  if (options.requestId && !checked) await ensureUnused(base, id);
   if (!options.wait) return post<Dict>(base, path, { ...body, requestId: id });
   const stream = await openMediaSse(base, options.signal);
   try { await post(base, path, { ...body, requestId: id }); return await waitForJob(stream, id, options); }
   finally { stream.close(); }
 }
-export function submitMedia(base: string, body: Dict, options: SubmitOptions) { return submit(base, "/api/media", normalizeMediaBody(body), options); }
+export async function submitMedia(base: string, body: Dict, options: SubmitOptions) {
+  if (options.requestId) await ensureUnused(base, options.requestId);
+  const normalized = normalizeMediaBody(body);
+  if (Array.isArray(normalized.inputs)) normalized.inputs = await uploadInputs(base, normalized.inputs as Input[]);
+  return submit(base, "/api/media", normalized, options, true);
+}
 export async function waitJob(base: string, id: string, options: WaitOptions) {
   const stream = await openMediaSse(base, options.signal);
   try {
@@ -158,6 +163,6 @@ export async function workflowEstimate(base: string, id: string, values: Dict, s
 }
 export async function workflowRun(base: string, id: string, values: Dict, selection: Dict, options: SubmitOptions) {
   if (options.requestId) await ensureUnused(base, options.requestId);
-  return submit(base, `/api/workflows/${enc(id)}`, { values: await workflowValues(base, values), selection }, { ...options, requestId: options.requestId });
+  return submit(base, `/api/workflows/${enc(id)}`, { values: await workflowValues(base, values), selection }, options, true);
 }
 export function tools(base: string) { return call<Dict>(base, "/api/media/tools"); }
