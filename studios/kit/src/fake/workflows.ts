@@ -38,7 +38,11 @@ const slot = (
   rationale: "Development fixture for this workflow slot.",
   available: Object.fromEntries([model, ...alternatives].map((id) => [id, true])),
 });
-const video = media("video", "Source video", "video", true),
+const video: WireField = {
+    ...media("video", "Source video", "video", true),
+    minDurationSec: 4,
+    maxDurationSec: 15,
+  } as WireField,
   images = media("images", "Reference images", "image", true, 8);
 const render = slot("render", "Video edit", "video-to-video", "bytedance/seedance-2.5", [
   "bytedance/seedance-2.5-flash",
@@ -83,10 +87,22 @@ const tail: WireField[] = [
 const aspect = select("aspectRatio", "Aspect ratio", ["16:9", "9:16", "1:1"]);
 const resolution = select("resolution", "Resolution", ["1k", "2k", "4k"]);
 const count: WireField = { name: "n", type: "integer", label: "Count", required: false, min: 1, max: 4, default: 1 };
+/** Same descriptions the real workflow definitions (lib/workflows/definitions) publish. */
+const DESCRIPTIONS: Record<string, string> = {
+  "remix-motion-transfer":
+    "Your subjects perform the motion of a 4-15 second clip; camera, timing and sound follow the clip.",
+  "remix-object-swap": "Swap selected people, products or objects in a 4-15 second clip and keep the rest of the shot.",
+  "remix-restyle": "Redraw a whole 4-15 second clip in another style while keeping its motion and sound.",
+  "remix-restyle-subscription":
+    "Restyles a 4-15 second clip with Grok's video edit, in segments of up to 8.7 seconds, and puts the source sound back.",
+  "director-cast": "Create a consistent character reference sheet.",
+  "director-cinema": "Create a cinematic film still.",
+  "director-locations": "Create a cinematic location study.",
+};
 const simple = (id: string, label: string, fields: WireField[], slots: WireSlot[]): WireWorkflow => ({
   id,
   label,
-  description: `Simulate ${label.toLowerCase()} using the selected model routes.`,
+  description: DESCRIPTIONS[id] ?? "Development fixture for " + label.toLowerCase() + ".",
   fields,
   slots,
 });

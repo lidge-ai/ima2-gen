@@ -8,7 +8,7 @@ test("asset filters, favorites and deletion", async ({ page, request }) => {
   expect(response.ok()).toBeTruthy();
   await expect
     .poll(async () =>
-      (await (await request.get("/api/media/history")).json()).items.some(
+      (await (await request.get("/api/history")).json()).items.some(
         (item: { prompt: string }) => item.prompt === prompt,
       ),
     )
@@ -37,12 +37,12 @@ test("asset filters, favorites and deletion", async ({ page, request }) => {
 test("history errors can be retried", async ({ page }) => {
   await page.goto("/#/assets/all");
   await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
-  await page.route("**/api/media/history?*", (route) =>
+  await page.route("**/api/history?*", (route) =>
     route.fulfill({ status: 503, json: { error: { code: "UNAVAILABLE", message: "History unavailable" } } }),
   );
   await page.getByRole("link", { name: "Images", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("History unavailable");
-  await page.unroute("**/api/media/history?*");
+  await page.unroute("**/api/history?*");
   await page.getByRole("button", { name: "Retry" }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Create an image" })).toBeVisible();

@@ -39,6 +39,7 @@ const expectedIds = [
   "replicate",
   "atlascloud",
   "sume",
+  "openrouter",
 ];
 const assets = join(dirname(fileURLToPath(import.meta.url)), "../assets/vendors");
 type Asset = { file: string; variant: string; format: string };
