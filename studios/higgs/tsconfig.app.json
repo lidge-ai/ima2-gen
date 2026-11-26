@@ -17,5 +17,5 @@
     "types": [],
     "paths": { "@ima2/studio-kit": ["../kit/src/index.ts"] }
   },
-  "include": ["src", "../kit/src/index.ts"]
+  "include": ["src", "audit/page", "../kit/src/index.ts"]
 }
