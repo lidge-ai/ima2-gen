@@ -146,6 +146,10 @@ export function fakeLocal(probes: Record<string, ProbeResult>): FakeLocal {
       ops.push({ op: "concat", args: [...paths, out] });
       writeFileSync(out, "joined:" + paths.length);
     },
+    async cut(video, start, length, out) {
+      ops.push({ op: "cut", args: [video, start.toFixed(3), length.toFixed(3), out] });
+      writeFileSync(out, "cut:" + start.toFixed(3) + "+" + length.toFixed(3));
+    },
   };
 }
 

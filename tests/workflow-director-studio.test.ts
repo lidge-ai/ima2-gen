@@ -113,7 +113,9 @@ test("clip length comes from the catalog, then the known table; otherwise the mo
 
 test("every workflow describes itself as JSON and marks models the gateway knows", () => {
   assert.deepEqual(WORKFLOWS.map((w) => w.id), [
-    "remix-motion-transfer", "remix-object-swap", "remix-restyle", "director-studio", "director-cast", "director-locations", "director-cinema",
+    "remix-motion-transfer", "remix-object-swap", "remix-restyle",
+    "remix-motion-transfer-subscription", "remix-object-swap-subscription", "remix-restyle-subscription",
+    "director-studio", "director-cast", "director-locations", "director-cinema",
   ]);
   const described = describeWorkflow(studio!, fakeGateway({}, specs));
   assert.equal(described.slots[0]?.available["bytedance/seedance-2.5"], true);

@@ -9,11 +9,14 @@ import { directorStudio } from "./definitions/directorStudio.js";
 import { remixMotionTransfer } from "./definitions/remixMotionTransfer.js";
 import { remixObjectSwap } from "./definitions/remixObjectSwap.js";
 import { remixRestyle } from "./definitions/remixRestyle.js";
+import { remixMotionTransferSubscription, remixObjectSwapSubscription } from "./definitions/remixKeyframeSubscription.js";
+import { remixRestyleSubscription } from "./definitions/remixRestyleSubscription.js";
 import { slotModelAvailable } from "./validate.js";
-import type { ModelSlot, WorkflowDefinition, WorkflowField, WorkflowId, WorkflowGateway } from "./types.js";
+import type { ModelSlot, WorkflowDefinition, WorkflowField, WorkflowId, WorkflowGateway, WorkflowPreset } from "./types.js";
 
 export const WORKFLOWS: readonly WorkflowDefinition[] = [
   remixMotionTransfer, remixObjectSwap, remixRestyle,
+  remixMotionTransferSubscription, remixObjectSwapSubscription, remixRestyleSubscription,
   directorStudio, directorCast, directorLocations, directorCinema,
 ];
 
@@ -35,6 +38,7 @@ export interface WorkflowDescription {
   fields: readonly WorkflowField[];
   slots: readonly SlotDescription[];
   tierField?: string;
+  preset?: WorkflowPreset;
 }
 
 /** JSON-safe description for GET /api/workflows. Pass a gateway to mark which models have adapters. */
@@ -48,6 +52,7 @@ export function describeWorkflow(def: WorkflowDefinition, gateway?: Pick<Workflo
     id: def.id, label: def.label, description: def.description, equivalents: def.equivalents, fields: def.fields, slots,
   };
   if (def.tierField) description.tierField = def.tierField;
+  if (def.preset) description.preset = def.preset;
   return description;
 }
 

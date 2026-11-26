@@ -150,7 +150,8 @@ export function slotModelAvailable(slot: ModelSlot, model: string, catalog: Plan
 
 function defaultFor(slot: ModelSlot, tier: unknown, catalog: PlanEnv["catalog"] | undefined): string {
   const preferred = (typeof tier === "string" ? slot.tierModels?.[tier] : undefined) ?? slot.defaultModel;
-  if (!catalog || slotModelAvailable(slot, preferred, catalog)) return preferred;
+  // A slot bound to a route (e.g. a subscription) keeps its model; another model would not fit that route.
+  if (!catalog || slot.defaultRoute || slotModelAvailable(slot, preferred, catalog)) return preferred;
   return [...slot.alternatives, ...Object.values(slot.tierModels ?? {})].find((m) => slotModelAvailable(slot, m, catalog)) ?? preferred;
 }
 
@@ -166,7 +167,7 @@ export function resolveSlots(def: WorkflowDefinition, selection: WorkflowSelecti
     const chosen = selection?.models?.[slot.name] ?? defaultFor(slot, tier, catalog);
     const allowed = [slot.defaultModel, ...slot.alternatives, ...Object.values(slot.tierModels ?? {})];
     if (!allowed.includes(chosen)) throw inputError("selection.models." + slot.name, chosen + " cannot run this step");
-    const route = selection?.routes?.[slot.name];
+    const route = selection?.routes?.[slot.name] ?? slot.defaultRoute;
     resolved[slot.name] = route ? { model: chosen, route } : { model: chosen };
   }
   const extra = Object.keys(selection?.models ?? {}).concat(Object.keys(selection?.routes ?? {}))

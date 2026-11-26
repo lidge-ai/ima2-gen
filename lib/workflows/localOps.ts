@@ -102,5 +102,12 @@ async function concat(paths: readonly string[], outPath: string, signal: AbortSi
 }
 
 export function createFfmpegLocalOps(): WorkflowLocalOps {
-  return { probe, frame, muxAudio, concat };
+  return { probe, frame, muxAudio, concat, cut };
+}
+
+/** Frame-accurate cut: seek before the input, re-encode, drop audio (the edit model replaces it). */
+async function cut(videoPath: string, startSec: number, durationSec: number, outPath: string, signal: AbortSignal): Promise<void> {
+  if (!(startSec >= 0) || !(durationSec > 0)) throw new WorkflowError("WORKFLOW_LOCAL_STEP_FAILED", "cut needs a start >= 0 and a positive length", { status: 500 });
+  await run("ffmpeg", ["-y", "-ss", startSec.toFixed(3), "-i", videoPath, "-t", durationSec.toFixed(3), "-map", "0:v:0", "-an",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "18", outPath], signal);
 }
