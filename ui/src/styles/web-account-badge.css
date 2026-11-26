@@ -16,17 +16,22 @@
 }
 
 @media (max-width: 760px) {
+  /* The mobile header leaves a gap between the logo and its buttons; the badge
+     shrinks into it (email truncates, Log out stays) instead of covering content. */
   .web-account-badge {
-    top: auto;
-    right: 8px;
-    /* Sit just above the mobile nav bar (z-index 160), not under it. */
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    top: 22px;
+    right: auto;
+    left: 76px;
     z-index: 170;
-    max-width: calc(100vw - 16px);
+    gap: 6px;
+    max-width: calc(100vw - 250px);
+    padding: 3px 6px;
+    font-size: 11px;
   }
 }
 
 .web-account-badge__email {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
