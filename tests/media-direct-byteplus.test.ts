@@ -5,6 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { adapter } from "../lib/providers/media/direct/byteplus/index.ts";
 import { HOST, KEY, ctxWith, png, rejection, req, type Call } from "./_byteplusFixture.ts";
+import type { MediaSubmitRequest } from "../lib/providers/media/contract.ts";
 
 test("catalog covers the Sume Seedance and Seedream ids with ModelArk wire ids and cited prices", () => {
   const byId = new Map(adapter.listModels().map((m) => [m.id, m]));
