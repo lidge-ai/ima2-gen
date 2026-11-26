@@ -1,110 +1,27 @@
-import { createHmac } from "node:crypto";
 import type {
   MediaAdapterContext,
   MediaJobRef,
-  MediaJobState,
   MediaModelSpec,
   MediaProviderAdapter,
   MediaSubmitRequest,
 } from "../../contract.js";
-import {
-  categoryForStatus,
-  contextSecrets,
-  fail,
-  mediaError,
-  normalizeUnknownError,
-  redactSecrets,
-  MediaAdapterError,
-} from "../_l2/errors.js";
-import { asArray, asRecord, asString, joinUrl, sendJson } from "../_l2/http.js";
-import { bareBase64OrUrl, urlOutput } from "../_l2/inputs.js";
+import { fail, normalizeUnknownError, MediaAdapterError } from "../_l2/errors.js";
+import { asRecord, asString } from "../_l2/http.js";
+import { bareBase64OrUrl } from "../_l2/inputs.js";
 import { assertKnownOptions, assertParams, assertTask, findModel } from "../_l2/validate.js";
 
-import { models } from "./models.js";
+import { modernModels as models } from "./models.js";
+import { request, poll } from "./shared.js";
 
 const PREFIX = "KLING";
-const BASE = "https://api-singapore.klingai.com";
-const IMAGE_PATH = "/v1/images/generations";
-const VIDEO_PATH = "/v1/videos/text2video";
-const IMAGE_TO_VIDEO = "/v1/videos/image2video";
-const OMNI_VIDEO = "/v1/videos/omni-video";
-const OMNI_IMAGE = "/v1/images/omni-image";
-const LIP_SYNC = "/v1/videos/advanced-lip-sync";
-function token(ctx: MediaAdapterContext, now = Date.now()): string {
-  const secret = ctx.extra?.secretKey;
-  if (!ctx.apiKey || !secret)
-    fail(PREFIX, "CREDENTIAL_MISSING", "auth", "KLING_ACCESS_KEY and KLING_SECRET_KEY are required");
-  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  const seconds = Math.floor(now / 1000);
-  const header = encode({ alg: "HS256", typ: "JWT" });
-  const claims = encode({ iss: ctx.apiKey, exp: seconds + 1800, nbf: seconds - 5 });
-  const payload = `${header}.${claims}`;
-  return `${payload}.${createHmac("sha256", secret).update(payload).digest("base64url")}`;
-}
-function vendorCategory(code: string, status: number) {
-  if (["1000", "1001", "1002", "1003", "1004", "1103"].includes(code)) return "auth" as const;
-  if (["1101", "1102"].includes(code)) return "quota" as const;
-  if (["1200", "1201"].includes(code)) return "invalid-request" as const;
-  if (["1202", "1203"].includes(code)) return "not-found" as const;
-  if (["1300", "1301"].includes(code)) return "moderation" as const;
-  if (["1302", "1303"].includes(code)) return "rate-limit" as const;
-  if (code === "1304") return "auth" as const;
-  if (["5000", "5001"].includes(code)) return "upstream" as const;
-  if (code === "5002") return "timeout" as const;
-  return categoryForStatus(status);
-}
-async function request(
-  ctx: MediaAdapterContext,
-  path: string,
-  body?: unknown,
-  modern = false,
-): Promise<Record<string, unknown>> {
-  const authorization = modern ? ctx.extra?.apiKey : token(ctx);
-  if (!authorization) fail(PREFIX, "CREDENTIAL_MISSING", "auth", "KLING_API_KEY is required");
-  let response;
-  try {
-    response = await sendJson(ctx, PREFIX, {
-      url: joinUrl(ctx.baseUrl ?? BASE, path),
-      headers: { authorization: `Bearer ${authorization}` },
-      ...(body === undefined ? {} : { body }),
-    });
-  } catch (error) {
-    if (error instanceof MediaAdapterError) throw error;
-    if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) throw error;
-    fail(PREFIX, "NETWORK", "upstream", "Provider request failed");
-  }
-  const envelope = asRecord(response.body);
-  const code = asString(envelope.code);
-  if (!response.ok || (code !== undefined && code !== "0")) {
-    const status = response.status;
-    const category = vendorCategory(code ?? "", status);
-    const message = redactSecrets(
-      asString(envelope.message) ?? `Provider returned HTTP ${status}`,
-      contextSecrets(ctx, ["secretKey", "apiKey"]),
-    );
-    fail(
-      PREFIX,
-      code && code !== "0" ? `VENDOR_${code.replace(/[^a-zA-Z0-9]/g, "_")}` : `HTTP_${status}`,
-      category,
-      message,
-      { status },
-    );
-  }
-  return envelope;
-}
 function pathFor(model: MediaModelSpec, req: MediaSubmitRequest): string {
-  if (model.id === "kling/kling-lipsync") return LIP_SYNC;
-  if (model.id === "kling/kling-4-omni") return "/omni-video/kling-4.0";
-  if (model.id === "kling/kling-4" || model.id === "kling/kling-3-turbo")
-    return `/${req.task === "image-to-video" ? "image-to-video" : "text-to-video"}/${model.upstreamId}`;
-  if (model.id === "kling/kling-o1" || model.id === "kling/kling-3-omni") return OMNI_VIDEO;
-  if (model.id === "kling/kling-image-o1" || model.id === "kling/kling-image-3-omni") return OMNI_IMAGE;
-  return model.kind === "image" ? IMAGE_PATH : req.task === "image-to-video" ? IMAGE_TO_VIDEO : VIDEO_PATH;
+  if (["kling/kling-4-omni", "kling/kling-3-omni", "kling/kling-o1"].includes(model.id))
+    return `/omni-video/${model.upstreamId}`;
+  return `/${req.task === "image-to-video" ? "image-to-video" : "text-to-video"}/${model.upstreamId}`;
 }
-function bodyFor(model: MediaModelSpec, req: MediaSubmitRequest, path: string): Record<string, unknown> {
+function bodyFor(model: MediaModelSpec, req: MediaSubmitRequest): Record<string, unknown> {
   assertTask(PREFIX, model, req);
   assertParams(PREFIX, model, req);
-  if (path === LIP_SYNC) return lipBody(req);
   assertKnownOptions(PREFIX, req.vendorOptions, []);
   if (!req.prompt) fail(PREFIX, "INVALID_PARAM", "invalid-request", "Prompt is required");
   if (req.seed !== undefined || (req.audio !== undefined && !model.params.nativeAudio))
@@ -131,104 +48,11 @@ function bodyFor(model: MediaModelSpec, req: MediaSubmitRequest, path: string): 
       req.inputs.some((i) => !["first-frame", "last-frame"].includes(i.role)))
   )
     fail(PREFIX, "INVALID_PARAM", "invalid-request", "A first frame and optional last frame are required");
-  if (path.startsWith("/v1/")) return legacyBody(model, req, path);
   return modernBody(model, req);
-}
-function legacyBody(model: MediaModelSpec, req: MediaSubmitRequest, path: string): Record<string, unknown> {
-  if (model.kind === "video" && req.resolution !== undefined)
-    fail(PREFIX, "INVALID_PARAM", "invalid-request", "Resolution is unsupported");
-  const body: Record<string, unknown> = { model_name: model.upstreamId, prompt: req.prompt };
-  if (req.negativePrompt) body.negative_prompt = req.negativePrompt;
-  if (req.resolution) body.resolution = req.resolution;
-  if (req.aspectRatio) body.aspect_ratio = req.aspectRatio;
-  if (req.durationSec) body.duration = String(req.durationSec);
-  if (req.audio !== undefined) body.sound = req.audio ? "on" : "off";
-  if (req.count !== undefined) body.n = req.count;
-  if (path === IMAGE_PATH && req.inputs.length) body.image = bareBase64OrUrl(PREFIX, req.inputs[0]!);
-  if (path === IMAGE_TO_VIDEO)
-    for (const input of req.inputs)
-      body[input.role === "first-frame" ? "image" : "image_tail"] = bareBase64OrUrl(PREFIX, input);
-  if (path === OMNI_IMAGE) {
-    if (req.inputs.some((i) => !["source-image", "reference-image"].includes(i.role)))
-      fail(PREFIX, "INVALID_PARAM", "invalid-request", "Image input required");
-    body.image_list = req.inputs.map((i) => ({ image: bareBase64OrUrl(PREFIX, i) }));
-  }
-  if (path === OMNI_VIDEO) {
-    if (req.inputs.some((i) => !["reference-image", "reference-video", "source-video"].includes(i.role)))
-      fail(PREFIX, "INVALID_PARAM", "invalid-request", "Unsupported reference input");
-    const images = req.inputs.filter((i) => i.role === "reference-image");
-    const videos = req.inputs.filter((i) => i.role !== "reference-image");
-    if (images.length > 4 || videos.length > 1 || (req.task !== "text-to-video" && !req.inputs.length))
-      fail(PREFIX, "INVALID_PARAM", "invalid-request", "Invalid references");
-    if (images.length) body.image_list = images.map((i) => ({ image_url: bareBase64OrUrl(PREFIX, i) }));
-    if (videos.length) {
-      if (!videos[0]!.url) fail(PREFIX, "INVALID_PARAM", "invalid-request", "Video URL required");
-      body.video_list = [
-        { video_url: videos[0]!.url, refer_type: req.task === "video-to-video" ? "base" : "feature" },
-      ];
-    }
-  }
-  return body;
-}
-function assertLipParams(req: MediaSubmitRequest): void {
-  if (
-    req.prompt ||
-    req.negativePrompt ||
-    req.durationSec !== undefined ||
-    req.resolution ||
-    req.aspectRatio ||
-    req.seed !== undefined ||
-    req.audio !== undefined ||
-    req.count !== undefined
-  )
-    fail(PREFIX, "INVALID_PARAM", "invalid-request", "Unsupported lip sync parameter");
-}
-function lipBody(req: MediaSubmitRequest): Record<string, unknown> {
-  const opt = assertKnownOptions(PREFIX, req.vendorOptions, [
-    "sessionId",
-    "faceId",
-    "soundStartTime",
-    "soundEndTime",
-    "soundInsertTime",
-  ]);
-  const { sessionId, faceId, soundStartTime, soundEndTime, soundInsertTime } = opt;
-  if (
-    typeof sessionId !== "string" ||
-    !sessionId ||
-    typeof faceId !== "string" ||
-    !faceId ||
-    typeof soundStartTime !== "number" ||
-    typeof soundEndTime !== "number" ||
-    typeof soundInsertTime !== "number" ||
-    soundStartTime < 0 ||
-    soundInsertTime < 0 ||
-    soundEndTime - soundStartTime < 2000 ||
-    req.inputs.length !== 1 ||
-    req.inputs[0]?.role !== "source-audio"
-  )
-    fail(
-      PREFIX,
-      "INVALID_PARAM",
-      "invalid-request",
-      "Face session, face ID, audio and valid times are required",
-    );
-  assertLipParams(req);
-  return {
-    session_id: sessionId,
-    face_choose: [
-      {
-        face_id: faceId,
-        sound_file: bareBase64OrUrl(PREFIX, req.inputs[0]!),
-        sound_start_time: soundStartTime,
-        sound_end_time: soundEndTime,
-        sound_insert_time: soundInsertTime,
-      },
-    ],
-  };
 }
 function modernOmniBody(req: MediaSubmitRequest): Record<string, unknown> {
   if (
-    !req.inputs.length ||
+    (!req.inputs.length && req.task !== "text-to-video") ||
     req.inputs.length > 15 ||
     req.inputs.some((i) => !["reference-image", "reference-video", "source-video"].includes(i.role))
   )
@@ -249,21 +73,23 @@ function modernOmniBody(req: MediaSubmitRequest): Record<string, unknown> {
     contents,
     settings: {
       ...(req.resolution ? { resolution: req.resolution } : {}),
+      ...(req.audio !== undefined ? { audio: req.audio ? "native" : "off" } : {}),
       ...(req.durationSec ? { duration: req.durationSec } : {}),
       ...(req.aspectRatio ? { aspect_ratio: req.aspectRatio } : {}),
     },
   };
 }
 function modernBody(model: MediaModelSpec, req: MediaSubmitRequest): Record<string, unknown> {
-  if (req.negativePrompt || req.audio !== undefined)
-    fail(PREFIX, "INVALID_PARAM", "invalid-request", "Unsupported modern parameter");
+  if (req.negativePrompt) fail(PREFIX, "INVALID_PARAM", "invalid-request", "Unsupported modern parameter");
   if (model.id.endsWith("turbo") && req.inputs.some((i) => i.role === "last-frame"))
     fail(PREFIX, "INVALID_PARAM", "invalid-request", "Turbo supports only a first frame");
-  if (model.id === "kling/kling-4-omni") return modernOmniBody(req);
+  if (["kling/kling-4-omni", "kling/kling-3-omni", "kling/kling-o1"].includes(model.id))
+    return modernOmniBody(req);
   if (req.task === "image-to-video" && req.aspectRatio)
     fail(PREFIX, "INVALID_PARAM", "invalid-request", "Aspect ratio is unsupported for image-to-video");
   const settings = {
     ...(req.resolution ? { resolution: req.resolution } : {}),
+    ...(req.audio !== undefined ? { audio: req.audio ? "native" : "off" } : {}),
     ...(req.durationSec ? { duration: req.durationSec } : {}),
     ...(req.aspectRatio ? { aspect_ratio: req.aspectRatio } : {}),
   };
@@ -284,69 +110,13 @@ async function submit(ctx: MediaAdapterContext, req: MediaSubmitRequest): Promis
   const model = findModel(PREFIX, models, req.model);
   const path = pathFor(model, req);
   const modern = !path.startsWith("/v1/");
-  const data = asRecord((await request(ctx, path, bodyFor(model, req, path), modern)).data);
+  const data = asRecord((await request(ctx, path, bodyFor(model, req), modern, PREFIX)).data);
   const id = asString(modern ? data.id : data.task_id);
   if (!id) fail(PREFIX, "BAD_RESPONSE", "upstream", "Missing task ID");
   return {
     providerJobId: id,
     resume: { path: modern ? "/tasks" : path, kind: model.kind, ...(modern ? { auth: "apiKey" } : {}) },
   };
-}
-function failedState(
-  ctx: MediaAdapterContext,
-  data: Record<string, unknown>,
-  modern: boolean,
-): MediaJobState {
-  return {
-    status: "failed",
-    error: mediaError(
-      PREFIX,
-      "TASK_FAILED",
-      "upstream",
-      redactSecrets(
-        asString(modern ? data.message : data.task_status_msg) ?? "Task failed",
-        contextSecrets(ctx, ["secretKey", "apiKey"]),
-      ),
-      { retryable: false },
-    ),
-  };
-}
-async function poll(ctx: MediaAdapterContext, job: MediaJobRef): Promise<MediaJobState> {
-  const path = job.resume?.path;
-  const kind = job.resume?.kind;
-  const modern = path === "/tasks" && job.resume?.auth === "apiKey";
-  if (!(
-    (kind === "image" && (path === IMAGE_PATH || path === OMNI_IMAGE)) ||
-    (kind === "video" &&
-      (path === VIDEO_PATH || path === IMAGE_TO_VIDEO || path === OMNI_VIDEO || path === LIP_SYNC || modern))
-  ))
-    fail(PREFIX, "INVALID_JOB", "invalid-request", "Invalid job path");
-  const envelope = await request(
-    ctx,
-    modern
-      ? `/tasks?task_ids=${encodeURIComponent(job.providerJobId)}`
-      : `${path}/${encodeURIComponent(job.providerJobId)}`,
-    undefined,
-    modern,
-  );
-  const data = modern
-    ? asRecord(asArray(envelope.data).find((v) => asString(asRecord(v).id) === job.providerJobId))
-    : asRecord(envelope.data);
-  const state = asString(modern ? data.status : data.task_status);
-  if (state === "submitted") return { status: "queued" };
-  if (state === "processing") return { status: "running" };
-  if (state === "failed") return failedState(ctx, data, modern);
-  if (state !== (modern ? "succeeded" : "succeed"))
-    fail(PREFIX, "BAD_RESPONSE", "upstream", "Unknown task status");
-  const result = asRecord(data.task_result);
-  const values = asArray(modern ? data.outputs : kind === "image" ? result.images : result.videos);
-  const outputs = values
-    .map(asRecord)
-    .map((v) => asString(v.url))
-    .filter((url): url is string => Boolean(url))
-    .map((url) => urlOutput(url, kind));
-  if (!outputs.length) fail(PREFIX, "BAD_RESPONSE", "upstream", "Task returned no output");
-  return { status: "succeeded", outputs };
 }
 
 export const adapter: MediaProviderAdapter = {
@@ -356,27 +126,26 @@ export const adapter: MediaProviderAdapter = {
   errorPrefix: PREFIX,
   credential: {
     keyVocabulary: "kling",
-    envVars: ["KLING_ACCESS_KEY"],
+    envVars: ["KLING_API_KEY"],
     configKey: "klingApiKey",
     consoleUrl: "https://kling.ai/dev/api-key",
-    extraFields: [
-      { name: "secretKey", envVar: "KLING_SECRET_KEY", secret: true, required: false },
-      { name: "apiKey", envVar: "KLING_API_KEY", secret: true, required: false },
-    ],
   },
   inputTransport: "inline",
   listModels: () => models,
   async validateKey(ctx) {
     try {
-      if (ctx.extra?.apiKey) await request(ctx, "/tasks", { limit: 1 }, true);
-      else await request(ctx, `${IMAGE_PATH}?pageNum=1&pageSize=1`);
+      const result = await request(ctx, "/tasks?task_ids=0", undefined, true, PREFIX);
+      if (result.code !== 0 || !Array.isArray(result.data))
+        fail(PREFIX, "BAD_RESPONSE", "upstream", "Key validation unavailable");
       return { ok: true };
     } catch (error) {
-      return { ok: false, reason: adapter.normalizeError(error).message };
+      const detail = adapter.normalizeError(error);
+      if (detail.category !== "auth") throw error;
+      return { ok: false, reason: detail.message };
     }
   },
   submit,
-  poll,
+  poll: (ctx, job) => poll(ctx, job, PREFIX, true),
   normalizeError(error) {
     return normalizeUnknownError(
       PREFIX,
