@@ -45,21 +45,48 @@
   padding: 32px;
 }
 .director-heading {
-  text-align: center;
   display: grid;
-  gap: 10px;
-  padding: 8vh 0 32px;
+  gap: 6px;
+  padding: 4px 0 24px;
+  max-width: 960px;
 }
 .director-form {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 960px;
   display: grid;
   gap: 14px;
 }
+/* Settings read as one even grid of labelled tiles: name above, value below, the same height. */
 .director-form > .workflow-params {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 8px;
+}
+.director-form > .workflow-params > .field,
+.director-form > .workflow-params > .workflow-switch {
+  min-height: 54px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  align-content: center;
+}
+.director-form > .workflow-params > .field input {
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+}
+.director-form > .workflow-params > .field:focus-within {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.director-form > .workflow-params > .field input:focus-visible {
+  outline: none;
+}
+.director-form > .workflow-params > .workflow-switch {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 .director-composer {
   display: grid;
@@ -73,8 +100,8 @@
   min-height: 100px;
 }
 .director-feed {
-  margin: 40px auto 0;
-  max-width: 1100px;
+  margin-top: 40px;
+  max-width: 960px;
   display: grid;
   gap: 16px;
 }
