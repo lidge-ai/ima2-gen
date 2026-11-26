@@ -227,6 +227,49 @@
   color: var(--text);
   min-width: 0;
 }
+/* The inputs drop their own outline, so the field shows focus instead (WCAG 2.4.7). */
+.popover-search:focus-within,
+.search-field:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.picker-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.picker-filters {
+  flex: 1 1 260px;
+}
+.picker-maker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+.picker-maker select {
+  height: 28px;
+  max-width: 160px;
+  padding: 0 8px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.picker-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.model-group {
+  padding: 8px 8px 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
 .model-list {
   list-style: none;
   margin: 0;
