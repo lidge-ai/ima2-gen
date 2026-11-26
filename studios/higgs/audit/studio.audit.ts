@@ -114,6 +114,26 @@ const unpricedRestyle: Act = async (page) => {
     await route.fulfill({ response, json: body });
   });
 };
+/** The server plans another model for a step than the workflow default (web instance without sign-ins). */
+const plannedStylize: Act = async (page) => {
+  await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const s of body.estimate.steps) if (s.stepId === "stylize") s.model = "openai/gpt-image-2";
+    for (const s of body.steps) if (s.id === "stylize") s.model = "openai/gpt-image-2";
+    await route.fulfill({ response, json: body });
+  });
+};
+/** BytePlus priced per 1K tokens, the longest price text the Models page shows. */
+const tokenPrices: Act = async (page) => {
+  await page.route("**/api/media/catalog*", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const m of body.models)
+      for (const r of m.routes) if (r.adapter === "byteplus") r.pricing = [{ unit: "1k-tokens", usd: 0.0057, source: "https://example.test", checkedAt: "2026-11-27" }];
+    await route.fulfill({ response, json: body });
+  });
+};
 
 const PRISTINE: Cell[] = [
   { id: "home__nokeys", hash: "/", setup: noKeys },
@@ -201,6 +221,19 @@ const PRISTINE: Cell[] = [
     },
   },
   { id: "video__web-over-cap", hash: "/video", setup: webCaps(0.1), act: prompt("over the per-run limit") },
+  {
+    id: "remix__planned-model",
+    hash: "/remix/remix-restyle",
+    setup: plannedStylize,
+    act: async (p) => {
+      const remove = p.getByRole("button", { name: /^(Remove Source video|원본 영상 삭제)/ });
+      if (await remove.count()) await remove.first().click();
+      await p.getByLabel(/^(Source video|원본 영상)$/).first().setInputFiles({ name: "source.mp4", mimeType: "video/mp4", buffer: Buffer.from("audit") });
+      await p.waitForTimeout(1500);
+      await p.locator(".workflow-steps").first().scrollIntoViewIfNeeded();
+    },
+  },
+  { id: "models__token-prices", hash: "/models/bytedance", setup: tokenPrices },
   {
     id: "video__picker-after-keyless",
     hash: "/video",
