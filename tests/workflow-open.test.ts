@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import type { MediaModelSpec } from "../lib/providers/media/contract.js";
-import { describeWorkflow, getWorkflow } from "../lib/workflows/index.js";
+import { describeWorkflow, getWorkflow, summarizeSteps } from "../lib/workflows/index.js";
 import { prepareWorkflow, runWorkflow } from "../lib/workflows/runner.js";
 import type { MediaStep, TextPlanRequest, WorkflowDefinition, WorkflowEvent } from "../lib/workflows/types.js";
 import { fakeAdapter, fakeGateway, fakeLocal, instantPoll, spec, tempDir, writeFixture } from "./_workflowFakes.js";
@@ -212,4 +212,12 @@ test("Grok's edit is never asked for silence: the source sound replaces its soun
   assert.equal(req && "resolution" in req, false, "the edit follows the source size");
   await assert.rejects(prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p", sound: "none" }, gateway, { combo: "subscription" }), /always returns sound/);
   await assert.rejects(prep("remix-restyle-open", { video: video(short), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" }), /always returns sound/);
+});
+
+test("step summaries name the slot each media step runs, so clients need not guess from step ids", async () => {
+  const gateway = fakeGateway({}, specs, planner, (id) => id.startsWith("bytedance/"));
+  const p = await prep("remix-motion-transfer-open", { video: video(), images }, gateway);
+  const media = summarizeSteps(p.plan).filter((s) => s.kind === "media").map((s) => [s.id, s.slot, s.model]);
+  assert.deepEqual(media, [["subject-first", "subject", "bytedance/seedream-5.5"], ["render", "render", "bytedance/seedance-2.5"]]);
+  assert.ok(summarizeSteps(p.plan).filter((s) => s.kind !== "media").every((s) => s.slot === undefined));
 });

@@ -83,6 +83,7 @@ export function summarizeSteps(plan: WorkflowPlan): StepSummary[] {
   return plan.steps.map((step) => {
     const summary: StepSummary = { id: step.id, label: step.label, kind: step.kind, dependsOn: step.dependsOn, final: step.final === true };
     if (step.kind === "media") {
+      summary.slot = step.slot;
       summary.model = step.model;
       if (step.route) summary.route = step.route;
     }
