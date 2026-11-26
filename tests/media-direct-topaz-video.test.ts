@@ -55,3 +55,46 @@ test("redacts transport errors and arbitrary normalized errors", async () => {
   await assert.rejects(adapter.submit(ctx, request), error => { assert.doesNotMatch(String(error), /sk-test-SECRET/); assert.doesNotMatch(adapter.normalizeError(error).message, /sk-test-SECRET/); return true; });
   assert.doesNotMatch(adapter.normalizeError(new Error(key)).message, /sk-test-SECRET/);
 });
+
+
+function box(type: string, ...parts: Uint8Array[]): Buffer {
+  const body = Buffer.concat(parts);
+  const header = Buffer.alloc(8);
+  header.writeUInt32BE(body.length + 8);
+  header.write(type, 4, 4, "ascii");
+  return Buffer.concat([header, body]);
+}
+/** A minimal MP4 (64x48, 2 s, 25 fps, 50 frames), built like tests/media-mp4-probe.test.ts in L0. */
+function tinyMp4(brand = "isom"): Uint8Array {
+  const tkhd = Buffer.alloc(84);
+  tkhd.writeUInt32BE(64 * 65536, 76);
+  tkhd.writeUInt32BE(48 * 65536, 80);
+  const mdhd = Buffer.alloc(24);
+  mdhd.writeUInt32BE(1000, 12);
+  mdhd.writeUInt32BE(2000, 16);
+  const hdlr = Buffer.alloc(12);
+  hdlr.write("vide", 8);
+  const stts = Buffer.alloc(16);
+  stts.writeUInt32BE(1, 4); stts.writeUInt32BE(50, 8); stts.writeUInt32BE(40, 12);
+  const stsz = Buffer.alloc(12);
+  stsz.writeUInt32BE(50, 8);
+  const stbl = box("stbl", box("stts", stts), box("stsz", stsz));
+  const mdia = box("mdia", box("mdhd", mdhd), box("hdlr", hdlr), box("minf", stbl));
+  const moov = box("moov", box("mvhd", Buffer.alloc(4)), box("trak", box("tkhd", tkhd), mdia));
+  return new Uint8Array(Buffer.concat([box("ftyp", Buffer.from(brand), Buffer.alloc(4)), box("mdat", Buffer.alloc(4)), moov]));
+}
+
+test("without vendorOptions.source the MP4 is probed for Topaz's source metadata", async () => {
+  const bytes = tinyMp4();
+  const { ctx, calls } = fixture([json({ requestId: "probe" }), json({ urls: ["https://upload.example/p"] }), new Response(null, { status: 200 }), json({}, 202)]);
+  await adapter.submit(ctx, { ...request, inputs: [{ role: "source-video", mimeType: "video/mp4", bytes }], vendorOptions: { output: { resolution: { width: 128, height: 96 } } } });
+  assert.deepEqual(JSON.parse(String(calls[0]!.init!.body)).source, { resolution: { width: 64, height: 48 }, container: "mp4", size: bytes.byteLength, duration: 2, frameRate: 25, frameCount: 50 });
+});
+
+test("an unreadable or QuickTime source without metadata is refused before any request", async () => {
+  const { ctx, calls } = fixture([]);
+  const noSource = { output: { resolution: { width: 128, height: 96 } } };
+  await assert.rejects(adapter.submit(ctx, { ...request, vendorOptions: noSource }), /Could not read the source MP4/);
+  await assert.rejects(adapter.submit(ctx, { ...request, inputs: [{ role: "source-video", mimeType: "video/mp4", bytes: tinyMp4("qt  ") }], vendorOptions: noSource }), /QuickTime/);
+  assert.equal(calls.length, 0);
+});
