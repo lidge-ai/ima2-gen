@@ -2,7 +2,7 @@ import type { MediaModelSpec } from "../../contract.js";
 
 const IMAGE_DOC = "https://kling.ai/document-api/apiReference/model/imageGeneration";
 const VIDEO_DOC = "https://kling.ai/document-api/api/video/3-0-omni/text-to-video/legacy";
-export const models: readonly MediaModelSpec[] = [
+const models: readonly MediaModelSpec[] = [
   {
     id: "kling/kling-image-3",
     upstreamId: "kling-v3",
@@ -207,3 +207,25 @@ export const models: readonly MediaModelSpec[] = [
     docsUrl: "https://kling.ai/document-api/api/video/lip-sync",
   },
 ];
+
+const modernWire: Readonly<Record<string, string>> = {
+  "kling/kling-4": "kling-4.0",
+  "kling/kling-4-omni": "kling-4.0",
+  "kling/kling-3-turbo": "kling-3.0-turbo",
+  "kling/kling-3": "kling-3.0",
+  "kling/kling-2.6": "kling-2.6",
+  "kling/kling-3-omni": "kling-3.0-omni",
+  "kling/kling-o1": "kling-o1",
+};
+export const legacyModels = models.filter(
+  (m) => !["kling/kling-4", "kling/kling-4-omni", "kling/kling-3-turbo"].includes(m.id),
+);
+const modernDocs: Readonly<Record<string, string>> = {
+  "kling/kling-2.6": "https://kling.ai/document-api/api/video/2-6/text-to-video",
+  "kling/kling-3": "https://kling.ai/document-api/api/video/3-0-omni/text-to-video",
+  "kling/kling-3-omni": "https://kling.ai/document-api/api/video/3-0-omni/video-omni",
+  "kling/kling-o1": "https://kling.ai/document-api/api/video/o1",
+};
+export const modernModels = models
+  .filter((m) => modernWire[m.id])
+  .map((m) => ({ ...m, upstreamId: modernWire[m.id]!, docsUrl: modernDocs[m.id] ?? m.docsUrl }));
