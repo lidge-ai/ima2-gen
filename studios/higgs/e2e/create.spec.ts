@@ -15,12 +15,15 @@ test("video: default keyed model, prompt, generate, progress, result with downlo
   const card = page.getByRole("article", { name: new RegExp(prompt) });
   await expect(card.getByText(/Queued|Generating/)).toBeVisible();
   await expect(card).toContainText("via fal");
-  await expect(card).toHaveCount(0, { timeout: 15_000 });
-  const tile = page.getByRole("button", { name: "Open " + prompt });
-  await tile.click();
+  await expect(card.getByText("Done")).toBeVisible({ timeout: 15_000 });
+  await expect(card.locator("video")).toBeVisible();
+  await expect(card.getByRole("link", { name: "Download" })).toHaveAttribute("href", /\/(files|generated)\//);
+  await expect(page.getByRole("button", { name: "Open " + prompt })).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: "Open " + prompt }).click();
   const dialog = page.getByRole("dialog", { name: "Result" });
-  await expect(dialog.locator("video")).toBeVisible();
-  await expect(dialog.getByRole("link", { name: "Download" })).toHaveAttribute("href", /\/files\//);
+  await expect(dialog.locator(".lightbox-media video")).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Download" })).toHaveAttribute("href", /\/(files|generated)\//);
 });
 
 test("video: cancel stops a running job", async ({ page }) => {
@@ -78,12 +81,15 @@ test("video: a preset fills the prompt and shows on the card", async ({ page }) 
   await expect(page.locator(".preset-card")).toContainText("Neon rain");
 });
 
-test("image: dock generates an image that opens in the viewer", async ({ page }) => {
+test("image: dock generates an image that later opens in the viewer", async ({ page }) => {
   await page.goto("/#/image");
   await expect(page.getByRole("button", { name: /^Model: / })).toContainText("GPT Image 2");
   const prompt = unique("A ceramic teapot on linen");
   await page.getByLabel("Prompt").fill(prompt);
   await page.getByRole("button", { name: /Generate/ }).click();
+  const card = page.getByRole("article", { name: new RegExp(prompt) });
+  await expect(card.getByRole("img", { name: prompt })).toBeVisible({ timeout: 15_000 });
+  await page.reload();
   await page.getByRole("button", { name: "Open " + prompt }).click();
-  await expect(page.getByRole("dialog", { name: "Result" }).locator("img")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Result" }).getByRole("img", { name: prompt })).toBeVisible();
 });

@@ -67,16 +67,6 @@ function KeyActions({ provider, status, form }: { provider: CatalogProvider; sta
       <button
         className="btn"
         type="button"
-        disabled={form.busy || !status?.configured}
-        onClick={() => {
-          void form.run("test");
-        }}
-      >
-        Test
-      </button>
-      <button
-        className="btn"
-        type="button"
         disabled={form.busy || !status?.configured || status.source === "env"}
         onClick={() => {
           void form.run("remove");

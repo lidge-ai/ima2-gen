@@ -1,5 +1,12 @@
 export * from "./types.ts";
-export { createStudioClient, isTerminal, type StudioClient, type WatchOptions, type StreamStatus } from "./client.ts";
+export {
+  createStudioClient,
+  isTerminal,
+  type StudioClient,
+  type StudioClientOptions,
+  type WatchOptions,
+  type StreamStatus,
+} from "./client.ts";
 export { StudioApiError, type HttpOptions } from "./http.ts";
 export { followEvents, toJobEvent, type SubscribeOptions } from "./events.ts";
 export { readSse, type SseMessage } from "./sse.ts";
@@ -8,6 +15,7 @@ export { chooseRoute, modelHasKey, type RouteChoice } from "./routing.ts";
 export {
   VENDOR_ALIASES,
   VENDOR_NAMES,
+  findVendor,
   pickLogo,
   vendorId,
   vendorName,
@@ -16,3 +24,8 @@ export {
   type VendorAssetFile,
   type VendorManifest,
 } from "./vendors.ts";
+export { reduceJobEvent } from "./jobReducer.ts";
+export { toCatalog, toKeyStatuses, fromWireJob } from "./adapt.ts";
+export { toWorkflowDef, toWireRun, toEstimate } from "./adaptWorkflow.ts";
+export { toHistoryItem, toHistoryPage } from "./adaptHistory.ts";
+export type * from "./wire.ts";

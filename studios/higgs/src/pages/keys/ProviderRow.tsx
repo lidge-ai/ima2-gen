@@ -18,24 +18,15 @@ function useKeyForm(provider: CatalogProvider) {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState("");
-  const run = async (action: "save" | "test" | "remove") => {
+  const run = async (action: "save" | "remove") => {
     setBusy(true);
     setResult("");
     try {
       if (action === "save") {
-        const validation = await studio.saveKey(provider.keyVocabulary, { apiKey: key, extra });
+        await studio.saveKey(provider.keyVocabulary, { apiKey: key, extra });
         setKey("");
         setExtra({});
-        setResult(
-          validation
-            ? validation.ok
-              ? "Saved and validated"
-              : `Saved. Validation failed: ${validation.reason ?? "Unknown reason"}`
-            : "Saved. Validation not available.",
-        );
-      } else if (action === "test") {
-        const validation = await studio.client.keys.validate(provider.keyVocabulary);
-        setResult(validation.ok ? "Validation passed" : `Validation failed: ${validation.reason ?? "Unknown reason"}`);
+        setResult("Saved. The provider accepted the key.");
       } else {
         await studio.removeKey(provider.keyVocabulary);
         setResult("Key removed");

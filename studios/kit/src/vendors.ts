@@ -24,6 +24,8 @@ export interface VendorAsset {
   license?: string;
   modifications?: string;
   missing?: string;
+  /** Adapter ids and key vocabularies that show this vendor's logo, e.g. "bfl", "topaz-video". */
+  aliases?: readonly string[];
 }
 
 export interface VendorManifest {
@@ -93,9 +95,15 @@ export function vendorId(idOrAlias: string): string {
   return VENDOR_ALIASES[key] ?? key;
 }
 
+/** Manifest entry by id, by its aliases, or by the built-in alias table. */
+export function findVendor(manifest: VendorManifest | undefined, idOrAlias: string): VendorAsset | undefined {
+  const key = idOrAlias.toLowerCase();
+  const id = vendorId(key);
+  return manifest?.vendors.find((v) => v.id === id || v.id === key || v.aliases?.includes(key));
+}
+
 export function vendorName(idOrAlias: string, manifest?: VendorManifest): string {
-  const id = vendorId(idOrAlias);
-  return manifest?.vendors.find((v) => v.id === id)?.name ?? VENDOR_NAMES[id] ?? idOrAlias;
+  return findVendor(manifest, idOrAlias)?.name ?? VENDOR_NAMES[vendorId(idOrAlias)] ?? idOrAlias;
 }
 
 const ORDER: Record<"dark" | "light", Record<"mark" | "full", readonly LogoVariant[]>> = {
@@ -109,7 +117,7 @@ export function pickLogo(
   idOrAlias: string,
   options: { background: "dark" | "light"; shape: "mark" | "full" },
 ): { asset: VendorAsset; file: VendorAssetFile } | null {
-  const asset = manifest?.vendors.find((v) => v.id === vendorId(idOrAlias));
+  const asset = findVendor(manifest, idOrAlias);
   if (!asset || asset.files.length === 0) return null;
   for (const variant of ORDER[options.background][options.shape]) {
     const file = asset.files.find((f) => f.variant === variant);
