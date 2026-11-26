@@ -8,6 +8,7 @@ export interface TileOption<T> {
   meta?: string;
   /** Logo or icon shown before the label. */
   icon?: ReactNode;
+  disabled?: boolean;
 }
 
 interface Props<T> {
@@ -44,6 +45,7 @@ function OptionMenu<T extends string | number>({ titleId, caption, value, option
             type="button"
             role="radio"
             aria-checked={option.value === value}
+            disabled={option.disabled}
             className="menu-item"
             onClick={() => onPick(option.value)}
           >

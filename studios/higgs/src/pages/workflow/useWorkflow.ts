@@ -89,11 +89,16 @@ export function useWorkflow(def: WorkflowDef) {
     const id = form.steps[step.id]?.model ?? step.model;
     if (!id) return [];
     const model = catalog?.models.find((item) => item.id === id);
-    return [{ step, model, choice: model ? chooseRoute(model) : null }];
+    return [{ step, model, choice: model ? chooseRoute(model) : null, available: step.available?.[id] }];
   });
   const blocked =
     !catalog ||
-    choices.some((item) => !item.choice || item.choice.kind === "needs-key" || item.choice.kind === "unavailable");
-  return { studio, catalog, ...form, ...estimate, ...run, blocked, choices };
+    choices.some(
+      (item) =>
+        item.available === false ||
+        (item.available === undefined &&
+          (!item.choice || item.choice.kind === "needs-key" || item.choice.kind === "unavailable")),
+    );
+  return { def, studio, catalog, ...form, ...estimate, ...run, blocked, choices };
 }
 export type WorkflowForm = ReturnType<typeof useWorkflow>;

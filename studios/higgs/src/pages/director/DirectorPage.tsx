@@ -1,6 +1,7 @@
 import type { HistoryItem, WorkflowDef } from "@ima2/studio-kit";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile } from "../../studio/handoff.ts";
+import { historyWorkflow } from "../../studio/historyWorkflow.ts";
 import { Feed } from "../../ui/Feed.tsx";
 import { ModelName } from "../../ui/ModelName.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
@@ -11,14 +12,14 @@ const order = ["director-studio", "director-cinema", "director-cast", "director-
 
 function useAttachElement(def: WorkflowDef, form: WorkflowForm) {
   return async (item: HistoryItem) => {
-    const name = item.workflow === "director-cast" ? "cast" : "location";
-    const input = def.inputs.find((entry) => entry.name === name && entry.kind !== "text");
+    const name = historyWorkflow(item, form.studio.getState().jobs) === "director-cast" ? "cast" : "location";
+    const pattern = name === "cast" ? /cast|character|subject|person|actor/i : /location|place|background|scene/i;
+    const candidates = def.inputs.filter(
+      (entry) => entry.kind === "image" && (form.files[entry.name]?.length ?? 0) < (entry.maxCount ?? 1),
+    );
+    const input = candidates.find((entry) => pattern.test(entry.name) || pattern.test(entry.label)) ?? candidates[0];
     if (!input) {
       form.setError(`${def.label} does not accept ${name} attachments`);
-      return;
-    }
-    if ((form.files[name]?.length ?? 0) >= (input.maxCount ?? 1)) {
-      form.setError(`${input.label} is full`);
       return;
     }
     try {
@@ -32,7 +33,7 @@ function useAttachElement(def: WorkflowDef, form: WorkflowForm) {
       const upload = await form.studio.upload(file);
       form.setFiles((old) => ({
         ...old,
-        [name]: [...(old[name] ?? []), { role: input.role ?? "reference-image", upload, name: file.name }],
+        [input.name]: [...(old[input.name] ?? []), { role: input.role ?? "reference-image", upload, name: file.name }],
       }));
     } catch (err) {
       form.setError(err instanceof Error ? err.message : "Could not attach result");
@@ -43,8 +44,8 @@ function useAttachElement(def: WorkflowDef, form: WorkflowForm) {
 function DirectorElements({ def, form }: { def: WorkflowDef; form: WorkflowForm }) {
   const history = useStudio((s) => s.history);
   const jobs = useStudio((s) => s.jobs);
-  const elements = history.filter(
-    (item) => item.workflow === "director-cast" || item.workflow === "director-locations",
+  const elements = history.filter((item) =>
+    ["director-cast", "director-locations"].includes(historyWorkflow(item, jobs) ?? ""),
   );
   const attach = useAttachElement(def, form);
   return (
@@ -55,13 +56,13 @@ function DirectorElements({ def, form }: { def: WorkflowDef; form: WorkflowForm 
           <button
             type="button"
             key={item.historyId}
-            aria-label={`Attach ${item.workflow === "director-cast" ? "cast" : "location"}: ${item.prompt || item.model}`}
+            aria-label={`Attach ${historyWorkflow(item, jobs) === "director-cast" ? "cast" : "location"}: ${item.prompt || item.model}`}
             onClick={() => {
               void attach(item);
             }}
           >
-            Attach {item.workflow === "director-cast" ? "cast" : "location"}:{" "}
-            {item.prompt || (item.workflow === "director-cast" ? "Cast" : "Location")}
+            Attach {historyWorkflow(item, jobs) === "director-cast" ? "cast" : "location"}:{" "}
+            {item.prompt || (historyWorkflow(item, jobs) === "director-cast" ? "Cast" : "Location")}
             {jobs[item.jobId]?.steps?.find((step) => step.model)?.model ? (
               <ModelName id={jobs[item.jobId]!.steps!.find((step) => step.model)!.model!} />
             ) : null}
