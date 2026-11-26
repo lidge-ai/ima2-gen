@@ -134,7 +134,6 @@ test("Generate is held back for a missing key first, then for images that do not
 const { formatUsd } = await import("../ui/src/lib/mediaFormat.js");
 
 test("amounts keep enough digits to tell prices apart and round up, never down", () => {
-  assert.deepEqual([0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12], [0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12].map((n) => n));
   assert.deepEqual([0, 0.0004, 0.004, 0.035, 0.2205, 0.5, 1.1025, 2.365, 12].map(formatUsd),
     ["$0", "$0.0004", "$0.004", "$0.035", "$0.221", "$0.50", "$1.11", "$2.37", "$12.00"]);
 });
