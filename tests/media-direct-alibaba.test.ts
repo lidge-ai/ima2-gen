@@ -80,3 +80,51 @@ test("validateKey uses a non-generation model-list request", async () => {
   assert.equal(calls[0]?.url, `${baseUrl}/api/v1/models`);
   assert.equal(calls[0]?.init.method, "GET");
 });
+
+test("image and reference video map their media and task-specific HappyHorse wire IDs", async () => {
+  for (const [id, task, role, wire] of [
+    ["happy-horse-1.0", "image-to-video", "first-frame", "happyhorse-1.0-i2v"],
+    ["happy-horse-1.1", "reference-to-video", "reference-image", "happyhorse-1.1-r2v"],
+    ["wan-3.0", "image-to-video", "first-frame", "wan3.0-video"],
+  ] as const) {
+    const { ctx, calls } = fake({ output: { task_id: "job" } });
+    await adapter.submit(ctx, { ...request(id, task), inputs: [{ role, bytes: new Uint8Array([1, 2]), mimeType: "image/png" }] });
+    const body = JSON.parse(String(calls[0]?.init.body));
+    assert.equal(body.model, wire);
+    assert.deepEqual(body.input.media, [{ type: role.replaceAll("-", "_"), url: "data:image/png;base64,AQI=" }]);
+  }
+});
+
+test("provider error codes and bad requests cannot leak secret data", async () => {
+  for (const [code, category] of [["InvalidApiKey", "auth"], ["Throttling.RateQuota", "rate-limit"], ["InvalidParameter", "invalid-request"], ["DataInspectionFailed", "moderation"], ["BudgetLimitExceeded", "quota"]] as const) {
+    const { ctx } = fake({ output: { task_status: "FAILED", code, message: "sk-private-test-key" } });
+    const state = await adapter.poll(ctx, { providerJobId: "id" });
+    assert.equal(state.status, "failed");
+    if (state.status === "failed") { assert.equal(state.error.category, category); assert.match(state.error.code, /^ALIBABA_[A-Z0-9_]+$/); assert.doesNotMatch(JSON.stringify(state), /sk-private-test-key/); }
+  }
+  assert.doesNotMatch(adapter.normalizeError(new Error("Bearer sk-private-test-key")).message, /sk-private-test-key/);
+});
+
+test("region and signal are carried into network calls and poll resumes original base", async () => {
+  const { ctx, calls } = fake({ output: { task_id: "one", task_status: "PENDING" } });
+  const signal = new AbortController().signal;
+  const job = await adapter.submit({ ...ctx, signal }, request("wan-3.0"));
+  assert.equal(calls[0]?.init.signal, signal);
+  await adapter.poll({ ...ctx, baseUrl: "https://other.example" }, job);
+  assert.equal(calls[1]?.url, `${baseUrl}/api/v1/tasks/one`);
+});
+
+test("known signed URL expiry is exposed and arbitrary option names cannot leak the key", async () => {
+  const { ctx } = fake({ output: { task_status: "SUCCEEDED", video_url: "https://example.com/x.mp4?Expires=1800000000" } });
+  const state = await adapter.poll(ctx, { providerJobId: "id" });
+  assert.equal(state.status, "succeeded");
+  if (state.status === "succeeded") assert.equal(state.outputs[0]?.expiresAt, "2027-01-15T08:00:00.000Z");
+  await assert.rejects(adapter.submit(ctx, { ...request("wan-3.0"), vendorOptions: { "sk-private-test-key": true } }), (error: unknown) => {
+    assert.doesNotMatch(JSON.stringify(adapter.normalizeError(error)), /sk-private-test-key/); return true;
+  });
+});
+
+test("HappyHorse image-to-video rejects ratio because output follows the first frame", async () => {
+  const { ctx } = fake({ output: { task_id: "id" } });
+  await assert.rejects(adapter.submit(ctx, { ...request("happy-horse-1.1", "image-to-video"), aspectRatio: "16:9", inputs: [{ role: "first-frame", url: "https://example.com/x.png", mimeType: "image/png" }] }));
+});
