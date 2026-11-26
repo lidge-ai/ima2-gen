@@ -26,6 +26,7 @@
 .media-route--single { cursor: default; }
 .media-route__main { display: grid; min-width: 0; }
 .media-route__main { flex: 1 1 auto; }
+.media-route__name { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 6px; }
 .media-route__main small { color: var(--text-muted); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .media-route__key { flex: none; padding: 1px 6px; border: 1px solid var(--hairline); color: var(--text-muted); font-size: 10px; line-height: 1.5; white-space: nowrap; }
 .media-route__key { border-radius: var(--r-xs); }

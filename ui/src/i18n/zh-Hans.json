@@ -144,7 +144,8 @@
     "routeAutoNowDirect": "当前：{route}（直连）",
     "routeAutoNowNoDirectKey": "当前：{route}（{direct} 直连需要密钥）",
     "routeAutoNowCheapest": "当前：{route}（无直连线路，有密钥的最便宜线路）",
-    "routeAutoNone": "还没有带密钥的线路"
+    "routeAutoNone": "还没有带密钥的线路",
+    "routeKeyNeeded": "需要密钥"
   },
   "media": {
     "keysTitle": "媒体提供商",

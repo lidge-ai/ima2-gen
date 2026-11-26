@@ -144,7 +144,8 @@
     "routeAutoNowDirect": "目前：{route}（直連）",
     "routeAutoNowNoDirectKey": "目前：{route}（{direct} 直連需要金鑰）",
     "routeAutoNowCheapest": "目前：{route}（無直連線路，有金鑰的最便宜線路）",
-    "routeAutoNone": "還沒有帶金鑰的線路"
+    "routeAutoNone": "還沒有帶金鑰的線路",
+    "routeKeyNeeded": "需要金鑰"
   },
   "media": {
     "keysTitle": "媒體供應商",

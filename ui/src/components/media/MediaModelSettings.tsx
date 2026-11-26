@@ -47,11 +47,11 @@ function autoReason(model: MediaModel, task: string, resolved: ResolvedRoute, t:
 function RouteFacts({ route, kind }: { route: MediaRoute; kind: MediaModel["kind"] }) {
   const { t } = useI18n();
   return (
-    <>
-      <span className="media-route__main"><span>{route.label}</span>
-        <small>{t(`mediaPicker.${route.route}`)} · {fromPrice(lowestPrice(route, kind), t)}</small></span>
-      <span className={"media-route__key" + (route.hasKey ? " media-route__key--ready" : "")}>{t(route.hasKey ? "mediaPicker.keyReady" : "mediaPicker.noKey")}</span>
-    </>
+    <span className="media-route__main">
+      <span className="media-route__name">{route.label}
+        <span className={"media-route__key" + (route.hasKey ? " media-route__key--ready" : "")}>{t(route.hasKey ? "mediaPicker.keyReady" : "mediaPicker.routeKeyNeeded")}</span></span>
+      <small>{t(`mediaPicker.${route.route}`)} · {fromPrice(lowestPrice(route, kind), t)}</small>
+    </span>
   );
 }
 

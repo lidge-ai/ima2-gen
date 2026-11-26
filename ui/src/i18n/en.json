@@ -144,7 +144,8 @@
     "routeAutoNowDirect": "Now: {route} (direct)",
     "routeAutoNowNoDirectKey": "Now: {route} ({direct} direct needs a key)",
     "routeAutoNowCheapest": "Now: {route} (no direct route; cheapest with a key)",
-    "routeAutoNone": "No route has a key yet"
+    "routeAutoNone": "No route has a key yet",
+    "routeKeyNeeded": "Needs key"
   },
   "media": {
     "keysTitle": "Media providers",

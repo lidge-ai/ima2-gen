@@ -144,7 +144,8 @@
     "routeAutoNowDirect": "지금: {route} (제작사 직결)",
     "routeAutoNowNoDirectKey": "지금: {route} ({direct} 직결은 키 필요)",
     "routeAutoNowCheapest": "지금: {route} (직결 경로 없음, 키 있는 가장 싼 경로)",
-    "routeAutoNone": "아직 키가 있는 경로가 없어요"
+    "routeAutoNone": "아직 키가 있는 경로가 없어요",
+    "routeKeyNeeded": "키 필요"
   },
   "media": {
     "keysTitle": "미디어 제공업체",
