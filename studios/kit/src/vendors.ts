@@ -17,6 +17,12 @@ export interface VendorAssetFile {
   shape?: LogoShape;
   /** The file is a full tile with its own background (an app icon or organisation avatar). */
   tile?: boolean;
+  /**
+   * Share of empty space the file leaves on each side (0 to 0.4). Small slots scale the image up
+   * by 1 / (1 - 2 × trim) inside a clipped box, so a mark drawn small in its canvas stays legible
+   * without editing the file.
+   */
+  trim?: number;
 }
 
 export interface VendorAsset {

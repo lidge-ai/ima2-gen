@@ -92,6 +92,7 @@
 }
 .key-info a {
   display: inline-flex;
+  min-height: 24px;
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;

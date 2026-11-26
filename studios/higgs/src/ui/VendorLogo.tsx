@@ -80,10 +80,12 @@ export function VendorLogo({ id, shape = "mark", size = 20, withName = false, cl
   const maxWidth = shape === "mark" ? size : Math.round(size * Math.min(ratio, MAX_WORDMARK_RATIO));
   const inset = Math.max(1, Math.round(size * 0.12));
   const padding = file.tile ? 0 : shape === "mark" ? inset : inset + "px " + inset * 2 + "px";
+  const trim = shape === "mark" ? Math.min(0.4, Math.max(0, file.trim ?? 0)) : 0;
+  const scale = trim ? { transform: "scale(" + (1 / (1 - 2 * trim)).toFixed(3) + ")" } : undefined;
   return (
     <span className={base + " " + plate} title={name}>
       <span className="vendor-logo-box" style={{ ...box, maxWidth, padding }}>
-        <img src={url} alt={label ?? ""} loading="lazy" decoding="async" />
+        <img src={url} alt={label ?? ""} loading="lazy" decoding="async" style={scale} />
       </span>
       <Name name={name} show={withName} />
     </span>
