@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("save, validate, search and remove a provider key", async ({ page }) => {
   await page.goto("/#/keys?focus=byteplus");
   const row = page.getByRole("article", { name: "BytePlus ModelArk" });
+  await expect(row.getByRole("heading", { name: /BytePlus ModelArk/ })).toBeVisible();
+  await expect(row.getByText("Seedance 2.5", { exact: true })).toBeVisible();
   const key = row.getByLabel("API key");
   await expect(key).toBeFocused();
   await expect(row.getByText("Not set")).toBeVisible();
