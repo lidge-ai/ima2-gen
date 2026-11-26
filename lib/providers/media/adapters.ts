@@ -25,6 +25,7 @@ import { adapter as ideogram } from "./direct/ideogram.js";
 import { adapter as recraft } from "./direct/recraft.js";
 import { adapter as topazImage } from "./direct/topaz-image.js";
 import { adapter as stability } from "./direct/stability.js";
+import { adapter as openai } from "./direct/openai.js";
 import { adapter as fal } from "./aggregator/fal.js";
 import { adapter as sume } from "./aggregator/sume.js";
 import { adapter as atlascloud } from "./aggregator/atlascloud.js";
@@ -45,7 +46,7 @@ export const BUILTIN_MEDIA_ADAPTERS: readonly MediaProviderAdapter[] = [
   // L3 direct video, audio and avatar
   google, googleImage, googleVertex, xai, sync, heygen, veed, topazVideo, mirelo, elevenlabs, cartesia,
   // L4 direct image
-  bfl, ideogram, recraft, topazImage, stability,
+  bfl, ideogram, recraft, topazImage, stability, openai,
   // L1 aggregators (after every direct route)
   fal, replicate, wavespeed, openrouter, atlascloud, sume,
 ];
