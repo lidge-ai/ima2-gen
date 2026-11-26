@@ -83,9 +83,10 @@ async function execute(deps: MediaRunnerDeps, wfDeps: WorkflowDeps, prepared: Pr
     finish = { status: "completed", meta: { filename: first?.filename ?? null, workflow: workflowId } };
     emit("done", { workflow: workflowId, outputs, filename: first?.filename ?? null, url: first?.url ?? null, mediaType: first?.mediaType ?? null, elapsed: +((Date.now() - startedAt) / 1000).toFixed(1) });
     logEvent("workflow", "saved", { requestId: opts.requestId, workflow: workflowId, outputs: outputs.length });
-  } catch (error) {
+  } catch {
     finish = { status: "error", httpStatus: 500, errorCode: "WORKFLOW_INTERNAL" };
-    emit("error", { workflow: workflowId, code: "WORKFLOW_INTERNAL", error: error instanceof Error ? error.message : "Workflow failed", category: "unknown", retryable: false });
+    logEvent("workflow", "internal-error", { requestId: opts.requestId, workflow: workflowId, code: "WORKFLOW_INTERNAL" });
+    emit("error", { workflow: workflowId, code: "WORKFLOW_INTERNAL", error: "Workflow failed (internal error); see the server log", category: "unknown", retryable: false });
   } finally {
     finishJob(opts.requestId, finish);
     await rm(workDir, { recursive: true, force: true }).catch(() => {});

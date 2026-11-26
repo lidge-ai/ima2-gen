@@ -1,6 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -15,6 +16,12 @@ import {
 } from "../bin/lib/modelResolver.ts";
 import type { McpJobOptions, McpJobResult } from "../bin/lib/mcpJob.ts";
 import { parseEventCursor } from "../lib/eventsPolicy.ts";
+
+const execFileAsync = promisify(execFile);
+// PR fast gate twice went silent for ~255 s inside this file without a single
+// result line (#449, #450). Every child and wait below is bounded so a repeat
+// fails with the test name instead of the job hitting its 5-minute limit.
+const STEP_TIMEOUT_MS = 30_000;
 
 const ready = (models: Partial<LaneInfo["models"]> = {}, defaults: LaneInfo["defaults"] = {}): LaneInfo => ({
   status: "ready",
@@ -186,8 +193,8 @@ describe("resolveTarget", () => {
   }
 });
 
-describe("loadCliDefaults", () => {
-  it("reads only string defaults from the raw CLI config file", () => {
+describe("loadCliDefaults", { timeout: 60_000 }, () => {
+  it("reads only string defaults from the raw CLI config file", async () => {
     const dir = mkdtempSync(join(tmpdir(), "ima2-cli-defaults-"));
     const moduleUrl = new URL("../bin/lib/config-store.ts", import.meta.url).href;
     try {
@@ -195,12 +202,19 @@ describe("loadCliDefaults", () => {
         defaults: { image: "oauth/gpt-5.6-luna", video: 42 },
         oauth: { model: "ignored" },
       }));
-      const child = spawnSync(process.execPath, [
+      // NODE_TEST_CONTEXT would make the child talk to this runner as if it were a test file.
+      const { NODE_TEST_CONTEXT: _testContext, ...parentEnv } = process.env;
+      // Async with a hard kill: a hung child must not block the event loop (spawnSync
+      // would also block node:test's own timeout from firing).
+      const child = await execFileAsync(process.execPath, [
+        "--import", "tsx",
         "--input-type=module",
         "--eval",
         `const { loadCliDefaults } = await import(${JSON.stringify(moduleUrl)}); console.log(JSON.stringify(loadCliDefaults()));`,
-      ], { encoding: "utf8", env: { ...process.env, IMA2_CONFIG_DIR: dir } });
-      assert.strictEqual(child.status, 0, child.stderr);
+      ], { encoding: "utf8", env: { ...parentEnv, IMA2_CONFIG_DIR: dir }, timeout: STEP_TIMEOUT_MS, killSignal: "SIGKILL" })
+        .catch((error: Error & { killed?: boolean; stderr?: string }) => {
+          throw new Error(`loadCliDefaults child failed${error.killed ? ` (killed after ${STEP_TIMEOUT_MS} ms)` : ""}: ${error.stderr ?? error.message}`);
+        });
       assert.strictEqual(child.stdout, '{"image":"oauth/gpt-5.6-luna"}\n');
     } finally {
       rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
@@ -337,11 +351,20 @@ assert.ok(address && typeof address === "object");
 const serverBase = `http://127.0.0.1:${address.port}`;
 
 after(() => {
-  for (const client of clients) client.end();
+  clearTimeout(watchdog);
+  for (const client of clients) client.destroy();
   fakeServer.closeAllConnections();
   fakeServer.close();
   rmSync(transpiledDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
+
+// Last resort: if the file is still alive long after every bounded case, print what the
+// fake server saw and exit nonzero, so CI names this file instead of timing out silently.
+const watchdog = setTimeout(() => {
+  console.error(`cli-model-resolver watchdog: file still running after 150 s; last events ${JSON.stringify(eventTrace.slice(-40))}`);
+  process.exit(1);
+}, 150_000);
+watchdog.unref();
 
 // A loaded windows-latest runner can spend most of a 1s budget on process
 // scheduling before the SSE stream even opens, which fails the job for a
@@ -360,7 +383,7 @@ function mcpOpts(requestId: string, timeoutMs = 20_000): McpJobOptions {
   };
 }
 
-describe("runMcpJob", () => {
+describe("runMcpJob", { timeout: STEP_TIMEOUT_MS }, () => {
   it("opens SSE before POST, reports progress, and resolves done", async (t) => {
     const phases: string[] = [];
     const nativeFetch = globalThis.fetch;
@@ -394,6 +417,21 @@ describe("runMcpJob", () => {
     await assert.rejects(mcpModule.runMcpJob(mcpOpts("timeout-job", 80)), { code: "MCP_JOB_TIMEOUT" });
   });
 
+  // CI #448 run 45844317659: the case above sat for 30 s instead of rejecting at 80 ms.
+  // A response body that never ends and never sees the abort (what an undici body
+  // iterator can do under load) must not keep runMcpJob waiting past its deadline.
+  it("times out even when the event body ignores the abort", async (t) => {
+    t.mock.method(globalThis, "fetch", async (_input: unknown, init?: RequestInit) => {
+      if ((init?.method ?? "GET") === "POST") return new Response('{"ok":true}', { status: 202 });
+      return new Response(new ReadableStream<Uint8Array>({ start() { /* never enqueues, never closes */ } }), {
+        headers: { "Content-Type": "text/event-stream" },
+      });
+    });
+    const started = Date.now();
+    await assert.rejects(mcpModule.runMcpJob(mcpOpts("deaf-body-job", 80)), { code: "MCP_JOB_TIMEOUT" });
+    assert.ok(Date.now() - started < 5_000, "rejected near the deadline");
+  });
+
   it("reconnects with the last id and recovers a replay gap from inflight", async () => {
     const before = reconnectCursors.length;
     const result = await mcpModule.runMcpJob(mcpOpts("replay-job"));
@@ -424,7 +462,7 @@ describe("runMcpJob", () => {
   });
 });
 
-describe("SSE cursor contract", () => {
+describe("SSE cursor contract", { timeout: STEP_TIMEOUT_MS }, () => {
   it("parses only decimal nonnegative safe integers", () => {
     for (const [value, expected] of [["0", 0], ["007", 7], ["9007199254740991", 9007199254740991]] as const) {
       assert.equal(parseEventCursor(value), expected);

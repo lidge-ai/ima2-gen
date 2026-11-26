@@ -45,6 +45,7 @@ import { registerContractRoutes } from "./contracts.js";
 import { mountKeyRoutes } from "./keys.js";
 import { registerMediaRoutes } from "./media.js";
 import { registerWorkflowRoutes } from "./workflows.js";
+import { registerMediaToolRoutes } from "./mediaTools.js";
 import { registerStudioRoutes } from "./studios.js";
 import { registerShowcaseRoutes } from "./showcase.js";
 import { registerGenerationRequestLogRoutes } from "./generationRequestLog.js";
@@ -98,6 +99,7 @@ export function configureRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   mountKeyRoutes(app, ctx);
   registerMediaRoutes(app, ctx);
   registerWorkflowRoutes(app, ctx);
+  registerMediaToolRoutes(app, ctx);
   registerStudioRoutes(app, ctx);
   registerShowcaseRoutes(app, ctx);
   registerGenerationRequestLogRoutes(app, ctx);
