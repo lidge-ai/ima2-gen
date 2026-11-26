@@ -47,7 +47,8 @@ const MODELS: ModelSpec[] = [
   ] },
   { id: "minimax/hailuo-3", label: "Hailuo 3", vendor: "minimax", kind: "video", routes: [
     { adapter: "minimax", tasks: VIDEO, params: { durationsSec: [6, 10], resolutions: ["768P", "1080P"] }, pricing: [price(0.045)] },
-    { adapter: "replicate", tasks: VIDEO, params: { durationsSec: [6, 10], resolutions: ["768p"], seed: true }, pricing: [price(0.06)] },
+    { adapter: "fal", tasks: VIDEO, params: { durationsSec: [6, 10], resolutions: ["768p"], seed: true }, pricing: [price(0.06)] },
+    { adapter: "replicate", tasks: VIDEO, params: { durationsSec: [6, 10], resolutions: ["768p"], seed: true }, pricing: [price(0.065)] },
   ] },
   { id: "kling/kling-4.0", label: "Kling 4.0", vendor: "kling", kind: "video", routes: [
     { adapter: "kling", tasks: VIDEO, params: { durationsSec: [5, 10], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16", "1:1"], negativePrompt: true }, pricing: [price(0.07, "second", "720p"), price(0.112, "second", "1080p")] },
@@ -92,7 +93,8 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 export interface MediaFixture {
   /** Key vocabularies that currently hold a key. */
   keys: Set<string>;
-  catalogMode: "ready" | "error";
+  /** "loading" holds the catalog answer until the mode changes. */
+  catalogMode: "ready" | "error" | "loading";
   /** What the provider says when a key is validated. */
   keyVerdict: "ok" | "reject";
   /** Every request this fixture answered, in order. */
@@ -162,6 +164,7 @@ async function answer(route: Route, fixture: MediaFixture): Promise<void> {
   try { body = method === "GET" ? null : request.postDataJSON() as Record<string, unknown>; } catch { body = null; }
   fixture.calls.push({ method, path, body });
   if (method === "GET" && path === "/api/media/catalog") {
+    for (let waited = 0; fixture.catalogMode === "loading" && waited < 30_000; waited += 50) await new Promise((resolve) => setTimeout(resolve, 50));
     if (fixture.catalogMode === "error") return route.fulfill({ status: 503, json: { error: "Fixture catalog unavailable" } });
     return route.fulfill({ json: catalog(fixture, url.searchParams.get("kind")) });
   }

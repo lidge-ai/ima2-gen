@@ -118,7 +118,6 @@ test("L11-M3 switching model keeps what fits, names what moved, and a pinned rou
 }));
 
 test("L11-M4 generate sends the shown route and only listed settings", run({}, async (page, media) => {
-  await media.stream.ready();
   await composer(page).fill(PROMPT);
   await openWindow(page);
   await pick(page, "Video", "bytedance/seedance-2.5");

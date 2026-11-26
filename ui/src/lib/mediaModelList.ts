@@ -1,5 +1,5 @@
 import type { MediaModel, MediaPrice } from "./mediaCatalog";
-import { candidateRoutes, lowestPrice, modelRunnable } from "./mediaRoutes";
+import { autoRoute, candidateRoutes, lowestPrice, modelRunnable } from "./mediaRoutes";
 import { modelTasks, type ClassicKind, type ClassicTask } from "./mediaTasks";
 
 /** A number that orders resolution labels ("720p", "4K", "1024x1536"); 0 when the label says nothing ("auto"). */
@@ -17,7 +17,7 @@ export function resolutionRank(label: string): number {
 
 /** The facts a row shows so two models can be compared without opening them. */
 export interface ModelFacts {
-  /** Lowest published price across the routes that can do the task. */
+  /** Lowest published price of the route that would run, or across every route while the model needs a key. */
   price: MediaPrice | null;
   /** Lowest and highest listed resolution, or null when no route lists any. */
   resolutions: { low: string; high: string; rank: number } | null;
@@ -27,8 +27,15 @@ export interface ModelFacts {
   runnable: boolean;
 }
 
+/**
+ * A model the saved keys can run is described by the route that would run, so the row never promises
+ * a price or a resolution the person cannot get. A model that still needs a key is described by its
+ * best case across routes.
+ */
 export function modelFacts(model: MediaModel, task?: string): ModelFacts {
-  const routes = candidateRoutes(model, task);
+  const candidates = candidateRoutes(model, task);
+  const running = autoRoute(model, task);
+  const routes = running ? [running] : candidates;
   const prices = routes.map((route) => lowestPrice(route, model.kind)).filter((price): price is MediaPrice => price !== null);
   const ranked = [...new Set(routes.flatMap((route) => route.params.resolutions ?? []))]
     .map((label) => ({ label, rank: resolutionRank(label) })).filter((entry) => entry.rank > 0).sort((a, b) => a.rank - b.rank);
@@ -40,8 +47,8 @@ export function modelFacts(model: MediaModel, task?: string): ModelFacts {
     resolutions: low && high ? { low: low.label, high: high.label, rank: high.rank } : null,
     durations: seconds.length ? { min: Math.min(...seconds), max: Math.max(...seconds) } : null,
     audio: routes.some((route) => route.params.nativeAudio === true),
-    routes: routes.length,
-    runnable: modelRunnable(model, task),
+    routes: candidates.length,
+    runnable: running !== undefined,
   };
 }
 

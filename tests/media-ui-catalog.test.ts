@@ -171,6 +171,15 @@ test("row facts, sorting, groups and suggestions come from catalog data", () => 
   assert.deepEqual(suggestModels(list.slice(0, 3), "text-to-video"), [], "three or fewer runnable models need no suggestion");
 });
 
+test("a runnable model is described by the route that would run; a model that needs a key by its best case", () => {
+  const direct = route("direct", { route: "direct", pricing: [price(0.1)], params: { durationsSec: [5, 15], resolutions: ["720p", "1080p"], nativeAudio: true } });
+  const keyed = route("fal", { hasKey: true, pricing: [price(0.3)], params: { durationsSec: [5, 8], resolutions: ["480p", "720p"] } });
+  const mine = modelFacts(model("acme/clip", [direct, keyed]), "text-to-video");
+  assert.deepEqual([mine.price?.usd, mine.resolutions?.high, mine.durations?.max, mine.audio, mine.routes, mine.runnable], [0.3, "720p", 8, false, 2, true]);
+  const locked = modelFacts(model("acme/clip", [direct, { ...keyed, hasKey: false }]), "text-to-video");
+  assert.deepEqual([locked.price?.usd, locked.resolutions?.high, locked.durations?.max, locked.audio, locked.runnable], [0.1, "1080p", 15, true, false]);
+});
+
 test("switching model keeps allowed settings, moves the rest to listed values and reports each move", () => {
   const from = route("fal", { hasKey: true, params: { durationsSec: [5, 10, 15], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16"], nativeAudio: true, seed: true, negativePrompt: true } });
   const first = reconcileSelection(model("acme/a", [from]), from, "text-to-video", null, "auto");
