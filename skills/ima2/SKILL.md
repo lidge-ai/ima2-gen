@@ -1649,4 +1649,74 @@ will take — read that error rather than guessing from this page.
 
 ### Media catalog and workflows
 
-Use `ima2 media models --json` to discover models, routes, key status and listed prices. Run `ima2 media run --model <id> --task <task> --prompt "..."`; add `--input role=path` for local files, or `--no-wait` to return a request ID. Inspect `ima2 media jobs --all` and cancel with `ima2 media cancel <requestId>`. Discover workflows with `ima2 media workflows` and estimate or run with `ima2 media workflow <id> --input name=value [--estimate]` (repeat `--input` for list fields such as several media files). Key status is available through `ima2 media keys`; set a key using `ima2 media keys set <vocabulary> --key-stdin` with the secret on stdin.
+Run these commands against a running ima2 server. Use `--server URL` to select it and `--json` for JSON output. `--max-usd` on `models` filters the catalog by the cheapest published price; it is not a spending limit.
+
+| Command | Purpose | Billed |
+|---|---|---|
+| `ima2 media models` | List and filter models and routes | No |
+| `ima2 media estimate` | Estimate published price for a model and task | No |
+| `ima2 media run` | Submit a media job | Yes |
+| `ima2 media status`, `wait`, `result`, `jobs`, `cancel` | Inspect, wait for, retrieve, list or cancel jobs | No |
+| `ima2 media keys` | List, set, validate or delete provider keys | No |
+| `ima2 media workflows` | List workflows | No |
+| `ima2 media workflow ID --schema` | Inspect workflow inputs | No |
+| `ima2 media workflow ID --estimate` | Estimate workflow steps | No |
+| `ima2 media workflow ID` | Run a workflow | Yes |
+| `ima2 media studios`, `studio open NAME`, `studio default NAME` | List studios, open one or set the default | No |
+| `ima2 media tools` | List tool descriptors | No |
+
+Discover a model, estimate, then submit and inspect the job:
+
+```bash
+ima2 media models --json
+ima2 media estimate --model MODEL --task TASK --prompt "A blue bird"
+ima2 media run --model MODEL --task TASK --prompt "A blue bird" --request-id bird-001 --no-wait
+ima2 media status bird-001
+ima2 media wait bird-001
+ima2 media result bird-001 --out ./outputs
+```
+
+Set secrets via stdin, then validate or delete the saved key:
+
+```bash
+ima2 media keys
+ima2 media keys set VOCABULARY --key-stdin
+ima2 media keys validate VOCABULARY
+ima2 media keys delete VOCABULARY --yes
+```
+
+Discover and inspect a workflow before estimating and running it. Repeat `--input` for list fields.
+
+```bash
+ima2 media workflows
+ima2 media workflow WORKFLOW_ID --schema
+ima2 media workflow WORKFLOW_ID --input name=value --estimate
+ima2 media workflow WORKFLOW_ID --input name=value --request-id workflow-001 --no-wait
+ima2 media studios
+ima2 media studio open NAME
+ima2 media studio default NAME
+```
+
+### ima2 MCP server
+
+`ima2 mcp` serves media tools over stdio using the running ima2 server; `ima2 mcp tools --json` lists their descriptors. To configure Claude Code:
+
+```json
+{"mcpServers":{"ima2":{"command":"ima2","args":["mcp"]}}}
+```
+
+For Codex, run `codex mcp add ima2 -- ima2 mcp`.
+
+`media_submit` and `workflow_run` are BILLED on the user's provider key. Call `media_estimate` or `workflow_estimate` first; published-price estimates can differ from the provider bill. Supply a `requestId` and check `media_job_status` before retrying. Duplicate checks are best-effort, not atomic, and may miss old or pre-restart IDs; a retry can create another billed job. Canceling the MCP call after submission does not stop the job.
+
+MCP key status and catalog responses do not return key values or `maskedKey`; key management remains in the CLI. MCP errors can include a hint:
+
+| Code or category | Hint |
+|---|---|
+| `MEDIA_KEY_MISSING` | Save a key with `ima2 media keys set <vocabulary> --key-stdin` |
+| `<P>_INSUFFICIENT_CREDIT` | Top up the provider balance, then retry |
+| Moderation, e.g. `BYTEPLUS_REAL_PERSON_BLOCKED` | Change the prompt or inputs; blocked requests are not retried |
+| `MEDIA_ROUTE_UNKNOWN` | List routes with `ima2 media models --model <id>` |
+
+<!-- ima2-mcp-server:generated:start -->
+<!-- ima2-mcp-server:generated:end -->

@@ -116,6 +116,24 @@ routes/
 | `ui/src/lib/eventChannel.ts` | 239 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
 | `bin/ima2.ts` | 499 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/commands/mcp.ts` | 57 | MCP stdio server and tool listing CLI |
+| `bin/lib/mediaApi.ts` | 213 | Media API client, job submission and output retrieval |
+| `bin/lib/mediaErrors.ts` | 51 | Media error conversion, redaction and MCP hints |
+| `bin/lib/mediaWait.ts` | 31 | Media event stream and job waiting |
+| `bin/lib/mcpServer.ts` | 131 | MCP server registration and dispatch |
+| `bin/lib/mcpMediaHandlers.ts` | 86 | Media MCP tool handlers and response projection |
+| `bin/lib/mcpWorkflowHandlers.ts` | 24 | Workflow MCP tool handlers |
+| `lib/providers/media/toolSchema.ts` | 170 | Media and workflow tool descriptors and schemas |
+| `lib/providers/media/estimate.ts` | 47 | Published media price estimates |
+| `routes/mediaTools.ts` | 46 | Media descriptors, estimates and workflow schema routes |
+| `bin/lib/media/catalogCmd.ts` | 13 | Catalog display |
+| `bin/lib/media/common.ts` | 73 | Shared media CLI inputs and options |
+| `bin/lib/media/jobCmd.ts` | 22 | Media job CLI actions |
+| `bin/lib/media/keysCmd.ts` | 57 | Media key CLI actions |
+| `bin/lib/media/progress.ts` | 17 | Media progress output |
+| `bin/lib/media/runCmd.ts` | 30 | Media job submission |
+| `bin/lib/media/studioCmd.ts` | 19 | Studio CLI actions |
+| `bin/lib/media/workflowCmd.ts` | 34 | Workflow CLI input parsing |
 | `bin/commands/gen.ts` | 445 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 181 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
