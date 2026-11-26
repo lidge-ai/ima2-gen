@@ -9,6 +9,8 @@ export interface StudioState {
   catalogError: string | null;
   keys: readonly KeyStatus[];
   workflows: readonly WorkflowDef[];
+  workflowsLoaded: boolean;
+  workflowsError: string | null;
   jobs: Readonly<Record<string, Job>>;
   /** Newest first. */
   jobOrder: readonly string[];
@@ -19,7 +21,7 @@ export interface StudioState {
 }
 
 const initial: StudioState = {
-  catalog: null, catalogError: null, keys: [], workflows: [], jobs: {}, jobOrder: [],
+  catalog: null, catalogError: null, keys: [], workflows: [], workflowsLoaded: false, workflowsError: null, jobs: {}, jobOrder: [],
   history: [], historyCursor: null, historyLoaded: false, stream: "connecting",
 };
 
@@ -53,7 +55,10 @@ export class Studio {
   start(): void {
     void this.refreshCatalog();
     void this.refreshKeys();
-    void this.client.workflows.list().then((workflows) => this.set({ workflows }), () => undefined);
+    void this.client.workflows.list().then(
+      (workflows) => this.set({ workflows, workflowsLoaded: true, workflowsError: null }),
+      (error: unknown) => this.set({ workflowsLoaded: true, workflowsError: message(error) }),
+    );
     void this.client.media.jobs({ status: "all", limit: 60 }).then((jobs) => { for (const job of jobs.reverse()) this.upsertJob(job); }, () => undefined);
     void this.loadHistory(true);
     void this.client.events.follow({
