@@ -22,7 +22,7 @@ import { asArray, asRecord, asString, httpError, joinUrl, readBody, requestJson 
 import { defaultMime, kindFromMime, mimeFromUrl } from "./shared/inputs.js";
 import { endpointFromJsonSchema, requestSchemaFromOpenApi } from "./shared/openapi.js";
 
-const PREFIX = "ATLASCLOUD_";
+const PREFIX = "ATLASCLOUD";
 const ORIGIN = "https://api.atlascloud.ai";
 
 function headers(ctx: MediaAdapterContext): Record<string, string> {

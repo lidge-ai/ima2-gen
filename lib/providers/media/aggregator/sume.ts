@@ -22,7 +22,7 @@ import { SUME_CATALOG } from "./sume/catalog.js";
 import { readSumeError } from "./sume/errors.js";
 import type { SumeCatalogEntry } from "./sume/types.js";
 
-const PREFIX = "SUME_";
+const PREFIX = "SUME";
 const BASE = "https://api.sume.com";
 
 const S: InputField = { type: "string" };

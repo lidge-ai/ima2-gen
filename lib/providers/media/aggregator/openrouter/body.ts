@@ -8,7 +8,7 @@ import { invalidRequest } from "../shared/errors.js";
 import { inputToUrl } from "../shared/inputs.js";
 import type { OpenRouterCatalogEntry } from "./types.js";
 
-const PREFIX = "OPENROUTER_";
+const PREFIX = "OPENROUTER";
 
 function refuse(message: string, reason = "UNSUPPORTED_OPTION"): never {
   throw invalidRequest(PREFIX, message, reason);
