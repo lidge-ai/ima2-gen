@@ -84,7 +84,8 @@ export function quoteFor(route: Pick<MediaRoute, "pricing">, selection: MediaSel
   if (selection.audio !== undefined) want.audio = selection.audio;
   const pick = pickPrice(route.pricing, unit, want);
   if (quantity === null || (!pick.price && !pick.range)) return { state: "unknown" };
-  const round = (usd: number) => Math.ceil(usd * quantity * 10000) / 10000;
+  // Rounded up to a hundredth of a cent; the small allowance keeps 0.07 x 1 from becoming 0.0701 through binary fractions.
+  const round = (usd: number) => Math.ceil(usd * quantity * 10000 - 1e-6) / 10000;
   if (pick.price) return { state: pick.floor ? "from" : "exact", usd: round(pick.price.usd), unit, quantity, price: pick.price };
   return { state: "range", min: round(pick.range!.min), max: round(pick.range!.max), unit, quantity };
 }

@@ -90,6 +90,7 @@ test("a quote multiplies the applicable row by the clip length, and says when it
   assert.deepEqual(quoteFor({ pricing: [row(0.05, undefined, "request")] }, selection), { state: "exact", usd: 0.05, unit: "request", quantity: 1, price: row(0.05, undefined, "request") });
   assert.deepEqual(estimateBody({ ...selection, aspectRatio: "16:9", audio: true, seed: 3, negativePrompt: "x" }, "fal", pricing[1]!),
     { model: "acme/clip", adapter: "fal", task: "text-to-video", durationSec: 5, resolution: "720p", aspectRatio: "16:9", audio: true, priceVariant: "text-to-video:720p" });
+  assert.equal((quoteFor({ pricing: [row(0.07, "2K", "image")] }, { ...image, resolution: "2K" }) as { usd: number }).usd, 0.07, "binary fractions do not add a hundredth of a cent");
   assert.deepEqual(estimateBody(image, "openai", row(0.04, undefined, "image")), { model: "acme/still", adapter: "openai", task: "text-to-image", count: 1 });
 });
 
