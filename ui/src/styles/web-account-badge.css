@@ -1,0 +1,56 @@
+.web-account-badge {
+  position: fixed;
+  top: 8px;
+  right: 56px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+@media (max-width: 760px) {
+  /* The mobile header leaves a gap between the logo and its buttons; the badge
+     shrinks into it (email truncates, Log out stays) instead of covering content. */
+  .web-account-badge {
+    top: 22px;
+    right: auto;
+    left: 76px;
+    z-index: 170;
+    gap: 6px;
+    max-width: calc(100vw - 250px);
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+}
+
+.web-account-badge__email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.web-account-badge__logout {
+  flex: none;
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.web-account-badge__form {
+  display: contents;
+}
+
+button.web-account-badge__logout {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
