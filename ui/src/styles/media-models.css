@@ -97,8 +97,10 @@
 @media (max-width: 800px) {
   /* A full-height sheet: the list needs every pixel on a phone, and the close button stays in thumb reach of the title. */
   .modal-backdrop.media-dialog-backdrop { align-items: stretch; padding: 0; }
-  .modal.media-dialog { width: 100%; height: 100dvh; border: 0; }
-  .media-dialog__head { padding: 12px 8px 8px 14px; }
+  /* The whole sheet scrolls under a pinned title, so search and filters do not take half of a phone screen from the list. */
+  .modal.media-dialog { width: 100%; height: 100dvh; border: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .media-dialog__head { position: sticky; top: 0; z-index: 1; padding: 12px 8px 8px 14px; background: var(--surface); }
+  .media-dialog__list { flex: none; overflow: visible; }
   .media-dialog__what, .media-tools, .media-dialog__list { padding-left: 14px; padding-right: 14px; }
   .media-tabs__tab { min-height: 44px; }
   .media-chip { min-height: 40px; }

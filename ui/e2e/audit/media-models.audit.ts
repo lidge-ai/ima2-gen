@@ -69,11 +69,9 @@ async function captureAll(stage: Stage): Promise<void> {
   await stage.window.locator(".media-tools__select select").nth(1).selectOption("price");
   await stage.shot("window-my-keys-by-price");
   await stage.window.locator(".media-chip").first().click();
-  await stage.window.locator(".media-dialog__list").evaluate((list) => { list.scrollTop = list.scrollHeight; });
   await stage.window.locator(".media-unsupported summary").click();
-  await stage.window.locator(".media-dialog__list").evaluate((list) => { list.scrollTop = list.scrollHeight; });
+  await stage.window.locator(".media-unsupported li").last().scrollIntoViewIfNeeded();
   await stage.shot("window-needs-key-and-unsupported");
-  await stage.window.locator(".media-dialog__list").evaluate((list) => { list.scrollTop = 0; });
 
   await stage.pick("bytedance/seedance-2.5");
   await stage.showCard();
