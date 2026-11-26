@@ -372,7 +372,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | Entry | `ui/src/main.tsx` | 89 | React mount |
 | Types | `ui/src/types.ts` | 346 | Provider, quality, size, image model, embedded metadata, response types, alpha verification fields, web-search, reasoning effort, multimode |
 | Canvas types | `ui/src/types/canvas.ts` | 98 | Canvas Mode shared types (annotations, versions, masks, brushes) |
-| Store | `ui/src/store/useAppStore.ts` | 688 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
+| Store | `ui/src/store/useAppStore.ts` | 691 | Zustand facade; classic/node/video/multimode/inflight/history/asset-gen logic split into `ui/src/store/store*Impl.ts` modules |
 | Persistence registry | `ui/src/store/persistenceRegistry.ts` | 98 | Single source of truth for `ima2.*` localStorage key names — covers gallery scope, gallery default scope, and settings keys (theme keys removed in Phase 010); prevents drift between hydration helpers and setters (#43) |
 | Card-news store | `ui/src/store/cardNewsStore.ts` | 417 | Card-news plan, role/image template selection, planner draft, job polling, regenerate actions |
 | Mode/dev gates | `ui/src/lib/devMode.ts` | 16 | `IS_DEV_UI`, `ENABLE_NODE_MODE`, `ENABLE_CARD_NEWS_MODE` build-time flags |
@@ -427,7 +427,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `GalleryImageTile.tsx` | 67 | Per-image gallery thumbnail and selection state |
 | `CardNewsGalleryTile.tsx` | 58 | Card-news set tile in the gallery |
 | `HistoryStrip.tsx` / `HistoryStripLayoutToggle.tsx` | n/a | Inline history strip with rail/grid layout toggle |
-| `ui/src/components/VideoControlsPanel.tsx` | 224 | Video model/options, voice controls and sound-intent prompt chips |
+| `ui/src/components/VideoControlsPanel.tsx` | 231 | Video model/options, voice controls and sound-intent prompt chips |
 | `ui/src/components/SoundIntentPicker.tsx` | 66 | Localized sound-intent selection using persisted ordinary prompt chips |
 | `PromptComposer.tsx` | 498 | Prompt input, reference handling, style-sheet entry, save-to-library, and provider-gated NovelAI Positive prompt pane |
 | `NegativePromptField.tsx` | 58 | Self-gated NovelAI Undesired content pane shared by Classic, Home, and mobile compose surfaces |
