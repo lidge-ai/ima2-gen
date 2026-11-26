@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { adapter } from "../lib/providers/media/direct/tencent.ts";
+import { tc3Authorization } from "../lib/providers/media/direct/tencent/tc3.ts";
 import type { MediaAdapterContext, MediaSubmitRequest } from "../lib/providers/media/contract.ts";
 
 const request: MediaSubmitRequest = { model: "tencent/wand-vega-1.0-lite", task: "text-to-video", prompt: "a cat", durationSec: 6, resolution: "768P", aspectRatio: "16:9", inputs: [] };
@@ -15,7 +16,7 @@ function context(reply: unknown, status = 200) {
 }
 test("catalog and exact submit wire request", async () => {
   const models = adapter.listModels();
-  assert.equal(models.length, 1);
+  assert.equal(models.length, 2);
   assert.equal(models[0]?.upstreamId, "wand-vega-video-1.0-lite");
   for (const m of models) {
     assert.match(m.id, /^[^/]+\/[^/]+$/);
@@ -74,4 +75,42 @@ test("documented vendor errors and reference requests", async () => {
   if (state.status === "failed") { assert.equal(state.error.code, "TENCENT_INTERNAL_ERROR"); assert.equal(state.error.category, "upstream"); assert.equal(state.error.retryable, true); }
   const bad = context({ error: { code: "invalid_request_error", message: "bad request" } }, 400);
   await assert.rejects(adapter.submit(bad.ctx, request), (e: Error) => adapter.normalizeError(e).category === "invalid-request");
+});
+
+test("TC3 signature matches Tencent's published sample", () => {
+  const payload = '{"Limit": 1, "Filters": [{"Values": ["\\u672a\\u547d\\u540d"], "Name": "instance-name"}]}';
+  assert.equal(tc3Authorization({ secretId: "DOC-EXAMPLE-SECRET-ID", secretKey: "Gu5t9xGARNpq86cd98joQYCN3EXAMPLE", host: "cvm.tencentcloudapi.com", service: "cvm", timestamp: 1551113065, payload }), "TC3-HMAC-SHA256 Credential=DOC-EXAMPLE-SECRET-ID/2019-02-25/cvm/tc3_request, SignedHeaders=content-type;host, Signature=72e494ea809ad7a8c8f7a4507b9bddcbaa8e581f516e8da2f66e2c5a96525168");
+});
+test("Mingmou requires TC3 credentials and uses VOD signed create and poll", async () => {
+  const req: MediaSubmitRequest = { model: "tencent/mingmou-1", task: "text-to-video", prompt: "a cat", inputs: [] };
+  const missing = context({});
+  await assert.rejects(adapter.submit(missing.ctx, req), (e: Error) => adapter.normalizeError(e).code === "TENCENT_CREDENTIAL_MISSING");
+  assert.equal(missing.calls.length, 0);
+  const created = context({ Response: { TaskId: "vod-task" } });
+  created.ctx.extra = { secretId: "id-secret-1234", secretKey: "key-secret-5678", vodSubAppId: "123456", region: "ap-singapore" };
+  const job = await adapter.submit(created.ctx, req);
+  assert.deepEqual(job.resume, { route: "vod", subAppId: "123456", region: "ap-singapore" });
+  assert.deepEqual(JSON.parse(String(created.calls[0]?.init.body)), { SubAppId: 123456, ModelName: "Mingmou", ModelVersion: "1.0", Prompt: "a cat" });
+  const headers = created.calls[0]?.init.headers as Record<string, string>;
+  assert.equal(created.calls[0]?.url, "https://example.test/");
+  assert.equal(headers["x-tc-action"], "CreateAigcVideoTask");
+  assert.equal(headers["x-tc-version"], "2018-07-17");
+  assert.match(headers.authorization ?? "", /^TC3-HMAC-SHA256 Credential=/);
+  const polling = context({ Response: { TaskType: "AigcVideoTask", AigcVideoTask: { Status: "FINISH", ErrCode: 0, Output: { FileInfos: [{ FileUrl: "https://example.test/output.mp4", ExpireTime: "2027-01-01T00:00:00Z" }] } } } });
+  polling.ctx.extra = created.ctx.extra;
+  assert.deepEqual(await adapter.poll(polling.ctx, job), { status: "succeeded", outputs: [{ kind: "video", url: "https://example.test/output.mp4", mimeType: "video/mp4", expiresAt: "2027-01-01T00:00:00Z" }] });
+  assert.deepEqual(JSON.parse(String(polling.calls[0]?.init.body)), { TaskId: "vod-task", SubAppId: 123456 });
+  assert.equal((polling.calls[0]?.init.headers as Record<string, string>)["x-tc-action"], "DescribeTaskDetail");
+});
+test("Mingmou running, failed and response envelope errors redact credentials", async () => {
+  const job = { providerJobId: "job", resume: { route: "vod", subAppId: "123" } };
+  const extra = { secretId: "secret-id-123", secretKey: "secret-key-456", vodSubAppId: "123" };
+  const running = context({ Response: { AigcVideoTask: { Status: "PROCESSING" } } }); running.ctx.extra = extra;
+  assert.equal((await adapter.poll(running.ctx, job)).status, "running");
+  const failed = context({ Response: { AigcVideoTask: { Status: "FINISH", ErrCode: 7, Message: "secret-key-456" } } }); failed.ctx.extra = extra;
+  const state = await adapter.poll(failed.ctx, job);
+  assert.equal(state.status, "failed");
+  if (state.status === "failed") assert.doesNotMatch(state.error.message, /secret-key-456/);
+  const bad = context({ Response: { Error: { Code: "AuthFailure.SignatureFailure", Message: "secret-id-123 secret-key-456" } } }); bad.ctx.extra = extra;
+  await assert.rejects(adapter.poll(bad.ctx, job), (e: Error) => { const normalized = adapter.normalizeError(e); return normalized.category === "auth" && !/secret-id-123|secret-key-456/.test(normalized.message); });
 });
