@@ -8,7 +8,8 @@ import { asRecord, asString, joinUrl, sendJson } from './_l2/http.js';
 import { urlOrDataUri, urlOutput } from './_l2/inputs.js';
 import { assertKnownOptions, assertParams, assertTask, findModel } from './_l2/validate.js';
 
-const PREFIX = 'MINIMAX_VIDEO';
+// Error codes read MINIMAX_<REASON>; the media event names the adapter, so the image lane's codes stay distinct.
+const PREFIX = 'MINIMAX';
 const PRICING = 'https://platform.minimax.io/docs/pricing/overview';
 const V1DOC = 'https://platform.minimax.io/docs/api-reference/video-generation-i2v';
 const V2DOC = 'https://platform.minimax.io/docs/api-reference/video-generation-v2-create';

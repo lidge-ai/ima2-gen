@@ -222,3 +222,22 @@ test("HappyHorse image-to-video rejects ratio because output follows the first f
     inputs: [{ role: "first-frame", url: "https://example.com/x.png", mimeType: "image/png" }],
   }));
 });
+
+test("a region outside the documented list is refused as a request error before any network call", async () => {
+  const calls: string[] = [];
+  const ctx: MediaAdapterContext = {
+    apiKey: "sk-private-test-key",
+    extra: { region: "x-extra" },
+    fetch: async (url) => {
+      calls.push(String(url));
+      return new Response("{}", { status: 200 });
+    },
+  };
+  await assert.rejects(adapter.submit(ctx, request("wan-3.0")), (error: unknown) => {
+    const detail = adapter.normalizeError(error);
+    assert.equal(detail.category, "invalid-request");
+    assert.equal(detail.code, "ALIBABA_INVALID_REGION");
+    return true;
+  });
+  assert.equal(calls.length, 0);
+});
