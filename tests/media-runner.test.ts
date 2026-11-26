@@ -243,6 +243,32 @@ test("route choice: direct before aggregator, explicit adapter honored, keyless 
   }
 });
 
+test("route choice without an adapter is the catalog's defaultRoute: keyed direct, else the cheapest keyed aggregator that can do the task", async () => {
+  const price = (usd: number) => [{ unit: "second" as const, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27" }];
+  const unpriced = makeFakeAdapter({ id: "agg-unpriced", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: [] })] });
+  const dear = makeFakeAdapter({ id: "agg-dear", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: price(0.09) })] });
+  const cheap = makeFakeAdapter({ id: "agg-cheap", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: price(0.04), tasks: ["text-to-video"] })] });
+  const direct = makeFakeAdapter({ id: "acme-direct", route: "direct", models: [fakeSpec("acme/clip-1", { pricing: price(0.2) })] });
+  const all = [unpriced, dear, cheap, direct];
+  const aggregatorKeys = { aggUnpricedApiKey: "k-unpriced-000", aggDearApiKey: "k-dear-000000", aggCheapApiKey: "k-cheap-000000" };
+  const chosen = async (keys: Record<string, string>, extra: Record<string, unknown> = {}) => {
+    const s = await setup(all, { keys });
+    try {
+      const picked = (await prepareMediaJob(s.deps, body(extra))).adapter.id;
+      const { MediaKeySnapshot } = await import("../lib/providers/media/credentials.ts");
+      const { buildMediaCatalog } = await import("../lib/providers/media/catalog.ts");
+      const listed = buildMediaCatalog(s.deps.registry, new MediaKeySnapshot({ env: {}, fileConfig: keys })).models.find((m) => m.id === "acme/clip-1")!.defaultRoute;
+      return { picked, listed };
+    } finally { await s.done(); }
+  };
+  assert.deepEqual(await chosen(aggregatorKeys), { picked: "agg-cheap", listed: "agg-cheap" }, "the request runs the route the catalog names");
+  assert.deepEqual(await chosen({ ...aggregatorKeys, acmeDirectApiKey: "k-direct-00000" }), { picked: "acme-direct", listed: "acme-direct" });
+  assert.deepEqual(await chosen({ aggUnpricedApiKey: "k-unpriced-000", aggDearApiKey: "k-dear-000000" }), { picked: "agg-dear", listed: "agg-dear" });
+  // The cheapest route cannot do image-to-video, so the request takes the cheapest one that can.
+  const refs = { task: "image-to-video", inputs: [{ role: "first-frame", url: "https://example.com/a.png" }] };
+  assert.equal((await chosen(aggregatorKeys, refs)).picked, "agg-dear");
+});
+
 test("parameters outside the chosen spec are refused before anything is sent", async () => {
   const adapter = makeFakeAdapter();
   const s = await setup([adapter]);
