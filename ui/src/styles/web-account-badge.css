@@ -19,7 +19,10 @@
   .web-account-badge {
     top: auto;
     right: 8px;
-    bottom: 8px;
+    /* Sit just above the mobile nav bar (z-index 160), not under it. */
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    z-index: 170;
+    max-width: calc(100vw - 16px);
   }
 }
 
