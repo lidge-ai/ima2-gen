@@ -22,11 +22,13 @@ export default defineConfig({
   webServer: [
     {
       command: "node ../kit/src/fake/cli.ts",
+      cwd: "..",
       env: { PORT: String(FAKE_PORT), FAKE_TIME_SCALE: process.env.FAKE_TIME_SCALE ?? "16" },
       url: "http://127.0.0.1:" + FAKE_PORT + "/api/media/catalog",
       reuseExistingServer: false,
     },
     {
+      cwd: "..",
       command: "npx vite --host 127.0.0.1 --port " + APP_PORT + " --strictPort",
       env: { PORT: String(APP_PORT), IMA2_STUDIO_API: "http://127.0.0.1:" + FAKE_PORT },
       url: "http://127.0.0.1:" + APP_PORT,
