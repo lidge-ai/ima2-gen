@@ -73,3 +73,42 @@ test('validation errors redact a key supplied as a model or option name', async 
     await assert.rejects(adapter.submit(ctx,{...request,...bad}), error => { assert.ok(!String(error).includes(ctx.apiKey)); assert.ok(!adapter.normalizeError(error).message.includes(ctx.apiKey)); return true; });
   }
 });
+
+test('lipsync accepts uploaded video and audio and supports TTS', async () => {
+  const {ctx,calls} = fake({ErrCode:0,Resp:{video_id:123,media_id:42}});
+  const video = await adapter.uploadInput!(ctx,{role:'source-video',mimeType:'video/mp4',bytes:new Uint8Array([1])});
+  const audio = await adapter.uploadInput!(ctx,{role:'source-audio',mimeType:'audio/mpeg',url:'https://example.test/a.mp3'});
+  assert.equal(video.url,'pixverse:media:42'); assert.equal(audio.url,'pixverse:media:42');
+  assert.equal(calls[0]?.url,'https://fake.test/openapi/v2/media/upload');
+  assert.ok((calls[0]?.init.body as FormData).get('file') instanceof Blob);
+  assert.equal((calls[1]?.init.body as FormData).get('file_url'),'https://example.test/a.mp3');
+  const base: MediaSubmitRequest = {model:'pixverse/pixverse-lipsync',task:'lipsync',inputs:[{role:'source-video',mimeType:'video/mp4',url:video.url},{role:'source-audio',mimeType:'audio/mpeg',url:audio.url}]};
+  await adapter.submit(ctx,base);
+  assert.equal(calls[2]?.url,'https://fake.test/openapi/v2/video/lip_sync/generate');
+  assert.deepEqual(JSON.parse(String(calls[2]?.init.body)),{video_media_id:42,audio_media_id:42});
+  await adapter.submit(ctx,{...base,inputs:base.inputs.slice(0,1),vendorOptions:{lip_sync_tts_speaker_id:'14',lip_sync_tts_content:'hello'}});
+  assert.deepEqual(JSON.parse(String(calls[3]?.init.body)),{video_media_id:42,lip_sync_tts_speaker_id:'14',lip_sync_tts_content:'hello'});
+  for(const bad of [{inputs:[]},{vendorOptions:{lip_sync_tts_content:'hello'}},{vendorOptions:{lip_sync_tts_content:'hello',lip_sync_tts_speaker_id:'14'}},{durationSec:5}]) await assert.rejects(adapter.submit(ctx,{...base,...bad}));
+});
+
+test('extend is V6 only and uses a source video', async () => {
+  const {ctx,calls} = fake({ErrCode:0,Resp:{video_id:123}});
+  const req: MediaSubmitRequest = {model:'pixverse/pixverse-v6',task:'video-extend',prompt:'continue',durationSec:5,resolution:'720p',inputs:[{role:'source-video',mimeType:'video/mp4',url:'pixverse:media:42'}]};
+  await adapter.submit(ctx,req);
+  assert.equal(calls[0]?.url,'https://fake.test/openapi/v2/video/extend/generate');
+  assert.deepEqual(JSON.parse(String(calls[0]?.init.body)),{model:'v6',prompt:'continue',duration:5,quality:'720p',video_media_id:42});
+  await assert.rejects(adapter.submit(ctx,{...req,model:'pixverse/pixverse-c1'}));
+  await assert.rejects(adapter.submit(ctx,{...req,aspectRatio:'16:9'}));
+});
+
+test('fusion maps image and V6 video references to documented payloads', async () => {
+  const {ctx,calls} = fake({ErrCode:0,Resp:{video_id:123}});
+  const base: MediaSubmitRequest = {model:'pixverse/pixverse-c1',task:'reference-to-video',prompt:'scene',durationSec:5,resolution:'720p',aspectRatio:'16:9',inputs:[{role:'reference-image',mimeType:'image/png',url:'pixverse:image:42'}]};
+  await adapter.submit(ctx,base);
+  assert.equal(calls[0]?.url,'https://fake.test/openapi/v2/video/fusion/generate');
+  assert.deepEqual(JSON.parse(String(calls[0]?.init.body)),{model:'c1',prompt:'scene',duration:5,quality:'720p',aspect_ratio:'16:9',image_references:[{img_id:42}]});
+  await adapter.submit(ctx,{...base,model:'pixverse/pixverse-v6',durationSec:0,inputs:[{role:'reference-video',mimeType:'video/mp4',url:'pixverse:media:77'}]});
+  assert.deepEqual(JSON.parse(String(calls[1]?.init.body)),{model:'v6',prompt:'scene',duration:0,quality:'720p',aspect_ratio:'16:9',video_references:[{video_media_id:77}],reference_mode:'omni'});
+  await assert.rejects(adapter.submit(ctx,{...base,inputs:[]}));
+  await assert.rejects(adapter.submit(ctx,{...base,inputs:[{role:'reference-video',mimeType:'video/mp4',url:'pixverse:media:77'}]}));
+});
