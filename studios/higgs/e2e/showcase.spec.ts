@@ -13,6 +13,7 @@ test("home shows showcase clips; one opens Remix with its settings", async ({ pa
   const swap = showcase.getByRole("article", { name: "Swap the dancer" });
   await expect(swap).toContainText("About $0.76 when it was made");
   await expect(swap.getByRole("link", { name: "BytePlus ModelArk" })).toHaveAttribute("href", "#/keys?focus=byteplus");
+  await swap.hover();
   await swap.getByRole("button", { name: "Compare with source" }).click();
   await expect(swap.getByText("Source", { exact: true })).toBeVisible();
   await swap.getByRole("button", { name: "Make one like this" }).click();
@@ -42,7 +43,7 @@ test("a subscription clip names the sign-in, not a key, and its zero cost as inc
   await page.route("**/api/showcase", (route) => route.fulfill({ json: { items } }));
   await page.goto("/#/");
   const showcase = page.getByRole("region", { name: "Made with ima2" });
-  await expect(showcase.getByRole("article")).toHaveCount(8);
+  await expect(showcase.getByRole("article")).toHaveCount(4);
   await expect(showcase.getByRole("link", { name: "All 10 clips" })).toHaveAttribute("href", "#/remix");
   const grok = showcase.getByRole("article", { name: "restyle-grok" });
   await expect(grok).toContainText("Included in the Grok subscription");
@@ -61,6 +62,7 @@ test("compare plays source and result; turning it off brings the result back pla
   await page.goto("/#/");
   const swap = page.getByRole("region", { name: "Made with ima2" }).getByRole("article", { name: "Swap the dancer" });
   const toggle = swap.getByRole("button", { name: "Compare with source" });
+  await swap.hover();
   await toggle.click();
   await playing(swap.locator("video[aria-label='Source']"));
   await playing(swap.locator("video[aria-label='Result']"));
@@ -78,6 +80,7 @@ test("a single compare clip plays when switched on, and the result returns when 
   await page.goto("/#/");
   const tile = page.getByRole("article", { name: "With compare" });
   const toggle = tile.getByRole("button", { name: "Compare with source" });
+  await tile.hover();
   await toggle.click();
   await playing(tile.locator("video[aria-label='Compare with source']"));
   await toggle.click();
@@ -167,17 +170,19 @@ test("clip details stay out of the way: hover, keyboard focus or a tap opens the
   await expect.poll(height).toBeGreaterThan(40);
 });
 
-test("Home ends the showcase on a full row: 4 x 2 on desktops, 3 x 2 on tablets", async ({ page }) => {
+test("Home shows one full row of clips and the tools below it on the first screen", async ({ page }) => {
   const items = Array.from({ length: 10 }, (_, i) => ({ id: "row-" + i, title: { en: "Row " + i }, workflow: "remix-object-swap", result: "/generated/showcase-swap-result.mp4", models: [], keys: [], estimate: { usd: 0.5 } }));
   await page.route("**/api/showcase", (route) => route.fulfill({ json: { items } }));
   await page.goto("/#/");
   const showcase = page.getByRole("region", { name: "Made with ima2" });
-  await expect(showcase.getByRole("article")).toHaveCount(8);
+  await expect(showcase.getByRole("article")).toHaveCount(4);
+  // 1440 x 900: the showcase row and the start of the tool cards share the first screen.
+  expect(await page.locator(".tool-row").evaluate((el) => el.getBoundingClientRect().top)).toBeLessThan(800);
   const tops = async () => showcase.getByRole("article").evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
   const rows = (values: number[]) => [...new Set(values)].map((top) => values.filter((v) => v === top).length);
-  expect(rows(await tops())).toEqual([4, 4]);
+  expect(rows(await tops())).toEqual([4]);
   await page.setViewportSize({ width: 1000, height: 900 });
-  await expect(showcase.getByRole("article")).toHaveCount(6);
-  expect(rows(await tops())).toEqual([3, 3]);
+  await expect(showcase.getByRole("article")).toHaveCount(3);
+  expect(rows(await tops())).toEqual([3]);
   await expect(showcase.getByRole("link", { name: "All 10 clips" })).toBeVisible();
 });

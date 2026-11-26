@@ -249,7 +249,8 @@
   scroll-snap-align: start;
   background: var(--surface-2);
 }
-.rail-card video {
+.rail-card video,
+.rail-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;

@@ -278,12 +278,12 @@ function Tile({ item, hide = "" }: { item: ShowcaseItem; hide?: string }) {
 }
 
 /**
- * Classes that hide a tile where it would start a partial last row at that width (4, 3 or 2
- * columns; at most two rows on tablets, three on phones). Fewer clips than one row all show.
+ * Classes that hide a tile where it would start a partial row at that width: Home shows one row
+ * (4 desktop, 3 tablet) or 2 x 2 on phones. Fewer clips than one row all show.
  */
 function rowCuts(count: number, index: number): string {
   const keep = (cols: number, max: number) => (count < cols ? count : Math.floor(Math.min(count, max) / cols) * cols);
-  return [index >= keep(4, 8) ? "hide-4" : "", index >= keep(3, 6) ? "hide-3" : "", index >= keep(2, 6) ? "hide-2" : ""].filter(Boolean).join(" ");
+  return [index >= keep(4, 4) ? "hide-4" : "", index >= keep(3, 3) ? "hide-3" : "", index >= keep(2, 4) ? "hide-2" : ""].filter(Boolean).join(" ");
 }
 
 /** Showcase grid; renders nothing when the server has no showcase items. With a limit, links to the full gallery. */
@@ -307,7 +307,7 @@ export function Showcase({ heading = true, limit }: { heading?: boolean; limit?:
           ) : null}
         </div>
       ) : null}
-      <div className={"showcase-grid" + (items.length <= 2 ? " is-few" : "") + (limit ? " is-capped" : "")}>
+      <div className={"showcase-grid" + (limit ? " is-capped" : "")}>
         {items.map((item, index) => (
           <Tile key={item.id} item={item} hide={limit ? rowCuts(items.length, index) : ""} />
         ))}

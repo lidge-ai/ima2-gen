@@ -98,8 +98,11 @@ function ToolRow() {
     <section className="tool-row" aria-label={t("tools")}>
       {TOOLS.map((tool) => (
         <a key={tool.path} className="tool-card" href={href(tool.path)}>
-          {tool.video ? (
-            <video key={String(reduce)} src={tool.sample} poster={posterOf(tool.sample)} preload="metadata" muted loop={!reduce} autoPlay={!reduce} playsInline aria-hidden />
+          {/* With motion reduced a sample never moves, so show its first frame as a still image. */}
+          {tool.video && !reduce ? (
+            <video src={tool.sample} poster={posterOf(tool.sample)} preload="metadata" muted loop autoPlay playsInline aria-hidden />
+          ) : tool.video ? (
+            <img src={posterOf(tool.sample)} alt="" />
           ) : (
             <img src={tool.sample} alt="" />
           )}
@@ -136,7 +139,11 @@ function PresetRail() {
       <div className="rail">
         {presets.map((p) => (
           <a key={p.id} className="rail-card" href={href("video", { preset: p.id })}>
-            <video key={String(reduce)} src={p.sample} poster={posterOf(p.sample)} preload="metadata" muted loop={!reduce} autoPlay={!reduce} playsInline aria-hidden />
+            {reduce || p.sampleKind !== "video" ? (
+              <img src={posterOf(p.sample) ?? p.sample} alt="" />
+            ) : (
+              <video src={p.sample} poster={posterOf(p.sample)} preload="metadata" muted loop autoPlay playsInline aria-hidden />
+            )}
             <span>{p.label}</span>
           </a>
         ))}
@@ -167,7 +174,7 @@ export function HomePage() {
   return (
     <div className="home">
       <KeyBanner />
-      <Showcase limit={8} />
+      <Showcase limit={4} />
       <ToolRow />
       <RecentWork />
       <PresetRail />
