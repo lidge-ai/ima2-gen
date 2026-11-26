@@ -1,3 +1,4 @@
+import { MediaModelPicker } from "./MediaModelPicker";
 import { fetchApi } from "../lib/api-core";
 import { useEffect, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
@@ -28,9 +29,11 @@ const VIDEO_MODELS: Array<{ value: string; label: string; sub: string }> = [
   { value: GROK_VIDEO_MODEL_15_LITE, label: "Grok V1.5 Lite", sub: "Lite" },
 ];
 
-export function VideoControlsPanel() {
+export function VideoControlsPanel({ showMediaPicker = true }: { showMediaPicker?: boolean }) {
   const { t } = useI18n();
   const videoModelSelected = useAppStore((s) => s.videoModelSelected);
+  const mediaSelection = useAppStore((s) => s.mediaSelection);
+  const setMediaSelection = useAppStore((s) => s.setMediaSelection);
   const selectVideoModel = useAppStore((s) => s.selectVideoModel);
   const refCount = useAppStore((s) => s.activeVideoRefCount());
   const singleRefMode = useAppStore((s) => s.videoSingleRefMode);
@@ -82,6 +85,7 @@ export function VideoControlsPanel() {
     if (duration !== null && duration > nextMax) {
       showToast(t("video.durationClampedToModel", { seconds: nextMax }));
     }
+    setMediaSelection(null);
     selectVideoModel(next);
   };
 
@@ -121,6 +125,8 @@ export function VideoControlsPanel() {
 
   return (
     <div className="right-panel-settings video-controls">
+      {showMediaPicker && <MediaModelPicker kind="video" />}
+      {!mediaSelection && <>
       <div className="option-group">
         <div className="section-title">{t("quality.grokModelTitle") ?? "Model"}</div>
         <div className="option-row">
@@ -218,6 +224,7 @@ export function VideoControlsPanel() {
         <summary>{t("common.activePrompt")}</summary>
         <p>{ACTIVE_VIDEO_PROMPT_GUIDANCE}</p>
       </details>
+      </>}
     </div>
   );
 }

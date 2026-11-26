@@ -1,5 +1,6 @@
 import type { VideoResolutionUI, GenerateItem } from "../types";
 import { cancelInflight } from "../lib/api";
+import { cancelMediaJob } from "../lib/mediaGenerate";
 import {
   getVisibleGalleryItems,
   resolveVisibleShortcutCurrent,
@@ -55,7 +56,8 @@ export async function cancelInFlightJobImpl(
     return { inFlight: next };
   });
   try {
-    await cancelInflight(requestId);
+    if (requestId.startsWith("media_")) await cancelMediaJob(requestId);
+    else await cancelInflight(requestId);
     get().startInFlightPolling();
   } catch {
     get().showToast(t("toast.cancelFailed"), true);

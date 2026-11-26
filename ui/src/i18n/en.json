@@ -1,4 +1,24 @@
 {
+  "mediaPicker": {
+    "model": "Media model",
+    "loadError": "Could not load media models.",
+    "classic": "Classic",
+    "noKey": "API key required",
+    "settings": "Manage API keys",
+    "route": "Route",
+    "direct": "Direct",
+    "aggregator": "Aggregator",
+    "keyReady": "Key ready",
+    "task": "Task",
+    "duration": "Duration",
+    "default": "Default",
+    "resolution": "Resolution",
+    "aspect": "Aspect ratio",
+    "nativeAudio": "Native audio",
+    "negativePrompt": "Negative prompt",
+    "seed": "Seed",
+    "documentation": "Documentation"
+  },
   "media": {
     "keysTitle": "Media providers",
     "noProviders": "No media providers available.",

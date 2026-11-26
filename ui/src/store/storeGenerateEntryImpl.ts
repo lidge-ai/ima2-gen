@@ -5,12 +5,14 @@ import { composePrompt, formatSize } from "./storePersistence";
 import { getCustomSizeConfirmation } from "./storeHelpers";
 import { abortFlight } from "./flightAbortRegistry";
 import type { StoreSet, StoreGet } from "./storeTypes";
+import { runMediaGenerateImpl } from "./storeMediaImpl";
 
 export async function generateImpl(set: StoreSet, get: StoreGet): Promise<void> {
   const s = get();
   const prompt = composePrompt(s.prompt, s.insertedPrompts);
   if (!prompt) return;
   if (missingElementsBlock(get)) return;
+  if (s.mediaSelection && s.uiMode === "classic") return runMediaGenerateImpl(set, get);
   const mode = effectiveCoreGenerationMode(s);
   if (mode === "video") return get().runVideoGenerate();
   // NovelAI never takes the multimode path: the persisted preference is left

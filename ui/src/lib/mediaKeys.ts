@@ -10,6 +10,7 @@ export interface MediaExtraField {
 export interface MediaVocabulary {
   vocabulary: string;
   label: string;
+  logo?: { id: string; name: string; urls: Partial<Record<"primary" | "dark" | "light" | "mark", string>>; source: string | null } | null;
   legacy: boolean;
   consoleUrl: string;
   keyPrefix: string | null;

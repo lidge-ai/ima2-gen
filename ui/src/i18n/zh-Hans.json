@@ -1,4 +1,24 @@
 {
+  "mediaPicker": {
+    "model": "媒体模型",
+    "loadError": "无法加载媒体模型。",
+    "classic": "经典",
+    "noKey": "需要 API 密钥",
+    "settings": "管理 API 密钥",
+    "route": "线路",
+    "direct": "直连",
+    "aggregator": "聚合",
+    "keyReady": "密钥已配置",
+    "task": "任务",
+    "duration": "时长",
+    "default": "默认",
+    "resolution": "分辨率",
+    "aspect": "宽高比",
+    "nativeAudio": "原生音频",
+    "negativePrompt": "负面提示词",
+    "seed": "种子",
+    "documentation": "文档"
+  },
   "media": {
     "keysTitle": "媒体提供商",
     "noProviders": "没有可用的媒体提供商。",

@@ -46,6 +46,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const fields = extraFieldStatus(v, status, adapters);
+  const logo = v.logo?.urls.mark ?? v.logo?.urls.primary ?? v.logo?.urls.dark ?? v.logo?.urls.light;
   const save = async (method: "PUT" | "DELETE") => {
     setBusy(true); setError("");
     try {
@@ -59,7 +60,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
     finally { setBusy(false); }
   };
   return <section className="media-provider-keys__provider">
-    <h4>{v.label}</h4>
+    <h4>{logo && <img src={logo} alt="" width={24} height={24} style={{ objectFit: "contain", verticalAlign: "middle", marginRight: 8 }} />}{v.label}</h4>
     {!v.legacy && <>
       <p>{status?.configured ? t("media.configured") : t("media.notConfigured")} · {status?.source ?? "none"} {status?.maskedKey}</p>
       <label>{t("media.apiKey")} <input className="api-key-input" type="password" autoComplete="off"
