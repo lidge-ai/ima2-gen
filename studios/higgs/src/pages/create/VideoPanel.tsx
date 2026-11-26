@@ -80,7 +80,7 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
         <button type="button" role="tab" aria-selected={form.mode === "edit"} onClick={() => set({ mode: "edit", model: undefined })}>Edit video</button>
       </div>
       <div className="panel-body">
-        {form.mode === "create" ? <PresetCard preset={findPreset(form.preset)} modelLabel={model?.label} onChange={onOpenPresets} /> : null}
+        {form.mode === "create" ? <PresetCard preset={findPreset(form.preset)} modelLabel={model?.label} vendor={model?.vendor} onChange={onOpenPresets} /> : null}
         {form.mode === "edit"
           ? <UploadSlot label="Video to edit" role="source-video" accept="video/*" value={form.sourceVideo} onChange={(sourceVideo) => set({ sourceVideo })} hint="MP4 or MOV" />
           : model ? <CreateInputs model={model} form={form} set={set} /> : null}

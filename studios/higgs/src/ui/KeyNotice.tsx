@@ -1,6 +1,7 @@
 import type { CatalogProvider, CatalogRoute } from "@ima2/studio-kit";
 import { href } from "../router.ts";
 import { Icon } from "./Icon.tsx";
+import { VendorLogo } from "./VendorLogo.tsx";
 
 interface Props {
   routes: readonly CatalogRoute[];
@@ -19,6 +20,7 @@ export function KeyNotice({ routes, providers }: Props) {
         <ul className="notice-list">
           {rows.map(({ route, provider }) => (
             <li key={route.providerId}>
+              <VendorLogo id={route.providerId} size={16} />
               <a href={href("keys", { focus: provider?.keyVocabulary ?? route.providerId })}>{route.label}</a>
               {provider ? (
                 <a className="muted-link" href={provider.consoleUrl} target="_blank" rel="noreferrer">

@@ -6,6 +6,7 @@ import { MediaView, downloadName } from "./MediaView.tsx";
 import { handOff } from "../studio/handoff.ts";
 import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
+import { ModelName, ProviderName } from "./ModelName.tsx";
 
 interface Props {
   item: HistoryItem | null;
@@ -57,8 +58,8 @@ export function Lightbox({ item, onClose }: Props) {
             </button>
             <p className="lightbox-prompt">{item.prompt ?? "No prompt"}</p>
             <dl className="meta-list">
-              <dt>Model</dt><dd>{item.model}</dd>
-              {item.provider ? <><dt>Ran through</dt><dd>{item.provider}</dd></> : null}
+              <dt>Model</dt><dd><ModelName id={item.model} /></dd>
+              {item.provider ? <><dt>Ran through</dt><dd><ProviderName id={item.provider} /></dd></> : null}
               {item.workflow ? <><dt>Workflow</dt><dd>{item.workflow}</dd></> : null}
               <dt>Created</dt><dd><time dateTime={item.createdAt}>{timeAgo(item.createdAt)}</time></dd>
               {item.width && item.height ? <><dt>Size</dt><dd>{item.width} x {item.height}</dd></> : null}

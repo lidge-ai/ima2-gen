@@ -1,6 +1,7 @@
 import type { CatalogModel } from "@ima2/studio-kit";
 import { SettingTile, type TileOption } from "../../ui/SettingTile.tsx";
 import { routePrice } from "../../ui/format.ts";
+import { VendorLogo } from "../../ui/VendorLogo.tsx";
 import type { CreateForm } from "./form.ts";
 
 interface Props {
@@ -19,6 +20,7 @@ export function routeOptions(model: CatalogModel): TileOption<string>[] {
     ...model.routes.map((route) => ({
       value: route.providerId,
       label: route.label,
+      icon: <VendorLogo id={route.providerId} size={16} />,
       meta: (route.route === "direct" ? "direct" : "aggregator") + " · " + routePrice(route) + (route.keyConfigured ? "" : " · no key"),
     })),
   ];

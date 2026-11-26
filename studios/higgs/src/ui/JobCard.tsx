@@ -4,6 +4,7 @@ import { href } from "../router.ts";
 import { Icon } from "./Icon.tsx";
 import { MediaView, downloadName } from "./MediaView.tsx";
 import { timeAgo } from "./format.ts";
+import { ModelName, ProviderName } from "./ModelName.tsx";
 
 const STATUS_TEXT: Record<Job["status"], string> = {
   queued: "Queued",
@@ -73,7 +74,10 @@ export function JobCard({ job }: { job: Job }) {
     <article className={"job-card is-" + job.status} aria-label={STATUS_TEXT[job.status] + ": " + text}>
       <header className="job-head">
         <span className={"status-pill is-" + job.status}>{STATUS_TEXT[job.status]}</span>
-        <span className="job-target">{job.target}{job.provider ? " via " + job.provider : ""}</span>
+        <span className="job-target">
+          {job.kind === "media" ? <ModelName id={job.target} /> : <span>{job.target}</span>}
+          {job.provider && job.provider !== "local" ? <span className="job-via">via <ProviderName id={job.provider} /></span> : null}
+        </span>
         <time className="job-time" dateTime={job.createdAt}>{timeAgo(job.createdAt)}</time>
       </header>
       <p className="job-prompt">{text}</p>

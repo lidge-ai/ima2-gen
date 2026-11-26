@@ -39,3 +39,21 @@
   }
   .page { padding-bottom: 72px; }
 }
+
+.logo { display: inline-flex; align-items: center; gap: 7px; color: var(--text); }
+.logo-mark { display: inline-grid; width: 22px; height: 22px; }
+.logo-mark svg { width: 100%; height: 100%; }
+.logo-word { font-weight: 720; font-size: 16px; letter-spacing: -0.02em; }
+.logo-sub { color: var(--text-muted); font-size: 13px; font-weight: 520; }
+
+.vendor-logo { display: inline-flex; align-items: center; gap: 7px; min-width: 0; vertical-align: middle; }
+.vendor-logo-plate { display: inline-grid; place-items: center; flex: none; border-radius: 6px; padding: 3px; box-sizing: border-box; }
+.vendor-logo.is-full .vendor-logo-plate { padding: 3px 7px; }
+.vendor-logo.plate-light .vendor-logo-plate { background: #f4f4f6; }
+.vendor-logo.plate-dark .vendor-logo-plate { background: var(--surface-3); }
+.vendor-logo-plate img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; display: block; }
+.vendor-logo.is-mark .vendor-logo-plate img { width: 100%; height: 100%; }
+.vendor-logo-name { font-weight: 560; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vendor-logo.is-text { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; background: var(--surface-3); color: var(--text-dim); font-size: 11px; font-weight: 700; }
+.model-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.model-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

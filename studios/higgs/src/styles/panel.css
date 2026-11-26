@@ -134,3 +134,9 @@
   .panel-foot { position: sticky; bottom: 64px; z-index: 5; border-radius: 0 0 var(--radius-l) var(--radius-l); }
   .stage { min-height: 60dvh; }
 }
+.picker-value { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.menu-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.preset-card-sub { display: inline-flex; align-items: center; gap: 6px; }
+.job-target { display: inline-flex; align-items: center; gap: 6px; }
+.job-via { display: inline-flex; align-items: center; gap: 5px; color: var(--text-faint); }
+.chip .vendor-logo { gap: 5px; }

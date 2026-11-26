@@ -4,6 +4,7 @@ import { useStudio, useStudioApi } from "../studio/context.tsx";
 import { JobCard } from "./JobCard.tsx";
 import { Lightbox } from "./Lightbox.tsx";
 import { MediaView } from "./MediaView.tsx";
+import { ModelName } from "./ModelName.tsx";
 
 interface Props {
   kind?: MediaKind;
@@ -23,7 +24,7 @@ export function Tile({ item, onOpen }: { item: HistoryItem; onOpen: (item: Histo
   return (
     <button type="button" className={"tile tile-" + item.kind} onClick={() => onOpen(item)} aria-label={"Open " + (item.prompt ?? item.model)}>
       <MediaView kind={item.kind} url={item.thumbUrl ?? item.url} alt={item.prompt ?? item.model} variant="tile" />
-      <span className="tile-caption">{item.model}</span>
+      <span className="tile-caption">{item.workflow ? item.workflow : <ModelName id={item.model} size={14} />}</span>
     </button>
   );
 }
