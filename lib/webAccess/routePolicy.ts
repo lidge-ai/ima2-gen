@@ -29,7 +29,6 @@ const UNPRICED_WRITES: readonly RegExp[] = [
   /^\/api\/agent(\/|$)/,
   /^\/api\/prompt-builder\/chat$/,
   /^\/api\/sprite-recipes\/[^/]+\/generate/,
-  /^\/api\/workflows\/[^/]+$/,
 ];
 
 const ALLOWED_WRITES: readonly RegExp[] = [
@@ -38,6 +37,8 @@ const ALLOWED_WRITES: readonly RegExp[] = [
   /^\/api\/media\/[^/]+\/cancel$/,
   /^\/api\/inflight\/[^/]+$/,
   /^\/api\/workflows\/[^/]+\/estimate$/,
+  // Runs pass the spend guard in routes/workflows.ts (complete published-price estimate only).
+  /^\/api\/workflows\/[^/]+$/,
   /^\/api\/sessions(\/|$)/,
   /^\/api\/history\/favorite$/,
   /^\/api\/history\/[^/]+$/,

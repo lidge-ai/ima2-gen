@@ -16,6 +16,8 @@ export interface WorkflowJobOptions {
   sessionId?: string | null;
   /** Parent folder for per-run scratch directories. */
   runsDir: string;
+  /** Extra sidecar fields for the saved outputs, e.g. the signed-in web user. */
+  meta?: Record<string, unknown>;
 }
 
 function emitter(requestId: string) {
@@ -50,6 +52,7 @@ async function saveFinals(deps: MediaRunnerDeps, prepared: PreparedWorkflow, opt
       requestId: opts.requestId, sessionId: opts.sessionId ?? null, createdAt: Date.now(),
       prompt: typeof prepared.values.prompt === "string" ? prepared.values.prompt : null,
       estimateUsd: prepared.estimate.usd, estimateComplete: prepared.estimate.complete,
+      ...(opts.meta ?? {}),
     }));
   }
   return saved;
