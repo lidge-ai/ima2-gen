@@ -5,42 +5,100 @@ import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
 import { VendorLogo, vendorDisplayName } from "../../ui/VendorLogo.tsx";
 import { modelKinds, routePrice } from "../../ui/format.ts";
+import { messages, tr, useT } from "../../i18n.ts";
 import "../../styles/models.css";
 
 type Kind = MediaKind | "all";
 
-const KINDS: readonly { id: Kind; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "video", label: "Video" },
-  { id: "image", label: "Image" },
-  { id: "audio", label: "Audio" },
+const M = messages(
+  {
+    all: "All",
+    video: "Video",
+    image: "Image",
+    audio: "Audio",
+    kind: "Kind",
+    source: "Source: {source} (checked {date})",
+    noSource: "The provider publishes no price",
+    notPublished: "Not published",
+    keySaved: "Key saved",
+    noKey: "No key",
+    direct: "Direct",
+    ways: "Ways to run {model}",
+    use: "Use this model",
+    openAdd: "Open and add a key",
+    search: "Search models",
+    byMaker: "Filter by maker",
+    countAll: "{n} models",
+    countSome: "{n} of {total} models",
+    clear: "Clear filters",
+    loading: "Loading models",
+    title: "Models and prices",
+    lead: "Prices are the providers' own published rates. ima2 adds nothing on top.",
+    noMatch: "No model matches",
+    noMatchHint: "Clear the filters or pick another maker.",
+  },
+  {
+    all: "전체",
+    video: "영상",
+    image: "이미지",
+    audio: "오디오",
+    kind: "종류",
+    source: "출처: {source} ({date} 확인)",
+    noSource: "제공사가 가격을 공개하지 않았어요",
+    notPublished: "가격 비공개",
+    keySaved: "키 저장됨",
+    noKey: "키 없음",
+    direct: "직결",
+    ways: "{model} 실행 경로",
+    use: "이 모델 쓰기",
+    openAdd: "열고 키 추가",
+    search: "모델 검색",
+    byMaker: "제작사로 거르기",
+    countAll: "모델 {n}개",
+    countSome: "모델 {total}개 중 {n}개",
+    clear: "필터 지우기",
+    loading: "모델 불러오는 중",
+    title: "모델과 가격",
+    lead: "가격은 제공사가 공개한 요금 그대로예요. ima2는 따로 붙이는 돈이 없어요.",
+    noMatch: "맞는 모델이 없어요",
+    noMatchHint: "필터를 지우거나 다른 제작사를 골라 보세요.",
+  },
+);
+
+const KINDS: readonly { id: Kind; label: "all" | "video" | "image" | "audio" }[] = [
+  { id: "all", label: "all" },
+  { id: "video", label: "video" },
+  { id: "image", label: "image" },
+  { id: "audio", label: "audio" },
 ];
 
 function priceSource(route: CatalogRoute): string {
   const first = route.pricing[0];
-  return first ? "Source: " + first.source + " (checked " + first.checkedAt + ")" : "The provider publishes no price";
+  return first ? tr(M, "source", { source: first.source, date: first.checkedAt }) : tr(M, "noSource");
 }
 
 function RouteLine({ route }: { route: CatalogRoute }) {
+  const t = useT(M);
   const priced = route.pricing.length > 0;
   return (
     <li className="route-line">
       <VendorLogo id={route.providerId} size={18} />
       <span className="route-line-name">
         <span className="route-line-label">{route.label}</span>
-        {route.route === "direct" ? <span className="tag">Direct</span> : null}
+        {route.route === "direct" ? <span className="tag">{t("direct")}</span> : null}
       </span>
       <span className={"route-line-price" + (priced ? "" : " is-none")} title={priceSource(route)}>
-        {priced ? routePrice(route) : "Not published"}
+        {priced ? routePrice(route) : t("notPublished")}
       </span>
       <span className={"key-state " + (route.keyConfigured ? "is-on" : "is-off")}>
-        {route.keyConfigured ? "Key saved" : "No key"}
+        {route.keyConfigured ? t("keySaved") : t("noKey")}
       </span>
     </li>
   );
 }
 
 function ModelCard({ model }: { model: CatalogModel }) {
+  const t = useT(M);
   const target = model.kind === "image" ? "image" : "video";
   return (
     <article className="model-card" aria-labelledby={"model-" + model.id}>
@@ -56,7 +114,7 @@ function ModelCard({ model }: { model: CatalogModel }) {
       <p className="model-card-id">
         <code>{model.id}</code>
       </p>
-      <ul className="route-lines" aria-label={"Ways to run " + model.label}>
+      <ul className="route-lines" aria-label={t("ways", { model: model.label })}>
         {model.routes.map((route) => (
           <RouteLine key={route.providerId} route={route} />
         ))}
@@ -64,7 +122,7 @@ function ModelCard({ model }: { model: CatalogModel }) {
       <div className="model-card-foot">
         {model.kind !== "audio" ? (
           <a className="btn" href={href(target, { model: model.id })}>
-            {modelHasKey(model) ? "Use this model" : "Open and add a key"}
+            {modelHasKey(model) ? t("use") : t("openAdd")}
             <Icon name="arrowRight" size={14} />
           </a>
         ) : null}
@@ -86,8 +144,9 @@ function useFiltered(models: readonly CatalogModel[], kind: Kind, vendor: string
 }
 
 function KindTabs({ kind, setKind }: { kind: Kind; setKind: (k: Kind) => void }) {
+  const t = useT(M);
   return (
-    <div className="tabs" role="group" aria-label="Kind">
+    <div className="tabs" role="group" aria-label={t("kind")}>
       {KINDS.map((k) => (
         <button
           key={k.id}
@@ -96,7 +155,7 @@ function KindTabs({ kind, setKind }: { kind: Kind; setKind: (k: Kind) => void })
           aria-pressed={kind === k.id}
           onClick={() => setKind(k.id)}
         >
-          {k.label}
+          {t(k.label)}
         </button>
       ))}
     </div>
@@ -113,6 +172,7 @@ interface Filters {
 }
 
 function ModelFilters({ vendors, ...f }: Filters & { vendors: readonly string[] }) {
+  const t = useT(M);
   return (
     <div className="models-filters">
       <div className="models-filters-row">
@@ -121,14 +181,14 @@ function ModelFilters({ vendors, ...f }: Filters & { vendors: readonly string[] 
           <Icon name="search" size={15} />
           <input
             type="search"
-            placeholder="Search models"
-            aria-label="Search models"
+            placeholder={t("search")}
+            aria-label={t("search")}
             value={f.query}
             onChange={(e) => f.setQuery(e.target.value)}
           />
         </label>
       </div>
-      <div className="chip-row" role="group" aria-label="Filter by maker">
+      <div className="chip-row" role="group" aria-label={t("byMaker")}>
         {vendors.map((v) => (
           <button
             key={v}
@@ -147,16 +207,17 @@ function ModelFilters({ vendors, ...f }: Filters & { vendors: readonly string[] 
 
 /** How many models show and which filters narrow them, with one way to clear them all. */
 function ResultsBar({ count, total, ...f }: Filters & { count: number; total: number }) {
+  const t = useT(M);
   const active = f.kind !== "all" || f.vendor !== null || f.query.trim() !== "";
   const parts = [
     f.vendor ? vendorDisplayName(f.vendor) : null,
-    f.kind !== "all" ? KINDS.find((k) => k.id === f.kind)?.label : null,
+    f.kind !== "all" ? t(KINDS.find((k) => k.id === f.kind)?.label ?? "all") : null,
     f.query.trim() ? '"' + f.query.trim() + '"' : null,
   ].filter(Boolean);
   return (
     <div className="results-bar">
       <p role="status">
-        {active ? count + " of " + total + " models" : total + " models"}
+        {active ? t("countSome", { n: count, total }) : t("countAll", { n: total })}
         {parts.length ? <span className="muted"> · {parts.join(" · ")}</span> : null}
       </p>
       {active ? (
@@ -169,7 +230,7 @@ function ResultsBar({ count, total, ...f }: Filters & { count: number; total: nu
             f.setQuery("");
           }}
         >
-          Clear filters
+          {t("clear")}
         </button>
       ) : null}
     </div>
@@ -178,6 +239,7 @@ function ResultsBar({ count, total, ...f }: Filters & { count: number; total: nu
 
 /** Every model the server can run, who makes it, every way to run it and what each costs. */
 export function ModelsPage({ vendor: initialVendor }: { vendor?: string }) {
+  const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
   const [kind, setKind] = useState<Kind>("all");
   const [vendor, setVendor] = useState<string | null>(initialVendor ?? null);
@@ -189,23 +251,23 @@ export function ModelsPage({ vendor: initialVendor }: { vendor?: string }) {
   if (!catalog)
     return (
       <div className="empty" role="status">
-        Loading models
+        {t("loading")}
       </div>
     );
   return (
     <div className="page-pad">
       <header className="page-head">
         <div>
-          <h1>Models and prices</h1>
-          <p className="muted">Prices are the providers' own published rates. ima2 adds nothing on top.</p>
+          <h1>{t("title")}</h1>
+          <p className="muted">{t("lead")}</p>
         </div>
       </header>
       <ModelFilters vendors={vendors} {...filters} />
       <ResultsBar count={shown.length} total={models.length} {...filters} />
       {shown.length === 0 ? (
         <div className="empty">
-          <h2>No model matches</h2>
-          <p>Clear the filters or pick another maker.</p>
+          <h2>{t("noMatch")}</h2>
+          <p>{t("noMatchHint")}</p>
         </div>
       ) : (
         <div className="model-grid">
