@@ -78,10 +78,11 @@ function studioHandler(root: string): RequestHandler {
     const dist = builtDist(root, name);
     if (!dist) return next();
     if (req.originalUrl.split("?")[0] === `/studio/${name}`) return res.redirect(301, `/studio/${name}/`);
-    let serve = statics.get(name);
-    if (!serve) {
+    // Keyed by the dist path from the directory listing, never by the requested name.
+    let serve = statics.get(dist);
+    if (typeof serve !== "function") {
       serve = express.static(dist, { index: "index.html", fallthrough: true });
-      statics.set(name, serve);
+      statics.set(dist, serve);
     }
     serve(req, res, () => {
       const wantsPage = (req.method === "GET" || req.method === "HEAD") && !/\.[a-z0-9]+$/i.test(req.path);

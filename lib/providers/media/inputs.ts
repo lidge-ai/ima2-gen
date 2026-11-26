@@ -37,11 +37,12 @@ function invalid(message: string): MediaJobError {
 export async function storeMediaInput(inputsDir: string, bytes: Buffer, mimeType: string): Promise<{ ref: string; mimeType: string; bytes: number }> {
   const mime = baseMime(mimeType);
   if (!isMediaMime(mime)) throw new MediaJobError("MEDIA_INPUT_TYPE", `Unsupported input type: ${mime || "unknown"}`, { status: 415 });
-  if (!(bytes instanceof Uint8Array) || bytes.length === 0) throw invalid("Input must be a non-empty byte body");
+  // byteLength, not length: a tampered body could be an array, which has a length too.
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0) throw invalid("Input must be a non-empty byte body");
   await mkdir(inputsDir, { recursive: true });
   const name = `${randomBytes(12).toString("hex")}.${extFromMime(mime)}`;
   await writeFile(join(inputsDir, name), bytes);
-  return { ref: `input:${name}`, mimeType: mime, bytes: bytes.length };
+  return { ref: `input:${name}`, mimeType: mime, bytes: bytes.byteLength };
 }
 
 function insideRoot(root: string, candidate: string): string {
