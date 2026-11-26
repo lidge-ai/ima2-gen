@@ -59,7 +59,7 @@ const M = messages(
     "noPrice": "공개 가격 없음",
     "source": "편집할 영상",
     "format": "MP4 또는 MOV",
-    "nokey": "생성하려면 키를 추가하세요.",
+    "nokey": "생성하려면 키를 추가해 주세요.",
     "unavailable": "이 모델을 사용할 수 있는 경로가 없어요.",
   },
 );

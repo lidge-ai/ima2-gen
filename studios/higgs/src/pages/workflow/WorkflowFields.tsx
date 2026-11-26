@@ -11,7 +11,7 @@ import type { WorkflowForm } from "./useWorkflow.ts";
 
 const M = messages(
   { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable" },
-  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가하세요", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가" },
+  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가" },
 );
 
 function TextWorkflowInput({

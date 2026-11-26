@@ -46,9 +46,9 @@ const M = messages(
     "generate": "생성",
     "estimate": "예상 {cost}",
     "noPrice": "공개 가격 없음",
-    "nokey": "생성하려면 키를 추가하세요.",
+    "nokey": "생성하려면 키를 추가해 주세요.",
     "unavailable": "이 모델을 사용할 수 있는 경로가 없어요.",
-    "uploadError": "업로드하지 못했어요. 다시 시도하세요.",
+    "uploadError": "업로드하지 못했어요. 다시 시도해 주세요.",
   },
 );
 

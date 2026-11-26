@@ -5,7 +5,7 @@ import { Icon } from "./Icon.tsx";
 import { VendorLogo } from "./VendorLogo.tsx";
 
 const M = messages({ title: "Add an API key to run this model", body: "ima2 calls each provider with your own key and their published price. Any one of these works:", get: "get a key" },
-  { title: "이 모델을 실행하려면 API 키를 추가하세요", body: "ima2는 내 키를 사용하고 제공업체의 가격을 적용해요. 아래 키 중 하나를 추가하세요.", get: "키 발급" });
+  { title: "이 모델을 실행하려면 API 키를 추가해 주세요", body: "ima2는 내 키를 사용하고 제공업체의 가격을 적용해요. 아래 키 중 하나를 추가해 주세요.", get: "키 발급" });
 
 interface Props {
   routes: readonly CatalogRoute[];
