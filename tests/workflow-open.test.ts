@@ -40,6 +40,8 @@ const planner = (r: TextPlanRequest) => (r.purpose === "remix-caption" ? caption
 const def = (id: string): WorkflowDefinition => getWorkflow(id)!;
 const imageOut = (text: string) => fakeAdapter({ states: [{ status: "succeeded", outputs: [{ kind: "image", bytes: new TextEncoder().encode(text), mimeType: "image/png" }] }] });
 const only = (allowed: string[]) => (id: string) => allowed.includes(id);
+/** Every keyed model runs; no ChatGPT sign-in, so GPT image over openai-oauth does not. */
+const noChatGpt = (_id: string, route: string | undefined) => route !== "openai-oauth";
 const dec = (b?: Uint8Array) => new TextDecoder().decode(b);
 
 function prep(id: string, values: Record<string, unknown>, gateway: ReturnType<typeof fakeGateway>, selection?: unknown) {
@@ -58,7 +60,7 @@ test("motion transfer (open) runs the open stage layout on BytePlus models with 
   const gateway = fakeGateway({ "bytedance/seedream-5.5": seedream, "bytedance/seedance-2.5": seedance }, specs, planner, (id) => id.startsWith("bytedance/"));
   const p = await prep("remix-motion-transfer-open", { video: video(), images, prompt: "keep it calm" }, gateway);
   assert.deepEqual(p.plan.steps.map((s) => s.id), ["scenes", "frame-first", "frame-mid", "frame-last", "caption", "subject-first", "render", "sound"]);
-  assert.deepEqual(p.notes, []);
+  assert.deepEqual(p.notes, [{ slot: "subject", kind: "fallback", message: "openai/gpt-image-2 cannot run now; using bytedance/seedream-5.5" }]);
   const render = p.plan.steps.find((s) => s.id === "render") as MediaStep;
   assert.deepEqual([render.model, render.units.quantity], ["bytedance/seedance-2.5", 4]);
   const { result, events } = await run("mt", p, gateway);
@@ -126,7 +128,7 @@ test("object swap (open): SAM 3 mask feeds the OpenAI edit, then Seedance edits 
   const sam = imageOut("mask");
   const gpt = imageOut("swapped-first");
   const seedance = fakeAdapter();
-  const gateway = fakeGateway({ "meta/sam-3": sam, "openai/gpt-image-2.6": gpt, "bytedance/seedance-2.5": seedance }, specs, planner, () => true);
+  const gateway = fakeGateway({ "meta/sam-3": sam, "openai/gpt-image-2.6": gpt, "bytedance/seedance-2.5": seedance }, specs, planner, noChatGpt);
   const p = await prep("remix-object-swap-open", { video: video(), images, target: "the paper boat" }, gateway);
   assert.deepEqual(p.plan.steps.map((s) => s.id), ["scenes", "frame-first", "frame-mid", "frame-last", "caption", "segment", "subject-first", "render", "sound"]);
   await run("swap", p, gateway);
@@ -142,7 +144,7 @@ test("object swap (open): SAM 3 mask feeds the OpenAI edit, then Seedance edits 
 test("object swap with Grok's text-only edit sends only the video and describes the replacement in words", async () => {
   const grok = fakeAdapter();
   const gateway = fakeGateway({ "xai/grok-imagine-video": grok, "openai/gpt-image-2": imageOut("x") }, specs, planner, () => true);
-  const p = await prep("remix-object-swap-open", { video: video(short), images, target: "the paper boat", resolution: "720p" }, gateway, { combo: "subscription" });
+  const p = await prep("remix-object-swap-open", { video: video(short), images, target: "the paper boat", resolution: "720p", sound: "model" }, gateway, { combo: "subscription" });
   await run("swap-grok", p, gateway);
   const req = grok.calls.find((c) => c.op === "submit")?.request;
   assert.deepEqual(req?.inputs.map((i) => i.role), ["source-video"]);
@@ -154,7 +156,7 @@ test("object swap with Grok's text-only edit sends only the video and describes 
 test("restyle (open) redraws the first frame and edits the source to match it", async () => {
   const flux = imageOut("styled");
   const seedance = fakeAdapter();
-  const gateway = fakeGateway({ "black-forest-labs/flux-kontext-pro": flux, "bytedance/seedance-2.5": seedance }, specs, planner, () => true);
+  const gateway = fakeGateway({ "black-forest-labs/flux-kontext-pro": flux, "bytedance/seedance-2.5": seedance }, specs, planner, noChatGpt);
   await assert.rejects(prep("remix-restyle-open", { video: video() }, gateway), /choose a style/);
   const p = await prep("remix-restyle-open", { video: video(), style: "watercolor" }, gateway);
   await run("restyle", p, gateway);
@@ -179,4 +181,34 @@ test("a combination leaves out optional steps it does not name", async () => {
   assert.ok(!p.plan.steps.some((s) => s.id === "segment"));
   assert.match(p.notes.find((n) => n.slot === "segment")?.message ?? "", /not part of BytePlus only/);
   await assert.rejects(prep("remix-object-swap-open", { video: video(short), images, target: "x" }, fakeGateway({}, specs, planner, () => true), { combo: "nope" }), /not a combination/);
+});
+test("image stages use GPT image over the ChatGPT sign-in first in every open mode", async () => {
+  const signedIn = (id: string, route: string | undefined) => route === "openai-oauth" ? id === "openai/gpt-image-2" : id.startsWith("bytedance/");
+  for (const [id, extra] of [["remix-motion-transfer-open", {}], ["remix-object-swap-open", { target: "the paper boat" }], ["remix-restyle-open", { style: "watercolor" }]] as const) {
+    const gpt = imageOut("gpt-" + id);
+    const gateway = fakeGateway({ "openai/gpt-image-2": gpt, "bytedance/seedance-2.5": fakeAdapter() }, specs, planner, signedIn);
+    const values = id === "remix-restyle-open" ? { video: video(), ...extra } : { video: video(), images, ...extra };
+    const p = await prep(id, values, gateway);
+    const subject = p.plan.steps.find((s) => s.id === "subject-first") as MediaStep;
+    assert.deepEqual([subject.model, subject.route], ["openai/gpt-image-2", "openai-oauth"], id);
+    assert.ok(!p.notes.some((n) => n.slot === "subject"), id + ": no fallback note");
+    await run("gpt-" + id, p, gateway);
+    assert.ok(gpt.calls.some((c) => c.op === "submit"), id + ": the GPT image adapter was called");
+    assert.ok(gateway.resolved.some((r) => r.model === "openai/gpt-image-2" && r.route === "openai-oauth"), id + ": resolved on the sign-in route");
+  }
+  const d = describeWorkflow(def("remix-object-swap-open"), fakeGateway({}, specs, planner, signedIn));
+  assert.equal(d.slots.find((s) => s.name === "subject")?.runnable?.["openai/gpt-image-2"], true);
+});
+
+test("Grok's edit is never asked for silence: the source sound replaces its sound, and silent outputs are refused up front", async () => {
+  const grok = fakeAdapter();
+  const gateway = fakeGateway({ "xai/grok-imagine-video": grok, "openai/gpt-image-2": imageOut("styled") }, specs, planner, () => true);
+  const p = await prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" });
+  assert.deepEqual(p.plan.steps.slice(-2).map((s) => s.id), ["render", "sound"]);
+  await run("grok-sound", p, gateway);
+  const req = grok.calls.find((c) => c.op === "submit")?.request;
+  assert.equal(req && "audio" in req, false, "no audio flag for Grok's edit");
+  assert.equal(req && "resolution" in req, false, "the edit follows the source size");
+  await assert.rejects(prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p", sound: "none" }, gateway, { combo: "subscription" }), /always returns sound/);
+  await assert.rejects(prep("remix-restyle-open", { video: video(short), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" }), /always returns sound/);
 });

@@ -53,7 +53,11 @@ export function describeWorkflow(def: WorkflowDefinition, gateway?: Pick<Workflo
     const available = Object.fromEntries(models.map((m) => [m, gateway ? slotModelAvailable(slot, m, (id) => gateway.catalog(id)) : false]));
     const canRun = gateway?.canRun?.bind(gateway);
     if (!canRun) return { ...slot, available };
-    return { ...slot, available, runnable: Object.fromEntries(models.map((m) => [m, available[m] === true && canRun(m, slot.defaultRoute)])) };
+    return { ...slot, available, runnable: Object.fromEntries(models.map((m) => {
+      const route = slot.modelRoutes?.[m] ?? slot.defaultRoute;
+      // A session route is judged by the route alone (its adapter, not the keyed catalog, offers the model).
+      return [m, (route ? true : available[m] === true) && canRun(m, route)];
+    })) };
   });
   const description: WorkflowDescription = {
     id: def.id, label: def.label, description: def.description, equivalents: def.equivalents, fields: def.fields, slots,
