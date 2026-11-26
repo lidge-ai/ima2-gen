@@ -7,6 +7,7 @@ import {
   type KeySaveBody,
   type KeyStatus,
   type MediaSubmitBody,
+  type ShowcaseItem,
   type StreamStatus,
   type StudioClient,
   type UploadedInput,
@@ -28,6 +29,8 @@ export interface StudioState {
   historyCursor: string | null;
   historyLoaded: boolean;
   stream: StreamStatus;
+  /** Example clips from the server's showcase folder; empty hides the showcase. */
+  showcase: readonly ShowcaseItem[];
 }
 
 const initial: StudioState = {
@@ -43,6 +46,7 @@ const initial: StudioState = {
   historyCursor: null,
   historyLoaded: false,
   stream: "connecting",
+  showcase: [],
 };
 
 function message(error: unknown): string {
@@ -87,6 +91,10 @@ export class Studio {
     void this.refreshCatalog();
     void this.refreshKeys();
     void this.refreshWorkflows();
+    void this.client.showcase.list().then(
+      (showcase) => this.set({ showcase }),
+      () => undefined,
+    );
     void this.client.media.jobs({ status: "all" }).then(
       (jobs) => {
         for (const job of jobs.reverse()) this.upsertJob(job);

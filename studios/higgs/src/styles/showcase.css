@@ -1,0 +1,112 @@
+.showcase {
+  display: grid;
+  gap: 12px;
+}
+.showcase-head p {
+  margin-top: 4px;
+  font-size: 13px;
+}
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.showcase-tile {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  min-width: 0;
+}
+.showcase-media {
+  position: relative;
+  aspect-ratio: 9 / 10;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.showcase-media > video,
+.showcase-media figure video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.showcase-media.is-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.showcase-media figure {
+  position: relative;
+  margin: 0;
+  min-width: 0;
+}
+.showcase-media figcaption {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(11, 11, 15, 0.82);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.showcase-body {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px 14px 14px;
+}
+.showcase-body h3 {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.showcase-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--text-dim);
+  font-size: 12.5px;
+}
+.showcase-cost,
+.showcase-keys {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.showcase-keys a {
+  color: var(--text);
+}
+.showcase-keys.is-ready {
+  color: var(--green);
+}
+.showcase-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.showcase-actions .btn-primary {
+  height: 38px;
+  font-size: 14px;
+  border-radius: var(--radius-s);
+}
+@media (max-width: 600px) {
+  .showcase-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .showcase-media {
+    aspect-ratio: 3 / 4;
+  }
+  .showcase-body {
+    padding: 10px;
+  }
+  .showcase-actions .btn {
+    width: 100%;
+  }
+}
+
