@@ -32,7 +32,10 @@ export async function sendJson(ctx: MediaAdapterContext, prefix: string, req: Js
     try {
       body = JSON.parse(text);
     } catch {
-      if (res.ok) fail(prefix, "BAD_RESPONSE", "upstream", `Provider returned non-JSON (HTTP ${res.status})`, { status: res.status });
+      if (res.ok)
+        fail(prefix, "BAD_RESPONSE", "upstream", `Provider returned non-JSON (HTTP ${res.status})`, {
+          status: res.status,
+        });
       body = { message: redactSecrets(text.slice(0, 300), [ctx.apiKey]) };
     }
   }

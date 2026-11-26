@@ -21,12 +21,24 @@ export function bareBase64OrUrl(prefix: string, input: MediaInput): string {
 }
 
 const EXT_MIME: Readonly<Record<string, string>> = {
-  mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm",
-  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif",
-  mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  webm: "video/webm",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
 };
 
-const DEFAULT_MIME: Readonly<Record<MediaKind, string>> = { video: "video/mp4", image: "image/png", audio: "audio/mpeg" };
+const DEFAULT_MIME: Readonly<Record<MediaKind, string>> = {
+  video: "video/mp4",
+  image: "image/png",
+  audio: "audio/mpeg",
+};
 
 export function mimeFromUrl(url: string, kind: MediaKind): string {
   let path = url;

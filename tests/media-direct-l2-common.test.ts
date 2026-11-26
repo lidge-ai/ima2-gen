@@ -3,7 +3,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  MediaAdapterError, categoryForStatus, mediaError, normalizeUnknownError, redactSecrets,
+  MediaAdapterError,
+  categoryForStatus,
+  mediaError,
+  normalizeUnknownError,
+  redactSecrets,
 } from "../lib/providers/media/direct/_l2/errors.ts";
 import { sendJson } from "../lib/providers/media/direct/_l2/http.ts";
 import { mimeFromUrl, urlOrDataUri } from "../lib/providers/media/direct/_l2/inputs.ts";
@@ -12,8 +16,17 @@ import { assertKnownOptions } from "../lib/providers/media/direct/_l2/validate.t
 test("status codes map to the contract categories", () => {
   const seen = [400, 401, 402, 403, 404, 408, 422, 429, 500, 503, 504].map((s) => [s, categoryForStatus(s)]);
   assert.deepEqual(seen, [
-    [400, "invalid-request"], [401, "auth"], [402, "quota"], [403, "auth"], [404, "not-found"],
-    [408, "timeout"], [422, "invalid-request"], [429, "rate-limit"], [500, "upstream"], [503, "upstream"], [504, "timeout"],
+    [400, "invalid-request"],
+    [401, "auth"],
+    [402, "quota"],
+    [403, "auth"],
+    [404, "not-found"],
+    [408, "timeout"],
+    [422, "invalid-request"],
+    [429, "rate-limit"],
+    [500, "upstream"],
+    [503, "upstream"],
+    [504, "timeout"],
   ]);
 });
 
@@ -36,9 +49,11 @@ test("redactSecrets removes the key, bearer tokens and JWTs", () => {
 test("normalizeUnknownError keeps adapter errors and classifies aborts and network failures", () => {
   const detail = mediaError("VIDU", "X", "quota", "m");
   assert.equal(normalizeUnknownError("VIDU", new MediaAdapterError(detail)), detail);
-  const abort = new Error("a"); abort.name = "AbortError";
+  const abort = new Error("a");
+  abort.name = "AbortError";
   assert.equal(normalizeUnknownError("VIDU", abort).code, "VIDU_ABORTED");
-  const timeout = new Error("t"); timeout.name = "TimeoutError";
+  const timeout = new Error("t");
+  timeout.name = "TimeoutError";
   assert.equal(normalizeUnknownError("VIDU", timeout).category, "timeout");
   assert.equal(normalizeUnknownError("VIDU", new TypeError("fetch failed")).category, "upstream");
 });
@@ -52,13 +67,22 @@ test("sendJson returns error statuses and redacts a key echoed in a non-JSON bod
 });
 
 test("inputs become URLs or data URIs and output mime follows the extension", () => {
-  assert.equal(urlOrDataUri("X", { role: "first-frame", url: "https://a/b.png", mimeType: "image/png" }), "https://a/b.png");
-  assert.equal(urlOrDataUri("X", { role: "first-frame", bytes: new Uint8Array([1, 2]), mimeType: "image/png" }), "data:image/png;base64,AQI=");
+  assert.equal(
+    urlOrDataUri("X", { role: "first-frame", url: "https://a/b.png", mimeType: "image/png" }),
+    "https://a/b.png",
+  );
+  assert.equal(
+    urlOrDataUri("X", { role: "first-frame", bytes: new Uint8Array([1, 2]), mimeType: "image/png" }),
+    "data:image/png;base64,AQI=",
+  );
   assert.equal(mimeFromUrl("https://cdn/x.webp?sig=1", "image"), "image/webp");
   assert.equal(mimeFromUrl("https://cdn/x", "video"), "video/mp4");
 });
 
 test("unknown vendor options are refused", () => {
   assert.deepEqual(assertKnownOptions("X", { a: 1 }, ["a"]), { a: 1 });
-  assert.throws(() => assertKnownOptions("X", { b: 1 }, ["a"]), (e: unknown) => e instanceof MediaAdapterError && e.detail.code === "X_UNKNOWN_OPTION");
+  assert.throws(
+    () => assertKnownOptions("X", { b: 1 }, ["a"]),
+    (e: unknown) => e instanceof MediaAdapterError && e.detail.code === "X_UNKNOWN_OPTION",
+  );
 });

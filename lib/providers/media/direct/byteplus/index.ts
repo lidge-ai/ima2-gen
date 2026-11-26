@@ -1,8 +1,14 @@
 // BytePlus ModelArk direct adapter: Seedance video (async tasks) and Seedream images (sync).
 // Auth: Authorization: Bearer <ARK_API_KEY>.
 // https://docs.byteplus.com/en/docs/ModelArk/base-url-and-authentication (read 2026-11-26)
-import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaOutput, MediaProviderAdapter } from "../../contract.js";
-import { MediaAdapterError, contextSecrets, fail, normalizeUnknownError, redactSecrets } from "../_l2/errors.js";
+import type {
+  MediaAdapterContext,
+  MediaJobRef,
+  MediaJobState,
+  MediaOutput,
+  MediaProviderAdapter,
+} from "../../contract.js";
+import { MediaAdapterError, contextSecrets, fail, normalizeUnknownError } from "../_l2/errors.js";
 import { asRecord, asString, joinUrl, sendJson, type JsonRequest, type JsonResponse } from "../_l2/http.js";
 import { assertTask, findModel } from "../_l2/validate.js";
 import { ERROR_PREFIX as P, arkError } from "./errors.js";
@@ -21,13 +27,21 @@ const FIRST_POLL_MS = 10_000;
 function baseUrl(ctx: MediaAdapterContext): string {
   if (ctx.baseUrl) return ctx.baseUrl.replace(/\/+$/, "");
   const region = ctx.extra?.region || "ap-southeast-1";
-  return REGION_BASE[region] ?? fail(P, "INVALID_REGION", "invalid-request", 'Unknown BytePlus region "' + region + '" (ap-southeast-1 or eu-west-1)');
+  return (
+    REGION_BASE[region] ??
+    fail(
+      P,
+      "INVALID_REGION",
+      "invalid-request",
+      'Unknown BytePlus region "' + region + '" (ap-southeast-1 or eu-west-1)',
+    )
+  );
 }
 
 function httpError(ctx: MediaAdapterContext, res: JsonResponse): MediaAdapterError {
   const error = asRecord(asRecord(res.body).error);
-  const message = redactSecrets(asString(error.message) ?? "HTTP " + String(res.status), contextSecrets(ctx));
-  return new MediaAdapterError(arkError(asString(error.code), message, res.status));
+  const message = asString(error.message) ?? "HTTP " + String(res.status);
+  return new MediaAdapterError(arkError(asString(error.code), message, res.status, contextSecrets(ctx)));
 }
 
 async function call(ctx: MediaAdapterContext, req: JsonRequest): Promise<JsonResponse> {
@@ -36,11 +50,19 @@ async function call(ctx: MediaAdapterContext, req: JsonRequest): Promise<JsonRes
   return res;
 }
 
-async function submitImage(ctx: MediaAdapterContext, base: string, body: Record<string, unknown>): Promise<MediaJobRef> {
+async function submitImage(
+  ctx: MediaAdapterContext,
+  base: string,
+  body: Record<string, unknown>,
+): Promise<MediaJobRef> {
   const res = await call(ctx, { method: "POST", url: joinUrl(base, "images/generations"), body });
-  const outputs = imageOutputs(res.body);
+  const outputs = imageOutputs(res.body, contextSecrets(ctx));
   const created = asString(asRecord(res.body).created) ?? String(Date.now());
-  return { providerJobId: "seedream-" + created, pollAfterMs: 0, resume: { kind: "image", outputs: JSON.stringify(outputs) } };
+  return {
+    providerJobId: "seedream-" + created,
+    pollAfterMs: 0,
+    resume: { kind: "image", outputs: JSON.stringify(outputs) },
+  };
 }
 
 function taskUrl(ctx: MediaAdapterContext, job: MediaJobRef): string {
@@ -76,7 +98,11 @@ export const adapter: MediaProviderAdapter = {
     assertTask(P, model, request);
     const base = baseUrl(ctx);
     if (model.kind === "image") return submitImage(ctx, base, buildImageBody(model, request));
-    const res = await call(ctx, { method: "POST", url: joinUrl(base, TASKS_PATH), body: buildVideoBody(model, request) });
+    const res = await call(ctx, {
+      method: "POST",
+      url: joinUrl(base, TASKS_PATH),
+      body: buildVideoBody(model, request),
+    });
     const id = asString(asRecord(res.body).id) ?? fail(P, "BAD_RESPONSE", "upstream", "Task creation returned no id");
     return { providerJobId: id, pollAfterMs: FIRST_POLL_MS, resume: { kind: "video", baseUrl: base } };
   },
@@ -85,7 +111,7 @@ export const adapter: MediaProviderAdapter = {
       return { status: "succeeded", outputs: JSON.parse(job.resume.outputs ?? "[]") as MediaOutput[] };
     }
     const res = await call(ctx, { method: "GET", url: taskUrl(ctx, job) });
-    return videoTaskState(res.body);
+    return videoTaskState(res.body, contextSecrets(ctx));
   },
   async cancel(ctx, job) {
     if (job.resume?.kind === "image") return;
