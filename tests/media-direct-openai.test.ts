@@ -12,7 +12,7 @@ const { fakeFetch, json } = await import("./helpers/mediaFakeFetch.ts");
 test.after(() => {
   if (previousConfigDir === undefined) delete process.env.IMA2_CONFIG_DIR;
   else process.env.IMA2_CONFIG_DIR = previousConfigDir;
-  rmSync(configDir, { recursive: true, force: true });
+  rmSync(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 const KEY = "openai_test_secret_123";
