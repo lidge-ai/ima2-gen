@@ -115,7 +115,7 @@ routes/
 | `lib/jobs/terminalStore.ts` | 79 | Terminal snapshot disk read/write/reap and per-ID admission cleanup; no inflight import |
 | `ui/src/lib/eventChannel.ts` | 239 | Browser singleton `EventSource` for `/api/events`; exponential backoff reconnect; `subscribe(jobId)` routing; connection state callbacks; `armStreamTimeout`; `ensureConnected` |
 | `ui/src/lib/sseStreamError.ts` | 77 | Shared `parseSseErrorPayload` — normalizes flat/nested SSE error shapes |
-| `bin/ima2.ts` | 500 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
+| `bin/ima2.ts` | 499 | CLI setup, serve, status, doctor, open, reset, command dispatch (`serve --dev` enables verbose diagnostics) |
 | `bin/commands/gen.ts` | 445 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 181 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |
