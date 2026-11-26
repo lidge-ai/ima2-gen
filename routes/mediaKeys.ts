@@ -89,16 +89,26 @@ function readExtra(raw: unknown, adapter: MediaProviderAdapter): Record<string, 
 
 async function validateWithAdapter(adapter: MediaProviderAdapter, apiKey: string, extra: Record<string, string>, options: MediaKeyRouteOptions): Promise<string | null> {
   const secrets = [apiKey, ...(adapter.credential.extraFields ?? []).filter((f) => f.secret).map((f) => extra[f.name] ?? "")];
+  const redact = (reason: string) => {
+    let result = redactSecrets(reason, secrets);
+    const usable = secrets.filter((value) => value.length >= 6);
+    let secret = usable.find((value) => result.includes(value));
+    while (secret) {
+      result = result.split(secret).join("[x]");
+      secret = usable.find((value) => result.includes(value));
+    }
+    return result;
+  };
   try {
     const verdict = await adapter.validateKey({ apiKey, extra, fetch: options.fetch ?? globalThis.fetch, signal: AbortSignal.timeout(10_000) });
-    return verdict.ok ? null : redactSecrets(verdict.reason ?? "rejected", secrets);
+    return verdict.ok ? null : redact(verdict.reason ?? "rejected");
   } catch (error) {
-    return redactSecrets(error instanceof Error ? error.message : "unknown", secrets);
+    return redact(error instanceof Error ? error.message : "unknown");
   }
 }
 
-function fail(res: Response, status: number, code: string, error: string) {
-  return res.status(status).json({ ok: false, error, code });
+function fail(res: Response, status: number, code: string, error: string, category?: string) {
+  return res.status(status).json({ ok: false, error, code, ...(category ? { category } : {}) });
 }
 
 /** PUT /api/keys/:vocabulary for a media-only vocabulary. Body: { apiKey, extra? }. */
@@ -137,10 +147,42 @@ export async function deleteMediaKey(ctx: RuntimeContext, adapter: MediaProvider
   return res.json({ ok: true, provider: cred.keyVocabulary, removed: true });
 }
 
+async function validateMediaKey(ctx: RuntimeContext, adapter: MediaProviderAdapter, vocabulary: string, body: unknown, res: Response, options: MediaKeyRouteOptions) {
+  const { apiKey: rawKey, extra: rawExtra } = (body ?? {}) as { apiKey?: unknown; extra?: unknown };
+  const key = typeof rawKey === "string" ? rawKey.trim() : undefined;
+  const cred = adapter.credential;
+  if (key !== undefined && key.length > (vocabulary === "vertex" ? 51200 : MAX_KEY_CHARS)) return fail(res, 400, "KEY_TOO_LARGE", "API key too large");
+  if (key !== undefined && key.length < 6) return fail(res, 400, "KEY_TOO_SHORT", "API key too short", "auth");
+  if (key && cred.keyPrefix && !key.startsWith(cred.keyPrefix)) return fail(res, 400, "INVALID_KEY_FORMAT", `Invalid key format for ${vocabulary}: expected prefix ${cred.keyPrefix}`);
+  const requestedExtra = readExtra(rawExtra, adapter);
+  if (typeof requestedExtra === "string") return fail(res, 400, "INVALID_EXTRA", requestedExtra);
+  const fields = cred.extraFields ?? [];
+  if (fields.some((field) => field.secret && requestedExtra[field.name] !== undefined && requestedExtra[field.name].length < 6)) {
+    return fail(res, 400, "KEY_TOO_SHORT", "Secret extra too short", "auth");
+  }
+  const fileConfig = await readConfigFileSafe(ctx.config.storage.configFile);
+  const resolved = resolveMediaCredential(cred, { env: options.env ?? process.env, fileConfig });
+  const apiKey = key ?? resolved.apiKey;
+  const extra = { ...resolved.extra, ...requestedExtra };
+  const hasSecret = fields.some((field) => field.secret && extra[field.name]);
+  if (!apiKey && !hasSecret) return fail(res, 400, "MEDIA_KEY_MISSING", `No key saved for ${adapter.label}`, "auth");
+  const missing = fields.filter((field) => field.required && !extra[field.name]).map((field) => field.name);
+  if (missing.length) return fail(res, 400, "MISSING_EXTRA", `Missing required fields: ${missing.join(", ")}`);
+  const rejected = await validateWithAdapter(adapter, apiKey ?? "", extra, options);
+  if (rejected !== null) return fail(res, 400, "KEY_VALIDATION_FAILED", `API key validation failed: ${rejected}`, "auth");
+  const source = key !== undefined || Object.keys(requestedExtra).length ? "request" : resolved.source;
+  return res.json({ ok: true, vocabulary, valid: true, source });
+}
+
 /** Routes that do not collide with routes/keys.ts's /api/keys/:provider handlers. */
 export function registerMediaKeyRoutes(app: Express, ctx: RuntimeContext, options: MediaKeyRouteOptions = {}) {
   app.get("/api/keys/vocabulary", async (_req: Request, res: Response) => {
     res.json({ vocabularies: vocabularyList(options, await loadVendorLogos(ctx.rootDir)) });
+  });
+  app.post("/api/keys/:vocabulary/validate", async (req: Request<{ vocabulary: string }>, res: Response) => {
+    const adapter = mediaKeyVocabularies(registryOf(options).listAdapters()).get(req.params.vocabulary);
+    if (!adapter) return fail(res, 400, "INVALID_PROVIDER", "Invalid provider");
+    return validateMediaKey(ctx, adapter, req.params.vocabulary, req.body, res, options);
   });
   // Extra fields alone (region, endpoint id), for any vocabulary including the legacy six.
   app.put("/api/keys/:vocabulary/extra", async (req: Request<{ vocabulary: string }>, res: Response) => {
