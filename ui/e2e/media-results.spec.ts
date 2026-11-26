@@ -26,7 +26,7 @@ test("L11-R1 a media result shows its route, settings and cost, and Make again r
   await actions(page).getByRole("button", { name: "Info", exact: true }).click();
   const details = page.getByRole("dialog", { name: "Generation Details" });
   await expect(details).toContainText("fal");
-  await expect(details).not.toContainText("media:fal");
+  await expect(details.locator(".metadata-modal__summary")).not.toContainText("media:");
   for (const text of ["Route", "Aggregator", "Resolution", "2K", "Aspect ratio", "16:9", "Seed", "Billed (reported by the provider)", "$0.07"]) await expect(details).toContainText(text);
   await page.keyboard.press("Escape");
 
