@@ -25,6 +25,7 @@ export function renderHelp(pkg: { name: string; version: string }): string {
   Client commands (require a running 'ima2 serve'):
     gen <prompt>   Generate image(s) from prompt  (ima2 gen --help)
     video <prompt> Generate video via Grok        (ima2 video --help)
+    media <sub>    Media models, jobs and workflows (ima2 media --help)
     edit <file>    Edit an existing image         (ima2 edit --help)
     ls             List recent history            (ima2 ls --help)
     show <name>    Show one history item          (ima2 show --help)

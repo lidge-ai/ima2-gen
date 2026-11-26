@@ -351,7 +351,7 @@ if (args.includes("-v") || args.includes("--version")) {
   exitFlushed(0);
 }
 
-const helpOwningCommands = ["update", "doctor", "gen", "video", "edit", "vectorize", "ls", "show", "ps", "cancel", "session", "history", "prompt", "multimode", "node", "annotate", "canvas-versions", "metadata", "comfy", "cardnews", "inflight", "storage", "billing", "providers", "oauth", "grok", "gpt", "login", "config", "defaults", "models", "capabilities", "tools", "skill", "ping", "backfill-thumbs", "service", "start", "restart", "stop", "logs"];
+const helpOwningCommands = ["update", "doctor", "gen", "video", "media", "edit", "vectorize", "ls", "show", "ps", "cancel", "session", "history", "prompt", "multimode", "node", "annotate", "canvas-versions", "metadata", "comfy", "cardnews", "inflight", "storage", "billing", "providers", "oauth", "grok", "gpt", "login", "config", "defaults", "models", "capabilities", "tools", "skill", "ping", "backfill-thumbs", "service", "start", "restart", "stop", "logs"];
 if (!command) {
   showHelp();
   exitFlushed(1);
@@ -439,6 +439,7 @@ switch (command) {
     break;
   case "gen":
   case "video":
+  case "media":
   case "upscale":
   case "edit":
   case "vectorize":
