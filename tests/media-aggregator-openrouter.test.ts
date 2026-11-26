@@ -30,10 +30,14 @@ test("openrouter catalog maps Sume ids to OpenRouter video ids with per-second S
   const veo = specs.find((spec) => spec.id === "google/veo-3.1");
   assert.deepEqual(veo?.params.durationsSec, [4, 6, 8]);
   assert.ok(specs.every((spec) => spec.kind === "video"));
-  for (const spec of specs) for (const price of spec.pricing) {
-    assert.equal(price.unit, "second");
-    assert.ok(price.variant, "unqualified base SKUs are dropped when qualified ones exist");
+  for (const spec of specs) {
+    for (const price of spec.pricing) assert.equal(price.unit, "second");
+    // An unqualified SKU reads as "applies to all"; it must not sit next to qualified ones.
+    const qualified = spec.pricing.some((price) => price.variant);
+    const unqualified = spec.pricing.some((price) => !price.variant);
+    assert.ok(!(qualified && unqualified), `${spec.id} mixes unqualified and qualified SKUs`);
   }
+  assert.equal(specs.find((spec) => spec.id === "minimax/minimax-h3")?.pricing.length, 1, "a lone base SKU is kept");
 });
 
 test("openrouter submit sends the documented body with Bearer auth", async () => {
