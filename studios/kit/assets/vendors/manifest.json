@@ -58,7 +58,8 @@
       "aliases": [
         "alibaba-cloud",
         "dashscope"
-      ]
+      ],
+      "missing": "심볼 없음: 사용 허가 필요(https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-terms-of-use-alibaba-cloud-international-website-terms-of-use, 7.1: \"The unauthorized copying, modification, use or publication of these marks is strictly prohibited.\"). The wordmark file stays for wide slots; square slots show a monogram."
     },
     {
       "id": "tencent",
@@ -116,6 +117,17 @@
       "name": "MiniMax",
       "files": [
         {
+          "file": "minimax-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://platform.minimax.io/docs/mintlify-assets/_mintlify/favicons/minimax-cac98058/-WSO_KEoennf5XoM/_generated/favicon/android-chrome-192x192.png",
+          "width": 192,
+          "height": 192,
+          "shape": "mark",
+          "tile": true,
+          "sourceKind": "site-asset"
+        },
+        {
           "file": "minimax.webp",
           "variant": "primary",
           "format": "webp",
@@ -138,8 +150,8 @@
       "pageUrl": "https://www.minimax.io/",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "Referential use to identify MiniMax as a model maker; no brand guideline page located; logo used unaltered.",
-      "modifications": "none; original WebP bytes as served by the official site header (dark variant: /assets/logo/minimax-horizontal-white.webp)",
+      "license": "Referential use to identify MiniMax as a model maker; no brand guideline page located; logo used unaltered. Brand terms (https://www.minimax.io/brand-vi#credits): \"Brand assets may not be altered, distorted, separated, redesigned, sublicensed, or used in any way that may cause confusion\"; files are used unaltered.",
+      "modifications": "none; original WebP bytes as served by the official site header (dark variant: /assets/logo/minimax-horizontal-white.webp); symbol mark minimax-mark.png is the icon declared by https://platform.minimax.io/docs (retrieved 2026-11-26 via Aside, original bytes). The brand kit at https://www.minimax.io/brand-vi sits behind a terms checkbox and was not downloaded.",
       "aliases": [
         "hailuo"
       ]
@@ -266,17 +278,40 @@
     {
       "id": "xai",
       "name": "xAI",
-      "files": [],
-      "pageUrl": "https://x.ai/",
+      "files": [
+        {
+          "file": "xai-mark.svg",
+          "variant": "mark",
+          "format": "svg",
+          "sourceUrl": "https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip",
+          "width": 600,
+          "height": 600,
+          "shape": "mark",
+          "tile": true,
+          "sourceKind": "brand-kit"
+        },
+        {
+          "file": "xai-dark.svg",
+          "variant": "dark",
+          "format": "svg",
+          "sourceUrl": "https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip",
+          "width": 600,
+          "height": 600,
+          "shape": "mark",
+          "tile": true,
+          "sourceKind": "brand-kit"
+        }
+      ],
+      "pageUrl": "https://x.ai/legal/brand-guidelines",
       "firstParty": true,
       "retrievedAt": "2026-11-26",
-      "license": "https://x.ai/legal/brand-guidelines requires logos to be used exactly as provided; the official files could not be downloaded, so no logo is used.",
-      "modifications": "none; no logo file is used",
+      "license": "https://x.ai/legal/brand-guidelines: \"You may use SpaceXSI’s Marks only if you agree to the following terms\" (use them only to accurately refer to SpaceXSI or its services) and \"only use our logos exactly as provided at the download link below, without any alteration or adjustment.\" Files are unaltered members of the official logo zip.",
+      "modifications": "none; extracted unmodified from SpaceXAI_Grok_Assets.zip (spacexai - symbol - black/white - squared.svg), retrieved 2026-11-26 via Aside",
       "aliases": [
         "xai-oauth",
         "grok"
       ],
-      "missing": "없음: 공식 브랜드 자산 미확보(https://x.ai/legal/brand-guidelines). The official logo download returned 403 on 2026-11-26; until the brand kit is obtained studios show the name and a monogram."
+      "sourceUrl": "https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip"
     },
     {
       "id": "meta",
@@ -1013,6 +1048,17 @@
       "name": "AtlasCloud",
       "files": [
         {
+          "file": "atlascloud-mark.png",
+          "variant": "mark",
+          "format": "png",
+          "sourceUrl": "https://avatars.githubusercontent.com/u/249862100?v=4",
+          "width": 200,
+          "height": 200,
+          "shape": "mark",
+          "tile": true,
+          "sourceKind": "github-avatar"
+        },
+        {
           "file": "atlascloud.svg",
           "variant": "primary",
           "format": "svg",
@@ -1028,7 +1074,7 @@
       "firstParty": true,
       "retrievedAt": "2026-11-26",
       "license": "Logo usage terms were not identified in the examined source; publication alone does not establish reuse permission.",
-      "modifications": "none",
+      "modifications": "none; symbol mark atlascloud-mark.png is the avatar of the GitHub organisation AtlasCloudAI, which atlascloud.ai links as its GitHub (organisation not verified by GitHub), retrieved 2026-11-26 via Aside.",
       "aliases": [
         "atlas-cloud"
       ]
