@@ -144,6 +144,7 @@ export interface Job {
   target: string;
   provider?: string;
   status: JobStatus;
+  /** 0 to 1. Absent when the provider reports no progress. */
   progress?: number;
   createdAt: string;
   updatedAt: string;
