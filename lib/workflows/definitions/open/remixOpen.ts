@@ -20,14 +20,19 @@ import {
 const OPEN_SOURCES = "Stage layout after D3voz/openjutsu (MIT), SydFloyd/openjutsu (Apache-2.0) and alisson-anjos/Henge (MIT), read 2026-11-26.";
 
 const IMAGE_EDITORS = ["bytedance/seedream-5.5", "openai/gpt-image-2.6", "openai/gpt-image-2", "google/nano-banana-2.1", "google/nano-banana-pro", "black-forest-labs/flux-2-pro", "black-forest-labs/flux-kontext-pro", "kling/kling-image-o1"];
-const EDITORS_FOR = (first: string): string[] => IMAGE_EDITORS.filter((m) => m !== first);
+/** GPT image over the ChatGPT sign-in (lib/codexBackend), tried first for every image stage. */
+const GPT_OAUTH_IMAGE = "openai/gpt-image-2";
+const EDITORS_AFTER = (next: string): string[] => [next, ...IMAGE_EDITORS.filter((m) => m !== next && m !== GPT_OAUTH_IMAGE)];
 
 function subjectSlot(mode: OpenMode): ModelSlot {
-  const first = mode === "swap" ? "openai/gpt-image-2.6" : mode === "restyle" ? "black-forest-labs/flux-kontext-pro" : "bytedance/seedream-5.5";
+  // Without a ChatGPT sign-in the next keyed editor takes over: GPT Image by key for swaps (mask edits),
+  // FLUX Kontext for restyles, Seedream for motion anchors.
+  const next = mode === "swap" ? "openai/gpt-image-2.6" : mode === "restyle" ? "black-forest-labs/flux-kontext-pro" : "bytedance/seedream-5.5";
   return {
     name: "subject", label: mode === "restyle" ? "Restyle the first frame" : "Put the subject into the first frame", task: "image-to-image", optional: true,
-    defaultModel: first, alternatives: EDITORS_FOR(first),
+    defaultModel: GPT_OAUTH_IMAGE, alternatives: EDITORS_AFTER(next), modelRoutes: { [GPT_OAUTH_IMAGE]: "openai-oauth" },
     rationale: OPEN_SOURCES + " The open pipelines anchor identity or look in the first frame before video generation; an image edit model does that here. "
+      + "GPT image over the ChatGPT subscription goes first; keyed editors follow when there is no sign-in. "
       + (mode === "swap" ? "OpenAI edits take the segment mask as the edit area." : ""),
   };
 }

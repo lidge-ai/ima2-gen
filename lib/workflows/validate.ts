@@ -165,11 +165,11 @@ function runnable(slot: ModelSlot, model: string, route: string | undefined, ctx
   return ctx.env.canRun ? ctx.env.canRun(model, route) : true;
 }
 
-/** Picks a model for a slot the user did not set: the first listed one that can run now. */
-function pickDefault(slot: ModelSlot, tier: unknown, route: string | undefined, ctx: SlotContext): string | undefined {
+/** Picks a model for a slot the user did not set: the first listed one that can run now on its route. */
+function pickDefault(slot: ModelSlot, tier: unknown, routeOf: (model: string) => string | undefined, ctx: SlotContext): string | undefined {
   const candidates = slotCandidates(slot, tier);
   const preferred = candidates[0] ?? slot.defaultModel;
-  const hit = candidates.find((m) => runnable(slot, m, route, ctx));
+  const hit = candidates.find((m) => runnable(slot, m, routeOf(m), ctx));
   if (hit) {
     if (hit !== preferred) ctx.notes.push({ slot: slot.name, kind: "fallback", message: preferred + " cannot run now; using " + hit });
     return hit;
@@ -206,7 +206,8 @@ export function resolveSlotPlan(def: WorkflowDefinition, selection: WorkflowSele
   const ctx: SlotContext = { env, notes: [] };
   const slots: Record<string, ResolvedSlot> = {};
   for (const slot of def.slots) {
-    const route = selection?.routes?.[slot.name] ?? combo?.routes?.[slot.name] ?? slot.defaultRoute;
+    const pinnedRoute = selection?.routes?.[slot.name] ?? combo?.routes?.[slot.name];
+    const routeOf = (model: string): string | undefined => pinnedRoute ?? slot.modelRoutes?.[model] ?? slot.defaultRoute;
     // A tier the user picked (e.g. lite) is a model choice too: keep it rather than fall back to a pricier model.
     const tierModel = typeof tier === "string" ? slot.tierModels?.[tier] : undefined;
     const pinned = selection?.models?.[slot.name] ?? combo?.models[slot.name] ?? tierModel;
@@ -217,10 +218,12 @@ export function resolveSlotPlan(def: WorkflowDefinition, selection: WorkflowSele
     if (pinned !== undefined && !slotCandidates(slot, tier).includes(pinned)) {
       throw inputError("selection.models." + slot.name, pinned + " cannot run this step");
     }
-    if (pinned !== undefined && !runnable(slot, pinned, route, ctx)) {
-      ctx.notes.push({ slot: slot.name, kind: "needs-key", message: pinned + " needs a key or sign-in" + (route ? " on " + route : "") });
+    if (pinned !== undefined && !runnable(slot, pinned, routeOf(pinned), ctx)) {
+      const on = routeOf(pinned);
+      ctx.notes.push({ slot: slot.name, kind: "needs-key", message: pinned + " needs a key or sign-in" + (on ? " on " + on : "") });
     }
-    const chosen = pinned ?? pickDefault(slot, tier, route, ctx);
+    const chosen = pinned ?? pickDefault(slot, tier, routeOf, ctx);
+    const route = chosen === undefined ? undefined : routeOf(chosen);
     if (chosen !== undefined) slots[slot.name] = route ? { model: chosen, route } : { model: chosen };
   }
   const extra = Object.keys(selection?.models ?? {}).concat(Object.keys(selection?.routes ?? {}))
