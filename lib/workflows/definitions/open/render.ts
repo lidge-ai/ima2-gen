@@ -87,17 +87,19 @@ export function renderStep(spec: RenderSpec, env: PlanEnv): MediaStep {
     dependsOn: [...anchors, ...(spec.hasCaption ? ["caption"] : [])],
     units: { unit: "second", quantity: seconds, variant: resolution + (sound === "model" ? "+audio" : "") },
     async build(rt) {
-      const audio = sound === "model";
+      // Grok's video edit always returns sound and refuses a silent request (checkRenderFit keeps silent
+      // outputs away from it); the sound step replaces that sound with the source's.
+      const audio = sound === "model" ? true : TEXT_ONLY_EDIT.has(slot.model) ? undefined : false;
       if (strategy === "pins") {
         const { inputs, prompt, keyframes } = await pinInputs(rt, spec);
-        return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, audio, inputs, vendorOptions: { keyframes } };
+        return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, ...(audio === undefined ? {} : { audio }), inputs, vendorOptions: { keyframes } };
       }
       if (strategy === "reference") {
         const { inputs, prompt } = await referenceInputs(rt, spec);
-        return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, audio, inputs };
+        return { model: slot.model, task: "reference-to-video", prompt, durationSec: seconds, resolution, ...(audio === undefined ? {} : { audio }), inputs };
       }
       const { inputs, prompt } = await editInputs(rt, spec);
-      return { model: slot.model, task: "video-to-video", prompt, resolution, audio, inputs };
+      return { model: slot.model, task: "video-to-video", prompt, resolution, ...(audio === undefined ? {} : { audio }), inputs };
     },
   };
   if (slot.route) step.route = slot.route;

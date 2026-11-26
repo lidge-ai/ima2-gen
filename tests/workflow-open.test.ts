@@ -144,7 +144,7 @@ test("object swap (open): SAM 3 mask feeds the OpenAI edit, then Seedance edits 
 test("object swap with Grok's text-only edit sends only the video and describes the replacement in words", async () => {
   const grok = fakeAdapter();
   const gateway = fakeGateway({ "xai/grok-imagine-video": grok, "openai/gpt-image-2": imageOut("x") }, specs, planner, () => true);
-  const p = await prep("remix-object-swap-open", { video: video(short), images, target: "the paper boat", resolution: "720p" }, gateway, { combo: "subscription" });
+  const p = await prep("remix-object-swap-open", { video: video(short), images, target: "the paper boat", resolution: "720p", sound: "model" }, gateway, { combo: "subscription" });
   await run("swap-grok", p, gateway);
   const req = grok.calls.find((c) => c.op === "submit")?.request;
   assert.deepEqual(req?.inputs.map((i) => i.role), ["source-video"]);
@@ -198,4 +198,16 @@ test("image stages use GPT image over the ChatGPT sign-in first in every open mo
   }
   const d = describeWorkflow(def("remix-object-swap-open"), fakeGateway({}, specs, planner, signedIn));
   assert.equal(d.slots.find((s) => s.name === "subject")?.runnable?.["openai/gpt-image-2"], true);
+});
+
+test("Grok's edit is never asked for silence: the source sound replaces its sound, and silent outputs are refused up front", async () => {
+  const grok = fakeAdapter();
+  const gateway = fakeGateway({ "xai/grok-imagine-video": grok, "openai/gpt-image-2": imageOut("styled") }, specs, planner, () => true);
+  const p = await prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" });
+  assert.deepEqual(p.plan.steps.slice(-2).map((s) => s.id), ["render", "sound"]);
+  await run("grok-sound", p, gateway);
+  const req = grok.calls.find((c) => c.op === "submit")?.request;
+  assert.equal(req && "audio" in req, false, "no audio flag for Grok's edit");
+  await assert.rejects(prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p", sound: "none" }, gateway, { combo: "subscription" }), /always returns sound/);
+  await assert.rejects(prep("remix-restyle-open", { video: video(short), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" }), /always returns sound/);
 });
