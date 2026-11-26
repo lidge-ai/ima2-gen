@@ -30,8 +30,9 @@ function flush(pending: Pending): SseMessage | null {
 
 /** Splits buffered text into complete lines, returning the unfinished tail. */
 function takeLines(buffer: string): { lines: string[]; rest: string } {
-  const parts = buffer.split(/\r\n|\r|\n/);
-  const rest = parts.pop() ?? "";
+  const trailingCr = buffer.endsWith("\r");
+  const parts = (trailingCr ? buffer.slice(0, -1) : buffer).split(/\r\n|\r|\n/);
+  const rest = (parts.pop() ?? "") + (trailingCr ? "\r" : "");
   return { lines: parts, rest };
 }
 
