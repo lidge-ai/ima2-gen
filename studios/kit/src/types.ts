@@ -271,6 +271,16 @@ export interface WorkflowEstimate {
   total: CostEstimate;
 }
 
+/**
+ * Spend limits of a shared web instance (GET /api/web/session). Such a server runs only jobs whose
+ * published-price estimate is complete and fits both caps; a local server has none (null).
+ */
+export interface WebSpend {
+  spentUsd: number;
+  dailyCapUsd: number;
+  requestCapUsd: number;
+}
+
 /** A finished example clip from the server's showcase folder (GET /api/showcase). */
 export interface ShowcaseItem {
   id: string;

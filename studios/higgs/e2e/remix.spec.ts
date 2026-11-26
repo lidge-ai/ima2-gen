@@ -39,3 +39,41 @@ test("restyle accepts the real source and style reference fields", async ({ page
   await expect(page.getByRole("button", { name: "Remove Style reference" })).toBeVisible();
   await expect(page.getByText("Steps and estimated cost")).toBeVisible();
 });
+
+/** What a shared web instance reports at /api/web/session; a local server has no such route. */
+const webSession = (spend: { spentUsd?: number; dailyCapUsd?: number; requestCapUsd?: number }) => ({
+  email: "member@example.com",
+  spend: { day: "2026-11-27", spentUsd: 0, dailyCapUsd: 20, requestCapUsd: 5, ...spend },
+});
+
+test("on a shared web server, an unpriced step is named before Generate, and a refusal shows the server's reason", async ({ page }) => {
+  await page.route("**/api/web/session", (route) => route.fulfill({ json: webSession({}) }));
+  let unpriced = true;
+  await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    if (unpriced) {
+      body.estimate.complete = false;
+      body.estimate.steps[0].usd = null;
+    }
+    await route.fulfill({ response, json: body });
+  });
+  const refusal = "workflow:remix-restyle has no published price, so this shared instance does not run it.";
+  await page.route("**/api/workflows/remix-restyle", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 403, json: { ok: false, code: "WEB_SPEND_UNPRICED", error: refusal, status: 403 } })
+      : route.fallback(),
+  );
+  await page.goto("/#/remix/remix-restyle");
+  const generate = page.getByRole("button", { name: /^Generate/ });
+  await expect(page.getByText("This shared server runs only priced steps. No published price: Restyle the first frame.")).toBeVisible();
+  await expect(generate).toBeDisabled();
+  // Priced again (another style), the button opens; if the server still refuses, its reason is shown as sent.
+  unpriced = false;
+  await page.getByRole("button", { name: /^Style: / }).click();
+  await page.getByRole("dialog", { name: "Style" }).getByRole("button", { name: "watercolor" }).click();
+  await expect(page.getByText(/runs only priced steps/)).toHaveCount(0);
+  await expect(generate).toBeEnabled();
+  await generate.click();
+  await expect(page.getByRole("alert").filter({ hasText: refusal })).toBeVisible();
+});

@@ -87,6 +87,10 @@ test("video: a model without any key asks for one and cannot run", async ({ page
   await expect(page.getByRole("link", { name: "All API keys" })).toHaveAttribute("href", "#/keys?focus=vidu");
   await page.getByLabel("Prompt").fill("anything");
   await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
+  // Picked once, a keyless model is not promoted to Recent; it stays under "Needs a key".
+  await page.getByRole("button", { name: /^Model: / }).click();
+  await expect(picker.getByRole("list", { name: "Needs a key (add it after picking)" }).getByRole("button", { name: /Vidu Q4/ })).toBeVisible();
+  await expect(picker.getByRole("list", { name: "Recent" }).getByRole("button", { name: /Vidu Q4/ })).toHaveCount(0);
 });
 
 test("video: choosing a route and settings changes the estimate", async ({ page }) => {
@@ -121,4 +125,14 @@ test("image: dock generates an image that later opens in the viewer", async ({ p
   await page.reload();
   await page.getByRole("button", { name: "Open " + prompt }).click();
   await expect(page.getByRole("dialog", { name: "Result" }).getByRole("img", { name: prompt })).toBeVisible();
+});
+
+test("video: on a shared web server, a run above the per-run limit is explained before sending", async ({ page }) => {
+  await page.route("**/api/web/session", (route) =>
+    route.fulfill({ json: { email: "member@example.com", spend: { day: "2026-11-27", spentUsd: 0, dailyCapUsd: 20, requestCapUsd: 0.1 } } }),
+  );
+  await page.goto("/#/video");
+  await page.getByLabel("Prompt").fill("over the limit");
+  await expect(page.getByText(/above this server's \$0\.10 limit per run/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Generate/ })).toBeDisabled();
 });

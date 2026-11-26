@@ -227,7 +227,9 @@ function PickerPanel({ models, value, onPick }: PanelProps) {
     (m) => matches(m, query, vendor) && features.every((f) => FEATURES.find((x) => x.id === f)!.test(m)),
   );
   const narrowed = !!query || !!vendor || features.length > 0;
-  const recent = narrowed ? [] : recentIds().flatMap((id) => shown.filter((m) => m.id === id));
+  // Recent holds only models that can run now; a keyless one stays under "Needs a key" even after
+  // it was picked, so the top of the list never promises something that cannot run.
+  const recent = narrowed ? [] : recentIds().flatMap((id) => shown.filter((m) => m.id === id && modelHasKey(m)));
   const rest = shown.filter((m) => !recent.includes(m));
   const pick = (id: string) => {
     remember(id);

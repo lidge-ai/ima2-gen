@@ -261,6 +261,7 @@ export function Generate({ form }: { form: WorkflowForm }) {
       {form.missing.length ? (
         <p className="form-hint">{t("requiredList", { fields: form.missing.map((item) => fieldLabel(form.def.id, item.name, item.label)).join(", ") })}</p>
       ) : null}
+      {form.spendReason ? <p className="form-hint spend-reason">{form.spendReason}</p> : null}
       {form.error ? (
         <p role="alert" className="form-error">
           {form.error}

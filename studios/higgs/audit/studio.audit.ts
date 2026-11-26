@@ -90,6 +90,22 @@ const sixClips: Act = async (page) => {
   });
 };
 const showcaseTile = (page: Page) => page.locator(".showcase-tile").nth(1);
+/** A shared web instance (L9 deployment): spend caps from /api/web/session. */
+const webCaps = (requestCapUsd: number): Act => async (page) => {
+  await page.route("**/api/web/session", (route) =>
+    route.fulfill({ json: { email: "member@example.com", spend: { day: "2026-11-27", spentUsd: 0, dailyCapUsd: 20, requestCapUsd } } }),
+  );
+};
+const unpricedRestyle: Act = async (page) => {
+  await webCaps(5)(page);
+  await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.estimate.complete = false;
+    body.estimate.steps[0].usd = null;
+    await route.fulfill({ response, json: body });
+  });
+};
 
 const PRISTINE: Cell[] = [
   { id: "home__nokeys", hash: "/", setup: noKeys },
@@ -163,6 +179,8 @@ const PRISTINE: Cell[] = [
   },
   { id: "notfound__route", hash: "/does-not-exist" },
   { id: "home__showcase-grid", hash: "/", setup: sixClips, act: async (p) => p.mouse.move(0, 0) },
+  { id: "remix__web-unpriced", hash: "/remix/remix-restyle", setup: unpricedRestyle, act: async (p) => p.waitForTimeout(800) },
+  { id: "video__web-over-cap", hash: "/video", setup: webCaps(0.1), act: prompt("over the per-run limit") },
   { id: "home__showcase-hover", hash: "/", setup: sixClips, act: async (p) => { await showcaseTile(p).hover(); await p.waitForTimeout(400); } },
   {
     id: "home__showcase-tap",

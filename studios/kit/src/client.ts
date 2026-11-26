@@ -2,10 +2,10 @@ import { fromWireJob, toCatalog, toKeyStatuses, toWireSubmit } from "./adapt.ts"
 import { historyParams, toHistoryPage } from "./adaptHistory.ts";
 import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
-import { Http, type HttpOptions } from "./http.ts";
+import { Http, StudioApiError, type HttpOptions } from "./http.ts";
 import type {
   Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, KeySaveBody, KeyStatus, MediaSubmitBody, ShowcaseItem, UploadedInput,
-  WorkflowDef, WorkflowEstimate, WorkflowRunBody,
+  WebSpend, WorkflowDef, WorkflowEstimate, WorkflowRunBody,
 } from "./types.ts";
 import type { WireAccepted, WireCatalog, WireEstimateResponse, WireHistoryPage, WireInput, WireJob, WireWorkflow } from "./wire.ts";
 
@@ -168,6 +168,21 @@ export function createStudioClient(options: StudioClientOptions = {}) {
     showcase: {
       list: async (): Promise<ShowcaseItem[]> =>
         (await http.request<{ items: ShowcaseItem[] }>("GET", "/api/showcase")).items ?? [],
+    },
+    /** Spend limits when this is a shared web instance; null on a local server (no such route). */
+    web: {
+      spend: async (): Promise<WebSpend | null> => {
+        try {
+          const body = await http.request<{ spend?: Partial<WebSpend> }>("GET", "/api/web/session");
+          const s = body.spend;
+          return s && typeof s.dailyCapUsd === "number" && typeof s.requestCapUsd === "number"
+            ? { spentUsd: typeof s.spentUsd === "number" ? s.spentUsd : 0, dailyCapUsd: s.dailyCapUsd, requestCapUsd: s.requestCapUsd }
+            : null;
+        } catch (error) {
+          if (error instanceof StudioApiError && error.status === 404) return null;
+          throw error;
+        }
+      },
     },
     events: {
       follow: (subscribe: SubscribeOptions) => followEvents(http, subscribe, cache.jobs),
