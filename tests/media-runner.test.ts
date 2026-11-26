@@ -14,7 +14,8 @@ const { MediaRegistry } = await import("../lib/providers/media/registry.ts");
 const { launchMediaJob, prepareMediaJob } = await import("../lib/providers/media/runner.ts");
 const { parseMediaJobBody } = await import("../lib/providers/media/validate.ts");
 const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts");
-const { abortJob, _resetForTests: resetInflight } = await import("../lib/inflight.ts");
+const { abortJob, listTerminalJobs, _resetForTests: resetInflight } = await import("../lib/inflight.ts");
+const { listHistoryRows } = await import("../lib/historyList.ts");
 const { configureLogger } = await import("../lib/logger.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter, FakeHttpError } = await import("./_mediaFakeAdapter.ts");
 const { closeDb } = await import("../lib/db.ts");
@@ -108,8 +109,54 @@ test("a failed state becomes an error event with the vendor code, its category a
     assert.equal(err.category, "quota");
     assert.equal(err.status, 402);
     assert.match(String(err.error), /\[redacted\]/);
+    // A reloaded UI reads the terminal job, not the event: it needs the same next-action facts.
+    const terminal = listTerminalJobs().find((job) => job.requestId === "req-fail")!;
+    assert.equal(terminal.status, "error");
+    assert.equal(terminal.meta.category, "quota");
+    assert.equal(terminal.meta.retryable, false);
+    assert.equal(terminal.meta.adapter, "fake", "admission meta survives the failure meta");
     assertNoKey(s.events);
     assertNoKey(logLines);
+  } finally {
+    await s.done();
+  }
+});
+
+test("the sidecar keeps what the provider billed and the submit-time estimate, and history rows expose them with route and settings", async () => {
+  const adapter = makeFakeAdapter({ id: "agg", route: "aggregator", script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }], billed: { usd: 0.31, units: 5, unit: "second" } }] } });
+  const s = await setup([adapter], { keys: { aggApiKey: FAKE_KEY } });
+  try {
+    const prepared = await prepareMediaJob(s.deps, body({ resolution: "720p", aspectRatio: "16:9", seed: 7 }));
+    const result = await launchMediaJob(s.deps, prepared, { requestId: "req-cost", estimate: { usd: 0.25, basis: "exact" } }).done;
+    const filename = result.outputs[0]!.filename;
+    const meta = JSON.parse(await readFile(join(s.deps.generatedDir, `${filename}.json`), "utf8"));
+    assert.deepEqual(meta.billed, { usd: 0.31, units: 5, unit: "second" });
+    assert.deepEqual(meta.estimate, { usd: 0.25, basis: "exact" });
+    const row = (await listHistoryRows(s.deps.generatedDir)).find((item) => item.filename === filename)!;
+    assert.equal(row.adapter, "agg");
+    assert.equal(row.route, "aggregator");
+    assert.deepEqual(row.media, { task: "text-to-video", durationSec: 5, resolution: "720p", aspectRatio: "16:9", seed: 7, audio: null, inputRoles: [] });
+    assert.deepEqual(row.billed, { usd: 0.31, units: 5, unit: "second" });
+    assert.deepEqual(row.estimate, { usd: 0.25, basis: "exact" });
+    assertNoKey(row);
+  } finally {
+    await s.done();
+  }
+});
+
+test("a job without a bill or an estimate leaves both out of the sidecar and null on the history row", async () => {
+  const adapter = makeFakeAdapter({ script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }] } });
+  const s = await setup([adapter]);
+  try {
+    const result = await launchMediaJob(s.deps, await prepareMediaJob(s.deps, body()), { requestId: "req-plain" }).done;
+    const filename = result.outputs[0]!.filename;
+    const meta = JSON.parse(await readFile(join(s.deps.generatedDir, `${filename}.json`), "utf8"));
+    assert.equal("billed" in meta, false);
+    assert.equal("estimate" in meta, false);
+    const row = (await listHistoryRows(s.deps.generatedDir)).find((item) => item.filename === filename)!;
+    assert.equal(row.route, "direct");
+    assert.equal(row.billed, null);
+    assert.equal(row.estimate, null);
   } finally {
     await s.done();
   }
