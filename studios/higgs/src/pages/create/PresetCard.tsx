@@ -14,7 +14,7 @@ export function PresetCard({ preset, modelLabel, onChange }: Props) {
         preset.sampleKind === "video"
           ? <video className="preset-card-media" src={preset.sample} muted loop autoPlay playsInline aria-hidden />
           : <img className="preset-card-media" src={preset.sample} alt="" />
-      ) : <div className="preset-card-media preset-card-blank" aria-hidden />}
+      ) : <img className="preset-card-media" src="samples/landscape.jpg" alt="" />}
       <div className="preset-card-text">
         <span className="preset-card-title">{preset?.label ?? "General"}</span>
         <span className="preset-card-sub">{modelLabel ?? "Any model"}</span>

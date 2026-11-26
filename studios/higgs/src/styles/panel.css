@@ -79,14 +79,11 @@
 .model-mark.small { width: 20px; height: 20px; border-radius: 6px; font-size: 11px; background: var(--surface-2); }
 
 .popover {
-  position: absolute; z-index: 40; background: #17171d; border: 1px solid var(--line-strong); border-radius: var(--radius);
+  position: fixed; z-index: 60; background: #17171d; border: 1px solid var(--line-strong); border-radius: var(--radius);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5); padding: 8px;
 }
+.menu-popover { min-width: 220px; }
 .model-popover { width: min(520px, calc(100vw - 24px)); max-height: min(560px, 70dvh); display: flex; flex-direction: column; gap: 8px; }
-.panel .model-popover { left: calc(100% + 12px); top: -200px; }
-.dock .popover { bottom: calc(100% + 8px); left: 0; }
-.menu-popover { min-width: 220px; top: calc(100% + 6px); left: 0; }
-.panel .menu-popover { left: auto; right: 0; }
 .popover-search { display: flex; align-items: center; gap: 8px; padding: 4px 8px; height: 38px; border-radius: 9px; background: var(--surface-2); color: var(--text-muted); }
 .popover-search input, .search-field input { flex: 1; border: 0; outline: 0; background: none; color: var(--text); min-width: 0; }
 .model-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; display: grid; gap: 2px; }
@@ -135,6 +132,5 @@
   .panel { overflow: visible; }
   .panel-body { overflow: visible; }
   .panel-foot { position: sticky; bottom: 64px; z-index: 5; border-radius: 0 0 var(--radius-l) var(--radius-l); }
-  .panel .model-popover { left: 0; top: calc(100% + 6px); }
   .stage { min-height: 60dvh; }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { modelHasKey, type CatalogModel, type MediaKind } from "@ima2/studio-kit";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
@@ -58,6 +58,7 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
 
 export function ModelPicker({ models, kind, value, onChange, variant = "row", tasks }: Props) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState("");
   const [vendor, setVendor] = useState<string | null>(null);
   const ofKind = useMemo(
@@ -70,12 +71,12 @@ export function ModelPicker({ models, kind, value, onChange, variant = "row", ta
   const close = () => setOpen(false);
   return (
     <div className={"picker picker-" + variant}>
-      <button type="button" className="picker-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={"Model: " + (current?.label ?? "none")} onClick={() => setOpen(!open)}>
+      <button ref={trigger} type="button" className="picker-trigger" aria-haspopup="dialog" aria-expanded={open} aria-label={"Model: " + (current?.label ?? "none")} onClick={() => setOpen(!open)}>
         {variant === "row" ? <span className="setting-caption">Model</span> : <span className="model-mark small" aria-hidden>{current?.vendor.charAt(0).toUpperCase() ?? "?"}</span>}
         <span className="setting-value">{current?.label ?? "Choose a model"}</span>
-        <Icon name={variant === "row" ? "chevron" : "chevron"} size={16} />
+        <Icon name="chevron" size={16} />
       </button>
-      <Popover open={open} onClose={close} label="Choose a model" className="model-popover">
+      <Popover open={open} onClose={close} label="Choose a model" className="model-popover" anchor={trigger} placement={variant === "row" ? "right" : "top"}>
         <div className="popover-search">
           <Icon name="search" />
           <input autoFocus type="search" placeholder="Search models" aria-label="Search models" value={query} onChange={(e) => setQuery(e.target.value)} />

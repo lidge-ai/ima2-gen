@@ -1,36 +1,73 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
+
+export type Placement = "bottom" | "top" | "right";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   label: string;
   children: ReactNode;
+  anchor: RefObject<HTMLElement | null>;
+  placement?: Placement;
   className?: string;
 }
 
-/** Anchored panel that closes on Escape and outside clicks, and returns focus to the trigger. */
-export function Popover({ open, onClose, label, children, className }: Props) {
+const MARGIN = 8;
+
+function place(anchor: DOMRect, panel: DOMRect, placement: Placement): CSSProperties {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const fitsRight = anchor.right + 12 + panel.width <= vw - MARGIN;
+  const side = placement === "right" && !fitsRight ? "bottom" : placement;
+  const clampX = (x: number) => Math.max(MARGIN, Math.min(x, vw - panel.width - MARGIN));
+  const clampY = (y: number) => Math.max(MARGIN, Math.min(y, vh - panel.height - MARGIN));
+  if (side === "right") return { left: anchor.right + 12, top: clampY(anchor.top + anchor.height / 2 - panel.height / 2) };
+  const below = anchor.bottom + 6;
+  const above = anchor.top - 6 - panel.height;
+  const top = side === "top" ? (above >= MARGIN ? above : below) : below + panel.height <= vh - MARGIN ? below : Math.max(MARGIN, above);
+  return { left: clampX(anchor.left), top };
+}
+
+/** Floating panel attached to its trigger. Rendered in body so scroll containers never clip it. */
+export function Popover({ open, onClose, label, children, anchor, placement = "bottom", className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (!anchor.current || !ref.current) return;
+      setStyle(place(anchor.current.getBoundingClientRect(), ref.current.getBoundingClientRect(), placement));
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open, anchor, placement]);
   useEffect(() => {
     if (!open) return;
-    const previous = document.activeElement as HTMLElement | null;
+    const trigger = anchor.current;
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } };
     const onDown = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (ref.current && !ref.current.contains(target) && !ref.current.parentElement?.contains(target)) onClose();
+      if (!ref.current?.contains(target) && !trigger?.contains(target)) onClose();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown);
-      previous?.focus?.();
+      if (trigger && document.activeElement === document.body) trigger.focus();
     };
-  }, [open, onClose]);
+  }, [open, onClose, anchor]);
   if (!open) return null;
-  return (
-    <div ref={ref} className={"popover " + (className ?? "")} role="dialog" aria-label={label}>
+  return createPortal(
+    <div ref={ref} className={"popover " + (className ?? "")} role="dialog" aria-label={label} style={style}>
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }

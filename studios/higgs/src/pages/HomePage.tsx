@@ -8,7 +8,7 @@ const TOOLS: { path: string; icon: IconName; title: string; body: string; sample
   { path: "video", icon: "video", title: "Video", body: "Text or a first frame to a clip, with camera presets.", sample: "samples/slow-push.mp4", video: true },
   { path: "image", icon: "image", title: "Image", body: "Generate or edit stills with any image model.", sample: "samples/editorial.jpg", video: false },
   { path: "remix", icon: "remix", title: "Remix", body: "Keep a clip's motion and recast, swap or restyle it.", sample: "samples/orbit.mp4", video: true },
-  { path: "director", icon: "director", title: "Director", body: "Cast, locations and multi-shot scenes from a script.", sample: "samples/crane-up.mp4", video: true },
+  { path: "director", icon: "director", title: "Director", body: "Cast, locations and multi-shot scenes from a script.", sample: "samples/rain-neon.mp4", video: true },
 ];
 
 function KeyBanner() {
