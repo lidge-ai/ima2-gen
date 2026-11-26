@@ -45,6 +45,8 @@ const video: WireField = {
     maxDurationSec: 15,
   } as WireField,
   images = media("images", "Reference images", "image", true, 8);
+const OPENJUTSU = { name: "D3voz/openjutsu", url: "https://github.com/D3voz/openjutsu", license: "MIT" };
+const HENGE = { name: "alissonanjos/Henge", url: "https://github.com/alissonanjos/Henge", license: "MIT" };
 const render = slot("render", "Video edit", "video-to-video", "bytedance/seedance-2.5", [
   "bytedance/seedance-2.5-flash",
   "bytedance/seedance-2",
@@ -152,7 +154,10 @@ const base: WireWorkflow[] = [
       text("prompt", "Notes"),
       ...tail,
     ],
-    [slot("stylize", "Restyle the first frame", "image-to-image", "bytedance/seedream-5.5"), render],
+    [
+      { ...slot("stylize", "Restyle the first frame", "image-to-image", "bytedance/seedream-5.5"), description: "Redraws the source's first frame in the chosen style.", credits: [OPENJUTSU, HENGE] },
+      { ...render, description: "Remakes the source clip so it follows the restyled first frame.", credits: [OPENJUTSU] },
+    ],
   ),
   simple(
     "director-cast",

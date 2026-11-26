@@ -32,6 +32,11 @@ const SLOTS: Record<string, string> = {
   render: "영상 만들기", stylize: "첫 프레임 스타일 바꾸기", composite: "프레임에 피사체 넣기", edit: "구간별 스타일 바꾸기", image: "이미지", sound: "사운드",
 };
 
+const SLOT_TEXT: Record<string, string> = {
+  stylize: "원본의 첫 프레임을 고른 스타일로 다시 그려요.",
+  render: "다시 그린 첫 프레임을 따라 원본 영상을 새로 만들어요.",
+};
+
 export function koText(wire: WireWorkflow): WorkflowText {
   const [label, description] = LABELS[wire.id] ?? [undefined, undefined];
   const fields: Record<string, { label?: string; help?: string; options?: Record<string, string> }> = {};
@@ -42,5 +47,6 @@ export function koText(wire: WireWorkflow): WorkflowText {
     if (Object.keys(entry).length) fields[name] = entry;
   }
   const slots = Object.fromEntries(wire.slots.filter((s) => SLOTS[s.name]).map((s) => [s.name, SLOTS[s.name]!]));
-  return { ...(label ? { label } : {}), ...(description ? { description } : {}), fields, slots };
+  const slotDescriptions = Object.fromEntries(wire.slots.filter((s) => s.description && SLOT_TEXT[s.name]).map((s) => [s.name, SLOT_TEXT[s.name]!]));
+  return { ...(label ? { label } : {}), ...(description ? { description } : {}), fields, slots, slotDescriptions };
 }
