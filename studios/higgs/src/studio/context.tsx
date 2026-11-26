@@ -15,5 +15,5 @@ export function useStudioApi(): Studio {
 
 export function useStudio<T>(select: (state: StudioState) => T): T {
   const studio = useStudioApi();
-  return useSyncExternalStore(studio.subscribe, () => select(studio.getState()));
+  return select(useSyncExternalStore(studio.subscribe, studio.getState));
 }

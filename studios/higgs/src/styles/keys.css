@@ -1,0 +1,18 @@
+.keys-page { max-width: 1100px; padding-bottom: 48px; }
+.keys-page .page-head p { color: var(--text-muted); margin-top: 5px; }
+.keys-page .page-head label { display: grid; gap: 5px; color: var(--text-muted); }
+.keys-page input { min-width: 0; padding: 9px 10px; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-s); }
+.key-group { display: grid; gap: 10px; }
+.key-group h2 { margin-top: 12px; }
+.key-row { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(300px, 1fr); gap: 24px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.key-info, .key-controls { display: grid; align-content: start; gap: 8px; }
+.key-info p, .key-hint { color: var(--text-muted); }
+.key-info a { justify-self: start; }
+.key-status { color: var(--text-dim); font-size: 12px; }
+.key-controls label { color: var(--text-muted); font-size: 12px; }
+.key-input { display: flex; gap: 6px; }
+.key-input input { flex: 1; }
+.key-extra { display: grid; gap: 5px; }
+.key-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.key-result { color: var(--text-dim); }
+@media (max-width: 760px) { .key-row { grid-template-columns: 1fr; gap: 16px; } .keys-page .page-head label { width: 100%; } }
