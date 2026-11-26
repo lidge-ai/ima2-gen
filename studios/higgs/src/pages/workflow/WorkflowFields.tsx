@@ -1,55 +1,59 @@
 import { formatUsd, type WorkflowDef, type WorkflowInputSpec } from "@ima2/studio-kit";
 import { useState } from "react";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
+import { ModelName } from "../../ui/ModelName.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import { UploadSlot } from "../../ui/UploadSlot.tsx";
+import { VendorLogo } from "../../ui/VendorLogo.tsx";
 import type { WorkflowForm } from "./useWorkflow.ts";
 
-export function WorkflowInput({
+function TextWorkflowInput({
   input,
   form,
-  optionalSwitch = false,
+  optionalSwitch,
 }: {
   input: WorkflowInputSpec;
   form: WorkflowForm;
-  optionalSwitch?: boolean;
+  optionalSwitch: boolean;
 }) {
   const [enabled, setEnabled] = useState(!optionalSwitch);
-  if (input.kind === "text")
-    return (
-      <div className="workflow-input">
-        {optionalSwitch ? (
-          <label className="workflow-switch">
-            <span>Prompt</span>
-            <input
-              type="checkbox"
-              role="switch"
-              checked={enabled}
-              onChange={(e) => {
-                setEnabled(e.target.checked);
-                if (!e.target.checked) form.setTexts((old) => ({ ...old, [input.name]: "" }));
-              }}
-            />
-          </label>
-        ) : null}
-        {enabled ? (
-          <label className="field">
-            {input.label}
-            <textarea
-              rows={4}
-              value={form.texts[input.name] ?? ""}
-              placeholder={input.description}
-              onChange={(e) =>
-                form.setTexts((old) => ({
-                  ...old,
-                  [input.name]: e.target.value,
-                }))
-              }
-            />
-          </label>
-        ) : null}
-      </div>
-    );
+  return (
+    <div className="workflow-input">
+      {optionalSwitch ? (
+        <label className="workflow-switch">
+          <span>Prompt</span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={enabled}
+            onChange={(e) => {
+              setEnabled(e.target.checked);
+              if (!e.target.checked) form.setTexts((old) => ({ ...old, [input.name]: "" }));
+            }}
+          />
+        </label>
+      ) : null}
+      {enabled ? (
+        <label className="field">
+          {input.label}
+          <textarea
+            rows={4}
+            value={form.texts[input.name] ?? ""}
+            placeholder={input.description}
+            onChange={(e) =>
+              form.setTexts((old) => ({
+                ...old,
+                [input.name]: e.target.value,
+              }))
+            }
+          />
+        </label>
+      ) : null}
+    </div>
+  );
+}
+
+function FileWorkflowInput({ input, form }: { input: WorkflowInputSpec; form: WorkflowForm }) {
   const values = form.files[input.name] ?? [];
   const max = input.maxCount ?? 1;
   return (
@@ -79,6 +83,22 @@ export function WorkflowInput({
         ))}
       </div>
     </div>
+  );
+}
+
+export function WorkflowInput({
+  input,
+  form,
+  optionalSwitch = false,
+}: {
+  input: WorkflowInputSpec;
+  form: WorkflowForm;
+  optionalSwitch?: boolean;
+}) {
+  return input.kind === "text" ? (
+    <TextWorkflowInput input={input} form={form} optionalSwitch={optionalSwitch} />
+  ) : (
+    <FileWorkflowInput input={input} form={form} />
   );
 }
 
@@ -124,6 +144,14 @@ export function WorkflowParams({ def, form, chip = false }: { def: WorkflowDef; 
   );
 }
 
+function StepModelIcon({ id, form }: { id: string; form: WorkflowForm }) {
+  return (
+    <span aria-hidden="true">
+      <VendorLogo id={form.catalog?.models.find((m) => m.id === id)?.vendor ?? id.split("/")[0]} />
+    </span>
+  );
+}
+
 export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowForm }) {
   return (
     <div className="workflow-steps">
@@ -139,11 +167,15 @@ export function WorkflowSteps({ def, form }: { def: WorkflowDef; form: WorkflowF
                 options={step.modelChoices.map((id) => ({
                   value: id,
                   label: form.catalog?.models.find((m) => m.id === id)?.label ?? id,
+                  icon: <StepModelIcon id={id} form={form} />,
                 }))}
                 onChange={(model) => form.setSteps((old) => ({ ...old, [step.id]: { model } }))}
               />
             ) : (
-              <span>{step.label}</span>
+              <span>
+                {step.label}
+                {step.model ? <ModelName id={step.model} /> : null}
+              </span>
             )}
             <span className="muted">
               {estimate
