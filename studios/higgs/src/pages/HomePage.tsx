@@ -167,7 +167,7 @@ export function HomePage() {
   return (
     <div className="home">
       <KeyBanner />
-      <Showcase />
+      <Showcase limit={8} />
       <ToolRow />
       <RecentWork />
       <PresetRail />

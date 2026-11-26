@@ -18,10 +18,13 @@ const M = messages(
     result: "Result",
     cost: "About {usd} when it was made",
     noPrice: "Price not published",
+    included: "Included in the {plans} subscription",
     needs: "Needs a key:",
     ready: "Your keys can run this",
+    signIn: "Uses your {plans} sign-in",
     unavailable: "This workflow is not on this server",
     play: "Play {title}",
+    all: "All {count} clips",
   },
   {
     title: "ima2로 만든 영상",
@@ -32,12 +35,23 @@ const M = messages(
     result: "결과",
     cost: "만들 때 약 {usd}",
     noPrice: "가격 비공개",
+    included: "{plans} 구독에 포함",
     needs: "필요한 키:",
     ready: "내 키로 바로 만들 수 있어요",
+    signIn: "{plans} 로그인으로 실행",
     unavailable: "이 서버에 없는 워크플로예요",
     play: "{title} 재생",
+    all: "영상 {count}개 모두 보기",
   },
 );
+
+/** Showcase entries list subscription routes beside key vocabularies; those are sign-ins, not keys. */
+const SUBSCRIPTIONS: Readonly<Record<string, string>> = { "openai-oauth": "ChatGPT", "xai-oauth": "Grok" };
+
+function split(item: ShowcaseItem) {
+  const plans = item.keys.filter((k) => k in SUBSCRIPTIONS).map((k) => SUBSCRIPTIONS[k]!);
+  return { plans: plans.join(" · "), keys: item.keys.filter((k) => !(k in SUBSCRIPTIONS)) };
+}
 
 /** Autoplay only where it costs nothing the person did not choose: on screen, motion allowed, data not saved. */
 function autoplayAllowed(): boolean {
@@ -94,20 +108,39 @@ function KeysLine({ item }: { item: ShowcaseItem }) {
   const t = useT(M);
   const keys = useStudio((s) => s.keys);
   const providers = useStudio((s) => s.catalog?.providers ?? []);
-  const missing = item.keys.filter((vocab) => !keys.some((k) => k.keyVocabulary === vocab && k.configured));
-  if (!item.keys.length) return null;
-  if (!missing.length) return <p className="showcase-keys is-ready">{t("ready")}</p>;
+  const needed = split(item);
+  const missing = needed.keys.filter((vocab) => !keys.some((k) => k.keyVocabulary === vocab && k.configured));
+  const signIn = needed.plans ? <p className="showcase-keys">{t("signIn", { plans: needed.plans })}</p> : null;
+  if (!needed.keys.length) return signIn;
+  if (!missing.length)
+    return (
+      <>
+        <p className="showcase-keys is-ready">{t("ready")}</p>
+        {signIn}
+      </>
+    );
   return (
-    <p className="showcase-keys">
-      {t("needs")}{" "}
-      {missing.map((vocab, i) => (
-        <span key={vocab}>
-          {i ? ", " : ""}
-          <a href={href("keys", { focus: vocab })}>{providers.find((p) => p.keyVocabulary === vocab)?.label ?? vocab}</a>
-        </span>
-      ))}
-    </p>
+    <>
+      <p className="showcase-keys">
+        {t("needs")}{" "}
+        {missing.map((vocab, i) => (
+          <span key={vocab}>
+            {i ? ", " : ""}
+            <a href={href("keys", { focus: vocab })}>{providers.find((p) => p.keyVocabulary === vocab)?.label ?? vocab}</a>
+          </span>
+        ))}
+      </p>
+      {signIn}
+    </>
   );
+}
+
+function costText(item: ShowcaseItem, t: (key: keyof typeof M.en, vars?: Record<string, string>) => string): string {
+  const usd = item.estimate?.usd;
+  if (usd === null || usd === undefined) return t("noPrice");
+  const plans = split(item).plans;
+  if (usd === 0 && plans) return t("included", { plans });
+  return t("cost", { usd: "$" + usd.toFixed(2) });
 }
 
 function Tile({ item }: { item: ShowcaseItem }) {
@@ -124,7 +157,6 @@ function Tile({ item }: { item: ShowcaseItem }) {
     if (item.source) handOff({ url: item.source, mimeType: "video/mp4", name: item.id + "-source.mp4", target: "remix", ...(item.values ? { values: item.values } : {}) });
     navigate("remix/" + workflow.id);
   };
-  const usd = item.estimate?.usd;
   return (
     <article className="showcase-tile" ref={ref} aria-label={title} {...bind}>
       <div className={"showcase-media" + (compare && !item.compare && item.source ? " is-compare" : "")}>
@@ -153,7 +185,7 @@ function Tile({ item }: { item: ShowcaseItem }) {
           ))}
         </p>
         <p className="showcase-cost" title={item.estimate?.basis}>
-          {usd === null || usd === undefined ? t("noPrice") : t("cost", { usd: "$" + usd.toFixed(2) })}
+          {costText(item, t)}
         </p>
         <KeysLine item={item} />
         <div className="showcase-actions">
@@ -172,11 +204,12 @@ function Tile({ item }: { item: ShowcaseItem }) {
   );
 }
 
-/** Showcase grid; renders nothing when the server has no showcase items. */
-export function Showcase({ heading = true }: { heading?: boolean }) {
+/** Showcase grid; renders nothing when the server has no showcase items. With a limit, links to the full gallery. */
+export function Showcase({ heading = true, limit }: { heading?: boolean; limit?: number }) {
   const t = useT(M);
-  const items = useStudio((s) => s.showcase);
-  if (!items.length) return null;
+  const all = useStudio((s) => s.showcase);
+  if (!all.length) return null;
+  const items = limit ? all.slice(0, limit) : all;
   return (
     <section className="showcase" aria-labelledby={heading ? "showcase-title" : undefined} aria-label={heading ? undefined : t("title")}>
       {heading ? (
@@ -185,6 +218,11 @@ export function Showcase({ heading = true }: { heading?: boolean }) {
             <h2 id="showcase-title">{t("title")}</h2>
             <p className="muted">{t("lead")}</p>
           </div>
+          {items.length < all.length ? (
+            <a className="muted-link" href={href("remix")}>
+              {t("all", { count: all.length })} <Icon name="arrowRight" size={13} />
+            </a>
+          ) : null}
         </div>
       ) : null}
       <div className={"showcase-grid" + (items.length <= 2 ? " is-few" : "")}>
