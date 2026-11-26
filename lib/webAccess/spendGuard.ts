@@ -9,7 +9,8 @@ import type { MediaModelSpec, MediaPrice, MediaSubmitRequest } from "../provider
  * job is charged its estimate up front (no refunds: a failed upstream job may
  * still bill), so the daily total is an upper bound on real spend.
  */
-export interface SpendEstimate { usd: number | null; basis: "exact" | "upper-bound" }
+/** "estimate": a formula from official unit prices (e.g. Seedance tokens); the bill can differ. */
+export interface SpendEstimate { usd: number | null; basis: "exact" | "upper-bound" | "estimate" }
 export interface SpendEntry { at: string; requestId: string; model: string; email: string; usd: number; basis: SpendEstimate["basis"] }
 export interface SpendGuardOptions { dailyCapUsd: number; requestCapUsd: number; ledgerFile: string; timeZone: string; now?: () => number }
 interface Ledger { version: 1; days: Record<string, { spentUsd: number; entries: SpendEntry[] }> }

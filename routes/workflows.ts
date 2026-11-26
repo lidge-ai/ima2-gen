@@ -23,6 +23,15 @@ export interface WorkflowRouteOptions {
   sessionRoutes?: Readonly<Record<string, SessionRoute>>;
 }
 
+/**
+ * Subscription routes for workflow steps. The shared web instance offers none: remote people must
+ * not run on the owner's ChatGPT or Grok sign-in, and its spend guard only admits priced key routes,
+ * so slots fall back to the next keyed model (e.g. Seedream for image stages).
+ */
+export function workflowSessionRoutes(ctx: RuntimeContext): Readonly<Record<string, SessionRoute>> {
+  return ctx.webAccess ? {} : createSessionRoutes(ctx);
+}
+
 function sendWorkflowError(res: Response, error: unknown): void {
   if (error instanceof WorkflowError) {
     res.status(error.status).json({ ok: false, code: error.code, error: error.message, status: error.status, category: error.options.category ?? "invalid-request", retryable: error.options.retryable ?? false, ...(error.options.field ? { field: error.options.field } : {}) });
@@ -54,7 +63,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
   const deps = () => mediaRunnerDeps(ctx, options.deps);
   const local = options.local ?? createFfmpegLocalOps();
   const planText = options.planText ?? createOAuthPlanText(ctx);
-  const sessionRoutes = options.sessionRoutes ?? createSessionRoutes(ctx);
+  const sessionRoutes = options.sessionRoutes ?? workflowSessionRoutes(ctx);
   const engineDeps = async (d: MediaRunnerDeps): Promise<WorkflowDeps> => ({ gateway: await createWorkflowGateway(d, { planText, sessionRoutes }), local, allowedRoots: [d.inputsDir, d.generatedDir] });
   const find = (id: string) => {
     const def = workflows.find((w) => w.id === id);
@@ -92,7 +101,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
       const webUser = typeof res.locals.webUser?.email === "string" ? res.locals.webUser.email as string : undefined;
       if (ctx.webAccess?.spend) {
         const usd = prepared.estimate.complete ? prepared.estimate.usd : null;
-        await ctx.webAccess.spend.admit({ requestId, model: "workflow:" + prepared.definition.id, email: webUser ?? "unknown", estimate: { usd, basis: "exact" } });
+        await ctx.webAccess.spend.admit({ requestId, model: "workflow:" + prepared.definition.id, email: webUser ?? "unknown", estimate: { usd, basis: prepared.estimate.approximate ? "estimate" : "exact" } });
       }
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
       const runsDir = join(ctx.config.storage.configDir, "workflow-runs");

@@ -136,6 +136,8 @@ export interface StepEstimate {
   source?: string;
   checkedAt?: string;
   note?: string;
+  /** True when the number is an estimate (a formula from official unit prices, or the highest listed variant). */
+  approximate?: boolean;
 }
 
 export interface WorkflowEstimate {
@@ -143,6 +145,8 @@ export interface WorkflowEstimate {
   usd: number;
   /** False when any paid step has no public price. */
   complete: boolean;
+  /** True when any step's number is an estimate rather than a published per-unit price times a known quantity. */
+  approximate?: boolean;
   steps: readonly StepEstimate[];
 }
 
@@ -198,6 +202,8 @@ export interface MediaStep extends StepBase {
   route?: string;
   outputKind: MediaKind;
   units: CostUnits;
+  /** Set when units come from a formula rather than the request itself; the reason is shown with the estimate. */
+  unitsApproximate?: string;
   build(rt: StepRuntime): Promise<MediaSubmitRequest>;
 }
 export interface LocalStep extends StepBase {
@@ -223,6 +229,8 @@ export interface PlanEnv {
   canRun?(modelId: string, route: string | undefined): boolean;
   /** Whether the gateway offers planText (captions, shot plans). */
   canPlanText?: boolean;
+  /** Label of the subscription behind a session route (e.g. "ChatGPT subscription"); undefined for keyed routes. */
+  subscription?(route: string): string | undefined;
 }
 
 export interface WorkflowDefinition {
@@ -291,6 +299,8 @@ export interface WorkflowGateway {
   planText?(request: TextPlanRequest, signal: AbortSignal): Promise<unknown>;
   /** Whether a model can run now (a saved key or a session route). Absent: every listed model counts as runnable. */
   canRun?(modelId: string, route: string | undefined): boolean;
+  /** Label of the subscription behind a session route; undefined for keyed routes. */
+  subscription?(route: string): string | undefined;
 }
 
 export interface ProbeResult {
