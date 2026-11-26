@@ -11,7 +11,7 @@ const root = await mkdtemp(join(tmpdir(), "ima2-media-contract-"));
 for (const name of ["open", "xdg-open", "explorer"]) {
   const path = join(root, name); await writeFile(path, "#!/bin/sh\nexit 0\n"); await chmod(path, 0o755);
 }
-test.after(() => rm(root, { recursive: true, force: true }));
+test.after(() => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 async function cli(base: string, args: string[], stdin = "") {
   const child = spawn(process.execPath, ["--import", "tsx", "bin/ima2.ts", "media", ...args, "--server", base], {
     env: { PATH: `${root}:${process.env.PATH}`, TMPDIR: process.env.TMPDIR, NO_COLOR: "1", HOME: root, USERPROFILE: root,
