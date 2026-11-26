@@ -1,5 +1,5 @@
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
-import { assertAllowed, findModel, httpJson, invalidRequest, MediaHttpError, normalizeMediaError, protocolError, readVendorOptions, requireInput, requireUrl } from "./l3-http.js";
+import { assertAllowed, findModel, httpJson, invalidRequest, MediaHttpError, normalizeMediaError, protocolError, readVendorOptions, redact, requireInput, requireUrl } from "./l3-http.js";
 
 const base = "https://api.sync.so/v2";
 const docsUrl = "https://sync.so/docs/api-reference/api/generate-api/create";
@@ -54,8 +54,9 @@ function stateOf(ctx: MediaAdapterContext, data: Record<string, unknown>): Media
     return { status: "succeeded", outputs: [{ kind: "video", url: data.outputUrl, mimeType: "video/mp4" }] };
   }
   if (data.status === "FAILED" || data.status === "REJECTED" || data.status === "NO_OP") {
-    const message = typeof data.error === "string" && data.error ? data.error.split(ctx.apiKey).join("[redacted]") : "Sync generation failed";
-    return { status: "failed", error: { code: `SYNC_${data.status}`, message, category: data.status === "REJECTED" ? "invalid-request" : "upstream", retryable: false, providerState: data.status } };
+    const message = typeof data.error === "string" && data.error ? redact(data.error, [ctx.apiKey]) : "Sync generation failed";
+    const reason = typeof data.errorCode === "string" && /^[a-z0-9_]+$/i.test(data.errorCode) ? data.errorCode.toUpperCase() : data.status;
+    return { status: "failed", error: { code: `SYNC_${reason}`, message, category: data.status === "REJECTED" ? "invalid-request" : "upstream", retryable: false, providerState: data.status } };
   }
   throw protocolError("Unknown Sync generation status");
 }
@@ -74,11 +75,12 @@ export const adapter: MediaProviderAdapter = {
       const input = [{ type: "video", url: requireUrl(requireInput(request, "source-video")) }, { type: "audio", url: requireUrl(requireInput(request, "source-audio")) }];
       const data = await httpJson(ctx, "Sync generation", `${ctx.baseUrl ?? base}/generate`, { method: "POST", headers: { "x-api-key": ctx.apiKey }, json: { model: model.upstreamId, input, ...(Object.keys(options).length ? { options } : {}) } });
       if (typeof data.id !== "string" || !data.id) throw protocolError("Generation response missing id");
-      return { providerJobId: data.id };
+      return { providerJobId: data.id, pollAfterMs: 5_000 };
     });
   },
   async poll(ctx, job: MediaJobRef) {
     return safe(ctx, async () => stateOf(ctx, await httpJson(ctx, "Sync generation", `${ctx.baseUrl ?? base}/generate/${encodeURIComponent(job.providerJobId)}`, { headers: { "x-api-key": ctx.apiKey } })));
   },
-  normalizeError(error) { const result = normalizeMediaError("SYNC", error); return { ...result, message: "Sync provider request failed" }; },
+  // Messages are scrubbed where they are raised (httpRaw, safe), so the vendor detail can reach the user.
+  normalizeError: (error) => normalizeMediaError("SYNC", error),
 };
