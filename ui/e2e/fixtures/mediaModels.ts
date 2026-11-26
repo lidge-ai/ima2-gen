@@ -238,3 +238,13 @@ export async function installMediaFixture(context: BrowserContext, options: { ke
   await context.route("**/*", handler);
   return fixture;
 }
+
+/** A history row as GET /api/history lists a media result, with the provenance fields the server adds. */
+export function mediaHistoryRow(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return { filename: "l11-flux.png", url: "/generated/l11-flux.png", thumb: null, mediaType: "image", createdAt: 1_795_700_000_000,
+    prompt: "a lighthouse at dusk, film grain", userPrompt: "a lighthouse at dusk, film grain", revisedPrompt: null, quality: null, size: null, format: "png",
+    provider: "media:fal", adapter: "fal", route: "aggregator", model: "black-forest-labs/flux-2-pro", elapsed: 12.4, usage: null, webSearchCalls: 0,
+    sessionId: "wp02-session", requestId: "media_fixture_1", kind: "image",
+    media: { task: "text-to-image", durationSec: null, resolution: "2K", aspectRatio: "16:9", seed: 7, audio: null, inputRoles: [] },
+    billed: { usd: 0.07 }, estimate: { usd: 0.07, basis: "exact" }, ...over };
+}

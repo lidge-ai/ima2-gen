@@ -570,7 +570,12 @@
       "prompt": "저장된 프롬프트",
       "revisedPrompt": "수정된 프롬프트",
       "composerPrompt": "작성기 프롬프트",
-      "insertedPrompts": "삽입된 프롬프트"
+      "insertedPrompts": "삽입된 프롬프트",
+      "mediaRoute": "경로",
+      "mediaOn": "켬",
+      "mediaBilled": "청구액 (제공업체 보고)",
+      "mediaEstimate": "제출 시 예상 비용",
+      "mediaCeiling": "제출 시 예상 비용 (최대)"
     }
   },
   "starPrompt": {
@@ -1209,7 +1214,12 @@
     "upscaleInvalid": "업스케일 파라미터가 올바르지 않습니다",
     "editVideo": "영상 편집",
     "editVideoTitle": "프롬프트로 이 영상을 수정합니다 (grok-imagine-video)",
-    "editVideoPrompt": "영상을 어떻게 바꿀까요? 예: 옷을 빨간색으로"
+    "editVideoPrompt": "영상을 어떻게 바꿀까요? 예: 옷을 빨간색으로",
+    "remake": "다시 만들기",
+    "remakeTitle": "이 결과의 모델, 경로, 설정, 프롬프트를 복원해요. 생성을 누르기 전에는 아무것도 보내지 않아요.",
+    "remakeReady": "모델, 설정, 프롬프트를 복원했어요. 예상 비용을 확인하고 생성을 눌러 주세요.",
+    "remakeNeedsImages": "모델, 설정, 프롬프트를 복원했어요. 이 결과는 이미지로 만들었으니 생성 전에 이미지를 다시 넣어 주세요.",
+    "remakeModelGone": "이 모델은 이제 카탈로그에 없어서 여기서 다시 만들 수 없어요."
   },
   "session": {
     "switchTitle": "세션 전환",

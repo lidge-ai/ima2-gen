@@ -15,6 +15,7 @@ import { listMcpProviders } from "../lib/mcpProviders";
 import type { GenerateItem } from "../types";
 import { handleError } from "../lib/errorHandler";
 import { resolveErrorSpec } from "../lib/errorCodes";
+import { isMediaResult } from "../lib/mediaResult";
 
 interface ResultActionsProps { imageOverride?: GenerateItem | null; onAfterDeleteFocus?: () => void }
 
@@ -38,6 +39,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
   const trashHistoryItem = useAppStore((s) => s.trashHistoryItem);
   const saveToAssetsAction = useAppStore((s) => s.saveToAssets);
   const permanentlyDeleteHistoryItemByClick = useAppStore((s) => s.permanentlyDeleteHistoryItemByClick);
+  const remakeMediaResult = useAppStore((s) => s.remakeMediaResult);
   const canvasOpen = useAppStore((s) => s.canvasOpen);
   const openCanvas = useAppStore((s) => s.openCanvas);
   const [comfyExporting, setComfyExporting] = useState(false);
@@ -485,6 +487,15 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       >
         {t("result.firstNode")}
       </button>
+      {isMediaResult(actionImage) && (
+        <button
+          type="button" className="action-btn"
+          onClick={() => void remakeMediaResult(actionImage)}
+          title={t("result.remakeTitle")}
+        >
+          {t("result.remake")}
+        </button>
+      )}
       <button
         type="button" className="action-btn"
         onClick={() => setMetadataOpen(true)}

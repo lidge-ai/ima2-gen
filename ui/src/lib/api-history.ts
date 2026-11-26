@@ -60,6 +60,12 @@ export type HistoryItem = {
   sequenceIndex?: number | null;
   sequenceTotalRequested?: number | null;
   sequenceTotalReturned?: number | null;
+  /** Media route provenance (lib/providers/media sidecars); absent on rows from other lanes and older servers. */
+  adapter?: string | null;
+  route?: "direct" | "aggregator" | string | null;
+  media?: import("./mediaResult").MediaResultSettings | null;
+  billed?: { usd?: number; units?: number; unit?: string } | null;
+  estimate?: { usd: number | null; basis: string } | null;
   sequenceStatus?: "complete" | "partial" | "empty" | null;
 };
 

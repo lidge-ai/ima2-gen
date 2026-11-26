@@ -43,6 +43,8 @@ export interface MediaSelectionState {
   mediaKeyPrompt: string | null;
   promptMediaKey: (failure: import("./mediaFailure").MediaFailure) => void;
   closeMediaKeyPrompt: () => void;
+  /** Restores a media result's model, route, settings and prompt so it can be generated again. Nothing is sent. */
+  remakeMediaResult: (item: import("../types").GenerateItem) => Promise<void>;
 }
 
 export type AdjustedField = "task" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed" | "negativePrompt";

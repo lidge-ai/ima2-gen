@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { mediaHistoryRow } from "../fixtures/mediaModels";
 import { openCreateScreen, openStaticApp, type StaticApp, type StaticLocale } from "../fixtures/staticClassicApp";
 
 // Render capture for the classic media model surfaces: screen x state x width x locale.
@@ -170,6 +171,33 @@ for (const locale of LOCALES) {
       try {
         await openCreateScreen(app.page);
         await captureKeysAndFailures(new Stage(app, width, locale));
+      } finally { await app.close(); }
+    });
+  }
+}
+
+for (const locale of LOCALES) {
+  for (const width of WIDTHS) {
+    test("capture results " + locale + " " + width, async ({ browser }) => {
+      test.setTimeout(120_000);
+      await mkdir(OUT, { recursive: true });
+      const app = await openStaticApp(browser, { locale, viewport: { width, height: HEIGHT[width] ?? 900 }, storage: { "ima2.selectedFilename": "l11-flux.png" } });
+      app.media.history.push(mediaHistoryRow());
+      try {
+        await openCreateScreen(app.page);
+        const stage = new Stage(app, width, locale);
+        const actions = app.page.locator(".result-actions:visible").first();
+        await expect(actions).toBeVisible();
+        await stage.shot("result");
+        await actions.locator(".action-btn", { hasText: /Info|정보/ }).first().click();
+        await expect(app.page.locator(".metadata-modal")).toBeVisible();
+        await stage.shot("result-details");
+        await app.page.keyboard.press("Escape");
+        await actions.locator(".action-btn", { hasText: /Make again|다시 만들기/ }).first().click();
+        await expect(app.page.locator(".toast").first()).toBeVisible();
+        await stage.shot("result-make-again");
+        if (!stage.mobile) await stage.card.screenshot({ path: join(OUT, "result-make-again-crop__" + width + "__" + locale + ".png") });
+        expect(app.errors).toEqual([]);
       } finally { await app.close(); }
     });
   }

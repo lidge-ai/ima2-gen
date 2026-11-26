@@ -570,7 +570,12 @@
       "prompt": "存储提示",
       "revisedPrompt": "修改提示",
       "composerPrompt": "作曲家提示",
-      "insertedPrompts": "插入的提示"
+      "insertedPrompts": "插入的提示",
+      "mediaRoute": "线路",
+      "mediaOn": "开",
+      "mediaBilled": "计费金额（提供商报告）",
+      "mediaEstimate": "提交时的预计费用",
+      "mediaCeiling": "提交时的预计费用（上限）"
     }
   },
   "starPrompt": {
@@ -1209,7 +1214,12 @@
     "upscaleInvalid": "无效的高档参数",
     "editVideo": "编辑视频",
     "editVideoTitle": "用提示词修改此视频（grok-imagine-video）",
-    "editVideoPrompt": "想如何修改这段视频？例如：把衣服改成红色"
+    "editVideoPrompt": "想如何修改这段视频？例如：把衣服改成红色",
+    "remake": "再次生成",
+    "remakeTitle": "恢复此结果的模型、线路、设置和提示词。按下生成之前不会发送任何内容。",
+    "remakeReady": "已恢复模型、设置和提示词。请确认预计费用后按生成。",
+    "remakeNeedsImages": "已恢复模型、设置和提示词。此结果由图片生成，生成前请重新添加图片。",
+    "remakeModelGone": "目录里已没有此模型，无法在这里再次生成。"
   },
   "session": {
     "switchTitle": "切换会话",

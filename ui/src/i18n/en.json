@@ -570,7 +570,12 @@
       "prompt": "Stored prompt",
       "revisedPrompt": "Revised prompt",
       "composerPrompt": "Composer prompt",
-      "insertedPrompts": "Inserted prompts"
+      "insertedPrompts": "Inserted prompts",
+      "mediaRoute": "Route",
+      "mediaOn": "On",
+      "mediaBilled": "Billed (reported by the provider)",
+      "mediaEstimate": "Estimate at submit",
+      "mediaCeiling": "Estimate at submit (at most)"
     }
   },
   "starPrompt": {
@@ -1209,7 +1214,12 @@
     "upscaleInvalid": "Invalid upscale parameters",
     "editVideo": "Edit video",
     "editVideoTitle": "Change this video with a prompt (grok-imagine-video)",
-    "editVideoPrompt": "What should change in this video? e.g. make the outfit red"
+    "editVideoPrompt": "What should change in this video? e.g. make the outfit red",
+    "remake": "Make again",
+    "remakeTitle": "Restore this result's model, route, settings and prompt. Nothing is sent until you press Generate.",
+    "remakeReady": "Model, settings and prompt restored. Check the estimate, then press Generate.",
+    "remakeNeedsImages": "Model, settings and prompt restored. This result was made from images: add them again before generating.",
+    "remakeModelGone": "This model is no longer in the catalog, so it cannot be made again here."
   },
   "session": {
     "switchTitle": "Switch session",
