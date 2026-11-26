@@ -42,7 +42,8 @@ test("L11-K1 a key is entered beside the model, checked before it is saved, and 
   await expect(entry).toContainText("ChatGPT and Grok sign-in models need no key.");
   await expect(generate(page)).toHaveAttribute("aria-disabled", "true");
   await expect(hint(page)).toHaveText("Add a Kling API key to generate.");
-  await generate(page).click();
+  // The button is aria-disabled, not disabled: it stays reachable so its reason is read out, and pressing it does nothing.
+  await generate(page).click({ force: true });
   expect(media.submissions).toEqual([]);
 
   media.keyVerdict = "reject";
@@ -88,7 +89,8 @@ test("L11-K3 images that do not fit the task hold Generate back with the reason"
   await card(page).getByRole("button", { name: "From an image", exact: true }).click();
   await expect(hint(page)).toHaveText("This task needs at least 1 image in the composer (now 0).");
   await expect(generate(page)).toHaveAttribute("aria-disabled", "true");
-  await generate(page).click();
+  // The button is aria-disabled, not disabled: it stays reachable so its reason is read out, and pressing it does nothing.
+  await generate(page).click({ force: true });
   expect(media.submissions).toEqual([]);
   await card(page).getByRole("button", { name: "From text", exact: true }).click();
   await expect(generate(page)).not.toHaveAttribute("aria-disabled", "true");
