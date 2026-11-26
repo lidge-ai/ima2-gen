@@ -80,7 +80,7 @@ export async function jobStatus(base: string, id: string) {
 }
 export function jobs(base: string, all = false) { return call<Dict>(base, `/api/media/jobs${all ? "?status=all" : ""}`); }
 export function cancel(base: string, id: string) { return post<Dict>(base, `/api/media/${enc(id)}/cancel`, {}); }
-async function ensureUnused(base: string, id: string): Promise<void> {
+export async function ensureRequestIdUnused(base: string, id: string): Promise<void> {
   let found = false;
   try { await jobStatus(base, id); found = true; }
   catch (error) { const e = toMediaApiError(error); if (e.code !== "MEDIA_JOB_UNKNOWN" || e.status !== 404) throw e; }
@@ -93,14 +93,14 @@ async function ensureUnused(base: string, id: string): Promise<void> {
 type SubmitOptions = WaitOptions & { requestId?: string; wait: boolean };
 async function submit(base: string, path: string, body: Dict, options: SubmitOptions, checked = false): Promise<Dict> {
   const id = options.requestId ?? `media_${randomUUID()}`;
-  if (options.requestId && !checked) await ensureUnused(base, id);
+  if (options.requestId && !checked) await ensureRequestIdUnused(base, id);
   if (!options.wait) return post<Dict>(base, path, { ...body, requestId: id });
   const stream = await openMediaSse(base, options.signal);
   try { await post(base, path, { ...body, requestId: id }); return await waitForJob(stream, id, options); }
   finally { stream.close(); }
 }
 export async function submitMedia(base: string, body: Dict, options: SubmitOptions) {
-  if (options.requestId) await ensureUnused(base, options.requestId);
+  if (options.requestId) await ensureRequestIdUnused(base, options.requestId);
   const normalized = normalizeMediaBody(body);
   if (Array.isArray(normalized.inputs)) normalized.inputs = await uploadInputs(base, normalized.inputs as Input[]);
   return submit(base, "/api/media", normalized, options, true);
@@ -170,7 +170,7 @@ export async function workflowEstimate(base: string, id: string, values: Dict, s
   return post<Dict>(base, `/api/workflows/${enc(id)}/estimate`, { values: await workflowValues(base, values), selection });
 }
 export async function workflowRun(base: string, id: string, values: Dict, selection: Dict, options: SubmitOptions) {
-  if (options.requestId) await ensureUnused(base, options.requestId);
+  if (options.requestId) await ensureRequestIdUnused(base, options.requestId);
   return submit(base, `/api/workflows/${enc(id)}`, { values: await workflowValues(base, values), selection }, options, true);
 }
 export function tools(base: string) { return call<Dict>(base, "/api/media/tools"); }
