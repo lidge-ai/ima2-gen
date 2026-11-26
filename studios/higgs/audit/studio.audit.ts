@@ -80,6 +80,16 @@ const prompt = (text: string): Act => async (page) => {
 const tab = (key: number): Act => async (page) => {
   for (let i = 0; i < key; i++) await page.keyboard.press("Tab");
 };
+/** Six showcase clips (the fake's two, repeated) so Home shows the grid, not the wide 1–2 clip cards. */
+const sixClips: Act = async (page) => {
+  await page.route("**/api/showcase", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as { items: Record<string, unknown>[] };
+    const items = Array.from({ length: 6 }, (_, i) => ({ ...body.items[i % body.items.length]!, id: "audit-clip-" + i }));
+    await route.fulfill({ response, json: { items } });
+  });
+};
+const showcaseTile = (page: Page) => page.locator(".showcase-tile").nth(1);
 
 const PRISTINE: Cell[] = [
   { id: "home__nokeys", hash: "/", setup: noKeys },
@@ -152,6 +162,18 @@ const PRISTINE: Cell[] = [
     },
   },
   { id: "notfound__route", hash: "/does-not-exist" },
+  { id: "home__showcase-grid", hash: "/", setup: sixClips, act: async (p) => p.mouse.move(0, 0) },
+  { id: "home__showcase-hover", hash: "/", setup: sixClips, act: async (p) => { await showcaseTile(p).hover(); await p.waitForTimeout(400); } },
+  {
+    id: "home__showcase-tap",
+    hash: "/",
+    setup: sixClips,
+    act: async (p) => {
+      await showcaseTile(p).locator(".showcase-peek").click();
+      await p.mouse.move(0, 0);
+      await p.waitForTimeout(400);
+    },
+  },
 ];
 
 test("pristine screens", async ({ browser }) => {
