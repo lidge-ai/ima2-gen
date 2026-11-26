@@ -12,7 +12,6 @@ import { ensureFreshUiDist } from "./lib/ui-build.js";
 import { renderHelp } from "./lib/helpText.js";
 import { detectCodexAuth } from "../lib/codexDetect.js";
 import { resolveChatgptSession } from "../lib/chatgptAuth.js";
-
 import { errInfo } from "../lib/errInfo.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -21,7 +20,6 @@ try {
   const metadata = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
   if (metadata && typeof metadata.version === "string" && typeof metadata.name === "string") pkg = metadata;
 } catch { /* best-effort: package.json metadata is optional; keep the placeholder version */ }
-
 // Installation diagnosis must run before any account/config initialization.
 if (process.argv[2] === "doctor" && process.argv.slice(3).includes("--installation")) {
   const options = process.argv.slice(3);
@@ -40,7 +38,6 @@ if (process.argv[2] === "doctor" && process.argv.slice(3).includes("--installati
   console.log(options.includes("--json") ? JSON.stringify(report) : renderDoctorReport(report));
   exitFlushed(report.summary.exitCode);
 }
-
 const { config: runtimeConfig } = await import("../config.js");
 const { doctor } = await import("./commands/doctor.js");
 const { maybePromptGithubStar } = await import("./lib/star-prompt.js");
@@ -48,11 +45,9 @@ const { maybePromptGithubStar } = await import("./lib/star-prompt.js");
 const CONFIG_DIR = runtimeConfig.storage.configDir;
 const CONFIG_FILE = runtimeConfig.storage.configFile;
 const LEGACY_CONFIG_FILE = join(ROOT, ".ima2", "config.json");
-
 function runSelf(args: string[]) {
   execFileSync(process.execPath, [join(ROOT, "bin", "ima2.js"), ...args], { stdio: "inherit" });
 }
-
 /** Native ChatGPT login into ima2's own store (lib/chatgptLogin.ts); no Codex CLI child. */
 async function runGptLogin() {
   const { gptLogin, notifyServerOfGptLogin } = await import("./commands/gpt.js");
@@ -60,7 +55,6 @@ async function runGptLogin() {
   console.log(`\n  ChatGPT session saved to ${session.path}${session.email ? ` (${session.email})` : ""}\n`);
   await notifyServerOfGptLogin();
 }
-
 function loadConfig() {
   if (existsSync(CONFIG_FILE)) {
     return JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
@@ -71,12 +65,10 @@ function loadConfig() {
   }
   return {};
 }
-
 function saveConfig(config: Record<string, unknown>) {
   mkdirSync(CONFIG_DIR, { recursive: true });
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
 }
-
 function loadAdvertisement() {
   const p = runtimeConfig.storage.advertiseFile;
   if (!existsSync(p)) return null;
@@ -351,7 +343,7 @@ if (args.includes("-v") || args.includes("--version")) {
   exitFlushed(0);
 }
 
-const helpOwningCommands = ["update", "doctor", "gen", "video", "media", "edit", "vectorize", "ls", "show", "ps", "cancel", "session", "history", "prompt", "multimode", "node", "annotate", "canvas-versions", "metadata", "comfy", "cardnews", "inflight", "storage", "billing", "providers", "oauth", "grok", "gpt", "login", "config", "defaults", "models", "capabilities", "tools", "skill", "ping", "backfill-thumbs", "service", "start", "restart", "stop", "logs"];
+const helpOwningCommands = ["update", "doctor", "gen", "video", "media", "mcp", "edit", "vectorize", "ls", "show", "ps", "cancel", "session", "history", "prompt", "multimode", "node", "annotate", "canvas-versions", "metadata", "comfy", "cardnews", "inflight", "storage", "billing", "providers", "oauth", "grok", "gpt", "login", "config", "defaults", "models", "capabilities", "tools", "skill", "ping", "backfill-thumbs", "service", "start", "restart", "stop", "logs"];
 if (!command) {
   showHelp();
   exitFlushed(1);
@@ -362,8 +354,15 @@ if ((args.includes("-h") || args.includes("--help")) && !helpOwningCommands.incl
 }
 
 const { printUpdateNotice } = await import("./lib/updateNotice.js");
-printUpdateNotice(command, args, pkg.version);
+if (command !== "mcp") printUpdateNotice(command, args, pkg.version);
 switch (command) {
+  case "mcp": {
+    const { setCliVersion } = await import("./lib/client.js");
+    setCliVersion(pkg.version);
+    const { default: mcpCmd } = await import("./commands/mcp.js");
+    await mcpCmd(args.slice(1), pkg.version);
+    break;
+  }
   case "update": {
     const { default: updateCmd } = await import("./commands/update.js");
     await updateCmd(args.slice(1));

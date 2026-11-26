@@ -81,6 +81,18 @@ The CLI surface was expanded to near-feature-parity with the server API in #45 (
 
 | Command | Server API | Role |
 |---|---|---|
+| `ima2 media models` | `GET /api/media/catalog` | List and filter media models and routes |
+| `ima2 media estimate` | `POST /api/media/estimate` | Estimate published price |
+| `ima2 media run` | `POST /api/media` | Submit a billed media job |
+| `ima2 media status`, `wait`, `result`, `jobs`, `cancel` | `/api/media/jobs*`, `/api/media/:id/cancel`, `/api/history`, `/api/events` | Inspect, wait for, retrieve, list or cancel jobs |
+| `ima2 media keys` | `/api/keys/*` | List, set, validate or delete keys |
+| `ima2 media workflows` | `GET /api/workflows` | List workflows |
+| `ima2 media workflow ID --schema` | `GET /api/workflows/:id/schema` | Inspect workflow inputs |
+| `ima2 media workflow ID --estimate` | `POST /api/workflows/:id/estimate` | Estimate workflow steps |
+| `ima2 media workflow ID` | `POST /api/workflows/:id` | Run a billed workflow |
+| `ima2 media studios`, `studio open`, `studio default` | `/api/studios*` | List, open or select a studio |
+| `ima2 media tools` | `GET /api/media/tools` | List tool descriptors |
+| `ima2 mcp [tools]` | `/api/media/*`, `/api/workflows/*`, `/api/keys/*` | Serve MCP over stdio or list tools |
 | `ima2 gen <prompt>` | `POST /api/generate` | Generate image(s) from a prompt and optional references |
 | `ima2 edit <file>` | `POST /api/edit` | Edit an existing image with a prompt |
 | `ima2 multimode <spec>` | `POST /api/generate/multimode` | Run a multimode generation sequence |

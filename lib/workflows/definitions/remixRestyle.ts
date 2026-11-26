@@ -78,7 +78,7 @@ export const remixRestyle: WorkflowDefinition = {
     checkReferenceLimit(env, stylize.model, refsOf(values, "styleImage").length, "styleImage");
     checkRemixFit(env, render.model, values, 1);
     const renderSpec = renderStep({
-      slot: render, values, dependsOn: ["style-frame"], instruction: RENDER_INSTRUCTION, includeUserImages: false,
+      slot: render, values, dependsOn: ["style-frame"], instruction: RENDER_INSTRUCTION, includeUserImages: false, catalog: env.catalog,
       async extraInputs(rt) {
         const styled = rt.artifactsOf("style-frame")[0];
         if (!styled) throw new Error("styled frame missing");
