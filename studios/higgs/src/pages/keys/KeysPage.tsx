@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
-import type { KeyStatus } from "@ima2/studio-kit";
+import type { Catalog, KeyStatus } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { ProviderRow } from "./ProviderRow.tsx";
 import "../../styles/keys.css";
 
-export function KeysPage({ focus }: { focus?: string }) {
+function useInitialKeys(retry: number) {
   const studio = useStudioApi();
-  const catalog = useStudio((s) => s.catalog);
-  const catalogError = useStudio((s) => s.catalogError);
-  const storeKeys = useStudio((s) => s.keys);
   const [initialKeys, setInitialKeys] = useState<readonly KeyStatus[] | null>(null);
   const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-  const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
     setError("");
@@ -28,45 +23,23 @@ export function KeysPage({ focus }: { focus?: string }) {
       active = false;
     };
   }, [studio, retry]);
-  if (catalogError || error)
-    return (
-      <main className="page-pad">
-        <h1>API keys</h1>
-        <div role="alert">
-          Could not load providers: {catalogError ?? error}{" "}
-          <button
-            className="btn"
-            onClick={() => {
-              void studio.refreshCatalog();
-              setRetry((v) => v + 1);
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      </main>
-    );
-  if (!catalog || !initialKeys)
-    return (
-      <main className="page-pad">
-        <h1>API keys</h1>
-        <p role="status">Loading providers</p>
-      </main>
-    );
-  const statuses = storeKeys.length ? storeKeys : initialKeys;
+  return { initialKeys, error };
+}
+
+function ProviderGroups({
+  catalog,
+  statuses,
+  query,
+  focus,
+}: {
+  catalog: Catalog;
+  statuses: readonly KeyStatus[];
+  query: string;
+  focus?: string;
+}) {
   const providers = catalog.providers.filter((p) => (p.label + " " + p.id).toLowerCase().includes(query.toLowerCase()));
   return (
-    <main className="page-pad keys-page">
-      <header className="page-head">
-        <div>
-          <h1>API keys</h1>
-          <p>Add keys to use models from your providers.</p>
-        </div>
-        <label>
-          Search providers{" "}
-          <input type="search" aria-label="Search providers" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
-      </header>
+    <>
       {!providers.length ? <p>No providers match your search.</p> : null}
       {(["direct", "aggregator"] as const).map((route) => {
         const group = providers.filter((provider) => provider.route === route);
@@ -85,6 +58,67 @@ export function KeysPage({ focus }: { focus?: string }) {
           </section>
         ) : null;
       })}
+    </>
+  );
+}
+
+function KeysError({ error, retry }: { error: string; retry: () => void }) {
+  return (
+    <main className="page-pad">
+      <h1>API keys</h1>
+      <div role="alert">
+        Could not load providers: {error}{" "}
+        <button className="btn" onClick={retry}>
+          Retry
+        </button>
+      </div>
+    </main>
+  );
+}
+
+export function KeysPage({ focus }: { focus?: string }) {
+  const studio = useStudioApi();
+  const catalog = useStudio((s) => s.catalog);
+  const catalogError = useStudio((s) => s.catalogError);
+  const storeKeys = useStudio((s) => s.keys);
+  const [query, setQuery] = useState("");
+  const [retry, setRetry] = useState(0);
+  const { initialKeys, error } = useInitialKeys(retry);
+  if (catalogError || error)
+    return (
+      <KeysError
+        error={catalogError ?? error}
+        retry={() => {
+          void studio.refreshCatalog();
+          setRetry((v) => v + 1);
+        }}
+      />
+    );
+  if (!catalog || !initialKeys)
+    return (
+      <main className="page-pad">
+        <h1>API keys</h1>
+        <p role="status">Loading providers</p>
+      </main>
+    );
+  return (
+    <main className="page-pad keys-page">
+      <header className="page-head">
+        <div>
+          <h1>API keys</h1>
+          <p>Add keys to use models from your providers.</p>
+        </div>
+        <label>
+          Search providers{" "}
+          <input type="search" aria-label="Search providers" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </label>
+      </header>
+      <ProviderGroups
+        catalog={catalog}
+        statuses={storeKeys.length ? storeKeys : initialKeys}
+        query={query}
+        focus={focus}
+      />
     </main>
   );
 }

@@ -12,6 +12,7 @@ export interface TileOption<T> {
 
 interface Props<T> {
   caption: string;
+  accessibleLabel?: string;
   value: T;
   options: readonly TileOption<T>[];
   onChange: (value: T) => void;
@@ -25,6 +26,7 @@ interface Props<T> {
 /** A labelled setting that opens a single-choice menu. */
 export function SettingTile<T extends string | number>({
   caption,
+  accessibleLabel,
   value,
   options,
   onChange,
@@ -44,7 +46,7 @@ export function SettingTile<T extends string | number>({
         className="setting-trigger"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={caption + ": " + (current?.label ?? "")}
+        aria-label={accessibleLabel ?? caption + ": " + (current?.label ?? "")}
         onClick={() => setOpen(!open)}
       >
         {icon ? <Icon name={icon} size={15} /> : null}

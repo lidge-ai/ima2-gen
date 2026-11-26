@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { CatalogModel, CatalogProvider, KeyStatus } from "@ima2/studio-kit";
 import { useStudioApi } from "../../studio/context.tsx";
+import { ModelName, ProviderName } from "../../ui/ModelName.tsx";
+import { KeyControls } from "./KeyControls.tsx";
 
 interface Props {
   provider: CatalogProvider;
@@ -47,10 +49,45 @@ function useKeyForm(provider: CatalogProvider) {
   return { key, setKey, extra, setExtra, show, setShow, busy, result, run };
 }
 
+export type KeyForm = ReturnType<typeof useKeyForm>;
+
+function ProviderInfo({
+  provider,
+  models,
+  state,
+}: {
+  provider: CatalogProvider;
+  models: readonly CatalogModel[];
+  state: string;
+}) {
+  return (
+    <div className="key-info">
+      <h3>
+        <ProviderName id={provider.id} size={20} />
+      </h3>
+      <span className="key-status">{state}</span>
+      <p>
+        {models.length} {models.length === 1 ? "model" : "models"}
+        {models.length ? ": " : ""}
+        {models.slice(0, 3).map((model, index) => (
+          <span key={model.id}>
+            {index ? ", " : ""}
+            <ModelName id={model.id} />
+          </span>
+        ))}
+        {models.length > 3 ? ", …" : ""}
+      </p>
+      <a href={provider.consoleUrl} target="_blank" rel="noreferrer">
+        Get a key <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  );
+}
+
 export function ProviderRow({ provider, status, models, focused }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const row = useRef<HTMLElement>(null);
-  const { key, setKey, extra, setExtra, show, setShow, busy, result, run } = useKeyForm(provider);
+  const form = useKeyForm(provider);
   useEffect(() => {
     if (focused) {
       row.current?.scrollIntoView({ block: "center" });
@@ -60,103 +97,8 @@ export function ProviderRow({ provider, status, models, focused }: Props) {
   const state = status?.source === "env" ? "From environment" : status?.configured ? "Saved" : "Not set";
   return (
     <article className="key-row" ref={row} aria-label={provider.label}>
-      <div className="key-info">
-        <h3>{provider.label}</h3>
-        <span className="key-status">{state}</span>
-        <p>
-          {models.length} {models.length === 1 ? "model" : "models"}
-          {models.length
-            ? ": " +
-              models
-                .slice(0, 3)
-                .map((m) => m.label)
-                .join(", ") +
-              (models.length > 3 ? ", …" : "")
-            : ""}
-        </p>
-        <a href={provider.consoleUrl} target="_blank" rel="noreferrer">
-          Get a key <span aria-hidden="true">↗</span>
-        </a>
-      </div>
-      <div className="key-controls">
-        <label htmlFor={"key-" + provider.id}>API key</label>
-        <div className="key-input">
-          <input
-            ref={input}
-            id={"key-" + provider.id}
-            type={show ? "text" : "password"}
-            value={key}
-            autoComplete="off"
-            placeholder="Enter a key"
-            onChange={(e) => setKey(e.target.value)}
-          />
-          <button
-            type="button"
-            className="btn"
-            aria-label={(show ? "Hide" : "Show") + " key for " + provider.label}
-            onClick={() => setShow(!show)}
-          >
-            {show ? "Hide" : "Show"}
-          </button>
-        </div>
-        {provider.extraFields?.map((field) => (
-          <label key={field.name} className="key-extra">
-            {field.name}
-            {field.required ? " (required)" : ""}
-            <input
-              type={field.secret ? "password" : "text"}
-              value={extra[field.name] ?? ""}
-              onChange={(e) => setExtra({ ...extra, [field.name]: e.target.value })}
-            />
-          </label>
-        ))}
-        <div className="key-actions">
-          <button
-            className="btn btn-primary"
-            type="button"
-            disabled={
-              busy ||
-              !key ||
-              provider.extraFields?.some(
-                (f) => f.required && !extra[f.name] && !status?.extraFields.find((s) => s.name === f.name)?.configured,
-              )
-            }
-            onClick={() => {
-              void run("save");
-            }}
-          >
-            Save
-          </button>
-          <button
-            className="btn"
-            type="button"
-            disabled={busy || !status?.configured}
-            onClick={() => {
-              void run("test");
-            }}
-          >
-            Test
-          </button>
-          <button
-            className="btn"
-            type="button"
-            disabled={busy || !status?.configured || status.source === "env"}
-            onClick={() => {
-              void run("remove");
-            }}
-          >
-            Remove
-          </button>
-        </div>
-        {status?.source === "env" ? (
-          <p className="key-hint">Environment keys must be removed from the environment.</p>
-        ) : null}
-        {result ? (
-          <p role="status" className="key-result">
-            {result}
-          </p>
-        ) : null}
-      </div>
+      <ProviderInfo provider={provider} models={models} state={state} />
+      <KeyControls provider={provider} status={status} input={input} form={form} />
     </article>
   );
 }
