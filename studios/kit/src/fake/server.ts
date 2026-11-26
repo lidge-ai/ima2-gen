@@ -9,11 +9,12 @@ export interface FakeServerOptions {
   timeScale?: number;
   keyed?: readonly string[];
   seed?: string | number;
+  envKeys?: readonly string[];
 }
 export async function startFakeServer(
   options: FakeServerOptions = {},
 ): Promise<{ url: string; close(): Promise<void> }> {
-  const keys = new Keys(options.keyed ?? ["openai", "fal"]);
+  const keys = new Keys(options.keyed ?? ["openai", "fal"], options.envKeys);
   const events = new EventRing((value) => keys.scrub(value)),
     jobs = new Jobs(events, options.timeScale ?? 1, String(options.seed ?? "fake"));
   const server = createServer((req, res) => {

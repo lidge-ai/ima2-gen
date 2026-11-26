@@ -1,341 +1,285 @@
-/**
- * Development workflow definitions. They mirror the shape lib/workflows (lane L6)
- * serves; step models are catalog ids so the UI can show per-step cost.
- */
-import { estimateCost, sumEstimates } from "../pricing.ts";
-import { chooseRoute } from "../routing.ts";
-import type {
-  Catalog,
-  CostEstimate,
-  WorkflowDef,
-  WorkflowEstimate,
-  WorkflowInputSpec,
-  WorkflowParamSpec,
-  WorkflowRunBody,
-} from "../types.ts";
+import type { WireField, WireSlot, WireWorkflow, WireEstimateResponse } from "../wire.ts";
+import type { Catalog } from "../types.ts";
 
-const SOURCE: WorkflowInputSpec = {
-  name: "source",
-  label: "Source video",
-  kind: "video",
-  role: "source-video",
-  required: true,
-  accept: "video/*",
-  description: "4 to 30 seconds",
-};
-const CAST: WorkflowInputSpec = {
-  name: "cast",
-  label: "Characters, products or clothes",
-  kind: "image",
-  role: "reference-image",
+const text = (name: string, label: string, required = false): WireField => ({
+  name,
+  label,
+  required,
+  type: "text",
+  maxLength: 4000,
+  multiline: true,
+});
+const media = (
+  name: string,
+  label: string,
+  accept: "image" | "video" | "audio",
+  required = false,
+  max = 1,
+): WireField => ({ name, label, required, type: "media", accept, min: 1, max });
+const select = (name: string, label: string, values: string[]): WireField => ({
+  name,
+  label,
   required: false,
-  accept: "image/*",
-  maxCount: 4,
-};
-const PROMPT: WorkflowInputSpec = { name: "prompt", label: "Direction", kind: "text", required: false };
-const RES: WorkflowParamSpec = {
-  name: "resolution",
-  label: "Resolution",
-  type: "select",
-  options: [
-    { value: "720p", label: "720p" },
-    { value: "1080p", label: "1080p" },
-  ],
-  default: "720p",
-};
-const DURATION: WorkflowParamSpec = {
-  name: "duration",
-  label: "Shot length",
-  type: "select",
-  options: [
-    { value: "5", label: "5 s" },
-    { value: "8", label: "8 s" },
-    { value: "10", label: "10 s" },
-  ],
-  default: "5",
-};
-const GENRE: WorkflowParamSpec = {
-  name: "genre",
-  label: "Genre",
-  type: "select",
-  options: ["General", "Drama", "Action", "Horror", "Comedy", "Documentary"].map((g) => ({
-    value: g.toLowerCase(),
-    label: g,
-  })),
-  default: "general",
-};
-const CAMERA: WorkflowParamSpec = {
-  name: "camera",
-  label: "Camera",
-  type: "select",
-  options: ["Auto", "Static", "Dolly", "Handheld", "Crane", "Orbit"].map((c) => ({ value: c.toLowerCase(), label: c })),
-  default: "auto",
-};
-const VIDEO_MODELS = ["kling/kling-3-omni", "alibaba/wan-3.0"];
-
-export const workflows: WorkflowDef[] = [
-  {
-    id: "remix-motion-transfer",
-    family: "remix",
-    label: "Motion transfer",
-    output: "video",
-    description: "Keep the movement of a source clip and recast it with your characters or products.",
-    inputs: [SOURCE, { ...CAST, required: true, description: "Who or what should perform the motion" }, PROMPT],
-    params: [RES, { name: "keepAudio", label: "Keep source sound", type: "boolean", default: true }],
-    steps: [
-      { id: "analyze", label: "Read motion and framing" },
-      {
-        id: "first-frame",
-        label: "Compose the first frame",
-        model: "google/nano-banana-pro",
-        modelChoices: ["google/nano-banana-pro", "openai/gpt-image-2"],
-      },
-      {
-        id: "animate",
-        label: "Drive it with the source motion",
-        model: "kling/kling-3-omni",
-        modelChoices: VIDEO_MODELS,
-      },
-    ],
-  },
-  {
-    id: "remix-subject-swap",
-    family: "remix",
-    label: "Subject swap",
-    output: "video",
-    description: "Replace one thing in a clip and keep everything else as it was.",
-    inputs: [
-      SOURCE,
-      {
-        name: "target",
-        label: "What to replace",
-        kind: "text",
-        required: true,
-        description: "For example: the red car",
-      },
-      { ...CAST, required: true, maxCount: 2, label: "Replace it with" },
-    ],
-    params: [RES],
-    steps: [
-      { id: "locate", label: "Find the subject in every frame" },
-      {
-        id: "swap-frame",
-        label: "Swap it in a key frame",
-        model: "google/nano-banana-pro",
-        modelChoices: ["google/nano-banana-pro", "black-forest-labs/flux-2-pro"],
-      },
-      {
-        id: "propagate",
-        label: "Carry the swap through the clip",
-        model: "alibaba/wan-3.0",
-        modelChoices: VIDEO_MODELS,
-      },
-    ],
-  },
-  {
-    id: "remix-restyle",
-    family: "remix",
-    label: "Restyle",
-    output: "video",
-    description: "Redraw a clip in another look while the motion stays put.",
-    inputs: [
-      SOURCE,
-      {
-        name: "style",
-        label: "Style reference",
-        kind: "image",
-        role: "reference-image",
-        required: false,
-        accept: "image/*",
-        maxCount: 1,
-      },
-      PROMPT,
-    ],
-    params: [
-      {
-        name: "look",
-        label: "Look",
-        type: "select",
-        options: ["Film", "Anime", "Clay", "Watercolor", "Noir", "Custom"].map((l) => ({
-          value: l.toLowerCase(),
-          label: l,
-        })),
-        default: "film",
-      },
-      RES,
-    ],
-    steps: [
-      {
-        id: "style-frame",
-        label: "Restyle a key frame",
-        model: "black-forest-labs/flux-2-pro",
-        modelChoices: ["black-forest-labs/flux-2-pro", "google/nano-banana-pro"],
-      },
-      { id: "restyle", label: "Apply the look to the clip", model: "kling/kling-3-omni", modelChoices: VIDEO_MODELS },
-    ],
-  },
-  {
-    id: "director-cast",
-    family: "director",
-    label: "Cast",
-    output: "image",
-    description: "Turn photos or a description into a character sheet you can reuse across shots.",
-    inputs: [
-      { name: "description", label: "Character", kind: "text", required: true, description: "Age, look, wardrobe" },
-      { ...CAST, label: "Photos", maxCount: 3 },
-    ],
-    params: [],
-    steps: [
-      {
-        id: "sheet",
-        label: "Draw the character sheet",
-        model: "google/nano-banana-pro",
-        modelChoices: ["google/nano-banana-pro", "bytedance/seedream-5.5"],
-      },
-    ],
-  },
-  {
-    id: "director-locations",
-    family: "director",
-    label: "Locations",
-    output: "image",
-    description: "Build a location plate to place your scenes in.",
-    inputs: [
-      {
-        name: "description",
-        label: "Location",
-        kind: "text",
-        required: true,
-        description: "Place, time of day, weather",
-      },
-      {
-        name: "photo",
-        label: "Reference photo",
-        kind: "image",
-        role: "reference-image",
-        required: false,
-        accept: "image/*",
-        maxCount: 1,
-      },
-    ],
-    params: [
-      {
-        name: "aspect",
-        label: "Frame",
-        type: "select",
-        options: [
-          { value: "16:9", label: "16:9" },
-          { value: "21:9", label: "21:9" },
-          { value: "9:16", label: "9:16" },
-        ],
-        default: "16:9",
-      },
-    ],
-    steps: [
-      {
-        id: "plate",
-        label: "Render the plate",
-        model: "bytedance/seedream-5.5",
-        modelChoices: ["bytedance/seedream-5.5", "black-forest-labs/flux-2-pro"],
-      },
-    ],
-  },
-  {
-    id: "director-studio",
-    family: "director",
-    label: "Studio shot",
-    output: "video",
-    description: "One directed shot from your cast, location and a scene description.",
-    inputs: [
-      { name: "prompt", label: "Scene", kind: "text", required: true },
-      { ...CAST, label: "Cast" },
-      {
-        name: "location",
-        label: "Location",
-        kind: "image",
-        role: "reference-image",
-        required: false,
-        accept: "image/*",
-        maxCount: 1,
-      },
-    ],
-    params: [GENRE, CAMERA, DURATION],
-    steps: [
-      {
-        id: "keyframe",
-        label: "Compose the key frame",
-        model: "google/nano-banana-pro",
-        modelChoices: ["google/nano-banana-pro", "openai/gpt-image-2"],
-      },
-      {
-        id: "shot",
-        label: "Shoot it",
-        model: "bytedance/seedance-2.5",
-        modelChoices: ["bytedance/seedance-2.5", "google/veo-3.1", "kling/kling-3"],
-      },
-    ],
-  },
-  {
-    id: "director-cinema",
-    family: "director",
-    label: "Cinema",
-    output: "video",
-    description: "A short scene from a script: shot list, key frames, shots and sound, cut together.",
-    inputs: [
-      {
-        name: "script",
-        label: "Script",
-        kind: "text",
-        required: true,
-        description: "A few lines of action and dialogue",
-      },
-      { ...CAST, label: "Cast" },
-      {
-        name: "location",
-        label: "Location",
-        kind: "image",
-        role: "reference-image",
-        required: false,
-        accept: "image/*",
-        maxCount: 1,
-      },
-    ],
-    params: [GENRE, { name: "shots", label: "Shots", type: "number", min: 1, max: 6, step: 1, default: 3 }, DURATION],
-    steps: [
-      { id: "plan", label: "Break the script into shots" },
-      {
-        id: "keyframes",
-        label: "Compose key frames",
-        model: "google/nano-banana-pro",
-        modelChoices: ["google/nano-banana-pro", "openai/gpt-image-2"],
-      },
-      {
-        id: "shots",
-        label: "Shoot every shot",
-        model: "google/veo-3.1",
-        modelChoices: ["google/veo-3.1", "bytedance/seedance-2.5", "kling/kling-3"],
-      },
-      { id: "sound", label: "Add sound", model: "mirelo/mirelo-sfx-2" },
-    ],
-  },
+  type: "enum",
+  options: values.map((value) => ({ value, label: value })),
+});
+const slot = (
+  name: string,
+  label: string,
+  task: WireSlot["task"],
+  model: string,
+  alternatives: string[] = [],
+): WireSlot => ({
+  name,
+  label,
+  task,
+  defaultModel: model,
+  alternatives,
+  rationale: "Development fixture for this workflow slot.",
+  available: Object.fromEntries([model, ...alternatives].map((id) => [id, true])),
+});
+const video = media("video", "Source video", "video", true),
+  images = media("images", "Reference images", "image", true, 8);
+const render = slot("render", "Video edit", "video-to-video", "bytedance/seedance-2.5", [
+  "bytedance/seedance-2.5-flash",
+  "bytedance/seedance-2",
+  "bytedance/seedance-2-mini",
+  "xai/grok-imagine-video",
+]);
+const composite = slot("composite", "Put the subject into a frame (GPT)", "image-to-image", "openai/gpt-image-2");
+const pin = slot(
+  "render",
+  "Regenerate the clip between pinned frames (Grok 1.5)",
+  "reference-to-video",
+  "xai/grok-imagine-video-1.5",
+);
+const still = slot("image", "Image", "text-to-image", "google/nano-banana-pro", [
+  "bytedance/seedream-5.5",
+  "openai/gpt-image-2",
+]);
+const look: WireField[] = [
+  select("camera", "Camera", ["modern", "35mm-film", "16mm-film", "8mm-film", "dv-camcorder"]),
+  select("lens", "Lens", ["clean-sharp", "anamorphic", "vintage-anamorphic", "vintage-soft", "halation"]),
+  select("palette", "Color palette", [
+    "teal-orange",
+    "bleach-bypass",
+    "golden-hour",
+    "neon-noir",
+    "pastel-dream",
+    "silver-mono",
+    "forest-moss",
+    "desert-ochre",
+    "arctic-blue",
+    "candlelight",
+    "pop-primary",
+    "faded-instant",
+  ]),
+  { name: "paletteColors", type: "colors", label: "Custom palette", required: false, min: 2, max: 15 },
 ];
-
-function stepEstimate(catalog: Catalog, body: WorkflowRunBody, step: WorkflowDef["steps"][number]): CostEstimate {
-  const modelId = body.steps?.[step.id]?.model ?? step.model;
-  if (!modelId) return { usd: 0, basis: "Runs locally" };
-  const model = catalog.models.find((m) => m.id === modelId);
-  if (!model) return { usd: null, basis: "Unknown model " + modelId };
-  const choice = chooseRoute(model, body.steps?.[step.id]?.provider);
-  const pricing = choice.kind === "unavailable" ? [] : choice.route.pricing;
-  const shots = Number(body.params?.shots ?? 1);
-  return estimateCost(pricing, {
-    durationSec: Number(body.params?.duration ?? 5),
-    count: shots,
-    resolution: String(body.params?.resolution ?? ""),
-  });
+const tail: WireField[] = [
+  select("resolution", "Resolution", ["480p", "720p", "1080p"]),
+  select("sound", "Sound", ["source", "generate", "none"]),
+];
+const aspect = select("aspectRatio", "Aspect ratio", ["16:9", "9:16", "1:1"]);
+const resolution = select("resolution", "Resolution", ["1k", "2k", "4k"]);
+const count: WireField = { name: "n", type: "integer", label: "Count", required: false, min: 1, max: 4, default: 1 };
+const simple = (id: string, label: string, fields: WireField[], slots: WireSlot[]): WireWorkflow => ({
+  id,
+  label,
+  description: `Simulate ${label.toLowerCase()} using the selected model routes.`,
+  fields,
+  slots,
+});
+const base: WireWorkflow[] = [
+  simple(
+    "remix-motion-transfer",
+    "Remix: motion transfer",
+    [video, images, text("prompt", "Notes"), select("tier", "Quality", ["standard", "lite"]), ...tail],
+    [render],
+  ),
+  simple(
+    "remix-object-swap",
+    "Remix: object swap",
+    [
+      video,
+      images,
+      text("target", "What to replace"),
+      text("prompt", "Notes"),
+      select("tier", "Quality", ["standard", "lite"]),
+      ...tail,
+    ],
+    [render],
+  ),
+  simple(
+    "remix-restyle",
+    "Remix: restyle",
+    [
+      video,
+      select("style", "Style", [
+        "cel-anime",
+        "clay-stop-motion",
+        "felt-craft",
+        "low-poly",
+        "toy-cgi",
+        "comic-ink",
+        "watercolor",
+        "gouache",
+        "oil-paint",
+        "pixel-art",
+        "retro-console-3d",
+        "yarn-world",
+        "ink-noir",
+        "neon-synth",
+      ]),
+      media("styleImage", "Style reference", "image"),
+      text("prompt", "Notes"),
+      ...tail,
+    ],
+    [slot("stylize", "Restyle the first frame", "image-to-image", "bytedance/seedream-5.5"), render],
+  ),
+  simple(
+    "director-cast",
+    "Director cast",
+    [text("prompt", "Prompt", true), media("images", "Reference images", "image", false, 4), aspect, resolution, count],
+    [still],
+  ),
+  simple(
+    "director-locations",
+    "Director locations",
+    [text("prompt", "Prompt", true), media("images", "Reference image", "image"), aspect, resolution, count, ...look],
+    [still],
+  ),
+  simple(
+    "director-cinema",
+    "Director cinema",
+    [
+      text("prompt", "Prompt", true),
+      media("images", "Scene reference", "image"),
+      media("characterImage", "Character reference", "image"),
+      aspect,
+      resolution,
+      ...look,
+    ],
+    [still],
+  ),
+  simple(
+    "director-studio",
+    "Director studio",
+    [
+      text("prompt", "Scene", true),
+      { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },
+      tail[0]!,
+      aspect,
+      { name: "generateAudio", type: "boolean", label: "Sound", required: false, default: true },
+      media("images", "Image references", "image", false, 30),
+      media("videos", "Video references", "video", false, 10),
+      media("audios", "Audio references", "audio", false, 10),
+      select("continuity", "Between shots", ["first-frame", "independent"]),
+      ...look,
+    ],
+    [
+      slot("render", "Video", "reference-to-video", "bytedance/seedance-2.5"),
+      slot("sound", "Sound bed", "video-to-audio", "mirelo/mirelo-sfx-2.0"),
+    ],
+  ),
+];
+export const workflows: WireWorkflow[] = [
+  ...base,
+  simple(
+    "remix-motion-transfer-subscription",
+    "Remix: motion transfer (subscriptions only)",
+    [
+      video,
+      images,
+      text("prompt", "Notes"),
+      { name: "anchors", type: "integer", label: "Pinned keyframes", required: false, min: 0, max: 4, default: 4 },
+      ...tail,
+    ],
+    [composite, pin],
+  ),
+  simple(
+    "remix-object-swap-subscription",
+    "Remix: object swap (subscriptions only)",
+    [
+      video,
+      images,
+      text("target", "What to replace"),
+      text("prompt", "Notes"),
+      { name: "anchors", type: "integer", label: "Pinned keyframes", required: false, min: 0, max: 4, default: 4 },
+      ...tail,
+    ],
+    [composite, pin],
+  ),
+  simple(
+    "remix-restyle-subscription",
+    "Remix: restyle (subscriptions only)",
+    [
+      video,
+      select("style", "Style", [
+        "cel-anime",
+        "clay-stop-motion",
+        "felt-craft",
+        "low-poly",
+        "toy-cgi",
+        "comic-ink",
+        "watercolor",
+        "gouache",
+        "oil-paint",
+        "pixel-art",
+        "retro-console-3d",
+        "yarn-world",
+        "ink-noir",
+        "neon-synth",
+      ]),
+      text("prompt", "Look"),
+      tail[1]!,
+    ],
+    [slot("edit", "Restyle each segment (Grok edit)", "video-to-video", "xai/grok-imagine-video")],
+  ),
+];
+for (const workflow of workflows) {
+  if (workflow.id === "remix-motion-transfer" || workflow.id === "remix-object-swap") workflow.tierField = "tier";
 }
-
-export function estimateWorkflow(def: WorkflowDef, body: WorkflowRunBody, catalog: Catalog): WorkflowEstimate {
-  const steps = def.steps.map((step) => ({ id: step.id, estimate: stepEstimate(catalog, body, step) }));
-  return { steps, total: sumEstimates(steps.map((s) => s.estimate)) };
+export function estimateWorkflow(
+  def: WireWorkflow,
+  values: Record<string, unknown>,
+  catalog: Catalog,
+  selection: Record<string, unknown> = {},
+): WireEstimateResponse {
+  const models = (selection.models ?? {}) as Record<string, string>,
+    routes = (selection.routes ?? {}) as Record<string, string>;
+  const steps = def.slots.map((slot, index) => ({
+    id: slot.name,
+    label: slot.label,
+    kind: "media",
+    dependsOn: index ? [def.slots[index - 1]!.name] : [],
+    model: models[slot.name] ?? slot.defaultModel,
+    route:
+      routes[slot.name] ??
+      catalog.models.find((m) => m.id === (models[slot.name] ?? slot.defaultModel))?.routes.find((r) => r.keyConfigured)
+        ?.providerId ??
+      "fal",
+    final: index === def.slots.length - 1,
+  }));
+  const estimates = steps.map((step) => {
+    const model = catalog.models.find((m) => m.id === step.model),
+      price = model?.routes.find((r) => r.providerId === step.route)?.pricing[0];
+    const quantity = price?.unit === "second" ? Number(values.duration ?? 5) : 1;
+    return {
+      stepId: step.id,
+      model: step.model,
+      usd: price ? price.usd * quantity : null,
+      ...(price
+        ? { units: { unit: price.unit, quantity }, source: price.source, checkedAt: price.checkedAt }
+        : { note: "No published price" }),
+    };
+  });
+  return {
+    steps,
+    estimate: {
+      usd: estimates.reduce((sum, e) => sum + (e.usd ?? 0), 0),
+      complete: estimates.every((e) => e.usd !== null),
+      steps: estimates,
+    },
+  };
 }

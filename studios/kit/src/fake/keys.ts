@@ -1,23 +1,11 @@
-import type { CatalogProvider, KeyStatus } from "../types.ts";
 export class Keys {
   readonly keyed: Set<string>;
+  readonly env: Set<string>;
   readonly secrets = new Set<string>();
   readonly extras = new Map<string, Set<string>>();
-  constructor(initial: readonly string[]) {
-    this.keyed = new Set(initial);
-  }
-  status(provider: CatalogProvider): KeyStatus {
-    const configured = this.keyed.has(provider.id);
-    return {
-      keyVocabulary: provider.keyVocabulary,
-      providerIds: [provider.id],
-      configured,
-      source: configured ? "config" : null,
-      extraFields: (provider.extraFields ?? []).map((f) => ({
-        ...f,
-        configured: this.extras.get(provider.id)?.has(f.name) ?? false,
-      })),
-    };
+  constructor(initial: readonly string[], env: readonly string[] = []) {
+    this.env = new Set(env);
+    this.keyed = new Set([...initial, ...env]);
   }
   scrub<T>(value: T): T {
     return JSON.parse(

@@ -90,7 +90,10 @@ test("keys save, validate and remove without echoing the key", async () => {
     const events = collect(client);
     await events.ready;
     await client.keys.save("kling", { apiKey: SECRET });
-    assert.equal((await client.keys.validate("kling")).ok, true);
+    await assert.rejects(
+      client.keys.save("kling", { apiKey: "rejected-secret" }),
+      (e: unknown) => e instanceof StudioApiError && e.code === "KEY_VALIDATION_FAILED",
+    );
     assert.equal((await client.keys.list()).find((k) => k.keyVocabulary === "kling")?.configured, true);
     const job = await client.media.submit({
       model: "kling/kling-3",
@@ -100,7 +103,7 @@ test("keys save, validate and remove without echoing the key", async () => {
     });
     await client.watchJob(job.jobId);
     await client.keys.remove("kling");
-    assert.equal((await client.keys.validate("kling")).ok, false);
+    assert.equal((await client.keys.list()).find((k) => k.keyVocabulary === "kling")?.configured, false);
     await events.stop();
     assert.ok(!bodies.join("").includes(SECRET), "a response echoed the key");
     assert.ok(!JSON.stringify(events.events).includes(SECRET), "an event echoed the key");
@@ -118,7 +121,7 @@ test("upload, submit, watch and download, with idempotent resubmit", async () =>
       clientRequestId: "same",
     };
     const accepted = await client.media.submit(body);
-    assert.deepEqual(await client.media.submit(body), accepted);
+    await assert.rejects(client.media.submit(body), (e: unknown) => e instanceof StudioApiError && e.status === 409);
     const done = await client.watchJob(accepted.jobId);
     assert.equal(done.status, "succeeded");
     assert.equal(done.provider, "openai");
@@ -149,7 +152,7 @@ test("history pages, favorites and deletes", async () => {
     const second = await client.history.list({ limit: 1, cursor: first.nextCursor! });
     assert.notEqual(first.items[0]!.historyId, second.items[0]!.historyId);
     const id = first.items[0]!.historyId;
-    assert.equal((await client.history.favorite(id, true)).item.favorite, true);
+    assert.equal((await client.history.favorite(id, true)).favorite, true);
     assert.equal((await client.history.list({ favorite: true })).items.length, 1);
     await client.history.remove(id);
     assert.equal((await client.history.list({ kind: "image" })).items.length, 1);
@@ -160,7 +163,7 @@ test("workflows estimate per step and run with step events", async () => {
   await withServer({ timeScale: 0.02 }, async ({ client }) => {
     const defs = await client.workflows.list();
     assert.deepEqual(new Set(defs.map((d) => d.family)), new Set(["remix", "director"]));
-    const restyle = { inputs: { prompt: "noir", source: [{ role: "source-video" as const, url: "/files/source" }] } };
+    const restyle = { inputs: { prompt: "noir", video: [{ role: "source-video" as const, url: "/files/source" }] } };
     const estimate = await client.workflows.estimate("remix-restyle", restyle);
     assert.equal(estimate.steps.length, 2);
     await assert.rejects(
@@ -170,15 +173,14 @@ test("workflows estimate per step and run with step events", async () => {
     const events = collect(client);
     await events.ready;
     const cinema = await client.workflows.run("director-cinema", {
-      inputs: { script: "Two friends meet at a station." },
-      params: { shots: 2 },
+      inputs: { prompt: "Two friends meet at a station." },
     });
     const done = await client.watchJob(cinema.jobId);
     await events.stop();
     assert.equal(done.status, "succeeded");
     assert.deepEqual(
       done.steps?.map((s) => s.status),
-      ["succeeded", "succeeded", "succeeded", "succeeded"],
+      ["succeeded"],
     );
     assert.ok(events.events.some((e) => e.jobId === cinema.jobId && e.event === "step"));
     assert.equal((await client.history.list({ workflow: "director-cinema" })).items.length, 1);
@@ -191,11 +193,7 @@ test("missing keys, failures and cancellation", async () => {
   try {
     await assert.rejects(
       client.media.submit(image),
-      (e: unknown) =>
-        e instanceof StudioApiError &&
-        e.status === 409 &&
-        e.code === "MEDIA_KEY_MISSING" &&
-        Array.isArray((e.details as { candidates: string[] }).candidates),
+      (e: unknown) => e instanceof StudioApiError && e.status === 400 && e.code === "MEDIA_KEY_MISSING",
     );
     await assert.rejects(
       client.media.submit({ ...image, model: "unknown" }),
@@ -254,6 +252,30 @@ test("SSE replay resumes and reports gaps", async () => {
     }
     stop.abort();
     assert.deepEqual(ids, [cursor + 1, cursor + 2]);
+  } finally {
+    await server.close();
+  }
+});
+
+test("wire keys, validation, session filtering and workflow field errors", async () => {
+  const server = await startFakeServer({ timeScale: 1, keyed: [], envKeys: ["openai"] });
+  const client = createStudioClient({ baseUrl: server.url, sessionId: "tab-a", browserId: "browser-a" });
+  try {
+    await assert.rejects(
+      client.keys.remove("openai"),
+      (e: unknown) => e instanceof StudioApiError && e.code === "ENV_KEY_IMMUTABLE",
+    );
+    const accepted = await client.media.submit(image);
+    assert.equal((await client.media.jobs({ status: "active" }))[0]?.jobId, accepted.jobId);
+    await assert.rejects(
+      client.workflows.run("remix-motion-transfer", { inputs: {} }),
+      (e: unknown) => e instanceof StudioApiError && e.code === "WORKFLOW_INPUT_INVALID",
+    );
+    await assert.rejects(
+      client.workflows.estimate("no-such-workflow", { inputs: {} }),
+      (e: unknown) => e instanceof StudioApiError && e.code === "WORKFLOW_UNKNOWN",
+    );
+    await client.media.cancel(accepted.jobId);
   } finally {
     await server.close();
   }
