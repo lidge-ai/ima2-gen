@@ -24,7 +24,9 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   projects: [
-    { name: "studio", testIgnore: "classic.audit.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    // Journeys create jobs, so they run in their own invocation and never before the pristine studio cells.
+    { name: "studio", testIgnore: ["classic.audit.ts", "journeys.audit.ts"], use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "journeys", testMatch: "journeys.audit.ts", use: { ...devices["Desktop Chrome"] } },
     { name: "classic", testMatch: "classic.audit.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: [
