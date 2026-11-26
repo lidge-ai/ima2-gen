@@ -1,6 +1,6 @@
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { getWorkflow } from "../lib/workflows/index.js";
 import { prepareWorkflow, runWorkflow } from "../lib/workflows/runner.js";
@@ -8,11 +8,16 @@ import type { MediaStep, WorkflowDefinition, WorkflowEvent } from "../lib/workfl
 import { fakeAdapter, fakeGateway, fakeLocal, instantPoll, spec, tempDir, writeFixture } from "./_workflowFakes.js";
 
 const root = tempDir("ima2-wf-remix-");
-after(() => rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
+// A second temp folder that is not an allowed root: real files outside, on every platform.
+const elsewhere = tempDir("ima2-wf-elsewhere-");
+after(() => {
+  for (const dir of [root, elsewhere]) rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+});
 const clip = writeFixture(root, "clip.mp4", "source-video");
 const silent = writeFixture(root, "silent.mp4", "silent-video");
 const long = writeFixture(root, "long.mp4", "long-video");
 const face = writeFixture(root, "face.png", "face");
+const outsideClip = writeFixture(elsewhere, "outside.mp4", "outside-video");
 const local = fakeLocal({
   "clip.mp4": { durationSec: 5.2, width: 720, height: 1280, hasAudio: true },
   "silent.mp4": { durationSec: 8, width: 1280, height: 720, hasAudio: false },
@@ -63,9 +68,26 @@ test("source rules: 4-15 s, 1-8 images, files only from allowed folders, https u
   await assert.rejects(prep("remix-motion-transfer", { values: { video: video() } }), /images: is required/);
   const nine = Array.from({ length: 9 }, () => images[1]);
   await assert.rejects(prep("remix-motion-transfer", { values: { video: video(), images: nine } }), /at most 8/);
-  await assert.rejects(prep("remix-motion-transfer", { values: { video: [{ path: "/etc/hosts", mimeType: "video/mp4" }], images } }), /outside the allowed folders/);
+  await assert.rejects(prep("remix-motion-transfer", { values: { video: video(outsideClip), images } }), /outside the allowed folders/);
   await assert.rejects(prep("remix-motion-transfer", { values: { video: video(), images: [{ url: "http://x.example/a.png", mimeType: "image/png" }] } }), /https/);
   await assert.rejects(prep("remix-motion-transfer", { values: { video: video(), images, extra: 1 } }), /not an input/);
+});
+
+test("a path outside the allowed folders gets the same answer whether or not it exists; only inside ones can be missing", async () => {
+  const missingOutside = join(elsewhere, "nothing-here.mp4");
+  await assert.rejects(prep("remix-motion-transfer", { values: { video: video(outsideClip), images } }), /file is outside the allowed folders/);
+  await assert.rejects(prep("remix-motion-transfer", { values: { video: video(missingOutside), images } }), /file is outside the allowed folders/);
+  await assert.rejects(prep("remix-motion-transfer", { values: { video: video(join(root, "missing.mp4")), images } }), /file not found/);
+  await assert.rejects(prep("remix-motion-transfer", { values: { video: video(join(root, "..", "escape.mp4")), images } }), /file is outside the allowed folders/);
+});
+
+test("a link inside an allowed folder that points outside it is refused", async () => {
+  // A directory junction on Windows (no privileges needed), a directory symlink elsewhere.
+  const link = join(root, "linked-dir");
+  mkdirSync(join(elsewhere, "target"), { recursive: true });
+  writeFixture(join(elsewhere, "target"), "clip.mp4", "outside-video");
+  symlinkSync(join(elsewhere, "target"), link, "junction");
+  await assert.rejects(prep("remix-motion-transfer", { values: { video: video(join(link, "clip.mp4")), images } }), /file is outside the allowed folders/);
 });
 
 test("silent sources and generated sound end at the edit step", async () => {
