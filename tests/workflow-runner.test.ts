@@ -25,7 +25,7 @@ function media(id: string, model: string, deps: string[] = [], inputs: MediaInpu
 function prepared(steps: WorkflowStep[]): PreparedWorkflow {
   return {
     definition: {} as PreparedWorkflow["definition"], values: {}, slots: {},
-    plan: { workflowId: "director-studio", steps }, estimate: { usd: 0, complete: true, steps: [] },
+    plan: { workflowId: "director-studio", steps }, estimate: { usd: 0, complete: true, steps: [] }, notes: [],
   };
 }
 
@@ -149,4 +149,20 @@ test("a later step reads its dependency's artifact; reading a non-dependency is 
   assert.equal(result.status, "succeeded");
   assert.deepEqual(seen, ["bytes-of https://cdn.example/out.mp4"]);
   assert.deepEqual(result.artifacts.map((a) => a.stepId), ["post"]);
+});
+
+test("video inputs go out by URL through the publisher, even to inline adapters", async () => {
+  const adapter = fakeAdapter({ transport: "inline" });
+  const gateway = fakeGateway({ "v/x": adapter });
+  const published: string[] = [];
+  gateway.publishInput = async (input) => {
+    published.push(input.role + ":" + input.mimeType);
+    return { url: "https://media.example/" + input.role };
+  };
+  const clip: MediaInput = { role: "source-video", bytes: new Uint8Array([9]), mimeType: "video/mp4" };
+  const still: MediaInput = { role: "reference-image", bytes: new Uint8Array([7]), mimeType: "image/png" };
+  await run([media("render", "v/x", [], [clip, still], true)], gateway);
+  assert.deepEqual(published, ["source-video:video/mp4"]);
+  const sent = adapter.calls.find((c) => c.op === "submit")?.request?.inputs;
+  assert.deepEqual(sent?.map((i) => [i.role, i.url ?? "bytes"]), [["source-video", "https://media.example/source-video"], ["reference-image", "bytes"]]);
 });

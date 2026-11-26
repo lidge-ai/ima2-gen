@@ -36,7 +36,7 @@ async function referenceInputs(rt: StepRuntime, spec: RenderSpec): Promise<{ inp
   const users = await userReferences(rt, spec.values);
   const images = [...(first ? [first] : []), ...users];
   const inputs = [await rt.asInput(sourceOf(spec.values), "reference-video"), ...images];
-  return { inputs, prompt: motionRenderPrompt(caption, textOf(spec.values, "prompt"), refNames(images.length, 0)) };
+  return { inputs, prompt: motionRenderPrompt(caption, textOf(spec.values, "prompt"), refNames(images.length, 0), Boolean(first)) };
 }
 
 async function editInputs(rt: StepRuntime, spec: RenderSpec): Promise<{ inputs: MediaInput[]; prompt: string }> {
@@ -70,7 +70,7 @@ async function pinInputs(rt: StepRuntime, spec: RenderSpec): Promise<{ inputs: M
   }
   const users = await userReferences(rt, spec.values);
   inputs.push(...users);
-  const prompt = motionRenderPrompt(caption, textOf(spec.values, "prompt"), refNames(users.length, inputs.length - users.length));
+  const prompt = motionRenderPrompt(caption, textOf(spec.values, "prompt"), refNames(users.length, inputs.length - users.length), false);
   return { inputs, prompt: "Animate smoothly through the pinned frames, matching each pinned pose at its time.\n\n" + prompt, keyframes };
 }
 

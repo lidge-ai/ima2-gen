@@ -39,9 +39,10 @@ function captionLines(c: Caption | undefined): string | undefined {
   return joinPrompt(...parts);
 }
 
-export function motionRenderPrompt(c: Caption | undefined, notes: string | undefined, refNames: string): string {
+export function motionRenderPrompt(c: Caption | undefined, notes: string | undefined, refNames: string, anchored: boolean): string {
   return joinPrompt(
-    "Recreate the exact motion, timing and camera movement of video 1 with new subjects: " + refNames + ". Rebuild the scene around them; keep the framing and pacing of video 1.",
+    "Recreate the exact motion, timing and camera movement of video 1 with new subjects: " + refNames + ". Keep the framing and pacing of video 1.",
+    anchored ? "Image 1 is the first frame with the new subjects and setting in place; start from it and keep its look." : undefined,
     captionLines(c),
     notes,
   );
@@ -66,10 +67,13 @@ export function restyleRenderPrompt(c: Caption | undefined, styleText: string | 
   );
 }
 
-export function subjectPrompt(mode: "motion" | "swap", target: string | undefined, refCount: number, masked: boolean): string {
+export function subjectPrompt(mode: "motion" | "swap", target: string | undefined, refCount: number, masked: boolean, notes?: string): string {
   const refs = Array.from({ length: refCount }, (_, i) => "image " + (i + 2)).join(", ");
   if (mode === "motion") {
-    return "Edit image 1. Replace the people or things performing in it with the subjects from " + refs + ", in that order. Keep each pose, position, scale, framing, background and lighting exactly.";
+    return joinPrompt(
+      "Edit image 1. Replace the people or things performing in it with the subjects from " + refs + ", in that order. Keep each pose, position, scale and framing exactly.",
+      notes ? "Change the setting and look as these notes say, otherwise keep them: " + notes : "Keep the background and lighting.",
+    );
   }
   return "Edit image 1. Replace only " + (target ?? "the main subject") + (masked ? " (the masked area)" : "") + " with the one from " + refs + ". Keep everything else exactly as it is.";
 }

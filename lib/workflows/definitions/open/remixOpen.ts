@@ -104,7 +104,7 @@ function subjectPromptFor(mode: OpenMode, values: WorkflowValues, masked: boolea
     const style = STYLE_PRESETS[textOf(values, "style") ?? ""]?.prompt;
     return () => restylePrompt(style, refsOf(values, "styleImage").length > 0, textOf(values, "prompt"));
   }
-  return () => subjectPrompt(mode, textOf(values, "target"), refsOf(values, "images").length, masked);
+  return () => subjectPrompt(mode, textOf(values, "target"), refsOf(values, "images").length, masked, mode === "motion" ? textOf(values, "prompt") : undefined);
 }
 
 function plan(mode: OpenMode, values: WorkflowValues, models: Readonly<Record<string, ResolvedSlot>>, env: PlanEnv): { steps: WorkflowStep[]; notes: PlanNote[] } {

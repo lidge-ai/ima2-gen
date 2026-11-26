@@ -5,6 +5,7 @@ import type { MediaRunnerDeps } from "./runnerTypes.js";
 import { WorkflowError } from "../../workflows/errors.js";
 import type { ResolvedRoute, WorkflowGateway } from "../../workflows/types.js";
 import type { SessionRoute } from "./sessionRoutes.js";
+import { createSumePublisher } from "./publishInput.js";
 
 function pick(model: MediaCatalogModel, keys: MediaKeySnapshot, route: string | undefined) {
   if (route) return model.candidates.find((c) => c.adapter.id === route);
@@ -35,10 +36,19 @@ async function resolveSession(deps: MediaRunnerDeps, modelId: string, routeId: s
   }
 }
 
+/** A free Sume upload publishes local video inputs when the user saved a Sume key. */
+function publisherFor(deps: MediaRunnerDeps, keys: MediaKeySnapshot, fetchImpl: typeof fetch): Pick<WorkflowGateway, "publishInput"> {
+  const sume = deps.registry.getAdapter("sume");
+  if (!sume || !keys.hasKey(sume)) return {};
+  const apiKey = keys.resolve(sume).apiKey;
+  return apiKey ? { publishInput: createSumePublisher(apiKey, fetchImpl) } : {};
+}
+
 export async function createWorkflowGateway(deps: MediaRunnerDeps, extras: GatewayExtras = {}): Promise<WorkflowGateway> {
   const keys = await MediaKeySnapshot.load(deps.configFile, deps.env ?? process.env);
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   return {
+    ...publisherFor(deps, keys, fetchImpl),
     catalog(modelId: string): MediaModelSpec | undefined {
       const model = deps.registry.getModel(modelId);
       return model ? pick(model, keys, undefined)?.spec : undefined;
