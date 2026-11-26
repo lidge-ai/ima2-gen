@@ -16,7 +16,7 @@ function pick(model: MediaCatalogModel, keys: MediaKeySnapshot, route: string | 
  * the first keyed route, direct before aggregator; never a keyless route).
  * One key snapshot per request keeps the estimate and the run on the same route.
  */
-export async function createWorkflowGateway(deps: MediaRunnerDeps): Promise<WorkflowGateway> {
+export async function createWorkflowGateway(deps: MediaRunnerDeps, extras: Pick<WorkflowGateway, "planText"> = {}): Promise<WorkflowGateway> {
   const keys = await MediaKeySnapshot.load(deps.configFile, deps.env ?? process.env);
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   return {
@@ -36,5 +36,6 @@ export async function createWorkflowGateway(deps: MediaRunnerDeps): Promise<Work
       return { adapter: chosen.adapter, ctx: { apiKey: cred.apiKey!, extra: cred.extra, fetch: fetchImpl } };
     },
     fetch: fetchImpl,
+    ...(extras.planText ? { planText: extras.planText } : {}),
   };
 }
