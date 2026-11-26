@@ -1646,3 +1646,7 @@ accepts custom voice ids, so an unknown id comes back as a 400 that names every 
 will take — read that error rather than guessing from this page.
 
 ### Video Editing (V2V)
+
+### Media catalog and workflows
+
+Use `ima2 media models --json` to discover models, routes, key status and listed prices. Run `ima2 media run --model <id> --task <task> --prompt "..."`; add `--input role=path` for local files, or `--no-wait` to return a request ID. Inspect `ima2 media jobs --all` and cancel with `ima2 media cancel <requestId>`. Discover workflows with `ima2 media workflows` and estimate or run with `ima2 media workflow <id> --input name=value [--estimate]`. Key status is available through `ima2 media keys`; set a key using `ima2 media keys set <vocabulary> --key-stdin` with the secret on stdin.
