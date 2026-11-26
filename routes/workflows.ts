@@ -78,7 +78,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
   app.post("/api/workflows/:id/estimate", async (req: Request<{ id: string }>, res: Response) => {
     try {
       const { prepared } = await prepare(req, AbortSignal.timeout(60_000));
-      res.json({ estimate: prepared.estimate, steps: summarizeSteps(prepared.plan) });
+      res.json({ estimate: prepared.estimate, steps: summarizeSteps(prepared.plan), notes: prepared.notes });
     } catch (error) {
       sendWorkflowError(res, error);
     }
@@ -97,7 +97,7 @@ export function registerWorkflowRoutes(app: Express, ctxRaw: RouteRuntimeContext
       const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
       const runsDir = join(ctx.config.storage.configDir, "workflow-runs");
       void launchWorkflowJob(d, wfDeps, prepared, { requestId, sessionId, runsDir, ...(webUser ? { meta: { webUser } } : {}) });
-      res.status(202).json({ requestId, workflow: prepared.definition.id, estimate: prepared.estimate, steps: summarizeSteps(prepared.plan) });
+      res.status(202).json({ requestId, workflow: prepared.definition.id, estimate: prepared.estimate, steps: summarizeSteps(prepared.plan), notes: prepared.notes });
     } catch (error) {
       sendWorkflowError(res, error);
     }

@@ -115,6 +115,7 @@ test("every workflow describes itself as JSON and marks models the gateway knows
   assert.deepEqual(WORKFLOWS.map((w) => w.id), [
     "remix-motion-transfer", "remix-object-swap", "remix-restyle",
     "remix-motion-transfer-subscription", "remix-object-swap-subscription", "remix-restyle-subscription",
+    "remix-motion-transfer-open", "remix-object-swap-open", "remix-restyle-open",
     "director-studio", "director-cast", "director-locations", "director-cinema",
   ]);
   const described = describeWorkflow(studio!, fakeGateway({}, specs));
