@@ -45,6 +45,30 @@ test("video: provider failure shows a plain reason", async ({ page }) => {
   const card = page.getByRole("article", { name: new RegExp("Failed: .*crowd scene") });
   await expect(card.getByRole("alert")).toContainText("safety filter blocked this request");
   await expect(card.getByRole("alert")).toContainText("FAKE_MODERATION");
+  // Each failure offers one next step; a blocked prompt goes back to the prompt.
+  await card.getByRole("button", { name: "Edit the prompt" }).click();
+  await expect(page.getByLabel("Prompt")).toBeFocused();
+});
+
+test("video: out of credit links to the provider; a rate limit puts the job back to send again", async ({ page }) => {
+  await page.goto("/#/video");
+  const generate = page.getByRole("button", { name: /Generate/ });
+  const quota = unique("[fail:quota] harbor at dusk");
+  await page.getByLabel("Prompt").fill(quota);
+  await generate.click();
+  const broke = page.getByRole("article", { name: new RegExp("Failed: .*harbor at dusk") });
+  await expect(broke.getByRole("link", { name: /^Add credit at / })).toHaveAttribute("target", "_blank");
+  const rate = unique("[fail:rate-limit] tram in snow");
+  await page.getByLabel("Prompt").fill(rate);
+  await generate.click();
+  const limited = page.getByRole("article", { name: new RegExp("Failed: .*tram in snow") });
+  await expect(limited).toHaveCount(1);
+  await page.getByLabel("Prompt").fill("something else");
+  await limited.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByLabel("Prompt")).toHaveValue(rate);
+  await expect(generate).toBeFocused();
+  await generate.click();
+  await expect(page.getByRole("article", { name: new RegExp("tram in snow") })).toHaveCount(2);
 });
 
 test("video: a model without any key asks for one and cannot run", async ({ page }) => {
