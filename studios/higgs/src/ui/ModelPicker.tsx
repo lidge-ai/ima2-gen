@@ -1,9 +1,43 @@
+import { messages, useT } from "../i18n.ts";
 import { useMemo, useRef, useState } from "react";
 import { modelHasKey, type CatalogModel, type MediaKind } from "@ima2/studio-kit";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
 import { fromPrice, modelKinds } from "./format.ts";
 import { VendorLogo, vendorDisplayName } from "./VendorLogo.tsx";
+
+const M = messages(
+  {
+    "audio": "Audio",
+    "nonePrice": "No published price",
+    "key": "Key ready",
+    "noKey": "Needs key",
+    "filter": "Filter by maker",
+    "all": "All",
+    "search": "Search models",
+    "models": "Models",
+    "empty": "No model matches.",
+    "none": "none",
+    "modelLabel": "Model: {model}",
+    "model": "Model",
+    "choose": "Choose a model",
+  },
+  {
+    "audio": "오디오",
+    "nonePrice": "공개 가격 없음",
+    "key": "키 사용 가능",
+    "noKey": "키 필요",
+    "filter": "제조사 필터",
+    "all": "전체",
+    "search": "모델 검색",
+    "models": "모델",
+    "empty": "일치하는 모델이 없어요. 검색어나 필터를 바꿔 보세요.",
+    "none": "없음",
+    "modelLabel": "모델: {model}",
+    "model": "모델",
+    "choose": "모델 선택",
+  },
+);
 
 interface Props {
   models: readonly CatalogModel[];
@@ -35,6 +69,7 @@ function specChips(model: CatalogModel): string[] {
 }
 
 function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: boolean; onPick: () => void }) {
+  const t = useT(M);
   const keyed = modelHasKey(model);
   return (
     <li>
@@ -43,7 +78,7 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
         <span className="model-row-main">
           <span className="model-row-label">
             {model.label}
-            {model.params.nativeAudio ? <span className="tag">Audio</span> : null}
+            {model.params.nativeAudio ? <span className="tag">{t("audio")}</span> : null}
           </span>
           <span className="model-row-sub">
             {specChips(model).map((chip) => (
@@ -57,8 +92,8 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
           </span>
         </span>
         <span className="model-row-meta">
-          <span className="model-row-price">{fromPrice(model.routes) ?? "No published price"}</span>
-          <span className={"key-state " + (keyed ? "is-on" : "is-off")}>{keyed ? "Key ready" : "Needs key"}</span>
+          <span className="model-row-price">{fromPrice(model.routes) ?? t("nonePrice")}</span>
+          <span className={"key-state " + (keyed ? "is-on" : "is-off")}>{t(keyed ? "key" : "noKey")}</span>
         </span>
         {selected ? <Icon name="check" size={16} /> : <span className="check-space" />}
       </button>
@@ -81,10 +116,11 @@ function VendorFilter({
   vendor: string | null;
   setVendor: (v: string | null) => void;
 }) {
+  const t = useT(M);
   return (
-    <div className="chip-row" role="group" aria-label="Filter by maker">
+    <div className="chip-row" role="group" aria-label={t("filter")}>
       <button type="button" className="chip" aria-pressed={vendor === null} onClick={() => setVendor(null)}>
-        All
+        {t("all")}
       </button>
       {vendors.map((v) => (
         <button
@@ -103,6 +139,7 @@ function VendorFilter({
 
 /** Search, maker filter and the model list inside the picker popover. */
 function PickerPanel({ models, value, onPick }: PanelProps) {
+  const t = useT(M);
   const [query, setQuery] = useState("");
   const [vendor, setVendor] = useState<string | null>(null);
   const vendors = useMemo(() => [...new Set(models.map((m) => m.vendor))].sort(), [models]);
@@ -114,24 +151,25 @@ function PickerPanel({ models, value, onPick }: PanelProps) {
         <input
           autoFocus
           type="search"
-          placeholder="Search models"
-          aria-label="Search models"
+          placeholder={t("search")}
+          aria-label={t("search")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
       <VendorFilter vendors={vendors} vendor={vendor} setVendor={setVendor} />
-      <ul className="model-list" aria-label="Models">
+      <ul className="model-list" aria-label={t("models")}>
         {shown.map((model) => (
           <ModelRow key={model.id} model={model} selected={model.id === value} onPick={() => onPick(model.id)} />
         ))}
-        {shown.length === 0 ? <li className="empty-line">No model matches.</li> : null}
+        {shown.length === 0 ? <li className="empty-line">{t("empty")}</li> : null}
       </ul>
     </>
   );
 }
 
 export function ModelPicker({ models, kind, value, onChange, variant = "row", tasks }: Props) {
+  const t = useT(M);
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const ofKind = useMemo(
@@ -147,20 +185,24 @@ export function ModelPicker({ models, kind, value, onChange, variant = "row", ta
         className="picker-trigger"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={"Model: " + (current?.label ?? "none")}
+        aria-label={t("modelLabel", { model: current?.label ?? t("none") })}
         onClick={() => setOpen(!open)}
       >
-        {variant === "row" ? <span className="setting-caption">Model</span> : null}
+        {variant === "row" ? <span className="setting-caption">{t("model")}</span> : null}
         <span className="setting-value picker-value">
           {current ? <VendorLogo id={current.vendor} size={variant === "row" ? 18 : 16} /> : null}
-          {current?.label ?? "Choose a model"}
+          {current?.label ?? t("choose")}
         </span>
         <Icon name="chevron" size={16} />
       </button>
       <Popover
         open={open}
-        onClose={() => setOpen(false)}
-        label="Choose a model"
+        onClose={() => {
+          const restore = document.activeElement !== trigger.current && document.activeElement?.closest(".model-popover");
+          setOpen(false);
+          if (restore) trigger.current?.focus();
+        }}
+        label={t("choose")}
         className="model-popover"
         anchor={trigger}
         placement={variant === "row" ? "right" : "top"}
@@ -171,6 +213,7 @@ export function ModelPicker({ models, kind, value, onChange, variant = "row", ta
           onPick={(id) => {
             onChange(id);
             setOpen(false);
+            trigger.current?.focus();
           }}
         />
       </Popover>

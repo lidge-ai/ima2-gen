@@ -78,7 +78,7 @@ test("video: a preset fills the prompt and shows on the card", async ({ page }) 
   await page.getByRole("button", { name: "Presets", exact: true }).first().click();
   await page.getByRole("button", { name: /Neon rain/ }).click();
   await expect(page.getByLabel("Prompt")).toHaveValue(/neon reflections/);
-  await expect(page.locator(".preset-card")).toContainText("Neon rain");
+  await expect(page.locator(".preset-feature")).toContainText("Neon rain");
 });
 
 test("image: dock generates an image that later opens in the viewer", async ({ page }) => {

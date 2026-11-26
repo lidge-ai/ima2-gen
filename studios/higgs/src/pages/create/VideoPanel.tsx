@@ -1,3 +1,4 @@
+import { messages, useT } from "../../i18n.ts";
 import type { Catalog, CatalogModel } from "@ima2/studio-kit";
 import { findPreset } from "../../data/presets.ts";
 import { Icon } from "../../ui/Icon.tsx";
@@ -10,6 +11,59 @@ import { RefSlots } from "./RefSlots.tsx";
 import { EDIT_TASKS, type CreateForm } from "./form.ts";
 import { useCreate } from "./useCreate.ts";
 
+const M = messages(
+  {
+    "input": "Input type",
+    "frames": "Frames",
+    "refs": "References",
+    "start": "Start frame",
+    "end": "End frame",
+    "optional": "Optional",
+    "promptOnly": "{model} works from the prompt only.",
+    "prompt": "Prompt",
+    "editPlaceholder": "Describe the change: make it snow, turn day into night",
+    "createPlaceholder": "Describe the shot: subject, motion, camera, light",
+    "soundOn": "Sound on",
+    "soundOff": "Sound off",
+    "mode": "Video mode",
+    "create": "Create video",
+    "edit": "Edit video",
+    "sending": "Sending",
+    "generate": "Generate",
+    "estimate": "Estimated {cost}",
+    "noPrice": "Price not published",
+    "source": "Video to edit",
+    "format": "MP4 or MOV",
+    "nokey": "Add a key to generate.",
+    "unavailable": "No route is available for this model.",
+  },
+  {
+    "input": "입력 유형",
+    "frames": "프레임",
+    "refs": "레퍼런스",
+    "start": "시작 프레임",
+    "end": "끝 프레임",
+    "optional": "선택",
+    "promptOnly": "{model} 모델은 프롬프트만 사용할 수 있어요.",
+    "prompt": "프롬프트",
+    "editPlaceholder": "바꿀 내용을 적어 주세요. 예: 눈 내리게 하기, 낮을 밤으로 바꾸기",
+    "createPlaceholder": "장면의 피사체, 움직임, 카메라, 조명을 설명해 주세요",
+    "soundOn": "사운드 켬",
+    "soundOff": "사운드 끔",
+    "mode": "영상 모드",
+    "create": "영상 생성",
+    "edit": "영상 편집",
+    "sending": "요청 중",
+    "generate": "생성",
+    "estimate": "예상 {cost}",
+    "noPrice": "공개 가격 없음",
+    "source": "편집할 영상",
+    "format": "MP4 또는 MOV",
+    "nokey": "생성하려면 키를 추가하세요.",
+    "unavailable": "이 모델을 사용할 수 있는 경로가 없어요.",
+  },
+);
+
 interface Props {
   catalog: Catalog;
   form: CreateForm;
@@ -18,55 +72,56 @@ interface Props {
 }
 
 function InputTypeToggle({ refMode, set }: { refMode: CreateForm["refMode"]; set: Props["set"] }) {
+  const t = useT(M);
   return (
-    <div className="segmented-wide" role="radiogroup" aria-label="Input type">
+    <div className="segmented-wide" role="group" aria-label={t("input")}>
       <button
         type="button"
-        role="radio"
-        aria-checked={refMode === "frames"}
+        aria-pressed={refMode === "frames"}
         onClick={() => set({ refMode: "frames", references: [] })}
       >
-        <Icon name="image" size={15} /> Frames
+        <Icon name="image" size={15} /> {t("frames")}
       </button>
       <button
         type="button"
-        role="radio"
-        aria-checked={refMode === "references"}
+        aria-pressed={refMode === "references"}
         onClick={() => set({ refMode: "references", firstFrame: null, lastFrame: null })}
       >
-        <Icon name="layers" size={15} /> References
+        <Icon name="layers" size={15} /> {t("refs")}
       </button>
     </div>
   );
 }
 
 function FrameSlots({ form, set }: { form: CreateForm; set: Props["set"] }) {
+  const t = useT(M);
   return (
     <div className="slots">
       <UploadSlot
-        label="Start frame"
+        label={t("start")}
         role="first-frame"
         accept="image/*"
         value={form.firstFrame}
         onChange={(firstFrame) => set({ firstFrame })}
-        hint="Optional"
+        hint={t("optional")}
       />
       <UploadSlot
-        label="End frame"
+        label={t("end")}
         role="last-frame"
         accept="image/*"
         value={form.lastFrame}
         onChange={(lastFrame) => set({ lastFrame })}
-        hint="Optional"
+        hint={t("optional")}
       />
     </div>
   );
 }
 
 function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateForm; set: Props["set"] }) {
+  const t = useT(M);
   const canFrames = model.tasks.includes("image-to-video");
   const canRefs = model.tasks.includes("reference-to-video");
-  if (!canFrames && !canRefs) return <p className="panel-note">{model.label} works from the prompt only.</p>;
+  if (!canFrames && !canRefs) return <p className="panel-note">{t("promptOnly", { model: model.label })}</p>;
   const refMode = canFrames && canRefs ? form.refMode : canRefs ? "references" : "frames";
   return (
     <>
@@ -85,10 +140,11 @@ function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateF
 }
 
 function PromptCard({ model, form, set }: { model: CatalogModel | undefined; form: CreateForm; set: Props["set"] }) {
+  const t = useT(M);
   return (
-    <div className="prompt-card">
-      <label htmlFor="video-prompt" className="prompt-card-label">
-        Prompt
+    <div className="prompt-editor">
+      <label htmlFor="video-prompt" className="prompt-editor-label">
+        {t("prompt")}
       </label>
       <textarea
         id="video-prompt"
@@ -97,17 +153,17 @@ function PromptCard({ model, form, set }: { model: CatalogModel | undefined; for
         rows={4}
         placeholder={
           form.mode === "edit"
-            ? "Describe the change: make it snow, turn day into night"
-            : "Describe the shot: subject, motion, camera, light"
+            ? t("editPlaceholder")
+            : t("createPlaceholder")
         }
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
         }}
       />
       {model?.params.nativeAudio ? (
-        <div className="prompt-card-chips">
+        <div className="prompt-editor-chips">
           <button type="button" className="chip" aria-pressed={form.audio} onClick={() => set({ audio: !form.audio })}>
-            <Icon name="audio" size={13} /> Sound {form.audio ? "on" : "off"}
+            <Icon name="audio" size={13} /> {t(form.audio ? "soundOn" : "soundOff")}
           </button>
         </div>
       ) : null}
@@ -116,23 +172,22 @@ function PromptCard({ model, form, set }: { model: CatalogModel | undefined; for
 }
 
 function ModeTabs({ mode, set }: { mode: CreateForm["mode"]; set: Props["set"] }) {
+  const t = useT(M);
   return (
-    <div className="panel-tabs" role="tablist" aria-label="Video mode">
+    <div className="panel-tabs" role="group" aria-label={t("mode")}>
       <button
         type="button"
-        role="tab"
-        aria-selected={mode === "create"}
+        aria-pressed={mode === "create"}
         onClick={() => set({ mode: "create", model: undefined })}
       >
-        Create video
+        {t("create")}
       </button>
       <button
         type="button"
-        role="tab"
-        aria-selected={mode === "edit"}
+        aria-pressed={mode === "edit"}
         onClick={() => set({ mode: "edit", model: undefined })}
       >
-        Edit video
+        {t("edit")}
       </button>
     </div>
   );
@@ -141,17 +196,18 @@ function ModeTabs({ mode, set }: { mode: CreateForm["mode"]; set: Props["set"] }
 type Create = ReturnType<typeof useCreate>;
 
 function PanelFoot({ create }: { create: Create }) {
+  const t = useT(M);
   return (
     <div className="panel-foot">
-      {create.blocked && create.model ? <p className="form-hint">{create.blocked}</p> : null}
+      {!create.canSend && !create.sending ? <p className="form-hint">{create.blocked ?? (create.choice.kind === "needs-key" ? t("nokey") : t("unavailable"))}</p> : null}
       <button
         className="btn btn-primary btn-generate"
         type="submit"
         disabled={!create.canSend}
-        title={create.cost.title}
+        title={create.blocked ?? undefined}
       >
-        <span>{create.sending ? "Sending" : "Generate"}</span>
-        <span className="btn-cost">{create.cost.text}</span>
+        <span>{create.sending ? t("sending") : t("generate")}</span>
+        <span className="btn-cost">{create.cost.text === "-" || create.cost.text === "Price not published" ? t("noPrice") : t("estimate", { cost: create.cost.text })}</span>
       </button>
     </div>
   );
@@ -168,15 +224,16 @@ function SourceInputs({
   set: Props["set"];
   onOpenPresets: () => void;
 }) {
+  const t = useT(M);
   if (form.mode === "edit") {
     return (
       <UploadSlot
-        label="Video to edit"
+        label={t("source")}
         role="source-video"
         accept="video/*"
         value={form.sourceVideo}
         onChange={(sourceVideo) => set({ sourceVideo })}
-        hint="MP4 or MOV"
+        hint={t("format")}
       />
     );
   }
@@ -209,13 +266,14 @@ function PanelNotices({ create, catalog }: { create: Create; catalog: Catalog })
 }
 
 export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
+  const t = useT(M);
   const create = useCreate(catalog, form, set);
   const { model } = create;
   const tasks = form.mode === "edit" ? EDIT_TASKS : ["text-to-video", "image-to-video", "reference-to-video"];
   return (
     <form
       className="panel"
-      aria-label="Create video"
+      aria-label={t("create")}
       onSubmit={(e) => {
         e.preventDefault();
         void create.submit();
