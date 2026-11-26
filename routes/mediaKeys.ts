@@ -157,7 +157,7 @@ async function validateMediaKey(ctx: RuntimeContext, adapter: MediaProviderAdapt
   const requestedExtra = readExtra(rawExtra, adapter);
   if (typeof requestedExtra === "string") return fail(res, 400, "INVALID_EXTRA", requestedExtra);
   const fields = cred.extraFields ?? [];
-  if (fields.some((field) => field.secret && requestedExtra[field.name] !== undefined && requestedExtra[field.name].length < 6)) {
+  if (fields.some((field) => field.secret && requestedExtra[field.name] !== undefined && (requestedExtra[field.name]?.length ?? 0) < 6)) {
     return fail(res, 400, "KEY_TOO_SHORT", "Secret extra too short", "auth");
   }
   const fileConfig = await readConfigFileSafe(ctx.config.storage.configFile);

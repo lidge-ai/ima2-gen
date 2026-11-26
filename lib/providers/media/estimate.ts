@@ -29,10 +29,10 @@ export function estimateMediaJob(registry: MediaRegistry, keys: MediaKeySnapshot
   const model = registry.getModel(body.model);
   const options = { modelId: body.model, adapterId: body.adapter, task: body.task, hasKey: (adapter: Parameters<MediaKeySnapshot["hasKey"]>[0]) => keys.hasKey(adapter) };
   let selection = selectMediaRoute(model, options);
-  if (!selection.ok && selection.code === "MEDIA_KEY_MISSING") {
+  if (selection.ok === false && selection.code === "MEDIA_KEY_MISSING") {
     selection = selectMediaRoute(model, { ...options, hasKey: () => true });
   }
-  if (!selection.ok) {
+  if (selection.ok === false) {
     throw new MediaJobError(selection.code, selection.message, { status: selection.status, category: selection.status === 404 ? "not-found" : "invalid-request" });
   }
   const { adapter, spec } = selection;

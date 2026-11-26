@@ -45,8 +45,8 @@ async function withApp(fn: (h: Harness) => Promise<void>, options: Options = {})
     { name: "region", envVar: "PAIR_REGION", secret: false, required: true },
   ] });
   const vertex = makeFakeAdapter({ id: "google-vertex", vocabulary: "vertex" });
-  const prefixed = makeFakeAdapter({ id: "prefixed" });
-  prefixed.credential = { ...prefixed.credential, keyPrefix: "pre-" };
+  const basePrefixed = makeFakeAdapter({ id: "prefixed" });
+  const prefixed = { ...basePrefixed, credential: { ...basePrefixed.credential, keyPrefix: "pre-" } };
   for (const adapter of [fake, pair, vertex, prefixed]) {
     adapter.validateKey = async (ctx: MediaAdapterContext) => {
       calls.push({ adapter: adapter.id, apiKey: ctx.apiKey, extra: { ...ctx.extra } });
