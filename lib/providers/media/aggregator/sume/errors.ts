@@ -5,7 +5,7 @@
  */
 import type { ErrorCategory } from "../shared/errors.js";
 import type { VendorErrorView } from "../shared/http.js";
-import { asRecord, asString } from "../shared/http.js";
+import { asArray, asRecord, asString } from "../shared/http.js";
 
 const CODE_CATEGORY: Record<string, ErrorCategory> = {
   unauthorized: "auth",
@@ -32,10 +32,19 @@ function categoryOf(code: string | undefined, vendorCategory: string | undefined
   return undefined;
 }
 
+/** Validation failures list per-field reasons under error.details.errors; surface them. */
+function detailText(error: Record<string, unknown>): string | undefined {
+  const items = asArray(asRecord(error.details).errors).map(asRecord);
+  const lines = [...new Set(items.map((item) => [asString(item.path), asString(item.message)].filter(Boolean).join(": ")).filter(Boolean))];
+  return lines.length > 0 ? lines.join("; ") : undefined;
+}
+
 export function readSumeError(body: unknown, _status: number): VendorErrorView {
   const error = asRecord(asRecord(body).error);
   const code = asString(error.code);
-  const message = asString(error.message);
+  const base = asString(error.message);
+  const details = detailText(error);
+  const message = base && details ? `${base} (${details})` : base ?? details;
   const category = categoryOf(code, asString(error.category));
   return {
     message,

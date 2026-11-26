@@ -36,8 +36,10 @@ const VIDEO_FIELDS: Record<string, InputField> = {
   extend: { type: "boolean" }, upscale: { type: "object" }, sound: { type: "object" }, captions: { type: "object" },
   dubbing: { type: "object" }, relight: { type: "object" },
 };
+/** https://www.sume.com/docs/images (2026-11-26): resolution is the 1K/2K/4K tier; image_size is a preset, WxH or object. */
 const IMAGE_FIELDS: Record<string, InputField> = {
-  prompt: S, image_urls: URLS, aspect_ratio: S, image_size: S, quality: S,
+  prompt: S, image_urls: URLS, aspect_ratio: S, resolution: S, image_size: {}, quality: S,
+  num_images: { type: "integer", minimum: 1 }, output_format: S, mask_url: S,
 };
 
 function headers(ctx: MediaAdapterContext): Record<string, string> {
