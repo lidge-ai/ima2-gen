@@ -58,9 +58,10 @@ for (const locale of ["en", "ko"] as const) {
       const app = await open(browser, locale, viewport);
       try {
         await pickLocal(app.page);
-        // The line beside Generate is on every width; the settings card is a side panel on wide screens only.
-        await expect(app.page.locator(".generate-row__media:visible")).toContainText("FLUX.2 klein (my workflow)");
+        // The model control is on every width; the settings card and the line beside Generate are on wide screens only.
+        await expect(app.page.locator(MODEL_CONTROL)).toContainText("FLUX.2 klein");
         if (viewport.width >= 1024) {
+          await expect(app.page.locator(".generate-row__media:visible")).toContainText("FLUX.2 klein (my workflow)");
           const estimate = card(app.page).locator(".media-estimate");
           await expect(estimate).toBeVisible();
           await estimate.scrollIntoViewIfNeeded();
