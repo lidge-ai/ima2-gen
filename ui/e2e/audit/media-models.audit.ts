@@ -260,3 +260,27 @@ for (const locale of LOCALES) {
     });
   }
 }
+
+// Sizes read the same on every route: MiniMax lists 768P and 1080P, the screen shows 768p and 1080p.
+for (const locale of LOCALES) {
+  for (const width of WIDTHS) {
+    test("capture size labels " + locale + " " + width, async ({ browser }) => {
+      test.setTimeout(120_000);
+      await mkdir(OUT, { recursive: true });
+      const app = await openStaticApp(browser, { locale, viewport: { width, height: HEIGHT[width] ?? 900 }, keys: ["minimax"] });
+      try {
+        await openCreateScreen(app.page);
+        const stage = new Stage(app, width, locale);
+        await stage.openWindow();
+        await stage.kind(1);
+        await app.page.locator('.media-dialog .media-row[data-model="minimax/hailuo-3"]').first().scrollIntoViewIfNeeded();
+        await stage.shot("window-size-labels");
+        await stage.pick("minimax/hailuo-3");
+        await stage.showCard();
+        await stage.shot("size-labels");
+        await stage.card.screenshot({ path: join(OUT, "size-labels-crop__" + width + "__" + locale + ".png") });
+        expect(app.errors).toEqual([]);
+      } finally { await app.close(); }
+    });
+  }
+}

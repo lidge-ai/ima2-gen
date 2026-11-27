@@ -1,3 +1,4 @@
+import { resolutionOptions } from "./resolutionLabel.js";
 import type { MediaKind, MediaProviderAdapter } from "./contract.js";
 import type { MediaKeySnapshot } from "./credentials.js";
 import { preferredCandidate, type MediaCatalogModel, type MediaRegistry } from "./registry.js";
@@ -44,6 +45,8 @@ function modelEntry(model: MediaCatalogModel, keys: MediaKeySnapshot, logos: Ven
     upstreamId: spec.upstreamId,
     tasks: spec.tasks,
     params: spec.params,
+    // One readable label per listed size; value is the provider's own spelling and is what a request sends.
+    resolutionOptions: resolutionOptions(spec.params.resolutions ?? []),
     pricing: spec.pricing,
     docsUrl: spec.docsUrl,
     hasKey: keys.hasKey(adapter),

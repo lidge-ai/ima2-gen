@@ -7,6 +7,7 @@ import { selectMediaRoute } from "./registry.js";
 import { adapterJobError, pollUntilTerminal } from "./runnerPoll.js";
 import { materializeOutput, saveOutput } from "./runnerOutputs.js";
 import { DEFAULT_MAX_INPUT_BYTES, type MediaJobResult, type MediaLaunchOptions, type MediaRunnerDeps, type PreparedMediaJob, type SavedMediaOutput } from "./runnerTypes.js";
+import { specResolution } from "./resolutionLabel.js";
 import { validateAgainstSpec, type MediaJobBody } from "./validate.js";
 import { abortJob, finishJob, isJobCanceled, isStartJobFailure, registerJobAbortController, setJobPhase, startJob } from "../../inflight.js";
 import { makeGenerationCanceledError } from "../../generationCancel.js";
@@ -36,6 +37,9 @@ export async function prepareMediaJob(deps: MediaRunnerDeps, body: MediaJobBody)
     const { code, message, status } = selection as Extract<typeof selection, { ok: false }>;
     throw new MediaJobError(code, message, { status, category: code === "MEDIA_KEY_MISSING" ? "auth" : "invalid-request" });
   }
+  // A request may spell a size any way ("720p" for a route that lists "720P"); the provider gets its own spelling.
+  const listed = body.resolution !== undefined ? specResolution(selection.spec.params.resolutions, body.resolution) : undefined;
+  if (listed !== undefined) body = { ...body, resolution: listed };
   validateAgainstSpec(selection.spec, body);
   const dirs = { generatedDir: deps.generatedDir, inputsDir: deps.inputsDir, maxBytes: deps.maxInputBytes ?? DEFAULT_MAX_INPUT_BYTES };
   const inputs = await Promise.all(body.inputs.map((ref) => resolveMediaInputRef(ref, dirs)));

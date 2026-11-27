@@ -1,4 +1,4 @@
-import type { MediaLogo } from "../lib/mediaCatalog";
+import { resolutionShown, type MediaLogo } from "../lib/mediaCatalog";
 import { useMediaCatalog } from "../lib/mediaCatalogStore";
 import { qualityLabel } from "./media/mediaLabels";
 import { MediaLogo as MediaMark } from "./media/MediaLogo";
@@ -199,7 +199,7 @@ export function ResultMetadataModal({
     const made = item.media;
     addField(settingsFields, t("mediaPicker.task"), made.task && isClassicTask(made.task) ? t(`mediaPicker.tasks.${made.task}`) : made.task, { compact: true });
     addField(settingsFields, t("mediaPicker.duration"), made.durationSec != null ? t("mediaPicker.seconds", { n: made.durationSec }) : null, { compact: true });
-    addField(settingsFields, t("mediaPicker.resolution"), made.resolution, { compact: true });
+    addField(settingsFields, t("mediaPicker.resolution"), made.resolution ? resolutionShown(catalog.models, item.model, resultAdapter(item), made.resolution) : null, { compact: true });
     addField(settingsFields, t("mediaPicker.quality"), made.quality ? qualityLabel(made.quality, t) : null, { compact: true });
     addField(settingsFields, t("mediaPicker.aspect"), made.aspectRatio, { compact: true });
     addField(settingsFields, t("mediaPicker.seed"), made.seed, { compact: true });
