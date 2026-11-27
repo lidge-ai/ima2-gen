@@ -28,6 +28,7 @@ import { PROVIDER_SURFACES } from "../lib/providers/surfaceSupport.js";
 import type { ProviderSurface, ProviderSurfaceSupport } from "../lib/providers/types.js";
 import { listWorkflows } from "../lib/comfyWorkflowStore.js";
 import { probeComfyOrigins } from "../lib/comfyImageAdapter.js";
+import { ComfyAccess } from "../lib/comfy/access.js";
 import { loadGrokCredentials } from "../lib/xaiAuth.js";
 import type { CoreProviderId } from "../lib/providers/registry.js";
 import {
@@ -271,6 +272,8 @@ async function comfyLane(ctx: RuntimeContext, deps: ModelsRouteDeps = {}): Promi
   const health = await (deps.probeComfyOrigins ?? probeComfyOrigins)(
     workflows.map((workflow) => workflow.origin),
     ctx.config.comfy.healthTimeoutMs,
+    undefined,
+    await ComfyAccess.load(ctx.config.storage.configFile),
   );
   const liveness = [...health.values()];
   const anyLive = liveness.some((entry) => entry.ok);

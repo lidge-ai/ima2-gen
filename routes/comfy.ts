@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
-import { exportImageToComfy, isComfyBridgeError, normalizeComfyOrigin } from "../lib/comfyBridge.js";
+import { exportImageToComfy, isComfyBridgeError } from "../lib/comfyBridge.js";
+import { ComfyAccess, deleteComfyRemote, isComfyRemoteError, putComfyRemote } from "../lib/comfy/access.js";
 import { probeComfyOrigins } from "../lib/comfyImageAdapter.js";
 import { deriveParams, inferBindCandidates, inferComfyMediaKind, parseApiGraph } from "../lib/comfyGraphBind.js";
 import { extractComfyApiGraph, isPngBuffer } from "../lib/comfyPngWorkflow.js";
@@ -35,6 +36,7 @@ function errorPayload(code: string, message: string) {
 
 export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
+  const loadAccess = () => ComfyAccess.load(ctx.config.storage.configFile);
 
   /**
    * Keeps ctx.comfyWorkflows in step with the store after a write.
@@ -54,6 +56,9 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
     if (isComfyBridgeError(error)) {
       const bridge = error as Error & { code: string; status: number };
       return res.status(bridge.status).json(errorPayload(bridge.code, bridge.message));
+    }
+    if (isComfyRemoteError(error)) {
+      return res.status(error.status).json(errorPayload(error.code, error.message));
     }
     return res.status(500).json(errorPayload("COMFY_WORKFLOW_FAILED", "Could not complete the workflow operation."));
   };
@@ -84,6 +89,8 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const health = await probeComfyOrigins(
         workflows.map((workflow) => workflow.origin),
         ctx.config.comfy.healthTimeoutMs,
+        undefined,
+        await loadAccess(),
       );
       return res.json({
         ok: true,
@@ -133,16 +140,55 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
    */
   app.post("/api/comfy/probe", async (req: Request, res: Response) => {
     const requested = (req.body ?? {}) as { origin?: unknown };
+    let access: ComfyAccess;
     let origin: string;
     try {
-      origin = normalizeComfyOrigin(
+      access = await loadAccess();
+      origin = access.target(
         typeof requested.origin === "string" ? requested.origin : ctx.config.comfy.defaultUrl,
-      );
+      ).origin;
     } catch (error) {
       return failWorkflow(res, error);
     }
-    const health = await probeComfyOrigins([origin], ctx.config.comfy.healthTimeoutMs);
+    const health = await probeComfyOrigins([origin], ctx.config.comfy.healthTimeoutMs, undefined, access);
     return res.json({ ok: true, origin, health: health.get(origin) ?? { ok: false, reason: "not probed" } });
+  });
+
+  /**
+   * ComfyUI servers beyond this computer.
+   *
+   * Loopback needs no entry. Any other server must be added here before a
+   * workflow can name it, and may carry a bearer token for an auth proxy. The
+   * token is write-only: responses say only whether one is saved.
+   */
+  app.get("/api/comfy/remotes", async (_req: Request, res: Response) => {
+    return res.json({ ok: true, remotes: (await loadAccess()).list() });
+  });
+
+  app.put("/api/comfy/remotes", async (req: Request, res: Response) => {
+    const body = (req.body ?? {}) as { origin?: unknown; token?: unknown; clearToken?: unknown };
+    try {
+      const remote = await putComfyRemote(ctx.config.storage.configFile, {
+        origin: body.origin, token: body.token, clearToken: body.clearToken === true,
+      });
+      return res.json({ ok: true, remote });
+    } catch (error) {
+      return failWorkflow(res, error);
+    }
+  });
+
+  app.delete("/api/comfy/remotes", async (req: Request, res: Response) => {
+    try {
+      const removed = await deleteComfyRemote(ctx.config.storage.configFile, req.query.origin);
+      if (!removed) {
+        return res.status(404).json(errorPayload("COMFY_REMOTE_NOT_FOUND", "That ComfyUI server is not on the list."));
+      }
+      const origin = new URL(String(req.query.origin)).origin;
+      const stranded = (await listWorkflows()).filter((workflow) => workflow.origin === origin).map((workflow) => workflow.id);
+      return res.json({ ok: true, origin, strandedWorkflows: stranded });
+    } catch (error) {
+      return failWorkflow(res, error);
+    }
   });
 
   app.post("/api/comfy/workflows", async (req: Request, res: Response) => {
@@ -206,7 +252,8 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           "Request body must contain exactly one filename.",
         ));
       }
-      const result = await exportImageToComfy(ctx, { filename: req.body.filename });
+      const target = (await loadAccess()).target(ctx.config.comfy.defaultUrl);
+      const result = await exportImageToComfy(ctx, { filename: req.body.filename }, { target });
       return res.json(result);
     } catch (error) {
       if (isComfyBridgeError(error)) {

@@ -13,7 +13,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { config } from "../config.js";
 import { atomicWriteJson } from "./atomicWrite.js";
-import { normalizeComfyOrigin } from "./comfyBridge.js";
+import { ComfyAccess } from "./comfy/access.js";
 import { logError } from "./logger.js";
 
 export const COMFY_WORKFLOW_ERROR = {
@@ -204,17 +204,18 @@ async function writeAll(records: ComfyWorkflowRecord[]): Promise<void> {
 /**
  * Creates or replaces a workflow.
  *
- * The origin goes through normalizeComfyOrigin, so a record can never hold an
- * address the bridge would refuse later: the http + loopback + explicit-port
- * rule is enforced once, at the boundary, instead of at every call site.
+ * The origin goes through the allow list, so a record can only name a loopback
+ * server or one the user added. The same check runs again before every job,
+ * because the list can shrink after a workflow was registered.
  */
 export async function putWorkflow(
   input: Omit<ComfyWorkflowRecord, "createdAt" | "updatedAt" | "mediaKind">
     & Partial<Pick<ComfyWorkflowRecord, "createdAt" | "mediaKind">>,
-  options: { allowReplace?: boolean } = {},
+  options: { allowReplace?: boolean; access?: ComfyAccess } = {},
 ): Promise<ComfyWorkflowRecord> {
   const id = validateWorkflowId(input.id);
-  const origin = normalizeComfyOrigin(input.origin);
+  const access = options.access ?? await ComfyAccess.load(config.storage.configFile);
+  const origin = access.target(input.origin).origin;
   const all = await listWorkflows();
   const existing = all.find((record) => record.id === id);
   if (existing && options.allowReplace !== true) {

@@ -26,6 +26,7 @@ export const WRITABLE_CONFIG_KEYS = new Set([
   "comfy.pollIntervalMs",
   "comfy.generationTimeoutMs",
   "comfy.maxDownloadBytes",
+  "comfy.liveProgress",
   "storage.generatedDir",
   "storage.generatedDirName",
   "server.port",
