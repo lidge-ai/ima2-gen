@@ -121,6 +121,8 @@ const models: readonly MediaModelSpec[] = [
       aspectRatios: ["16:9", "9:16", "1:1"],
       maxReferenceImages: 4,
       maxReferenceVideos: 1,
+      inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-video"] }],
+      taskFields: { "video-to-video": { accepts: ["prompt", "durationSec", "aspectRatio"], requires: ["prompt"] } },
     },
     pricing: [],
     docsUrl: "https://kling.ai/document-api/api/video/o1/video-omni/legacy",
@@ -176,6 +178,8 @@ const models: readonly MediaModelSpec[] = [
       resolutions: ["720p", "1080p", "4k"],
       maxReferenceImages: 10,
       maxReferenceVideos: 5,
+      inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-video"] }],
+      taskFields: { "video-to-video": { accepts: ["prompt", "durationSec", "resolution", "aspectRatio"], requires: ["prompt"] } },
     },
     pricing: [
       {

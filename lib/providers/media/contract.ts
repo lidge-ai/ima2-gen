@@ -56,6 +56,20 @@ export interface MediaInputRequirement {
   billedLength?: boolean;
 }
 
+/** The request fields every media job shares; a task on a route may take only some of them. */
+export type MediaTaskFieldName = "prompt" | "negativePrompt" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed";
+
+/** The common fields one task takes on one route. The adapter refuses any other field of MediaTaskFieldName. */
+export interface MediaTaskFields {
+  accepts: readonly MediaTaskFieldName[];
+  /** The task does not run without these. Each is also in accepts. */
+  requires?: readonly MediaTaskFieldName[];
+  /** The values this task takes, when they differ from the route's lists. Only for fields in accepts. */
+  durationsSec?: readonly number[];
+  resolutions?: readonly string[];
+  aspectRatios?: readonly string[];
+}
+
 /** A vendorOptions key a client can show as a setting. */
 export interface MediaOptionSpec {
   /** The vendorOptions key. */
@@ -114,6 +128,12 @@ export interface MediaModelSpec {
     inputs?: readonly MediaInputRequirement[];
     /** vendorOptions a client can offer for this route. */
     options?: readonly MediaOptionSpec[];
+    /**
+     * What an edit, extend or upscale task takes on this route, where that differs from the lists above
+     * (an edit that follows its source takes no length or ratio). Absent for a task: no declaration, and
+     * a client falls back to the lists above as before.
+     */
+    taskFields?: Partial<Record<MediaTask, MediaTaskFields>>;
   };
   /** Empty when the vendor publishes no price; never guessed. */
   pricing: readonly MediaPrice[];

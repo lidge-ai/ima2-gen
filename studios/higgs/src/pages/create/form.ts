@@ -125,7 +125,7 @@ export function taskFor(model: CatalogModel, form: CreateForm): MediaTask | null
 
 export function routeFor(model: CatalogModel | undefined, form: CreateForm): RouteChoice {
   if (!model) return { kind: "unavailable" };
-  return chooseRoute(model, form.provider || undefined);
+  return chooseRoute(model, form.provider || undefined, taskFor(model, form) ?? undefined);
 }
 
 export function problem(model: CatalogModel | undefined, form: CreateForm): string | null {
