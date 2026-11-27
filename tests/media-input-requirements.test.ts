@@ -11,7 +11,8 @@ import { paramsFromSchemas, type EndpointSchema } from "../lib/providers/media/a
 import { billedInputSeconds, withBilledLength } from "../lib/providers/media/inputLength.ts";
 import { estimateMediaUsd } from "../lib/webAccess/spendGuard.ts";
 
-const TALKING: readonly MediaTask[] = ["lipsync", "avatar", "dubbing", "subtitles"];
+// Tasks whose form is media inputs: the talking-video ones, and sound made for a video.
+const TALKING: readonly MediaTask[] = ["lipsync", "avatar", "dubbing", "subtitles", "video-to-audio"];
 const MIME: Record<string, string> = { image: "image/png", video: "video/mp4", audio: "audio/mpeg" };
 const kindOf = (role: MediaInputRole) => (role.endsWith("audio") ? "audio" : role.endsWith("video") ? "video" : "image");
 
