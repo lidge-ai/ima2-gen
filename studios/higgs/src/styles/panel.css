@@ -425,7 +425,8 @@
 
 .notice {
   display: grid;
-  grid-template-columns: auto 1fr;
+  /* minmax(0, ...): the key field inside must shrink with a narrow panel instead of pushing the notice wider. */
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   padding: 12px;
   border-radius: var(--radius);
