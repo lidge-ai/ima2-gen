@@ -41,7 +41,7 @@ function checkForm(params: import("../types.ts").MediaModelSpec["params"] | unde
   if (needs.length > 0 && roles.some((role) => !needs.some((need) => need.role === role))) throw invalid();
   const fields = params?.taskFields?.[String(data.task) as never] as import("../types.ts").MediaTaskFields | undefined;
   if (fields) {
-    const sent = (["prompt", "negativePrompt", "durationSec", "resolution", "aspectRatio", "audio", "seed"] as const).filter((name) => data[name] !== undefined);
+    const sent = (["prompt", "negativePrompt", "durationSec", "resolution", "aspectRatio", "audio", "seed", "count", "quality"] as const).filter((name) => data[name] !== undefined);
     if (sent.some((name) => !fields.accepts.includes(name))) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Unsupported field for " + String(data.task));
     if ((fields.requires ?? []).some((name) => !sent.includes(name))) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Missing field for " + String(data.task));
   }

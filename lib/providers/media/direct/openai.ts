@@ -1,6 +1,8 @@
+import { withImageForms, type ImageForm } from "./_l2/imageForm.js";
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
 import { redactSecrets } from "../redact.js";
 import { MediaHttpError, classifyStatus, normalizeMediaError } from "./l3-http.js";
+import { vendorMask } from "../maskConvention.js";
 
 const API = "https://api.openai.com";
 const MODELS = [
@@ -12,10 +14,20 @@ const MODELS = [
 ].map(([id, upstreamId, label]): MediaModelSpec => ({
   id: `openai/${id}`, upstreamId: upstreamId!, label: label!, vendor: "openai", kind: "image",
   tasks: ["text-to-image", "image-to-image"],
-  params: { resolutions: ["1024x1024", "1536x1024", "1024x1536"], maxReferenceImages: 15 },
+  params: {
+    resolutions: ["1024x1024", "1536x1024", "1024x1536"], maxReferenceImages: 15,
+    // Mask rule: "An additional image whose fully transparent areas (e.g. where alpha is zero) indicate where image should be
+    // edited ... Must be a valid PNG file ... and have the same dimensions as image" (openapi.yaml in
+    // github.com/openai/openai-openapi, createImageEdit mask, read 2026-11-28).
+  },
   pricing: [{ unit: "1k-tokens", usd: 0.03, variant: "output image", source: `https://developers.openai.com/api/docs/models/${id === "gpt-image-2" ? "gpt-image-2.5-flare" : upstreamId}`, checkedAt: "2026-11-26" }],
   docsUrl: `https://developers.openai.com/api/docs/models/${upstreamId}`,
 }));
+
+// One image to edit, up to 15 more to draw from, and a mask this adapter converts from repaint-white.
+const DECLARED = withImageForms(MODELS, Object.fromEntries(MODELS.map((model) => [model.id, {
+  task: "image-to-image", images: 1, references: 15, mask: ["vendor", "repaint-white"], accepts: ["prompt", "resolution", "count"], requires: ["prompt"],
+} satisfies ImageForm])));
 
 const results = new Map<string, { at: number; state: MediaJobState }>();
 const TTL = 30 * 60 * 1000;
@@ -81,7 +93,7 @@ function outputs(data: unknown): MediaJobState {
 export const adapter: MediaProviderAdapter = {
   id: "openai", label: "OpenAI", route: "direct", errorPrefix: "OPENAI", inputTransport: "inline",
   credential: { keyVocabulary: "openai", envVars: ["OPENAI_API_KEY"], configKey: "apiKey", keyPrefix: "sk-", consoleUrl: "https://platform.openai.com/api-keys" },
-  listModels: () => MODELS,
+  listModels: () => DECLARED,
   async validateKey(ctx) {
     try { await call(ctx, "/v1/models", { headers: { Authorization: `Bearer ${ctx.apiKey}` } }); return { ok: true }; }
     catch (error) { const e = normalizeMediaError("OPENAI", error); if (e.category === "auth") return { ok: false, reason: e.message }; throw error; }
@@ -92,7 +104,8 @@ export const adapter: MediaProviderAdapter = {
     if (!edit && request.inputs.length) throw new MediaHttpError({ reason: "INVALID_REQUEST", message: "Text generation takes no images", category: "invalid-request", retryable: false });
     const headers: Record<string, string> = { Authorization: `Bearer ${ctx.apiKey}` };
     if (!edit) headers["Content-Type"] = "application/json";
-    const data = await call(ctx, edit ? "/v1/images/edits" : "/v1/images/generations", { method: "POST", headers, body: edit ? multipart(body, request) : JSON.stringify(body) });
+    const form = edit ? multipart(body, await vendorMask(request, "transparent-repaints")) : undefined;
+    const data = await call(ctx, edit ? "/v1/images/edits" : "/v1/images/generations", { method: "POST", headers, body: form ?? JSON.stringify(body) });
     return park(outputs(data));
   },
   async poll(_ctx, job) { return pollResult(job); },
