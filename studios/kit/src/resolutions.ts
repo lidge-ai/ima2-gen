@@ -24,11 +24,17 @@ export function resolutionParts(value: string): ResolutionParts | null {
   const rest = text.slice(size[0].length).toLowerCase();
   const words = rest.split(/[^a-z0-9]+/).filter(Boolean);
   const tier = words.includes("esr") ? "esr" : words.includes("sr") ? "sr" : undefined;
-  const fps = /(\d+)\s*fps/.exec(rest);
+  // "60fps" or "60 fps", read word by word (no backtracking regex on catalog text).
+  let fps: number | undefined;
+  words.forEach((word, i) => {
+    if (!word.endsWith("fps")) return;
+    const n = Number(word === "fps" ? words[i - 1] : word.slice(0, -3));
+    if (Number.isInteger(n) && n > 0) fps = n;
+  });
   return {
     base: size[1] + unit,
     ...(tier ? { tier } : {}),
-    ...(fps ? { fps: Number(fps[1]) } : {}),
+    ...(fps ? { fps } : {}),
   };
 }
 
