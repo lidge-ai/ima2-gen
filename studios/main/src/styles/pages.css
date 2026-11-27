@@ -8,7 +8,8 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 16px 8px;
+  /* The bottom padding is the fade's height, so the end of the content stays clear when scrolled to it. */
+  padding: 16px 16px 24px;
   /* What scrolls under the dock fades out above it instead of showing between the tool chips. */
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
