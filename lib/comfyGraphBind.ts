@@ -200,13 +200,14 @@ export function deriveParams(graph: ComfyGraph, bind: ComfyWorkflowBindings): Co
 }
 
 export interface BindValues {
-  prompt: string;
+  prompt?: string | undefined;
   negativePrompt?: string | undefined;
   width?: number | undefined;
   height?: number | undefined;
   seed?: number | undefined;
   length?: number | undefined;
   fps?: number | undefined;
+  durationSec?: number | undefined;
   refImageName?: string | undefined;
   params?: Record<string, number | string | boolean> | undefined;
 }
@@ -257,6 +258,7 @@ export function bindGraph(
   put(bind.seed, values.seed, "seed");
   put(bind.length, values.length, "length");
   put(bind.fps, values.fps, "fps");
+  put(bind.duration, values.durationSec, "length in seconds");
   if (values.refImageName !== undefined) {
     if (!bind.refImage) {
       throw new ComfyWorkflowError(

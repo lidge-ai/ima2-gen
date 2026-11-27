@@ -7,7 +7,7 @@ import { describeParams } from "../lib/comfy/detect.js";
 import { inspectComfyWorkflow } from "../lib/comfy/inspect.js";
 import { ComfyResultGraphError, resultGraph } from "../lib/comfy/resultGraph.js";
 import { syncLocalCatalog, workflowSpec } from "../lib/comfy/localCatalog.js";
-import { readMediaSlots, withClassicReference } from "../lib/comfy/register.js";
+import { durationRangeFor, readMediaSlots, withClassicReference } from "../lib/comfy/register.js";
 import { extractComfyApiGraph, isPngBuffer } from "../lib/comfyPngWorkflow.js";
 import {
   deleteWorkflow,
@@ -247,6 +247,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const slots = readMediaSlots((bind as { inputs?: unknown }).inputs, graph);
       const stored = withClassicReference(bind, slots, mediaKind);
       const paidNodes = inspection.server.reachable ? inspection.server.paidNodes : [];
+      const durationRange = durationRangeFor(stored, graph, inspection.info);
       const record = await putWorkflow({
         id: typeof body.id === "string" ? body.id : "",
         label: typeof body.label === "string" ? body.label : String(body.id ?? ""),
@@ -257,6 +258,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         params: Array.isArray(body.params) ? body.params
           : inspection.info ? describeParams(graph, stored, inspection.info) : deriveParams(graph, stored),
         ...(paidNodes.length > 0 ? { paidNodes } : {}),
+        ...(durationRange ? { durationRange } : {}),
       }, { allowReplace: body.replace === true, access });
       await refreshWorkflows();
       // Registration does not wait for a missing node or model to be installed; it says what is missing.

@@ -1,4 +1,5 @@
 // lib/comfy/register.ts — checks the file slots a workflow is registered with.
+import { inputSpec, type ComfyObjectInfo } from "./objectInfo.js";
 import {
   COMFY_WORKFLOW_ERROR, ComfyWorkflowError,
   type ComfyGraph, type ComfyInputRole, type ComfyMediaKind, type ComfyMediaSlot, type ComfyWorkflowBindings,
@@ -51,4 +52,19 @@ export function withClassicReference(bind: ComfyWorkflowBindings, slots: readonl
   const only = slots.length === 1 && slots[0]!.kind === "image" && slots[0]!.role !== "mask" ? slots[0]! : undefined;
   if (only && !bind.refImage && mediaKind !== "audio") next.refImage = { node: only.node, input: only.input };
   return next;
+}
+
+/**
+ * The lengths every input bound to the duration accepts, from the server's node schemas. A schema that
+ * allows zero is read as starting at one second: a result has to have some length.
+ */
+export function durationRangeFor(bind: ComfyWorkflowBindings, graph: ComfyGraph, info: ComfyObjectInfo | undefined): { minSec: number; maxSec: number } | undefined {
+  if (!bind.duration || !info) return undefined;
+  let minSec = 1, maxSec = Number.POSITIVE_INFINITY;
+  for (const slot of [bind.duration, ...(bind.duration.also ?? [])]) {
+    const options = inputSpec(info, graph[slot.node]?.class_type ?? "", slot.input)?.options;
+    if (typeof options?.min === "number") minSec = Math.max(minSec, options.min);
+    if (typeof options?.max === "number") maxSec = Math.min(maxSec, options.max);
+  }
+  return Number.isFinite(maxSec) && maxSec >= minSec ? { minSec, maxSec } : undefined;
 }

@@ -98,7 +98,7 @@ describe("comfy workflow manager", () => {
 
   it("blocks submit until every file input has a role, and sends the roles", () => {
     assert.match(source, /slotsWaiting === 0/);
-    assert.match(source, /bind: buildBind\(selection, slots, slotRoles\)/);
+    assert.match(source, /bind: buildBind\(selection, slots, slotRoles, inspection\?\.candidates \?\? \[\]\)/);
   });
 
   it("reads the remote server list only when its section is opened, and never shows a token", () => {

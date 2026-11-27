@@ -120,6 +120,19 @@ function readSettings(record: ComfyWorkflowRecord, request: MediaSubmitRequest):
   return settings;
 }
 
+/** The length the request asks for, when the workflow has a length input to put it in. A length it cannot honour is refused, not ignored. */
+function readDuration(record: ComfyWorkflowRecord, request: MediaSubmitRequest): number | undefined {
+  const seconds = request.durationSec;
+  if (seconds === undefined) return undefined;
+  const model = COMFY_MODEL_PREFIX + record.id;
+  if (!record.bind.duration) throw invalid(COMFY_ERR.OPTION_INVALID, model + " has a fixed length: its workflow has no length input bound. Leave the length out, or register the workflow again with one.");
+  const range = record.durationRange;
+  if (!(seconds > 0) || (range && (seconds < range.minSec || seconds > range.maxSec))) {
+    throw invalid(COMFY_ERR.OPTION_INVALID, model + (range ? " takes a length from " + String(range.minSec) + " to " + String(range.maxSec) + " seconds." : " takes a length above zero seconds."));
+  }
+  return seconds;
+}
+
 function refusePaidNodes(record: ComfyWorkflowRecord, request: MediaSubmitRequest): void {
   const paid = record.paidNodes ?? [];
   if (paid.length === 0 || request.vendorOptions?.allowPaidNodes === true) return;
@@ -154,7 +167,7 @@ async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Pr
   const { refImage: _ref, inputs: _inputs, ...bind } = record.bind;
   const graph = bindGraph(record.graph, bind, {
     prompt: request.prompt ?? "", negativePrompt: request.negativePrompt, seed: request.seed,
-    width: settings.width, height: settings.height, length: settings.length, fps: settings.fps, params: settings.params,
+    width: settings.width, height: settings.height, length: settings.length, fps: settings.fps, durationSec: readDuration(record, request), params: settings.params,
   }, record.params);
   const promptAt = record.bind.prompt;
   if (promptAt && request.prompt === undefined) graph[promptAt.node]!.inputs[promptAt.input] = record.graph[promptAt.node]!.inputs[promptAt.input];

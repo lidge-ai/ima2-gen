@@ -1,5 +1,5 @@
 import type {
-  ComfyBindField, ComfyInputRole, ComfyMediaSlot, ComfyMediaSlotCandidate, ComfyMissingChoice, ComfyServerReport, ComfyWorkflowBindings,
+  ComfyBindCandidate, ComfyBindField, ComfyInputRole, ComfyMediaSlot, ComfyMediaSlotCandidate, ComfyMissingChoice, ComfyServerReport, ComfyWorkflowBindings,
 } from "./api-comfy";
 
 /**
@@ -37,20 +37,24 @@ export function unassignedSlots<T extends ComfyMediaSlotCandidate>(slots: readon
   return slots.filter((slot) => !roles[slotKey(slot)]);
 }
 
-const FIELDS: readonly Exclude<ComfyBindField, "output" | "inputs">[] = ["prompt", "negativePrompt", "width", "height", "seed", "refImage"];
+const FIELDS: readonly Exclude<ComfyBindField, "output" | "inputs">[] = ["prompt", "negativePrompt", "width", "height", "seed", "refImage", "length", "fps", "duration"];
 
 /** What POST /api/comfy/workflows takes as bind: the chosen fields, and every file input with its role. */
 export function buildBind(
   selection: Readonly<Partial<Record<string, string>>>,
   slots: readonly ComfyMediaSlotCandidate[],
   roles: Readonly<Record<string, string | undefined>>,
+  candidates: readonly ComfyBindCandidate[] = [],
 ): ComfyWorkflowBindings {
   const bind: Record<string, unknown> = {};
   for (const field of FIELDS) {
     const value = selection[field];
     if (!value) continue;
     const dot = value.indexOf(".");
-    bind[field] = { node: value.slice(0, dot), input: value.slice(dot + 1) };
+    const node = value.slice(0, dot), input = value.slice(dot + 1);
+    // A setting the graph writes in several nodes is bound in all of them, as the inspection listed them.
+    const also = candidates.find((entry) => entry.field === field && entry.node === node && entry.input === input)?.also;
+    bind[field] = { node, input, ...(also && also.length > 0 ? { also } : {}) };
   }
   bind.output = { node: selection.output ?? "" };
   // With no slots listed the server was not asked; sending nothing leaves its own rule for older registrations in place.
