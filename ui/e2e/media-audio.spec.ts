@@ -81,7 +81,8 @@ test("AU2 speech: the voice is chosen from the provider's list with a sample, Ge
   expect(media.calls.filter((call) => call.path === "/api/media/voices").length).toBe(1);
   await expect(hint(page)).toHaveText("Choose a voice to generate.");
   await expect(generate(page)).toHaveAttribute("aria-disabled", "true");
-  await generate(page).click();
+  // The button stays focusable so its reason is announced; pressing it sends nothing.
+  await generate(page).click({ force: true });
   expect(media.submissions).toEqual([]);
 
   await voice(page).getByLabel("Search voices").fill("calm");
