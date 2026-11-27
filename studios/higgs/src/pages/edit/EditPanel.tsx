@@ -31,10 +31,11 @@ const M = messages(
     route: "Run through", automatic: "Automatic", direct: "direct", aggregator: "aggregator", local: "this computer, no provider charge", noKey: "no key",
     follows: "Length, size and sound follow the source video.",
     generate: "Generate", sending: "Sending", nokey: "Add a key to generate.",
-    estimate: "Estimated {cost} · {seconds} s", unpriced: "Price not published", afterVideo: "Add the video to see the price",
+    estimate: "Estimated {cost} · {seconds} s", unpriced: "Price not published", noMatch: "No price listed for these settings", afterVideo: "Add the video to see the price",
     reading: "Reading the length", unknownLength: "Length unknown, no price",
     unreadable: "This browser could not read the length of the video, so the price is not shown.",
     none: "This catalog has no model that edits, extends or upscales a video yet.",
+    notHere: "{model} has no route this form can run yet, so another model is selected.",
     handOff: "Could not bring that result here. Add it with the upload button.",
   },
   {
@@ -52,10 +53,11 @@ const M = messages(
     route: "실행 경로", automatic: "자동", direct: "직접", aggregator: "어그리게이터", local: "이 컴퓨터에서 실행, 요금 없음", noKey: "키 없음",
     follows: "길이, 크기, 사운드는 원본 영상을 따라요.",
     generate: "생성", sending: "요청 중", nokey: "생성하려면 키를 추가해 주세요.",
-    estimate: "예상 {cost} · {seconds}초", unpriced: "공개 가격 없음", afterVideo: "영상을 넣으면 가격이 계산돼요",
+    estimate: "예상 {cost} · {seconds}초", unpriced: "공개 가격 없음", noMatch: "이 설정의 가격이 공개되지 않았어요", afterVideo: "영상을 넣으면 가격이 계산돼요",
     reading: "길이를 읽는 중이에요", unknownLength: "길이를 몰라 가격이 없어요",
     unreadable: "이 브라우저에서 영상 길이를 읽지 못해 가격을 표시하지 않아요.",
     none: "이 카탈로그에는 영상을 편집, 연장, 업스케일할 수 있는 모델이 아직 없어요.",
+    notHere: "{model} 모델은 아직 이 폼에서 실행할 수 있는 경로가 없어 다른 모델을 골랐어요.",
     handOff: "결과를 가져오지 못했어요. 업로드 버튼으로 직접 추가해 주세요.",
   },
 );
@@ -144,7 +146,7 @@ function Settings({ form, edit }: { form: EditForm; edit: Edit }) {
 /** The estimate, or the reason there is none yet: an unpublished price is not the same as a length still to come. */
 function costText(edit: Edit, t: T): string {
   if (!edit.priced || edit.priced.pricing.length === 0) return t("unpriced");
-  if (edit.cost && edit.billed !== null) return t("estimate", { cost: edit.cost, seconds: edit.billed });
+  if (edit.billed !== null) return edit.cost ? t("estimate", { cost: edit.cost, seconds: edit.billed }) : t("noMatch");
   if (!edit.form?.source.billedLength) return t("unpriced");
   if (!edit.state.source) return t("afterVideo");
   return t(edit.state.sourceSec === null ? "unknownLength" : "reading");
@@ -178,12 +180,16 @@ export function EditPanel({ catalog, model: requested, modes }: { catalog: Catal
     edit.setSource({ role: "source-video", upload, name });
     setNotice(false);
   }, () => setNotice(true));
+  // A model opened by its link that no tool here can run: say so instead of quietly showing another one.
+  const asked = catalog.models.find((m) => m.id === requested);
+  const unrunnable = asked && EDIT_TASKS.every((tool) => editRoutes(asked, tool).length === 0) ? asked : undefined;
   const billedUnread = form?.source.billedLength && state.source && state.sourceSec === null;
   return (
     <form className="panel" aria-label={t("title")} onSubmit={(e) => { e.preventDefault(); void edit.submit(); }}>
       <VideoModeTabs mode="edit" modes={modes} onPick={(mode) => navigate("video", mode === "create" ? undefined : { mode })} />
       <div className="panel-body">
         {tools.length === 0 ? <p className="panel-note">{t("none")}</p> : <ToolTabs tools={tools} edit={edit} />}
+        {unrunnable && tools.length > 0 && state.model !== unrunnable.id ? <p className="form-hint" role="status">{t("notHere", { model: unrunnable.label })}</p> : null}
         {tools.length > 0 ? (
           <UploadSlot label={t((state.tool + "Source") as "video-extendSource")} role="source-video" accept="video/*" value={state.source} onChange={edit.setSource} hint={t("format")} />
         ) : null}

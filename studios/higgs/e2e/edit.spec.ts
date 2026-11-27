@@ -122,3 +122,12 @@ test("edit video: an upscaler's Use link opens the edit form, and Korean names e
   await expect(page.getByRole("button", { name: /^생성/ })).toContainText("영상을 넣으면 가격이 계산돼요");
   await page.getByRole("button", { name: /언어|Language/ }).first().click();
 });
+
+test("edit video: a model no route here can edit is named instead of being swapped silently", async ({ page }) => {
+  // Seedance 2.0 Mini lists an edit task, but none of its routes declares a form for it.
+  await page.goto("/#/video?mode=edit&model=bytedance%2Fseedance-2-mini");
+  await expect(page.getByRole("status").filter({ hasText: "Seedance 2.0 Mini has no route this form can run yet" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Model: / })).not.toContainText("Mini");
+  await page.goto("/#/video?mode=edit&model=xai%2Fgrok-imagine-video");
+  await expect(page.getByText("has no route this form can run yet")).toHaveCount(0);
+});

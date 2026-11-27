@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { StudioApiError, estimateCost, formatUsd, type Catalog, type CatalogModel, type EditTask } from "@ima2/studio-kit";
+import { StudioApiError, editRoutes, estimateCost, formatUsd, type Catalog, type CatalogModel, type EditTask } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { syncModelToUrl } from "../../studio/draft.ts";
 import { spendBlock } from "../../studio/spend.ts";
@@ -11,7 +11,7 @@ import { availableTools, billedSeconds, defaultModel, emptyState, problem, resol
 function startTool(catalog: Catalog, requested: string | undefined): EditTask | undefined {
   const tools = availableTools(catalog);
   const asked = catalog.models.find((m) => m.id === requested);
-  return tools.find((tool) => asked?.tasks.includes(tool)) ?? tools[0];
+  return tools.find((tool) => asked && editRoutes(asked, tool).length > 0) ?? tools[0];
 }
 
 /** Picks a model and route, and resets the settings that belong to the previous route. The video and prompt stay. */
