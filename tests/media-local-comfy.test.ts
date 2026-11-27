@@ -150,6 +150,24 @@ test("files are uploaded into the slot of their role and the graph uses the name
   assert.deepEqual(state.status === "succeeded" ? state.outputs.map((out) => [out.kind, out.mimeType]) : state, [["video", "video/mp4"]]);
 });
 
+test("a workflow with no text input runs as it is, and a prompt sent to it is refused instead of dropped", async () => {
+  const fake = await fakeComfy();
+  const graph = { "1": { class_type: "EmptyImage", inputs: { width: 64, height: 64, batch_size: 1, color: 0 } }, "9": { class_type: "SaveImage", inputs: { filename_prefix: "ima2", images: ["1", 0] } } };
+  await register(fake.origin, "blank", { graph, bind: { output: { node: "9" } }, params: [] });
+  assert.deepEqual(listLocalSpecs().map((spec) => [spec.id, spec.tasks]), [["comfy/blank", ["text-to-image"]]]);
+  const state = await runToEnd(await adapter.submit(ctx(), { model: "comfy/blank", task: "text-to-image", inputs: [] }));
+  assert.equal(state.status, "succeeded");
+  assert.deepEqual(fake.prompts[0]!.body.prompt, graph, "the graph is queued unchanged");
+  await assert.rejects(() => adapter.submit(ctx(), { model: "comfy/blank", task: "text-to-image", prompt: "a fox", inputs: [] }), (error: unknown) => {
+    const failure = error as { code?: string; message?: string };
+    return failure.code === "COMFY_OPTION_INVALID" && /comfy\/blank takes no prompt: its workflow has no text input/.test(failure.message ?? "");
+  });
+  assert.equal(fake.prompts.length, 1, "the refused request queued nothing");
+  // An empty prompt is no prompt.
+  await runToEnd(await adapter.submit(ctx(), { model: "comfy/blank", task: "text-to-image", prompt: "", inputs: [] }));
+  assert.equal(fake.prompts.length, 2);
+});
+
 test("an audio workflow returns audio", async () => {
   const fake = await fakeComfy({ outputs: { "9": { audio: [{ filename: "song.mp3", subfolder: "audio", type: "output" }] } }, files: { "song.mp3": MP3 } });
   await register(fake.origin, "song", { mediaKind: "audio", bind: { prompt: T2I_BIND.prompt, output: T2I_BIND.output }, params: [] });
