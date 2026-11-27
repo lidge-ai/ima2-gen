@@ -64,6 +64,7 @@ export function workflowSpec(record: ComfyWorkflowRecord): MediaModelSpec {
     params: {
       ...(record.bind.seed ? { seed: true } : {}),
       ...(record.bind.negativePrompt ? { negativePrompt: true } : {}),
+      ...(record.bind.duration && record.durationRange ? { durationRange: record.durationRange } : {}),
       ...(count("reference-image") > 0 ? { maxReferenceImages: count("reference-image") } : {}),
       ...(count("reference-video") > 0 ? { maxReferenceVideos: count("reference-video") } : {}),
       ...(inputs.length > 0 ? { inputs } : {}),

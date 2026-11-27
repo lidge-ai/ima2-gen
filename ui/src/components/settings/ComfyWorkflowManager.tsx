@@ -38,7 +38,7 @@ async function readWorkflowFile(file: File): Promise<{ graph?: unknown; pngBase6
   return { graph: JSON.parse(new TextDecoder().decode(buffer)) };
 }
 
-const BIND_FIELDS: ComfyBindField[] = ["prompt", "negativePrompt", "width", "height", "seed", "refImage", "output"];
+const BIND_FIELDS: ComfyBindField[] = ["prompt", "negativePrompt", "width", "height", "seed", "refImage", "length", "fps", "duration", "output"];
 type Source = { graph?: unknown; pngBase64?: string };
 type Registered = { model: string; task?: string; server?: ComfyServerReport };
 
@@ -163,7 +163,7 @@ export function ComfyWorkflowManager() {
         ...(label ? { label } : {}),
         origin,
         mediaKind,
-        bind: buildBind(selection, slots, slotRoles),
+        bind: buildBind(selection, slots, slotRoles, inspection?.candidates ?? []),
       });
       setRegistered({
         model: response.media?.model ?? workflowMediaModel(response.workflow?.id ?? workflowId),
@@ -280,7 +280,7 @@ export function ComfyWorkflowManager() {
               </div>
 
               <div className="section-title">{t("comfy.bindTitle")}</div>
-              {inspection.needsConfirmation ? (
+              {unresolved.length > 0 ? (
                 <div className="muted">{t("comfy.bindAmbiguous")}</div>
               ) : null}
 

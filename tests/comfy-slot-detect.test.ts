@@ -135,6 +135,30 @@ describe("comfy slot detection", () => {
     assert.deepEqual(detectMediaSlots(two, INFO, "video").filter((slot) => slot.kind === "image").map((slot) => [slot.node, slot.role]), [["1", undefined], ["4", "mask"], ["5", undefined]]);
   });
 
+  it("binds a length in seconds written in several nodes as one setting, and asks when they disagree", () => {
+    // ACE-Step 1.5 as ComfyUI 0.46.0 describes it: the length is in the latent node and again in the text encoder.
+    const info = {
+      ...INFO,
+      "EmptyAceStep1.5LatentAudio": { input: { required: { seconds: ["FLOAT", { default: 120, min: 1, max: 1000, step: 0.01 }], batch_size: ["INT", { default: 1, min: 1, max: 4096 }] } }, output: ["LATENT"], output_node: false },
+      "TextEncodeAceStepAudio1.5": { input: { required: { clip: ["CLIP"], tags: ["STRING", { multiline: true }], lyrics: ["STRING", { multiline: true }], seed: ["INT", { default: 0, min: 0, max: 18446744073709552000 }],
+        duration: ["FLOAT", { default: 120, min: 0, max: 2000, step: 0.1 }] } }, output: ["CONDITIONING"], output_node: false },
+      SaveAudioAdvanced: { input: { required: { audio: ["AUDIO"], filename_prefix: ["STRING", { default: "audio/ComfyUI" }] } }, output: [], output_node: true },
+    } as unknown as ComfyObjectInfo;
+    const graph = (duration: number): ComfyGraph => ({
+      "94": { class_type: "TextEncodeAceStepAudio1.5", inputs: { clip: ["97", 1], tags: "soft piano", lyrics: "", seed: 31, duration } },
+      "98": { class_type: "EmptyAceStep1.5LatentAudio", inputs: { seconds: 120, batch_size: 1 } },
+      "106": { class_type: "SaveAudioAdvanced", inputs: { audio: ["18", 0], filename_prefix: "audio/x" } },
+    });
+    const same = detectBindCandidates(graph(120), info).filter((entry) => entry.field === "duration");
+    assert.deepEqual(same.map((entry) => [entry.node + "." + entry.input, entry.unambiguous, entry.also]), [["94.duration", true, [{ node: "98", input: "seconds" }]]]);
+    const bound = bindGraph(graph(120), { output: { node: "106" }, duration: { node: "94", input: "duration", also: [{ node: "98", input: "seconds" }] } }, { durationSec: 15 });
+    assert.deepEqual([bound["94"]!.inputs.duration, bound["98"]!.inputs.seconds], [15, 15]);
+    const differ = detectBindCandidates(graph(60), info).filter((entry) => entry.field === "duration");
+    assert.deepEqual(differ.map((entry) => entry.unambiguous), [false, false], "two different lengths are a choice, not one setting");
+    // A graph with no length in seconds offers nothing.
+    assert.deepEqual(detectBindCandidates(KLEIN, INFO).filter((entry) => entry.field === "duration"), []);
+  });
+
   it("asks when the graph does not settle it", () => {
     // Two samplers fed by different texts: neither is "the" prompt.
     const two: ComfyGraph = { ...SD, "30": { class_type: "KSampler", inputs: { ...SD["3"]!.inputs, positive: ["7", 0], negative: ["6", 0] } } };

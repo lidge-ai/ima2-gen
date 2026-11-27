@@ -2816,6 +2816,9 @@
       "height": "Height",
       "seed": "Seed",
       "refImage": "Reference image",
+      "length": "Frame count",
+      "fps": "Frames per second",
+      "duration": "Length (seconds)",
       "output": "Output node"
     },
     "kindAudio": "Audio",

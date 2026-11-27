@@ -93,6 +93,8 @@ export interface ComfyWorkflowBindings {
   length?: ComfyBinding;
   /** Frames per second, when the graph exposes it as a scalar. */
   fps?: ComfyBinding;
+  /** A length in seconds (an audio graph's "seconds" or "duration" input), set from the request's durationSec. */
+  duration?: ComfyBinding;
   /**
    * Files the workflow takes, by role. A record written before this field existed
    * has only refImage; mediaSlots() reads both.
@@ -123,6 +125,8 @@ export interface ComfyWorkflowRecord {
   params: ComfyWorkflowParam[];
   /** Paid partner node classes the server reported at registration. ComfyUI may charge the user's Comfy account for them. */
   paidNodes?: string[];
+  /** The lengths the bound duration inputs accept, as the server's node schemas gave them at registration. */
+  durationRange?: { minSec: number; maxSec: number };
   createdAt: number;
   updatedAt: number;
 }
@@ -277,6 +281,7 @@ export async function putWorkflow(
     bind: input.bind,
     params: input.params ?? [],
     ...(input.paidNodes && input.paidNodes.length > 0 ? { paidNodes: [...input.paidNodes] } : {}),
+    ...(input.durationRange ? { durationRange: input.durationRange } : {}),
     createdAt: existing?.createdAt ?? input.createdAt ?? now,
     updatedAt: now,
   };
