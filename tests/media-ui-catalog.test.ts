@@ -318,3 +318,36 @@ test("price rows are matched however the provider words sound, video input and c
   assert.equal(price(perRun, { ...t2v, resolution: "1080P", durationSec: 6 }, "request"), 0.49);
   assert.equal(price(perRun, { ...t2v, resolution: "1080P", durationSec: 10 }, "request"), undefined, "no row for a length the price list does not name");
 });
+
+test("speed and mode tiers start at the provider's middle setting and settle one price", () => {
+  const row = (usd: number, variant: string, unit = "image") => ({ unit, usd, variant, source: "https://example.com", checkedAt: "2026-11-27" }) as MediaRoute["pricing"][number];
+  assert.equal(quality.defaultQuality(["turbo", "default", "quality"]), "default");
+  assert.equal(quality.defaultQuality(["TURBO", "BALANCED", "QUALITY"]), "BALANCED");
+  assert.equal(quality.defaultQuality(["standard", "pro", "4k"]), "standard");
+  assert.equal(quality.defaultQuality(["std", "pro"]), "std");
+  const usd = (pricing: MediaRoute["pricing"], qualities: string[], want: Record<string, unknown>, unit = "image") =>
+    estimateWording.pickPrice(pricing, unit, { task: "text-to-image", qualities, ...want } as never).price?.usd;
+  const ideogram = [row(0.03, "text-to-image:low"), row(0.06, "text-to-image:medium"), row(0.1, "text-to-image:high"), row(0.008, "image-to-image:very_low"), row(0.03, "image-to-image:low"), row(0.22, "image-to-image:high")];
+  const tiers = ["very_low", "low", "medium", "high"];
+  assert.equal(usd(ideogram, tiers, { quality: "high" }), 0.1);
+  assert.equal(usd(ideogram, tiers, { quality: "high", task: "image-to-image" }), 0.22);
+  assert.equal(usd(ideogram, tiers, { quality: "very_low", task: "image-to-image" }), 0.008);
+  assert.equal(usd([row(0.03, "TURBO"), row(0.06, "BALANCED"), row(0.09, "QUALITY")], ["TURBO", "BALANCED", "QUALITY"], { quality: "BALANCED" }), 0.06);
+  // Rows for a request with source images apply to edits, and only to edits.
+  const replicate = [row(0.03, "model variant=low"), row(0.1, "model variant=high"), row(0.03, "model variant=low-with-source-images"), row(0.22, "model variant=high-with-source-images")];
+  assert.equal(usd(replicate, ["low", "high"], { quality: "high" }), 0.1);
+  assert.equal(usd(replicate, ["low", "high"], { quality: "high", task: "image-to-image" }), 0.22);
+  const kling = [row(0.168, "with audio=False, model variant=standard", "second"), row(0.252, "with audio=True, model variant=standard", "second"), row(0.224, "with audio=False, model variant=pro", "second"), row(0.42, "with audio=False, model variant=4k", "second")];
+  assert.equal(usd(kling, ["standard", "pro", "4k"], { task: "text-to-video", quality: "pro" }, "second"), 0.224);
+  assert.equal(usd(kling, ["standard", "pro", "4k"], { task: "text-to-video", quality: "standard", audio: true }, "second"), 0.252);
+});
+
+test("a price per megapixel or per token is said to be billed by usage, not left blank", () => {
+  const row = (unit: string, variant?: string) => ({ unit, usd: 0.03, source: "https://example.com", checkedAt: "2026-11-27", ...(variant ? { variant } : {}) }) as MediaRoute["pricing"][number];
+  const selection = { kind: "image" as const, model: "acme/still", adapter: "a", task: "text-to-image" };
+  assert.deepEqual(quoteQuality({ pricing: [row("megapixel", "first output MP"), row("megapixel", "additional output MP")] }, selection), { state: "usage", unit: "megapixel" });
+  assert.deepEqual(quoteQuality({ pricing: [row("1k-tokens", "output image")] }, selection), { state: "usage", unit: "1k-tokens" });
+  // A per-image row still wins when the route has one.
+  assert.equal(quoteQuality({ pricing: [row("megapixel"), row("image")] }, selection).state, "exact");
+  assert.deepEqual(quoteQuality({ pricing: [] }, selection), { state: "unpriced" });
+});

@@ -183,3 +183,16 @@ test("replicate submits an uncurated model through its latest version schema wit
   assert.deepEqual(calls[1].body, { version: "v123", input: { prompt: "a lighthouse at dusk", aspect_ratio: "9:16" } });
   assert.equal((await errorOf(adapter.submit(ctx(fetch), request({ model: "acme/clip", aspectRatio: "1:1" })))).code, "REPLICATE_UNSUPPORTED_OPTION");
 });
+
+test("replicate mode tiers and rendering speeds are listed as qualities and sent on their own field", async () => {
+  const spec = (id: string) => adapter.listModels().find((model) => model.id === id)!;
+  assert.deepEqual(spec("kling/kling-3").params.qualities, ["standard", "pro", "4k"]);
+  assert.deepEqual(spec("kling/kling-o1").params.qualities, ["std", "pro"]);
+  assert.deepEqual(spec("openai/gpt-image-2").params.qualities, ["low", "medium", "high", "auto"]);
+  // A mode that is not a price tier is not a quality.
+  assert.equal(spec("bytedance/seedance-2.5").params.qualities, undefined);
+  const { fetch, calls } = fakeFetch([[/predictions/, () => json(prediction("p-mode"), 201)]]);
+  await adapter.submit(ctx(fetch), request({ model: "kling/kling-o1", task: "text-to-video", quality: "pro" }));
+  assert.equal(((calls[0].body as { input: Record<string, unknown> }).input).mode, "pro");
+  assert.equal((await errorOf(adapter.submit(ctx(fetch), request({ model: "kling/kling-o1", task: "text-to-video", quality: "4k" })))).code, "REPLICATE_UNSUPPORTED_OPTION");
+});

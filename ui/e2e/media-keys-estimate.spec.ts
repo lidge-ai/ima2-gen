@@ -162,3 +162,19 @@ test("L11-K6 a model priced by quality offers the quality, quotes one price for 
   await page.reload();
   await expect(card(page).locator(".option-group", { has: page.getByText("Quality", { exact: true }) }).getByRole("button", { name: "Low", exact: true })).toHaveAttribute("aria-pressed", "true");
 }));
+
+test("L11-K7 a speed tier is a setting with one price; a price per megapixel says it is billed by usage", run({}, async (page, media) => {
+  await pick(page, "Image", "ideogram/ideogram-v3");
+  const estimate = card(page).locator(".media-estimate");
+  const tiers = card(page).locator(".option-group", { has: page.getByText("Quality", { exact: true }) });
+  await expect(tiers.getByRole("button", { name: "Balanced", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(estimate.locator(".price")).toHaveText("$0.06");
+  await tiers.getByRole("button", { name: "Turbo", exact: true }).click();
+  await expect(estimate.locator(".price")).toHaveText("$0.03");
+  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)?.body).toMatchObject({ quality: "TURBO", priceVariant: "TURBO" });
+
+  await pick(page, "Image", "alibaba/z-image");
+  await expect(card(page).locator(".media-estimate .price")).toHaveText("Billed by usage");
+  await expect(card(page).locator(".media-estimate")).toContainText("fal charges this model per megapixel, so the amount depends on the output. Check the price list below.");
+  await expect(hint(page)).toHaveText("Z-Image · billed by usage");
+}));

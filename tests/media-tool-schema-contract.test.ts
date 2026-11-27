@@ -241,3 +241,13 @@ test("tool argument bounds, required handles, and output properties match their 
     for (const property of properties) assert.ok(output.properties[property], `${name}.${property}`);
   }
 });
+
+test("the media tools take quality, and the CLI help names the flag", async () => {
+  const { buildMediaToolDescriptors } = await import("../lib/providers/media/toolSchema.ts");
+  const tools = buildMediaToolDescriptors([]) as { name: string; inputSchema: { properties: Record<string, unknown> } }[];
+  const taking = tools.filter((tool) => "resolution" in tool.inputSchema.properties);
+  assert.ok(taking.some((tool) => tool.name === "media_estimate") && taking.length >= 2, "the estimate and the submit tool");
+  for (const tool of taking) assert.deepEqual(tool.inputSchema.properties.quality, tool.inputSchema.properties.resolution, tool.name);
+  const { readFile } = await import("node:fs/promises");
+  assert.ok((await readFile(new URL("../bin/commands/media.ts", import.meta.url), "utf8")).includes("[--resolution R] [--quality Q]"));
+});
