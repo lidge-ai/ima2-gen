@@ -129,6 +129,25 @@ test("a run binds the request into the graph, never the Comfy account key, and r
   assert.deepEqual(outputs.map((out) => [out.kind, out.mimeType, out.bytes?.byteLength]), [["image", "image/png", FAKE_PNG.length]]);
 });
 
+test("a setting typed on a command line arrives as text and is read as the type the workflow declares", async () => {
+  const fake = await fakeComfy();
+  await register(fake.origin, "klein", { paidNodes: ["KlingTextToVideoNode"] });
+  await register(fake.origin, "clip", { bind: { ...T2I_BIND, length: { node: "5", input: "batch_size" }, fps: { node: "5", input: "fps" } } });
+  await adapter.submit(ctx(), { model: "comfy/klein", task: "text-to-image", prompt: "x", vendorOptions: { "KSampler.steps": "8", "KSampler.sampler_name": "dpmpp_2m", allowPaidNodes: "true" }, inputs: [] });
+  await adapter.submit(ctx(), { model: "comfy/clip", task: "text-to-image", prompt: "x", vendorOptions: { length: "49", fps: "23.976" }, inputs: [] });
+  const sent = fake.prompts.map((entry) => (entry.body as { prompt: Record<string, { inputs: Record<string, unknown> }> }).prompt);
+  assert.deepEqual([sent[0]!["3"]!.inputs.steps, sent[0]!["3"]!.inputs.sampler_name], [8, "dpmpp_2m"]);
+  assert.deepEqual([sent[1]!["5"]!.inputs.batch_size, sent[1]!["5"]!.inputs.fps], [49, 23.976]);
+  // Text that is not a number is still refused, and so is a number outside the range.
+  for (const [options, pattern] of [
+    [{ "KSampler.steps": "many" }, /'KSampler\.steps' must be a number/], [{ "KSampler.steps": "" }, /must be a number/],
+    [{ "KSampler.steps": "500" }, /between 1 and 100/], [{ length: "long" }, /'length' must be a positive number/],
+  ] as const) {
+    await assert.rejects(() => adapter.submit(ctx(), { model: "comfy/clip", task: "text-to-image", prompt: "x", vendorOptions: options, inputs: [] }), (error: unknown) => pattern.test((error as Error).message));
+  }
+  assert.equal(fake.prompts.length, 2);
+});
+
 test("files are uploaded into the slot of their role and the graph uses the name the server gave", async () => {
   const fake = await fakeComfy({
     outputs: { "9": { images: [{ filename: "talk_00001_.mp4", subfolder: "video", type: "output" }], animated: [true] }, "12": { audio: [{ filename: "talk.mp3", subfolder: "", type: "output" }] } },
