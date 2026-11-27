@@ -1,0 +1,40 @@
+// Loaded into every test process by scripts/run-tests.mjs (--import). It changes nothing while a
+// test runs; when the process exits it fails the file if the database was left in a state that
+// breaks cleanup or touches a real profile:
+//
+//  - the SQLite handle is still open. sessions.db and its -wal/-shm files stay in use, so on
+//    Windows removing the config directory fails with EBUSY;
+//  - the agent queue worker is still ticking. Its timer calls into the database every 1.5 s and
+//    reopens a handle that closeDb() just closed, which is the same EBUSY a moment later;
+//  - a database was opened outside the system temp directory, which means the test ran against
+//    a real config directory instead of an isolated one.
+//
+// lib/db.ts and lib/agentQueueWorker.ts publish that state on globalThis; this file only reads it.
+import { realpathSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { resolve, sep } from "node:path";
+
+function inside(root, path) {
+  const base = resolve(root).toLowerCase();
+  const target = resolve(path).toLowerCase();
+  return target === base || target.startsWith(base + sep);
+}
+
+function isTemp(path) {
+  const roots = [tmpdir()];
+  try { roots.push(realpathSync(tmpdir())); } catch { /* the plain path is enough */ }
+  return path === ":memory:" || roots.some((root) => inside(root, path));
+}
+
+process.on("exit", () => {
+  const handle = globalThis[Symbol.for("ima2.dbHandle")];
+  const problems = [];
+  if (handle?.open) problems.push("the SQLite handle is still open (" + handle.open + "). Close it in an after() hook before the config directory is removed: await releaseDatabase() from tests/helpers/releaseDatabase.ts");
+  if (globalThis[Symbol.for("ima2.agentQueueWorker")]) problems.push("the agent queue worker is still running; its timer reopens the database after closeDb(). Stop it first: await releaseDatabase() from tests/helpers/releaseDatabase.ts");
+  for (const path of new Set(handle?.opened ?? [])) {
+    if (!isTemp(path)) problems.push("a database outside the temp directory was opened (" + path + "). Give the test its own config directory: import \"./helpers/isolatedConfig.ts\" first");
+  }
+  if (problems.length === 0) return;
+  for (const problem of problems) console.error("[test process guard] " + problem);
+  process.exitCode = 1;
+});
