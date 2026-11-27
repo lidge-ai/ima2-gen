@@ -38,7 +38,6 @@ export interface CreateForm {
   firstFrame: SlotValue | null;
   lastFrame: SlotValue | null;
   references: readonly SlotValue[];
-  sourceImage: SlotValue | null;
   /** Video create: start/end frames, or free reference images. */
   refMode: "frames" | "references";
   preset: string | undefined;
@@ -63,7 +62,6 @@ export function emptyForm(model?: CatalogModel): CreateForm {
     firstFrame: null,
     lastFrame: null,
     references: [],
-    sourceImage: null,
     refMode: "frames",
     preset: undefined,
   };
@@ -107,7 +105,7 @@ export function taskFor(model: CatalogModel, form: CreateForm): MediaTask | null
     return has("text-to-video") ? "text-to-video" : null;
   }
   if (model.kind === "image") {
-    if (form.sourceImage || form.references.length > 0) return has("image-to-image") ? "image-to-image" : null;
+    // Working on an image has its own tools (pages/image); this form makes one from a prompt.
     return has("text-to-image") ? "text-to-image" : null;
   }
   return model.tasks[0] ?? null;
@@ -127,7 +125,7 @@ export function problem(model: CatalogModel | undefined, form: CreateForm): stri
 }
 
 export function toBody(model: CatalogModel, form: CreateForm, provider: string | undefined): MediaSubmitBody {
-  const slots = [form.firstFrame, form.lastFrame, form.sourceImage, ...form.references];
+  const slots = [form.firstFrame, form.lastFrame, ...form.references];
   const inputs = slots
     .filter((slot): slot is SlotValue => slot !== null)
     .map((slot) => ({ role: slot.role, inputId: slot.upload.inputId }));

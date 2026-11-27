@@ -109,6 +109,33 @@
   place-items: center;
   padding: 0;
 }
+.dock-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dock-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.dock-tray .dock-attachment,
+.dock-tray .dock-attachment img {
+  width: 44px;
+  height: 44px;
+}
+.dock-tray-count {
+  font-size: 12px;
+  color: var(--text-dim, var(--muted));
+  font-variant-numeric: tabular-nums;
+}
+.dock-help {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 13px;
+  color: var(--text-dim, var(--muted));
+}
 .stepper {
   display: inline-flex;
   align-items: center;
@@ -443,4 +470,8 @@
 .image-empty-stack img { min-width: 0; flex: 0 1 112px; }
 .dock-main:focus-within { outline: 2px solid var(--text); outline-offset: 2px; }
 
-@media (max-width: 760px) { .dock { max-height: 60dvh; overflow-y: auto; flex-shrink: 0; } }
+/* The bottom bar is there up to 1000px (shell.css): the page ends above it, and a tall dock scrolls. */
+@media (max-width: 1000px) {
+  .image-page { height: calc(100dvh - var(--topbar-h) - 64px); }
+  .dock { max-height: 60dvh; overflow-y: auto; flex-shrink: 0; }
+}

@@ -45,6 +45,10 @@ function checkForm(params: import("../types.ts").MediaModelSpec["params"] | unde
     if (sent.some((name) => !fields.accepts.includes(name))) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Unsupported field for " + String(data.task));
     if ((fields.requires ?? []).some((name) => !sent.includes(name))) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Missing field for " + String(data.task));
   }
+  const mask = needs.find((need) => need.role === "mask");
+  if (data.maskConvention === "repaint-white" && !mask?.conventions?.includes("repaint-white")) {
+    throw new Fault(400, "MEDIA_MASK_CONVENTION_UNSUPPORTED", "This route does not take a repaint-white mask");
+  }
   if (TALKING.has(String(data.task)) && (data.prompt !== undefined || data.durationSec !== undefined || data.aspectRatio !== undefined)) throw invalid();
   const options = (data.vendorOptions ?? {}) as Record<string, unknown>;
   for (const option of (params?.options ?? []).filter(forTask)) {
