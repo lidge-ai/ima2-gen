@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import time
 import uuid
+from urllib.parse import urlsplit
 
 from .nodes import Ima2BridgeError
 
 TERMINAL = ("completed", "error", "canceled")
+WORKFLOW_PREFIX = "comfy/"
+LOOPBACK = ("127.0.0.1", "localhost", "::1", "0.0.0.0", "::")
 
 
 class Ima2Interrupted(Ima2BridgeError):
@@ -19,6 +22,31 @@ def models_for(catalog, kind):
     ready = [m["id"] for m in models if m.get("defaultRoute")]
     waiting = [m["id"] for m in models if not m.get("defaultRoute")]
     return ready + waiting
+
+
+def same_server(origin, own_server):
+    """True when origin is the ComfyUI at own_server, an (address, port) pair."""
+    if not own_server:
+        return False
+    try:
+        parts = urlsplit(str(origin))
+        port = parts.port or {"http": 80, "https": 443}.get(parts.scheme)
+    except ValueError:
+        return False
+    host, (own_host, own_port) = (parts.hostname or "").lower(), own_server
+    return bool(host) and port == own_port and (host in LOOPBACK or host == str(own_host).lower())
+
+
+def refuse_own_server(client, model, own_server):
+    """A workflow model runs on a ComfyUI. On the one running this node it would queue behind this very run and wait forever."""
+    if not own_server or not str(model).startswith(WORKFLOW_PREFIX):
+        return
+    origin = client.workflow_origin(str(model)[len(WORKFLOW_PREFIX):])
+    if same_server(origin, own_server):
+        raise Ima2BridgeError(
+            f"{model} is a workflow on this same ComfyUI ({origin}), which runs one graph at a time: it would wait for itself. "
+            "Open that workflow here instead, or register it in ima2 on another ComfyUI server."
+        )
 
 
 def pick_task(kind, roles):
@@ -66,15 +94,17 @@ def _status_line(job, estimate_line, started):
     return f"ima2: {phase}, {int(time.time() - started)} s, {estimate_line}"
 
 
-def run_media_job(client, request, inputs, max_usd=0.0, on_status=None, interrupted=None, sleep=time.sleep, timeout=1800, poll=1.0):
+def run_media_job(client, request, inputs, max_usd=0.0, on_status=None, interrupted=None, sleep=time.sleep, timeout=1800, poll=1.0, own_server=None):
     """Estimate, check the budget, upload inputs, submit, wait, and return the saved outputs with their bytes.
 
     request: model, task, prompt and the optional settings ima2's POST /api/media takes.
     inputs: [(role, bytes, mime_type)].
     interrupted: called between polls; True cancels the ima2 job and raises Ima2Interrupted.
+    own_server: (address, port) of the ComfyUI running the node, so a workflow model on it is refused.
     """
     notify = on_status or (lambda _line: None)
     body = {key: value for key, value in request.items() if value not in (None, "")}
+    refuse_own_server(client, body.get("model"), own_server)
     estimate = client.estimate(dict(body))
     estimate_line = describe_estimate(estimate)
     if max_usd >= 0:

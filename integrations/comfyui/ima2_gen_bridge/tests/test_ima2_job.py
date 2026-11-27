@@ -27,6 +27,7 @@ class FakeIma2(ThreadingHTTPServer):
     def __init__(self, estimate, polls=("running", "completed"), error_code=None):
         super().__init__(("127.0.0.1", 0), Handler)
         self.estimate, self.polls, self.error_code = estimate, list(polls), error_code
+        self.workflows = None
         self.calls, self.headers_seen, self.submitted, self.canceled, self.uploads = [], [], None, [], []
         threading.Thread(target=self.serve_forever, daemon=True).start()
 
@@ -58,6 +59,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"models": [
                 {"id": "a/needs-key", "kind": "image", "defaultRoute": None}, {"id": "comfy/klein", "kind": "image", "defaultRoute": "comfy-local"},
                 {"id": "b/clip", "kind": "video", "defaultRoute": "fal"}]})
+        if self.path == "/api/comfy/workflows":
+            if fake.workflows is None:
+                return self._send(404, {"ok": False, "code": "NOT_FOUND", "error": "nothing here"})
+            return self._send(200, {"ok": True, "workflows": fake.workflows})
         if self.path.startswith("/api/media/jobs/"):
             status = fake.polls.pop(0) if len(fake.polls) > 1 else fake.polls[0]
             job = {"status": status, "phase": "streaming"}
@@ -136,6 +141,36 @@ class JobTest(unittest.TestCase):
         lines = []
         self.run_job(client, max_usd=0, on_status=lines.append)
         self.assertEqual(lines[0], "ima2: runs locally, about 4.2 s on your machine, no provider charge")
+
+    def test_a_workflow_on_the_comfyui_running_the_node_is_refused_before_it_waits_for_itself(self):
+        fake, client = self.serve({"usd": 0, "route": "local"})
+        fake.workflows = [{"id": "klein", "origin": "http://localhost:8188"}, {"id": "other", "origin": "http://127.0.0.1:8189"}]
+        request = {"model": "comfy/klein", "task": "text-to-image", "prompt": "a fox"}
+        with self.assertRaisesRegex(Ima2BridgeError, "comfy/klein is a workflow on this same ComfyUI"):
+            ima2_job.run_media_job(client, request, [], own_server=("127.0.0.1", 8188), sleep=lambda _s: None)
+        self.assertEqual(fake.calls, ["GET /api/comfy/workflows"])
+        # Another ComfyUI, another port: it runs.
+        ima2_job.run_media_job(client, dict(request, model="comfy/other"), [], own_server=("127.0.0.1", 8188), sleep=lambda _s: None)
+        self.assertEqual(fake.submitted["model"], "comfy/other")
+        # A model that is not a workflow is never looked up.
+        fake.calls.clear()
+        self.run_job(client, own_server=("127.0.0.1", 8188))
+        self.assertNotIn("GET /api/comfy/workflows", fake.calls)
+
+    def test_an_ima2_without_the_workflow_list_still_runs(self):
+        fake, client = self.serve({"usd": 0, "route": "local"})
+        ima2_job.run_media_job(client, {"model": "comfy/klein", "task": "text-to-image", "prompt": "a fox"}, [], own_server=("127.0.0.1", 8188), sleep=lambda _s: None)
+        self.assertEqual(fake.submitted["model"], "comfy/klein")
+
+    def test_same_server_compares_the_port_and_a_loopback_or_identical_host(self):
+        same = ima2_job.same_server
+        self.assertTrue(same("http://127.0.0.1:8188", ("0.0.0.0", 8188)))
+        self.assertTrue(same("http://[::1]:8188/", ("127.0.0.1", 8188)))
+        self.assertTrue(same("http://192.168.0.5:8188", ("192.168.0.5", 8188)))
+        self.assertFalse(same("http://127.0.0.1:8189", ("127.0.0.1", 8188)))
+        self.assertFalse(same("https://comfy.example.com", ("127.0.0.1", 443)))
+        self.assertFalse(same("not a url", ("127.0.0.1", 8188)))
+        self.assertFalse(same("http://127.0.0.1:8188", None))
 
     def test_stopping_the_comfyui_run_cancels_the_ima2_job(self):
         fake, client = self.serve({"usd": 0}, polls=("running",))

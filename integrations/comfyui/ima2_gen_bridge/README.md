@@ -63,6 +63,12 @@ Shared inputs:
 While a job runs, the node shows ima2's state and the estimate. Stopping the
 ComfyUI run cancels the ima2 job.
 
+A `comfy/<workflow>` model is a ComfyUI workflow registered in ima2. When it is
+registered on the same ComfyUI that is running the node, the node refuses it:
+ComfyUI runs one graph at a time, so the inner run would wait for the outer one.
+Open that workflow in ComfyUI directly, or register it in ima2 on a second
+ComfyUI server.
+
 ### Cost
 
 A job runs on the route ima2 picks and is charged by that provider to the key you

@@ -82,6 +82,17 @@ class Ima2Client:
     def estimate(self, body):
         return self._json("POST", "/api/media/estimate", body)
 
+    def workflow_origin(self, workflow_id):
+        """The ComfyUI server a registered workflow runs on, or None when ima2 does not say."""
+        try:
+            workflows = self._json("GET", "/api/comfy/workflows").get("workflows")
+        except Ima2ApiError:
+            return None
+        for workflow in workflows if isinstance(workflows, list) else []:
+            if isinstance(workflow, dict) and workflow.get("id") == workflow_id:
+                return workflow.get("origin")
+        return None
+
     def upload(self, data, mime_type):
         raw = self._open("POST", "/api/media/inputs", bytes(data), {"Content-Type": mime_type}, timeout=max(self.timeout, 120))
         ref = json.loads(raw.decode("utf-8")).get("ref")

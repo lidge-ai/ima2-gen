@@ -121,6 +121,14 @@ def _status(node_id):
     return send
 
 
+def _own_server():
+    from server import PromptServer
+
+    instance = PromptServer.instance
+    port = getattr(instance, "port", None)
+    return (getattr(instance, "address", "") or "127.0.0.1", int(port)) if port else None
+
+
 def _options(raw):
     if not raw or not raw.strip():
         return None
@@ -147,7 +155,7 @@ def _run(kind, node_id, inputs, values, extra=None):
     try:
         result = run_media_job(
             Ima2Client(), request, inputs, max_usd=float(values["max_usd"]), on_status=_status(node_id),
-            interrupted=_interrupted, timeout=int(values.get("timeout") or 1800),
+            interrupted=_interrupted, timeout=int(values.get("timeout") or 1800), own_server=_own_server(),
         )
     except Ima2Interrupted:
         import comfy.model_management
