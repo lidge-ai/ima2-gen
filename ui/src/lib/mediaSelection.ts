@@ -1,4 +1,4 @@
-import type { MediaModel, MediaRoute } from "./mediaCatalog";
+import { makerName, type MediaModel, type MediaRoute } from "./mediaCatalog";
 import { resolutionRank } from "./mediaModelList";
 import { routeTasks, type ClassicTask } from "./mediaTasks";
 
@@ -114,7 +114,7 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   const tasks = routeTasks(route);
   const task: string = (tasks as string[]).includes(wantedTask) ? wantedTask : tasks[0] ?? route.tasks[0] ?? wantedTask;
   const params = route.params;
-  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: model.logo?.name || model.vendor, routeLabel: route.label };
+  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: makerName(model), routeLabel: route.label };
   if (route.logo?.urls.mark) next.routeMark = route.logo.urls.mark;
   const durationSec = keepDuration(previous?.durationSec, params.durationsSec);
   const resolution = keepLabel(previous?.resolution, params.resolutions, defaultResolution(params.resolutions));
