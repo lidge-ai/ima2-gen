@@ -179,3 +179,31 @@ test("in Korean the ways read 한 번에 / 구독으로 / 단계별로, with tra
   await expect(ways.getByRole("link")).toHaveText(["한 번에", "구독으로", "단계별로"]);
   await expect(ways.getByText("최대 720p, 1080p는 안 돼요.")).toBeVisible();
 });
+
+/** What the server answers when restyle has no look to aim for yet (lib/workflows/definitions/remixRestyle.ts check). */
+const noLookYet = { ok: false, code: "WORKFLOW_INPUT_INVALID", error: "choose a style or add a style reference", status: 400, category: "invalid-request", retryable: false };
+
+for (const lang of [
+  { locale: "en", hint: "Choose a style or add a style reference to see the cost.", button: /^Generate Add inputs for price$/, style: /^Style: / },
+  { locale: "ko", hint: "스타일을 고르거나 스타일 참조를 넣으면 비용이 나와요.", button: /^생성 비용을 보려면 입력 추가$/, style: /^스타일: / },
+] as const) {
+  test(`restyle before a style is chosen says what to pick, not that pricing failed (${lang.locale})`, async ({ page }) => {
+    await page.addInitScript((locale) => localStorage.setItem("ima2.locale", locale), lang.locale);
+    await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+      const values = (route.request().postDataJSON() as { values?: Record<string, unknown> }).values ?? {};
+      if (values.style === undefined && values.styleImage === undefined) await route.fulfill({ status: 400, json: noLookYet });
+      else await route.fallback();
+    });
+    await page.goto("/#/remix/remix-restyle");
+    const generate = page.getByRole("button", { name: lang.button });
+    await expect(generate).toBeDisabled();
+    await expect(page.getByText(lang.hint).first()).toBeVisible();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect(page.getByText(/choose a style or add a style reference|Price estimate failed|예상 비용 계산 실패|가격 확인 불가|Price unavailable/)).toHaveCount(0);
+    // Picking a style is the next step; the price follows.
+    await page.getByRole("button", { name: lang.style }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "watercolor" }).click();
+    await expect(page.getByText(lang.hint)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^(Generate|생성) \$/ })).toBeEnabled();
+  });
+}
