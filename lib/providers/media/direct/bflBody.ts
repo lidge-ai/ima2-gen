@@ -44,6 +44,9 @@ function encode(input: MediaInput): string {
 }
 
 function checkInputs(request: MediaSubmitRequest, images: readonly MediaInput[]): void {
+  // Anything else (a mask) was dropped without a word before; a job must not run as a different one.
+  const other = request.inputs.find((input) => !images.includes(input));
+  if (other) fail(PREFIX, "UNSUPPORTED_INPUT", "This model takes images only; a " + other.role + " input is not supported", { category: "invalid-request" });
   if (request.task === "image-to-image" && images.length === 0) {
     fail(PREFIX, "INPUT_REQUIRED", "image-to-image needs a source image", { category: "invalid-request" });
   }

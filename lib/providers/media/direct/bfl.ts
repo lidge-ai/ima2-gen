@@ -7,6 +7,7 @@
  * same header until "Ready" (result.sample is a signed URL valid ~10 minutes,
  * downloaded without the key) or a terminal status. GET /v1/credits proves a key.
  */
+import { withImageForms, type ImageForm } from "./_l2/imageForm.js";
 import type {
   MediaAdapterContext, MediaJobRef, MediaJobState, MediaProviderAdapter, MediaSubmitRequest,
 } from "../contract.js";
@@ -158,9 +159,22 @@ export const adapter: MediaProviderAdapter = {
     extraFields: [{ name: "region", envVar: "BFL_REGION", secret: false, required: false }],
   },
   inputTransport: "inline",
-  listModels: () => BFL_MODELS,
+  listModels: () => DECLARED,
   validateKey,
   submit,
   poll,
   normalizeError: (error) => normalizeUnknownError(PREFIX, error),
 };
+
+const edit = (images: number, accepts: ImageForm["accepts"], more: Partial<ImageForm> = {}): ImageForm =>
+  ({ task: "image-to-image", images, accepts: ["prompt", ...accepts], requires: ["prompt"], ...more });
+// No mask: these endpoints take images and a prompt. (FLUX Fill, BFL's masked edit, is not a model here.)
+const DECLARED = withImageForms(BFL_MODELS, {
+  "black-forest-labs/flux-kontext-max": edit(1, ["aspectRatio", "seed"]),
+  "black-forest-labs/flux-kontext-pro": edit(1, ["aspectRatio", "seed"]),
+  "black-forest-labs/flux-2-max": edit(8, ["aspectRatio", "seed"]),
+  "black-forest-labs/flux-2-pro": edit(8, ["aspectRatio", "seed"]),
+  "black-forest-labs/flux-2-flex": edit(8, ["aspectRatio", "seed"]),
+  "black-forest-labs/flux-3-image": edit(10, ["resolution", "aspectRatio"]),
+  "black-forest-labs/flux-3-image-klein": edit(10, ["resolution", "aspectRatio", "seed"]),
+});

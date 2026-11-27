@@ -1,4 +1,5 @@
 /** Recraft synchronous JSON API, documented in the 2026-11-26 L4 research report. */
+import { withImageForms, type ImageForm } from "./_l2/imageForm.js";
 import type { MediaAdapterContext, MediaJobRef, MediaJobState, MediaOutput, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
 import { fail, makeError, MediaAdapterError, normalizeUnknownError } from "./_l4kit/errors.js";
 import { asRecord, httpError, readBody, readString } from "./_l4kit/http.js";
@@ -60,6 +61,13 @@ async function validateKey(ctx: MediaAdapterContext): Promise<{ ok: boolean; rea
 export const adapter: MediaProviderAdapter = {
   id: "recraft", label: LABEL, route: "direct", errorPrefix: PREFIX,
   credential: { keyVocabulary: "recraft", envVars: ["RECRAFT_API_KEY"], configKey: "recraftApiKey", consoleUrl: "https://www.recraft.ai/app/api/api-keys" },
-  inputTransport: "inline", listModels: () => RECRAFT_MODELS, validateKey, submit, poll,
+  inputTransport: "inline", listModels: () => DECLARED, validateKey, submit, poll,
   normalizeError: (error) => normalizeUnknownError(PREFIX, error),
 };
+
+// Vectorize and upscale take the image alone: no prompt, ratio or count.
+const DECLARED = withImageForms(RECRAFT_MODELS, {
+  "recraft/recraft-vectorize": { task: "image-vectorize", images: 1, accepts: [] },
+  "recraft/recraft-crisp-upscale": { task: "image-upscale", images: 1, accepts: [] },
+  "recraft/recraft-creative-upscale": { task: "image-upscale", images: 1, accepts: [] },
+} satisfies Record<string, ImageForm>);

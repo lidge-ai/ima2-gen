@@ -54,10 +54,15 @@ export interface MediaInputRequirement {
   tasks?: readonly MediaTask[];
   /** The job is billed per second of this input; with several, the longest one is the upper bound. */
   billedLength?: boolean;
+  /**
+   * For a mask: the mask conventions this route takes (MediaSubmitRequest.maskConvention). Absent means
+   * "vendor" only: the mask must already follow the provider's own rule.
+   */
+  conventions?: readonly ("vendor" | "repaint-white")[];
 }
 
 /** The request fields every media job shares; a task on a route may take only some of them. */
-export type MediaTaskFieldName = "prompt" | "negativePrompt" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed";
+export type MediaTaskFieldName = "prompt" | "negativePrompt" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed" | "count" | "quality";
 
 /** The common fields one task takes on one route. The adapter refuses any other field of MediaTaskFieldName. */
 export interface MediaTaskFields {
@@ -184,6 +189,12 @@ export interface MediaSubmitRequest {
   inputs: readonly MediaInput[];
   /** Vendor-specific passthrough, validated by the adapter. Unknown keys are refused, not dropped. */
   vendorOptions?: Readonly<Record<string, unknown>>;
+  /**
+   * What the mask input means. "vendor" (default): the provider's own rule, passed through untouched.
+   * "repaint-white": a PNG the size of the image, white = repaint, black = keep; the adapter converts it,
+   * and a route that does not declare this convention refuses it. See maskConvention.ts.
+   */
+  maskConvention?: "vendor" | "repaint-white";
 }
 
 export interface MediaJobRef {
