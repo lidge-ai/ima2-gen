@@ -246,17 +246,29 @@ export interface WorkflowStepSpec {
   route?: string;
   /** Why the workflow uses this model, with its evidence. */
   rationale?: string;
+  /** One sentence telling a person what the step does (server description, else its rationale). */
+  description?: string;
+  credits?: readonly WorkflowCredit[];
 }
 
 /**
  * One language's text for a workflow (GET /api/workflows i18n.<lang>). Every key is optional and
  * falls back to the English fields. Keys follow the wire: field names, option values, slot names.
  */
+/** A project or paper a workflow step follows. */
+export interface WorkflowCredit {
+  name: string;
+  url?: string;
+  license?: string;
+}
+
 export interface WorkflowText {
   label?: string;
   description?: string;
   fields?: Readonly<Record<string, { label?: string; help?: string; options?: Readonly<Record<string, string>> }>>;
   slots?: Readonly<Record<string, string>>;
+  /** Translated slot descriptions, keyed by slot name. */
+  slotDescriptions?: Readonly<Record<string, string>>;
 }
 
 export interface WorkflowDef {
