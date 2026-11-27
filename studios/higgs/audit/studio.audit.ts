@@ -234,6 +234,7 @@ const PRISTINE: Cell[] = [
     },
   },
   { id: "models__token-prices", hash: "/models/bytedance", setup: tokenPrices },
+  { id: "remix__run-styles", hash: "/remix/remix-motion-transfer-subscription" },
   {
     id: "remix__one-reference",
     hash: "/remix/remix-motion-transfer",

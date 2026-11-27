@@ -9,6 +9,7 @@ import { wireCatalog } from "../src/fake/catalog.ts";
 import { Keys } from "../src/fake/keys.ts";
 import { workflows, estimateWorkflow } from "../src/fake/workflows.ts";
 import { makeCatalog } from "../src/fake/catalog.ts";
+import { resolutionParts, tidyResolutions } from "../src/resolutions.ts";
 
 test("catalog, key, submit and job adapters translate wire records", () => {
   const wire = wireCatalog(new Keys(["openai"]));
@@ -129,4 +130,25 @@ test("a running job that the server reports finished reads as complete, whatever
   const merged = cache.merge({ requestId: "r", kind: "media", startedAt: 0, status: "completed", finishedAt: 10, meta: { model: "m" } });
   assert.equal(merged.status, "succeeded");
   assert.equal(merged.progress, 1);
+});
+
+test("a model's settings merged from its routes list each size once, in order, and every clip length in order", () => {
+  const catalog = toCatalog(wireCatalog(new Keys(["fal"])));
+  const seedance = catalog.models.find((m) => m.id === "bytedance/seedance-2.5")!;
+  // The aggregator route lists 1-3 s after 15 s and spells "480P"; the direct route lists "480p".
+  assert.deepEqual(seedance.params.durationsSec, [1, 2, 3, 4, 5, 8, 10, 12, 15]);
+  assert.deepEqual(seedance.params.resolutions, ["480P", "720p", "720p-sr", "1080p", "1080p-esr & 60fps"]);
+  const image = catalog.models.find((m) => m.id === "openai/gpt-image-2")!;
+  assert.deepEqual(image.params.resolutions, ["1k", "2k", "4k"]);
+  // Each route keeps its own list for sending.
+  assert.deepEqual(image.routeParams?.openai?.resolutions, ["1K", "2K"]);
+});
+
+test("resolution values read as a size, an upscale tier and a frame rate", () => {
+  assert.deepEqual(resolutionParts("1080p-esr & 60fps"), { base: "1080p", tier: "esr", fps: 60 });
+  assert.deepEqual(resolutionParts("720p-SR"), { base: "720p", tier: "sr" });
+  assert.deepEqual(resolutionParts("4k"), { base: "4K" });
+  assert.deepEqual(resolutionParts("1.5k"), { base: "1.5K" });
+  assert.equal(resolutionParts("2x"), null);
+  assert.deepEqual(tidyResolutions(["4k", "1080p", "2x", "480P", "480p", "1440p-sr"]), ["480P", "1080p", "1440p-sr", "4k", "2x"]);
 });

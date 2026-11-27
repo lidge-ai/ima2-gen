@@ -3,9 +3,15 @@ import { assertAllowed, findModel, httpJson, inputsByRole, invalidRequest, Media
 
 const docs = 'https://developers.heygen.com/docs/models/heygen-video';
 const avatarDocs = 'https://developers.heygen.com/docs/models/avatar-6';
+/** The photo-avatar form: one face and the audio it speaks. A saved avatar id with a script goes through vendorOptions instead. */
+const AVATAR_INPUTS = [{ role: 'reference-image', min: 1, max: 1 }, { role: 'source-audio', min: 1, max: 1, billedLength: true }] as const;
+const AVATAR_OPTIONS = [
+  { name: 'motionPrompt', type: 'text', maxLength: 1200 },
+  { name: 'motionExpressiveness', type: 'enum', values: ['default', 'less'] },
+] as const;
 const models: readonly MediaModelSpec[] = [
   { id: 'heygen/heygen-video-1', upstreamId: 'heygen-video-1', vendor: 'heygen', label: 'HeyGen Video 1', kind: 'video', tasks: ['text-to-video', 'image-to-video', 'reference-to-video'], params: { durationsSec: Array.from({ length: 26 }, (_, i) => i + 5), resolutions: ['480p', '768p', '1080p', '2k'], aspectRatios: ['21:9', '16:9', '4:3', '1:1', '3:4', '9:16'], maxReferenceImages: 9, maxReferenceVideos: 3, seed: true, nativeAudio: true }, pricing: [], docsUrl: docs },
-  ...['heygen-avatar-6', 'heygen-avatar-6-turbo'].map((id): MediaModelSpec => ({ id: 'heygen/' + id, upstreamId: id, vendor: 'heygen', label: id === 'heygen-avatar-6' ? 'HeyGen Avatar 6' : 'HeyGen Avatar 6 Turbo', kind: 'video', tasks: ['avatar'], params: { resolutions: ['1080p', '2k'], aspectRatios: ['16:9', '9:16', '1:1', '4:5', '5:4', 'auto'], maxReferenceImages: 1, maxReferenceVideos: 1 }, pricing: [], docsUrl: avatarDocs })),
+  ...['heygen-avatar-6', 'heygen-avatar-6-turbo'].map((id): MediaModelSpec => ({ id: 'heygen/' + id, upstreamId: id, vendor: 'heygen', label: id === 'heygen-avatar-6' ? 'HeyGen Avatar 6' : 'HeyGen Avatar 6 Turbo', kind: 'video', tasks: ['avatar'], params: { resolutions: ['1080p', '2k'], aspectRatios: ['16:9', '9:16', '1:1', '4:5', '5:4', 'auto'], maxReferenceImages: 1, maxReferenceVideos: 1, inputs: AVATAR_INPUTS, options: AVATAR_OPTIONS }, pricing: [], docsUrl: avatarDocs })),
 ];
 type ResponseData = { data?: { video_id?: string; status?: string; video_url?: string; failure_code?: string; failure_message?: string } };
 const base = (ctx: MediaAdapterContext) => (ctx.baseUrl ?? 'https://api.heygen.com').replace(/\/$/, '');

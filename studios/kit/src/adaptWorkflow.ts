@@ -1,6 +1,6 @@
 /** Workflow description, run body and estimate translation (lib/workflows <-> kit types). */
 import type {
-  MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowRunBody,
+  MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowPreset, WorkflowRunBody,
 } from "./types.ts";
 import type { WireEstimateResponse, WireField, WireWorkflow } from "./wire.ts";
 
@@ -61,7 +61,13 @@ export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
       ...(slot.credits?.length ? { credits: slot.credits } : {}),
     })),
     ...(wire.i18n ? { i18n: wire.i18n } : {}),
+    ...(wire.preset?.label ? { preset: toPreset(wire.preset) } : {}),
   };
+}
+
+function toPreset(p: NonNullable<WireWorkflow["preset"]>): WorkflowPreset {
+  const losses = (p.losses ?? []).filter((l): l is { aspect: string; detail: string } => !!l.detail).map((l) => ({ aspect: l.aspect ?? "other", detail: l.detail }));
+  return { label: p.label ?? "", losses, ...(p.billingNote ? { billingNote: p.billingNote } : {}) };
 }
 
 /**
@@ -90,6 +96,16 @@ export function localizeWorkflow(def: WorkflowDef, locale: string): WorkflowDef 
         ...(param.options ? { options: param.options.map((o) => ({ ...o, label: f?.options?.[o.value] ?? o.label })) } : {}),
       };
     }),
+    ...(def.preset
+      ? {
+          preset: {
+            ...def.preset,
+            label: text.preset?.label ?? def.preset.label,
+            losses: def.preset.losses.map((l, i) => ({ ...l, detail: text.preset?.losses?.[i] ?? l.detail })),
+            ...(def.preset.billingNote ? { billingNote: text.preset?.billingNote ?? def.preset.billingNote } : {}),
+          },
+        }
+      : {}),
     steps: def.steps.map((step) => {
       const description = text.slotDescriptions?.[step.id] ?? step.description;
       return { ...step, label: text.slots?.[step.id] ?? step.label, ...(description !== undefined ? { description } : {}) };

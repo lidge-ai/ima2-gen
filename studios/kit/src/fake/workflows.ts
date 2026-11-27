@@ -258,7 +258,40 @@ export const workflows: WireWorkflow[] = [
     [slot("edit", "Restyle each segment (Grok edit)", "video-to-video", "xai/grok-imagine-video")],
   ),
 ];
+/** What the subscription variants give up, as the server describes it (lib/workflows/definitions/*Subscription). */
+const SUBSCRIPTION_LOSSES: Record<string, { aspect: string; detail: string }[]> = {
+  "remix-motion-transfer-subscription": [
+    { aspect: "motion", detail: "Motion is regenerated between pinned frames, so fine timing can drift." },
+    { aspect: "resolution", detail: "720p at most; no 1080p." },
+  ],
+  "remix-object-swap-subscription": [
+    { aspect: "motion", detail: "Motion is regenerated between pinned frames, so fine timing can drift." },
+    { aspect: "resolution", detail: "720p at most; no 1080p." },
+  ],
+  "remix-restyle-subscription": [
+    { aspect: "style", detail: "The style comes from text only; Grok's edit takes no style image." },
+    { aspect: "resolution", detail: "720p at most; no 1080p." },
+  ],
+};
+/** Step-by-step variants: prepare the first frame, then render (the server's remix-*-open). */
+const staged = (mode: "motion-transfer" | "object-swap" | "restyle", label: string, fields: WireField[]): WireWorkflow => {
+  const restyle = mode === "restyle";
+  return simple("remix-" + mode + "-open", label + " (step by step)", fields, [
+    {
+      ...slot("subject", restyle ? "Restyle the first frame" : "Put the subject into the first frame", "image-to-image", "openai/gpt-image-2", ["bytedance/seedream-5.5"]),
+      description: restyle ? "Redraws the first frame of the source in the chosen style." : "Puts your subject into the source's first frame.",
+    },
+    { ...render, description: "Renders the clip from the prepared first frame." },
+  ]);
+};
+workflows.push(
+  staged("motion-transfer", "Remix: motion transfer", [video, images, text("prompt", "Notes"), ...tail]),
+  staged("object-swap", "Remix: object swap", [video, images, text("target", "What to replace"), text("prompt", "Notes"), ...tail]),
+  staged("restyle", "Remix: restyle", [video, media("styleImage", "Style reference", "image"), text("prompt", "Notes"), ...tail]),
+);
 for (const workflow of workflows) {
+  const losses = SUBSCRIPTION_LOSSES[workflow.id];
+  if (losses) workflow.preset = { label: "Subscriptions only (ChatGPT + Grok)", losses };
   if (workflow.id === "remix-motion-transfer" || workflow.id === "remix-object-swap") workflow.tierField = "tier";
   workflow.i18n = { ko: koText(workflow) };
 }

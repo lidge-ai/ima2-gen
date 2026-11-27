@@ -163,6 +163,7 @@ Total: 658 (runtime: 349, contract: 309)
 - `tests/media-aggregator-replicate.test.ts`
 - `tests/media-aggregator-sume.test.ts`
 - `tests/media-aggregator-wavespeed.test.ts`
+- `tests/media-billed-length-route.test.ts`
 - `tests/media-direct-alibaba.test.ts`
 - `tests/media-direct-bfl.test.ts`
 - `tests/media-direct-byteplus-image.test.ts`
@@ -194,6 +195,7 @@ Total: 658 (runtime: 349, contract: 309)
 - `tests/media-direct-veed.test.ts`
 - `tests/media-direct-vidu.test.ts`
 - `tests/media-direct-xai.test.ts`
+- `tests/media-input-requirements.test.ts`
 - `tests/media-key-validate-route.test.ts`
 - `tests/media-mp4-probe.test.ts`
 - `tests/media-publish-input.test.ts`
