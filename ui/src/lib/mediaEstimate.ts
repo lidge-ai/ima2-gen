@@ -1,4 +1,4 @@
-import type { MediaPrice, MediaRoute } from "./mediaCatalog";
+import type { MediaParams, MediaPrice, MediaRoute } from "./mediaCatalog";
 import { resolutionRank } from "./mediaModelList";
 import type { MediaSelection } from "./mediaSelection";
 
@@ -21,13 +21,21 @@ const RESOLUTION = /\b(?:\d{3,4}p|\d(?:\.\d)?k)\b/gi;
  * text written by each provider page ("text-to-video:720p", "1080p 16:9, no video input", "each input image"),
  * so this reads the parts it knows and refuses rows that name something the request is not.
  */
-function variantScore(variant: string | undefined, want: { task: string; resolution?: string; audio?: boolean }): number | null {
+export interface PriceWant { task: string; resolution?: string; audio?: boolean; durationSec?: number; quality?: string; /** Every quality the route lists, so a row naming another tier can be told apart. */ qualities?: readonly string[] }
+
+/** The listed quality tiers a row names as whole words ("high" is not found in "xhigh" or "very_high"). */
+function tiersIn(text: string, qualities: readonly string[]): string[] {
+  const words = text.split(/[^a-z0-9_]+/);
+  return qualities.filter((tier) => words.includes(tier.toLowerCase()));
+}
+
+function variantScore(variant: string | undefined, want: PriceWant): number | null {
   if (!variant) return 1;
   const text = variant.toLowerCase();
   let score = 1;
   if (/\beach input\b|\bper input\b/.test(text)) return null;
   // The classic composer never sends a video, so rows priced for a video input do not apply.
-  if (/video[ _]in(?:put)?\b/.test(text) && !/\b(?:no|non|without)[ _]video[ _]in/.test(text)) return null;
+  if (/video[ _-]in(?:put)?\b|\bvideo references\b/.test(text) && !/\b(?:no|non|without)[ _-]video[ _-]in|\bno video references\b/.test(text)) return null;
   const tasks = text.match(TASK_NAME);
   if (tasks) { if (!tasks.includes(want.task)) return null; score += 4; }
   const resolutions = text.match(RESOLUTION);
@@ -41,8 +49,17 @@ function variantScore(variant: string | undefined, want: { task: string; resolut
       score += 2 + 1 / (1 + (Math.min(...covering) - resolutionRank(wanted)) / 1000);
     }
   }
-  if (/\b(?:no|without)[ -]audio\b|\bsilent\b/.test(text)) { if (want.audio) return null; score += 1; }
-  else if (/\baudio\b|\bsound\b/.test(text)) { if (!want.audio) return null; score += 1; }
+  if (want.quality !== undefined && want.qualities?.length) {
+    const tiers = tiersIn(text, want.qualities);
+    if (tiers.length > 0) { if (!tiers.some((tier) => tier.toLowerCase() === want.quality!.toLowerCase())) return null; score += 3; }
+  }
+  // A row priced for one clip length ("768P 6s") applies to that length only.
+  const lengths = text.match(/\b\d{1,3}s\b/g);
+  if (lengths && want.durationSec !== undefined) { if (!lengths.includes(want.durationSec + "s")) return null; score += 2; }
+  // Providers word sound many ways: "without audio", "audio off", "with audio=False", "sound disabled", "without_audio".
+  const sound = text.replace(/[a-z]+-to-audio/g, "");
+  if (/(?:no|without)[ _-]audio|audio[ =](?:off|false)|sound disabled|\bsilent\b/.test(sound)) { if (want.audio) return null; score += 1; }
+  else if (/audio|sound/.test(sound)) { if (!want.audio) return null; score += 1; }
   return score;
 }
 
@@ -55,7 +72,7 @@ export interface PricePick {
   range: { min: number; max: number } | null;
 }
 
-export function pickPrice(pricing: readonly MediaPrice[], unit: string, want: { task: string; resolution?: string; audio?: boolean }): PricePick {
+export function pickPrice(pricing: readonly MediaPrice[], unit: string, want: PriceWant): PricePick {
   const scored = pricing.filter((price) => price.unit === unit)
     .flatMap((price) => { const score = variantScore(price.variant, want); return score === null ? [] : [{ price, score }]; });
   if (scored.length === 0) return { price: null, floor: false, range: null };
@@ -75,13 +92,15 @@ export type MediaQuote =
   | { state: "unknown" };
 
 /** The estimate the published prices support for this selection, before asking the server to confirm it. */
-export function quoteFor(route: Pick<MediaRoute, "pricing">, selection: MediaSelection): MediaQuote {
+export function quoteFor(route: Pick<MediaRoute, "pricing"> & { params?: MediaParams }, selection: MediaSelection): MediaQuote {
   if (route.pricing.length === 0) return { state: "unpriced" };
   const unit = estimateUnit(selection.kind, route.pricing);
   const quantity = estimateQuantity(unit, selection);
-  const want: { task: string; resolution?: string; audio?: boolean } = { task: selection.task };
+  const want: PriceWant = { task: selection.task };
+  if (selection.quality !== undefined && route.params?.qualities?.length) { want.quality = selection.quality; want.qualities = route.params.qualities; }
   if (selection.resolution !== undefined) want.resolution = selection.resolution;
   if (selection.audio !== undefined) want.audio = selection.audio;
+  if (selection.durationSec !== undefined) want.durationSec = selection.durationSec;
   const pick = pickPrice(route.pricing, unit, want);
   if (quantity === null || (!pick.price && !pick.range)) return { state: "unknown" };
   // The server's rule (lib/providers/media/estimate.ts): settle in whole millionths of a dollar, then round up to a hundredth of a cent.
@@ -95,6 +114,7 @@ export function estimateBody(selection: MediaSelection, adapter: string, price: 
   const body: Record<string, unknown> = { model: selection.model, adapter, task: selection.task };
   if (selection.durationSec !== undefined) body.durationSec = selection.durationSec;
   if (selection.resolution !== undefined) body.resolution = selection.resolution;
+  if (selection.quality !== undefined) body.quality = selection.quality;
   if (selection.aspectRatio !== undefined) body.aspectRatio = selection.aspectRatio;
   if (selection.audio !== undefined) body.audio = selection.audio;
   if (selection.kind === "image") body.count = 1;

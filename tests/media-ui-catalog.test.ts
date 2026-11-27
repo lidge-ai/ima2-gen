@@ -252,3 +252,69 @@ test("making a result again restores its model, pinned route and settings agains
   assert.deepEqual(remakePlan({ ...row, model: "acme/retired" }, models), { ok: false, reason: "model-gone" });
   assert.deepEqual(remakePlan({ provider: "oauth", model: "gpt-6-luna" }, models), { ok: false, reason: "not-media" });
 });
+
+const quality = await import("../ui/src/lib/mediaSelection.js");
+const { quoteFor: quoteQuality, estimateBody: estimateQuality } = await import("../ui/src/lib/mediaEstimate.js");
+const estimateWording = await import("../ui/src/lib/mediaEstimate.js");
+const { remakePlan: remakeQuality } = await import("../ui/src/lib/mediaResult.js");
+const { modelName } = await import("../ui/src/lib/mediaCatalog.js");
+
+test("a model priced by quality gets a quality setting, one price for it, and the quality in what is sent", () => {
+  const row = (usd: number, variant: string) => ({ unit: "image" as const, usd, variant, source: "https://example.com", checkedAt: "2026-11-27" });
+  const graded = { adapter: "sume", route: "aggregator", label: "Sume", logo: null, upstreamId: "gpt-image-2", tasks: ["text-to-image", "image-to-image"], docsUrl: "", hasKey: true,
+    params: { resolutions: ["1K", "2K"], qualities: ["low", "medium", "high"] },
+    pricing: [row(0.006, "1K · low"), row(0.0528, "1K · medium"), row(0.2108, "1K · high"), row(0.012, "2K · low"), row(0.1, "2K · medium"), row(0.4, "2K · high")] } as MediaRoute;
+  const plain = { ...graded, adapter: "openai", route: "direct", params: { resolutions: ["1K"] }, pricing: [row(0.04, "1K")] } as MediaRoute;
+  const model: MediaModel = { id: "openai/gpt-image-2", label: "GPT Image 2", vendor: "openai", logo: null, kind: "image", tasks: graded.tasks, routes: [graded, plain], defaultRoute: "sume" };
+  const first = quality.reconcileSelection(model, graded, "text-to-image", null, "auto").selection;
+  assert.deepEqual([first.resolution, first.quality], ["1K", "medium"], "medium is the starting quality when there is no auto");
+  assert.deepEqual(quoteQuality(graded, first), { state: "exact", usd: 0.0528, unit: "image", quantity: 1, price: graded.pricing[1] });
+  const low = { ...first, quality: "low" };
+  assert.equal((quoteQuality(graded, low) as { usd: number }).usd, 0.006);
+  assert.equal((quoteQuality(graded, { ...low, resolution: "2K" }) as { usd: number }).usd, 0.012);
+  const { quality: _none, ...unset } = first;
+  assert.deepEqual(quoteQuality(graded, unset), { state: "range", min: 0.006, max: 0.2108, unit: "image", quantity: 1 }, "without a quality the rows still span a range");
+  assert.equal(estimateQuality(low, "sume", graded.pricing[0]!).quality, "low");
+  assert.equal(buildMediaSubmitBody(low, "cup", "r1", null, []).quality, "low");
+  // "high" is not "xhigh", and other providers spell the row differently.
+  const wide = { ...graded, params: { qualities: ["auto", "high", "xhigh"] }, pricing: [row(0.05, "model variant=auto"), row(0.2, "model variant=high"), row(0.4, "model variant=xhigh")] } as MediaRoute;
+  const auto = quality.reconcileSelection(model, wide, "text-to-image", null, "auto").selection;
+  assert.equal(auto.quality, "auto");
+  assert.equal((quoteQuality(wide, { ...auto, quality: "high" }) as { usd: number }).usd, 0.2);
+  assert.equal(quality.defaultQuality(["std", "pro"]), "std");
+  // Moving to a route without the setting drops it and says so.
+  const moved = quality.reconcileSelection(model, plain, "text-to-image", low, "pinned");
+  assert.equal(moved.selection.quality, undefined);
+  assert.deepEqual(moved.adjusted.filter((entry) => entry.field === "quality"), [{ field: "quality", from: "low", to: null }]);
+  const again = remakeQuality({ provider: "media:sume", adapter: "sume", model: model.id, mediaType: "image", media: { task: "text-to-image", resolution: "2K", quality: "high", inputRoles: [] } }, [model]);
+  assert.equal(again.ok && again.selection.quality, "high");
+});
+
+test("a retiring model keeps a clean name and carries the fact separately", () => {
+  assert.deepEqual(modelName("GPT Image 2 (deprecated)"), { label: "GPT Image 2", retiring: true });
+  assert.deepEqual(modelName("Wan 2.2 (Legacy)"), { label: "Wan 2.2", retiring: true });
+  assert.deepEqual(modelName("FLUX.1 (dev)"), { label: "FLUX.1 (dev)", retiring: false });
+  assert.deepEqual(modelName("(deprecated)"), { label: "(deprecated)", retiring: false });
+});
+
+test("price rows are matched however the provider words sound, video input and clip length", () => {
+  const { pickPrice } = estimateWording;
+  const row = (usd: number, variant: string, unit = "second") => ({ unit, usd, variant, source: "https://example.com", checkedAt: "2026-11-27" }) as MediaRoute["pricing"][number];
+  const price = (rows: MediaRoute["pricing"], want: Parameters<typeof pickPrice>[2], unit = "second") => pickPrice(rows, unit, want).price?.usd ?? pickPrice(rows, unit, want).range ?? undefined;
+  const t2v = { task: "text-to-video" };
+  for (const [off, on] of [["audio off, no video references", "audio on, no video references"], ["with audio=False", "with audio=True"], ["sound disabled", "sound enabled"],
+    ["model variant=without_audio", "model variant=with_audio"], ["without audio", "with audio"]] as const) {
+    const rows = [row(0.1, off), row(0.2, on)];
+    assert.equal(price(rows, { ...t2v, audio: false }), 0.1, off);
+    assert.equal(price(rows, t2v), 0.1, off + " (sound not asked for)");
+    assert.equal(price(rows, { ...t2v, audio: true }), 0.2, on);
+  }
+  // The classic composer sends no video, however the row spells that.
+  assert.equal(price([row(0.1, "model variant=no-video-input, target resolution=720p"), row(0.3, "model variant=video-input, target resolution=720p")], { ...t2v, resolution: "720p" }), 0.1);
+  assert.equal(price([row(0.1, "model variant=std"), row(0.3, "model variant=std-with-video-input")], t2v), 0.1);
+  // A row priced for one clip length applies to that length only.
+  const perRun = [row(0.28, "768P 6s", "request"), row(0.56, "768P 10s", "request"), row(0.49, "1080P 6s", "request")];
+  assert.equal(price(perRun, { ...t2v, resolution: "768P", durationSec: 10 }, "request"), 0.56);
+  assert.equal(price(perRun, { ...t2v, resolution: "1080P", durationSec: 6 }, "request"), 0.49);
+  assert.equal(price(perRun, { ...t2v, resolution: "1080P", durationSec: 10 }, "request"), undefined, "no row for a length the price list does not name");
+});

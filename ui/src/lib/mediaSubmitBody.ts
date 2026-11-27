@@ -6,7 +6,7 @@ export type MediaInput = { role: MediaInputRole; filename?: string; ref?: string
 export function buildMediaSubmitBody(selection: MediaSelection, prompt: string, requestId: string,
   sessionId: string | null, inputs: MediaInput[]): Record<string, unknown> {
   return { requestId, sessionId, prompt, model: selection.model, adapter: selection.adapter,
-    task: selection.task, durationSec: selection.durationSec, resolution: selection.resolution,
+    task: selection.task, durationSec: selection.durationSec, resolution: selection.resolution, quality: selection.quality,
     aspectRatio: selection.aspectRatio, audio: selection.audio,
     negativePrompt: selection.negativePrompt, seed: selection.seed, inputs };
 }

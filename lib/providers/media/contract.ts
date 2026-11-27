@@ -55,6 +55,8 @@ export interface MediaModelSpec {
     durationsSec?: readonly number[];
     resolutions?: readonly string[];
     aspectRatios?: readonly string[];
+    /** Quality tiers the route accepts and prices separately ("low", "medium", "high"), in the provider's spelling. */
+    qualities?: readonly string[];
     maxReferenceImages?: number;
     maxReferenceVideos?: number;
     nativeAudio?: boolean;
@@ -95,6 +97,8 @@ export interface MediaSubmitRequest {
   negativePrompt?: string;
   durationSec?: number;
   resolution?: string;
+  /** One of spec.params.qualities. */
+  quality?: string;
   aspectRatio?: string;
   seed?: number;
   audio?: boolean;

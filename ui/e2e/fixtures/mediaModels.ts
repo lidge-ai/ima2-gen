@@ -82,6 +82,10 @@ const MODELS: ModelSpec[] = [
   { id: "openai/gpt-image-2.5", label: "GPT Image 2.5", vendor: "openai", kind: "image", routes: [
     { adapter: "openai", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1024x1024", "1536x1024", "1024x1536"], maxReferenceImages: 16 }, pricing: [price(0.011, "image", "low"), price(0.042, "image", "medium"), price(0.167, "image", "high")] },
   ] },
+  { id: "openai/gpt-image-2", label: "GPT Image 2 (deprecated)", vendor: "openai", kind: "image", routes: [
+    { adapter: "fal", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "2K"], qualities: ["low", "medium", "high"], maxReferenceImages: 4 },
+      pricing: [price(0.006, "image", "1K · low"), price(0.0528, "image", "1K · medium"), price(0.2108, "image", "1K · high"), price(0.012, "image", "2K · low"), price(0.1, "image", "2K · medium"), price(0.4, "image", "2K · high")] },
+  ] },
   { id: "recraft/v4", label: "Recraft V4", vendor: "recraft", kind: "image", routes: [
     { adapter: "recraft", tasks: ["text-to-image"], params: { aspectRatios: ["1:1", "16:9", "9:16"] }, pricing: [price(0.04, "image")] },
   ] },

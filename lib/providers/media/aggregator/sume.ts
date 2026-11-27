@@ -50,10 +50,19 @@ function base(ctx: MediaAdapterContext): string {
   return ctx.baseUrl ?? BASE;
 }
 
+/** The rate card names a quality after the resolution ("1K · low"); those names are the values the image router's quality field takes. */
+function qualitiesOf(entry: SumeCatalogEntry): string[] {
+  if (entry.route !== "image") return [];
+  const names = entry.pricing.flatMap((price) => { const part = price.variant?.split(" · ")[1]?.trim(); return part ? [part] : []; });
+  const unique = [...new Set(names)];
+  return unique.length > 1 ? unique : [];
+}
+
 function toSpec(entry: SumeCatalogEntry): MediaModelSpec {
+  const qualities = qualitiesOf(entry);
   return {
     id: entry.id, upstreamId: entry.wire, vendor: entry.vendor, label: entry.label, kind: entry.kind,
-    tasks: entry.tasks, params: entry.params, pricing: entry.pricing, docsUrl: entry.route === "image" ? "https://www.sume.com/docs/images" : "https://www.sume.com/docs/video",
+    tasks: entry.tasks, params: qualities.length > 0 ? { ...entry.params, qualities } : entry.params, pricing: entry.pricing, docsUrl: entry.route === "image" ? "https://www.sume.com/docs/images" : "https://www.sume.com/docs/video",
   };
 }
 

@@ -76,7 +76,8 @@ function sidecar(prepared: PreparedMediaJob, opts: MediaLaunchOptions, job: Medi
     prompt: request.prompt ?? null, userPrompt: request.prompt ?? null, revisedPrompt: null,
     createdAt: Date.now(), elapsed, providerJobId: job.providerJobId,
     media: { task: request.task, durationSec: request.durationSec ?? null, resolution: request.resolution ?? null,
-      aspectRatio: request.aspectRatio ?? null, seed: request.seed ?? null, audio: request.audio ?? null, inputRoles },
+      aspectRatio: request.aspectRatio ?? null, seed: request.seed ?? null, audio: request.audio ?? null, inputRoles,
+      ...(request.quality ? { quality: request.quality } : {}) },
     ...(spec.kind === "video" ? { video: { mode: request.task, duration: request.durationSec ?? null, resolution: request.resolution ?? null, aspectRatio: request.aspectRatio ?? null } } : {}),
     // What the provider reported charging, and what the published prices predicted at submit.
     ...(billed ? { billed } : {}),

@@ -10,7 +10,7 @@ import { DurationSlider } from "../controls/DurationSlider";
 import { MediaEstimate } from "./MediaEstimate";
 import { MediaKeyEntry } from "./MediaKeyEntry";
 import { MediaLogo } from "./MediaLogo";
-import { fromPrice, unitPrice } from "./mediaLabels";
+import { fromPrice, qualityLabel, unitPrice } from "./mediaLabels";
 
 type Update = (selection: MediaSelection, adjusted?: Adjustment[]) => void;
 /** Says which earlier settings the new model could not keep, so a changed length or size is never a surprise at generate time. */
@@ -20,7 +20,7 @@ function AdjustmentNote() {
   const dismiss = useAppStore((s) => s.dismissMediaAdjustments);
   if (adjusted.length === 0) return null;
   const fieldName = (field: Adjustment["field"]) => t(field === "task" ? "mediaPicker.task" : field === "durationSec" ? "mediaPicker.duration"
-    : field === "resolution" ? "mediaPicker.resolution" : field === "aspectRatio" ? "mediaPicker.aspect" : field === "audio" ? "mediaPicker.nativeAudio"
+    : field === "resolution" ? "mediaPicker.resolution" : field === "quality" ? "mediaPicker.quality" : field === "aspectRatio" ? "mediaPicker.aspect" : field === "audio" ? "mediaPicker.nativeAudio"
     : field === "seed" ? "mediaPicker.seed" : "mediaPicker.negativePrompt");
   return (
     <div className="media-note" role="status">
@@ -150,6 +150,9 @@ function RouteParams({ route, selection, update }: { route: MediaRoute; selectio
       {params.resolutions?.length ? (params.resolutions.length > 1
         ? <Choice title={t("mediaPicker.resolution")} value={selection.resolution ?? ""} items={params.resolutions.map((item) => ({ value: item, label: item }))} update={(resolution) => update({ ...selection, resolution })} />
         : <p className="media-fixed">{t("mediaPicker.resolution")}: {params.resolutions[0]}</p>) : null}
+      {params.qualities?.length ? (params.qualities.length > 1
+        ? <Choice title={t("mediaPicker.quality")} value={selection.quality ?? ""} items={params.qualities.map((item) => ({ value: item, label: qualityLabel(item, t) }))} update={(quality) => update({ ...selection, quality })} />
+        : <p className="media-fixed">{t("mediaPicker.quality")}: {qualityLabel(params.qualities[0]!, t)}</p>) : null}
       {params.aspectRatios?.length ? (
         <div className="option-group"><div className="section-title">{t("mediaPicker.aspect")}</div>
           <Select ariaLabel={t("mediaPicker.aspect")} value={selection.aspectRatio ?? ""} portal

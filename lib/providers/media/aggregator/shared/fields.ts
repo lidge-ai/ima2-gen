@@ -48,6 +48,7 @@ const SCALAR_FIELDS = {
   negativePrompt: ["negative_prompt"],
   durationSec: ["duration", "duration_seconds", "seconds"],
   resolution: ["resolution", "image_size"],
+  quality: ["quality"],
   aspectRatio: ["aspect_ratio", "ratio"],
   seed: ["seed"],
   audio: ["generate_audio", "enable_audio", "sound", "audio"],
@@ -170,6 +171,12 @@ function stringsOf(field: InputField | undefined): string[] {
   return field?.enum ? field.enum.map(String) : [];
 }
 
+/** A "quality" enum of tier names. Some endpoints use that field name for a resolution list, which is not a quality setting. */
+function qualitiesOf(field: InputField | undefined): string[] {
+  const values = stringsOf(field);
+  return values.some((value) => /^\d+(?:\.\d+)?[pk]$/i.test(value)) ? [] : values;
+}
+
 function union<T>(lists: readonly T[][]): T[] {
   return [...new Set(lists.flat())];
 }
@@ -189,12 +196,14 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
   const durations = union(schemas.map((s) => durationsOf(s.fields.duration ?? s.fields.duration_seconds))).sort((a, b) => a - b);
   const resolutions = union(schemas.map((s) => stringsOf(s.fields.resolution)));
   const aspectRatios = union(schemas.map((s) => stringsOf(s.fields.aspect_ratio ?? s.fields.ratio)));
+  const qualities = union(schemas.map((s) => qualitiesOf(s.fields.quality)));
   const maxRefImages = maxArrayItems(schemas, "reference-image");
   const maxRefVideos = maxArrayItems(schemas, "reference-video");
   return {
     ...(durations.length > 0 ? { durationsSec: durations } : {}),
     ...(resolutions.length > 0 ? { resolutions } : {}),
     ...(aspectRatios.length > 0 ? { aspectRatios } : {}),
+    ...(qualities.length > 1 ? { qualities } : {}),
     ...(maxRefImages !== undefined ? { maxReferenceImages: maxRefImages } : {}),
     ...(maxRefVideos !== undefined ? { maxReferenceVideos: maxRefVideos } : {}),
     ...(schemas.some((s) => SCALAR_FIELDS.audio.some((n) => s.fields[n] !== undefined && SCALAR_FILTER.audio?.(s.fields[n] as InputField))) ? { nativeAudio: true } : {}),
