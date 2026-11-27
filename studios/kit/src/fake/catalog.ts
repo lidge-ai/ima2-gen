@@ -397,6 +397,11 @@ export function makeCatalog(keyed: ReadonlySet<string>): Catalog {
   return { providers, models: MODELS.map((row) => toModel(row, keyed)) };
 }
 
+/** The settings one route of a model accepts, as the wire catalog sends them. */
+export function routeParamsFor(model: CatalogModel, providerId: string): Params {
+  return model.routeParams?.[providerId] ?? ROUTE_PARAMS[model.id]?.[providerId] ?? model.params;
+}
+
 /** Providers keyed at start unless the caller overrides it: one direct, one aggregator, so both UI states show. */
 export const DEFAULT_KEYED: readonly string[] = ["openai", "fal"];
 
@@ -415,7 +420,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
       label: route.label,
       upstreamId: route.upstreamId,
       tasks: model.tasks,
-      params: model.routeParams?.[route.providerId] ?? ROUTE_PARAMS[model.id]?.[route.providerId] ?? model.params,
+      params: routeParamsFor(model, route.providerId),
       pricing: route.pricing,
       docsUrl: route.docsUrl,
       hasKey: route.keyConfigured,

@@ -31,8 +31,6 @@ const M = messages(
     "create": "Create video",
     "sending": "Sending",
     "generate": "Generate",
-    "estimate": "Estimated {cost}",
-    "noPrice": "Price not published",
     "source": "Video to edit",
     "format": "MP4 or MOV",
     "nokey": "Add a key to generate.",
@@ -54,8 +52,6 @@ const M = messages(
     "create": "영상 생성",
     "sending": "요청 중",
     "generate": "생성",
-    "estimate": "예상 {cost}",
-    "noPrice": "공개 가격 없음",
     "source": "편집할 영상",
     "format": "MP4 또는 MOV",
     "nokey": "생성하려면 키를 추가해 주세요.",
@@ -184,7 +180,7 @@ function PanelFoot({ create }: { create: Create }) {
         title={create.blocked ?? undefined}
       >
         <span>{create.sending ? t("sending") : t("generate")}</span>
-        <span className="btn-cost" title={create.cost.title || undefined}>{create.cost.plain ? create.cost.text : create.cost.text === "-" || create.cost.text === "Price not published" ? t("noPrice") : t("estimate", { cost: create.cost.text })}</span>
+        <span className="btn-cost" title={create.cost.title || undefined}>{create.cost.text}</span>
       </button>
     </div>
   );

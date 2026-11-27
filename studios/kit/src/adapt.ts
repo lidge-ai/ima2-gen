@@ -2,8 +2,8 @@
  * Translates the server's wire shapes (wire.ts) into the UI-facing kit types
  * (types.ts) and back. Pure functions; client.ts does the I/O.
  */
-import type { Catalog, CatalogModel, CatalogProvider, Job, JobError, KeyStatus, MediaModelSpec, MediaSubmitBody, SubmitInput } from "./types.ts";
-import type { WireAdapter, WireCatalog, WireJob, WireModel, WireRoute } from "./wire.ts";
+import type { Catalog, CatalogModel, CatalogProvider, Job, JobError, KeyStatus, MediaModelSpec, MediaQuote, MediaSubmitBody, SubmitInput } from "./types.ts";
+import type { WireAdapter, WireCatalog, WireJob, WireMediaEstimate, WireModel, WireRoute } from "./wire.ts";
 import { tidyResolutions } from "./resolutions.ts";
 
 /* ---------- catalog and keys ---------- */
@@ -152,3 +152,29 @@ export function fromWireJob(wire: WireJob): Job {
 const CATEGORIES: readonly JobError["category"][] = [
   "auth", "quota", "rate-limit", "invalid-request", "moderation", "not-found", "upstream", "timeout", "unknown",
 ];
+
+/* ---------- estimates ---------- */
+
+/** The server's quote as it came, checked for shape; anything unrecognised reads "unknown", never a figure. */
+export function toQuote(wire: WireMediaEstimate["quote"] | undefined): MediaQuote {
+  const num = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+  const unit = typeof wire?.unit === "string" ? wire.unit : "";
+  switch (wire?.state) {
+    case "exact":
+    case "from":
+      return num(wire.usd) && num(wire.quantity) && wire.price
+        ? { state: wire.state, usd: wire.usd, unit, quantity: wire.quantity, price: wire.price }
+        : { state: "unknown" };
+    case "range":
+      return num(wire.min) && num(wire.max) && num(wire.quantity)
+        ? { state: "range", min: wire.min, max: wire.max, unit, quantity: wire.quantity }
+        : { state: "unknown" };
+    case "usage":
+      return { state: "usage", unit };
+    case "unpriced":
+    case "local":
+      return { state: wire.state };
+    default:
+      return { state: "unknown" };
+  }
+}

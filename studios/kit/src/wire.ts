@@ -216,7 +216,7 @@ export interface WireMediaEstimate {
   adapter: string;
   route: "direct" | "aggregator" | "local";
   usd: number | null;
-  quote: { state: string };
+  quote: { state: string; usd?: number; min?: number; max?: number; unit?: string; quantity?: number; price?: import("./types.ts").MediaPrice };
   local?: { expectedSec: number | null; basis: string; mayBill: boolean };
   note?: string;
 }

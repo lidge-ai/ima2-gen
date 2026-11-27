@@ -1,4 +1,4 @@
-import { fromWireJob, toCatalog, toKeyStatuses, toWireSubmit } from "./adapt.ts";
+import { fromWireJob, toCatalog, toKeyStatuses, toQuote, toWireSubmit } from "./adapt.ts";
 import { historyParams, toHistoryPage } from "./adaptHistory.ts";
 import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
@@ -107,8 +107,12 @@ function mediaApi(http: Http, cache: JobCache, sessionId: string | undefined) {
     estimate: async (body: MediaSubmitBody): Promise<MediaEstimateResult> => {
       const request = toWireSubmit(body);
       delete request.requestId;
+      delete request.prompt;
       const wire = await http.request<WireMediaEstimate>("POST", "/api/media/estimate", { body: request });
-      return { route: wire.route, usd: wire.usd, ...(wire.local ? { local: wire.local } : {}) };
+      return {
+        route: wire.route, usd: wire.usd, quote: toQuote(wire.quote),
+        ...(wire.note ? { note: wire.note } : {}), ...(wire.local ? { local: wire.local } : {}),
+      };
     },
     cancel: async (jobId: string) => {
       await http.request<unknown>("POST", "/api/media/" + enc(jobId) + "/cancel");

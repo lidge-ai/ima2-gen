@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readSse } from "../src/sse.ts";
-import { estimateCost, formatUsd, sumEstimates } from "../src/pricing.ts";
+import { formatUsd, sumEstimates } from "../src/pricing.ts";
 import { chooseRoute } from "../src/routing.ts";
 import { makeCatalog } from "../src/fake/catalog.ts";
 
@@ -18,11 +18,12 @@ test("SSE parses split CRLF, comments, ids and multiline data", async () => {
   for await (const event of readSse(stream)) result.push(event);
   assert.deepEqual(result, [{ id: "42", event: "step", data: "first\nsecond" }]);
 });
-test("pricing computes and preserves unknown prices", () => {
-  const price = { unit: "second" as const, usd: 0.1, source: "fixture:fake", checkedAt: "2026-11-26" };
-  assert.equal(estimateCost([price], { durationSec: 5, count: 2 }).usd, 1);
-  assert.equal(formatUsd(estimateCost([], {})), "Price not published");
-  assert.equal(sumEstimates([estimateCost([price], { durationSec: 5 }), estimateCost([], {})]).usd, null);
+test("money prints the server's figures and keeps an unpriced step unpriced", () => {
+  assert.equal(formatUsd({ usd: 1, basis: "" }), "$1.00");
+  assert.equal(formatUsd({ usd: 0.0034, basis: "" }), "$0.0034");
+  assert.equal(formatUsd({ usd: null, basis: "" }), "Price not published");
+  assert.equal(sumEstimates([{ usd: 0.5, basis: "" }, { usd: null, basis: "" }]).usd, null);
+  assert.equal(sumEstimates([{ usd: 0.5, basis: "" }, { usd: 0.25, basis: "" }]).usd, 0.75);
 });
 test("routing prefers direct then keyed aggregator and reports missing key", () => {
   let model = makeCatalog(new Set(["openai", "fal"])).models.find((m) => m.id === "openai/gpt-image-2")!;

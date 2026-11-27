@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import { makeCatalog, wireCatalog } from "./catalog.ts";
+import { makeCatalog, routeParamsFor, wireCatalog } from "./catalog.ts";
+import { quoteFor } from "../../../../lib/providers/media/priceQuote.ts";
 import { workflows, estimateWorkflow } from "./workflows.ts";
 import { fakeShowcase } from "./showcase.ts";
 import type { Jobs } from "./jobs.ts";
@@ -93,11 +94,18 @@ function route(modelId: string, adapter: string | undefined, keys: Keys) {
   if (!selected || !selected.keyConfigured) throw new Fault(400, "MEDIA_KEY_MISSING", "Provider key required", "auth");
   return { model, selected };
 }
-/** POST /api/media/estimate: a local route answers with run time (median of earlier runs) and no charge. */
+/**
+ * POST /api/media/estimate, answered by the server's own price rule (lib/providers/media/priceQuote.ts) so
+ * the fake never quotes differently from a real server. A local route answers with run time and no charge.
+ */
 async function estimate(req: IncomingMessage, res: ServerResponse, keys: Keys): Promise<void> {
   const data = await json(req);
-  if (typeof data.model !== "string" || (data.adapter !== undefined && typeof data.adapter !== "string")) throw invalid();
-  const { model, selected } = route(data.model, data.adapter as string | undefined, keys);
+  if (typeof data.model !== "string" || typeof data.task !== "string" || (data.adapter !== undefined && typeof data.adapter !== "string")) throw invalid();
+  const model = makeCatalog(keys.keyed).models.find((m) => m.id === data.model);
+  if (!model) throw new Fault(404, "MEDIA_MODEL_UNKNOWN", "Unknown model", "not-found");
+  // Like the server, an estimate does not need a key: it prices the route a key would use.
+  const selected = data.adapter ? model.routes.find((r) => r.providerId === data.adapter) : (model.routes.find((r) => r.keyConfigured) ?? model.routes[0]);
+  if (!selected) throw invalid();
   if (selected.route === "local") {
     send(res, 200, {
       model: model.id, adapter: selected.providerId, route: "local", usd: 0, quote: { state: "local" },
@@ -105,10 +113,21 @@ async function estimate(req: IncomingMessage, res: ServerResponse, keys: Keys): 
     });
     return;
   }
-  const price = selected.pricing[0];
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+  const num = (v: unknown) => (typeof v === "number" ? v : undefined);
+  const request = {
+    kind: model.kind, task: data.task,
+    ...(str(data.resolution) !== undefined ? { resolution: str(data.resolution)! } : {}),
+    ...(str(data.quality) !== undefined ? { quality: str(data.quality)! } : {}),
+    ...(typeof data.audio === "boolean" ? { audio: data.audio } : {}),
+    ...(num(data.durationSec) !== undefined ? { durationSec: num(data.durationSec)! } : {}),
+    ...(num(data.count) !== undefined ? { count: num(data.count)! } : {}),
+  };
+  const params = routeParamsFor(model, selected.providerId);
+  const quote = quoteFor({ pricing: selected.pricing, params }, request);
   send(res, 200, {
-    model: model.id, adapter: selected.providerId, route: selected.route, usd: price ? price.usd : null,
-    quote: { state: price ? "exact" : "unpriced" },
+    model: model.id, adapter: selected.providerId, route: selected.route, hasKey: selected.keyConfigured,
+    usd: quote.state === "exact" || quote.state === "from" ? quote.usd : null, prices: selected.pricing, quote,
   });
 }
 async function submit(req: IncomingMessage, res: ServerResponse, jobs: Jobs, keys: Keys): Promise<void> {
