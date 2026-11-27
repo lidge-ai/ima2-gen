@@ -11,7 +11,7 @@ import re
 from .ima2_client import Ima2ApiError
 from .nodes import Ima2BridgeError
 
-FIELDS = ("prompt", "negativePrompt", "width", "height", "seed")
+FIELDS = ("prompt", "negativePrompt", "width", "height", "seed", "length", "fps", "duration")
 SETTINGS_HINT = "Export it with Workflow > Export (API) and add that file in ima2 Settings > ComfyUI workflows, where each one can be chosen."
 
 
@@ -54,6 +54,9 @@ def _plan(inspection):
         if len(settled) == 1:
             entry = settled[0]
             bind[field] = {"node": entry["node"]} if field == "output" else {"node": entry["node"], "input": entry["input"]}
+            # A setting the graph writes in several nodes (a size, a length) is bound in all of them.
+            if field != "output" and entry.get("also"):
+                bind[field]["also"] = entry["also"]
         elif options:
             undecided.append(f"{field}: " + " or ".join(f"{e['node']}.{e['input']}" if e.get("input") else str(e["node"]) for e in options))
     slots = []
