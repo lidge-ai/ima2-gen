@@ -23,6 +23,9 @@ function run(rows: Record<string, unknown>[], body: (page: Page, media: MediaFix
 }
 
 test("L11-R1 a media result shows its route, settings and cost, and Make again restores them without sending anything", run([mediaHistoryRow()], async (page, media) => {
+  // Showing a result asks for no media data; opening its details is what loads the catalog names.
+  await expect(actions(page).getByRole("button", { name: "Info", exact: true })).toBeVisible();
+  expect(media.mediaReads()).toBe(0);
   await actions(page).getByRole("button", { name: "Info", exact: true }).click();
   const details = page.getByRole("dialog", { name: "Generation Details" });
   await expect(details).toContainText("fal");
@@ -30,7 +33,6 @@ test("L11-R1 a media result shows its route, settings and cost, and Make again r
   for (const text of ["Route", "Aggregator", "Resolution", "2K", "Aspect ratio", "16:9", "Seed", "Billed (reported by the provider)", "$0.07"]) await expect(details).toContainText(text);
   await page.keyboard.press("Escape");
 
-  expect(media.mediaReads()).toBe(0);
   await actions(page).getByRole("button", { name: "Make again", exact: true }).click();
   await expect(page.locator(".toast")).toContainText("Model, settings and prompt restored. Check the estimate, then press Generate.");
   await expect(card(page)).toContainText("FLUX.2 Pro");

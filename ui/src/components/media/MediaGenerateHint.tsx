@@ -1,4 +1,5 @@
 import { useI18n } from "../../i18n";
+import { useAppStore } from "../../store/useAppStore";
 import { quoteAmount } from "./MediaEstimate";
 import { useMediaQuote } from "./useMediaQuote";
 import type { MediaReadiness } from "./useMediaReadiness";
@@ -12,9 +13,11 @@ export function MediaGenerateHint({ id, readiness }: { id: string; readiness: Me
   const { selection, resolved, blocker } = readiness;
   const view = useMediaQuote(resolved?.route, selection);
   const name = selection.label ?? selection.model;
+  const failed = useAppStore((s) => s.mediaFailure?.selection?.model === selection.model);
   let text: string;
   if (blocker?.code === "key") text = t("mediaPicker.blockKey", { provider: blocker.route.label });
   else if (blocker?.code === "input") text = t(`mediaPicker.problem.${blocker.problem.code}`, { min: blocker.problem.min, max: blocker.problem.max, have: blocker.problem.have });
+  else if (failed) text = t("mediaPicker.failure.hint", { model: name });
   else {
     const amount = quoteAmount(view, t);
     text = amount ? t("mediaPicker.estimate.hint", { model: name, amount }) : t("mediaPicker.estimate.hintNoPrice", { model: name });

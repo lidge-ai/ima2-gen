@@ -2,7 +2,7 @@ import { useId, useState, type KeyboardEvent } from "react";
 import { useI18n } from "../../i18n";
 import type { MediaAdapter } from "../../lib/mediaCatalog";
 import { loadMediaCatalog } from "../../lib/mediaCatalogStore";
-import { keyDraftProblem, keyEntrySupported, saveMediaKey } from "../../lib/mediaKeyEntry";
+import { keyDraftProblem, keyEntrySupported, keySaveProblem, saveMediaKey, type KeySaveProblem } from "../../lib/mediaKeyEntry";
 import { useAppStore } from "../../store/useAppStore";
 
 /**
@@ -20,7 +20,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
   const [extra, setExtra] = useState<Record<string, string>>({});
   const [shown, setShown] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ kind: KeySaveProblem; raw: string } | null>(null);
   const provider = adapter.label;
   if (!keyEntrySupported(adapter)) {
     return (
@@ -34,7 +34,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
   const problem = keyDraftProblem(adapter, { apiKey, extra });
   const save = async () => {
     if (problem || busy) return;
-    setBusy(true); setError("");
+    setBusy(true); setError(null);
     try {
       await saveMediaKey(adapter, { apiKey, extra });
       setApiKey(""); setExtra({});
@@ -42,7 +42,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
       showToast(t("mediaPicker.key.saved", { provider }));
       onDone?.();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : String(failure));
+      setError({ kind: keySaveProblem(failure), raw: failure instanceof Error ? failure.message : String(failure) });
     } finally { setBusy(false); }
   };
   // Enter saves the key and goes no further: this sits beside the composer, not inside a form of its own.
@@ -59,7 +59,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
       <label className="media-key__label" htmlFor={id + "-key"}>{t("media.apiKey")}</label>
       <div className="media-key__row">
         <input id={id + "-key"} className="api-key-input" type={shown ? "text" : "password"} autoComplete="off" spellCheck={false} placeholder={adapter.keyPrefix ?? ""}
-          value={apiKey} aria-describedby={id + "-state"} onChange={(event) => { setApiKey(event.target.value); setError(""); }} onKeyDown={onEnter} />
+          value={apiKey} aria-describedby={id + "-state"} onChange={(event) => { setApiKey(event.target.value); setError(null); }} onKeyDown={onEnter} />
         <button type="button" className="option-btn media-key__show" aria-pressed={shown} onClick={() => setShown(!shown)}>{t(shown ? "mediaPicker.key.hide" : "mediaPicker.key.show")}</button>
       </div>
       {adapter.extraFields.map((field) => (
@@ -75,7 +75,13 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
         </button>
         {replacing && onDone ? <button type="button" className="modal__btn modal__btn--secondary" disabled={busy} onClick={onDone}>{t("common.cancel")}</button> : null}
       </div>
-      <p className="media-key__state" id={id + "-state"} role={error ? "alert" : "status"}>{error ? t("mediaPicker.key.failed", { reason: error }) : hint}</p>
+      {error ? (
+        <div className="media-key__state" id={id + "-state"} role="alert">
+          <p>{error.kind === "rejected" ? t("mediaPicker.key.rejected", { provider }) : error.kind === "unverified" ? t("mediaPicker.key.unverified", { provider })
+            : error.kind === "format" ? t("mediaPicker.key.formatWrong") : error.kind === "extra" ? t("mediaPicker.key.extra") : t("mediaPicker.key.failed")}</p>
+          <details className="media-details"><summary>{t("mediaPicker.details")}</summary><p className="media-error-detail">{error.raw}</p></details>
+        </div>
+      ) : <p className="media-key__state" id={id + "-state"} role="status">{hint}</p>}
       {replacing ? null : (
         <p className="media-key__aside">{t("mediaPicker.key.subscription")}{" "}
           <button type="button" className="media-link" onClick={() => setSelection(null)}>{t("mediaPicker.useBuiltin")}</button></p>

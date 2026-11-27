@@ -1,3 +1,4 @@
+import { useMediaCatalog } from "../lib/mediaCatalogStore";
 import {
   lazy,
   Suspense,
@@ -59,6 +60,8 @@ function getClassicImageSrc(image: GenerateItem): string {
 
 export function Canvas() {
   const currentImage = useAppStore((s) => s.currentImage);
+  // A media result shows its catalog name once the catalog is in memory; this never loads it.
+  const mediaModels = useMediaCatalog(false).models;
   const importLocalImageToHistory = useAppStore((s) => s.importLocalImageToHistory);
   const multimodeSequence = useAppStore((s) => {
     const id = s.multimodePreviewFlightId;
@@ -182,7 +185,8 @@ export function Canvas() {
 
   const displayQuality = formatQualityAlias(currentImage?.quality);
   const displaySize = formatSizeAlias(currentImage?.size);
-  const displayModel = getImageModelShortLabel(currentImage?.model, currentImage?.provider);
+  const displayModel = (currentImage?.provider?.startsWith("media:") ? mediaModels.find((model) => model.id === currentImage.model)?.label : undefined)
+    ?? getImageModelShortLabel(currentImage?.model, currentImage?.provider);
   const imageSrc = currentImage ? getClassicImageSrc(currentImage) : null;
   const resultFavorite = resolveResultFavorite(
     currentImage?.filename,

@@ -167,13 +167,16 @@
       "save": "확인하고 저장",
       "checking": "{provider}에 확인하는 중…",
       "saved": "{provider} 키를 저장했어요. 이제 생성할 수 있어요.",
-      "failed": "키를 저장하지 못했어요: {reason}",
+      "failed": "키를 저장하지 못했어요.",
       "short": "키로 보기에는 너무 짧아요.",
       "prefix": "이 제공업체의 키는 {prefix}(으)로 시작해요.",
       "extra": "필수 칸을 채워 주세요.",
       "required": "(필수)",
       "subscription": "ChatGPT·Grok 로그인으로 쓰는 모델은 키가 필요 없어요. 기본 제공자에서 실행해요.",
-      "fileOnly": "이 제공업체는 서비스 계정 파일로 로그인해요. 설정에서 추가해 주세요."
+      "fileOnly": "이 제공업체는 서비스 계정 파일로 로그인해요. 설정에서 추가해 주세요.",
+      "rejected": "{provider}가 이 키를 받지 않았어요. 키를 다시 확인해 주세요.",
+      "unverified": "지금은 {provider}에 키를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      "formatWrong": "이 제공업체의 키 형식이 아니에요."
     },
     "failure": {
       "title": "{model} 생성이 끝나지 못했어요",
@@ -189,8 +192,11 @@
       "actionKey": "키 바꾸기",
       "actionBilling": "{provider} 열기",
       "actionRetry": "같은 설정으로 다시 시도",
-      "actionPrompt": "프롬프트 고치기"
-    }
+      "actionPrompt": "프롬프트 고치기",
+      "hint": "{model} 생성이 끝나지 못했어요. 이유와 다음 행동은 모델 설정에 있어요."
+    },
+    "details": "자세히",
+    "routeCheapestKey": "가장 싼 경로: {route}, {price}. 이 키를 대신 넣기"
   },
   "media": {
     "keysTitle": "미디어 제공업체",
@@ -510,7 +516,7 @@
     "copyField": "{label} 복사",
     "rawJson": "원본 메타데이터 JSON",
     "sections": {
-      "provider": "Provider & Model",
+      "provider": "제공자와 모델",
       "settings": "생성 설정",
       "usage": "사용량 및 시간",
       "lineage": "출처",
@@ -519,11 +525,11 @@
       "prompts": "프롬프트"
     },
     "fields": {
-      "provider": "Provider",
+      "provider": "제공자",
       "authPath": "인증 경로",
       "model": "모델",
-      "providerUrl": "Provider URL",
-      "requestId": "Request ID",
+      "providerUrl": "제공자 URL",
+      "requestId": "요청 ID",
       "quality": "품질",
       "size": "크기",
       "format": "포맷",
@@ -1219,7 +1225,9 @@
     "remakeTitle": "이 결과의 모델, 경로, 설정, 프롬프트를 복원해요. 생성을 누르기 전에는 아무것도 보내지 않아요.",
     "remakeReady": "모델, 설정, 프롬프트를 복원했어요. 예상 비용을 확인하고 생성을 눌러 주세요.",
     "remakeNeedsImages": "모델, 설정, 프롬프트를 복원했어요. 이 결과는 이미지로 만들었으니 생성 전에 이미지를 다시 넣어 주세요.",
-    "remakeModelGone": "이 모델은 이제 카탈로그에 없어서 여기서 다시 만들 수 없어요."
+    "remakeModelGone": "이 모델은 이제 카탈로그에 없어서 여기서 다시 만들 수 없어요.",
+    "moreActions": "더 보기",
+    "fewerActions": "접기"
   },
   "session": {
     "switchTitle": "세션 전환",

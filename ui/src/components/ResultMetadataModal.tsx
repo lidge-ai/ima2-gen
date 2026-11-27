@@ -1,6 +1,8 @@
-import { getMediaCatalog } from "../lib/mediaCatalogStore";
+import type { MediaLogo } from "../lib/mediaCatalog";
+import { useMediaCatalog } from "../lib/mediaCatalogStore";
+import { MediaLogo as MediaMark } from "./media/MediaLogo";
 import { formatUsd } from "../lib/mediaFormat";
-import { isMediaResult, resultCost } from "../lib/mediaResult";
+import { isMediaResult, resultAdapter, resultCost } from "../lib/mediaResult";
 import { isClassicTask } from "../lib/mediaTasks";
 import { useMemo } from "react";
 import { useModalFocus } from "../hooks/useModalFocus";
@@ -10,6 +12,10 @@ import type { GenerateItem } from "../types";
 type Field = {
   label: string;
   value: string;
+  /** The raw id behind a display name, shown small beside it. */
+  sub?: string;
+  /** A maker or provider mark shown before the name. */
+  mark?: MediaLogo | null;
   copyValue?: string;
   pre?: boolean;
   compact?: boolean;
@@ -64,7 +70,7 @@ function formatJson(value: unknown): string | null {
   }
 }
 
-function addField(fields: Field[], label: string, value: unknown, options: Pick<Field, "copyValue" | "pre" | "compact"> = {}) {
+function addField(fields: Field[], label: string, value: unknown, options: Pick<Field, "copyValue" | "pre" | "compact" | "sub" | "mark"> = {}) {
   const text = stringify(value);
   if (!text) return;
   fields.push({ label, value: text, ...options });
@@ -95,11 +101,7 @@ function sequenceSummary(item: GenerateItem): string | null {
 
 function providerLabel(provider: string | null | undefined): string | null {
   if (!provider) return null;
-  if (provider.startsWith("media:")) {
-    // The provider lane's own name when the catalog is loaded; its id otherwise, never the "media:" prefix.
-    const id = provider.slice(6);
-    return getMediaCatalog().adapters.find((adapter) => adapter.id === id)?.label ?? id;
-  }
+  if (provider.startsWith("media:")) return provider.slice(6);
   return PROVIDER_LABELS[provider] ?? provider;
 }
 
@@ -148,10 +150,16 @@ export function ResultMetadataModal({
   const containerRef = useModalFocus<HTMLElement>(true, onClose);
   const rawJson = useMemo(() => JSON.stringify(item, null, 2), [item]);
   const latestContinuity = item.videoContinuity?.entries?.[item.videoContinuity.entries.length - 1] ?? null;
-  const provider = providerLabel(item.provider);
+  // A media result is named as the catalog names it; opening this window for one is what loads the catalog.
+  const media = isMediaResult(item);
+  const catalog = useMediaCatalog(media);
+  const lane = media ? catalog.adapters.find((adapter) => adapter.id === resultAdapter(item)) : undefined;
+  const madeBy = media ? catalog.models.find((model) => model.id === item.model) : undefined;
+  const provider = lane?.label ?? providerLabel(item.provider);
+  const modelName = madeBy?.label ?? item.model;
   const summaryCost = isMediaResult(item) ? resultCost(item) : null;
   const summaryFacts = [
-    [provider, item.model].filter(Boolean).join(" · "),
+    [provider, modelName].filter(Boolean).join(" · "),
     formatSize(item.size),
     item.elapsed != null ? `${item.elapsed}s` : null,
     summaryCost ? formatUsd(summaryCost.usd) : null,
@@ -161,8 +169,10 @@ export function ResultMetadataModal({
   const sections: Section[] = [];
 
   const providerFields: Field[] = [];
-  addField(providerFields, t("metadata.fields.provider"), provider, { compact: true });
-  addField(providerFields, t("metadata.fields.model"), item.model, { compact: true });
+  addField(providerFields, t("metadata.fields.provider"), provider, { compact: true, ...(media ? { mark: lane?.logo ?? null } : {}),
+    ...(lane && lane.label !== lane.id ? { sub: lane.id } : {}) });
+  addField(providerFields, t("metadata.fields.model"), modelName, { compact: true, ...(media ? { mark: madeBy?.logo ?? null } : {}),
+    ...(madeBy && item.model ? { sub: item.model } : {}) });
   addField(providerFields, t("metadata.fields.providerUrl"), item.providerUrl, {
     copyValue: item.providerUrl ?? undefined,
   });
@@ -295,7 +305,13 @@ export function ResultMetadataModal({
                   <div className={compactFieldClass(field)} key={`${section.title}:${field.label}`}>
                     <dt>{field.label}</dt>
                     <dd>
-                      {field.pre ? <pre>{field.value}</pre> : <span>{field.value}</span>}
+                      {field.pre ? <pre>{field.value}</pre> : field.mark !== undefined || field.sub ? (
+                        <span className="metadata-modal__named">
+                          {field.mark !== undefined ? <MediaMark logo={field.mark} label={field.value} size="sm" /> : null}
+                          <span className="metadata-modal__name">{field.value}</span>
+                          {field.sub ? <small>{field.sub}</small> : null}
+                        </span>
+                      ) : <span>{field.value}</span>}
                       {field.copyValue ? (
                         <button type="button" onClick={() => onCopy(field.copyValue!)} aria-label={t("metadata.copyField", { label: field.label })}>
                           {t("metadata.copy")}

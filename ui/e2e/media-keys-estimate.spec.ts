@@ -49,7 +49,7 @@ test("L11-K1 a key is entered beside the model, checked before it is saved, and 
   media.keyVerdict = "reject";
   await entry.getByLabel("API key").fill("kling-key-wrong");
   await entry.getByRole("button", { name: "Check and save" }).click();
-  await expect(entry.getByRole("alert")).toContainText("The key was not saved: API key validation failed");
+  await expect(entry.getByRole("alert")).toContainText("Kling did not accept this key.");
   expect(keyWrites(media)).toEqual(["POST /api/keys/kling/validate"]);
 
   media.keyVerdict = "ok";

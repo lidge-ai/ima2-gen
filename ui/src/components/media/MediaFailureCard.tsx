@@ -34,7 +34,6 @@ export function MediaFailureCard() {
     <section className="media-failure" role="alert">
       <h4 className="media-failure__title">{t("mediaPicker.failure.title", { model })}</h4>
       <p>{reason(failure, provider, t)}</p>
-      {failure.message || failure.code ? <p className="media-error-detail"><code>{failure.code}</code>{failure.message ? " " + failure.message : ""}</p> : null}
       <div className="media-failure__actions">
         {action === "key" ? <button type="button" className="modal__btn" onClick={() => askKey(failure)}>{t("mediaPicker.failure.actionKey")}</button> : null}
         {action === "billing" && adapter?.consoleUrl ? (
@@ -44,6 +43,10 @@ export function MediaFailureCard() {
         {action === "prompt" ? <button type="button" className="modal__btn" onClick={editPrompt}>{t("mediaPicker.failure.actionPrompt")}</button> : null}
         <button type="button" className="modal__btn modal__btn--secondary" onClick={dismiss}>{t("mediaPicker.dismiss")}</button>
       </div>
+      {failure.message || failure.code ? (
+        <details className="media-details"><summary>{t("mediaPicker.details")}</summary>
+          <p className="media-error-detail"><code>{failure.code}</code>{failure.message ? " " + failure.message : ""}</p></details>
+      ) : null}
     </section>
   );
 }

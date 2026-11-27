@@ -337,7 +337,7 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
     // The route's provider by its catalog name and mark, kept with the selection so no catalog read is needed here.
     const name = mediaSelection.routeLabel ?? mediaSelection.adapter;
     providerGroups.unshift({ items: [{ value: `media:${mediaSelection.adapter}`, searchText: name, disabled: true,
-      label: <span className="media-lane"><MediaLogo logo={mediaSelection.routeMark ? { id: mediaSelection.adapter, name, urls: { mark: mediaSelection.routeMark }, source: null } : null} label={name} size="sm" />{name}</span> }] });
+      label: <span className="media-lane"><MediaLogo logo={mediaSelection.routeMark ? { id: mediaSelection.adapter, name, urls: { mark: mediaSelection.routeMark }, source: null } : null} label={name} size="sm" /><span className="media-lane__name">{name}</span></span>, title: name }] });
   }
   if (connectedMcpProviders.length > 0) {
     providerGroups.push({

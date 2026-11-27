@@ -158,6 +158,9 @@ async function captureKeysAndFailures(stage: Stage): Promise<void> {
   await expect(stage.card.locator(".media-failure")).toBeVisible();
   await stage.card.locator(".media-failure").scrollIntoViewIfNeeded();
   await stage.shot("failure-quota");
+  await stage.card.locator(".media-failure summary").click();
+  await stage.shot("failure-details");
+  await stage.card.locator(".media-failure summary").click();
   await stage.card.locator(".media-failure").screenshot({ path: join(OUT, "failure-quota-crop__" + stage.width + "__" + stage.locale + ".png") });
   expect(app.errors).toEqual([]);
 }
@@ -189,6 +192,10 @@ for (const locale of LOCALES) {
         const actions = app.page.locator(".result-actions:visible").first();
         await expect(actions).toBeVisible();
         await stage.shot("result");
+        if (stage.mobile) {
+          await app.page.locator(".result-actions__toggle:visible").first().click();
+          await stage.shot("result-more");
+        }
         await actions.locator(".action-btn", { hasText: /Info|정보/ }).first().click();
         await expect(app.page.locator("[aria-labelledby=metadata-modal-title]")).toBeVisible();
         await stage.shot("result-details");
@@ -197,6 +204,27 @@ for (const locale of LOCALES) {
         await expect(app.page.locator(".toast").first()).toBeVisible();
         await stage.shot("result-make-again");
         if (!stage.mobile) await stage.card.screenshot({ path: join(OUT, "result-make-again-crop__" + width + "__" + locale + ".png") });
+        expect(app.errors).toEqual([]);
+      } finally { await app.close(); }
+    });
+  }
+}
+
+for (const locale of LOCALES) {
+  for (const width of WIDTHS) {
+    test("capture no key " + locale + " " + width, async ({ browser }) => {
+      test.setTimeout(120_000);
+      await mkdir(OUT, { recursive: true });
+      const app = await openStaticApp(browser, { locale, viewport: { width, height: HEIGHT[width] ?? 900 }, keys: [] });
+      try {
+        await openCreateScreen(app.page);
+        const stage = new Stage(app, width, locale);
+        await stage.openWindow();
+        await stage.kind(1);
+        await stage.pick("bytedance/seedance-2.5");
+        await stage.showCard();
+        await stage.card.locator(".media-routes").scrollIntoViewIfNeeded();
+        await stage.shot("no-key");
         expect(app.errors).toEqual([]);
       } finally { await app.close(); }
     });
