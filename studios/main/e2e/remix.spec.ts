@@ -191,13 +191,15 @@ for (const lang of [
     await page.addInitScript((locale) => localStorage.setItem("ima2.locale", locale), lang.locale);
     await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
       const values = (route.request().postDataJSON() as { values?: Record<string, unknown> }).values ?? {};
-      if (values.style === undefined && values.styleImage === undefined) await route.fulfill({ status: 400, json: noLookYet });
+      // Like the server, an empty list or blank value counts as not given.
+      const given = (v: unknown) => v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0);
+      if (!given(values.style) && !given(values.styleImage)) await route.fulfill({ status: 400, json: noLookYet });
       else await route.fallback();
     });
     await page.goto("/#/remix/remix-restyle");
-    const generate = page.getByRole("button", { name: lang.button });
-    await expect(generate).toBeDisabled();
-    await expect(page.getByText(lang.hint).first()).toBeVisible();
+    // The example clip loads first; then the estimate comes back asking for a look.
+    await expect(page.getByText(lang.hint)).toBeVisible();
+    await expect(page.getByRole("button", { name: lang.button })).toBeDisabled();
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.getByText(/choose a style or add a style reference|Price estimate failed|예상 비용 계산 실패|가격 확인 불가|Price unavailable/)).toHaveCount(0);
     // Picking a style is the next step; the price follows.
