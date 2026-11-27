@@ -107,10 +107,10 @@ test("a workflow is checked against its server, file inputs need a role, and reg
     expect(fixture.calls.filter((call) => call.path === "/api/comfy/remotes")).toHaveLength(0);
 
     await chooseFile(page, "wan-i2v.json", API_GRAPH);
-    const inspect = fixture.calls.find((call) => call.path === "/api/comfy/inspect");
-    expect((inspect?.body as { origin?: string }).origin, "the inspection names the server").toBe(ORIGIN);
     const report = page.locator(".comfy-report--warn").first();
     await expect(report).toContainText(ORIGIN + " lacks something this workflow needs.");
+    const inspect = fixture.calls.find((call) => call.path === "/api/comfy/inspect");
+    expect((inspect?.body as { origin?: string }).origin, "the inspection names the server").toBe(ORIGIN);
     await expect(report).toContainText("WanAnimateToVideo");
     await expect(report).toContainText("wan2.2_ti2v_5B_fp16.safetensors");
     await expect(report).toContainText("beta57");
