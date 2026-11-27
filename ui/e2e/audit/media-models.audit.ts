@@ -119,3 +119,58 @@ for (const locale of LOCALES) {
     });
   }
 }
+
+async function captureKeysAndFailures(stage: Stage): Promise<void> {
+  const { app, page } = stage;
+  // Key entry for a model the saved key cannot run, with a rejected key, then the estimate and the Generate hint.
+  await stage.openWindow();
+  await stage.kind(1);
+  await stage.pick("kling/kling-4.0");
+  await stage.showCard();
+  app.media.keyVerdict = "reject";
+  await stage.card.locator(".media-key .api-key-input").first().fill("kling-key-0000");
+  await stage.card.locator(".media-key__actions .modal__btn").first().click();
+  await expect(stage.card.locator(".media-key [role=alert]")).toBeVisible();
+  await stage.card.locator(".media-key").scrollIntoViewIfNeeded();
+  await stage.shot("key-rejected");
+  await stage.card.locator(".media-key").screenshot({ path: join(OUT, "key-rejected-crop__" + stage.width + "__" + stage.locale + ".png") });
+  if (!stage.mobile) { await page.locator(".generate-row:visible").screenshot({ path: join(OUT, "generate-blocked-crop__" + stage.width + "__" + stage.locale + ".png") }); }
+
+  await stage.openWindow();
+  await stage.kind(1);
+  await stage.pick("bytedance/seedance-2.5");
+  await stage.showCard();
+  await expect(stage.card.locator(".media-estimate .price")).toContainText("$");
+  await stage.card.locator(".media-estimate").scrollIntoViewIfNeeded();
+  await stage.shot("estimate");
+  await stage.card.locator(".media-estimate").screenshot({ path: join(OUT, "estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
+  if (stage.mobile) await page.locator("#mobile-generate-sheet [role=tab]").nth(0).click();
+  await page.locator(".generate-row:visible").screenshot({ path: join(OUT, "generate-estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
+
+  await page.locator(".composer:visible .composer__textarea").fill(PROMPT[stage.locale] ?? PROMPT.en!);
+  await page.locator(".generate-btn:visible").click();
+  await expect.poll(() => app.media.submissions.length).toBeGreaterThan(0);
+  await app.media.emit(page, "progress", String(app.media.submissions[0]!.requestId), { status: "running", progress: 0.4 });
+  await stage.shot("running");
+  await app.media.emit(page, "error", String(app.media.submissions[0]!.requestId), { code: "FAL_INSUFFICIENT_CREDIT", error: "Exhausted balance. Top up at fal.ai/dashboard/billing.", status: 402, category: "quota", retryable: false, adapter: "fal" });
+  await stage.showCard();
+  await expect(stage.card.locator(".media-failure")).toBeVisible();
+  await stage.card.locator(".media-failure").scrollIntoViewIfNeeded();
+  await stage.shot("failure-quota");
+  await stage.card.locator(".media-failure").screenshot({ path: join(OUT, "failure-quota-crop__" + stage.width + "__" + stage.locale + ".png") });
+  expect(app.errors).toEqual([]);
+}
+
+for (const locale of LOCALES) {
+  for (const width of WIDTHS) {
+    test("capture keys and failures " + locale + " " + width, async ({ browser }) => {
+      test.setTimeout(180_000);
+      await mkdir(OUT, { recursive: true });
+      const app = await openStaticApp(browser, { locale, viewport: { width, height: HEIGHT[width] ?? 900 } });
+      try {
+        await openCreateScreen(app.page);
+        await captureKeysAndFailures(new Stage(app, width, locale));
+      } finally { await app.close(); }
+    });
+  }
+}

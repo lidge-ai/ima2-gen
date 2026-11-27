@@ -1,3 +1,4 @@
+import { MediaLogo } from "./media/MediaLogo";
 import { useEffect, useMemo, useState } from "react";
 import type { Provider } from "../types";
 import {
@@ -332,7 +333,12 @@ export function GenProviderModelSelect({ compact = false }: { compact?: boolean 
       }),
     },
   ];
-  if (mediaSelection) providerGroups.unshift({ items: [{ value: `media:${mediaSelection.adapter}`, label: mediaSelection.adapter, disabled: true }] });
+  if (mediaSelection) {
+    // The route's provider by its catalog name and mark, kept with the selection so no catalog read is needed here.
+    const name = mediaSelection.routeLabel ?? mediaSelection.adapter;
+    providerGroups.unshift({ items: [{ value: `media:${mediaSelection.adapter}`, searchText: name, disabled: true,
+      label: <span className="media-lane"><MediaLogo logo={mediaSelection.routeMark ? { id: mediaSelection.adapter, name, urls: { mark: mediaSelection.routeMark }, source: null } : null} label={name} size="sm" />{name}</span> }] });
+  }
   if (connectedMcpProviders.length > 0) {
     providerGroups.push({
       label: t("mcp.connectedProviders"),

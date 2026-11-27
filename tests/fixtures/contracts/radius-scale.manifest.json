@@ -3512,5 +3512,19 @@
     "selector": ".media-route__key",
     "expected": "var(--r-xs)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-key",
+    "expected": "var(--r-md)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-failure",
+    "expected": "var(--r-md)",
+    "important": false
   }
 ]

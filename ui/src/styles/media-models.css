@@ -14,6 +14,8 @@
 .media-mark { border-radius: var(--r-sm); }
 .media-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .media-mark--sm { width: 24px; height: 24px; padding: 3px; }
+.media-lane { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.media-lane .media-mark--sm { width: 18px; height: 18px; padding: 2px; }
 .media-mark--monogram { padding: 0; border: 1px solid var(--hairline); background: var(--surface-3); color: var(--text); font-size: 14px; font-weight: 600; line-height: 1; }
 .media-mark--sm.media-mark--monogram { font-size: 11px; }
 
@@ -103,6 +105,34 @@
 .media-unsupported ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 12px; margin: 0; padding: 0; list-style: none; }
 .media-unsupported li { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
 .media-dialog button:focus-visible, .media-dialog input:focus-visible, .media-dialog select:focus-visible, .media-dialog summary:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+
+/* ── Key entry, estimate, failure (media models) ── */
+.media-key { display: grid; gap: 6px; padding: 10px; border: 1px solid var(--hairline); background: var(--control-bg); color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+.media-key { border-radius: var(--r-md); }
+.media-key p { margin: 0; }
+.media-key__title { margin: 0; color: var(--text); font-size: 12px; font-weight: 600; }
+.media-key__label { display: grid; gap: 4px; color: var(--text-dim); font: 11px/1.4 var(--mono); }
+.media-key__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
+.media-key .api-key-input { width: 100%; min-width: 0; min-height: 40px; }
+.media-key__show.option-btn { flex: none; min-width: 52px; min-height: 40px; padding: 6px 10px; }
+.media-key__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.media-key__actions .modal__btn { min-height: 40px; }
+.media-key__actions .modal__btn:disabled { opacity: 0.5; cursor: default; }
+.media-key__state { min-height: 16px; color: var(--text); overflow-wrap: anywhere; }
+.media-key__aside { color: var(--text-muted); }
+.media-estimate { flex-wrap: wrap; }
+.media-estimate .price { color: var(--text); }
+.media-estimate small { flex-basis: 100%; color: var(--text-muted); font: 11px/1.45 var(--mono); overflow-wrap: anywhere; }
+.media-failure { display: grid; gap: 6px; padding: 10px; border: 1px solid var(--red); background: var(--control-bg); color: var(--text); font-size: 12px; line-height: 1.5; }
+.media-failure { border-radius: var(--r-md); }
+.media-failure p { margin: 0; }
+.media-failure__title { margin: 0; font-size: 12px; font-weight: 600; }
+.media-failure__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.media-failure__actions .modal__btn { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }
+.generate-row--media { row-gap: 6px; }
+.generate-row__media { grid-column: 1 / -1; margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.generate-row__media--blocked { color: var(--text); }
+.generate-btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
 
 @media (max-width: 800px) {
   /* A full-height sheet: the list needs every pixel on a phone, and the close button stays in thumb reach of the title. */

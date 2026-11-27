@@ -1,5 +1,6 @@
 import type { Adjustment, MediaSelection } from "../lib/mediaSelection";
-import { saveMediaSelection } from "../lib/mediaSelectionStore";
+import { readStoredMediaFailure, saveMediaSelection, writeStoredMediaFailure } from "../lib/mediaSelectionStore";
+import { buildMediaFailure, parseMediaFailure, type MediaFailure } from "../lib/mediaFailure";
 import { prepareMediaInputs, submitMediaJob } from "../lib/mediaGenerate";
 import { buildMediaSubmitBody } from "../lib/mediaSubmitBody";
 import { getHistory } from "../lib/api";
@@ -14,6 +15,46 @@ export function setMediaSelectionImpl(selection: MediaSelection | null, adjusted
   set({ mediaSelection: selection, ...(adjusted || !selection ? { mediaAdjustments: adjusted ?? [] } : {}) });
 }
 
+export function loadMediaFailure(): MediaFailure | null {
+  return parseMediaFailure(readStoredMediaFailure());
+}
+
+export function setMediaFailureImpl(failure: MediaFailure | null, set: StoreSet): void {
+  writeStoredMediaFailure(failure);
+  set({ mediaFailure: failure, ...(failure ? {} : { mediaKeyPrompt: null }) });
+}
+
+/** Puts the failed job's model back (its key is what needs replacing) and opens the key entry for that lane. */
+export function promptMediaKeyImpl(failure: MediaFailure, set: StoreSet, get: StoreGet): void {
+  if (failure.selection) get().setMediaSelection({ ...failure.selection, adapter: failure.adapter || failure.selection.adapter, routeMode: "pinned" });
+  set({ mediaKeyPrompt: failure.adapter || null });
+}
+
+export async function retryMediaFailureImpl(set: StoreSet, get: StoreGet): Promise<void> {
+  const failure = get().mediaFailure;
+  if (!failure?.selection) return;
+  get().setMediaSelection(failure.selection);
+  // The prompt that failed is shown again in the composer, so what runs is what the person sees.
+  if (failure.prompt && !composePrompt(get().prompt, get().insertedPrompts)) get().setPrompt(failure.prompt);
+  setMediaFailureImpl(null, set);
+  await get().generate();
+}
+
+/** A job that failed while the page was away: the terminal record has the code and, once the server sends them, the category and retryable flag. */
+export function recordTerminalMediaFailure(error: unknown, get: StoreGet): void {
+  const media = (error as { media?: { requestId: string; adapter: string; model?: string; prompt?: string } } | null)?.media;
+  if (!media || isCanceledGenerationError(error)) return;
+  const current = get().mediaSelection;
+  const selection = current && current.model === media.model ? current : null;
+  const { code, status, category, retryable } = error as { code?: unknown; status?: unknown; category?: unknown; retryable?: unknown };
+  get().setMediaFailure(buildMediaFailure({ code, status, category, retryable }, { requestId: media.requestId, prompt: media.prompt ?? "", selection, adapter: media.adapter }));
+}
+
+/** Server job states to the phases the in-flight list has words for. */
+function phaseOf(status: string): string {
+  return status === "running" ? "streaming" : status;
+}
+
 export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promise<void> {
   const state = get();
   const selection = state.mediaSelection;
@@ -24,21 +65,23 @@ export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promis
   const startedAt = Date.now();
   const controller = new AbortController();
   registerFlightAbort(id, controller);
-  const flight = { id, prompt, startedAt, kind: selection.kind, sessionId: state.activeSessionId };
+  const flight = { id, prompt, startedAt, kind: selection.kind, sessionId: state.activeSessionId, model: selection.label ?? selection.model };
   const next = [...state.inFlight, flight];
   saveInFlight(next);
   set({ inFlight: next, activeGenerations: next.length });
+  let adapter = selection.adapter;
   try {
     const refs = [...state.referenceImages, ...(state.providerUrlReference ? [state.providerUrlReference] : [])];
-    const { inputs, adapter } = await prepareMediaInputs(selection, refs, controller.signal);
+    const prepared = await prepareMediaInputs(selection, refs, controller.signal);
+    adapter = prepared.adapter;
     // The adapter is always sent, so what runs is the route the panel showed (automatic resolves here, once).
-    const payload = buildMediaSubmitBody({ ...selection, adapter }, prompt, id, state.activeSessionId, inputs);
+    const payload = buildMediaSubmitBody({ ...selection, adapter }, prompt, id, state.activeSessionId, prepared.inputs);
     const phase = (value: string) => set((current) => ({ inFlight: current.inFlight.map((item) =>
       item.id === id ? { ...item, phase: value } : item) }));
     const outputs = await submitMediaJob(payload, id, controller.signal, {
       onSubmitted: () => { phase("streaming"); get().startInFlightPolling(); },
       onProgress: (data) => {
-        if (typeof data.status === "string") phase(data.status);
+        if (typeof data.status === "string") phase(phaseOf(data.status));
         if (selection.kind === "video") set({ videoProgress: typeof data.progress === "number" ? data.progress : null });
       },
     });
@@ -49,11 +92,15 @@ export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promis
         mediaType: output.mediaType, prompt, requestId: id, sessionId: state.activeSessionId, createdAt: Date.now() };
     });
     for (const item of items) await addHistory(item, set, get, { autoSelectStartedAt: startedAt });
+    // A finished job answers the last failure; the card has nothing left to say.
+    if (get().mediaFailure) setMediaFailureImpl(null, set);
   } catch (error) {
     if (!(error instanceof Error && error.name === "AbortError") && !isCanceledGenerationError(error)) {
       const code = (error as { code?: unknown })?.code;
       const message = error instanceof Error ? error.message : String(error);
       get().showToast(typeof code === "string" ? `${code}: ${message}` : message, true);
+      // Only a job the server answered for is kept: a local refusal (no key, wrong inputs) is already explained beside Generate.
+      if (typeof code === "string") setMediaFailureImpl(buildMediaFailure(error, { requestId: id, prompt, selection: { ...selection, adapter }, adapter }), set);
     }
   } finally {
     clearFlightAbort(id);

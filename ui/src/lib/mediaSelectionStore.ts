@@ -1,5 +1,5 @@
 import type { MediaSelection } from "./mediaSelection";
-import { MEDIA_RECENT_MODELS_STORAGE_KEY, MEDIA_SELECTION_STORAGE_KEY } from "../store/persistenceRegistry";
+import { MEDIA_FAILURE_STORAGE_KEY, MEDIA_RECENT_MODELS_STORAGE_KEY, MEDIA_SELECTION_STORAGE_KEY } from "../store/persistenceRegistry";
 
 const RECENT_LIMIT = 6;
 
@@ -29,6 +29,9 @@ export function parseMediaSelection(raw: unknown): MediaSelection | null {
   const selection: MediaSelection = { kind: v.kind, model: v.model, adapter: v.adapter, task: v.task, routeMode: v.routeMode === "auto" ? "auto" : "pinned" };
   if (text(v.label)) selection.label = v.label;
   if (text(v.vendor)) selection.vendor = v.vendor;
+  if (text(v.routeLabel)) selection.routeLabel = v.routeLabel;
+  // Only a logo this server serves is ever put in an <img>.
+  if (text(v.routeMark, 300) && v.routeMark.startsWith("/media-assets/")) selection.routeMark = v.routeMark;
   if (typeof v.durationSec === "number" && Number.isFinite(v.durationSec) && v.durationSec > 0) selection.durationSec = v.durationSec;
   if (text(v.resolution)) selection.resolution = v.resolution;
   if (text(v.aspectRatio)) selection.aspectRatio = v.aspectRatio;
@@ -57,4 +60,13 @@ export function rememberModel(kind: string, id: string): string[] {
   const next = [key, ...loadRecentModels().filter((entry) => entry !== key)].slice(0, RECENT_LIMIT);
   write(MEDIA_RECENT_MODELS_STORAGE_KEY, next);
   return next;
+}
+
+/** The last failed media job as stored JSON; mediaFailure.ts owns its shape. */
+export function readStoredMediaFailure(): unknown {
+  return read(MEDIA_FAILURE_STORAGE_KEY);
+}
+
+export function writeStoredMediaFailure(failure: unknown): void {
+  write(MEDIA_FAILURE_STORAGE_KEY, failure);
 }

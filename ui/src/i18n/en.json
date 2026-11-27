@@ -145,7 +145,52 @@
     "routeAutoNowNoDirectKey": "Now: {route} ({direct} direct needs a key)",
     "routeAutoNowCheapest": "Now: {route} (no direct route; cheapest with a key)",
     "routeAutoNone": "No route has a key yet",
-    "routeKeyNeeded": "Needs key"
+    "routeKeyNeeded": "Needs key",
+    "blockKey": "Add a {provider} API key to generate.",
+    "estimate": {
+      "label": "Estimated cost",
+      "unknown": "Not in the price list",
+      "basisSeconds": "{n} s × {price}",
+      "rangeNote": "The price list has several tiers for this model; the charge depends on an option this screen does not set.",
+      "unpricedNote": "{provider} publishes no price for this model. Check the charge in its console.",
+      "hint": "{model} · est. {amount}",
+      "hintNoPrice": "{model} · no published price"
+    },
+    "key": {
+      "title": "{provider} needs an API key",
+      "replaceTitle": "Replace the {provider} key",
+      "body": "Paste the key here. It is checked with {provider} before it is saved, and your prompt and settings stay as they are.",
+      "get": "Get a key at {provider}",
+      "newTab": "(opens in a new tab)",
+      "show": "Show",
+      "hide": "Hide",
+      "save": "Check and save",
+      "checking": "Checking with {provider}…",
+      "saved": "{provider} key saved. You can generate now.",
+      "failed": "The key was not saved: {reason}",
+      "short": "That is too short to be a key.",
+      "prefix": "Keys for this provider start with {prefix}.",
+      "extra": "Fill in the required fields.",
+      "required": "(required)",
+      "subscription": "ChatGPT and Grok sign-in models need no key. They run from the built-in providers.",
+      "fileOnly": "This provider signs in with a service-account file, which is added in Settings."
+    },
+    "failure": {
+      "title": "{model} did not finish",
+      "auth": "{provider} rejected the key.",
+      "quota": "The {provider} account is out of credit or quota. Billing and refunds follow {provider}'s own policy.",
+      "rateLimit": "{provider} is limiting requests for this key right now.",
+      "timeout": "{provider} took too long to answer.",
+      "upstream": "{provider} had a server error.",
+      "moderation": "{provider}'s safety filter refused this request. Change the prompt or the images.",
+      "invalid": "{provider} did not accept these settings. Change them and generate again.",
+      "notFound": "{provider} does not offer this model on this route any more. Pick another route or model.",
+      "unknown": "The job failed without a reason this screen can act on.",
+      "actionKey": "Replace the key",
+      "actionBilling": "Open {provider}",
+      "actionRetry": "Try again with the same settings",
+      "actionPrompt": "Edit the prompt"
+    }
   },
   "media": {
     "keysTitle": "Media providers",

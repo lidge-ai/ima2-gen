@@ -77,6 +77,8 @@ export type PersistedInFlight = {
   parentNodeId?: string | null;
   clientNodeId?: string | null;
   kind?: "classic" | "node" | "multimode" | "image" | "video" | "mcp-image" | "mcp-video" | `mcp-action-${string}`;
+  /** What is running, as shown to the person (media jobs: the model's name). */
+  model?: string;
 };
 
 export type ServerInFlightJob = {

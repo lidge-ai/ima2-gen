@@ -183,11 +183,11 @@ test("a runnable model is described by the route that would run; a model that ne
 test("switching model keeps allowed settings, moves the rest to listed values and reports each move", () => {
   const from = route("fal", { hasKey: true, params: { durationsSec: [5, 10, 15], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16"], nativeAudio: true, seed: true, negativePrompt: true } });
   const first = reconcileSelection(model("acme/a", [from]), from, "text-to-video", null, "auto");
-  assert.deepEqual(first, { selection: { kind: "video", model: "acme/a", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "a", vendor: "acme", durationSec: 5, resolution: "720p" }, adjusted: [] });
+  assert.deepEqual(first, { selection: { kind: "video", model: "acme/a", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "a", vendor: "acme", routeLabel: "fal", durationSec: 5, resolution: "720p" }, adjusted: [] });
   const tuned = { ...first.selection, durationSec: 15, resolution: "1080p", aspectRatio: "9:16", audio: true, seed: 42, negativePrompt: "blur" };
   const to = route("kling", { route: "direct", hasKey: true, tasks: ["image-to-video"], params: { durationsSec: [5, 10], resolutions: ["720P", "1080P"], aspectRatios: ["16:9"] } });
   const next = reconcileSelection(model("acme/b", [to]), to, "text-to-video", tuned, "pinned");
-  assert.deepEqual(next.selection, { kind: "video", model: "acme/b", adapter: "kling", task: "image-to-video", routeMode: "pinned", label: "b", vendor: "acme", durationSec: 10, resolution: "1080P" });
+  assert.deepEqual(next.selection, { kind: "video", model: "acme/b", adapter: "kling", task: "image-to-video", routeMode: "pinned", label: "b", vendor: "acme", routeLabel: "kling", durationSec: 10, resolution: "1080P" });
   assert.deepEqual(next.adjusted, [
     { field: "task", from: "text-to-video", to: "image-to-video" }, { field: "durationSec", from: "15", to: "10" },
     { field: "aspectRatio", from: "9:16", to: null }, { field: "audio", from: "true", to: null },
@@ -206,7 +206,7 @@ test("seeds are whole numbers in the provider range, and saved selections are re
   assert.equal(parseMediaSelection(null), null);
   assert.equal(parseMediaSelection({ kind: "audio", model: "a/b", adapter: "x", task: "t" }), null);
   assert.equal(parseMediaSelection({ kind: "video", model: "", adapter: "x", task: "t" }), null);
-  assert.deepEqual(parseMediaSelection({ kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", durationSec: 5, seed: 1.5, audio: "yes", extra: 1 }),
-    { kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", durationSec: 5 });
+  assert.deepEqual(parseMediaSelection({ kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", routeLabel: "fal.ai", routeMark: "https://evil.example/x.svg", durationSec: 5, seed: 1.5, audio: "yes", extra: 1 }),
+    { kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", routeLabel: "fal.ai", durationSec: 5 });
   assert.equal(parseMediaSelection({ kind: "image", model: "a/b", adapter: "fal", task: "text-to-image" })?.routeMode, "pinned");
 });
