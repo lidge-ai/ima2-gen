@@ -305,7 +305,9 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+/* What an action reported sits under the row of buttons, whichever button it belongs to. */
 .lightbox-note {
+  order: 1;
   flex-basis: 100%;
   display: grid;
   gap: 4px;
