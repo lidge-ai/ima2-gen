@@ -8,7 +8,7 @@ export const M = messages(
     noMatch: "No assets match this model and filter.", noAll: "No assets yet.", noImages: "No images yet.",
     noVideos: "No videos yet.", noAudio: "No audio yet.", noSaved: "No saved assets yet. Save a result to find it here.",
     clearModel: "Clear model filter", browse: "Browse assets", createImage: "Create an image", createVideo: "Create a video",
-    audioNext: "Audio results will appear here when available.", error: "Could not load assets: {error}", retry: "Retry",
+    createAudio: "Create audio", error: "Could not load assets: {error}", retry: "Retry",
     loading: "Loading assets", results: "Assets results", loadingMore: "Loading", loadMore: "Load more",
   },
   {
@@ -18,7 +18,7 @@ export const M = messages(
     noMatch: "이 모델과 필터에 맞는 에셋이 없어요.", noAll: "아직 에셋이 없어요.", noImages: "아직 이미지가 없어요.",
     noVideos: "아직 영상이 없어요.", noAudio: "아직 오디오가 없어요.", noSaved: "아직 저장한 에셋이 없어요. 결과를 저장하면 여기서 볼 수 있어요.",
     clearModel: "모델 필터 지우기", browse: "에셋 보기", createImage: "이미지 만들기", createVideo: "영상 만들기",
-    audioNext: "오디오 결과가 생기면 여기에서 볼 수 있어요.", error: "에셋을 불러오지 못했어요: {error}", retry: "다시 시도",
+    createAudio: "오디오 만들기", error: "에셋을 불러오지 못했어요: {error}", retry: "다시 시도",
     loading: "에셋을 불러오는 중이에요", results: "에셋 결과", loadingMore: "불러오는 중", loadMore: "더 보기",
   },
 );

@@ -46,6 +46,7 @@ const PROVIDERS: Record<string, ProviderDef> = {
   pixverse: { label: "PixVerse", route: "direct", consoleUrl: "https://pixverse.ai/" },
   recraft: { label: "Recraft", route: "direct", consoleUrl: "https://www.recraft.ai/" },
   heygen: { label: "HeyGen", route: "direct", consoleUrl: "https://www.heygen.com/" },
+  elevenlabs: { label: "ElevenLabs", route: "direct", consoleUrl: "https://elevenlabs.io/app/settings/api-keys" },
   fal: { label: "fal", route: "aggregator", consoleUrl: "https://fal.ai/dashboard/keys" },
   replicate: { label: "Replicate", route: "aggregator", consoleUrl: "https://replicate.com/account/api-tokens" },
 };
@@ -68,6 +69,14 @@ const AVATAR_FORM: Params = {
     { role: "source-audio", min: 1, max: 1, billedLength: true },
   ],
 };
+/** Sound effects: a text request needs a length; sound for a video takes the video. */
+const SOUND_FORM: Params = {
+  durationRange: { minSec: 1, maxSec: 600, tasks: ["text-to-audio"], required: true },
+  inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-audio"], billedLength: true }],
+};
+const MUSIC_FORM: Params = { durationRange: { minSec: 3, maxSec: 600 }, options: [{ name: "force_instrumental", type: "boolean" }] };
+/** Price units that differ from the kind's default, as the real catalog has them. */
+const PRICE_UNITS: Readonly<Record<string, MediaPrice["unit"]>> = { "elevenlabs/eleven-v3": "character", "elevenlabs/elevenlabs-music-2.5": "minute" };
 const DUBBING_FORM: Params = {
   inputs: [{ role: "source-video", min: 1, max: 1, billedLength: true }],
   options: [
@@ -279,6 +288,25 @@ const MODELS: ModelRow[] = [
     ["text-to-audio", "video-to-audio"],
     {},
     { mirelo: 0.01, fal: 0.012 },
+    { mirelo: SOUND_FORM, fal: SOUND_FORM },
+  ],
+  [
+    "elevenlabs/eleven-v3",
+    "Eleven v3",
+    "audio",
+    ["text-to-audio"],
+    {},
+    { elevenlabs: 0.00008 },
+    { elevenlabs: { options: [{ name: "voice_id", type: "voice", required: true }] } },
+  ],
+  [
+    "elevenlabs/elevenlabs-music-2.5",
+    "Eleven Music 2.5",
+    "audio",
+    ["text-to-audio"],
+    {},
+    { elevenlabs: 0.15, fal: 0.2 },
+    { elevenlabs: MUSIC_FORM, fal: MUSIC_FORM },
   ],
   ["xai/grok-imagine-video", "Grok Imagine Video", "video", ["video-to-video"], V_SHORT, { xai: 0.05 }],
   ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }],
@@ -313,9 +341,9 @@ function unitFor(kind: MediaKind, tasks: readonly MediaTask[]): MediaPrice["unit
   return tasks.length > 0 ? "second" : "request";
 }
 
-function pricing(kind: MediaKind, tasks: readonly MediaTask[], usd: number | null): MediaPrice[] {
+function pricing(kind: MediaKind, tasks: readonly MediaTask[], usd: number | null, id?: string): MediaPrice[] {
   if (usd === null) return [];
-  return [{ unit: unitFor(kind, tasks), usd, source: "fixture:fake", checkedAt: "2026-11-26" }];
+  return [{ unit: PRICE_UNITS[id ?? ""] ?? unitFor(kind, tasks), usd, source: "fixture:fake", checkedAt: "2026-11-26" }];
 }
 
 function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
@@ -325,7 +353,7 @@ function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
     route: PROVIDERS[providerId]!.route,
     label: PROVIDERS[providerId]!.label,
     upstreamId: providerId === "fal" || providerId === "replicate" ? providerId + ":" + id : id.split("/")[1]!,
-    pricing: pricing(kind, tasks, usd),
+    pricing: pricing(kind, tasks, usd, id),
     docsUrl: PROVIDERS[providerId]!.consoleUrl,
     keyConfigured: keyed.has(providerId),
   }));

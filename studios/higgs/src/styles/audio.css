@@ -1,0 +1,104 @@
+/* Audio: the script counter, length field and voice list. The rest is the shared panel. */
+.audio-count {
+  align-self: flex-end;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.audio-settings {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.audio-settings .field {
+  width: 100%;
+}
+.audio-range {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.voice-popover {
+  width: min(360px, calc(100vw - 16px));
+  max-height: min(520px, calc(100dvh - 16px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+.voice-search {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+}
+.voice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  display: grid;
+  gap: 2px;
+}
+.voice-list .group-title {
+  padding: 6px 6px 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.voice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+.voice-pick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  text-align: left;
+}
+.voice-pick:hover,
+.voice-pick[aria-pressed="true"] {
+  background: var(--surface-3);
+}
+.voice-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.voice-facts {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.voice-about {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.voice-play {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.voice-state {
+  padding: 16px 8px;
+  color: var(--text-dim);
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}

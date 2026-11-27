@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 export type Route =
   | { page: "explore" }
   | { page: "create"; kind: "image" | "video"; model?: string; preset?: string; mode?: string }
+  | { page: "audio"; tool?: string; model?: string }
   | { page: "remix"; workflow?: string }
   | { page: "director"; workflow?: string }
   | { page: "presets"; tab?: string }
@@ -19,6 +20,8 @@ export function parseHash(hash: string): Route {
     case "image":
     case "video":
       return clean({ page: "create", kind: head, model: get("model"), preset: get("preset"), mode: head === "video" ? get("mode") : undefined });
+    case "audio":
+      return clean({ page: "audio", tool: get("tool"), model: get("model") });
     case "remix":
       return clean({ page: "remix", workflow: sub || get("workflow") });
     case "director":
