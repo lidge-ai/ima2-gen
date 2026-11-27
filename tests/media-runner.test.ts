@@ -380,3 +380,21 @@ test("a secret extra field alone makes a route usable, and asset:// inputs reach
     await s.done();
   }
 });
+
+test("quality runs only where the route lists it, reaches the adapter and is kept with the result", async () => {
+  const { validateAgainstSpec } = await import("../lib/providers/media/validate.ts");
+  const graded = fakeSpec("acme/still-1", { kind: "image", tasks: ["text-to-image"], params: { resolutions: ["1K"], qualities: ["low", "high"] } });
+  assert.throws(() => validateAgainstSpec(graded, parseMediaJobBody({ model: graded.id, task: "text-to-image", quality: "max" })), /does not support quality max \(allowed: low, high\)/);
+  assert.throws(() => validateAgainstSpec(fakeSpec("acme/clip-1"), body({ quality: "low" })), /does not take a quality/);
+  const script = { states: [{ status: "succeeded" as const, outputs: [{ kind: "video" as const, url: VIDEO_URL, mimeType: "video/mp4" }] }], submitted: [] as { quality?: string }[] };
+  const s = await setup([makeFakeAdapter({ models: [graded], script })]);
+  try {
+    const prepared = await prepareMediaJob(s.deps, parseMediaJobBody({ model: graded.id, task: "text-to-image", prompt: "a fox", quality: "low" }));
+    const result = await launchMediaJob(s.deps, prepared, { requestId: "req-quality" }).done;
+    assert.equal(script.submitted[0]?.quality, "low");
+    const row = (await listHistoryRows(s.deps.generatedDir)).find((item) => item.filename === result.outputs[0]!.filename)!;
+    assert.equal((row.media as { quality?: string }).quality, "low");
+  } finally {
+    await s.done();
+  }
+});

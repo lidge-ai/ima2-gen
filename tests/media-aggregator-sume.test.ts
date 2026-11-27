@@ -161,3 +161,15 @@ test("sume image edits send the source first and its references after it in imag
   }));
   assert.deepEqual((calls[0].body as { image_urls: string[] }).image_urls, ["https://x.test/frame.png", "https://x.test/ref.png"]);
 });
+
+test("sume models priced by quality list the qualities and send the chosen one", async () => {
+  const specs = adapter.listModels();
+  assert.deepEqual(specs.find((spec) => spec.id === "openai/gpt-image-2")?.params.qualities, ["low", "medium", "high"]);
+  assert.deepEqual(specs.find((spec) => spec.id === "openai/gpt-image-2.5")?.params.qualities, ["auto", "low", "medium", "high", "xhigh", "max"]);
+  // A price list that does not split by quality declares none.
+  assert.equal(specs.find((spec) => spec.id === "bytedance/seedance-2.5")?.params.qualities, undefined);
+  const { fetch, calls } = fakeFetch([[`${API}/v1/image-router/generate`, () => json(receipt, 202)]]);
+  await adapter.submit(ctx(fetch), request({ model: "openai/gpt-image-2", task: "text-to-image", prompt: "cup", resolution: "1K", quality: "low" }));
+  assert.deepEqual(calls[0].body, { model: "gpt-image-2", prompt: "cup", resolution: "1K", quality: "low" });
+  assert.equal((await errorOf(adapter.submit(ctx(fetch), request({ quality: "low" })))).code, "SUME_UNSUPPORTED_OPTION");
+});

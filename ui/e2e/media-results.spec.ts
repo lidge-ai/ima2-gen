@@ -51,6 +51,18 @@ test("L11-R2 a result whose model left the catalog says so instead of restoring 
   expect(media.submissions).toEqual([]);
 }));
 
+test("L11-R4 a result made at a chosen quality shows it and Make again restores it", run([mediaHistoryRow({ model: "openai/gpt-image-2", media: { task: "text-to-image", durationSec: null, resolution: "1K", quality: "high", aspectRatio: null, seed: null, audio: null, inputRoles: [] }, billed: null, estimate: { usd: 0.2108, basis: "exact" } })], async (page, media) => {
+  await actions(page).getByRole("button", { name: "Info", exact: true }).click();
+  const details = page.getByRole("dialog", { name: "Generation Details" });
+  for (const text of ["GPT Image 2", "Quality", "High"]) await expect(details).toContainText(text);
+  await expect(details).not.toContainText("deprecated");
+  await page.keyboard.press("Escape");
+  await actions(page).getByRole("button", { name: "Make again", exact: true }).click();
+  await expect(card(page).locator(".option-group", { has: page.getByText("Quality", { exact: true }) }).getByRole("button", { name: "High", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(card(page).locator(".media-estimate .price")).toHaveText("$0.211");
+  expect(media.submissions).toEqual([]);
+}));
+
 test("L11-R3 a result from a built-in provider has no Make again and no media lines", run([mediaHistoryRow({ provider: "oauth", model: "gpt-6-luna", adapter: null, route: null, media: null, billed: null, estimate: null })], async (page) => {
   await expect(actions(page).getByRole("button", { name: "Info", exact: true })).toBeVisible();
   await expect(actions(page).getByRole("button", { name: "Make again", exact: true })).toHaveCount(0);

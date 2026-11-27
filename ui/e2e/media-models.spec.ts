@@ -164,3 +164,16 @@ test("L11-M6 at 390 wide the model window is a full sheet with no sideways scrol
   await pick(page, "Image", "black-forest-labs/flux-2-pro");
   await expect(page.locator(MODEL_TRIGGER + " .ctl-select__value")).toHaveText("FLUX.2 Pro");
 }));
+
+test("L11-M7 a retiring model is named plainly; the model window alone marks it", run({}, async (page) => {
+  await openWindow(page);
+  const retiring = row(page, "openai/gpt-image-2");
+  await expect(retiring.locator(".media-row__name")).toContainText("GPT Image 2");
+  await expect(retiring).not.toContainText("deprecated");
+  await expect(retiring.locator(".media-row__tag")).toHaveText("Retiring soon");
+  await expect(row(page, "black-forest-labs/flux-2-pro").locator(".media-row__tag")).toHaveCount(0);
+  await retiring.click();
+  await expect(page.locator(MODEL_TRIGGER + " .ctl-select__value")).toHaveText("GPT Image 2");
+  await expect(card(page)).toContainText("GPT Image 2");
+  await expect(card(page)).not.toContainText("deprecated");
+}));

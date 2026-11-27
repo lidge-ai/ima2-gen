@@ -143,3 +143,22 @@ test("L11-K5 a retryable failure runs the same settings again; a rejected key op
   await failure.getByRole("button", { name: "Replace the key" }).click();
   await expect(card(page).getByRole("region", { name: "Replace the fal key" })).toBeVisible();
 }));
+
+test("L11-K6 a model priced by quality offers the quality, quotes one price for it and sends it", run({}, async (page, media) => {
+  await pick(page, "Image", "openai/gpt-image-2");
+  const estimate = card(page).locator(".media-estimate");
+  const quality = card(page).locator(".option-group", { has: page.getByText("Quality", { exact: true }) });
+  await expect(quality.getByRole("button", { name: "Medium", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(estimate.locator(".price")).toHaveText("$0.053");
+  await quality.getByRole("button", { name: "Low", exact: true }).click();
+  await expect(estimate.locator(".price")).toHaveText("$0.006");
+  await expect(hint(page)).toHaveText("GPT Image 2 · est. $0.006");
+  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)?.body).toMatchObject({ quality: "low", priceVariant: "1K · low" });
+  await composer(page).fill("a paper boat");
+  await generate(page).click();
+  await expect.poll(() => media.submissions.length).toBe(1);
+  expect(media.submissions[0]).toMatchObject({ model: "openai/gpt-image-2", quality: "low", resolution: "1K" });
+  // The choice survives a reload with the rest of the settings.
+  await page.reload();
+  await expect(card(page).locator(".option-group", { has: page.getByText("Quality", { exact: true }) }).getByRole("button", { name: "Low", exact: true })).toHaveAttribute("aria-pressed", "true");
+}));
