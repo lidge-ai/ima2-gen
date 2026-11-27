@@ -133,7 +133,7 @@ routes/
 | `bin/lib/media/keysCmd.ts` | 58 | Media key CLI actions |
 | `bin/lib/media/progress.ts` | 18 | Media progress output |
 | `bin/lib/media/runCmd.ts` | 31 | Media job submission |
-| `bin/lib/media/studioCmd.ts` | 20 | Studio CLI actions |
+| `bin/lib/media/studioCmd.ts` | 23 | Studio CLI actions |
 | `bin/lib/media/workflowCmd.ts` | 35 | Workflow CLI input parsing |
 | `bin/commands/gen.ts` | 445 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 181 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
