@@ -291,3 +291,22 @@ test("wire keys, validation, session filtering and workflow field errors", async
     await server.close();
   }
 });
+
+test("voices need a key, and a voice's sample address plays", async () => {
+  await withServer({}, async ({ client, url }) => {
+    await client.keys.remove("elevenlabs").catch(() => undefined);
+    await assert.rejects(
+      client.voices.list("elevenlabs"),
+      (e: unknown) => e instanceof StudioApiError && e.code === "MEDIA_KEY_MISSING",
+    );
+    await client.keys.save("elevenlabs", { apiKey: SECRET });
+    const list = await client.voices.list("elevenlabs");
+    assert.ok(list.voices.some((v) => v.owned), "the user's own voices are marked");
+    const sample = list.voices.find((v) => v.previewUrl)?.previewUrl;
+    assert.ok(sample, "at least one voice has a sample");
+    const played = await fetch(new URL(sample, url));
+    assert.equal(played.status, 200);
+    assert.match(played.headers.get("content-type") ?? "", /^audio\//);
+    assert.ok((await played.arrayBuffer()).byteLength > 0);
+  });
+});
