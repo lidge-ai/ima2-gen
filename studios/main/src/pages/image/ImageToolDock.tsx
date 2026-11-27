@@ -140,10 +140,10 @@ export function ImageToolDock({ catalog, tool, tabs, unrunnable, notice }: Props
       {choice.kind === "needs-key" ? <KeyNotice routes={choice.candidates} providers={catalog.providers} /> : null}
       {tool.error ? <p className="form-error" role="alert">{tool.error}</p> : null}
       {notice ? <p className="form-error" role="alert">{notice}</p> : null}
-      {unrunnable ? <p className="form-hint" role="status">{t("notHere", { model: unrunnable })}</p> : null}
       {tabs}
       <div className="dock-main">
         <div className="dock-fields">
+          {unrunnable ? <p className="form-hint dock-reason" role="status">{t("notHere", { model: unrunnable })}</p> : null}
           <p className="dock-help">{t((task + "Help") as "image-upscaleHelp")}</p>
           <Tray tool={tool} max={form?.max ?? 1} />
           {form && takes(form, "prompt") ? (
