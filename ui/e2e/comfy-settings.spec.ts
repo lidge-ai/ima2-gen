@@ -38,10 +38,16 @@ const PROBLEMS = {
   paidNodes: ["KlingImage2VideoNode"],
 };
 
-interface Fixture { server: unknown; calls: Array<{ method: string; path: string; body: unknown }>; remotes: Array<{ origin: string; hasToken: boolean; insecure: boolean }> }
+interface Fixture {
+  server: unknown; calls: Array<{ method: string; path: string; body: unknown }>; remotes: Array<{ origin: string; hasToken: boolean; insecure: boolean }>;
+  /** The address the app is configured with, as GET /api/comfy/workflows reports it. */
+  defaultOrigin?: string;
+  /** A workflow with no text input: the inspection offers an output node and nothing else. */
+  promptless?: boolean;
+}
 
-async function installComfy(page: Page, server: unknown): Promise<Fixture> {
-  const fixture: Fixture = { server, calls: [], remotes: [
+async function installComfy(page: Page, server: unknown, more: Pick<Fixture, "defaultOrigin" | "promptless"> = {}): Promise<Fixture> {
+  const fixture: Fixture = { ...more, server, calls: [], remotes: [
     { origin: "https://comfy.example.com", hasToken: true, insecure: false },
     { origin: "http://192.168.0.24:8188", hasToken: false, insecure: true },
   ] };
@@ -51,7 +57,11 @@ async function installComfy(page: Page, server: unknown): Promise<Fixture> {
     const body = request.method() === "GET" ? null : request.postDataJSON() as Record<string, unknown> | null;
     fixture.calls.push({ method: request.method(), path: url.pathname, body });
     const key = request.method() + " " + url.pathname;
-    if (key === "GET /api/comfy/workflows") return route.fulfill({ json: { ok: true, workflows: WORKFLOWS } });
+    if (key === "GET /api/comfy/workflows") return route.fulfill({ json: { ok: true, workflows: WORKFLOWS, ...(fixture.defaultOrigin ? { defaultOrigin: fixture.defaultOrigin } : {}) } });
+    if (key === "POST /api/comfy/inspect" && fixture.promptless) {
+      return route.fulfill({ json: { ok: true, nodes: [], candidates: CANDIDATES.filter((entry) => entry.field === "output"), needsConfirmation: false, mediaKind: "video",
+        mediaSlots: [], server: { origin: String(body?.origin), reachable: true, missingNodes: [], missingChoices: [], paidNodes: [] } } });
+    }
     if (key === "POST /api/comfy/inspect") {
       return route.fulfill({ json: { ok: true, nodes: [], candidates: CANDIDATES, needsConfirmation: false, mediaKind: "video",
         mediaSlots: (fixture.server as { reachable?: boolean }).reachable ? SLOTS : [], server: fixture.server } });
@@ -75,8 +85,8 @@ async function installComfy(page: Page, server: unknown): Promise<Fixture> {
   return fixture;
 }
 
-async function openSettings(app: StaticApp, server: unknown): Promise<Fixture> {
-  const fixture = await installComfy(app.page, server);
+async function openSettings(app: StaticApp, server: unknown, more: Pick<Fixture, "defaultOrigin" | "promptless"> = {}): Promise<Fixture> {
+  const fixture = await installComfy(app.page, server, more);
   await app.page.goto(STATIC_ORIGIN + "/#settings");
   await app.page.locator("#comfy-workflow-manager-title").scrollIntoViewIfNeeded();
   await expect(app.page.locator(".comfy-workflow-table tbody tr")).toHaveCount(3);
@@ -208,6 +218,34 @@ test("other servers are read when opened; a token is sent once and never shown",
 
 for (const locale of ["en", "ko"] as const satisfies readonly StaticLocale[]) {
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    test("the configured address and a workflow with no text input at " + String(viewport.width) + " in " + locale, async ({ browser }) => {
+      const app = await openStaticApp(browser, { locale, viewport });
+      try {
+        const configured = "http://127.0.0.1:18813";
+        const fixture = await openSettings(app, PROBLEMS, { defaultOrigin: configured, promptless: true });
+        const page = app.page;
+        // The field starts from the configured server, not a fixed port.
+        await expect(page.locator("#comfy-origin")).toHaveValue(configured);
+        await chooseFile(page, "blank-video.json", API_GRAPH);
+        await expect(page.locator(".comfy-report--ok")).toContainText(configured);
+        expect((fixture.calls.find((call) => call.path === "/api/comfy/inspect")?.body as { origin?: string }).origin).toBe(configured);
+        // No text input: it says so, and registering needs only the node that saves the result.
+        await expect(page.locator("#comfy-bind-prompt")).toHaveCount(0);
+        if (locale === "en") await expect(page.locator(".comfy-manager")).toContainText("No text input was found: this workflow will run as it is and take no prompt.");
+        const register = page.locator(".comfy-manager .settings-action-btn").first();
+        await expect(register).toBeEnabled();
+        await shot(page, "comfy-promptless-" + locale + "-" + String(viewport.width), "#comfy-id");
+        await register.click();
+        const sent = fixture.calls.find((call) => call.method === "POST" && call.path === "/api/comfy/workflows")?.body as { bind: Record<string, unknown>; origin: string };
+        expect(sent.bind).toEqual({ output: { node: "9" } });
+        expect(sent.origin).toBe(configured);
+        expect(await sidewaysScroll(page), "no sideways scroll").toEqual([]);
+        expect(app.errors).toEqual([]);
+      } finally {
+        await app.close();
+      }
+    });
+
     test("comfy settings render at " + String(viewport.width) + " in " + locale, async ({ browser }) => {
       const app = await openStaticApp(browser, { locale, viewport });
       try {

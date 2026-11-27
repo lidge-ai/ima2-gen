@@ -20,7 +20,8 @@ export interface ComfyBinding {
 }
 
 export interface ComfyWorkflowBindings {
-  prompt: ComfyBinding;
+  /** Absent when the workflow has no text input. */
+  prompt?: ComfyBinding;
   negativePrompt?: ComfyBinding;
   width?: ComfyBinding;
   height?: ComfyBinding;
@@ -108,7 +109,8 @@ export interface ComfyInspectResult {
   server?: ComfyServerReport;
 }
 
-export function listComfyWorkflows(): Promise<{ ok: true; workflows: ComfyWorkflowRecord[] }> {
+/** defaultOrigin: the ComfyUI address this app is configured with, when there is one it may call. */
+export function listComfyWorkflows(): Promise<{ ok: true; workflows: ComfyWorkflowRecord[]; defaultOrigin?: string }> {
   return jsonFetch("/api/comfy/workflows");
 }
 

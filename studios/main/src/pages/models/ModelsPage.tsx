@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
-import { TALKING_TASKS, formRoutes, modelHasKey, type CatalogModel, type CatalogRoute, type MediaKind } from "@ima2/studio-kit";
+import { EDIT_TASKS, TALKING_TASKS, editRoutes, formRoutes, modelHasKey, type CatalogModel, type CatalogRoute, type MediaKind } from "@ima2/studio-kit";
 import { href } from "../../router.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
@@ -9,6 +9,8 @@ import { messages, tr, useT } from "../../i18n.ts";
 import "../../styles/models.css";
 
 type Kind = MediaKind | "all";
+
+const CREATE: readonly string[] = ["text-to-video", "image-to-video", "reference-to-video"];
 
 const M = messages(
   {
@@ -109,6 +111,8 @@ function ModelCard({ model }: { model: CatalogModel }) {
   const target = model.kind === "image" ? "image" : "video";
   // Lip-sync, avatar, dubbing and subtitle models open the talking form, the only one that can fill their inputs.
   const talking = TALKING_TASKS.some((task) => formRoutes(model, task).length > 0);
+  // A model that only reworks a clip (an upscaler) opens the edit form.
+  const editOnly = model.kind === "video" && !model.tasks.some((task) => CREATE.includes(task)) && EDIT_TASKS.some((task) => editRoutes(model, task).length > 0);
   return (
     <article className="model-card" aria-labelledby={"model-" + model.id}>
       <header className="model-card-head">
@@ -134,7 +138,7 @@ function ModelCard({ model }: { model: CatalogModel }) {
         ))}
       </ul>
       <div className="model-card-foot">
-        <a className="btn" href={href(model.kind === "audio" ? "audio" : target, { model: model.id, ...(talking ? { mode: "speak" } : {}) })}>
+        <a className="btn" href={href(model.kind === "audio" ? "audio" : target, { model: model.id, ...(talking ? { mode: "speak" } : editOnly ? { mode: "edit" } : {}) })}>
           {modelHasKey(model) ? t("use") : t("openAdd")}
           <Icon name="arrowRight" size={14} />
         </a>

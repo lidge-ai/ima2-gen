@@ -1,4 +1,6 @@
+import type { Catalog } from "@ima2/studio-kit";
 import { messages, useT } from "../../i18n.ts";
+import { availableTasks } from "../speak/speakForm.ts";
 
 const M = messages(
   { mode: "Video mode", create: "Create video", edit: "Edit video", speak: "Talking video" },
@@ -6,6 +8,11 @@ const M = messages(
 );
 
 export type VideoMode = "create" | "edit" | "speak";
+
+/** "speak" appears only when the catalog has a model that can do it. */
+export function videoModes(catalog: Catalog): VideoMode[] {
+  return availableTasks(catalog).length > 0 ? ["create", "edit", "speak"] : ["create", "edit"];
+}
 
 /** The three ways to make a video. "speak" appears only when the catalog has a model that can do it. */
 export function VideoModeTabs({ mode, modes, onPick }: { mode: VideoMode; modes: readonly VideoMode[]; onPick: (mode: VideoMode) => void }) {

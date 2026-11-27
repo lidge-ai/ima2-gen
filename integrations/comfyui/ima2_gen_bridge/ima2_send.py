@@ -48,8 +48,10 @@ def _plan(inspection):
     bind = {}
     for field in (*FIELDS, "output"):
         options = by_field.get(field) or []
+        # ima2 marks the one it settled (the text a sampler's positive input leads to) and may list other
+        # candidates beside it for a person to pick instead. One settled candidate is the answer.
         settled = [entry for entry in options if entry.get("unambiguous")]
-        if len(settled) == 1 and len(options) == 1:
+        if len(settled) == 1:
             entry = settled[0]
             bind[field] = {"node": entry["node"]} if field == "output" else {"node": entry["node"], "input": entry["input"]}
         elif options:
@@ -79,8 +81,6 @@ def send_workflow(client, graph, name, origin, label=None, replace=False):
         bind, undecided = _plan(inspection)
         if undecided:
             return _refusal("NEEDS_A_PERSON", "Some parts of this workflow can go more than one way, so it was not registered. " + SETTINGS_HINT, undecided=undecided)
-        if "prompt" not in bind:
-            return _refusal("NO_PROMPT", "ima2 found no text input to use as the prompt. Add one (a text encoder or a String node) and send it again.")
         if "output" not in bind:
             return _refusal("NO_OUTPUT", "ima2 found no node that saves a result. Add a Save Image, Save Video or Save Audio node and send it again.")
         body = {"graph": graph, "id": wid, "origin": origin, "bind": bind}
