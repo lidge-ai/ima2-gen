@@ -10,14 +10,6 @@ import {
   type AudioState, type AudioTool,
 } from "./audioForm.ts";
 
-/** The amounts a usage-billed price can be counted in for this request. */
-function usageAmount(amount: { characters?: number; durationSec?: number }): Record<string, number> {
-  return {
-    ...(amount.characters !== undefined ? { character: amount.characters } : {}),
-    ...(amount.durationSec !== undefined ? { second: amount.durationSec, minute: amount.durationSec / 60 } : {}),
-  };
-}
-
 /** The tool a deep-linked model belongs to, else the first one this catalog can run. */
 function startTool(catalog: Catalog, requested: string | undefined, wanted: string | undefined): AudioTool {
   const tools = availableTools(catalog);
@@ -58,9 +50,12 @@ export function useAudio(catalog: Catalog, requested: { tool?: string; model?: s
   const amount = model && shown ? priced(model, shown, state) : {};
   // The server prices the request; a clip is priced only once its length is known (the billed length).
   const waitsForClip = state.tool === "video" && amount.durationSec === undefined;
-  const quote = useServerQuote(model && shown && !waitsForClip ? { ...toBody(model, shown, state), ...(amount.durationSec !== undefined ? { durationSec: amount.durationSec } : {}) } : null);
-  // Speech is billed per character: the server says so, and the one per-character price times the text gives the figure.
-  const cost = quoteText(quote, shown ? { pricing: shown.pricing, amount: usageAmount(amount) } : undefined);
+  // Speech is priced by its text: the estimate carries the script's length and the server prices it.
+  const quote = useServerQuote(
+    model && shown && !waitsForClip ? { ...toBody(model, shown, state), ...(amount.durationSec !== undefined ? { durationSec: amount.durationSec } : {}) } : null,
+    { pricedByText: state.tool === "speech" },
+  );
+  const cost = quoteText(quote);
   const missing = problem(model, shown, state);
   // A shared web instance runs only what it can price, so the reason is given before sending.
   const blocked = missing ?? (route && webSpend && model && !quote.pending ? spendBlock(webSpend, [{ label: model.label, usd: cost.usd }], cost.usd) : null);
