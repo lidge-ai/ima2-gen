@@ -1,3 +1,4 @@
+import "./helpers/isolatedConfig.ts";
 import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";

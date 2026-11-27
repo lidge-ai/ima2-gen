@@ -1,6 +1,7 @@
 // Behavioral tests: these drive the REAL /api/generate pipeline over HTTP
 // rather than asserting on source text, so they catch wiring regressions that
 // a regex contract cannot (adversarial review 260821, blocker 6).
+import "./helpers/isolatedConfig.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
