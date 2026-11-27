@@ -19,7 +19,7 @@ const M = messages(
     script: "Script", scriptHint: "Write exactly what the voice should say", describe: "Description", describeHint: "Genre, mood and instruments, or the sound you need",
     notes: "Notes", notesHint: "Optional: what the sound should be like", clip: "Video", required: "Required", count: "{n} characters",
     length: "Length in seconds", lengthAuto: "Decided by the model", lengthRange: "{min} to {max}",
-    route: "Run through", automatic: "Automatic", direct: "direct", aggregator: "aggregator", noKey: "no key", noPrice: "No published price",
+    route: "Run through", automatic: "Automatic", direct: "direct", aggregator: "aggregator", local: "this computer, no provider charge", noKey: "no key", noPrice: "No published price",
     generate: "Generate", sending: "Sending", estimate: "Estimated {cost}", unpriced: "Price not published",
     perCharacter: "Priced per character", perLength: "Priced by length", afterVideo: "Add the video to see the price",
     nokey: "Add a key to generate.", none: "No model in this catalog makes audio yet.", loading: "Loading models", history: "History", views: "Audio views",
@@ -30,7 +30,7 @@ const M = messages(
     script: "대본", scriptHint: "목소리가 읽을 내용을 그대로 적어 주세요", describe: "설명", describeHint: "장르, 분위기, 악기나 필요한 소리를 적어 주세요",
     notes: "메모", notesHint: "선택: 어떤 소리면 좋은지 적어 주세요", clip: "영상", required: "필수", count: "{n}자",
     length: "길이(초)", lengthAuto: "모델이 정해요", lengthRange: "{min}~{max}",
-    route: "실행 경로", automatic: "자동", direct: "직접", aggregator: "어그리게이터", noKey: "키 없음", noPrice: "공개 가격 없음",
+    route: "실행 경로", automatic: "자동", direct: "직접", aggregator: "어그리게이터", local: "이 컴퓨터에서 실행, 요금 없음", noKey: "키 없음", noPrice: "공개 가격 없음",
     generate: "생성", sending: "요청 중", estimate: "예상 {cost}", unpriced: "공개 가격 없음",
     perCharacter: "글자 수에 따라 과금", perLength: "길이에 따라 과금", afterVideo: "영상을 넣으면 가격이 계산돼요",
     nokey: "생성하려면 키를 추가해 주세요.", none: "이 카탈로그에는 오디오를 만드는 모델이 아직 없어요.", loading: "모델을 불러오는 중이에요", history: "기록", views: "오디오 화면",
@@ -79,7 +79,9 @@ function RouteTile({ audio }: { audio: Audio }) {
   if (routes.length < 2) return null;
   const options = routes.map((route) => ({
     value: route.providerId, label: route.label,
-    meta: [t(route.route), route.pricing.length ? "" : t("noPrice"), route.keyConfigured ? "" : t("noKey")].filter(Boolean).join(" · "),
+    meta: route.route === "local"
+      ? t("local")
+      : [t(route.route), route.pricing.length ? "" : t("noPrice"), route.keyConfigured ? "" : t("noKey")].filter(Boolean).join(" · "),
   }));
   return <SettingTile caption={t("route")} value={audio.state.provider} options={[{ value: "", label: t("automatic") }, ...options]} onChange={audio.pickRoute} />;
 }
