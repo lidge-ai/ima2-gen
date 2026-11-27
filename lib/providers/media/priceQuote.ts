@@ -92,7 +92,12 @@ export interface PricePick<T extends PriceRow = PriceRow> {
 }
 
 export function pickPrice<T extends PriceRow>(pricing: readonly T[], unit: string, want: PriceWant): PricePick<T> {
-  const scored = pricing.filter((price) => price.unit === unit)
+  const rows = pricing.filter((price) => price.unit === unit);
+  // When the price list names the requested quality, rows that do not name it are other tiers (or the untiered
+  // base price) and do not apply. This holds whether or not the route declares its tiers.
+  const tier = want.quality?.toLowerCase();
+  const namesTier = (price: T) => tier !== undefined && (price.variant ?? "").toLowerCase().split(/[^a-z0-9_]+/).includes(tier);
+  const scored = (rows.some(namesTier) ? rows.filter(namesTier) : rows)
     .flatMap((price) => { const score = variantScore(price.variant, want); return score === null ? [] : [{ price, score }]; });
   if (scored.length === 0) return { price: null, floor: false, range: null };
   const top = Math.max(...scored.map((entry) => entry.score));
