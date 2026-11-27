@@ -6,6 +6,7 @@ import { mkdtemp, rm, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 const TEST_DIR = await mkdtemp(join(tmpdir(), "ima2-structured-filename-"));
 process.env.IMA2_CONFIG_DIR = TEST_DIR;
@@ -18,7 +19,6 @@ const { registerEditRoutes } = await import("../routes/edit.ts");
 const { registerAgentRoutes } = await import("../routes/agent.ts");
 const { subscribe, _resetForTest: resetEventBus } = await import("../lib/eventBus.js");
 const { _resetForTests: resetInflight } = await import("../lib/inflight.js");
-const db = await import("../lib/db.js");
 
 const originalFetch = globalThis.fetch;
 
@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 after(async () => {
-  db.closeDb();
+  await releaseDatabase();
   await rm(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 

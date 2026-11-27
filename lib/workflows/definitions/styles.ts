@@ -7,6 +7,9 @@ export interface StylePreset {
   prompt: string;
 }
 
+/** Every restyle prompt says this: the medium changes, the people in the shot do not (no lighter skin, no new hair). */
+export const KEEP_PEOPLE = "Keep each person's own features as filmed: skin tone, hair, face and build stay the same; only the medium and rendering change.";
+
 export const STYLE_PRESETS: Readonly<Record<string, StylePreset>> = {
   "cel-anime": { label: "Cel anime", prompt: "Japanese cel animation: clean ink outlines, flat color fills, two-tone shading, hand-painted backgrounds." },
   "clay-stop-motion": { label: "Clay stop-motion", prompt: "Stop-motion clay animation: sculpted plasticine figures with thumbprint texture, miniature handmade sets, soft studio light." },

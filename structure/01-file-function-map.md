@@ -181,7 +181,7 @@ routes/
 | `lib/styleSheet.ts` | 140 | Session style-sheet extraction and prefix composition |
 | `lib/assetLifecycle.ts` | 203 | Soft delete (OS trash via `trash` dep), restore, node asset-missing marking |
 | `lib/systemTrash.ts` | 21 | Cross-platform OS-trash helper wrapping the `trash` dependency |
-| `lib/db.ts` | 400 | SQLite bootstrap and migrations (schema 7): sessions, nodes, edges, inflight, terminal jobs, idempotency keys, prompts, prompt folders, canvas versions |
+| `lib/db.ts` | 405 | SQLite bootstrap and migrations (schema 7): sessions, nodes, edges, inflight, terminal jobs, idempotency keys, prompts, prompt folders, canvas versions |
 | `lib/nodeStore.ts` | 107 | Node image and metadata load/save |
 | `lib/inflight.ts` | 462 | SQLite-backed active job registry for classic/node/multimode, abort controllers, cancel state, and terminal job snapshots that survive a restart |
 
@@ -376,7 +376,7 @@ Backed by `routes/agent.ts`; no CLI wrapper. Session/turn/queue persistence and 
 | `lib/agentSettings.ts` | 84 | Per-session generation settings |
 | `lib/agentRuntime.ts` | 440 | Turn execution, tool dispatch, generation delegation |
 | `lib/agentQueueStore.ts` | 367 | Durable async queue persistence |
-| `lib/agentQueueWorker.ts` | 226 | Background queue worker |
+| `lib/agentQueueWorker.ts` | 230 | Background queue worker |
 | `lib/agentCommandParser.ts` | 77 | Slash-command parsing |
 | `lib/agentToolManifest.ts` | 31 | Tool metadata for `/api/agent/tools` |
 | `lib/agentPlannerModel.ts` | 205 | Planner model selection |

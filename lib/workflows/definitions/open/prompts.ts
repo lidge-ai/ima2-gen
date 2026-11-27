@@ -5,6 +5,7 @@
  * the first frame, then let a guided video model carry the source motion. No code or graph is copied.
  */
 import { joinPrompt } from "../shared.js";
+import { KEEP_PEOPLE } from "../styles.js";
 
 export interface Caption {
   scene?: string;
@@ -61,6 +62,7 @@ export function swapRenderPrompt(c: Caption | undefined, target: string | undefi
 export function restyleRenderPrompt(c: Caption | undefined, styleText: string | undefined, notes: string | undefined, textOnly: boolean): string {
   return joinPrompt(
     "Restyle the whole video. Keep every motion, camera move, framing and timing exactly; change only the look.",
+    KEEP_PEOPLE,
     textOnly ? (styleText ? "Look: " + styleText : undefined) : "Image 1 is the first frame redrawn in the target look; match its medium, palette and lighting in every frame.",
     captionLines(c),
     notes,
@@ -81,6 +83,7 @@ export function subjectPrompt(mode: "motion" | "swap", target: string | undefine
 export function restylePrompt(styleText: string | undefined, hasPlate: boolean, notes: string | undefined): string {
   return joinPrompt(
     "Redraw image 1 in a new visual style. Keep its composition, framing, poses, and every person and object in place.",
+    KEEP_PEOPLE,
     styleText ? "Style: " + styleText : undefined,
     hasPlate ? "Match the look of image 2: medium, palette, line and texture." : undefined,
     notes,

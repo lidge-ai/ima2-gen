@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { adaptFetchAssignmentsForNativeOAuth } from "./_oauthNativeFixture.ts";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 // GPT OAuth plans then renders; keep this file's one-call image fixtures (see the helper).
 adaptFetchAssignmentsForNativeOAuth();
@@ -17,7 +18,6 @@ const { registerAgentRoutes } = await import("../routes/agent.ts");
 const { normalizeAgentGenerationPlan } = await import("../lib/agentGenerationPlanner.ts");
 const { requestAgentPlanFromModel } = await import("../lib/agentPlannerModel.ts");
 const { DEFAULT_AGENT_GENERATION_SETTINGS } = await import("../lib/agentSettings.ts");
-const db = await import("../lib/db.ts");
 
 const originalFetch = globalThis.fetch;
 
@@ -25,8 +25,8 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-after(() => {
-  db.closeDb();
+after(async () => {
+  await releaseDatabase();
   rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 

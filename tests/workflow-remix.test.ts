@@ -137,8 +137,11 @@ test("restyle run passes the first frame to the image model and the styled frame
   assert.deepEqual(still?.inputs.map((i) => [i.role, new TextDecoder().decode(i.bytes)]), [["source-image", "frame:first"], ["reference-image", "plate"]]);
   assert.match(still?.prompt ?? "", /16-bit pixel art/);
   assert.match(still?.prompt ?? "", /night time/);
+  // A restyle changes the medium, never who is in the shot (a first take lightened every skin tone).
+  assert.match(still?.prompt ?? "", /skin tone, hair/);
   const edit = videoAdapter.calls.find((c) => c.op === "submit")?.request;
   assert.deepEqual(edit?.inputs.map((i) => [i.role, new TextDecoder().decode(i.bytes)]), [["source-video", "source-video"], ["reference-image", "styled"]]);
+  assert.match(edit?.prompt ?? "", /skin tone, hair/);
   assert.equal(readFileSync(result.artifacts[0]?.path ?? "", "utf8"), "bytes-of https://cdn.example/out.mp4");
 });
 

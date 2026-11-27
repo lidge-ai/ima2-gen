@@ -1,3 +1,4 @@
+import "./helpers/isolatedConfig.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
