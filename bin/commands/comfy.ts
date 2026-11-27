@@ -17,11 +17,19 @@ const HELP = `
                         [--seed <node.input>] [--ref <node.input>]
                         [--output <node>] [--yes] [--replace]
      workflow rm <id>
+    remote ls [--json]
+    remote add <origin> [--token-stdin]
+    remote rm <origin>
 
    A workflow file is either a ComfyUI API-format JSON export
    (Workflow > Export (API)) or a PNG ComfyUI produced, which carries the
    same graph in its metadata. The format is detected from the bytes, not
    the extension.
+
+   A ComfyUI server on this computer (http://127.0.0.1:<port>) needs no setup.
+   Any other server must be added with "remote add" before a workflow can use
+   it. A token for a server behind an auth proxy is read from stdin only and
+   is never printed.
 `;
 
 const FLAGS = {
@@ -315,9 +323,78 @@ async function workflowSub(argv: string[]): Promise<void> {
   return handler(args);
 }
 
+interface ComfyRemoteSummary { origin: string; hasToken: boolean; insecure: boolean }
+
+function failRequest(e: unknown): never {
+  const err = e as { message?: string; code?: string };
+  die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
+  throw e;
+}
+
+/** One line from stdin, so the token never appears in argv, shell history or process listings. */
+async function readTokenFromStdin(): Promise<string> {
+  if (process.stdin.isTTY) die(2, "--token-stdin needs the token piped on stdin");
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Buffer));
+  const token = Buffer.concat(chunks).toString("utf8").trim();
+  if (!token) die(2, "no token on stdin");
+  return token;
+}
+
+async function remoteLs(args: ParsedArgs): Promise<void> {
+  const base = await serverBase(args.server);
+  const resp = await request<{ remotes: ComfyRemoteSummary[] }>(base, "/api/comfy/remotes", { method: "GET" }).catch(failRequest);
+  if (args.json) { json(resp); return; }
+  if (resp.remotes.length === 0) {
+    out("No remote ComfyUI server added. A server on this computer needs no entry.");
+    return;
+  }
+  for (const remote of resp.remotes) {
+    const notes = [remote.hasToken ? "token saved" : "no token", ...(remote.insecure ? [color.yellow("plain http: not encrypted")] : [])];
+    out(`${remote.origin}  ${notes.join(", ")}`);
+  }
+}
+
+async function remoteAdd(args: ParsedArgs): Promise<void> {
+  const origin = args.positional[0];
+  if (!origin) die(2, "server address required, e.g. https://comfy.example.com");
+  const token = args["token-stdin"] ? await readTokenFromStdin() : undefined;
+  const base = await serverBase(args.server);
+  const resp = await request<{ remote: ComfyRemoteSummary }>(base, "/api/comfy/remotes", {
+    method: "PUT", body: { origin, ...(token ? { token } : {}) },
+  }).catch(failRequest);
+  if (args.json) { json(resp); return; }
+  out(color.green("✓ ") + `${resp.remote.origin} (${resp.remote.hasToken ? "token saved" : "no token"})`);
+  if (resp.remote.insecure) out(color.yellow("  plain http to another machine: the token and every image travel unencrypted"));
+  out("  Workflows you register run code on that server. Add only servers and workflows you trust.");
+}
+
+async function remoteRm(args: ParsedArgs): Promise<void> {
+  const origin = args.positional[0];
+  if (!origin) die(2, "server address required");
+  const base = await serverBase(args.server);
+  const resp = await request<{ origin: string; strandedWorkflows: string[] }>(
+    base, `/api/comfy/remotes?origin=${encodeURIComponent(origin)}`, { method: "DELETE" },
+  ).catch(failRequest);
+  if (args.json) { json(resp); return; }
+  out(color.green("✓ ") + `removed ${resp.origin}`);
+  if (resp.strandedWorkflows.length > 0) out(`  these workflows can no longer run: ${resp.strandedWorkflows.join(", ")}`);
+}
+
+const REMOTE_SUB: Record<string, (args: ParsedArgs) => Promise<void>> = { ls: remoteLs, add: remoteAdd, rm: remoteRm };
+
+async function remoteSub(argv: string[]): Promise<void> {
+  const action = argv[0];
+  if (!action || action === "--help" || action === "-h") { out(HELP); return; }
+  const handler = REMOTE_SUB[action];
+  if (!handler) die(2, `unknown remote action: ${action}\n${HELP}`);
+  return handler(parseArgs(argv.slice(1), { flags: { ...FLAGS, "token-stdin": { type: "boolean" } } }));
+}
+
 const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   export: exportSub,
   workflow: workflowSub,
+  remote: remoteSub,
 };
 
 export default async function comfyCmd(argv: string[]) {

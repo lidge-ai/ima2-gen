@@ -456,9 +456,11 @@ export function registerVideoRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           onQueue: (info: ComfyQueueInfo) => {
             dualEmitVideo(res, requestId, "progress", {
               requestId,
-              progress: null,
+              progress: info.fraction ?? null,
               queuePosition: info.position,
               running: info.running,
+              ...(info.nodeType ? { node: info.nodeType } : {}),
+              ...(info.step ? { step: info.step } : {}),
             });
           },
         });

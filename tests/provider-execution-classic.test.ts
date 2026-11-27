@@ -223,6 +223,8 @@ if (executionTestProcess(import.meta.url)) {
           bind: { prompt: { node: "6", input: "text" }, seed: { node: "7", input: "seed" }, output: { node: "9" } },
           params: [{ name: "steps", node: "7", input: "steps", type: "number" }] });
         fixture.ctx.config.comfy.pollIntervalMs = 1;
+        // This fixture forbids every connection but its own HTTP server; the progress socket has its own tests.
+        fixture.ctx.config.comfy.liveProgress = false;
         const response = await fixture.post({ prompt: "comfy fixture", provider: "comfy", model: workflowId,
           async: asyncMode, sizeNudge: false, seed: 123, comfyParams: { steps: 17 } });
         assert.equal(response.status, asyncMode ? 202 : 200);
