@@ -125,3 +125,32 @@ test("in Korean, step descriptions and the sources heading are Korean", async ({
   await expect(page.getByText("원본의 첫 프레임을 고른 스타일로 다시 그려요.")).toBeVisible();
   await expect(page.locator("details.workflow-credits summary")).toHaveText("출처 (2)");
 });
+
+test("one reference image counts as one; the next empty slot adds another", async ({ page }) => {
+  await page.goto("/#/remix/remix-motion-transfer");
+  await page.getByLabel("Reference images", { exact: true }).setInputFiles({ name: "a.png", mimeType: "image/png", buffer: Buffer.from("png") });
+  await expect(page.getByRole("button", { name: "Remove Reference images" })).toBeVisible();
+  await expect(page.getByText("Reference images · Required · 1 of 8")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add another: Reference images" })).toBeVisible();
+  await expect(page.getByText(/Reference images 2/)).toHaveCount(0);
+  await page.getByLabel("Add another: Reference images").setInputFiles({ name: "b.png", mimeType: "image/png", buffer: Buffer.from("png") });
+  await expect(page.getByRole("button", { name: "Remove Reference images 2" })).toBeVisible();
+  await expect(page.getByText("Reference images · Required · 2 of 8")).toBeVisible();
+});
+
+test("before any upload, a step shows the model this server can run, not an unrunnable default", async ({ page }) => {
+  await page.route("**/api/workflows", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as { workflows: { id: string; slots: Record<string, unknown>[] }[] };
+    const restyle = body.workflows.find((w) => w.id === "remix-restyle")!;
+    restyle.slots = restyle.slots.map((slot) =>
+      slot.name === "stylize"
+        ? { ...slot, defaultModel: "openai/gpt-image-2", alternatives: ["bytedance/seedream-5.5"], defaultRoute: "openai-oauth", runnable: { "openai/gpt-image-2": false, "bytedance/seedream-5.5": true }, available: { "openai/gpt-image-2": true, "bytedance/seedream-5.5": true } }
+        : slot,
+    );
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto("/#/remix/remix-restyle");
+  await page.getByRole("button", { name: "Remove Source video" }).click().catch(() => undefined);
+  await expect(page.getByRole("button", { name: /^Restyle the first frame: / })).toHaveAccessibleName("Restyle the first frame: Seedream 5.5");
+});
