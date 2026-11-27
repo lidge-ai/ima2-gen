@@ -158,7 +158,7 @@ async function probeRef(field: MediaField, ref: WorkflowMediaRef, local: Workflo
 }
 
 /** True when an adapter lists the model and the model supports the slot's task. */
-export function slotModelAvailable(slot: ModelSlot, model: string, catalog: PlanEnv["catalog"]): boolean {
+export function slotModelAvailable(slot: Pick<ModelSlot, "task">, model: string, catalog: PlanEnv["catalog"]): boolean {
   return catalog(model)?.tasks.includes(slot.task) === true;
 }
 

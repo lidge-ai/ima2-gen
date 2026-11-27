@@ -27,7 +27,8 @@ export function getWorkflow(id: string): WorkflowDefinition | undefined {
   return WORKFLOWS.find((w) => w.id === id);
 }
 
-export interface SlotDescription extends Omit<ModelSlot, "tierModels"> {
+/** A slot as clients see it: the definition without its reviewer note (rationale stays in code). */
+export interface SlotDescription extends Omit<ModelSlot, "tierModels" | "rationale"> {
   tierModels?: Readonly<Record<string, string>>;
   /** model id -> whether an adapter lists it with the slot's task. */
   available: Readonly<Record<string, boolean>>;
@@ -50,7 +51,7 @@ export interface WorkflowDescription {
 
 /** JSON-safe description for GET /api/workflows. Pass a gateway to mark which models have adapters. */
 export function describeWorkflow(def: WorkflowDefinition, gateway?: Pick<WorkflowGateway, "catalog" | "canRun">): WorkflowDescription {
-  const slots = def.slots.map((slot) => {
+  const slots = def.slots.map(({ rationale: _reviewerNote, ...slot }) => {
     const models = [...new Set([slot.defaultModel, ...slot.alternatives, ...Object.values(slot.tierModels ?? {})])];
     const available = Object.fromEntries(models.map((m) => [m, gateway ? slotModelAvailable(slot, m, (id) => gateway.catalog(id)) : false]));
     const canRun = gateway?.canRun?.bind(gateway);

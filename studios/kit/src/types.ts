@@ -244,9 +244,7 @@ export interface WorkflowStepSpec {
   runnable?: Readonly<Record<string, boolean>>;
   /** Route the step uses by default when it is not a keyed provider route, e.g. a subscription session ("openai-oauth"). */
   route?: string;
-  /** Why the workflow uses this model, with its evidence. */
-  rationale?: string;
-  /** One sentence telling a person what the step does (server description, else its rationale). */
+  /** One sentence telling a person what the step does (the server's slot description). */
   description?: string;
   credits?: readonly WorkflowCredit[];
 }

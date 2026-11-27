@@ -36,7 +36,6 @@ const slot = (
   task,
   defaultModel: model,
   alternatives,
-  rationale: "Development fixture for this workflow slot.",
   available: Object.fromEntries([model, ...alternatives].map((id) => [id, true])),
 });
 const video: WireField = {
