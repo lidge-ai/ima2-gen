@@ -82,7 +82,8 @@ export interface ComfyBinding {
 }
 
 export interface ComfyWorkflowBindings {
-  prompt: ComfyBinding;
+  /** Absent when the workflow has no text input: it then runs as it is, and takes no prompt. */
+  prompt?: ComfyBinding;
   negativePrompt?: ComfyBinding;
   width?: ComfyBinding;
   height?: ComfyBinding;
@@ -153,7 +154,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *
  * The file is user-editable, and a half-written record would otherwise surface
  * as a selector entry that fails only once a generation is billed. Anything
- * that does not carry an id, an origin, and a prompt/output binding is dropped.
+ * that does not carry an id, an origin and an output binding is dropped, and so
+ * is one whose prompt binding is present but malformed.
  */
 function normalizeWorkflowRecord(value: unknown): ComfyWorkflowRecord | null {
   if (!isRecord(value)) return null;
@@ -164,7 +166,7 @@ function normalizeWorkflowRecord(value: unknown): ComfyWorkflowRecord | null {
   if (!isRecord(bind)) return null;
   const prompt = bind.prompt;
   const output = bind.output;
-  if (!isRecord(prompt) || typeof prompt.node !== "string" || typeof prompt.input !== "string") return null;
+  if (prompt !== undefined && (!isRecord(prompt) || typeof prompt.node !== "string" || typeof prompt.input !== "string")) return null;
   if (!isRecord(output) || typeof output.node !== "string") return null;
   if (value.mediaKind !== undefined && value.mediaKind !== "image" && value.mediaKind !== "video" && value.mediaKind !== "audio") return null;
   return {

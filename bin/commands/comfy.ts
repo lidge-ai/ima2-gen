@@ -355,9 +355,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
       + `Run: ima2 comfy workflow inspect ${file}\n`
       + `Then pass each explicitly, e.g. ${unresolved.map((f: string) => `${flagFor[f] ?? f} <node>.<input>`).join(" ")}`);
   }
-  if (!bind.prompt || !bind.output) {
-    die(2, "a prompt binding and an output node are required (see: ima2 comfy workflow inspect <file>)");
-  }
+  if (!bind.output) die(2, "an output node is required: the node that saves the result (see: ima2 comfy workflow inspect <file>)");
   const inputs = buildMediaSlots(inspected, args.input, file);
   if (inputs.length > 0) bind.inputs = inputs;
 
@@ -379,8 +377,10 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
   if (args.json) { json(resp); return; }
   out(color.green("✓ ") + `${resp.workflow.id} -> ${resp.workflow.origin}`);
   printServerReport(resp.server);
-  if (resp.media) out(`  run it with: ima2 media run --model ${resp.media.model} --task ${resp.media.task} --prompt "<prompt>"`);
-  if (resp.workflow.mediaKind === "image") out(`  or, in the classic lane: ima2 gen "<prompt>" --provider comfy --model ${resp.workflow.id}`);
+  const takesPrompt = Boolean(bind.prompt);
+  if (!takesPrompt) out("  no text input found: it runs as it is and takes no prompt");
+  if (resp.media) out(`  run it with: ima2 media run --model ${resp.media.model} --task ${resp.media.task}${takesPrompt ? ' --prompt "<prompt>"' : ""}`);
+  if (takesPrompt && resp.workflow.mediaKind === "image") out(`  or, in the classic lane: ima2 gen "<prompt>" --provider comfy --model ${resp.workflow.id}`);
 }
 
 async function workflowRm(args: ParsedArgs): Promise<void> {

@@ -141,6 +141,46 @@ describe("comfy workflow routes", () => {
     });
   });
 
+  it("registers a workflow that has no prompt input, and still requires an output node", async () => {
+    await withServer(async (base) => {
+      const graph = { "1": { class_type: "EmptyImage", inputs: { width: 64, height: 64 } }, "9": { class_type: "SaveImage", inputs: { images: ["1", 0], filename_prefix: "x" } } };
+      const res = await post(base, "/api/comfy/workflows", { id: "blank", graph, bind: { output: { node: "9" } } });
+      const body = await res.json();
+      assert.equal(res.status, 200, JSON.stringify(body));
+      assert.equal("prompt" in body.workflow.bind, false);
+      const listed = await (await fetch(base + "/api/comfy/workflows")).json();
+      assert.deepEqual(listed.workflows.map((workflow: { id: string }) => workflow.id), ["blank"]);
+      const noOutput = await post(base, "/api/comfy/workflows", { id: "nowhere", graph, bind: {} });
+      assert.equal(noOutput.status, 400);
+      const failure = await noOutput.json();
+      assert.equal(failure.error.code, "COMFY_WORKFLOW_BIND_INVALID");
+      assert.match(failure.error.message, /An output node is required/);
+      // A prompt binding that is given must still be a real one.
+      const broken = await post(base, "/api/comfy/workflows", { id: "broken", graph, bind: { prompt: { node: "1" }, output: { node: "9" } } });
+      assert.equal(broken.status, 400);
+    });
+  });
+
+  it("says which ComfyUI address is configured, so the settings screen starts from it", async () => {
+    const original = config.comfy.defaultUrl;
+    (config.comfy as { defaultUrl: string }).defaultUrl = "http://127.0.0.1:18813/";
+    try {
+      await withServer(async (base) => {
+        const listed = await (await fetch(base + "/api/comfy/workflows")).json();
+        assert.equal(listed.defaultOrigin, "http://127.0.0.1:18813");
+      });
+      // A configured address that is not allowed is not offered as a starting point.
+      (config.comfy as { defaultUrl: string }).defaultUrl = "https://not-on-the-list.example";
+      await withServer(async (base) => {
+        const listed = await (await fetch(base + "/api/comfy/workflows")).json();
+        assert.equal(listed.ok, true);
+        assert.equal("defaultOrigin" in listed, false);
+      });
+    } finally {
+      (config.comfy as { defaultUrl: string }).defaultUrl = original;
+    }
+  });
+
   it("requires confirmed bindings before it will save", async () => {
     await withServer(async (base) => {
       const res = await post(base, "/api/comfy/workflows", { id: "x", graph: GRAPH });

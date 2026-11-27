@@ -84,6 +84,15 @@ class SendTest(unittest.TestCase):
                      "inputs": [{"kind": "image", "role": "first-frame", "node": "52", "input": "image"}]},
         })
 
+    def test_a_field_ima2_settled_is_used_even_when_it_lists_other_text_inputs_beside_it(self):
+        # What ima2 answers for the official Wan 2.2 template: the sampler's positive input settles the prompt,
+        # and the negative text box is still listed under prompt as something a person could pick instead.
+        fake, client = self.serve({"candidates": [candidate("prompt", "6", "text"), candidate("prompt", "7", "text", False),
+                                                  candidate("negativePrompt", "7", "text"), candidate("output", "58", "")],
+                                   "mediaKind": "video", "mediaSlots": [], "server": READY})
+        self.assertEqual(ima2_send.send_workflow(client, GRAPH, "wan", ORIGIN)["ok"], True)
+        self.assertEqual(fake.calls[-1][2]["bind"], {"prompt": {"node": "6", "input": "text"}, "negativePrompt": {"node": "7", "input": "text"}, "output": {"node": "58"}})
+
     def test_a_choice_only_a_person_can_make_is_handed_back_and_nothing_is_registered(self):
         slots = [{"kind": "image", "node": "52", "input": "image", "classType": "LoadImage"}, {"kind": "image", "node": "53", "input": "image", "classType": "LoadImage"}]
         fake, client = self.serve({"candidates": [candidate("prompt", "6", "text", False), candidate("prompt", "7", "text", False), candidate("output", "9", "")],
@@ -95,11 +104,10 @@ class SendTest(unittest.TestCase):
         self.assertIn("ima2 Settings", result["message"])
         self.assertEqual([call[0] for call in fake.calls], ["/api/comfy/inspect"])
 
-    def test_no_prompt_or_no_output_is_said_plainly(self):
-        _fake, client = self.serve({"candidates": [candidate("output", "9", "")], "mediaSlots": [], "server": READY})
-        result = ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)
-        self.assertEqual((result["ok"], result["code"]), (False, "NO_PROMPT"))
-        self.assertIn("text input", result["message"])
+    def test_a_workflow_with_no_text_input_is_registered_without_a_prompt_and_no_output_is_said_plainly(self):
+        fake, client = self.serve({"candidates": [candidate("output", "9", "")], "mediaSlots": [], "server": READY})
+        self.assertEqual(ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)["ok"], True)
+        self.assertEqual(fake.calls[-1][2]["bind"], {"output": {"node": "9"}})
         _fake, client = self.serve({"candidates": [candidate("prompt", "6", "text")], "mediaSlots": [], "server": READY})
         self.assertEqual(ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)["code"], "NO_OUTPUT")
 

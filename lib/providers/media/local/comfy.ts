@@ -143,6 +143,10 @@ async function stageInputs(ctx: MediaAdapterContext, target: ComfyTarget, record
 
 async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Promise<MediaJobRef> {
   const record = requireWorkflow(request.model);
+  // A prompt nothing in the graph reads would be dropped in silence; say so instead.
+  if (!record.bind.prompt && request.prompt) {
+    throw invalid(COMFY_ERR.OPTION_INVALID, COMFY_MODEL_PREFIX + record.id + " takes no prompt: its workflow has no text input. Send the request without one.");
+  }
   refusePaidNodes(record, request);
   const settings = readSettings(record, request);
   const target = await targetFor(record.origin);
@@ -152,7 +156,8 @@ async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Pr
     prompt: request.prompt ?? "", negativePrompt: request.negativePrompt, seed: request.seed,
     width: settings.width, height: settings.height, length: settings.length, fps: settings.fps, params: settings.params,
   }, record.params);
-  if (request.prompt === undefined) graph[record.bind.prompt.node]!.inputs[record.bind.prompt.input] = record.graph[record.bind.prompt.node]!.inputs[record.bind.prompt.input];
+  const promptAt = record.bind.prompt;
+  if (promptAt && request.prompt === undefined) graph[promptAt.node]!.inputs[promptAt.input] = record.graph[promptAt.node]!.inputs[promptAt.input];
   await stageInputs(ctx, target, record, graph, request.inputs);
   // ComfyUI sends a job's node and step events only to the socket whose client id submitted it.
   const clientId = "ima2-" + randomUUID();

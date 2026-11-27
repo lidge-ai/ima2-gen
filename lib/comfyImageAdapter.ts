@@ -339,6 +339,9 @@ async function runComfyWorkflow(
   if (!workflow) {
     throw comfyError(COMFY_ERR.WORKFLOW_NOT_FOUND, "ComfyUI workflow '" + workflowId + "' is not registered.", 404);
   }
+  if (!workflow.bind.prompt && prompt.trim()) {
+    throw comfyError(COMFY_ERR.OPTION_INVALID, "ComfyUI workflow '" + workflowId + "' takes no prompt: it has no text input. Run it as comfy/" + workflowId + " from the media route, without a prompt.", 400);
+  }
   const cfg = ctx.config.comfy;
   // Resolved for every run, not at registration: a server the user has since
   // removed from the allow list must stop receiving jobs.

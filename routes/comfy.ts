@@ -104,8 +104,12 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         undefined,
         await loadAccess(),
       );
+      const access = await loadAccess();
+      // The address new registrations start from: the configured one, when it is a server this app may call.
+      const defaultOrigin = access.tryTarget(ctx.config.comfy.defaultUrl)?.origin;
       return res.json({
         ok: true,
+        ...(defaultOrigin ? { defaultOrigin } : {}),
         workflows: workflows.map((workflow) => ({
           ...workflow,
           health: health.get(workflow.origin) ?? { ok: false, reason: "not probed" },
@@ -217,10 +221,14 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
     try {
       const graph = graphFromBody(req.body);
       const bind = body.bind;
-      if (!bind?.prompt?.node || !bind?.output?.node) {
+      // A workflow with no text input needs no prompt binding. One that is given must be whole.
+      const promptOk = bind?.prompt === undefined || (typeof bind.prompt?.node === "string" && typeof bind.prompt?.input === "string" && bind.prompt.node && bind.prompt.input);
+      if (!bind?.output?.node || !promptOk) {
         return res.status(400).json(errorPayload(
           COMFY_WORKFLOW_ERROR.BIND_INVALID,
-          "A prompt binding and an output node are required. Call /api/comfy/inspect first and confirm the candidates.",
+          !bind?.output?.node
+            ? "An output node is required: the node that saves the result. Call /api/comfy/inspect first and confirm the candidates."
+            : "The prompt binding must name a node and one of its inputs.",
         ));
       }
       const access = await loadAccess();
