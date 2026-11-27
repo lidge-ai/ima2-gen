@@ -43,7 +43,7 @@ test("in Korean the server's figure reads 예상, and a pending answer says it i
     await route.continue();
   });
   await page.goto("/#/video");
-  await expect(page.getByRole("button", { name: /생성/ })).toContainText("계산 중…");
+  await expect(page.getByRole("button", { name: /^생성/ })).toContainText("계산 중…");
   release();
-  await expect(page.getByRole("button", { name: /생성/ })).toContainText("예상 $0.30");
+  await expect(page.getByRole("button", { name: /^생성/ })).toContainText("예상 $0.30");
 });

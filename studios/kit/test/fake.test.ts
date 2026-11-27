@@ -303,7 +303,7 @@ test("a ComfyUI workflow runs on this computer: no key, no price, a run time, an
     // A keyless lane is never listed among the keys to add.
     assert.equal((await client.keys.list()).some((k) => k.keyVocabulary === "comfy-local"), false);
     const estimate = await client.media.estimate({ model: "comfy/klein", task: "text-to-image", prompt: "a fox", inputs: [] });
-    assert.deepEqual(estimate, { route: "local", usd: 0, local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
+    assert.deepEqual(estimate, { route: "local", usd: 0, quote: { state: "local" }, note: "runs locally; no provider charge", local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
     const { jobId } = await client.media.submit({ model: "comfy/klein", task: "text-to-image", prompt: "[fail:comfy-offline] a fox", inputs: [] });
     const done = await client.watchJob(jobId);
     assert.equal(done.status, "failed");
