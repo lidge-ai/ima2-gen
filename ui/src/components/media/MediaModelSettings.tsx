@@ -42,6 +42,7 @@ function AdjustmentNote() {
 function autoReason(model: MediaModel, task: string, resolved: ResolvedRoute, t: (key: string, vars?: Record<string, string | number>) => string): string {
   const route = resolved.route.label;
   if (resolved.state === "needs-key") return t("mediaPicker.routeAutoNone");
+  if (resolved.route.route === "local") return t("mediaPicker.routeAutoNowLocal", { route });
   if (resolved.route.route === "direct") return t("mediaPicker.routeAutoNowDirect", { route });
   const direct = candidateRoutes(model, task).find((candidate) => candidate.route === "direct");
   return direct ? t("mediaPicker.routeAutoNowNoDirectKey", { route, direct: direct.label }) : t("mediaPicker.routeAutoNowCheapest", { route });
@@ -52,8 +53,9 @@ function RouteFacts({ route, kind }: { route: MediaRoute; kind: MediaModel["kind
   return (
     <span className="media-route__main">
       <span className="media-route__name">{route.label}
-        <span className={"media-route__key" + (route.hasKey ? " media-route__key--ready" : "")}>{t(route.hasKey ? "mediaPicker.keyReady" : "mediaPicker.routeKeyNeeded")}</span></span>
-      <small>{t(`mediaPicker.${route.route}`)} · {fromPrice(lowestPrice(route, kind), t)}</small>
+        <span className={"media-route__key" + (route.hasKey ? " media-route__key--ready" : "")}>{t(route.keyless ? "mediaPicker.keyNotNeeded" : route.hasKey ? "mediaPicker.keyReady" : "mediaPicker.routeKeyNeeded")}</span></span>
+      {/* A local route has no price to be "unpublished": it says there is no charge. */}
+      <small>{t(`mediaPicker.${route.route}`)} · {route.route === "local" ? t("mediaPicker.localFree") : fromPrice(lowestPrice(route, kind), t)}</small>
     </span>
   );
 }
@@ -194,7 +196,7 @@ function PriceList({ route }: { route: MediaRoute }) {
       {route.pricing.map((price, index) => (
         <div className="media-price" key={index}>{unitPrice(price, t)}{price.variant ? ` · ${price.variant}` : ""} · <a href={price.source} target="_blank" rel="noreferrer">{t("mediaPicker.checked", { date: price.checkedAt })}</a></div>
       ))}
-      {route.pricing.length === 0 ? <div className="media-price">{t("mediaPicker.noPrice")}</div> : null}
+      {route.pricing.length === 0 ? <div className="media-price">{t(route.route === "local" ? "mediaPicker.localFree" : "mediaPicker.noPrice")}</div> : null}
       {route.docsUrl ? <a className="media-link" href={route.docsUrl} target="_blank" rel="noreferrer">{t("mediaPicker.documentation")}</a> : null}
     </details>
   );

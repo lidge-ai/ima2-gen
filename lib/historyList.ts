@@ -101,7 +101,7 @@ export async function listHistoryRows(baseDir = config.storage.generatedDir) {
       sequenceStatus: meta?.sequenceStatus || null,
       // Media adapter and workflow provenance (lib/providers/media sidecars).
       adapter: meta?.adapter || null,
-      route: meta?.route === "direct" || meta?.route === "aggregator" ? meta.route : null,
+      route: meta?.route === "direct" || meta?.route === "aggregator" || meta?.route === "local" ? meta.route : null,
       media: meta?.media && typeof meta.media === "object" ? meta.media : null,
       billed: meta?.billed && typeof meta.billed === "object" ? meta.billed : null,
       estimate: meta?.estimate && typeof meta.estimate === "object" ? meta.estimate : null,

@@ -196,6 +196,7 @@ Total: 663 (runtime: 355, contract: 308)
 - `tests/media-direct-xai.test.ts`
 - `tests/media-input-requirements.test.ts`
 - `tests/media-key-validate-route.test.ts`
+- `tests/media-local-route.test.ts`
 - `tests/media-mp4-probe.test.ts`
 - `tests/media-price-quote.test.ts`
 - `tests/media-publish-input.test.ts`

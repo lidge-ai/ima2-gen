@@ -13,7 +13,7 @@ const price = (usd: number, unit = "second", variant?: string): Price =>
   ({ unit, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27", ...(variant ? { variant } : {}) });
 const seconds = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator"; vocabulary: string; logo?: string | null; extra?: { name: string; secret: boolean; required: boolean }[] }> = {
+const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator" | "local"; vocabulary: string; logo?: string | null; keyless?: boolean; extra?: { name: string; secret: boolean; required: boolean }[] }> = {
   byteplus: { label: "BytePlus ModelArk", route: "direct", vocabulary: "byteplus", logo: null, extra: [{ name: "region", secret: false, required: false }] },
   google: { label: "Google Gemini API", route: "direct", vocabulary: "gemini", logo: "google-mark.png" },
   kling: { label: "Kling", route: "direct", vocabulary: "kling", logo: "kling-mark.png" },
@@ -26,6 +26,8 @@ const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator"; 
   fal: { label: "fal", route: "aggregator", vocabulary: "fal", logo: "fal-mark.png" },
   replicate: { label: "Replicate", route: "aggregator", vocabulary: "replicate", logo: "replicate-mark.svg" },
   sume: { label: "Sume", route: "aggregator", vocabulary: "sume", logo: "sume-mark.svg" },
+  // Listed only when the fixture is opened with a local route (MediaFixture.local).
+  "comfy-local": { label: "ComfyUI (this computer)", route: "local", vocabulary: "comfy-local", logo: null, keyless: true },
 };
 const VENDOR_LOGO: Record<string, [string, string | null]> = {
   bytedance: ["ByteDance", "bytedance-mark.png"], google: ["Google", "google-mark.png"], kling: ["Kling", "kling-mark.png"],
@@ -100,6 +102,11 @@ const MODELS: ModelSpec[] = [
 ];
 
 // The catalog offers a square symbol as urls.mark when the kit manifest has one; makers without one get a monogram in the UI.
+/** A workflow the user registered on their own ComfyUI: one keyless local route, no published price. */
+const LOCAL_MODEL: ModelSpec = { id: "comfy/flux2-klein", label: "FLUX.2 klein (my workflow)", vendor: "comfy", kind: "image", routes: [
+  { adapter: "comfy-local", tasks: ["text-to-image"], params: { seed: true }, pricing: [] },
+] };
+
 const logo = (name: string, mark: string | null) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name,
   urls: mark ? { mark: "/media-assets/vendors/" + mark } : {}, source: null });
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
@@ -107,6 +114,8 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 export interface MediaFixture {
   /** Key vocabularies that currently hold a key. */
   keys: Set<string>;
+  /** The catalog also lists a model that runs on the user's own machine (route "local", keyless, unpriced). */
+  local: boolean;
   /** "loading" holds the catalog answer until the mode changes. */
   catalogMode: "ready" | "error" | "loading";
   /** What the provider says when a key is validated. */
@@ -124,18 +133,20 @@ export interface MediaFixture {
 }
 
 function catalog(fixture: MediaFixture, kind: string | null) {
-  const hasKey = (adapter: string) => fixture.keys.has(ADAPTERS[adapter]!.vocabulary);
-  const models = MODELS.filter((model) => !kind || model.kind === kind).map((model) => {
+  const hasKey = (adapter: string) => ADAPTERS[adapter]!.keyless === true || fixture.keys.has(ADAPTERS[adapter]!.vocabulary);
+  const listed = fixture.local ? [...MODELS, LOCAL_MODEL] : MODELS;
+  const models = listed.filter((model) => !kind || model.kind === kind).map((model) => {
     const routes = model.routes.map((route) => ({ adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, label: ADAPTERS[route.adapter]!.label,
       logo: logo(ADAPTERS[route.adapter]!.label, ADAPTERS[route.adapter]!.logo ?? null), upstreamId: model.id,
-      tasks: route.tasks, params: route.params ?? {}, resolutionOptions: resolutionOptions((route.params?.resolutions as string[] | undefined) ?? []), pricing: route.pricing ?? [], docsUrl: "https://example.com/docs/" + route.adapter, hasKey: hasKey(route.adapter) }));
+      tasks: route.tasks, params: route.params ?? {}, resolutionOptions: resolutionOptions((route.params?.resolutions as string[] | undefined) ?? []), pricing: route.pricing ?? [], docsUrl: "https://example.com/docs/" + route.adapter, hasKey: hasKey(route.adapter),
+      keyless: ADAPTERS[route.adapter]!.keyless === true }));
     const vendor = VENDOR_LOGO[model.vendor];
     return { id: model.id, label: model.label, vendor: model.vendor, logo: vendor ? logo(vendor[0], vendor[1]) : null, kind: model.kind,
       tasks: [...new Set(routes.flatMap((route) => route.tasks))], routes,
       defaultRoute: (routes.find((r) => r.hasKey && r.route === "direct") ?? routes.find((r) => r.hasKey))?.adapter ?? null };
   });
-  const adapters = Object.entries(ADAPTERS).map(([id, a]) => ({ id, label: a.label, route: a.route, logo: logo(a.label, a.logo ?? null),
-    keyVocabulary: a.vocabulary, consoleUrl: "https://example.com/keys/" + id, keyPrefix: null, hasKey: fixture.keys.has(a.vocabulary),
+  const adapters = Object.entries(ADAPTERS).filter(([, a]) => fixture.local || a.route !== "local").map(([id, a]) => ({ id, label: a.label, route: a.route, logo: logo(a.label, a.logo ?? null),
+    keyVocabulary: a.vocabulary, consoleUrl: "https://example.com/keys/" + id, keyPrefix: null, hasKey: hasKey(id), keyless: a.keyless === true,
     keySource: fixture.keys.has(a.vocabulary) ? "config" : "none", maskedKey: fixture.keys.has(a.vocabulary) ? "fixt..ey" : null,
     extraFields: (a.extra ?? []).map((field) => ({ ...field, configured: false, source: "none" })), modelCount: 1 }));
   return { models, adapters };
@@ -143,9 +154,13 @@ function catalog(fixture: MediaFixture, kind: string | null) {
 
 /** Answers like lib/providers/media/estimate.ts, with the server's own price rule. */
 function estimate(fixture: MediaFixture, body: Record<string, unknown>) {
-  const model = MODELS.find((entry) => entry.id === body.model);
+  const model = (fixture.local ? [...MODELS, LOCAL_MODEL] : MODELS).find((entry) => entry.id === body.model);
   const route = model?.routes.find((entry) => entry.adapter === body.adapter) ?? model?.routes[0];
   if (!model || !route) return { status: 404, json: { ok: false, code: "MEDIA_MODEL_UNKNOWN", error: "Unknown media model", category: "not-found", retryable: false } };
+  if (ADAPTERS[route.adapter]!.route === "local") {
+    return { status: 200, json: { model: model.id, adapter: route.adapter, route: "local", hasKey: true, unit: "request", quantity: 1, usd: 0, prices: [], quote: { state: "local" },
+      local: { expectedSec: null, basis: "no runs yet", mayBill: false }, note: "runs locally; no provider charge" } };
+  }
   const pricing = route.pricing ?? [];
   const text = (key: string) => (typeof body[key] === "string" ? { [key]: body[key] as string } : {});
   const number = (key: string) => (typeof body[key] === "number" ? { [key]: body[key] as number } : {});
@@ -231,9 +246,9 @@ function installEventChannel(): void {
  * Layered over a base route handler: this one answers the media and key-write routes and passes
  * everything else down, so the base fixture still refuses any API read it does not know.
  */
-export async function installMediaFixture(context: BrowserContext, options: { keys?: string[] } = {}): Promise<MediaFixture> {
+export async function installMediaFixture(context: BrowserContext, options: { keys?: string[]; local?: boolean } = {}): Promise<MediaFixture> {
   const fixture: MediaFixture = {
-    keys: new Set(options.keys ?? ["fal"]), catalogMode: "ready", keyVerdict: "ok", calls: [], submissions: [], history: [], terminalJobs: [],
+    keys: new Set(options.keys ?? ["fal"]), local: options.local === true, catalogMode: "ready", keyVerdict: "ok", calls: [], submissions: [], history: [], terminalJobs: [],
     mediaReads: () => fixture.calls.filter((call) => call.path.startsWith("/api/media")).length,
     emit: async (page, event, requestId, data) => {
       const delivered = await page.evaluate(([name, payload]) => (window as unknown as { l11Emit(event: string, data: unknown): number }).l11Emit(name, payload),
