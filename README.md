@@ -84,14 +84,20 @@ See which lanes are ready, type a prompt, and pick up recent work without diggin
 ## Sponsors
 
 <!-- sponsors:standard — one row per sponsor, in order of signing -->
-<table>
-<tbody>
-<tr>
-<td width="180"><a href="https://mozhenzhen.com/go/ima2-gen"><img src="assets/sponsors/mozhenzhen.png" alt="Mozhenzhen" width="150"></a></td>
-<td>Partner Pick: Check Mozhenzhen before you buy AI. Compare prices across 2,000+ models and 350K+ listings, and check model authenticity with 100K verification reports covering 5,000+ API relays. Find free API credits and offers, too. Free to use, Mozhenzhen doesn't sell AI services, and rankings are data-driven.</td>
-</tr>
-</tbody>
-</table>
+<a href="https://mozhenzhen.com/go/ima2-gen">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/sponsors/mozhenzhen-banner-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/sponsors/mozhenzhen-banner-light.png">
+    <img src="assets/sponsors/mozhenzhen-banner-light.png" alt="Mozhenzhen 模真真" width="100%">
+  </picture>
+</a>
+
+🐼 **Partner Pick · 合作推荐：买 AI 别花冤枉钱！花钱前先查【模真真 Mozhenzhen】/ Stop overpaying for AI — check [Mozhenzhen](https://mozhenzhen.com/go/ima2-gen) before you buy:**
+- 🏷️ **【比价 Price Check】** 2000+ 模型 · 35 万+ 渠道同台比价 / Compare official plans, API relays & pay-as-you-go rates side-by-side
+- 🛡️ **【验真 Verification】** 5000+ 中转站 · 10 万份报告查假模型与降智 / Audit model authenticity & real developer reviews
+- 🧭 **【买号/充值导航 Accounts】** 1200+ 号商 · 2 万+ 商品看清价格与质保 / Upfront pricing, delivery speed & warranty
+- 🎁 **【羊毛 Free Perks】** 每天更新免费额度与公益站合集 / Daily updated free API credits & promos
+- ⭐ **全部免费 · 不卖任何 AI 服务，排名只看数据 / Always Free & Data-Driven** 👉 [mozhenzhen.com](https://mozhenzhen.com/go/ima2-gen)
 
 ## Quick start
 
