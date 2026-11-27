@@ -2,13 +2,15 @@ import { fetchApi, jsonFetch } from "./api-core";
 import { armStreamTimeout, subscribe, whenConnected } from "./eventChannel";
 import { parseSseErrorPayload } from "./sseStreamError";
 import { fetchMediaCatalog } from "./mediaCatalog";
+import { formProblem } from "./mediaForm";
 import { resolveRoute } from "./mediaRoutes";
 import type { MediaSelection } from "./mediaSelection";
 import type { MediaInput, MediaInputRole } from "./mediaSubmitBody";
 import { inputProblem, inputRoles } from "./mediaTasks";
 import { t } from "../i18n";
 
-export type MediaOutput = { filename: string; url: string; mediaType: "image" | "video" };
+export type MediaOutput = { filename: string; url: string; mediaType: "image" | "video" | "audio" };
+const OUTPUT_TYPES: readonly string[] = ["image", "video", "audio"];
 
 export function cancelMediaJob(id: string): Promise<unknown> {
   return jsonFetch(`/api/media/${encodeURIComponent(id)}/cancel`, { method: "POST" });
@@ -46,6 +48,9 @@ export async function prepareMediaInputs(selection: MediaSelection, references: 
   // The settings panel already explains a tray that does not fit; this is the last check before upload.
   const problem = inputProblem(selection.task, route, references.length);
   if (problem) throw new Error(`${t("toast.generateFailed")} (${selection.task}: ${problem.have}/${problem.min}–${problem.max})`);
+  // The Generate button is held while a declared setting is missing; this covers every other way of starting a job.
+  const missing = formProblem(route, selection);
+  if (missing) throw new Error(`${t("toast.generateFailed")} (${missing.code})`);
   const roles = inputRoles(selection.task, references.length);
   return { inputs: await Promise.all(references.map((value, index) => inputFor(value, roles[index]!, signal))), adapter: route.adapter };
 }
@@ -68,7 +73,7 @@ export async function submitMediaJob(payload: Record<string, unknown>, id: strin
       if (event === "progress") callbacks.onProgress?.(data);
       if (event === "done") {
         if (!Array.isArray(data.outputs) || data.outputs.length === 0 || data.outputs.some((item: MediaOutput) =>
-          !item || typeof item.filename !== "string" || typeof item.url !== "string" || (item.mediaType !== "image" && item.mediaType !== "video"))) {
+          !item || typeof item.filename !== "string" || typeof item.url !== "string" || !OUTPUT_TYPES.includes(item.mediaType))) {
           finish(new Error(t("toast.generateFailed")));
         } else finish(undefined, data.outputs as MediaOutput[]);
       }

@@ -69,7 +69,7 @@ export async function remakeMediaResultImpl(item: GenerateItem, get: StoreGet): 
   get().setMediaSelection(plan.selection, plan.adjusted);
   const prompt = item.userPrompt ?? item.prompt;
   if (prompt) { get().clearInsertedPrompts(); get().setPrompt(prompt); }
-  get().showToast(t(plan.inputsDropped ? "result.remakeNeedsImages" : "result.remakeReady"));
+  get().showToast(t(plan.inputsDropped ? "result.remakeNeedsImages" : plan.voiceNeeded ? "result.remakeNeedsVoice" : "result.remakeReady"));
 }
 
 /** Server job states to the phases the in-flight list has words for. */

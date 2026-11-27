@@ -22,11 +22,19 @@ function write(key: string, value: unknown): void {
 
 const text = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max;
 
+/** Saved option values: a few named switches, choices and ids; anything else is dropped. */
+function parseOptions(raw: unknown): Record<string, string | boolean> | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const entries = Object.entries(raw as Record<string, unknown>).slice(0, 20)
+    .filter((entry): entry is [string, string | boolean] => text(entry[0], 100) && (typeof entry[1] === "boolean" || text(entry[1], 2000)));
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 /** Reads a saved selection, dropping anything that is not the shape this version writes. */
 export function parseMediaSelection(raw: unknown): MediaSelection | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const v = raw as Record<string, unknown>;
-  if ((v.kind !== "image" && v.kind !== "video") || !text(v.model) || !text(v.adapter) || !text(v.task)) return null;
+  if ((v.kind !== "image" && v.kind !== "video" && v.kind !== "audio") || !text(v.model) || !text(v.adapter) || !text(v.task)) return null;
   const selection: MediaSelection = { kind: v.kind, model: v.model, adapter: v.adapter, task: v.task, routeMode: v.routeMode === "auto" ? "auto" : "pinned" };
   if (text(v.label)) selection.label = modelName(v.label).label;
   if (text(v.vendor)) selection.vendor = v.vendor;
@@ -40,6 +48,9 @@ export function parseMediaSelection(raw: unknown): MediaSelection | null {
   if (typeof v.audio === "boolean") selection.audio = v.audio;
   if (text(v.negativePrompt, 20_000)) selection.negativePrompt = v.negativePrompt;
   if (typeof v.seed === "number" && Number.isInteger(v.seed) && v.seed >= 0) selection.seed = v.seed;
+  const options = parseOptions(v.options);
+  if (options) selection.options = options;
+  if (text(v.voiceName)) selection.voiceName = v.voiceName;
   return selection;
 }
 

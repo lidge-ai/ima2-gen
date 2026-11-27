@@ -176,11 +176,12 @@ export function GalleryModal() {
             k === "classic" || k === "edit" || k === "generate" ||
             k === "card-news-card" || k === "card-news-set" ? k : null;
           const isVideo = h.mediaType === "video" || /\.(mp4|webm|mov)$/i.test(h.filename ?? "");
+          const isAudio = h.mediaType === "audio" || /\.(mp3|wav|m4a|ogg|flac)$/i.test(h.filename ?? "");
           return {
             image: h.url,
             url: h.url,
             filename: h.filename,
-            thumb: h.format === "gif" ? h.url : h.thumb ?? (isVideo ? undefined : h.url),
+            thumb: h.format === "gif" ? h.url : h.thumb ?? (isVideo || isAudio ? undefined : h.url),
             mediaType: h.mediaType,
             video: h.video ?? null,
             videoSeries: h.videoSeries ?? null,

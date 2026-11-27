@@ -6,6 +6,7 @@ import { toVideoHistoryItem } from "../lib/videoHistoryItem";
 import { videoExtensionOwner } from "../lib/videoExtendStream";
 import { postVideoEdit } from "../lib/videoEditRequest";
 import { isVideoItem, extractFirstFrame, extractMidFrame, extractLastFrame } from "../lib/videoMedia";
+import { isAudioItem } from "../lib/audioMedia";
 import { continueFromItem, continueFromItemAsUrl } from "../lib/continueFromItem";
 import { ResultMetadataModal } from "./ResultMetadataModal";
 import { UpscalePopover } from "./UpscalePopover";
@@ -94,9 +95,11 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
     ? extendUi.status : "idle";
   if (!actionImage) return null;
   const isVideo = isVideoItem(actionImage);
+  // Sound has no picture: nothing to copy as an image, continue from, animate, upscale or put on the node canvas.
+  const isAudio = isAudioItem(actionImage);
   const videoSrc = isVideo ? (actionImage.url || actionImage.image) : "";
-  const canExportToComfy = Boolean(actionImage.filename);
-  const canAnimate = Boolean(actionImage.filename) && !isVideo;
+  const canExportToComfy = Boolean(actionImage.filename) && !isAudio;
+  const canAnimate = Boolean(actionImage.filename) && !isVideo && !isAudio;
   const canExtend = isVideo && Boolean(actionImage.filename);
   const isGrokProvider = actionImage.provider === "grok" || actionImage.provider === "grok-api";
   const providerUrlAlive = Boolean(
@@ -364,9 +367,9 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       <button type="button" className="action-btn" onClick={download}>
         {t("result.download")}
       </button>
-      <button type="button" className={`action-btn action-btn--more${isVideo ? " action-btn--frame" : ""}`} onClick={copyImage}>
+      {isAudio ? null : <button type="button" className={`action-btn action-btn--more${isVideo ? " action-btn--frame" : ""}`} onClick={copyImage}>
         {t(isVideo ? "result.copyLastFrame" : "result.copyImage")}
-      </button>
+      </button>}
       {isVideo && (
         <>
           <button type="button" className="action-btn action-btn--more action-btn--frame" onClick={copyFirstFrame}>
@@ -380,7 +383,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       <button type="button" className="action-btn action-btn--more" onClick={() => void copyPrompt()}>
         {t("result.copyPrompt")}
       </button>
-      <button
+      {isAudio ? null : <button
         type="button" className="action-btn action-btn--more"
         onClick={() => {
           void (async () => {
@@ -391,14 +394,14 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
         title={t("chain.saveToAssets")}
       >
         {t("chain.saveToAssets")}
-      </button>
-      <button
+      </button>}
+      {isAudio ? null : <button
         type="button" className="action-btn action-btn--primary"
         onClick={newFromHere}
         title={t("result.continueHereTitle")}
       >
         {t("result.continueHere")}
-      </button>
+      </button>}
       {providerUrlAlive && (
         <button
           type="button" className="action-btn action-btn--more"
@@ -418,7 +421,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
           {animating ? t("result.animating") : t("result.animate")}
         </button>
       )}
-      {runwayConnected && actionImage.filename && (
+      {runwayConnected && actionImage.filename && !isAudio && (
         isVideo ? (
           <button
             type="button" className="action-btn action-btn--more"
@@ -481,13 +484,13 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
           )}
         </>
       )}
-      <button
+      {isAudio ? null : <button
         type="button" className="action-btn action-btn--more"
         onClick={generateAsFirstNode}
         title={t("result.firstNodeTitle")}
       >
         {t("result.firstNode")}
-      </button>
+      </button>}
       {isMediaResult(actionImage) && (
         <button
           type="button" className="action-btn action-btn--remake"
@@ -504,7 +507,7 @@ export function ResultActions({ imageOverride = null, onAfterDeleteFocus }: Resu
       >
         {t("result.info")}
       </button>
-      {!canvasOpen && (
+      {!canvasOpen && !isAudio && (
         <button
           type="button" className="action-btn action-btn--more"
           onClick={openCanvas}

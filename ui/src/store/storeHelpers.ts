@@ -185,7 +185,7 @@ export function loadInFlight({ includeExpired = false }: { includeExpired?: bool
 
 export function normalizeInflightKind(value: unknown): PersistedInFlight["kind"] {
   if (
-    value === "classic" || value === "node" || value === "multimode" || value === "image" || value === "video" ||
+    value === "classic" || value === "node" || value === "multimode" || value === "image" || value === "video" || value === "audio" ||
     value === "mcp-image" || value === "mcp-video"
   ) return value;
   return typeof value === "string" && value.startsWith("mcp-action-") ? value as `mcp-action-${string}` : undefined;
@@ -202,6 +202,8 @@ export function narrowGenerateKind(k?: string | null): GenerateItem["kind"] {
 export function mapHistoryItem(it: Awaited<ReturnType<typeof getHistory>>["items"][number]): GenerateItem {
   const composerInsertedPrompts = normalizeInsertedPromptArray(it.composerInsertedPrompts);
   const isVideo = it.mediaType === "video" || /\.(mp4|webm|mov)$/i.test(it.filename ?? "");
+  // A sound file is not a picture: without a thumbnail the tile shows a placeholder, never the file as an image.
+  const isAudio = it.mediaType === "audio" || /\.(mp3|wav|m4a|ogg|flac)$/i.test(it.filename ?? "");
   return {
     image: it.url,
     url: it.url,
@@ -213,7 +215,7 @@ export function mapHistoryItem(it: Awaited<ReturnType<typeof getHistory>>["items
     videoLineage: it.videoLineage ?? null,
     filename: it.filename,
     // A GIF's JPEG thumbnail is its first frame; tiles show the original so it plays.
-    thumb: it.format === "gif" ? it.url : it.thumb ?? (isVideo ? undefined : it.url),
+    thumb: it.format === "gif" ? it.url : it.thumb ?? (isVideo || isAudio ? undefined : it.url),
     prompt: it.prompt ?? undefined,
     userPrompt: it.userPrompt ?? null,
     revisedPrompt: it.revisedPrompt ?? null,

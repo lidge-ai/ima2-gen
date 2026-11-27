@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useI18n } from "../../i18n";
-import { resolutionChoices, type MediaAdapter, type MediaModel, type MediaRoute } from "../../lib/mediaCatalog";
+import type { MediaAdapter, MediaModel, MediaRoute } from "../../lib/mediaCatalog";
+import { audioUse, sizeChoices, taskParams } from "../../lib/mediaForm";
 import { candidateRoutes, cheapestRoute, lowestPrice, resolveRoute, type ResolvedRoute } from "../../lib/mediaRoutes";
 import { parseSeed, reconcileSelection, type Adjustment, type MediaSelection } from "../../lib/mediaSelection";
 import { inputLimits, inputProblem, modelTasks, type ClassicTask } from "../../lib/mediaTasks";
@@ -8,6 +9,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { Segmented, Select } from "../controls";
 import { DurationSlider } from "../controls/DurationSlider";
 import { MediaEstimate } from "./MediaEstimate";
+import { MediaFormFields } from "./MediaFormFields";
 import { MediaKeyEntry } from "./MediaKeyEntry";
 import { MediaLogo } from "./MediaLogo";
 import { fromPrice, qualityLabel, unitPrice } from "./mediaLabels";
@@ -21,7 +23,7 @@ function AdjustmentNote() {
   if (adjusted.length === 0) return null;
   const fieldName = (field: Adjustment["field"]) => t(field === "task" ? "mediaPicker.task" : field === "durationSec" ? "mediaPicker.duration"
     : field === "resolution" ? "mediaPicker.resolution" : field === "quality" ? "mediaPicker.quality" : field === "aspectRatio" ? "mediaPicker.aspect" : field === "audio" ? "mediaPicker.nativeAudio"
-    : field === "seed" ? "mediaPicker.seed" : "mediaPicker.negativePrompt");
+    : field === "seed" ? "mediaPicker.seed" : field === "voice" ? "mediaPicker.option.voice_id" : "mediaPicker.negativePrompt");
   const shown = (field: Adjustment["field"], value: string) => (field === "quality" ? qualityLabel(value, t) : value);
   return (
     <div className="media-note" role="status">
@@ -137,14 +139,16 @@ function Choice({ title, value, items, update }: { title: string; value: string;
   );
 }
 
-function RouteParams({ route, selection, update }: { route: MediaRoute; selection: MediaSelection; update: Update }) {
+function RouteParams({ route, ready, selection, update }: { route: MediaRoute; ready: boolean; selection: MediaSelection; update: Update }) {
   const { t } = useI18n();
-  const params = route.params;
+  // Only what the route declares for this task: a field it does not take is neither shown nor sent.
+  const params = taskParams(route, selection.task);
   const durations = [...(params.durationsSec ?? [])].sort((a, b) => a - b);
-  const sizes = resolutionChoices(route);
+  const sizes = sizeChoices(route, params);
   const { aspectRatio: _aspect, ...withoutAspect } = selection;
   return (
     <>
+      <MediaFormFields route={route} ready={ready} selection={selection} update={update} />
       {durations.length > 1 ? (
         <div className="option-group"><div className="section-title">{t("mediaPicker.duration")}</div>
           <DurationSlider values={durations} value={selection.durationSec ?? null} ariaLabel={t("mediaPicker.duration")}
@@ -178,6 +182,8 @@ function InputStatus({ route, selection }: { route: MediaRoute; selection: Media
   const have = useAppStore((s) => s.referenceImages.length + (s.providerUrlReference ? 1 : 0));
   const limits = inputLimits(selection.task, route);
   const problem = inputProblem(selection.task, route, have);
+  // Sound takes no image: the line says what the prompt is used for instead (read aloud, or a description).
+  if (!problem && selection.kind === "audio") return <p className="media-inputs" role="note">{t("mediaPicker.useNeeds." + audioUse(route, selection.task))}</p>;
   if (!problem && (!limits || limits.max === 0)) return null;
   return (
     <p className={`media-inputs${problem ? " media-inputs--problem" : ""}`} role="status">
@@ -240,7 +246,7 @@ export function MediaModelSettings({ model, selection, adapters }: { model: Medi
         : <p className="media-inputs media-inputs--problem" role="status">{t("mediaPicker.routeNeedsKey", { route: resolved.route.label })}{" "}
           <button type="button" className="media-link" onClick={() => openSettings("providers")}>{t("mediaPicker.settings")}</button></p>
       ) : lane && keyPrompt === lane.id ? <MediaKeyEntry key={lane.id} adapter={lane} replacing onDone={closeKeyPrompt} /> : null}
-      <RouteParams route={resolved.route} selection={selection} update={setSelection} />
+      <RouteParams route={resolved.route} ready={resolved.state !== "needs-key"} selection={selection} update={setSelection} />
       <MediaEstimate route={resolved.route} selection={selection} />
       <PriceList route={resolved.route} />
     </div>

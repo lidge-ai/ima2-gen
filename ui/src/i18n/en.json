@@ -49,7 +49,7 @@
       "minute": "minute",
       "character": "character"
     },
-    "cardIdle": "Run image and video models with your own API keys, at the provider's own price.",
+    "cardIdle": "Run image, video and audio models with your own API keys, at the provider's own price.",
     "change": "Change model",
     "useBuiltin": "Back to built-in",
     "browseAll": "All models…",
@@ -63,14 +63,16 @@
       "image-to-image": "Edit an image",
       "text-to-video": "From text",
       "image-to-video": "From an image",
-      "reference-to-video": "From references"
+      "reference-to-video": "From references",
+      "text-to-audio": "From text"
     },
     "taskNeeds": {
       "text-to-image": "Uses the prompt only.",
       "image-to-image": "Edits the first image in the composer; a model that takes more uses the rest as references.",
       "text-to-video": "Uses the prompt only.",
       "image-to-video": "Uses one composer image as the first frame.",
-      "reference-to-video": "Uses the composer images as references for a new scene."
+      "reference-to-video": "Uses the composer images as references for a new scene.",
+      "text-to-audio": "Uses the prompt only."
     },
     "search": "Search models",
     "maker": "Maker",
@@ -120,6 +122,18 @@
     },
     "noPrice": "No published price",
     "audioTag": "Sound",
+    "voiceTag": "Voice",
+    "use": {"label": "What to make", "speech": "Speech", "sound": "Music and sound effects"},
+    "useNeeds": {"speech": "A voice reads the prompt aloud, exactly as written.", "sound": "The prompt describes the music or sound to make."},
+    "length": "Length",
+    "lengthUnit": "seconds",
+    "lengthAuto": "Model decides",
+    "lengthHint": "{min}–{max} seconds",
+    "lengthHintOptional": "{min}–{max} seconds. Leave empty to let the model decide.",
+    "form": {"voice": "Choose a voice to generate.", "lengthRequired": "Set a length from {min} to {max} seconds.", "lengthRange": "Length must be {min} to {max} seconds.", "option": "Set {name} to generate."},
+    "option": {"voice_id": "Voice", "force_instrumental": "Instrumental only (no vocals)", "loop": "Seamless loop"},
+    "voice": {"choose": "Choose a voice", "change": "Change", "search": "Search voices", "mine": "My voices", "library": "Voice library", "loading": "Loading voices…", "failed": "Could not load voices from {provider}.", "empty": "This account has no voices yet.", "none": "No voice matches.", "needsKey": "Add the {provider} key to list its voices.", "play": "Play a sample of {name}", "stop": "Stop the sample of {name}", "more": "{n} more. Search to narrow the list.", "female": "Female", "male": "Male", "neutral": "Neutral"},
+    "unitKCharacters": "1K chars",
     "seconds": "{n} s",
     "secondsRange": "{min}–{max} s",
     "emptyFiltered": "No model matches.",
@@ -397,6 +411,7 @@
     "footerHint": "You can close this panel — generations will continue.",
     "kindImage": "Image",
     "kindVideo": "Video",
+    "kindAudio": "Audio",
     "kindNode": "Node",
     "kindMcp": "MCP",
     "progressAria": "Generation progress: {n}%"
@@ -776,6 +791,7 @@
     "openAria": "Open image in canvas mode",
     "dragToComposer": "Drag to composer as reference",
     "dragHint": "Drag",
+    "audioResult": "Generated audio",
     "annotationInstructionsChip": "Canvas notes",
     "close": "Close Canvas",
     "blank": {
@@ -1241,6 +1257,7 @@
     "remakeTitle": "Restore this result's model, route, settings and prompt. Nothing is sent until you press Generate.",
     "remakeReady": "Model, settings and prompt restored. Check the estimate, then press Generate.",
     "remakeNeedsImages": "Model, settings and prompt restored. This result was made from images: add them again before generating.",
+    "remakeNeedsVoice": "Model, settings and prompt restored. Choose a voice, then press Generate.",
     "remakeModelGone": "This model is no longer in the catalog, so it cannot be made again here.",
     "moreActions": "More actions",
     "fewerActions": "Fewer actions"

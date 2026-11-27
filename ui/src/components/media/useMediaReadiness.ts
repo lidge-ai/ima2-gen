@@ -28,5 +28,5 @@ export function useMediaReadiness(): MediaReadiness | null {
   const model = catalog.models.find((item) => item.id === selection.model && item.kind === selection.kind);
   const resolved = model ? resolveRoute(model, selection) : undefined;
   const adapter = resolved ? catalog.adapters.find((item) => item.id === resolved.route.adapter) : undefined;
-  return { selection, model, resolved, adapter, blocker: generateBlocker(resolved, selection.task, references) };
+  return { selection, model, resolved, adapter, blocker: generateBlocker(resolved, selection.task, references, selection) };
 }

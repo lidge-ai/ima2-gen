@@ -8,5 +8,6 @@ export function buildMediaSubmitBody(selection: MediaSelection, prompt: string, 
   return { requestId, sessionId, prompt, model: selection.model, adapter: selection.adapter,
     task: selection.task, durationSec: selection.durationSec, resolution: selection.resolution, quality: selection.quality,
     aspectRatio: selection.aspectRatio, audio: selection.audio,
-    negativePrompt: selection.negativePrompt, seed: selection.seed, inputs };
+    negativePrompt: selection.negativePrompt, seed: selection.seed,
+    ...(selection.options && Object.keys(selection.options).length > 0 ? { vendorOptions: selection.options } : {}), inputs };
 }

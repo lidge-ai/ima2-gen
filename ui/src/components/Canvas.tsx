@@ -21,6 +21,8 @@ import { useI18n } from "../i18n";
 import { isEditableTarget } from "../lib/domEvents";
 import { getImageModelShortLabel } from "../lib/imageModels";
 import { isVideoItem } from "../lib/videoMedia";
+import { isAudioItem } from "../lib/audioMedia";
+import { MediaAudioResult } from "./media/MediaAudioResult";
 import { buildVideoDragPayload, continuitySummary } from "../lib/videoContinuity";
 import { formatReasoningLabel } from "../lib/reasoning";
 import { resolveResultFavorite } from "../lib/favoriteState";
@@ -237,7 +239,9 @@ export function Canvas() {
                 onToggle={toggleCurrentFavorite}
               />
             ) : null}
-            {isVideoItem(currentImage) ? (
+            {isAudioItem(currentImage) ? (
+              <MediaAudioResult item={currentImage} src={imageSrc} model={displayModel ?? null} />
+            ) : isVideoItem(currentImage) ? (
               <>
                 <video
                   className="result-img"
@@ -295,7 +299,7 @@ export function Canvas() {
                 </div>
               </>
             )}
-            <ViewerControls
+            {isAudioItem(currentImage) ? null : <ViewerControls
               zoom={viewer.zoom}
               minZoom={VIEWER_MIN_ZOOM}
               maxZoom={VIEWER_MAX_ZOOM}
@@ -308,7 +312,7 @@ export function Canvas() {
                 zoomOut: t("viewer.zoomOut"),
                 reset: t("viewer.reset"),
               }}
-            />
+            />}
           </div>
           <div className="result-meta">
             {(isVideoItem(currentImage)
