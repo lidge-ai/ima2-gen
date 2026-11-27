@@ -71,7 +71,12 @@ test("L11-K2 the estimate follows the settings and is confirmed by the server fo
   await pick(page, "Video", "bytedance/seedance-2.5");
   const estimate = card(page).locator(".media-estimate");
   await expect(estimate).toContainText("$2.37");
-  await expect(estimate).toContainText("5 s × $0.473/s · text-to-video:720p");
+  // The line a person reads is the sum; the price-list row it came from is one press away.
+  await expect(estimate.locator("small")).toHaveText("5 s × $0.473/s");
+  const basis = estimate.locator("details");
+  await expect(basis.locator("p")).toBeHidden();
+  await basis.getByText("Price basis", { exact: true }).click();
+  await expect(basis.locator("p")).toHaveText("text-to-video:720p");
   await expect(hint(page)).toHaveText("Seedance 2.5 · est. $2.37");
   const estimates = () => media.calls.filter((call) => call.path === "/api/media/estimate").map((call) => call.body?.priceVariant);
   await expect.poll(estimates).toEqual(["text-to-video:720p"]);

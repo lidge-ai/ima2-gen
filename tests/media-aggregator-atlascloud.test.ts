@@ -33,6 +33,10 @@ test("atlas catalog serves Sume ids across video, image and audio with starting 
   assert.ok(seedance?.params.aspectRatios?.includes("16:9"));
   assert.ok(specs.some((spec) => spec.kind === "image"));
   for (const spec of specs) for (const price of spec.pricing) assert.match(price.variant ?? "", /starting price/);
+  // Image prices are per image, as Atlas publishes them (model pages checked 2026-11-27).
+  const imagePrice = (id: string) => specs.find((spec) => spec.id === id)?.pricing.map((price) => [price.unit, price.usd, price.variant]);
+  assert.deepEqual(imagePrice("bytedance/seedream-5.5"), [["image", 0.016, "text-to-image: starting price"]]);
+  assert.deepEqual(imagePrice("openai/gpt-image-2.6-sunburst"), [["image", 0.008, "image-to-image: starting price"]]);
   assert.equal(adapter.inputTransport, "upload");
   assert.equal(adapter.cancel, undefined);
 });

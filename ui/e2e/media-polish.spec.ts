@@ -102,6 +102,8 @@ test("L11-P4 on a phone the result bar shows the main actions, the rest behind M
 test("L11-P5 with no key anywhere, Automatic offers the cheapest route's key entry", run({ keys: [] }, async (page) => {
   await pick(page, "Video", "bytedance/seedance-2.5");
   await expect(card(page).getByRole("region", { name: "BytePlus ModelArk needs an API key" })).toBeVisible();
+  // The extra field is named in words, not by its config key.
+  await expect(card(page).getByRole("region", { name: "BytePlus ModelArk needs an API key" }).getByLabel("Region", { exact: true })).toBeVisible();
   await card(page).getByRole("button", { name: "Cheapest route: Sume, from $0.098/s. Add its key instead" }).click();
   await expect(card(page).getByRole("region", { name: "Sume needs an API key" })).toBeVisible();
   await expect(card(page).getByRole("radio", { name: /^Sume/ })).toBeChecked();
