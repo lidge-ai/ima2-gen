@@ -37,3 +37,40 @@ test("a definition's own i18n.ko overrides the dictionary", () => {
   assert.equal(d.i18n.ko.label, "캐릭터 시트");
   assert.equal(d.i18n.ko.description, "일관된 캐릭터 레퍼런스 시트를 만듭니다.");
 });
+
+/** Every string in a value, depth first. */
+function strings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(strings);
+  if (value && typeof value === "object") return Object.values(value).flatMap(strings);
+  return [];
+}
+
+test("each slot has a one-sentence description for people, with sources and notes kept out of it", () => {
+  for (const w of WORKFLOWS) {
+    for (const slot of describeWorkflow(w).slots) {
+      const where = w.id + "/" + slot.name;
+      assert.ok(slot.description, where + " has a description");
+      assert.ok(slot.description!.length <= 120, where + " description is one short sentence");
+      assert.equal((slot.description!.match(/[.!?](\s|$)/g) ?? []).length, 1, where + " description is one sentence");
+      assert.doesNotMatch(slot.description!, /https?:|\bMIT\b|Apache|licen[cs]e|read 20\d\d|lib\//, where + " description carries no source, licence or code reference");
+    }
+  }
+});
+
+test("sources are a separate list on the slots that borrow a design, not text", () => {
+  const open = describeWorkflow(WORKFLOWS.find((w) => w.id === "remix-motion-transfer-open")!);
+  const credits = open.slots.find((s) => s.name === "render")?.credits;
+  assert.deepEqual(credits?.map((c) => [c.name, c.license]), [["D3voz/openjutsu", "MIT"], ["SydFloyd/openjutsu", "Apache-2.0"], ["alisson-anjos/Henge", "MIT"]]);
+  assert.ok(credits?.every((c) => c.url?.startsWith("https://github.com/")));
+});
+
+test("the Korean block has every slot description and no English paragraphs anywhere", () => {
+  for (const w of WORKFLOWS) {
+    const d = describeWorkflow(w);
+    for (const slot of d.slots) assert.ok(d.i18n.ko.slotDescriptions?.[slot.name], w.id + "/" + slot.name + " has a Korean description");
+    // Model and product names may stay in Latin script; a run of five or more English words is untranslated prose.
+    const prose = strings(d.i18n.ko).filter((s) => /[A-Za-z][A-Za-z'-]*(?:[ ,]+[A-Za-z][A-Za-z'-]*){4,}/.test(s));
+    assert.deepEqual(prose, [], w.id + " Korean text has no English prose");
+  }
+});

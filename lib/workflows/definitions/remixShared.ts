@@ -56,6 +56,7 @@ export function checkRemixFit(env: PlanEnv, model: string, values: WorkflowValue
 export function renderSlot(withLite: boolean): ModelSlot {
   const slot: ModelSlot = {
     name: "render", label: "Video edit", task: "video-to-video",
+    description: "Edits the source clip with your references, keeping its timing and camera.",
     defaultModel: "bytedance/seedance-2.5",
     alternatives: ["bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini", "xai/grok-imagine-video"],
     rationale: RENDER_EVIDENCE,
