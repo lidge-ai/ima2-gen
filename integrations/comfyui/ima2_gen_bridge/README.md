@@ -85,5 +85,5 @@ registers `Ima2 Generate` alone.
 ## Tests
 
 ```bash
-python3 -B -m unittest discover -s integrations/comfyui/ima2_gen_bridge/tests -t integrations/comfyui
+python3 -B integrations/comfyui/ima2_gen_bridge/tests/test_ima2_job.py
 ```

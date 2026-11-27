@@ -1,7 +1,7 @@
 """Tests for the parts of the pack that need neither ComfyUI nor torch: the ima2 client and the job runner.
 
 A small HTTP server stands in for ima2 on a loopback port. Run from the repository root:
-    python3 -B -m unittest discover -s integrations/comfyui/ima2_gen_bridge/tests -t integrations/comfyui
+    python3 -B integrations/comfyui/ima2_gen_bridge/tests/test_ima2_job.py
 """
 import json
 import os
@@ -11,6 +11,7 @@ import types
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 # The package's legacy node imports numpy, torch and PIL at module load; none is used here.
 for _name in ("numpy", "torch", "PIL"):
     sys.modules.setdefault(_name, types.ModuleType(_name))

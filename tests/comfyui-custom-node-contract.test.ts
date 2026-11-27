@@ -151,7 +151,7 @@ for legacy, expected in models.items():
 
   it("runs a media job end to end against a stand-in ima2: budget check, upload, wait, cancel", () => {
     const python = process.platform === "win32" ? "python" : "python3";
-    const result = spawnSync(python, ["-B", "-m", "unittest", "discover", "-s", join(root, bridgeDir, "tests"), "-t", join(root, "integrations/comfyui")], { encoding: "utf8" });
+    const result = spawnSync(python, ["-B", join(root, bridgeDir, "tests", "test_ima2_job.py")], { encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr || result.error?.message);
     assert.match(result.stderr, /Ran 9 tests/);
   });
