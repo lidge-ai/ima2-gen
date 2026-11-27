@@ -77,3 +77,30 @@ test("on a shared web server, an unpriced step is named before Generate, and a r
   await generate.click();
   await expect(page.getByRole("alert").filter({ hasText: refusal })).toBeVisible();
 });
+
+test("in Korean, Remix reads the server's Korean workflow text: name, field help, options and step names", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
+  await page.goto("/#/remix/remix-object-swap");
+  await expect(page.getByRole("heading", { name: "리믹스: 사물 바꾸기", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /^품질: / }).click();
+  await expect(page.getByRole("dialog", { name: "품질" }).getByRole("button", { name: "표준" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("공연할 사람이나 사물 이미지 1~8장, 순서대로.").first()).toBeAttached();
+  await expect(page.getByText("1-8 images of the people or things")).toHaveCount(0);
+  await expect(page.getByText("Standard", { exact: true })).toHaveCount(0);
+});
+
+test("a step shows the model the server's estimate planned, not the workflow default", async ({ page }) => {
+  // A web instance without the ChatGPT sign-in plans another model for the first frame.
+  await page.route("**/api/workflows/remix-restyle/estimate", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    // The plan step's id need not match the slot; the server names the slot on each step.
+    for (const s of body.estimate.steps) if (s.stepId === "stylize") Object.assign(s, { stepId: "frame-one", model: "openai/gpt-image-2" });
+    for (const s of body.steps) if (s.id === "stylize") Object.assign(s, { id: "frame-one", slot: "stylize", model: "openai/gpt-image-2" });
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto("/#/remix/remix-restyle");
+  await expect(page.getByRole("button", { name: "Restyle the first frame: GPT Image 2" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Restyle the first frame: Seedream 5.5" })).toHaveCount(0);
+});

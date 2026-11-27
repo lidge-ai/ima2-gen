@@ -29,3 +29,26 @@ test("every maker is shown by logo or by its official name", async ({ page }) =>
     await expect(strip.getByTitle(name)).toBeVisible();
   }
 });
+
+test("a long per-token price never runs into the key state, in Korean too", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
+  await page.route("**/api/media/catalog*", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const m of body.models)
+      for (const r of m.routes) if (r.adapter === "byteplus") r.pricing = [{ unit: "1k-tokens", usd: 0.0057, source: "https://example.test", checkedAt: "2026-11-27" }];
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto("/#/models");
+  const lines = page.locator(".route-line");
+  await expect(lines.first()).toBeVisible();
+  const overlaps = await lines.evaluateAll((els) =>
+    els.filter((el) => {
+      const price = el.querySelector(".route-line-price")?.getBoundingClientRect();
+      const key = el.querySelector(".key-state")?.getBoundingClientRect();
+      return price && key && price.right > key.left - 4;
+    }).length,
+  );
+  expect(overlaps).toBe(0);
+  await expect(page.getByText(/\$0\.0057\/1천 토큰/).first()).toBeVisible();
+});

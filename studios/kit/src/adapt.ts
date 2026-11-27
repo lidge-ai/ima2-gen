@@ -129,6 +129,8 @@ export function fromWireJob(wire: WireJob): Job {
   };
   const provider = str("adapter");
   if (provider) job.provider = provider;
+  // A finished job is complete whether its progress came from events or only from this record.
+  if (status === "succeeded") job.progress = 1;
   if (status === "failed" && wire.errorCode) {
     // The live "error" event carries the category; a record read back after a reload only has it
     // when the server stored it in meta. Without it the card falls back to the generic message.

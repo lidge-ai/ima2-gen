@@ -1,6 +1,5 @@
 import type { HistoryItem, WorkflowDef } from "@ima2/studio-kit";
 import { messages, tr, useT } from "../../i18n.ts";
-import { workflowText } from "../workflow/workflowLabels.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile } from "../../studio/handoff.ts";
 import { historyWorkflow } from "../../studio/historyWorkflow.ts";
@@ -9,6 +8,7 @@ import { ModelName } from "../../ui/ModelName.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
+import { useWorkflows } from "../../studio/workflows.ts";
 import "../../styles/director.css";
 
 const M = messages(
@@ -27,7 +27,7 @@ function useAttachElement(def: WorkflowDef, form: WorkflowForm) {
     );
     const input = candidates.find((entry) => pattern.test(entry.name) || pattern.test(entry.label)) ?? candidates[0];
     if (!input) {
-      form.setError(tr(M, "noAttach", { workflow: workflowText(def.id, "label", def.label), kind: tr(M, name) }));
+      form.setError(tr(M, "noAttach", { workflow: def.label, kind: tr(M, name) }));
       return;
     }
     try {
@@ -98,7 +98,7 @@ function DirectorSidebar({
       <nav aria-label={t("workflows")}>
         {workflows.map((item) => (
           <a key={item.id} href={`#/director/${item.id}`} aria-current={def.id === item.id ? "page" : undefined}>
-            {workflowText(item.id, "label", item.label)}
+            {item.label}
           </a>
         ))}
       </nav>
@@ -115,8 +115,8 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
       <DirectorSidebar def={def} workflows={workflows} form={form} />
       <main className="director-main">
         <div className="director-heading">
-          <h1>{workflowText(def.id, "label", def.label)}</h1>
-          <p className="muted">{workflowText(def.id, "description", def.description)}</p>
+          <h1>{def.label}</h1>
+          <p className="muted">{def.description}</p>
         </div>
         <form
           className="director-form"
@@ -149,7 +149,7 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
 
 export function DirectorPage({ workflow }: { workflow?: string }) {
   const t = useT(M);
-  const all = useStudio((s) => s.workflows);
+  const all = useWorkflows();
   const loaded = useStudio((s) => s.workflowsLoaded);
   const error = useStudio((s) => s.workflowsError);
   const workflows = all

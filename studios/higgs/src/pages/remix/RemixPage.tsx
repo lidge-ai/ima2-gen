@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { WorkflowDef } from "@ima2/studio-kit";
 import { messages, tr, useT } from "../../i18n.ts";
-import { workflowText } from "../workflow/workflowLabels.ts";
 import { PRESETS, type Preset } from "../../data/presets.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { handOffFile, takeHandOff } from "../../studio/handoff.ts";
@@ -10,6 +9,7 @@ import { Showcase } from "../../ui/Showcase.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
+import { useWorkflows } from "../../studio/workflows.ts";
 import "../../styles/remix.css";
 
 const M = messages(
@@ -232,8 +232,8 @@ function RemixPanel({
       </div>
       <div className="panel-body">
         <div className="workflow-card">
-          <h2>{workflowText(def.id, "label", def.label)}</h2>
-          <p className="muted">{workflowText(def.id, "description", def.description)}</p>
+          <h2>{def.label}</h2>
+          <p className="muted">{def.description}</p>
         </div>
         <RemixModes def={def} workflows={workflows} />
         {def.inputs.map((input) => (
@@ -322,7 +322,7 @@ function RemixWorkspace({ def, workflows }: { def: WorkflowDef; workflows: reado
 
 export function RemixPage({ workflow }: { workflow?: string }) {
   const t = useT(M);
-  const all = useStudio((s) => s.workflows);
+  const all = useWorkflows();
   const loaded = useStudio((s) => s.workflowsLoaded);
   const error = useStudio((s) => s.workflowsError);
   const workflows = all.filter((item) => item.family === "remix");

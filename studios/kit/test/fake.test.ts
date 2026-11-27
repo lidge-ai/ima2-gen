@@ -143,6 +143,17 @@ test("upload, submit, watch and download, with idempotent resubmit", async () =>
   });
 });
 
+test("watching a job that already finished still returns its saved outputs", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client, url }) => {
+    const accepted = await client.media.submit({ ...image, prompt: "done before watching" });
+    for (let i = 0; i < 100 && (await client.media.job(accepted.jobId)).status !== "succeeded"; i += 1) await new Promise((r) => setTimeout(r, 20));
+    const done = await client.watchJob(accepted.jobId);
+    assert.equal(done.status, "succeeded");
+    assert.ok(done.outputs.length > 0, "a finished job has outputs");
+    assert.equal((await fetch(url + done.outputs[0]!.url)).headers.get("content-type"), "image/png");
+  });
+});
+
 test("history pages, favorites and deletes", async () => {
   await withServer({ timeScale: 0.02 }, async ({ client }) => {
     for (const prompt of ["one", "two"]) await client.watchJob((await client.media.submit({ ...image, prompt })).jobId);
