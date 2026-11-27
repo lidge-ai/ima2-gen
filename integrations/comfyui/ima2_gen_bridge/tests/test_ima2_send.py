@@ -119,16 +119,10 @@ class SendTest(unittest.TestCase):
         self.assertEqual(ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN, replace=True)["ok"], True)
         self.assertEqual(fake.calls[-1][2]["replace"], True)
 
-    def test_what_the_server_lacks_comes_back_with_a_registration_that_went_through(self):
+    def test_what_the_server_lacks_is_said_one_line_each(self):
         report = dict(READY, missingNodes=[{"classType": "WanAnimate", "nodes": ["12"]}],
                       missingChoices=[{"node": "4", "classType": "UNETLoader", "input": "unet_name", "value": "wan.safetensors", "model": True}], paidNodes=["KlingNode"])
-        fake, client = self.serve({"candidates": [candidate("prompt", "6", "text"), candidate("output", "9", "")], "mediaSlots": [], "server": report})
-        fake_answer_server = report
-
-        class Reporting(Handler):
-            pass
-        result = ima2_send.describe_problems(fake_answer_server)
-        self.assertEqual(result, ["node type not installed: WanAnimate", "model file not on the server: wan.safetensors", "paid partner nodes (ComfyUI may charge your Comfy account): KlingNode"])
+        self.assertEqual(ima2_send.describe_problems(report), ["node type not installed: WanAnimate", "model file not on the server: wan.safetensors", "paid partner nodes (ComfyUI may charge your Comfy account): KlingNode"])
         self.assertEqual(ima2_send.describe_problems({"origin": ORIGIN, "reachable": False, "reason": "refused"}), ["ComfyUI at " + ORIGIN + " did not answer ima2: refused"])
         self.assertEqual(ima2_send.describe_problems(None), [])
 
