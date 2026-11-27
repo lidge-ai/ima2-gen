@@ -157,7 +157,7 @@ function estimate(fixture: MediaFixture, body: Record<string, unknown>) {
   const route = model?.routes.find((entry) => entry.adapter === body.adapter) ?? model?.routes[0];
   if (!model || !route) return { status: 404, json: { ok: false, code: "MEDIA_MODEL_UNKNOWN", error: "Unknown media model", category: "not-found", retryable: false } };
   if (ADAPTERS[route.adapter]!.route === "local") {
-    return { status: 200, json: { model: model.id, adapter: route.adapter, route: "local", hasKey: true, unit: "request", quantity: 1, usd: 0, prices: [],
+    return { status: 200, json: { model: model.id, adapter: route.adapter, route: "local", hasKey: true, unit: "request", quantity: 1, usd: 0, prices: [], quote: { state: "local" },
       local: { expectedSec: null, basis: "no runs yet", mayBill: false }, note: "runs locally; no provider charge" } };
   }
   const pricing = route.pricing ?? [];
