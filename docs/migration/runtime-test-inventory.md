@@ -65,6 +65,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/comfy-provider-contract.test.ts`
 - `tests/comfy-remote-access.test.ts`
 - `tests/comfy-routes-contract.test.ts`
+- `tests/comfy-slot-detect.test.ts`
 - `tests/comfy-video-adapter.test.ts`
 - `tests/comfy-workflow-store.test.ts`
 - `tests/comfyui-custom-node-contract.test.ts`
@@ -161,6 +162,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/media-aggregator-replicate.test.ts`
 - `tests/media-aggregator-sume.test.ts`
 - `tests/media-aggregator-wavespeed.test.ts`
+- `tests/media-audio-forms.test.ts`
 - `tests/media-billed-length-route.test.ts`
 - `tests/media-direct-alibaba.test.ts`
 - `tests/media-direct-bfl.test.ts`

@@ -110,6 +110,11 @@ export interface MediaModelSpec {
   tasks: readonly MediaTask[];
   params: {
     durationsSec?: readonly number[];
+    /**
+     * A free length in seconds instead of a list (audio). Informational for forms: the adapter checks the value.
+     * tasks limits it to some of the spec's tasks; required means the task cannot run without a length.
+     */
+    durationRange?: { minSec: number; maxSec: number; tasks?: readonly MediaTask[]; required?: boolean };
     resolutions?: readonly string[];
     aspectRatios?: readonly string[];
     /** Quality tiers the route accepts and prices separately ("low", "medium", "high"), in the provider's spelling. */

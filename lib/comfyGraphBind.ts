@@ -37,7 +37,12 @@ export function parseApiGraph(raw: unknown): ComfyGraph {
   if (Array.isArray((raw as { nodes?: unknown }).nodes)) {
     throw new ComfyWorkflowError(
       COMFY_WORKFLOW_ERROR.GRAPH_INVALID,
-      "This is a UI workflow save. Export it again with Workflow > Export (API) and register that file.",
+      "This file is ComfyUI's editor format (nodes and links). ComfyUI itself only runs the API format, "
+        + "and nothing outside its editor can convert one into the other reliably. "
+        + "In ComfyUI, open the workflow and choose Workflow > Export (API), then add that file here. "
+        + "A PNG that ComfyUI saved also works: it carries the API format inside.",
+      400,
+      "ui-format",
     );
   }
   const graph: ComfyGraph = {};
@@ -72,6 +77,8 @@ export interface BindCandidate {
   title?: string;
   /** False when several nodes match this field and a human must choose. */
   unambiguous: boolean;
+  /** Other inputs holding the same value, bound together with this one. */
+  also?: Array<{ node: string; input: string }>;
 }
 
 /** A node input that is wiring, not a value: ["nodeId", slotIndex]. */
@@ -150,7 +157,7 @@ export function unambiguousBindings(candidates: BindCandidate[]): Partial<ComfyW
   for (const candidate of candidates) {
     if (!candidate.unambiguous) continue;
     if (candidate.field === "output") bind.output = { node: candidate.node };
-    else bind[candidate.field] = { node: candidate.node, input: candidate.input };
+    else bind[candidate.field] = { node: candidate.node, input: candidate.input, ...(candidate.also ? { also: candidate.also } : {}) };
   }
   return bind;
 }
@@ -164,8 +171,9 @@ export function deriveParams(graph: ComfyGraph, bind: ComfyWorkflowBindings): Co
   const bound = new Set<string>();
   for (const value of Object.values(bind)) {
     if (!value) continue;
-    const entry = value as { node: string; input?: string };
+    const entry = value as { node: string; input?: string; also?: Array<{ node: string; input: string }> };
     if (entry.input) bound.add(`${entry.node}.${entry.input}`);
+    for (const other of entry.also ?? []) bound.add(`${other.node}.${other.input}`);
   }
   const params: ComfyWorkflowParam[] = [];
   for (const [nodeId, node] of Object.entries(graph)) {
@@ -213,7 +221,7 @@ function assign(graph: ComfyGraph, binding: ComfyBinding | undefined, value: unk
   node.inputs[binding.input] = value;
 }
 
-type ComfyBinding = { node: string; input: string };
+type ComfyBinding = { node: string; input: string; also?: Array<{ node: string; input: string }> };
 
 /**
  * Returns a DEEP COPY with values injected.
@@ -235,8 +243,10 @@ export function bindGraph(
   const written = new Set<string>();
   const put = (binding: ComfyBinding | undefined, value: unknown, label: string) => {
     if (!binding || value === undefined) return;
-    assign(copy, binding, value, label);
-    written.add(`${binding.node}.${binding.input}`);
+    for (const target of [binding, ...(binding.also ?? [])]) {
+      assign(copy, target, value, label);
+      written.add(`${target.node}.${target.input}`);
+    }
   };
   put(bind.prompt, values.prompt, "prompt");
   put(bind.negativePrompt, values.negativePrompt, "negative prompt");

@@ -64,6 +64,16 @@ interface ComfyCandidate {
   unambiguous?: boolean;
   classType?: string;
   title?: string;
+  also?: Array<{ node: string; input: string }>;
+}
+
+interface ComfyServerReport {
+  origin: string;
+  reachable: boolean;
+  reason?: string;
+  missingNodes?: Array<{ classType: string; nodes: string[] }>;
+  missingChoices?: Array<{ node: string; classType: string; input: string; value: string; model: boolean }>;
+  paidNodes?: string[];
 }
 
 interface ComfyInspectResponse {
@@ -71,6 +81,7 @@ interface ComfyInspectResponse {
   candidates?: ComfyCandidate[];
   mediaKind?: string;
   needsConfirmation?: boolean;
+  server?: ComfyServerReport;
 }
 
 interface ComfyWorkflowSummary {
@@ -179,12 +190,31 @@ async function workflowLs(args: ParsedArgs): Promise<void> {
   }
 }
 
+/** What the workflow needs that its server lacks, in the order a person would fix it. */
+function printServerReport(server: ComfyServerReport | undefined): void {
+  if (!server) return;
+  if (!server.reachable) {
+    out(color.yellow(`  ${server.origin} did not answer (${server.reason ?? "unreachable"}); slots were proposed from node names only`));
+    return;
+  }
+  for (const node of server.missingNodes ?? []) {
+    out(color.yellow(`  missing node type ${node.classType} (node ${node.nodes.join(", ")}): install the custom node pack that provides it on ${server.origin}`));
+  }
+  for (const choice of server.missingChoices ?? []) {
+    const what = choice.model ? `model file '${choice.value}' is not on the server` : `'${choice.value}' is not a choice the server offers`;
+    out(color.yellow(`  node ${choice.node} (${choice.classType}) ${choice.input}: ${what}`));
+  }
+  if ((server.paidNodes ?? []).length > 0) {
+    out(color.yellow(`  paid partner nodes: ${server.paidNodes!.join(", ")}. ComfyUI may charge your Comfy account when these run.`));
+  }
+}
+
 async function workflowInspect(args: ParsedArgs): Promise<void> {
   const file = args.positional[0];
   if (!file) die(2, "workflow file required");
   const base = await serverBase(args.server);
   const body = await readWorkflowFile(file);
-  const resp = await request<ComfyInspectResponse>(base, "/api/comfy/inspect", { method: "POST", body })
+  const resp = await request<ComfyInspectResponse>(base, "/api/comfy/inspect", { method: "POST", body: { ...body, ...(args.origin ? { origin: args.origin } : {}) } })
     .catch((e: unknown) => {
       const err = e as { message?: string; code?: string };
       die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
@@ -194,9 +224,11 @@ async function workflowInspect(args: ParsedArgs): Promise<void> {
   for (const candidate of resp.candidates ?? []) {
     const mark = candidate.unambiguous ? color.green("auto") : color.yellow("pick");
     const target = candidate.input ? `${candidate.node}.${candidate.input}` : candidate.node;
-    out(`  ${mark}  ${candidate.field.padEnd(15)} ${target.padEnd(12)} ${candidate.classType}${candidate.title ? `  "${candidate.title}"` : ""}`);
+    const also = (candidate.also ?? []).map((slot) => `${slot.node}.${slot.input}`).join(", ");
+    out(`  ${mark}  ${candidate.field.padEnd(15)} ${target.padEnd(12)} ${candidate.classType}${candidate.title ? `  "${candidate.title}"` : ""}${also ? `  (same value: ${also})` : ""}`);
   }
   out(`  kind             ${resp.mediaKind ?? "image"}`);
+  printServerReport(resp.server);
   if (resp.needsConfirmation) {
     out("");
     out("Some fields have several candidates; pass them explicitly when adding, e.g. --prompt 6.text");
@@ -210,7 +242,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
   const base = await serverBase(args.server);
   const source = await readWorkflowFile(file);
 
-  const inspected = await request<ComfyInspectResponse>(base, "/api/comfy/inspect", { method: "POST", body: source })
+  const inspected = await request<ComfyInspectResponse>(base, "/api/comfy/inspect", { method: "POST", body: { ...source, ...(args.origin ? { origin: args.origin } : {}) } })
     .catch((e: unknown) => {
       const err = e as { message?: string; code?: string };
       die(exitCodeForError(e), `${err.message}${err.code ? ` (${err.code})` : ""}`);
@@ -236,7 +268,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
       if (candidate.unambiguous) bind.output = { node: candidate.node };
       continue;
     }
-    if (candidate.unambiguous) bind[candidate.field] = { node: candidate.node, input: candidate.input };
+    if (candidate.unambiguous) bind[candidate.field] = { node: candidate.node, input: candidate.input, ...(candidate.also ? { also: candidate.also } : {}) };
   }
   for (const [field, value] of Object.entries(explicit)) {
     if (value) bind[field] = value;
@@ -270,7 +302,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
     die(2, "a prompt binding and an output node are required (see: ima2 comfy workflow inspect <file>)");
   }
 
-  const resp = await request<{ workflow: ComfyWorkflowSummary }>(base, "/api/comfy/workflows", {
+  const resp = await request<{ workflow: ComfyWorkflowSummary; server?: ComfyServerReport }>(base, "/api/comfy/workflows", {
     method: "POST",
     body: {
       ...source,
@@ -287,6 +319,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
   });
   if (args.json) { json(resp); return; }
   out(color.green("✓ ") + `${resp.workflow.id} -> ${resp.workflow.origin}`);
+  printServerReport(resp.server);
   if (resp.workflow.mediaKind === "video") {
     out("  catalog-only: ComfyUI video execution is not supported yet");
   } else {
