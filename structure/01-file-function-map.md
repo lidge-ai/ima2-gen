@@ -100,7 +100,7 @@ routes/
 | `routes/metadata.ts` | 81 | `/api/metadata/read` for embedded XMP image metadata extraction |
 | `routes/annotations.ts` | 119 | `GET/PUT/DELETE /api/annotations/:filename` for canvas annotation overlays |
 | `routes/canvasVersions.ts` | 100 | `POST/PUT /api/canvas-versions` for canvas version snapshots |
-| `routes/comfy.ts` | 295 | Comfy workflow inspect/register/list/delete/probe plus `POST /api/comfy/export-image`; media-kind inference and mismatch validation |
+| `routes/comfy.ts` | 315 | Comfy workflow inspect/register/list/delete/probe plus `POST /api/comfy/export-image`; media-kind inference and mismatch validation |
 | `routes/models.ts` | 549 | Canonical runtime model catalog; Comfy image/video workflow partition and model-level execution locks |
 | `routes/prompts.ts` | 429 | Prompt library CRUD, favorites, import/export, and folder management |
 | `routes/promptImport.ts` | 380 | Prompt library preview/commit import API plus PR2 curated search, PR3 GitHub folder browse/preview, and PR4 discovery review endpoints |
@@ -146,7 +146,7 @@ routes/
 | `bin/commands/annotate.ts` | 121 | CLI annotation read/write/delete client |
 | `bin/commands/canvas-versions.ts` | 82 | CLI canvas version list/save client |
 | `bin/commands/metadata.ts` | 51 | CLI image metadata read client |
-| `bin/commands/comfy.ts` | 494 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
+| `bin/commands/comfy.ts` | 497 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
 | `bin/commands/models.ts` | 101 | Human/JSON model catalog with lane/kind/id/label/lane status/model lock status/capabilities |
 | `bin/lib/modelResolver.ts` | 208 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
 | `bin/commands/cardnews.ts` | 251 | CLI dev-gated card-news client |

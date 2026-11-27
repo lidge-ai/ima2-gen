@@ -76,6 +76,23 @@ saved in ima2. The estimate comes from the provider's published price list; the
 real bill can differ. `max_usd` is a check before the run, not a spending cap on
 your account.
 
+## Send a workflow to ima2
+
+`Workflow > Send workflow to ima2` registers the workflow that is open in the
+editor as a model in ima2: `comfy/<name>`. ima2 then runs it on this ComfyUI from
+its own screens, CLI and tools, with the prompt and files you give it there.
+
+The editor converts the workflow to the API format and ima2 works out where the
+prompt goes, which node saves the result and which file inputs it takes. When
+that is clear it is registered at once. When something can go more than one way
+(two text encoders that could each be the prompt, two image inputs) nothing is
+registered and the message lists what is undecided: export the workflow with
+`Workflow > Export (API)` and add that file in ima2 Settings, where each one
+can be chosen. A workflow that itself uses ima2 nodes is refused, because ima2
+would end up calling itself.
+
+Sending registers a workflow; it generates nothing and involves no key.
+
 ### Ima2 Generate
 
 The original node is still here under the same id, so saved workflows keep

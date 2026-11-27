@@ -5,11 +5,13 @@ import { probeComfyOrigins } from "../lib/comfyImageAdapter.js";
 import { deriveParams, parseApiGraph } from "../lib/comfyGraphBind.js";
 import { describeParams } from "../lib/comfy/detect.js";
 import { inspectComfyWorkflow } from "../lib/comfy/inspect.js";
+import { ComfyResultGraphError, resultGraph } from "../lib/comfy/resultGraph.js";
 import { syncLocalCatalog, workflowSpec } from "../lib/comfy/localCatalog.js";
 import { readMediaSlots, withClassicReference } from "../lib/comfy/register.js";
 import { extractComfyApiGraph, isPngBuffer } from "../lib/comfyPngWorkflow.js";
 import {
   deleteWorkflow,
+  getWorkflow,
   isComfyWorkflowError,
   listWorkflows,
   putWorkflow,
@@ -266,6 +268,24 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       await refreshWorkflows();
       return res.json({ ok: true, id: req.params.id });
     } catch (error) {
+      return failWorkflow(res, error);
+    }
+  });
+
+  /**
+   * A saved result as a ComfyUI graph: the one ComfyUI ran when the result came from ComfyUI,
+   * otherwise a graph for the ima2 node pack that repeats the request. Read-only.
+   */
+  app.get("/api/comfy/result-graph", async (req: Request, res: Response) => {
+    try {
+      const access = await loadAccess();
+      const result = await resultGraph({
+        filename: req.query.filename, generatedDir: ctx.config.storage.generatedDir, timeoutMs: schemaTimeoutMs,
+        findWorkflow: getWorkflow, resolveTarget: async (origin) => access.tryTarget(origin),
+      });
+      return res.json({ ok: true, ...result });
+    } catch (error) {
+      if (error instanceof ComfyResultGraphError) return res.status(error.status).json(errorPayload(error.code, error.message));
       return failWorkflow(res, error);
     }
   });

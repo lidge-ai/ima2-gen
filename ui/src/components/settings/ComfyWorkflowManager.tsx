@@ -9,11 +9,15 @@ import {
   type ComfyBindField,
   type ComfyInspectResult,
   type ComfyMediaKind,
-  type ComfyWorkflowBindings,
+  type ComfyServerReport,
   type ComfyWorkflowRecord,
 } from "../../lib/api-comfy";
+import { buildBind, isEditorFormat, presetSlotRoles, unassignedSlots, workflowMediaModel } from "../../lib/comfyRegistration";
 import { useI18n } from "../../i18n";
 import { refreshLaneCatalog } from "../../lib/laneCatalog";
+import { ComfyRemoteServers } from "./ComfyRemoteServers";
+import { ComfyEditorFormatHelp, ComfyFileSlots, ComfyServerReportView } from "./ComfyWorkflowReport";
+import { ComfyWorkflowTable } from "./ComfyWorkflowTable";
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
@@ -35,6 +39,8 @@ async function readWorkflowFile(file: File): Promise<{ graph?: unknown; pngBase6
 }
 
 const BIND_FIELDS: ComfyBindField[] = ["prompt", "negativePrompt", "width", "height", "seed", "refImage", "output"];
+type Source = { graph?: unknown; pngBase64?: string };
+type Registered = { model: string; task?: string; server?: ComfyServerReport };
 
 function candidateKey(candidate: ComfyBindCandidate): string {
   return candidate.input ? `${candidate.node}.${candidate.input}` : candidate.node;
@@ -45,13 +51,16 @@ export function ComfyWorkflowManager() {
   const [workflows, setWorkflows] = useState<ComfyWorkflowRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [inspection, setInspection] = useState<ComfyInspectResult | null>(null);
-  const [source, setSource] = useState<{ graph?: unknown; pngBase64?: string } | null>(null);
+  const [source, setSource] = useState<Source | null>(null);
+  const [editorFormat, setEditorFormat] = useState(false);
   const [selection, setSelection] = useState<Partial<Record<ComfyBindField, string>>>({});
+  const [slotRoles, setSlotRoles] = useState<Record<string, string>>({});
   const [workflowId, setWorkflowId] = useState("");
   const [label, setLabel] = useState("");
   const [mediaKind, setMediaKind] = useState<ComfyMediaKind>("image");
   const [origin, setOrigin] = useState("http://127.0.0.1:8188");
   const [originState, setOriginState] = useState<{ kind: "idle" | "ok" | "unreachable" | "invalid"; detail?: string }>({ kind: "idle" });
+  const [registered, setRegistered] = useState<Registered | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -70,22 +79,37 @@ export function ComfyWorkflowManager() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  /** Asks the server the workflow will run on, so slots and the missing-node report describe that server. */
+  const inspect = async (parsed: Source, at: string) => {
+    const result = await inspectComfyWorkflow(parsed, at);
+    setInspection(result);
+    setMediaKind(result.mediaKind ?? "image");
+    // Unambiguous candidates are preselected; ambiguous ones stay empty on
+    // purpose so the user has to look at them.
+    const preset: Partial<Record<ComfyBindField, string>> = {};
+    for (const candidate of result.candidates) {
+      if (candidate.unambiguous) preset[candidate.field] = candidateKey(candidate);
+    }
+    setSelection(preset);
+    setSlotRoles(presetSlotRoles(result.mediaSlots ?? []));
+  };
+
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setError(null);
+    setRegistered(null);
+    setEditorFormat(false);
     try {
       const parsed = await readWorkflowFile(file);
-      const result = await inspectComfyWorkflow(parsed);
-      setSource(parsed);
-      setInspection(result);
-      setMediaKind(result.mediaKind ?? "image");
-      // Unambiguous candidates are preselected; ambiguous ones stay empty on
-      // purpose so the user has to look at them.
-      const preset: Partial<Record<ComfyBindField, string>> = {};
-      for (const candidate of result.candidates) {
-        if (candidate.unambiguous) preset[candidate.field] = candidateKey(candidate);
+      // The editor format is turned away here with the way to export the right one, not after a round trip.
+      if (isEditorFormat(parsed.graph)) {
+        setInspection(null);
+        setSource(null);
+        setEditorFormat(true);
+        return;
       }
-      setSelection(preset);
+      await inspect(parsed, origin);
+      setSource(parsed);
       if (!workflowId) setWorkflowId(file.name.replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-").slice(0, 64));
     } catch (cause) {
       setInspection(null);
@@ -107,43 +131,45 @@ export function ComfyWorkflowManager() {
       setOriginState(response.health.ok
         ? { kind: "ok", ...(response.health.version ? { detail: response.health.version } : {}) }
         : { kind: "unreachable" });
+      // A file already chosen was read against the previous address: read it again against this one.
+      if (source) await inspect(source, origin);
     } catch (cause) {
       setOriginState({ kind: "invalid", detail: cause instanceof Error ? cause.message : undefined });
     }
   };
 
+  const slots = inspection?.mediaSlots ?? [];
   const unresolved = (inspection?.candidates ?? [])
     .filter((candidate) => !candidate.unambiguous)
     .map((candidate) => candidate.field)
     .filter((field, index, all) => all.indexOf(field) === index)
     .filter((field) => !selection[field]);
+  const slotsWaiting = unassignedSlots(slots, slotRoles).length;
 
-  const canSubmit = Boolean(inspection && workflowId && selection.prompt && selection.output && unresolved.length === 0 && !busy);
+  const canSubmit = Boolean(inspection && workflowId && selection.prompt && selection.output && unresolved.length === 0 && slotsWaiting === 0 && !busy);
 
   const submit = async () => {
     if (!canSubmit || !source) return;
     setBusy(true);
     setError(null);
     try {
-      const bind: Partial<ComfyWorkflowBindings> = {};
-      for (const field of BIND_FIELDS) {
-        const value = selection[field];
-        if (!value) continue;
-        if (field === "output") { bind.output = { node: value }; continue; }
-        const dot = value.indexOf(".");
-        bind[field] = { node: value.slice(0, dot), input: value.slice(dot + 1) };
-      }
-      await createComfyWorkflow({
+      const response = await createComfyWorkflow({
         ...source,
         id: workflowId,
         ...(label ? { label } : {}),
         origin,
         mediaKind,
-        bind: bind as ComfyWorkflowBindings,
+        bind: buildBind(selection, slots, slotRoles),
+      });
+      setRegistered({
+        model: response.media?.model ?? workflowMediaModel(response.workflow?.id ?? workflowId),
+        ...(response.media?.task ? { task: response.media.task } : {}),
+        ...(response.server ? { server: response.server } : {}),
       });
       setInspection(null);
       setSource(null);
       setSelection({});
+      setSlotRoles({});
       setWorkflowId("");
       setLabel("");
       setMediaKind("image");
@@ -158,6 +184,7 @@ export function ComfyWorkflowManager() {
 
   const remove = async (id: string) => {
     setBusy(true);
+    setRegistered(null);
     try {
       await deleteComfyWorkflow(id);
       await Promise.all([refresh(), refreshLaneCatalog()]);
@@ -169,76 +196,27 @@ export function ComfyWorkflowManager() {
   };
 
   return (
-    <div aria-labelledby="comfy-workflow-manager-title">
+    <div className="comfy-manager" aria-labelledby="comfy-workflow-manager-title">
       <article className="settings-row">
         <div className="settings-row-main">
           <div className="section-title" id="comfy-workflow-manager-title">{t("comfy.workflowsTitle")}</div>
-
           {loading ? <div className="muted">{t("comfy.loading")}</div> : null}
-
-          {!loading && workflows.length === 0 ? (
-            <div className="muted">{t("comfy.empty")}</div>
+          {!loading && workflows.length === 0 ? <div className="muted">{t("comfy.empty")}</div> : null}
+          {workflows.length > 0 ? <ComfyWorkflowTable workflows={workflows} busy={busy} onRemove={(id) => void remove(id)} /> : null}
+          {registered ? (
+            <div className="comfy-report comfy-report--ok" role="status">
+              <strong>{t("comfy.registered", { model: registered.model })}</strong>
+              {registered.task ? <p className="mono">ima2 media run --model {registered.model} --task {registered.task} --prompt "…"</p> : null}
+            </div>
           ) : null}
-
-          {workflows.length > 0 ? (
-            <table className="comfy-workflow-table">
-              <thead>
-                <tr>
-                  <th scope="col">{t("comfy.colId")}</th>
-                  <th scope="col">{t("comfy.colKind")}</th>
-                  <th scope="col">{t("comfy.colOrigin")}</th>
-                  <th scope="col">{t("comfy.colStatus")}</th>
-                  <th scope="col"><span className="sr-only">{t("comfy.colActions")}</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {workflows.map((workflow) => {
-                  const live = workflow.health?.ok === true;
-                  const statusId = `comfy-status-${workflow.id}`;
-                  return (
-                    <tr key={workflow.id}>
-                      <td>{workflow.label || workflow.id}</td>
-                      <td>{t(workflow.mediaKind === "video" ? "comfy.kindVideo" : "comfy.kindImage")}</td>
-                      <td className="mono">{workflow.origin}</td>
-                      {/* Status is never encoded by colour alone. */}
-                      <td id={statusId}>
-                        <span className={live ? "status-ok" : "status-warn"}>
-                          {live ? t("comfy.statusReady") : t("comfy.statusOffline")}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          onClick={() => void remove(workflow.id)}
-                          disabled={busy}
-                          aria-describedby={statusId}
-                        >
-                          {t("comfy.remove")}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : null}
+          {registered?.server && (!registered.server.reachable || registered.server.missingNodes.length + registered.server.missingChoices.length + registered.server.paidNodes.length > 0)
+            ? <ComfyServerReportView report={registered.server} /> : null}
         </div>
       </article>
 
       <article className="settings-row">
         <div className="settings-row-main">
           <div className="section-title">{t("comfy.addTitle")}</div>
-
-          <div className="comfy-field">
-            <label htmlFor="comfy-file">{t("comfy.fileLabel")}</label>
-            <input
-              id="comfy-file"
-              ref={fileRef}
-              type="file"
-              accept=".json,.png,application/json,image/png"
-              onChange={(event) => void onFile(event.target.files?.[0])}
-            />
-          </div>
 
           <div className="comfy-field">
             <label htmlFor="comfy-origin">{t("comfy.originLabel")}</label>
@@ -256,8 +234,23 @@ export function ComfyWorkflowManager() {
           {originState.kind === "unreachable" ? <div className="status-warn">{t("comfy.originUnreachable")}</div> : null}
           {originState.kind === "invalid" ? <div className="status-err">{t("comfy.originInvalid")}</div> : null}
 
+          <div className="comfy-field">
+            <label htmlFor="comfy-file">{t("comfy.fileLabel")}</label>
+            <input
+              id="comfy-file"
+              ref={fileRef}
+              type="file"
+              accept=".json,.png,application/json,image/png"
+              onChange={(event) => void onFile(event.target.files?.[0])}
+            />
+          </div>
+
+          {editorFormat ? <ComfyEditorFormatHelp /> : null}
+
           {inspection ? (
             <>
+              <ComfyServerReportView report={inspection.server} />
+
               <div className="comfy-field">
                 <label htmlFor="comfy-id">{t("comfy.idLabel")}</label>
                 <input id="comfy-id" value={workflowId} onChange={(event) => setWorkflowId(event.target.value)} spellCheck={false} />
@@ -277,6 +270,7 @@ export function ComfyWorkflowManager() {
                 >
                   <option value="image">{t("comfy.kindImage")}</option>
                   <option value="video">{t("comfy.kindVideo")}</option>
+                  <option value="audio">{t("comfy.kindAudio")}</option>
                 </select>
                 {mediaKind === "video" ? <div className="muted">{t("comfy.videoKindHint")}</div> : null}
               </div>
@@ -310,8 +304,11 @@ export function ComfyWorkflowManager() {
                   </div>
                 );
               })}
+              {!selection.prompt ? <div className="muted">{t("comfy.promptRequired")}</div> : null}
 
-              <button type="button" onClick={() => void submit()} disabled={!canSubmit}>
+              <ComfyFileSlots slots={slots} roles={slotRoles} onChange={(key, role) => setSlotRoles((prev) => ({ ...prev, [key]: role }))} />
+
+              <button type="button" className="settings-action-btn" onClick={() => void submit()} disabled={!canSubmit}>
                 {t("comfy.register")}
               </button>
             </>
@@ -320,6 +317,13 @@ export function ComfyWorkflowManager() {
           {error ? <div className="status-err" role="alert">{error}</div> : null}
         </div>
       </article>
+
+      <article className="settings-row">
+        <div className="settings-row-main">
+          <ComfyRemoteServers />
+        </div>
+      </article>
     </div>
   );
 }
+
