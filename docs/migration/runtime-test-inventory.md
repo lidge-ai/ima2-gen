@@ -455,6 +455,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/comfy-cli-contract.test.ts`
 - `tests/comfy-display.test.ts`
 - `tests/comfy-export-ui-contract.test.ts`
+- `tests/comfy-registration-ui.test.ts`
 - `tests/comfy-ui-contract.test.ts`
 - `tests/composer-feedback-contract.test.ts`
 - `tests/composer-mention-parity-contract.test.ts`
