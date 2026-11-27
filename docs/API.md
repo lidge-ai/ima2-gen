@@ -1205,6 +1205,7 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `…/api/prompts/import/…` | `ima2 prompt import sources/refresh/curated/discovery/folder` |
 | `…/api/cardnews/…` (gated on `features.cardNews`) | `ima2 cardnews …` |
 | `POST /api/comfy/export-image` | `ima2 comfy export` |
+| `GET /api/comfy/result-graph?filename=` | `ima2 comfy graph` |
 | `GET /api/comfy/workflows` | `ima2 comfy workflow ls` |
 | `POST /api/comfy/workflows` | `ima2 comfy workflow add` |
 | `DELETE /api/comfy/workflows/:id` | `ima2 comfy workflow rm` |

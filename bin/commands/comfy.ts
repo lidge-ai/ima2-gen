@@ -3,12 +3,14 @@ import { parseArgs, type FlagValue, type ParsedArgs } from "../lib/args.js";
 import { resolveServer, request } from "../lib/client.js";
 import { out, die, color, json, exitCodeForError } from "../lib/output.js";
 import { errInfo } from "../../lib/errInfo.js";
+import { graphSub } from "./comfyGraph.js";
 
 const HELP = `
   ima2 comfy <subcommand> [options]
 
   Subcommands:
     export <filename> [-o <out>] [--force]
+    graph <filename> [-o <out>] [--force] [--json]   a saved result as a ComfyUI graph
     workflow ls [--json]
     workflow inspect <file> [--json]
     workflow add <file> --id <id> [--label <text>] [--kind image|video|audio] [--origin <url>]
@@ -480,6 +482,7 @@ async function remoteSub(argv: string[]): Promise<void> {
 
 const SUB: Record<string, (argv: string[]) => Promise<void>> = {
   export: exportSub,
+  graph: graphSub,
   workflow: workflowSub,
   remote: remoteSub,
 };

@@ -98,6 +98,7 @@ test("remote-unsafe routes and unpriced generation are closed; everyday routes s
     ["POST", "/api/comfy/workflows", "WEB_ROUTE_DISABLED"],
     ["POST", "/api/comfy/inspect", "WEB_ROUTE_DISABLED"],
     ["POST", "/api/comfy/export-image", "WEB_ROUTE_DISABLED"],
+    ["GET", "/api/comfy/result-graph?filename=x.png", "WEB_ROUTE_DISABLED"],
     ["GET", "/api/comfy/remotes", "WEB_ROUTE_DISABLED"],
     ["PUT", "/api/comfy/remotes", "WEB_ROUTE_DISABLED"],
     ["DELETE", "/api/comfy/remotes", "WEB_ROUTE_DISABLED"],
