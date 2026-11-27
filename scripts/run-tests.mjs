@@ -8,6 +8,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 // Fails a test file that exits with the database still in use or opened outside the temp directory.
 const guard = pathToFileURL(fileURLToPath(new URL("../tests/helpers/processGuard.mjs", import.meta.url))).href;
+// Keeps listen(0) off the ports fetch refuses, so a test that fetches its own server does not fail by chance.
+const ports = pathToFileURL(fileURLToPath(new URL("../tests/helpers/fetchablePorts.mjs", import.meta.url))).href;
 
 const testDir = "tests";
 const files = readdirSync(testDir)
@@ -20,7 +22,7 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-const child = spawn(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "--import", guard, "--test", ...files], {
+const child = spawn(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "--import", guard, "--import", ports, "--test", ...files], {
   stdio: "inherit",
   env: { ...process.env, IMA2_RESET_DISPATCH_DISABLED: "1" },
 });

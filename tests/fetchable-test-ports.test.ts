@@ -15,7 +15,7 @@ function badPort(error: unknown): boolean {
 
 async function fetchRefuses(port: number): Promise<boolean> {
   // A refused port fails before any connection is made; anything else here is a connection error.
-  return fetch("http://" + HOST + ":" + String(port) + "/").then(() => false, badPort);
+  return fetch("http://" + HOST + ":" + String(port) + "/", { signal: AbortSignal.timeout(2_000) }).then(() => false, badPort);
 }
 
 test("the list is the one this runtime's fetch refuses", async () => {
