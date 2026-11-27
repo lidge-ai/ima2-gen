@@ -1,4 +1,5 @@
-import type { MediaSelection } from "../lib/mediaSelection";
+import type { Adjustment, MediaSelection } from "../lib/mediaSelection";
+import { saveMediaSelection } from "../lib/mediaSelectionStore";
 import { prepareMediaInputs, submitMediaJob } from "../lib/mediaGenerate";
 import { buildMediaSubmitBody } from "../lib/mediaSubmitBody";
 import { getHistory } from "../lib/api";
@@ -8,8 +9,9 @@ import { registerFlightAbort, clearFlightAbort } from "./flightAbortRegistry";
 import { addHistory } from "./storeGraphSave";
 import type { StoreGet, StoreSet } from "./storeTypes";
 
-export function setMediaSelectionImpl(selection: MediaSelection | null, set: StoreSet): void {
-  set({ mediaSelection: selection });
+export function setMediaSelectionImpl(selection: MediaSelection | null, adjusted: Adjustment[] | undefined, set: StoreSet): void {
+  saveMediaSelection(selection);
+  set({ mediaSelection: selection, ...(adjusted || !selection ? { mediaAdjustments: adjusted ?? [] } : {}) });
 }
 
 export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promise<void> {
@@ -28,8 +30,9 @@ export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promis
   set({ inFlight: next, activeGenerations: next.length });
   try {
     const refs = [...state.referenceImages, ...(state.providerUrlReference ? [state.providerUrlReference] : [])];
-    const inputs = await prepareMediaInputs(selection, refs, controller.signal);
-    const payload = buildMediaSubmitBody(selection, prompt, id, state.activeSessionId, inputs);
+    const { inputs, adapter } = await prepareMediaInputs(selection, refs, controller.signal);
+    // The adapter is always sent, so what runs is the route the panel showed (automatic resolves here, once).
+    const payload = buildMediaSubmitBody({ ...selection, adapter }, prompt, id, state.activeSessionId, inputs);
     const phase = (value: string) => set((current) => ({ inFlight: current.inFlight.map((item) =>
       item.id === id ? { ...item, phase: value } : item) }));
     const outputs = await submitMediaJob(payload, id, controller.signal, {

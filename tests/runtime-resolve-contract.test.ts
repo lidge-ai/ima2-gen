@@ -47,6 +47,43 @@ function advertiseDir(entry?: unknown): { dir: string; file: string } {
 const ima2 = (pid: number, extra: Record<string, unknown> = {}) => (url: string) =>
   url === "/api/health" ? { body: { ok: true, pid, startedAt: 111, version: "9.9.9", ...extra } } : { status: 404 };
 
+async function listenOn(server: Server, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    server.once("error", () => resolve(false));
+    server.listen(port, "127.0.0.1", () => resolve(true));
+  });
+}
+
+/**
+ * Our ima2 server on a port P and a second, unrelated ima2 server (another pid) on P - 1,
+ * as when a parallel test's fake server happens to sit next to ours.
+ */
+async function hopWithNeighbour(): Promise<{ ours: Server; neighbour: Server; port: number }> {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const { server: ours, port } = await serve(ima2(4242));
+    const neighbour = createServer((_req, res) => {
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ ok: true, pid: 5356, startedAt: 222, version: "9.9.9" }));
+    });
+    if (port > 1 && await listenOn(neighbour, port - 1)) return { ours, neighbour, port };
+    await close(ours);
+  }
+  throw new Error("could not bind two adjacent loopback ports");
+}
+
+/**
+ * Real fetch for our own server only. Every other port reads as refused, so whatever else listens
+ * on a busy host (another test's ima2, anything) cannot answer for the configured port.
+ */
+function reachOnly(port: number): typeof fetch {
+  const own = `http://127.0.0.1:${port}`;
+  const refused = () => Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNREFUSED" } });
+  return ((input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(input instanceof Request ? input.url : String(input));
+    return url.origin === own ? fetch(input, init) : Promise.reject(refused());
+  }) as typeof fetch;
+}
+
 test("a server the advertisement vouches for is live and stoppable", async () => {
   const { server, port } = await serve(ima2(process.pid, { bootId: "b1", launcher: "background", root: "/r" }));
   const { dir, file } = advertiseDir({ pid: process.pid, url: `http://127.0.0.1:${port}`, adminNonce: "n" });
@@ -76,21 +113,21 @@ test("a stale advertisement plus refused ports proves absence", async () => {
 });
 
 test("a server that hopped ports is found without an advertisement, but is not stoppable", async () => {
-  const { server, port } = await serve(ima2(4242));
+  const { ours, neighbour, port } = await hopWithNeighbour();
   const configured = port - 1;
   const { dir, file } = advertiseDir();
   try {
-    const r = await resolveRuntime({ advertiseFile: file, port: configured, span: 1 });
-    // configured may be occupied by something else on a busy host; only assert when it is free.
-    if (r.status === "live") {
-      assert.equal(r.runtime?.pid, 4242);
-      assert.equal(r.source, "port");
-      assert.equal(r.stoppable, false);
-    } else {
-      assert.equal(r.status, "unknown");
-    }
+    // The neighbour really answers on the configured port; reachOnly keeps it (and any other
+    // listener on a busy host) out, so the hop to our server is what gets resolved.
+    const r = await resolveRuntime({ advertiseFile: file, port: configured, span: 1, fetchFn: reachOnly(port) });
+    assert.equal(r.status, "live");
+    assert.equal(r.runtime?.pid, 4242);
+    assert.equal(r.runtime?.port, port);
+    assert.equal(r.source, "port");
+    assert.equal(r.stoppable, false);
   } finally {
-    await close(server);
+    await close(ours);
+    await close(neighbour);
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

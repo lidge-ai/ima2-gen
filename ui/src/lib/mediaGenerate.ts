@@ -1,22 +1,17 @@
 import { fetchApi, jsonFetch } from "./api-core";
 import { armStreamTimeout, subscribe, whenConnected } from "./eventChannel";
 import { parseSseErrorPayload } from "./sseStreamError";
-import { chooseMediaRoute, fetchMediaCatalog } from "./mediaCatalog";
+import { fetchMediaCatalog } from "./mediaCatalog";
+import { resolveRoute } from "./mediaRoutes";
 import type { MediaSelection } from "./mediaSelection";
 import type { MediaInput, MediaInputRole } from "./mediaSubmitBody";
+import { inputProblem, inputRoles } from "./mediaTasks";
 import { t } from "../i18n";
 
 export type MediaOutput = { filename: string; url: string; mediaType: "image" | "video" };
 
 export function cancelMediaJob(id: string): Promise<unknown> {
   return jsonFetch(`/api/media/${encodeURIComponent(id)}/cancel`, { method: "POST" });
-}
-
-function roleForTask(task: string): MediaInputRole | null {
-  if (task === "image-to-video") return "first-frame";
-  if (task === "image-to-image") return "source-image";
-  if (task === "reference-to-video") return "reference-image";
-  return null;
 }
 
 async function inputFor(value: string, role: MediaInputRole, signal: AbortSignal): Promise<MediaInput> {
@@ -32,19 +27,18 @@ async function inputFor(value: string, role: MediaInputRole, signal: AbortSignal
   return { role, ref: uploaded.ref };
 }
 
-export async function prepareMediaInputs(selection: MediaSelection, references: string[], signal: AbortSignal): Promise<MediaInput[]> {
+export async function prepareMediaInputs(selection: MediaSelection, references: string[], signal: AbortSignal): Promise<{ inputs: MediaInput[]; adapter: string }> {
   const catalog = await fetchMediaCatalog(selection.kind);
   const model = catalog.models.find((item) => item.id === selection.model);
-  const route = model && chooseMediaRoute(model, selection.adapter);
-  if (!route || !route.tasks.includes(selection.task)) throw new Error(t("mediaPicker.loadError"));
-  if (!route.hasKey) throw new Error(t("mediaPicker.noKey"));
-  const role = roleForTask(selection.task);
-  if (references.length && !role) throw new Error(`${t("toast.generateFailed")} (${selection.task}: ${references.length})`);
-  if (role && role !== "reference-image" && references.length !== 1) throw new Error(`${t("toast.generateFailed")} (${selection.task}: ${references.length}/1)`);
-  if (role === "reference-image" && (references.length === 0 || references.length > (route.params.maxReferenceImages ?? 0))) {
-    throw new Error(`${t("toast.generateFailed")} (${selection.task}: ${references.length}/1–${route.params.maxReferenceImages ?? 0})`);
-  }
-  return role ? Promise.all(references.map((value) => inputFor(value, role, signal))) : [];
+  const resolved = model && resolveRoute(model, selection);
+  if (!resolved || !resolved.route.tasks.includes(selection.task)) throw new Error(t("mediaPicker.loadError"));
+  if (resolved.state === "needs-key") throw new Error(t("mediaPicker.noKey"));
+  const route = resolved.route;
+  // The settings panel already explains a tray that does not fit; this is the last check before upload.
+  const problem = inputProblem(selection.task, route, references.length);
+  if (problem) throw new Error(`${t("toast.generateFailed")} (${selection.task}: ${problem.have}/${problem.min}–${problem.max})`);
+  const roles = inputRoles(selection.task, references.length);
+  return { inputs: await Promise.all(references.map((value, index) => inputFor(value, roles[index]!, signal))), adapter: route.adapter };
 }
 
 export async function submitMediaJob(payload: Record<string, unknown>, id: string, signal: AbortSignal,

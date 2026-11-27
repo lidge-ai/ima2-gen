@@ -3421,5 +3421,96 @@
     "selector": ".update-popover__actions button,\n.update-popover__actions a",
     "expected": "var(--r-sm)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-route",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-note",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-inputs--problem",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-dialog__close",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-tabs__tab",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-tools__search",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-tools__select select",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-chip",
+    "expected": "var(--r-pill)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-row",
+    "expected": "var(--r-md)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-row__tag",
+    "expected": "var(--r-xs)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-row--skeleton span",
+    "expected": "var(--r-xs)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-mark",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-route__key",
+    "expected": "var(--r-xs)",
+    "important": false
   }
 ]

@@ -4,6 +4,7 @@
 // Legacy generation-controls contract: GENERATION_DEFAULTS_STORAGE_KEY = "ima2.generationDefaults".
 import { create } from "zustand";
 import { setMediaSelectionImpl } from "./storeMediaImpl";
+import { loadMediaSelection } from "../lib/mediaSelectionStore";
 import type { VideoResolutionUI } from "../types";
 import { getBrowserId } from "../lib/api";
 import { loadCoreSelectionSnapshot } from "./coreSelectionPersistence";
@@ -167,8 +168,13 @@ const storedVideoDefaults = loadVideoDefaults();
 const initialSelection = loadCoreSelectionSnapshot();
 
 export const useAppStore = create<AppState>((set, get, store) => ({
-  mediaSelection: null,
-  setMediaSelection: (selection) => setMediaSelectionImpl(selection, set),
+  mediaSelection: loadMediaSelection(),
+  setMediaSelection: (selection, adjusted) => setMediaSelectionImpl(selection, adjusted, set),
+  mediaAdjustments: [],
+  dismissMediaAdjustments: () => set({ mediaAdjustments: [] }),
+  mediaPicker: null,
+  openMediaPicker: (kind) => set({ mediaPicker: kind ? { kind } : {} }),
+  closeMediaPicker: () => set({ mediaPicker: null }),
   ...createPresetSlice(set, get, store),
   assets: [],
   assetGenWorkflow: "generate",

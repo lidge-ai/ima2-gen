@@ -139,6 +139,22 @@ export const KO: Readonly<Record<string, string>> = {
   "Sound bed": "배경 사운드",
   "Image": "이미지",
 
+  // Slot (step) descriptions
+  "Edits the source clip with your references, keeping its timing and camera.": "참조를 반영해 원본 영상을 편집하고, 타이밍과 카메라는 그대로 둡니다.",
+  "Redraws the first frame of the source in the chosen style.": "원본의 첫 프레임을 고른 스타일로 다시 그립니다.",
+  "Draws your subject into the pinned frames of the source.": "원본의 고정 프레임에 내 대상을 그려 넣습니다.",
+  "Regenerates the clip between the pinned frames.": "고정 프레임 사이의 영상을 다시 생성합니다.",
+  "Restyles the source in segments of up to 8.7 seconds.": "원본을 최대 8.7초 구간씩 리스타일합니다.",
+  "Puts your subject into the source's first frame.": "원본의 첫 프레임에 내 대상을 넣습니다.",
+  "Puts the replacement into the source's first frame.": "원본의 첫 프레임에 바꿀 대상을 넣습니다.",
+  "Marks the target to replace in the first frame.": "첫 프레임에서 바꿀 대상을 표시합니다.",
+  "Renders a new clip that follows the source's motion and camera.": "원본의 움직임과 카메라를 따르는 새 영상을 렌더합니다.",
+  "Edits the source clip to match the prepared first frame.": "준비한 첫 프레임에 맞춰 원본 영상을 편집합니다.",
+  "Edits the source clip to match the restyled first frame.": "다시 그린 첫 프레임에 맞춰 원본 영상을 편집합니다.",
+  "Generates the video for each planned shot.": "계획한 샷마다 영상을 생성합니다.",
+  "Adds a sound bed when the video model makes no sound.": "영상 모델이 소리를 만들지 않을 때 배경 사운드를 넣습니다.",
+  "Generates the images from your prompt and references.": "프롬프트와 참조로 이미지를 생성합니다.",
+
   // Presets (subscription variants)
   "Subscriptions only": "구독만 사용",
   "ChatGPT subscription (GPT OAuth) for still-frame edits": "정지 프레임 편집용 ChatGPT 구독 (GPT OAuth)",

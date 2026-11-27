@@ -3,6 +3,7 @@ import { checkModelFit, inputsFrom, intOf, joinPrompt, lookPrompt, option, refsO
 
 export const imageSlot: ModelSlot = {
   name: "image", label: "Image", task: "text-to-image", defaultModel: "google/nano-banana-pro",
+  description: "Generates the images from your prompt and references.",
   alternatives: [
     "bytedance/seedream-5.5", "openai/gpt-image-2.6", "black-forest-labs/flux-2-max", "black-forest-labs/flux-3-image",
     "ideogram/ideogram-v4.5", "kling/kling-image-3-omni", "black-forest-labs/flux-kontext-max",

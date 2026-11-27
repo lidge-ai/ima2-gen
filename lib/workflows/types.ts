@@ -82,8 +82,18 @@ export interface ModelSlot {
   modelRoutes?: Readonly<Record<string, string>>;
   /** The workflow still runs without this step; when no listed model can run, the step is left out and a note says what it needs. */
   optional?: boolean;
-  /** Why this model fits, with the evidence source; shown to users and reviewers. */
+  /** Why this model fits, with the evidence source: a note for reviewers. People see description and credits. */
   rationale: string;
+  /** One plain sentence for people: what this step does. Shown under the step; translated in i18n.ko.slotDescriptions. */
+  description?: string;
+  /** Open projects this step's design follows; clients list them once per workflow under "Sources". */
+  credits?: readonly SlotCredit[];
+}
+
+export interface SlotCredit {
+  name: string;
+  url?: string;
+  license?: string;
 }
 
 export interface WorkflowSelection {
@@ -269,6 +279,8 @@ export interface WorkflowText {
   description?: string;
   fields?: Record<string, { label?: string; help?: string; options?: Record<string, string> }>;
   slots?: Record<string, string>;
+  /** Korean of each slot's description, by slot name (slots keeps the label). */
+  slotDescriptions?: Record<string, string>;
   preset?: { label?: string; requires?: Record<string, string>; losses?: (string | null)[]; billingNote?: string };
   combos?: Record<string, { label?: string; note?: string }>;
 }
