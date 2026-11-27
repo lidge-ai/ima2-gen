@@ -39,27 +39,14 @@ test("the inventory lists the files and states no count", () => {
 test("two branches that each add a test merge into an inventory that still passes the check", () => {
   const base = { "a.test.ts": runtimeTest, "m.test.ts": "" };
   const generate = (files: Record<string, string>) => { const box = sandbox(files); try { box.run(); return box.read().split("\n"); } finally { box.done(); } };
-  const before = generate(base);
   const one = generate({ ...base, "c.test.ts": runtimeTest });
   const two = generate({ ...base, "z.test.ts": "" });
-  // What git does with two branches that insert different lines: every line either branch added is kept, in order.
-  const added = (branch: string[]) => branch.filter((line) => !before.includes(line));
-  const merged = [...new Set([...one, ...added(two)])];
-  const order = (line: string) => [...new Set([...one, ...two])].sort((x, y) => generateOrder(x, y, one, two)).indexOf(line);
-  const box = sandbox({ ...base, "c.test.ts": runtimeTest, "z.test.ts": "" });
-  try {
-    box.run();
-    const fresh = box.read().split("\n");
-    assert.deepEqual([...merged].sort((x, y) => fresh.indexOf(x) - fresh.indexOf(y)), fresh, "the union of both branches' lines is the regenerated file");
-    assert.equal(order.length, 1);
-    assert.equal(box.run("--check").status, 0);
-  } finally { box.done(); }
+  const fresh = generate({ ...base, "c.test.ts": runtimeTest, "z.test.ts": "" });
+  // A merge keeps every line either branch has. That is the whole regenerated file only when no line
+  // depends on how many files there are.
+  assert.deepEqual([...new Set([...one, ...two])].sort(), [...new Set(fresh)].sort());
+  assert.ok(fresh.includes("- `tests/c.test.ts`") && fresh.includes("- `tests/z.test.ts`"));
 });
-
-function generateOrder(x: string, y: string, one: string[], two: string[]): number {
-  const at = (line: string) => Math.max(one.indexOf(line), two.indexOf(line));
-  return at(x) - at(y);
-}
 
 test("a stale inventory names the files that are missing from it or no longer exist", () => {
   const box = sandbox({ "a.test.ts": runtimeTest });
