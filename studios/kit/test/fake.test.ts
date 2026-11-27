@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { createServer } from "node:net";
 import assert from "node:assert/strict";
 import { startFakeServer } from "../src/fake/server.ts";
 import { createStudioClient, type StudioClient } from "../src/client.ts";
@@ -381,4 +382,25 @@ test("estimates come from the server's rule, including rows a studio-side matche
     const sized = await client.media.estimate({ ...upscale, durationSec: 6 });
     assert.deepEqual([sized.quote.state, sized.usd], ["exact", 0.3]);
   });
+});
+
+test("the fake server never listens on a port fetch refuses; a refused port is held, another asked for, then let go", async () => {
+  let refused: number | undefined;
+  const isBlockedPort = (port: number) => {
+    refused ??= port;
+    return port === refused;
+  };
+  const server = await startFakeServer({ isBlockedPort });
+  try {
+    const port = Number(new URL(server.url).port);
+    assert.ok(refused !== undefined);
+    assert.notEqual(port, refused);
+    assert.equal((await fetch(server.url + "/api/media/catalog")).status, 200);
+    // The refused port was let go once a usable one was found.
+    const probe = createServer();
+    await new Promise<void>((resolve, reject) => probe.once("error", reject).listen(refused, "127.0.0.1", () => resolve()));
+    await new Promise<void>((resolve) => probe.close(() => resolve()));
+  } finally {
+    await server.close();
+  }
 });
