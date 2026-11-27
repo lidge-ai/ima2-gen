@@ -216,6 +216,7 @@ const INPUT_TASKS: Partial<Record<MediaTask, { roles: readonly MediaInputRole[];
   avatar: { roles: ["source-image", "source-video", "source-audio"], billed: ["source-audio"] },
   dubbing: { roles: ["source-video"], billed: ["source-video"] },
   subtitles: { roles: ["source-video"], billed: ["source-video"] },
+  "video-to-audio": { roles: ["source-video"], billed: ["source-video"] },
 };
 /** Required scalar fields a form always sends when the spec lists them. */
 const FORM_SCALARS: ReadonlySet<string> = new Set([...SCALAR_FIELDS.resolution, ...SCALAR_FIELDS.aspectRatio]);

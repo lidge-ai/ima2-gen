@@ -3,7 +3,13 @@ import { assertAllowed, contextSecrets, findModel, httpJson, invalidRequest, Med
 
 const models: readonly MediaModelSpec[] = [{
   id: "mirelo/mirelo-sfx-2.0", upstreamId: "sfx-2.0", vendor: "mirelo", label: "Mirelo SFX 2.0",
-  kind: "audio", tasks: ["video-to-audio", "text-to-audio"], params: { negativePrompt: true, seed: true }, pricing: [],
+  kind: "audio", tasks: ["video-to-audio", "text-to-audio"], pricing: [],
+  params: {
+    negativePrompt: true, seed: true,
+    // A text request must say how long the sound is; sound for a video follows the video.
+    durationRange: { minSec: 1, maxSec: 600, tasks: ["text-to-audio"], required: true },
+    inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-audio"], billedLength: true }],
+  },
   docsUrl: "https://mirelo.ai/api-docs#concept/sfx-2.0",
 }];
 const base = (ctx: MediaAdapterContext) => (ctx.baseUrl ?? "https://api.mirelo.ai").replace(/\/$/, "");
