@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { chooseRoute, type WorkflowDef, type WorkflowEstimate, type WorkflowRunBody } from "@ima2/studio-kit";
+import { chooseRoute, StudioApiError, type WorkflowDef, type WorkflowEstimate, type WorkflowRunBody } from "@ima2/studio-kit";
 import { messages, tr } from "../../i18n.ts";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
@@ -38,14 +38,26 @@ function useWorkflowForm(def: WorkflowDef) {
   return { files, setFiles, texts, setTexts, params, setParams, steps, setSteps, body, missing };
 }
 
+/**
+ * The server refuses an estimate with WORKFLOW_INPUT_INVALID and no field when a rule across fields is
+ * not met yet (restyle: a style or a style reference). That is the next thing to fill in, not a failure.
+ */
+function needsMoreInput(err: unknown): string | null {
+  if (!(err instanceof StudioApiError) || err.status !== 400 || err.code !== "WORKFLOW_INPUT_INVALID") return null;
+  const field = (err.details as { field?: unknown } | undefined)?.field;
+  return field === undefined ? err.message : null;
+}
+
 function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
   const studio = useStudioApi();
   const [estimate, setEstimate] = useState<WorkflowEstimate | null>(null);
   const [estimateError, setEstimateError] = useState<string | null>(null);
+  const [inputNeeded, setInputNeeded] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
     setEstimate(null);
     setEstimateError(null);
+    setInputNeeded(null);
     if (def.inputs.some((input) => input.required && !body.inputs[input.name]?.length)) return;
     const timer = setTimeout(() => {
       void studio.client.workflows.estimate(def.id, body).then(
@@ -53,7 +65,10 @@ function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
           if (current) setEstimate(value);
         },
         (err: unknown) => {
-          if (current) setEstimateError(err instanceof Error ? err.message : tr(M, "estimate"));
+          if (!current) return;
+          const reason = needsMoreInput(err);
+          if (reason !== null) setInputNeeded(reason);
+          else setEstimateError(err instanceof Error ? err.message : tr(M, "estimate"));
         },
       );
     }, 250);
@@ -62,7 +77,7 @@ function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
       clearTimeout(timer);
     };
   }, [studio, def, body]);
-  return { estimate, estimateError };
+  return { estimate, estimateError, inputNeeded };
 }
 
 function useWorkflowRun(def: WorkflowDef, body: WorkflowRunBody) {
@@ -120,6 +135,7 @@ export function useWorkflow(def: WorkflowDef) {
   const blocked =
     !catalog ||
     !!spendReason ||
+    estimate.inputNeeded !== null ||
     choices.some(
       (item) =>
         item.available === false ||
