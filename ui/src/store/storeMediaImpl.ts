@@ -104,6 +104,10 @@ export async function runMediaGenerateImpl(set: StoreSet, get: StoreGet): Promis
       onSubmitted: () => { phase("streaming"); get().startInFlightPolling(); },
       onProgress: (data) => {
         if (typeof data.status === "string") phase(phaseOf(data.status));
+        // Every kind of job may report how far along it is (a local ComfyUI run does, step by step).
+        set({ inFlight: get().inFlight.map((item) => item.id === id ? { ...item,
+          progress: typeof data.progress === "number" ? data.progress : null,
+          ...(typeof data.detail === "string" ? { progressDetail: data.detail } : {}) } : item) });
         if (selection.kind === "video") set({ videoProgress: typeof data.progress === "number" ? data.progress : null });
       },
     });

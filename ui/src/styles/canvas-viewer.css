@@ -230,6 +230,8 @@
   min-height: 0;
   overflow-y: auto;
   display: grid;
+  /* One column that may shrink: a wide table inside scrolls in its own box instead of widening the page. */
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 28px;
   padding: 22px 28px 36px;
@@ -264,6 +266,8 @@
 
 .settings-section__body {
   display: grid;
+  /* A column that may shrink below its widest child, so nothing in a section pushes the page sideways. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   max-width: none;
 }
