@@ -80,7 +80,12 @@ const models: MediaModelSpec[] = [
     label: "PixVerse Lip Sync",
     kind: "video",
     tasks: ["lipsync"],
-    params: {},
+    params: {
+      inputs: [
+        { role: "source-video", min: 1, max: 1 },
+        { role: "source-audio", min: 1, max: 1, billedLength: true },
+      ],
+    },
     pricing: [
       {
         unit: "second",

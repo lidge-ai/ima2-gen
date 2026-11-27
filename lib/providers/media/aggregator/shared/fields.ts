@@ -8,7 +8,7 @@
  * take is refused with an invalid-request error instead of being dropped, so a
  * user is never billed for a different job than the one they asked for.
  */
-import type { MediaInputRole, MediaModelSpec, MediaSubmitRequest, MediaTask } from "../../contract.js";
+import type { MediaInputRequirement, MediaInputRole, MediaModelSpec, MediaOptionSpec, MediaSubmitRequest, MediaTask } from "../../contract.js";
 import { invalidRequest } from "./errors.js";
 import { inputToUrl } from "./inputs.js";
 
@@ -210,6 +210,53 @@ function maxArrayItems(schemas: readonly EndpointSchema[], role: MediaInputRole)
   return counts.length > 0 ? Math.max(...counts) : undefined;
 }
 
+/** Tasks whose form is media inputs rather than a prompt; the roles to look for and which of them the bill follows. */
+const INPUT_TASKS: Partial<Record<MediaTask, { roles: readonly MediaInputRole[]; billed: readonly MediaInputRole[] }>> = {
+  lipsync: { roles: ["source-video", "source-audio"], billed: ["source-video", "source-audio"] },
+  avatar: { roles: ["source-image", "source-video", "source-audio"], billed: ["source-audio"] },
+  dubbing: { roles: ["source-video"], billed: ["source-video"] },
+  subtitles: { roles: ["source-video"], billed: ["source-video"] },
+};
+/** Required scalar fields a form always sends when the spec lists them. */
+const FORM_SCALARS: ReadonlySet<string> = new Set([...SCALAR_FIELDS.resolution, ...SCALAR_FIELDS.aspectRatio]);
+const ALL_SCALARS: ReadonlySet<string> = new Set(Object.values(SCALAR_FIELDS).flat());
+
+function optionOf(name: string, field: InputField, required: boolean, task: MediaTask): MediaOptionSpec | undefined {
+  const base = { name, ...(required ? { required: true } : {}), tasks: [task] };
+  if (field.enum && field.enum.length > 0) return { ...base, type: "enum", values: field.enum.map(String) };
+  if (field.type === "boolean") return { ...base, type: "boolean" };
+  if (field.type === "string") return { ...base, type: "text" };
+  return undefined;
+}
+
+/** What one endpoint needs from a form, or undefined when a required field is something a form cannot fill. */
+function formOf(schema: EndpointSchema): { inputs: MediaInputRequirement[]; options: MediaOptionSpec[] } | undefined {
+  const plan = INPUT_TASKS[schema.task];
+  if (!plan) return undefined;
+  const used = new Set<string>();
+  const inputs: MediaInputRequirement[] = [];
+  for (const role of plan.roles) {
+    const name = pickField(schema, ROLE_FIELDS[role], used, URL_FIELD);
+    if (!name) continue;
+    used.add(name);
+    const field = schema.fields[name] ?? {};
+    inputs.push({
+      role, min: schema.required.includes(name) ? 1 : 0, max: field.type === "array" ? field.maxItems ?? 1 : 1,
+      tasks: [schema.task], ...(plan.billed.includes(role) ? { billedLength: true } : {}),
+    });
+  }
+  const options: MediaOptionSpec[] = [];
+  for (const [name, field] of Object.entries(schema.fields)) {
+    if (used.has(name) || ALL_SCALARS.has(name)) continue;
+    const option = optionOf(name, field, schema.required.includes(name), schema.task);
+    if (option) options.push(option);
+  }
+  const fillable = (name: string) => used.has(name) || FORM_SCALARS.has(name) || options.some((option) => option.name === name);
+  if (inputs.length === 0 || !schema.required.every(fillable)) return undefined;
+  // Required options first, in the schema's order.
+  return { inputs, options: [...options.filter((o) => o.required), ...options.filter((o) => !o.required)] };
+}
+
 /** Derives the advertised MediaModelSpec params from the endpoints that serve a model. */
 export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaModelSpec["params"] {
   const has = (names: readonly string[]) => schemas.some((s) => names.some((n) => n in s.fields));
@@ -219,6 +266,15 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
   const qualities = union(schemas.map(qualitiesOf));
   const maxRefImages = maxArrayItems(schemas, "reference-image");
   const maxRefVideos = maxArrayItems(schemas, "reference-video");
+  // One form per task: the first endpoint that a form can fill.
+  const tasks = new Set<MediaTask>();
+  const forms = schemas.flatMap((schema) => {
+    const form = tasks.has(schema.task) ? undefined : formOf(schema);
+    if (form) tasks.add(schema.task);
+    return form ?? [];
+  });
+  const inputs = forms.flatMap((form) => form.inputs);
+  const options = forms.flatMap((form) => form.options);
   return {
     ...(durations.length > 0 ? { durationsSec: durations } : {}),
     ...(resolutions.length > 0 ? { resolutions } : {}),
@@ -229,5 +285,7 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
     ...(schemas.some((s) => SCALAR_FIELDS.audio.some((n) => s.fields[n] !== undefined && SCALAR_FILTER.audio?.(s.fields[n] as InputField))) ? { nativeAudio: true } : {}),
     ...(has(SCALAR_FIELDS.negativePrompt) ? { negativePrompt: true } : {}),
     ...(has(SCALAR_FIELDS.seed) ? { seed: true } : {}),
+    ...(inputs.length > 0 ? { inputs } : {}),
+    ...(options.length > 0 ? { options } : {}),
   };
 }
