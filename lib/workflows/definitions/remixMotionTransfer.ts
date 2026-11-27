@@ -14,7 +14,6 @@ export const remixMotionTransfer: WorkflowDefinition = {
   id: "remix-motion-transfer",
   label: "Remix: motion transfer",
   description: "Your subjects perform the motion of a 4-15 second clip; camera, timing and sound follow the clip.",
-  equivalents: ["sume/sume-remix-motion-transfer", "sume/sume-remix-lite-motion-transfer"],
   fields: [
     sourceVideoField(),
     referenceImagesField("1-8 images of the people or things that should perform, in order."),

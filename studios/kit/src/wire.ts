@@ -148,7 +148,6 @@ export interface WireWorkflow {
   id: string;
   label: string;
   description: string;
-  equivalents?: unknown;
   fields: readonly WireField[];
   slots: readonly WireSlot[];
   tierField?: string;

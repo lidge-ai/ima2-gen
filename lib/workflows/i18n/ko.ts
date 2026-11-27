@@ -20,7 +20,7 @@ export const KO: Readonly<Record<string, string>> = {
   "Remix: motion transfer (open pipeline)": "리믹스: 모션 전이 (오픈 파이프라인)",
   "Remix: object swap (open pipeline)": "리믹스: 대상 교체 (오픈 파이프라인)",
   "Remix: restyle (open pipeline)": "리믹스: 리스타일 (오픈 파이프라인)",
-  "The open Genjutsu reproductions' stages (analyse, caption, mask, prepare the subject, guided render, restore sound), each run on a commercial model with your keys.": "오픈소스 재현 프로젝트의 단계(분석, 설명 생성, 마스크, 대상 준비, 가이드 렌더, 소리 복원)를 그대로 따르고, 각 단계는 내 키로 상용 모델에서 실행합니다.",
+  "Follows the stages of open-source remix pipelines (analyse, caption, mask, prepare the subject, guided render, restore sound) and runs each on a commercial model with your keys.": "오픈소스 재현 프로젝트의 단계(분석, 설명 생성, 마스크, 대상 준비, 가이드 렌더, 소리 복원)를 그대로 따르고, 각 단계는 내 키로 상용 모델에서 실행합니다.",
   "Director studio": "디렉터 스튜디오",
   "A directed 4-30 second clip from one prompt: planned shots, a look and a sound bed, with image, video and audio references.": "프롬프트 하나로 4~30초 영상을 연출합니다. 샷 구성, 룩, 배경 사운드를 계획하고 이미지·영상·오디오 참조를 쓸 수 있습니다.",
   "Director cast": "디렉터 캐스트",

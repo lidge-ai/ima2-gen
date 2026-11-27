@@ -1,5 +1,5 @@
 /**
- * Remix presets built on the stage layout of the open Genjutsu reproductions
+ * Remix presets built on the stage layout of open-source remix pipelines
  * (D3voz/openjutsu, SydFloyd/openjutsu, Henge): analyse the source, caption it, segment the
  * target, prepare the subject in anchor frames, guided render, restore the source sound.
  * Every stage runs on a commercial model through the media adapters, with the user's keys.
@@ -161,8 +161,7 @@ function definition(mode: OpenMode): WorkflowDefinition {
   return {
     id,
     label: (mode === "motion" ? "Remix: motion transfer" : mode === "swap" ? "Remix: object swap" : "Remix: restyle") + " (open pipeline)",
-    description: "The open Genjutsu reproductions' stages (analyse, caption, mask, prepare the subject, guided render, restore sound), each run on a commercial model with your keys.",
-    equivalents: mode === "motion" ? ["sume/sume-remix-motion-transfer"] : mode === "swap" ? ["sume/sume-remix-object-swap"] : ["sume/sume-remix-restyle"],
+    description: "Follows the stages of open-source remix pipelines (analyse, caption, mask, prepare the subject, guided render, restore sound) and runs each on a commercial model with your keys.",
     fields: fields(mode),
     slots: mode === "swap" ? [SEGMENT_SLOT, subjectSlot(mode), renderSlot(mode)] : [subjectSlot(mode), renderSlot(mode)],
     combos: COMBOS[mode],

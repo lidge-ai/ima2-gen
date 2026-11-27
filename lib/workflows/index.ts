@@ -39,7 +39,6 @@ export interface WorkflowDescription {
   id: WorkflowId;
   label: string;
   description: string;
-  equivalents: readonly string[];
   fields: readonly WorkflowField[];
   slots: readonly SlotDescription[];
   tierField?: string;
@@ -63,7 +62,7 @@ export function describeWorkflow(def: WorkflowDefinition, gateway?: Pick<Workflo
     })) };
   });
   const description: WorkflowDescription = {
-    id: def.id, label: def.label, description: def.description, equivalents: def.equivalents, fields: def.fields, slots, i18n: workflowI18n(def),
+    id: def.id, label: def.label, description: def.description, fields: def.fields, slots, i18n: workflowI18n(def),
   };
   if (def.tierField) description.tierField = def.tierField;
   if (def.preset) description.preset = def.preset;

@@ -134,7 +134,6 @@ function definition(mode: Mode): WorkflowDefinition {
     id,
     label: mode === "motion" ? "Remix: motion transfer (subscriptions only)" : "Remix: object swap (subscriptions only)",
     description: "Draws your subject into pinned frames of the source with GPT, then regenerates the clip between those frames with Grok 1.5.",
-    equivalents: mode === "motion" ? ["sume/sume-remix-motion-transfer"] : ["sume/sume-remix-object-swap"],
     preset: { id: "subscription", label: "Subscriptions only", basedOn, requires: REQUIRES, losses: LOSSES, billingNote: BILLING_NOTE },
     fields: fields(mode),
     slots: [GPT_FRAME_SLOT, XAI_PIN_SLOT],

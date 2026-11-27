@@ -60,7 +60,6 @@ export const remixRestyle: WorkflowDefinition = {
   id: "remix-restyle",
   label: "Remix: restyle",
   description: "Redraw a whole 4-15 second clip in another style while keeping its motion and sound.",
-  equivalents: ["sume/sume-remix-restyle"],
   fields: [
     sourceVideoField(),
     { name: "style", type: "enum", label: "Style", required: false, options: Object.entries(STYLE_PRESETS).map(([k, s]) => option(k, s.label)) },

@@ -45,7 +45,6 @@ const oneStep = {
   id: "test-flow",
   label: "Test flow",
   description: "one fake clip",
-  equivalents: [],
   fields: [{ type: "text", name: "prompt", label: "Prompt", required: true, maxLength: 200 }],
   slots: [{ name: "render", label: "Render", task: "text-to-video", defaultModel: "acme/clip-1", alternatives: [], rationale: "test" }],
   plan(values: Record<string, unknown>, slots: Record<string, { model: string; route?: string }>) {

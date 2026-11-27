@@ -77,7 +77,6 @@ export const remixRestyleSubscription: WorkflowDefinition = {
   id: "remix-restyle-subscription",
   label: "Remix: restyle (subscriptions only)",
   description: "Restyles a 4-15 second clip with Grok's video edit, in segments of up to 8.7 seconds, and puts the source sound back.",
-  equivalents: ["sume/sume-remix-restyle"],
   preset: {
     id: "subscription", label: "Subscriptions only", basedOn: "remix-restyle", requires: [REQUIRES[1]!], billingNote: BILLING_NOTE,
     losses: [
