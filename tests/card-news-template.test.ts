@@ -21,7 +21,7 @@ const {
   updateCardNewsJobCard,
 } = await import("../lib/cardNewsJobStore.ts");
 const { configureRoutes } = await import("../routes/index.ts");
-const { closeDb, getDbPath } = await import("../lib/db.ts");
+const { getDbPath } = await import("../lib/db.ts");
 
 after(async () => {
   await releaseDatabase();

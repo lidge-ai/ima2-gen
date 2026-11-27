@@ -16,7 +16,6 @@ process.env.IMA2_CONFIG_DIR = TEST_DIR;
 process.env.IMA2_DB_PATH = join(TEST_DIR, "sessions.db");
 
 const { registerAgentRoutes } = await import("../routes/agent.ts");
-const db = await import("../lib/db.ts");
 const originalFetch = globalThis.fetch;
 
 afterEach(() => {

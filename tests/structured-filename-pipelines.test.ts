@@ -19,7 +19,6 @@ const { registerEditRoutes } = await import("../routes/edit.ts");
 const { registerAgentRoutes } = await import("../routes/agent.ts");
 const { subscribe, _resetForTest: resetEventBus } = await import("../lib/eventBus.js");
 const { _resetForTests: resetInflight } = await import("../lib/inflight.js");
-const db = await import("../lib/db.js");
 
 const originalFetch = globalThis.fetch;
 
