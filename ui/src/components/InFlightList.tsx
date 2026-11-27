@@ -1,3 +1,4 @@
+import { jobProgressPercent } from "../lib/jobProgress";
 import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import type { PersistedInFlight } from "../store/storeTypes";
@@ -65,7 +66,7 @@ function CompactRow({ f, phaseLabels, videoProgress, cancelInFlightJob, t }: Sha
       <span className="in-flight-phase">
         {f.kind === "video" && videoProgress != null && videoProgress > 0
           ? `${Math.round(videoProgress * 100)}%`
-          : phaseLabel}
+          : jobProgressPercent(f.progress) != null ? `${String(jobProgressPercent(f.progress))}%` : phaseLabel}
       </span>
       <button
         type="button"
@@ -111,7 +112,7 @@ function RichRow({ f, determinateVideoId, validVideoProgress, phaseLabels, cance
   const progressPercent =
     f.id === determinateVideoId && validVideoProgress != null
       ? Math.round(validVideoProgress * 100)
-      : null;
+      : jobProgressPercent(f.progress);
   return (
     <li className="in-flight-rich-item" data-phase={f.phase ?? "queued"} title={promptLabel} aria-label={`${modelLabel}, ${phaseLabel}: ${promptLabel}`}>
       <span className={`in-flight-placeholder${isVideo ? " in-flight-placeholder--video" : ""}`} aria-hidden="true">
@@ -121,7 +122,7 @@ function RichRow({ f, determinateVideoId, validVideoProgress, phaseLabels, cance
         <span className="in-flight-rich-title">{modelLabel}</span>
         <span className="in-flight-rich-prompt" title={promptLabel}>{truncate(f.prompt, 54)}</span>
         <span className="in-flight-rich-status">
-          <span className="in-flight-phase">{progressPercent == null ? phaseLabel : `${phaseLabel} · ${progressPercent}%`}</span>
+          <span className="in-flight-phase">{progressPercent == null ? phaseLabel : `${phaseLabel} · ${progressPercent}%`}{f.progressDetail ? ` · ${f.progressDetail}` : ""}</span>
           <ProgressTrack progressPercent={progressPercent} phaseLabel={phaseLabel} t={t} />
         </span>
       </span>

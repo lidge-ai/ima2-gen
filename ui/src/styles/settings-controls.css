@@ -285,3 +285,86 @@
 .comfy-bind-row select[aria-invalid="true"] {
   border-color: var(--amber);
 }
+
+/* A wide table scrolls inside its own box on a narrow screen; the page never scrolls sideways. */
+.comfy-table-scroll {
+  overflow-x: auto;
+}
+
+/* What the server said about a workflow, and what to do. The border side marks the tone; the words carry it. */
+.comfy-report {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--border, rgba(255, 255, 255, 0.2));
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.comfy-report--ok {
+  border-left-color: var(--green, #4caf7a);
+}
+
+.comfy-report--warn {
+  border-left-color: var(--amber);
+}
+
+.comfy-report p,
+.comfy-report ul,
+.comfy-report ol {
+  margin: 4px 0 0;
+}
+
+.comfy-report ul,
+.comfy-report ol {
+  padding-left: 18px;
+}
+
+.comfy-report .mono,
+.comfy-bind-row .mono,
+.comfy-remote-list .mono {
+  font-family: var(--mono);
+}
+
+.comfy-bind-row {
+  flex-wrap: wrap;
+}
+
+.comfy-remotes > summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.comfy-remotes p {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
+.comfy-remotes > button {
+  margin-top: 10px;
+}
+
+.comfy-remote-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.comfy-remote-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.05));
+}
+
+.comfy-remote-list__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

@@ -73,6 +73,9 @@ export type PersistedInFlight = {
   composerPrompt?: string;
   composerInsertedPrompts?: InsertedPrompt[];
   phase?: string;
+  /** How far along a media job says it is, 0 to 1, and what it is doing ("KSampler 7/20"). Only while it runs. */
+  progress?: number | null;
+  progressDetail?: string;
   sessionId?: string | null;
   parentNodeId?: string | null;
   clientNodeId?: string | null;

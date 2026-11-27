@@ -5,6 +5,7 @@ import { test } from "node:test";
 
 const { buildBind, isEditorFormat, presetSlotRoles, reportSummary, slotKey, SLOT_ROLES, unassignedSlots, workflowMediaModel } =
   await import("../ui/src/lib/comfyRegistration.js");
+const { jobProgressPercent } = await import("../ui/src/lib/jobProgress.js");
 
 const frame = { kind: "image" as const, node: "52", input: "image", classType: "LoadImage", role: "first-frame" as const };
 const second = { kind: "image" as const, node: "53", input: "image", classType: "LoadImage" };
@@ -77,3 +78,10 @@ test("a registered workflow is named the way the media catalog lists it", () => 
   assert.equal(workflowMediaModel("klein-edit"), "comfy/klein-edit");
 });
 
+
+test("a running job's progress is shown only when it reported one between nothing and done", () => {
+  assert.equal(jobProgressPercent(0.426), 43);
+  assert.equal(jobProgressPercent(0), 0);
+  assert.equal(jobProgressPercent(1), 100);
+  for (const none of [null, undefined, -0.1, 1.2, Number.NaN, "0.5"]) assert.equal(jobProgressPercent(none), null);
+});

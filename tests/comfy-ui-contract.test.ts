@@ -74,9 +74,33 @@ describe("comfy workflow manager", () => {
   });
 
   it("does not encode status by colour alone", () => {
-    assert.match(source, /t\("comfy\.statusReady"\)/);
-    assert.match(source, /t\("comfy\.statusOffline"\)/);
-    assert.match(source, /aria-describedby=\{statusId\}/);
+    const table = read("ui/src/components/settings/ComfyWorkflowTable.tsx");
+    assert.match(table, /t\("comfy\.statusReady"\)/);
+    assert.match(table, /t\("comfy\.statusOffline"\)/);
+    assert.match(table, /aria-describedby=\{statusId\}/);
+  });
+
+  it("turns the editor format away before the server is asked, and asks the chosen server about the rest", () => {
+    const guard = source.indexOf("isEditorFormat(parsed.graph)");
+    const ask = source.indexOf("await inspect(parsed, origin)");
+    assert.ok(guard > 0 && ask > guard, "the editor-format check comes before the inspection");
+    assert.match(source, /inspectComfyWorkflow\(parsed, at\)/, "the inspection names the server the workflow will run on");
+    // Changing the address re-reads a chosen file against the new server.
+    assert.match(source, /if \(source\) await inspect\(source, origin\)/);
+  });
+
+  it("blocks submit until every file input has a role, and sends the roles", () => {
+    assert.match(source, /slotsWaiting === 0/);
+    assert.match(source, /bind: buildBind\(selection, slots, slotRoles\)/);
+  });
+
+  it("reads the remote server list only when its section is opened, and never shows a token", () => {
+    const remotes = read("ui/src/components/settings/ComfyRemoteServers.tsx");
+    assert.match(remotes, /onToggle=\{\(event\) => \{ if \(event\.currentTarget\.open && remotes === null\) void load\(\); \}\}/);
+    assert.doesNotMatch(remotes, /useEffect/, "nothing is fetched on mount");
+    assert.match(remotes, /type="password"/);
+    assert.match(remotes, /remote\.hasToken \? t\("comfy\.remoteHasToken"\) : t\("comfy\.remoteNoToken"\)/);
+    assert.doesNotMatch(remotes, /remote\.token/);
   });
 
   it("carries media kind through inspect and create", () => {
