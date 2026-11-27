@@ -1,7 +1,6 @@
 import { formRoutes, formatUsd, estimateCost, type Catalog, type MediaOptionSpec, type TalkingTask, type TaskForm } from "@ima2/studio-kit";
 import { messages, useT } from "../../i18n.ts";
 import { navigate } from "../../router.ts";
-import { Icon } from "../../ui/Icon.tsx";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { ModelPicker } from "../../ui/ModelPicker.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
