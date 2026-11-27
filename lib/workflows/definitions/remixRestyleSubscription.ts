@@ -1,13 +1,14 @@
 import type { LocalStep, MediaStep, ResolvedSlot, WorkflowDefinition, WorkflowStep, WorkflowValues } from "../types.js";
 import { keepSoundStep, sourceOf, sourceVideoField } from "./remixShared.js";
 import { joinPrompt, option, textOf } from "./shared.js";
-import { STYLE_PRESETS } from "./styles.js";
+import { KEEP_PEOPLE, STYLE_PRESETS } from "./styles.js";
 import { BILLING_NOTE, cappedVariant, XAI_EDIT_MAX_SEC, XAI_EDIT_SLOT, REQUIRES, segmentPlan } from "./subscription.js";
 
 function prompt(values: WorkflowValues): string {
   const preset = STYLE_PRESETS[textOf(values, "style") ?? ""];
   return joinPrompt(
     "Restyle this video. Keep every motion, camera move, framing and timing exactly as filmed; change only the look.",
+    KEEP_PEOPLE,
     preset ? "Style: " + preset.prompt : undefined,
     textOf(values, "prompt"),
   );

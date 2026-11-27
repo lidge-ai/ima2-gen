@@ -196,6 +196,7 @@ Total: 659 (runtime: 351, contract: 308)
 - `tests/media-input-requirements.test.ts`
 - `tests/media-key-validate-route.test.ts`
 - `tests/media-mp4-probe.test.ts`
+- `tests/media-price-match.test.ts`
 - `tests/media-publish-input.test.ts`
 - `tests/media-routes.test.ts`
 - `tests/media-runner.test.ts`

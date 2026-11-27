@@ -162,9 +162,11 @@ test("restyle (open) redraws the first frame and edits the source to match it", 
   const p = await prep("remix-restyle-open", { video: video(), style: "watercolor" }, gateway);
   await run("restyle", p, gateway);
   assert.match(flux.calls.find((c) => c.op === "submit")?.request?.prompt ?? "", /Loose watercolor/);
+  assert.match(flux.calls.find((c) => c.op === "submit")?.request?.prompt ?? "", /skin tone, hair/);
   const req = seedance.calls.find((c) => c.op === "submit")?.request;
   assert.deepEqual(req?.inputs.map((i) => [i.role, dec(i.bytes)]), [["source-video", "source-video"], ["reference-image", "styled"]]);
   assert.match(req?.prompt ?? "", /Image 1 is the first frame redrawn/);
+  assert.match(req?.prompt ?? "", /skin tone, hair/);
 });
 
 test("descriptions carry combos and which models can run now", () => {
@@ -209,6 +211,7 @@ test("Grok's edit is never asked for silence: the source sound replaces its soun
   await run("grok-sound", p, gateway);
   const req = grok.calls.find((c) => c.op === "submit")?.request;
   assert.equal(req && "audio" in req, false, "no audio flag for Grok's edit");
+  assert.match(req?.prompt ?? "", /skin tone, hair/, "Grok's edit never sees the restyled first frame, so the prompt keeps each person's features");
   assert.equal(req && "resolution" in req, false, "the edit follows the source size");
   await assert.rejects(prep("remix-restyle-open", { video: video(), style: "yarn-world", resolution: "720p", sound: "none" }, gateway, { combo: "subscription" }), /always returns sound/);
   await assert.rejects(prep("remix-restyle-open", { video: video(short), style: "yarn-world", resolution: "720p" }, gateway, { combo: "subscription" }), /always returns sound/);
