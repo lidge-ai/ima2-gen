@@ -20,7 +20,7 @@ function sandbox(files: Record<string, string>) {
   return { root, run, read: () => readFileSync(join(root, inventory), "utf8"), done: () => rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }) };
 }
 
-const runtimeTest = 'import "../lib/x.ts";\n';
+const runtimeTest = 'import x from "../lib/x.ts";\n';
 
 test("the inventory lists the files and states no count", () => {
   const box = sandbox({ "a.test.ts": runtimeTest, "b.test.ts": "" });
