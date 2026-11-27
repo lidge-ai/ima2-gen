@@ -14,6 +14,8 @@ export interface ResolvedMediaCredential {
   secrets: string[];
   /** A secret extra field has a value (some vendors authenticate with an access-key pair alone). */
   hasSecretExtra: boolean;
+  /** The route needs no key (MediaCredentialSpec.keyless). */
+  keyless: boolean;
 }
 
 export interface MediaKeyLookup {
@@ -73,22 +75,25 @@ export function resolveMediaCredential(spec: MediaCredentialSpec, lookup: MediaK
       missingExtra.push(field.name);
     }
   }
-  return { apiKey: key.apiKey, source: key.source, extra, extraSources, missingExtra, secrets, hasSecretExtra };
+  return { apiKey: key.apiKey, source: key.source, extra, extraSources, missingExtra, secrets, hasSecretExtra, keyless: spec.keyless === true };
 }
 
 /**
  * Usable when the main key or any secret extra field is set (L2: Kling's newer API key and
  * Tencent's SecretId/SecretKey are extras), and no required extra is missing. The adapter
  * reports a credential its chosen endpoint still lacks as its own auth error.
+ * A keyless route is always usable here: it has nothing to be missing.
  */
 export function credentialReady(resolved: ResolvedMediaCredential): boolean {
+  if (resolved.keyless) return true;
   return (Boolean(resolved.apiKey) || resolved.hasSecretExtra) && resolved.missingExtra.length === 0;
 }
 
-/** One key-store entry per vocabulary; the first registered adapter defines it. */
+/** One key-store entry per vocabulary; the first registered adapter defines it. Keyless routes have no entry. */
 export function mediaKeyVocabularies(adapters: readonly MediaProviderAdapter[]): Map<string, MediaProviderAdapter> {
   const out = new Map<string, MediaProviderAdapter>();
   for (const adapter of adapters) {
+    if (adapter.credential.keyless) continue;
     if (!out.has(adapter.credential.keyVocabulary)) out.set(adapter.credential.keyVocabulary, adapter);
   }
   return out;

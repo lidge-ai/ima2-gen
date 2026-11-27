@@ -26,7 +26,7 @@ test("media status takes precedence and secret values stay absent", () => {
 
 // ── Keys, estimates and failures in the classic picker (L11) ──
 const { keyDraftProblem, keyEntrySupported, keySaveRequests } = await import("../ui/src/lib/mediaKeyEntry.js");
-const { estimateBody } = await import("../ui/src/lib/mediaEstimate.js");
+const { estimateBody, quoteFromEstimate } = await import("../ui/src/lib/mediaEstimate.js");
 // The price rule lives on the server; the UI shows the server's answer.
 const { pickPrice, quoteFor } = await import("../lib/providers/media/priceQuote.ts");
 const { buildMediaFailure, failureAction, failureCategory, parseMediaFailure } = await import("../ui/src/lib/mediaFailure.js");
@@ -85,6 +85,9 @@ test("a quote multiplies the applicable row by the clip length, and says when it
   const pricing = [row(0.2205, "text-to-video:480p"), row(0.473, "text-to-video:720p")];
   assert.deepEqual(quoteFor({ pricing }, selection), { state: "exact", usd: 2.365, unit: "second", quantity: 5, price: pricing[1] });
   assert.deepEqual(quoteFor({ pricing: [] }, selection), { state: "unpriced" });
+  // A local route has no price to be missing: the server answers "local" and the screen keeps it, never "no published price".
+  assert.deepEqual(quoteFromEstimate({ quote: { state: "local" }, route: "local", usd: 0 }), { state: "local" });
+  assert.deepEqual(quoteFromEstimate({ quote: { state: "something-newer" } }), { state: "unknown" }, "a state this screen does not know is shown as unknown, not guessed");
   assert.deepEqual(quoteFor({ pricing }, { ...selection, task: "image-to-video" }), { state: "unknown" });
   assert.deepEqual(quoteFor({ pricing: [row(0.134, "text-to-video: starting price")] }, selection).state, "from");
   const image = { kind: "image" as const, model: "acme/still", adapter: "openai", task: "text-to-image" };
