@@ -51,7 +51,7 @@ const record = (value: unknown): Meta => (typeof value === "object" && value !==
 function safeName(filename: unknown): string {
   const invalid = () => new ComfyResultGraphError(COMFY_GRAPH_ERROR.INVALID, "A saved result's filename is required, without a folder.", 400);
   if (typeof filename !== "string" || !filename.trim()) throw invalid();
-  let decoded = filename;
+  let decoded: string;
   try { decoded = decodeURIComponent(filename); } catch { throw invalid(); }
   if (isAbsolute(filename) || filename !== basename(filename) || /[\\/]|\.\.|^[a-z][a-z0-9+.-]*:/i.test(decoded)) throw invalid();
   return filename;

@@ -32,7 +32,7 @@ async function withResults(run: (dir: string, save: (name: string, bytes: Buffer
       if (meta !== undefined) await writeFile(join(dir, name + ".json"), JSON.stringify(meta));
     });
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }
 
