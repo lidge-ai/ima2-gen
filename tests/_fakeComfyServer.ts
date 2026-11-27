@@ -25,6 +25,8 @@ export interface FakeComfyOptions {
   redirectHistoryTo?: string;
   /** WebSocket messages sent for each job, in order, before it finishes. */
   events?: (promptId: string) => Array<{ type: string; data: Record<string, unknown> }>;
+  /** Node schemas served at GET /object_info/{class}; a class not listed answers {} like a real server. */
+  objectInfo?: Record<string, unknown>;
 }
 
 export interface FakeComfyRequest { method: string; path: string; authorization: string | undefined; body: unknown }
@@ -102,6 +104,11 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
     if (!authorized(req)) return send(res, 401, { error: "unauthorized" });
     const path = url.pathname;
     if (path === "/system_stats") return send(res, 200, { system: { comfyui_version: "0.46.0" }, devices: [] });
+    if (path.startsWith("/object_info/")) {
+      const classType = decodeURIComponent(path.slice("/object_info/".length));
+      const node = options.objectInfo?.[classType];
+      return send(res, 200, node ? { [classType]: node } : {});
+    }
     if (path === "/prompt" && req.method === "POST") {
       if (options.reject) return send(res, options.reject.status, options.reject.body);
       const payload = body as Record<string, unknown>;
