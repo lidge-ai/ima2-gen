@@ -156,6 +156,27 @@ for legacy, expected in models.items():
     assert.match(result.stderr, /Ran \d+ tests[^]*\nOK/);
   });
 
+  it("sends a workflow to a stand-in ima2: registered when nothing is left to decide, handed back otherwise", () => {
+    const python = process.platform === "win32" ? "python" : "python3";
+    const result = spawnSync(python, ["-B", join(root, bridgeDir, "tests", "test_ima2_send.py")], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+    assert.match(result.stderr, /Ran \d+ tests[^]*\nOK/);
+  });
+
+  it("the editor's menu entry sends the converted workflow to the pack's own route and nothing else", () => {
+    const script = readSource(`${bridgeDir}/web/ima2_send.js`);
+    assert.match(script, /app\.graphToPrompt\(\)/, "the editor does the conversion to the API format");
+    assert.match(script, /api\.fetchApi\("\/ima2\/send"/);
+    assert.match(script, /menuCommands: \[\{ path: \["Workflow"\], commands: \[COMMAND\] \}\]/);
+    // No address, key or token is typed, stored or sent from the browser, and no other server is called.
+    assert.doesNotMatch(script, /https?:\/\/|localStorage|token|api[_-]?key|password/i);
+    const route = readSource(`${bridgeDir}/web_routes.py`);
+    assert.match(route, /routes\.post\("\/ima2\/send"\)/);
+    assert.match(route, /http:\/\/127\.0\.0\.1:\{int\(PromptServer\.instance\.port\)\}/, "ima2 is told this ComfyUI's loopback address, never one from the request");
+    assert.match(route, /run_in_executor/, "the blocking call does not hold ComfyUI's event loop");
+    assert.match(readSource(`${bridgeDir}/__init__.py`), /WEB_DIRECTORY = "\.\/web"/);
+  });
+
   it("media nodes take no key, token or server address, and never act as a Comfy partner node", () => {
     const source = readSource(`${bridgeDir}/media_nodes.py`);
     const inputs = [...source.matchAll(/io\.\w+\.Input\("([a-z_]+)"/g)].map((match) => match[1]);
@@ -165,7 +186,7 @@ for legacy, expected in models.items():
     // is_api_node would make ComfyUI hand this pack the user's Comfy account token.
     assert.doesNotMatch(source, /is_api_node/);
     assert.match(source, /hidden=\[io\.Hidden\.unique_id\]/);
-    for (const file of ["media_nodes.py", "ima2_client.py", "ima2_job.py", "__init__.py"]) {
+    for (const file of ["media_nodes.py", "ima2_client.py", "ima2_job.py", "ima2_send.py", "web_routes.py", "__init__.py"]) {
       const code = readSource(`${bridgeDir}/${file}`);
       // Comfy Registry standards: no eval or exec, no installing packages at run time, no shelling out.
       assert.doesNotMatch(code, /\beval\(|\bexec\(|subprocess|os\.system|pip install|shell=True/, file);
