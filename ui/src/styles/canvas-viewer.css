@@ -266,6 +266,8 @@
 
 .settings-section__body {
   display: grid;
+  /* A column that may shrink below its widest child, so nothing in a section pushes the page sideways. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   max-width: none;
 }

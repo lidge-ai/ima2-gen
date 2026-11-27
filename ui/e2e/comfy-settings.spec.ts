@@ -93,8 +93,9 @@ async function shot(page: Page, name: string, target: string): Promise<void> {
   await page.screenshot({ path: join(SHOTS, name + ".png") });
 }
 
-const noSidewaysScroll = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
+/** Neither the page nor the settings column scrolls sideways; only the workflow table may, inside its own box. */
+const noSidewaysScroll = (page: Page) => page.evaluate(() =>
+  [document.documentElement, document.querySelector(".settings-content")!].every((box) => box.scrollWidth <= box.clientWidth + 1));
 
 test("a workflow is checked against its server, file inputs need a role, and registering says how to use it", async ({ browser }) => {
   const app = await openStaticApp(browser, { viewport: { width: 1440, height: 900 } });

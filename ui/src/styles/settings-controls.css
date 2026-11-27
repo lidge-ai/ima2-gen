@@ -291,6 +291,17 @@
   overflow-x: auto;
 }
 
+/* Ids, addresses and one-word states stay on one line; the table scrolls rather than breaking them apart. */
+.comfy-workflow-table th,
+.comfy-workflow-table td {
+  white-space: nowrap;
+}
+
+.comfy-workflow-table td:first-child {
+  white-space: normal;
+  min-width: 96px;
+}
+
 /* What the server said about a workflow, and what to do. The border side marks the tone; the words carry it. */
 .comfy-report {
   margin-top: 10px;
