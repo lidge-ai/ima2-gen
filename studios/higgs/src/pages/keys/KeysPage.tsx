@@ -42,7 +42,8 @@ function ProviderGroups({
   clearSearch: () => void;
 }) {
   const t = useT(M);
-  const providers = catalog.providers.filter((p) => (p.label + " " + p.id).toLowerCase().includes(query.toLowerCase()));
+  // A keyless provider (a local server) has no key to manage, so it has no row here.
+  const providers = catalog.providers.filter((p) => !p.keyless && (p.label + " " + p.id).toLowerCase().includes(query.toLowerCase()));
   return (
     <>
       {!providers.length ? <div><p>{t("noMatch")}</p><button className="btn" type="button" onClick={clearSearch}>{t("clearSearch")}</button></div> : null}

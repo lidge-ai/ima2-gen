@@ -94,10 +94,13 @@ export type MediaQuote =
   /** The route publishes a price, but per megapixel, token, minute or character: it depends on the output, so no figure is shown. */
   | { state: "usage"; unit: string }
   | { state: "unpriced" }
+  /** The route runs on the user's own machine: there is no provider price to quote. */
+  | { state: "local" }
   | { state: "unknown" };
 
 /** The estimate the published prices support for this selection, before asking the server to confirm it. */
-export function quoteFor(route: Pick<MediaRoute, "pricing"> & { params?: MediaParams }, selection: MediaSelection): MediaQuote {
+export function quoteFor(route: Pick<MediaRoute, "pricing"> & { params?: MediaParams; route?: MediaRoute["route"] }, selection: MediaSelection): MediaQuote {
+  if (route.route === "local") return { state: "local" };
   if (route.pricing.length === 0) return { state: "unpriced" };
   const unit = estimateUnit(selection.kind, route.pricing);
   const quantity = estimateQuantity(unit, selection);
