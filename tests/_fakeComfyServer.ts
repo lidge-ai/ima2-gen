@@ -39,6 +39,8 @@ export interface FakeComfy {
 }
 
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+/** Ports fetch refuses to call ("bad port"). A Windows host can hand one out for port 0. */
+const FETCH_BLOCKED_PORTS = new Set([1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080]);
 
 function textFrame(text: string): Buffer {
   const payload = Buffer.from(text, "utf8");
@@ -154,7 +156,11 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
     socket.write(textFrame(JSON.stringify({ type: "status", data: { status: { exec_info: { queue_remaining: 0 } }, sid: clientId } })));
   });
 
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+  for (;;) {
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+    if (!FETCH_BLOCKED_PORTS.has((server.address() as AddressInfo).port)) break;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
   fake.origin = "http://127.0.0.1:" + String((server.address() as AddressInfo).port);
   fake.close = async () => {
     for (const socket of open) socket.destroy();
