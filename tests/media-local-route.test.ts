@@ -87,7 +87,7 @@ test("a local estimate is free with an expected time from past runs, or unknown,
     new MediaRegistry([localAdapter(() => [localSpec("here/one")], estimateLocal ? { estimateLocal } : {})]);
   const body = { model: "here/one", task: "text-to-image" as const, inputs: [] };
   assert.deepEqual(estimateMediaJob(registry(), NO_KEYS, body), {
-    model: "here/one", adapter: "here-local", route: "local", hasKey: true, unit: "request", quantity: 1, usd: 0, prices: [],
+    model: "here/one", adapter: "here-local", route: "local", hasKey: true, unit: "request", quantity: 1, usd: 0, prices: [], quote: { state: "local" },
     local: { expectedSec: null, basis: "no runs yet", mayBill: false }, note: "runs locally; no provider charge",
   });
   const timed = estimateMediaJob(registry(() => ({ expectedSec: 42, basis: "median of 5 runs", mayBill: false })), NO_KEYS, body);

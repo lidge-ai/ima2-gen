@@ -67,7 +67,9 @@ test("tool inventory, billing, descriptions, and annotations are explicit", () =
     assert.equal(tool.outputSchema.required?.length ?? 0, 0, tool.name);
     assert.notEqual(tool.outputSchema.additionalProperties, false, tool.name);
   }
-  assert.ok(descriptor("media_estimate").description.startsWith("Informational: published price x quantity for the chosen route. usd is set only when one published price applies (or priceVariant names one); the provider's actual bill may differ."));
+  const estimateText = descriptor("media_estimate").description;
+  assert.ok(estimateText.startsWith("Informational: published price x quantity for the chosen route. The price row is chosen from the request"), estimateText);
+  assert.ok(estimateText.includes("quote carries the full answer") && estimateText.endsWith("The provider's actual bill may differ."), estimateText);
   assert.ok(descriptor("media_job_status").description.includes("Jobs stay listed while running and among the last 100 finished; saved outputs stay in history."));
   assert.ok(descriptor("workflow_estimate").description.includes("Prices each step from published prices. Runs a local media probe; calls no provider."));
   assert.ok(descriptor("workflow_run").description.endsWith("Director text planning uses the signed-in GPT session."));

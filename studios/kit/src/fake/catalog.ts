@@ -51,8 +51,30 @@ const PROVIDERS: Record<string, ProviderDef> = {
 };
 
 type Params = MediaModelSpec["params"];
-/** [id, label, kind, tasks, params, routes as providerId:usd-per-unit] */
-type ModelRow = [string, string, MediaKind, MediaTask[], Params, Record<string, number | null>];
+/** [id, label, kind, tasks, params, routes as providerId:usd-per-unit, params of single routes when they differ] */
+type ModelRow = [string, string, MediaKind, MediaTask[], Params, Record<string, number | null>, Record<string, Params>?];
+
+/** Forms the talking-video routes declare, shaped like the real catalog's. */
+const LIPSYNC_FORM: Params = {
+  inputs: [
+    { role: "source-video", min: 1, max: 1, billedLength: true },
+    { role: "source-audio", min: 1, max: 1, billedLength: true },
+  ],
+};
+const AVATAR_FORM: Params = {
+  resolutions: ["480p", "720p"],
+  inputs: [
+    { role: "source-image", min: 1, max: 1 },
+    { role: "source-audio", min: 1, max: 1, billedLength: true },
+  ],
+};
+const DUBBING_FORM: Params = {
+  inputs: [{ role: "source-video", min: 1, max: 1, billedLength: true }],
+  options: [
+    { name: "target_language", type: "enum", values: ["en", "es", "ja", "ko"], required: true },
+    { name: "source_language", type: "enum", values: ["auto", "en", "es", "ja", "ko"] },
+  ],
+};
 
 const V_FULL: Params = {
   durationsSec: [4, 5, 8, 10, 12],
@@ -234,7 +256,22 @@ const MODELS: ModelRow[] = [
   ["pixverse/pixverse-v6", "PixVerse V6", "video", T2V, V_SHORT, { pixverse: 0.06, fal: 0.08 }],
   ["recraft/recraft-v4.1", "Recraft V4.1", "image", T2I, IMG, { recraft: 0.04, fal: 0.05 }],
   ["heygen/heygen-avatar-6", "HeyGen Avatar 6", "video", ["avatar"], V_SHORT, { heygen: null }],
-  ["sync/sync-lipsync-3", "Sync Lipsync 3", "video", ["lipsync"], {}, { sync: 0.08, fal: 0.1 }],
+  [
+    "sync/sync-lipsync-3",
+    "Sync Lipsync 3",
+    "video",
+    ["lipsync"],
+    {},
+    { sync: 0.08, fal: 0.1 },
+    {
+      sync: { ...LIPSYNC_FORM, options: [{ name: "sync_mode", type: "enum", values: ["bounce", "loop", "cut_off"] }] },
+      fal: LIPSYNC_FORM,
+    },
+  ],
+  // The direct route needs a session a form cannot make, so only the aggregator declares a form.
+  ["kling/kling-lipsync", "Kling Lip Sync", "video", ["lipsync"], {}, { kling: null, fal: 0.05 }, { kling: {}, fal: LIPSYNC_FORM }],
+  ["veed/veed-fabric-1.0", "VEED Fabric 1.0", "video", ["avatar"], { resolutions: ["480p", "720p"] }, { fal: 0.08 }, { fal: AVATAR_FORM }],
+  ["veed/veed-dubbing", "VEED Dubbing", "video", ["dubbing"], {}, { fal: 0.11 }, { fal: DUBBING_FORM }],
   [
     "mirelo/mirelo-sfx-2.0",
     "Mirelo SFX 2.0",
@@ -282,7 +319,7 @@ function pricing(kind: MediaKind, tasks: readonly MediaTask[], usd: number | nul
 }
 
 function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
-  const [id, label, kind, tasks, params, routes] = row;
+  const [id, label, kind, tasks, params, routes, routeParams] = row;
   const entries = Object.entries(routes).map(([providerId, usd]) => ({
     providerId,
     route: PROVIDERS[providerId]!.route,
@@ -301,6 +338,7 @@ function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
     tasks,
     params,
     routes: entries.sort((a, b) => rank(a) - rank(b)),
+    ...(routeParams ? { routeParams } : {}),
   };
 }
 
@@ -335,7 +373,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
       label: route.label,
       upstreamId: route.upstreamId,
       tasks: model.tasks,
-      params: ROUTE_PARAMS[model.id]?.[route.providerId] ?? model.params,
+      params: model.routeParams?.[route.providerId] ?? ROUTE_PARAMS[model.id]?.[route.providerId] ?? model.params,
       pricing: route.pricing,
       docsUrl: route.docsUrl,
       hasKey: route.keyConfigured,

@@ -7,15 +7,19 @@
  * catalog routes with key state, uploads, jobs, events, history and workflows.
  */
 import type {
+  MediaInputRequirement,
   MediaInputRole,
   MediaKind,
   MediaModelSpec,
+  MediaOptionSpec,
   MediaPrice,
   MediaProviderError,
   MediaTask,
 } from "../../../lib/providers/media/contract.ts";
 
-export type { MediaInputRole, MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask };
+export type {
+  MediaInputRequirement, MediaInputRole, MediaKind, MediaModelSpec, MediaOptionSpec, MediaPrice, MediaProviderError, MediaTask,
+};
 
 /** One adapter that can run a model: a direct maker API, an aggregator, or the user's own machine ("local"). */
 export interface CatalogRoute {

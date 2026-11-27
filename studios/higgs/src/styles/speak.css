@@ -1,0 +1,37 @@
+/* Talking video: tool tabs and the audio slot. Everything else is the shared panel. */
+.speak-tools {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+.speak-settings .chip {
+  justify-self: start;
+}
+.slot-audio {
+  height: 104px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 30px;
+  text-align: center;
+}
+.slot-audio-play {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text);
+}
+.slot-audio-play:hover {
+  background: var(--surface);
+}
+.slot-audio-name {
+  max-width: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
