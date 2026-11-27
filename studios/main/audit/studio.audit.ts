@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 import { LOCALES, saveText, shoot } from "./lib.ts";
 
-// Screen × state × width matrix of the higgs studio (L7 design audit). Tests run in order on
+// Screen × state × width matrix of the main studio (L7 design audit). Tests run in order on
 // one fake server: pristine states first, then seeded results. A cell that cannot be reached
 // is recorded in metrics.jsonl as { cell, unreachable } instead of failing the run.
 
