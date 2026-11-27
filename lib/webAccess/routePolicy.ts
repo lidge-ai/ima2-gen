@@ -33,6 +33,8 @@ const UNPRICED_WRITES: readonly RegExp[] = [
 
 const ALLOWED_WRITES: readonly RegExp[] = [
   /^\/api\/media$/,
+  // Price lookup only (routes/mediaTools.ts); the media UI asks it before every run.
+  /^\/api\/media\/estimate$/,
   /^\/api\/media\/inputs$/,
   /^\/api\/media\/[^/]+\/cancel$/,
   /^\/api\/inflight\/[^/]+$/,
