@@ -88,9 +88,11 @@ describe("comfy workflow store", () => {
     await withScratchStore(async () => {
       const store = await import("../lib/comfyWorkflowStore.ts");
       await assert.rejects(
-        () => store.putWorkflow(record({ mediaKind: "audio" })),
+        () => store.putWorkflow(record({ mediaKind: "3d" })),
         (error: any) => error?.code === "COMFY_WORKFLOW_MEDIA_KIND_INVALID",
       );
+      // Audio became a kind a workflow can save once the media route could run one.
+      assert.equal((await store.putWorkflow(record({ id: "song", mediaKind: "audio" }))).mediaKind, "audio");
       const dir = join(config.storage.configDir, "comfy");
       await mkdir(dir, { recursive: true });
       await writeFile(join(dir, "workflows.json"), JSON.stringify([record()]), "utf8");

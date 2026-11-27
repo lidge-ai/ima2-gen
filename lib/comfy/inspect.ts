@@ -8,7 +8,7 @@ import { inferBindCandidates, inferComfyMediaKind, type BindCandidate } from "..
 import type { ComfyGraph, ComfyMediaKind } from "../comfyWorkflowStore.js";
 import type { ComfyTarget } from "./access.js";
 import { redactForTarget } from "./client.js";
-import { detectBindCandidates, detectMediaKind, findWorkflowProblems, type ComfyWorkflowProblems } from "./detect.js";
+import { detectBindCandidates, detectMediaKind, detectMediaSlots, findWorkflowProblems, type ComfyWorkflowProblems, type MediaSlotCandidate } from "./detect.js";
 import { fetchComfyObjectInfo, type ComfyObjectInfo } from "./objectInfo.js";
 
 export type ComfyServerReport =
@@ -17,8 +17,9 @@ export type ComfyServerReport =
 
 export interface ComfyInspection {
   candidates: BindCandidate[];
-  /** "audio" is reported so a caller can say so; only image and video workflows can be registered. */
-  mediaKind?: ComfyMediaKind | "audio";
+  mediaKind?: ComfyMediaKind;
+  /** File pickers in the graph. Empty when the server was not reachable: its schemas are what identify them. */
+  mediaSlots: MediaSlotCandidate[];
   server: ComfyServerReport;
   /** The schemas the inspection read, for callers that go on to describe parameters. */
   info?: ComfyObjectInfo;
@@ -51,6 +52,7 @@ export async function inspectComfyWorkflow(
     return {
       candidates: inferBindCandidates(graph),
       ...(mediaKind ? { mediaKind } : {}),
+      mediaSlots: [],
       server: { origin: target.origin, reachable: false, reason: schemas.reason },
     };
   }
@@ -60,6 +62,7 @@ export async function inspectComfyWorkflow(
   return {
     candidates: detectBindCandidates(graph, info),
     ...(mediaKind ? { mediaKind } : {}),
+    mediaSlots: detectMediaSlots(graph, info, mediaKind),
     server: { origin: target.origin, reachable: true, ...findWorkflowProblems(graph, info) },
     info,
   };

@@ -49,7 +49,10 @@ const MODELS: readonly MediaModelSpec[] = [
     pricing: prices([0.02, 0.03, 0.14]), docsUrl: DOCS },
   { id: "xai/grok-imagine-video", upstreamId: BASE, vendor: "xai", label: "Grok Imagine Video", kind: "video",
     tasks: ["text-to-video", "image-to-video", "reference-to-video", "video-to-video", "video-extend"],
-    params: { durationsSec: DURATIONS, resolutions: ["480p", "720p"], aspectRatios: RATIOS, maxReferenceImages: 7, nativeAudio: true },
+    params: { durationsSec: DURATIONS, resolutions: ["480p", "720p"], aspectRatios: RATIOS, maxReferenceImages: 7, nativeAudio: true,
+      // An edit follows its source in length, size and sound; an extension takes only the added length.
+      inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-video"], billedLength: true }, { role: "source-video", min: 1, max: 1, tasks: ["video-extend"] }],
+      taskFields: { "video-to-video": { accepts: ["prompt"], requires: ["prompt"] }, "video-extend": { accepts: ["prompt", "durationSec"], requires: ["prompt"] } } },
     pricing: prices([0.05, 0.07]), docsUrl: "https://docs.x.ai/developers/rest-api-reference/inference/videos" },
 ];
 

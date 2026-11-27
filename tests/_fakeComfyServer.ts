@@ -27,6 +27,9 @@ export interface FakeComfyOptions {
   events?: (promptId: string) => Array<{ type: string; data: Record<string, unknown> }>;
   /** Node schemas served at GET /object_info/{class}; a class not listed answers {} like a real server. */
   objectInfo?: Record<string, unknown>;
+  /** What a finished job's history lists under "outputs", and the bytes /view serves per filename. Defaults to one PNG from node 9. */
+  outputs?: Record<string, unknown>;
+  files?: Record<string, Buffer>;
 }
 
 export interface FakeComfyRequest { method: string; path: string; authorization: string | undefined; body: unknown }
@@ -37,6 +40,8 @@ export interface FakeComfy {
   sockets: Array<{ clientId: string | null; authorization: string | undefined }>;
   prompts: Array<{ promptId: string; clientId: unknown; body: Record<string, unknown> }>;
   canceledBy: string[];
+  /** Files received at POST /upload/image: the name sent, its size and its declared type. */
+  uploads: Array<{ name: string; bytes: number; type: string }>;
   close(): Promise<void>;
 }
 
@@ -50,6 +55,12 @@ function textFrame(text: string): Buffer {
     ? Buffer.from([0x81, payload.length])
     : Buffer.from([0x81, 126, payload.length >> 8, payload.length & 0xff]);
   return Buffer.concat([header, payload]);
+}
+
+async function rawBody(req: IncomingMessage): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks);
 }
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
@@ -66,7 +77,7 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
   const running = new Set<string>();
   const clients = new Map<string, Duplex>();
   const open = new Set<Duplex>();
-  const fake: FakeComfy = { origin: "", requests: [], sockets: [], prompts: [], canceledBy: [], close: async () => {} };
+  const fake: FakeComfy = { origin: "", requests: [], sockets: [], prompts: [], canceledBy: [], uploads: [], close: async () => {} };
 
   const send = (res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) => {
     const payload = Buffer.isBuffer(body) ? body : Buffer.from(body === undefined ? "" : JSON.stringify(body));
@@ -80,7 +91,7 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
     running.delete(promptId);
     history.set(promptId, ok
       ? { status: { status_str: "success", completed: true, messages: [] },
-          outputs: { "9": { images: [{ filename: "ima2_00001_.png", subfolder: "", type: "output" }] } } }
+          outputs: options.outputs ?? { "9": { images: [{ filename: "ima2_00001_.png", subfolder: "", type: "output" }] } } }
       : { status: { status_str: "error", completed: false, messages: [["execution_interrupted", { prompt_id: promptId }]] }, outputs: {} });
   };
   const cancel = (promptId: string, via: string): boolean => {
@@ -103,7 +114,6 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
     const url = new URL(req.url ?? "/", "http://fake");
     const body = req.method === "POST" && !String(req.headers["content-type"] ?? "").startsWith("multipart/")
       ? await readBody(req) : undefined;
-    if (req.method === "POST" && body === undefined) req.resume();
     fake.requests.push({ method: req.method ?? "", path: url.pathname, authorization: req.headers.authorization, body });
     if (!authorized(req)) return send(res, 401, { error: "unauthorized" });
     const path = url.pathname;
@@ -141,8 +151,14 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
       if (typeof id === "string") cancel(id, "interrupt");
       return send(res, 200, undefined);
     }
-    if (path === "/view") return send(res, 200, FAKE_PNG);
-    if (path === "/upload/image") return send(res, 200, { name: "ima2_ref.png", subfolder: "", type: "input" });
+    if (path === "/view") return send(res, 200, options.files?.[url.searchParams.get("filename") ?? ""] ?? FAKE_PNG);
+    if (path === "/upload/image" && req.method === "POST") {
+      const form = await new Request("http://fake/upload", { method: "POST", headers: { "content-type": String(req.headers["content-type"]) }, body: await rawBody(req), duplex: "half" } as RequestInit).formData();
+      const file = form.get("image") as File;
+      fake.uploads.push({ name: file.name, bytes: file.size, type: file.type });
+      // Like ComfyUI, the stored name is the server's to choose; a client must use what comes back.
+      return send(res, 200, { name: "stored_" + file.name, subfolder: "", type: "input" });
+    }
     return send(res, 404, { error: "not found" });
   });
 

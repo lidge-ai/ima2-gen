@@ -8,7 +8,7 @@
  * take is refused with an invalid-request error instead of being dropped, so a
  * user is never billed for a different job than the one they asked for.
  */
-import type { MediaInputRequirement, MediaInputRole, MediaModelSpec, MediaOptionSpec, MediaSubmitRequest, MediaTask } from "../../contract.js";
+import type { MediaInputRequirement, MediaInputRole, MediaModelSpec, MediaOptionSpec, MediaSubmitRequest, MediaTask, MediaTaskFieldName, MediaTaskFields } from "../../contract.js";
 import { invalidRequest } from "./errors.js";
 import { inputToUrl } from "./inputs.js";
 
@@ -258,6 +258,42 @@ function formOf(schema: EndpointSchema): { inputs: MediaInputRequirement[]; opti
   return { inputs, options: [...options.filter((o) => o.required), ...options.filter((o) => !o.required)] };
 }
 
+/** Tasks that rework one source video. Their form is that video plus whichever common fields the endpoint has. */
+const EDIT_TASKS: ReadonlySet<MediaTask> = new Set<MediaTask>(["video-to-video", "video-extend", "video-upscale"]);
+const TASK_FIELDS: readonly MediaTaskFieldName[] = ["prompt", "negativePrompt", "durationSec", "resolution", "aspectRatio", "audio", "seed"];
+const SCALAR_VALUE: FieldFilter = (field) => field.type !== "object" && field.type !== "array";
+
+/** What an edit endpoint takes, or undefined when it has no source-video field or requires something a form cannot fill. */
+function editFormOf(schema: EndpointSchema): { input: MediaInputRequirement; fields: MediaTaskFields } | undefined {
+  if (!EDIT_TASKS.has(schema.task)) return undefined;
+  const used = new Set<string>();
+  const taken = new Map<MediaTaskFieldName, InputField>();
+  const required: MediaTaskFieldName[] = [];
+  for (const key of TASK_FIELDS) {
+    const filter = SCALAR_FILTER[key];
+    const name = pickField(schema, SCALAR_FIELDS[key], used, (field) => SCALAR_VALUE(field) && (!filter || filter(field)));
+    if (!name) continue;
+    used.add(name);
+    taken.set(key, schema.fields[name] ?? {});
+    if (schema.required.includes(name)) required.push(key);
+  }
+  const video = pickField(schema, ROLE_FIELDS["source-video"], used, URL_FIELD);
+  if (!video || !schema.required.every((name) => name === video || used.has(name))) return undefined;
+  const durations = durationsOf(taken.get("durationSec")), resolutions = stringsOf(taken.get("resolution")), ratios = stringsOf(taken.get("aspectRatio"));
+  // Without a length of its own, an edit or upscale is as long as its source, and is billed by it.
+  const billed = schema.task !== "video-extend" && !taken.has("durationSec");
+  return {
+    input: { role: "source-video", min: 1, max: 1, tasks: [schema.task], ...(billed ? { billedLength: true } : {}) },
+    fields: {
+      accepts: [...taken.keys()],
+      ...(required.length > 0 ? { requires: required } : {}),
+      ...(durations.length > 0 ? { durationsSec: durations } : {}),
+      ...(resolutions.length > 0 ? { resolutions } : {}),
+      ...(ratios.length > 0 ? { aspectRatios: ratios } : {}),
+    },
+  };
+}
+
 /** Derives the advertised MediaModelSpec params from the endpoints that serve a model. */
 export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaModelSpec["params"] {
   const has = (names: readonly string[]) => schemas.some((s) => names.some((n) => n in s.fields));
@@ -274,7 +310,14 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
     if (form) tasks.add(schema.task);
     return form ?? [];
   });
-  const inputs = forms.flatMap((form) => form.inputs);
+  // An edit task runs on the first endpoint listed for it, so that endpoint alone decides its form.
+  const edits = schemas.flatMap((schema) => {
+    if (!EDIT_TASKS.has(schema.task) || tasks.has(schema.task)) return [];
+    tasks.add(schema.task);
+    const form = editFormOf(schema);
+    return form ? [{ task: schema.task, ...form }] : [];
+  });
+  const inputs = [...forms.flatMap((form) => form.inputs), ...edits.map((edit) => edit.input)];
   const options = forms.flatMap((form) => form.options);
   return {
     ...(durations.length > 0 ? { durationsSec: durations } : {}),
@@ -288,5 +331,6 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
     ...(has(SCALAR_FIELDS.seed) ? { seed: true } : {}),
     ...(inputs.length > 0 ? { inputs } : {}),
     ...(options.length > 0 ? { options } : {}),
+    ...(edits.length > 0 ? { taskFields: Object.fromEntries(edits.map((edit) => [edit.task, edit.fields])) } : {}),
   };
 }

@@ -610,7 +610,7 @@ To change `provider` / `apiKey`, run `ima2 setup` or `ima2 login` instead.
 | `ima2 comfy export <filename>` | Export a ComfyUI workflow (`POST /api/comfy/export-image`) |
 | `ima2 comfy workflow ls` | List registered workflows with per-origin health |
 | `ima2 comfy workflow inspect <file>` | Show nodes and binding candidates without saving |
-| `ima2 comfy workflow add <file> --id <id>` | Register a workflow from an API-format JSON export or a ComfyUI PNG |
+| `ima2 comfy workflow add <file> --id <id> [--input <role>=<node.input>]...` | Register a workflow from an API-format JSON export or a ComfyUI PNG. It becomes the media model `comfy/<id>`: run it with `ima2 media run --model comfy/<id> --task <task>` (no key, no provider charge; `ima2 media estimate` shows the time this machine took before). Files the workflow takes are passed with `--input <role>=<path>`; a size with `--resolution WIDTHxHEIGHT`; the workflow's own settings with `--vendor-option <Node.input>=<value>` |
 | `ima2 comfy workflow rm <id>` | Remove a registered workflow |
 | `ima2 comfy remote ls` | List ComfyUI servers allowed beyond this computer (never prints tokens) |
 | `ima2 comfy remote add <origin> [--token-stdin]` | Allow a ComfyUI server by exact origin; the optional bearer token is read from stdin |

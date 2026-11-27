@@ -53,7 +53,21 @@ export interface ComfyGraphNode {
 }
 
 export type ComfyGraph = Record<string, ComfyGraphNode>;
-export type ComfyMediaKind = "image" | "video";
+/** What the workflow saves. "audio" workflows run through the media route only; the classic image and video lanes do not list them. */
+export type ComfyMediaKind = "image" | "video" | "audio";
+
+/** The role a file plays when it is fed to a workflow; the media contract's input roles. */
+export type ComfyInputRole =
+  | "first-frame" | "last-frame" | "reference-image" | "reference-video" | "reference-audio"
+  | "source-image" | "source-video" | "source-audio" | "mask";
+
+/** A node input that takes an uploaded file (a LoadImage, LoadVideo or LoadAudio picker). */
+export interface ComfyMediaSlot {
+  role: ComfyInputRole;
+  kind: "image" | "video" | "audio";
+  node: string;
+  input: string;
+}
 
 /** Where one request field is injected into the graph. */
 export interface ComfyBinding {
@@ -78,6 +92,11 @@ export interface ComfyWorkflowBindings {
   length?: ComfyBinding;
   /** Frames per second, when the graph exposes it as a scalar. */
   fps?: ComfyBinding;
+  /**
+   * Files the workflow takes, by role. A record written before this field existed
+   * has only refImage; mediaSlots() reads both.
+   */
+  inputs?: ComfyMediaSlot[];
   /** SaveImage-like node whose outputs are collected. No input key. */
   output: { node: string };
 }
@@ -101,6 +120,8 @@ export interface ComfyWorkflowRecord {
   graph: ComfyGraph;
   bind: ComfyWorkflowBindings;
   params: ComfyWorkflowParam[];
+  /** Paid partner node classes the server reported at registration. ComfyUI may charge the user's Comfy account for them. */
+  paidNodes?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -145,11 +166,11 @@ function normalizeWorkflowRecord(value: unknown): ComfyWorkflowRecord | null {
   const output = bind.output;
   if (!isRecord(prompt) || typeof prompt.node !== "string" || typeof prompt.input !== "string") return null;
   if (!isRecord(output) || typeof output.node !== "string") return null;
-  if (value.mediaKind !== undefined && value.mediaKind !== "image" && value.mediaKind !== "video") return null;
+  if (value.mediaKind !== undefined && value.mediaKind !== "image" && value.mediaKind !== "video" && value.mediaKind !== "audio") return null;
   return {
     ...(value as unknown as ComfyWorkflowRecord),
     label: typeof value.label === "string" && value.label.trim() ? value.label : value.id,
-    mediaKind: value.mediaKind === "video" ? "video" : "image",
+    mediaKind: value.mediaKind === "video" || value.mediaKind === "audio" ? value.mediaKind : "image",
     params: Array.isArray(value.params) ? value.params as ComfyWorkflowParam[] : [],
     createdAt: typeof value.createdAt === "number" ? value.createdAt : 0,
     updatedAt: typeof value.updatedAt === "number" ? value.updatedAt : 0,
@@ -157,13 +178,24 @@ function normalizeWorkflowRecord(value: unknown): ComfyWorkflowRecord | null {
 }
 
 export function validateComfyMediaKind(value: unknown): ComfyMediaKind {
-  if (value !== "image" && value !== "video") {
+  if (value !== "image" && value !== "video" && value !== "audio") {
     throw new ComfyWorkflowError(
       COMFY_WORKFLOW_ERROR.MEDIA_KIND_INVALID,
-      "Workflow media kind must be 'image' or 'video'.",
+      "Workflow media kind must be 'image', 'video' or 'audio'.",
     );
   }
   return value;
+}
+
+/**
+ * The files a workflow takes. A record from before bind.inputs has one reference
+ * image at most: the frame a video starts from, or the image an image workflow edits.
+ */
+export function mediaSlots(record: Pick<ComfyWorkflowRecord, "bind" | "mediaKind">): ComfyMediaSlot[] {
+  if (Array.isArray(record.bind.inputs)) return record.bind.inputs;
+  const ref = record.bind.refImage;
+  if (!ref) return [];
+  return [{ role: record.mediaKind === "video" ? "first-frame" : "source-image", kind: "image", node: ref.node, input: ref.input }];
 }
 
 /**
@@ -242,6 +274,7 @@ export async function putWorkflow(
     graph: input.graph,
     bind: input.bind,
     params: input.params ?? [],
+    ...(input.paidNodes && input.paidNodes.length > 0 ? { paidNodes: [...input.paidNodes] } : {}),
     createdAt: existing?.createdAt ?? input.createdAt ?? now,
     updatedAt: now,
   };
