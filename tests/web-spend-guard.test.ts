@@ -99,7 +99,15 @@ test("the request's quality (top-level field) picks its own price row, whatever 
   ] } as unknown as MediaModelSpec;
   assert.deepEqual(estimateMediaUsd(byTask, req({ quality: "low" })), { usd: 0.03, basis: "exact" });
   assert.deepEqual(estimateMediaUsd(byTask, req({ task: "image-to-image", quality: "very_low" })), { usd: 0.008, basis: "exact" });
-  // A quality with no published row, or a row naming something the request does not say, is never guessed.
+  // A quality no row names narrows nothing: the charge is the highest of the rows that still apply.
   assert.deepEqual(estimateMediaUsd(imageSpec, req({ resolution: "1K", quality: "ultra" })), { usd: 0.2108, basis: "upper-bound" });
-  assert.deepEqual(estimateMediaUsd(imageSpec, req({ quality: "low" })), { usd: 0.2108, basis: "upper-bound" });
+  // Rows that still apply are charged at their highest price, not the highest price on the list:
+  // every "low" row costs $0.006 here, so a request that names only the quality is charged that.
+  assert.deepEqual(estimateMediaUsd(imageSpec, req({ quality: "low" })), { usd: 0.006, basis: "exact" });
+  const twoSizes = { ...imageSpec, pricing: [...imageSpec.pricing, { unit: "image", usd: 0.012, variant: "2K · low", ...source }, { unit: "image", usd: 0.4, variant: "2K · high", ...source }] } as unknown as MediaModelSpec;
+  assert.deepEqual(estimateMediaUsd(twoSizes, req({ quality: "low" })), { usd: 0.012, basis: "upper-bound" });
+  assert.deepEqual(estimateMediaUsd(twoSizes, req({ quality: "high" })), { usd: 0.4, basis: "upper-bound" });
+  // A published starting price is a floor, so it is charged as an estimate, never as exact.
+  const floor = { ...imageSpec, pricing: [{ unit: "image", usd: 0.004, variant: "text-to-image: starting price", ...source }] } as unknown as MediaModelSpec;
+  assert.deepEqual(estimateMediaUsd(floor, req({})), { usd: 0.004, basis: "estimate" });
 });
