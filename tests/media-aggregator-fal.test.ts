@@ -202,3 +202,9 @@ test("fal submits an uncurated endpoint after reading its published schema", asy
   assert.equal(job.resume?.statusUrl, "https://queue.fal.run/acme/new-video/requests/req-1/status");
   await assert.rejects(adapter.submit(ctx(fetch), request({ model: "acme/new-video", durationSec: 20 })));
 });
+
+test("fal lists Ideogram 3 rendering speeds as its quality and sends the chosen one as rendering_speed", () => {
+  const spec = adapter.listModels().find((model) => model.id === "ideogram/ideogram-v3")!;
+  assert.deepEqual(spec.params.qualities, ["TURBO", "BALANCED", "QUALITY"]);
+  assert.equal(adapter.listModels().find((model) => model.id === "ideogram/ideogram-vectorize")?.params.qualities, undefined);
+});

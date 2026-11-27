@@ -16,6 +16,11 @@ export function quoteAmount(view: QuoteView, t: Translate): string | null {
   return null;
 }
 
+const USAGE_UNIT_NAMES: readonly string[] = ["megapixel", "1k-tokens", "minute", "character"];
+function usageUnit(unit: string, t: Translate): string {
+  return USAGE_UNIT_NAMES.includes(unit) ? t(`mediaPicker.usageUnits.${unit}`) : unit;
+}
+
 /** The estimate with what it is made of, so the number can be checked against the provider's price list. */
 export function MediaEstimate({ route, selection }: { route: MediaRoute; selection: MediaSelection }) {
   const { t } = useI18n();
@@ -25,7 +30,7 @@ export function MediaEstimate({ route, selection }: { route: MediaRoute; selecti
   return (
     <div className="cost-estimate media-estimate" role="status">
       <span>{t("mediaPicker.estimate.label")}</span>
-      <span className="price">{amount ?? (quote.state === "unpriced" ? t("mediaPicker.noPrice") : t("mediaPicker.estimate.unknown"))}</span>
+      <span className="price">{amount ?? (quote.state === "unpriced" ? t("mediaPicker.noPrice") : quote.state === "usage" ? t("mediaPicker.estimate.usage") : t("mediaPicker.estimate.unknown"))}</span>
       {quote.state === "exact" || quote.state === "from" ? (
         <small>{quote.unit === "second" ? t("mediaPicker.estimate.basisSeconds", { n: quote.quantity, price: unitPrice(quote.price, t) }) : unitPrice(quote.price, t)}</small>
       ) : null}
@@ -33,6 +38,7 @@ export function MediaEstimate({ route, selection }: { route: MediaRoute; selecti
         <details className="media-details"><summary>{t("mediaPicker.estimate.basis")}</summary><p>{quote.price.variant}</p></details>
       ) : null}
       {quote.state === "range" ? <small>{t("mediaPicker.estimate.rangeNote")}</small> : null}
+      {quote.state === "usage" ? <small>{t("mediaPicker.estimate.usageNote", { provider: route.label, unit: usageUnit(quote.unit, t) })}</small> : null}
       {quote.state === "unpriced" ? <small>{t("mediaPicker.estimate.unpricedNote", { provider: route.label })}</small> : null}
     </div>
   );

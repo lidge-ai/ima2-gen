@@ -22,6 +22,7 @@ function AdjustmentNote() {
   const fieldName = (field: Adjustment["field"]) => t(field === "task" ? "mediaPicker.task" : field === "durationSec" ? "mediaPicker.duration"
     : field === "resolution" ? "mediaPicker.resolution" : field === "quality" ? "mediaPicker.quality" : field === "aspectRatio" ? "mediaPicker.aspect" : field === "audio" ? "mediaPicker.nativeAudio"
     : field === "seed" ? "mediaPicker.seed" : "mediaPicker.negativePrompt");
+  const shown = (field: Adjustment["field"], value: string) => (field === "quality" ? qualityLabel(value, t) : value);
   return (
     <div className="media-note" role="status">
       <strong>{t("mediaPicker.adjustedTitle")}</strong>
@@ -29,7 +30,7 @@ function AdjustmentNote() {
         {adjusted.map((entry) => (
           <li key={entry.field}>{entry.to === null || entry.field === "audio" || entry.field === "negativePrompt"
             ? t("mediaPicker.adjustedDropped", { field: fieldName(entry.field) })
-            : t("mediaPicker.adjustedTo", { field: fieldName(entry.field), from: entry.from, to: entry.to })}</li>
+            : t("mediaPicker.adjustedTo", { field: fieldName(entry.field), from: shown(entry.field, entry.from), to: shown(entry.field, entry.to) })}</li>
         ))}
       </ul>
       <button type="button" className="media-link" onClick={dismiss}>{t("mediaPicker.dismiss")}</button>

@@ -123,7 +123,7 @@
 .media-key__state { min-height: 16px; color: var(--text); overflow-wrap: anywhere; }
 .media-key__aside { color: var(--text-muted); }
 .media-estimate { flex-wrap: wrap; }
-.media-estimate .price { color: var(--text); }
+.media-estimate .price { color: var(--text); white-space: nowrap; }
 .media-estimate .media-details { flex-basis: 100%; }
 .media-estimate small { flex-basis: 100%; color: var(--text-muted); font: 11px/1.45 var(--mono); overflow-wrap: anywhere; }
 .media-failure { display: grid; gap: 6px; padding: 10px; border: 1px solid var(--red); background: var(--control-bg); color: var(--text); font-size: 12px; line-height: 1.5; }

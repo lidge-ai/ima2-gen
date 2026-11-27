@@ -135,3 +135,20 @@ test("short keys and transport failures are redacted; redirects are disabled", a
   const failing = { apiKey: "abc", fetch: (async () => { throw new Error("network abc"); }) as typeof fetch };
   await assert.rejects(adapter.submit(failing, request()), (error: Error) => !error.message.includes("abc"));
 });
+
+test("the tiers Ideogram prices by are a listed quality, sent on the field each model reads", async () => {
+  const spec = (id: string) => adapter.listModels().find((model) => model.id === id)!;
+  assert.deepEqual(spec("ideogram/ideogram-v3").params.qualities, ["turbo", "default", "quality"]);
+  assert.deepEqual(spec("ideogram/ideogram-v4.5").params.qualities, ["very_low", "low", "medium", "high"]);
+  assert.equal(spec("ideogram/ideogram-vectorize").params.qualities, undefined);
+  // Each price row names its task and tier the way the estimate reads them.
+  assert.deepEqual(spec("ideogram/ideogram-v4.5").pricing.map((price) => price.variant), ["text-to-image:low", "text-to-image:medium", "text-to-image:high",
+    "image-to-image:very_low", "image-to-image:low", "image-to-image:medium", "image-to-image:high"]);
+  const sent = async (req: MediaSubmitRequest) => { const { ctx, calls } = fake([{ body: { generation_id: "job_q" } }]); await adapter.submit(ctx, req); return calls[0]!.init.body as FormData; };
+  assert.equal((await sent(request({ quality: "turbo" }))).get("rendering_speed"), "turbo");
+  assert.equal((await sent(request({ model: "ideogram/ideogram-v4.5", quality: "high" }))).get("quality"), "high");
+  const refused = async (req: MediaSubmitRequest) => { const { ctx, calls } = fake([]); await assert.rejects(adapter.submit(ctx, req)); assert.equal(calls.length, 0); };
+  await refused(request({ quality: "high" }));
+  await refused(request({ quality: "turbo", vendorOptions: { rendering_speed: "quality" } }));
+  await refused(request({ model: "ideogram/ideogram-vectorize", task: "image-vectorize", prompt: undefined, inputs: [image], quality: "low" }));
+});

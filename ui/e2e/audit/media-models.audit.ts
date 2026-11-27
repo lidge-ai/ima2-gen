@@ -159,6 +159,16 @@ async function captureKeysAndFailures(stage: Stage): Promise<void> {
   await stage.card.locator(".media-estimate").scrollIntoViewIfNeeded();
   await stage.shot("quality");
   await stage.card.screenshot({ path: join(OUT, "quality-crop__" + stage.width + "__" + stage.locale + ".png") });
+  // A speed tier is the same kind of setting; a price per megapixel says it is billed by usage.
+  for (const [id, name] of [["ideogram/ideogram-v3", "speed-tier"], ["alibaba/z-image", "usage-billed"]] as const) {
+    await stage.openWindow();
+    await stage.kind(0);
+    await stage.pick(id);
+    await stage.showCard();
+    await stage.card.locator(".media-estimate").scrollIntoViewIfNeeded();
+    await stage.shot(name);
+    await stage.card.screenshot({ path: join(OUT, name + "-crop__" + stage.width + "__" + stage.locale + ".png") });
+  }
   await stage.openWindow();
   await stage.kind(1);
   await stage.pick("bytedance/seedance-2.5");
