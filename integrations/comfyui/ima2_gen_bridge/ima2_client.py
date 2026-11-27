@@ -84,6 +84,13 @@ class Ima2Client:
     def estimate(self, body):
         return self._json("POST", "/api/media/estimate", body)
 
+    def inspect_workflow(self, graph, origin):
+        """What ima2 makes of a workflow on the ComfyUI at origin: where the prompt goes, which files it takes, what that server lacks."""
+        return self._json("POST", "/api/comfy/inspect", {"graph": graph, "origin": origin})
+
+    def register_workflow(self, body):
+        return self._json("POST", "/api/comfy/workflows", body)
+
     def workflow_origin(self, workflow_id):
         """The ComfyUI server a registered workflow runs on, or None when ima2 does not say."""
         try:
