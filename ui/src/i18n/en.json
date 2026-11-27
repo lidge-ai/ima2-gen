@@ -152,6 +152,7 @@
     "routeKeyNeeded": "Needs key",
     "blockKey": "Add a {provider} API key to generate.",
     "estimate": {
+      "pending": "Working it out…",
       "usage": "Billed by usage",
       "usageNote": "{provider} charges this model per {unit}, so the amount depends on the output. Check the price list below.",
       "hintUsage": "{model} · billed by usage",

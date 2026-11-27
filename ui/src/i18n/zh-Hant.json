@@ -152,6 +152,7 @@
     "routeKeyNeeded": "需要金鑰",
     "blockKey": "需要先填寫 {provider} 的 API 金鑰才能生成。",
     "estimate": {
+      "pending": "計算中…",
       "usage": "依用量計費",
       "usageNote": "{provider} 依{unit}對此模型計費，金額取決於產生結果。請查看下方價目表。",
       "hintUsage": "{model} · 依用量計費",

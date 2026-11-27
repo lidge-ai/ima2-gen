@@ -123,6 +123,10 @@ test("estimate prices the selected image variant and leaves ambiguous prices unk
     assert.equal(ambiguous.status, 200);
     assert.equal(ambiguous.body.usd, null);
     assert.match(ambiguous.body.note, /several published variants/);
+    assert.deepEqual(ambiguous.body.quote, { state: "range", min: 0.01, max: 0.2, unit: "image", quantity: 1 });
+    // Without a count, one image is priced.
+    const { count: _count, ...noCount } = image;
+    assert.equal((await estimate(base, { ...noCount, priceVariant: "1K · low" })).body.quantity, 1);
     assert.deepEqual(calls, [], "estimation must not call a provider");
   });
 });
@@ -134,11 +138,11 @@ test("estimate uses video seconds and reports missing duration", async () => {
     assert.equal(known.body.unit, "second");
     assert.equal(known.body.quantity, 5);
     assert.equal(known.body.usd, 0.25);
-    const unknown = await estimate(base, video);
-    assert.equal(unknown.status, 200);
-    assert.equal(unknown.body.quantity, null);
-    assert.equal(unknown.body.usd, null);
-    assert.match(unknown.body.note, /quantity unknown/);
+    // Without a length, the route's default clip (5 s when it offers it) is priced.
+    const defaulted = await estimate(base, video);
+    assert.equal(defaulted.status, 200);
+    assert.equal(defaulted.body.quantity, 5);
+    assert.equal(defaulted.body.usd, 0.25);
   });
 });
 
@@ -187,4 +191,45 @@ test("an estimate carries no binary-fraction error and still rounds a real fract
   assert.equal(usd({ model: "acme/still-7", task: "text-to-image", inputs: [], count: 3 }), 0.21);
   assert.equal(usd({ model: "acme/still-tiny", task: "text-to-image", inputs: [], count: 1 }), 0.0002, "a real 0.00011 still rounds up");
   assert.equal(usd({ model: "acme/clip-third", task: "text-to-video", inputs: [], durationSec: 5 }), 0.1665);
+});
+
+test("the estimate picks the price row from the request: quality, resolution, sound and length", async () => {
+  const { estimateMediaJob } = await import("../lib/providers/media/estimate.ts");
+  const { MediaKeySnapshot } = await import("../lib/providers/media/credentials.ts");
+  const row = (unit: "image" | "second" | "megapixel", usd: number, variant?: string) => ({ unit, usd, ...(variant ? { variant } : {}), ...priceSource });
+  const registry = new MediaRegistry([makeFakeAdapter({ models: [
+    fakeSpec("acme/graded", { kind: "image", tasks: ["text-to-image", "image-to-image"], params: { resolutions: ["1K", "2K"], qualities: ["low", "medium", "high"] }, pricing: [
+      row("image", 0.006, "1K · low"), row("image", 0.0528, "1K · medium"), row("image", 0.2108, "1K · high"),
+      row("image", 0.006, "2K · low"), row("image", 0.1, "2K · medium"), row("image", 0.4, "2K · high")] }),
+    fakeSpec("acme/sound", { params: { durationsSec: [4, 8], resolutions: ["720p"], nativeAudio: true }, pricing: [row("second", 0.1, "720p without audio"), row("second", 0.15, "720p with audio")] }),
+    fakeSpec("acme/no-lengths", { params: {}, pricing: [row("second", 0.1)] }),
+    fakeSpec("acme/by-area", { kind: "image", tasks: ["text-to-image"], params: {}, pricing: [row("megapixel", 0.03, "output MP")] }),
+  ] })]);
+  const keys = new MediaKeySnapshot({ env: {}, fileConfig: {} });
+  const estimate = (body: Record<string, unknown>) => estimateMediaJob(registry, keys, { inputs: [], ...body } as never);
+  const graded = { model: "acme/graded", task: "text-to-image" };
+  // The CLI case: a quality and nothing else. Every "low" row costs the same, so that is the price.
+  const low = estimate({ ...graded, quality: "low" });
+  assert.deepEqual([low.usd, low.quantity, low.unit, low.note], [0.006, 1, "image", undefined]);
+  assert.equal(low.quote.state, "exact");
+  assert.equal(estimate({ ...graded, quality: "low", count: 3 }).usd, 0.018);
+  assert.equal(estimate({ ...graded, vendorOptions: { quality: "low" } }).usd, 0.006, "the older spelling of the same setting");
+  assert.equal(estimate({ ...graded, quality: "high", resolution: "2K" }).usd, 0.4);
+  // "high" costs different amounts at 1K and 2K: a range, not a guess.
+  const high = estimate({ ...graded, quality: "high" });
+  assert.equal(high.usd, null);
+  assert.deepEqual(high.quote, { state: "range", min: 0.2108, max: 0.4, unit: "image", quantity: 1 });
+  assert.match(high.note ?? "", /several published variants/);
+  // A named row still wins, as before.
+  assert.equal(estimate({ ...graded, quality: "low", priceVariant: "2K · high" }).usd, 0.4);
+  assert.match(estimate({ ...graded, priceVariant: "8K" }).note ?? "", /priceVariant not found/);
+  // Sound and the default clip length (the shortest when 5 s is not offered).
+  assert.deepEqual([estimate({ model: "acme/sound", task: "text-to-video" }).usd, estimate({ model: "acme/sound", task: "text-to-video" }).quantity], [0.4, 4]);
+  assert.equal(estimate({ model: "acme/sound", task: "text-to-video", audio: true, durationSec: 8 }).usd, 1.2);
+  const noLength = estimate({ model: "acme/no-lengths", task: "text-to-video" });
+  assert.deepEqual([noLength.usd, noLength.quantity], [null, null]);
+  assert.match(noLength.note ?? "", /quantity unknown/);
+  const area = estimate({ model: "acme/by-area", task: "text-to-image" });
+  assert.deepEqual([area.usd, area.quote], [null, { state: "usage", unit: "megapixel" }]);
+  assert.match(area.note ?? "", /megapixel/);
 });
