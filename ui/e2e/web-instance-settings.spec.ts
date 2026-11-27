@@ -30,6 +30,7 @@ test("on a person's own computer, Settings shows subscription sign-in, MCP provi
     for (const name of SUBSCRIPTION_CARDS) await expect(page.locator(".provider-card h4", { hasText: name }).first()).toBeVisible();
     await expect(page.locator("#mcp-provider-connections-title")).toBeVisible();
     await expect(page.locator("#comfy-workflow-manager-title")).toBeVisible();
+    await expect(page.locator(".settings-accordion__trigger", { hasText: "API Keys" })).toBeVisible();
     await expect(page.locator("#web-instance-settings-note")).toHaveCount(0);
     await shot(page, "settings-local");
   } finally { await app.close(); }
@@ -49,6 +50,9 @@ test("on the shared web instance, Settings leaves out what only works on the hos
     await expect(page.locator("#mcp-provider-connections-title")).toHaveCount(0);
     await expect(page.locator("#comfy-workflow-manager-title")).toHaveCount(0);
     await expect(page.getByText("ComfyUI address")).toHaveCount(0);
+    // Keys are set on the host; saving one here is refused (PUT /api/keys/* is closed), so no key inputs.
+    await expect(page.locator(".settings-accordion__trigger", { hasText: "API Keys" })).toHaveCount(0);
+    await expect(page.locator("input[type=password]")).toHaveCount(0);
     // The rest of the Providers section stays.
     await expect(page.getByRole("button", { name: "Check readiness" })).toBeVisible();
     await shot(page, "settings-web-instance");
