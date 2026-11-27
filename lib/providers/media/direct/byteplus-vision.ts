@@ -36,6 +36,10 @@ const KEY = 'realman_avatar_picture_omni15_cv';
 const KEY2 = 'realman_avatar_picture_omni20_cv';
 const REGION = 'ap-singapore-1';
 const DOCS = 'https://docs.byteplus.com/en/docs/byteplus-vision/omnihuman-video_generation';
+const AVATAR_INPUTS = [
+  { role: 'source-image', min: 1, max: 1 },
+  { role: 'source-audio', min: 1, max: 1, billedLength: true },
+] as const;
 const MODELS: readonly MediaModelSpec[] = [{
   id: 'bytedance/omnihuman-1.5',
   upstreamId: KEY,
@@ -45,7 +49,8 @@ const MODELS: readonly MediaModelSpec[] = [{
   tasks: ['avatar'],
   params: {
     resolutions: ['720p', '1080p'],
-    seed: true
+    seed: true,
+    inputs: AVATAR_INPUTS
   },
   pricing: [{
     unit: 'second',
@@ -61,7 +66,7 @@ const MODELS: readonly MediaModelSpec[] = [{
   label: 'OmniHuman 2.0',
   kind: 'video',
   tasks: ['avatar'],
-  params: {},
+  params: { inputs: AVATAR_INPUTS },
   pricing: [],
   docsUrl: 'https://docs.byteplus.com/en/docs/byteplus-vision/omnihuman-2-0-video-generation',
 }];

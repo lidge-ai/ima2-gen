@@ -1,5 +1,6 @@
 import type { MediaKind, MediaModelSpec, MediaPrice, MediaProviderAdapter, MediaSubmitRequest } from "./contract.js";
 import type { ResolvedMediaCredential } from "./credentials.js";
+import type { InputLengthProbe } from "./inputLength.js";
 import type { MediaRegistry } from "./registry.js";
 
 export interface MediaRunnerDeps {
@@ -17,6 +18,8 @@ export interface MediaRunnerDeps {
   maxDownloadBytes?: number;
   /** Video/image thumbnails need ffmpeg/sharp; tests turn them off. */
   thumbnails?: boolean;
+  /** Measures an uploaded input for jobs billed by input length; defaults to ffprobe. Tests inject a fake. */
+  probeInputLength?: InputLengthProbe;
 }
 
 export interface PreparedMediaJob {

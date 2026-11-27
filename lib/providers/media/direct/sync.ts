@@ -11,7 +11,11 @@ const definitions = [
   ["sync-lipsync-3", "sync-3", [0.13325, 0.13325, 0.12675, 0.10675]],
 ] as const;
 const models: readonly MediaModelSpec[] = definitions.map(([id, upstreamId, prices]) => ({
-  id: `sync/${id}`, upstreamId, vendor: "sync", label: upstreamId, kind: "video", tasks: ["lipsync"], params: {}, docsUrl,
+  id: `sync/${id}`, upstreamId, vendor: "sync", label: upstreamId, kind: "video", tasks: ["lipsync"], docsUrl,
+  params: {
+    inputs: [{ role: "source-video", min: 1, max: 1, billedLength: true }, { role: "source-audio", min: 1, max: 1, billedLength: true }],
+    options: [{ name: "sync_mode", type: "enum", values: ["bounce", "loop", "cut_off", "silence", "remap"] }],
+  },
   pricing: prices.map((usd, index) => ({ unit: "second" as const, usd, variant: `${plans[index]} (25 fps)`, source: pricingUrl, checkedAt: "2026-11-26" })),
 }));
 

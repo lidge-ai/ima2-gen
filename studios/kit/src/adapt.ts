@@ -4,9 +4,11 @@
  */
 import type { Catalog, CatalogModel, CatalogProvider, Job, JobError, KeyStatus, MediaModelSpec, MediaSubmitBody, SubmitInput } from "./types.ts";
 import type { WireAdapter, WireCatalog, WireJob, WireModel, WireRoute } from "./wire.ts";
+import { tidyResolutions } from "./resolutions.ts";
 
 /* ---------- catalog and keys ---------- */
 
+/** Lists merged from several routes read in order: shortest clip first, each resolution once by size. */
 function unionParams(routes: readonly WireRoute[]): MediaModelSpec["params"] {
   const out: Record<string, unknown> = {};
   for (const route of routes) {
@@ -17,6 +19,8 @@ function unionParams(routes: readonly WireRoute[]): MediaModelSpec["params"] {
       else if (typeof value === "boolean") out[key] = Boolean(prev) || value;
     }
   }
+  if (Array.isArray(out.durationsSec)) out.durationsSec = [...(out.durationsSec as number[])].sort((a, b) => a - b);
+  if (Array.isArray(out.resolutions)) out.resolutions = tidyResolutions(out.resolutions as string[]);
   return out as MediaModelSpec["params"];
 }
 
