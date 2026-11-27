@@ -10,7 +10,7 @@ export {
 export { StudioApiError, type HttpOptions } from "./http.ts";
 export { followEvents, toJobEvent, type SubscribeOptions } from "./events.ts";
 export { readSse, type SseMessage } from "./sse.ts";
-export { estimateCost, formatUsd, pickPrice, sumEstimates, type PricedRequest } from "./pricing.ts";
+export { formatUsd, sumEstimates } from "./pricing.ts";
 export { chooseRoute, modelHasKey, type RouteChoice } from "./routing.ts";
 export { TALKING_TASKS, billedSeconds, chooseFormRoute, formRoutes, taskForm, type TalkingTask, type TaskForm } from "./taskForm.ts";
 export { EDIT_TASKS, chooseEditRoute, editForm, editRoutes, type EditForm, type EditTask } from "./editForm.ts";

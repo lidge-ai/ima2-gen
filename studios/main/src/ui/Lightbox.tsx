@@ -9,6 +9,7 @@ import { restoreDraft } from "../studio/draft.ts";
 import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
+import { ComfyGraphButton } from "./ComfyGraphButton.tsx";
 
 const M = messages(
   { animate: "Animate", edit: "Edit", remix: "Remix", extend: "Extend", upscale: "Upscale", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
@@ -89,6 +90,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
       <a className="btn" href={item.url} download={downloadName(item.url, item.historyId)}>
         <Icon name="download" size={15} /> {t("download")}
       </a>
+      <ComfyGraphButton key={item.historyId} item={item} />
       {again && item.prompt ? (
         <button type="button" className="btn" onClick={runAgain}>
           <Icon name="sparkle" size={15} /> {t("again")}

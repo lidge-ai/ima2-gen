@@ -12,6 +12,7 @@ import type { ElementMentionKind } from "./ElementMentionChip";
 import { ReferenceTray } from "./composer/ReferenceTray";
 import { ElementMentionChips } from "./composer/ElementMentionChips";
 import { DeadTagMirror } from "./composer/DeadTagMirror";
+import { useComposerPlaceholder } from "./composer/useComposerPlaceholder";
 import { PromptComposerToolbar } from "./composer/PromptComposerToolbar";
 import { usePromptPaste } from "./composer/usePromptPaste";
 import { composerAcceptAttr } from "../lib/droppedMedia"; import { useComposerDrop } from "./composer/useComposerDrop";
@@ -101,13 +102,7 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
   const afterPrompts = insertedPrompts.filter((item) => item.placement === "after");
   const visualPromptIds = [...beforePrompts.map((item) => item.id), "__main_prompt__", ...afterPrompts.map((item) => item.id)];
   const canAddMore = trayItems.length < maxRefs;
-  const placeholder = multimode
-    ? trayItems.length > 0
-      ? t("multimode.promptPlaceholderWithRefs")
-      : t("multimode.promptPlaceholder")
-    : trayItems.length > 0
-      ? t("prompt.placeholderWithRefs")
-      : t("prompt.placeholder");
+  const placeholder = useComposerPlaceholder(multimode, trayItems.length > 0);
   const submitPrompt = () => { if (missingElementIds.length > 0) return; void generate(); };
 
   const captureAttachmentCaret = (): number => {

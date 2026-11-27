@@ -48,6 +48,44 @@
 /* Labels sit above their field: the panel is too narrow for a label column in every language. */
 .media-controls .media-parameter { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 
+/* ── Declared settings: a free length and a voice ── */
+/* The unit sits beside the field inside the row, whatever width the field asks for. */
+.media-length { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; color: var(--text-muted); font-size: 11px; }
+.media-length input { width: 100%; min-width: 0; box-sizing: border-box; }
+.media-field-hint { grid-column: 1 / -1; margin: 0; color: var(--text-muted); font-size: 11px; line-height: 1.4; }
+.media-voice { gap: 6px; }
+.media-voice__current { font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 36px; text-align: left; }
+.media-voice__current > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-voice__change { flex: none; color: var(--text-muted); font-size: 11px; }
+.media-voice__panel { display: grid; gap: 6px; min-width: 0; }
+.media-voice__scroll { max-height: 280px; border: 1px solid var(--hairline-soft); overflow-y: auto; overscroll-behavior: contain; }
+.media-voice__scroll { border-radius: var(--r-sm); }
+.media-voice__scroll:empty { display: none; }
+.media-voice__scroll > .media-inputs { padding: 8px; }
+.media-voice__group { margin: 0; padding: 8px 8px 4px; color: var(--text-muted); font-size: 11px; font-weight: 600; }
+.media-voice__list { margin: 0; padding: 0; list-style: none; }
+.media-voice__row { display: flex; align-items: stretch; border-top: 1px solid var(--hairline-soft); }
+.media-voice__pick { display: grid; flex: 1 1 auto; gap: 1px; min-width: 0; min-height: 44px; padding: 6px 8px; border: 0; background: transparent; color: var(--text); font-size: 12px; text-align: left; cursor: pointer; }
+.media-voice__pick:hover { background: var(--control-hover); }
+.media-voice__pick[aria-pressed="true"] { background: var(--accent-soft); }
+.media-voice__name { font-weight: 500; overflow-wrap: anywhere; }
+.media-voice__facts, .media-voice__about { color: var(--text-muted); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.media-voice__about { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.media-voice__play { flex: 0 0 44px; border: 0; border-left: 1px solid var(--hairline-soft); background: transparent; color: var(--text-dim); font-size: 11px; cursor: pointer; }
+.media-voice__play:hover, .media-voice__play[aria-pressed="true"] { background: var(--control-hover); color: var(--text); }
+.media-voice__pick:focus-visible, .media-voice__play:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; }
+
+/* ── A sound result: no picture, so the stage shows what it is and the player ── */
+.result-audio { display: grid; gap: 12px; width: min(560px, calc(100% - 32px)); padding: 20px; border: 1px solid var(--hairline); background: var(--surface-2); text-align: left; }
+.result-audio { border-radius: var(--r-md); }
+.result-audio__head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.result-audio__mark { display: grid; flex: none; width: 36px; height: 36px; place-items: center; border: 1px solid var(--hairline); color: var(--text-dim); font-size: 16px; }
+.result-audio__mark { border-radius: var(--r-sm); }
+.result-audio__title { min-width: 0; color: var(--text); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.result-audio__player { display: block; width: 100%; min-height: 40px; }
+.video-thumb-placeholder.audio-thumb-placeholder { display: grid; place-items: center; color: var(--text-muted); font-size: 18px; line-height: 1; }
+.home-recent-card__fallback--audio { gap: 6px; overflow-wrap: anywhere; }
+
 /* ── Model window ── */
 /* Above the mobile compose sheet (180), which is where the model card lives on a phone. */
 .modal-backdrop.media-dialog-backdrop { z-index: 210; padding: 16px; }
@@ -177,3 +215,5 @@
   .media-row__check { grid-column: 3; grid-row: 1; }
   .media-row--builtin { grid-template-columns: minmax(0, 1fr); }
 }
+/* A sound tile in the history strip takes the same box as a clip's. */
+.history-thumb--audio { position: relative; cursor: pointer; }

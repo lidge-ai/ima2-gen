@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+// The child runs outside scripts/run-tests.mjs, so it is given the same port helper: its fixtures
+// listen on port 0 and fetch themselves, and fetch refuses some of the ports a system can hand out.
+const fetchablePorts = pathToFileURL(fileURLToPath(new URL("./helpers/fetchablePorts.mjs", import.meta.url))).href;
 
 /** No credentials, home/config roots, or ambient Node loader flags cross this boundary. */
 export function executionChildEnv(): NodeJS.ProcessEnv {
@@ -18,7 +22,7 @@ export function executionTestProcess(url: string): boolean {
     return true;
   }
   test(`isolated execution fixture: ${fileURLToPath(url)}`, { timeout: 65_000 }, async (t) => {
-    const child = spawn(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "--test", fileURLToPath(url)], {
+    const child = spawn(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "--import", fetchablePorts, "--test", fileURLToPath(url)], {
       env: { ...executionChildEnv(), EXECUTION_TEST_FILE: url }, stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";

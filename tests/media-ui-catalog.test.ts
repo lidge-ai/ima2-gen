@@ -156,7 +156,7 @@ test("the list holds only models of the kind that can do the task, narrowed by s
 test("row facts, sorting, groups and suggestions come from catalog data", () => {
   const list = filterModels(CATALOG, { kind: "video", task: "text-to-video" });
   assert.deepEqual(modelFacts(CATALOG[1]!, "text-to-video"), { price: price(0.4), resolutions: { low: "720p", high: "4k", rank: 2160 },
-    durations: { min: 5, max: 8 }, audio: true, routes: 1, runnable: true });
+    durations: { min: 5, max: 8 }, audio: true, voice: false, local: false, routes: 1, runnable: true });
   const ids = (l: MediaModel[]) => l.map((m) => m.id);
   assert.deepEqual(ids(sortModels(list, "price", "text-to-video")), ["beta/locked", "acme/fast", "acme/long", "beta/plain", "acme/sharp"]);
   assert.deepEqual(ids(sortModels(list, "resolution", "text-to-video"))[0], "acme/sharp");
@@ -204,7 +204,7 @@ test("seeds are whole numbers in the provider range, and saved selections are re
   assert.equal(parseSeed(" 0 "), 0);
   for (const bad of ["", "1.5", "-3", "1e3", "abc", "99999999999"]) assert.equal(parseSeed(bad), undefined, bad);
   assert.equal(parseMediaSelection(null), null);
-  assert.equal(parseMediaSelection({ kind: "audio", model: "a/b", adapter: "x", task: "t" }), null);
+  assert.equal(parseMediaSelection({ kind: "document", model: "a/b", adapter: "x", task: "t" }), null);
   assert.equal(parseMediaSelection({ kind: "video", model: "", adapter: "x", task: "t" }), null);
   assert.deepEqual(parseMediaSelection({ kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", routeLabel: "fal.ai", routeMark: "https://evil.example/x.svg", durationSec: 5, seed: 1.5, audio: "yes", extra: 1 }),
     { kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", routeLabel: "fal.ai", durationSec: 5 });
@@ -234,7 +234,7 @@ test("making a result again restores its model, pinned route and settings agains
   const models = [model("acme/clip", [direct, fal])];
   const row = { provider: "media:fal", adapter: "fal", model: "acme/clip", mediaType: "video",
     media: { task: "text-to-video", durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true, inputRoles: [] } };
-  assert.deepEqual(remakePlan(row, models), { ok: true, adjusted: [], inputsDropped: false,
+  assert.deepEqual(remakePlan(row, models), { ok: true, adjusted: [], inputsDropped: false, voiceNeeded: false,
     selection: { kind: "video", model: "acme/clip", adapter: "fal", task: "text-to-video", routeMode: "pinned", label: "clip", vendor: "Acme", routeLabel: "fal",
       durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true } });
   // The route it ran on is gone: Automatic takes over and says which settings moved.

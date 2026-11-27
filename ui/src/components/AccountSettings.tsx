@@ -50,7 +50,8 @@ function statusTone(status?: string): "ok" | "warn" | "err" {
   return "warn";
 }
 
-export function AccountSettings() {
+/** webInstance: the shared web instance, where subscription sign-in on the host is refused (lib/webAccess). */
+export function AccountSettings({ webInstance = false }: { webInstance?: boolean } = {}) {
   const { t } = useI18n();
   const oauth = useOAuthStatus();
   const grok = useGrokStatus();
@@ -74,20 +75,22 @@ export function AccountSettings() {
 
   return (
     <>
-      <article className="provider-card">
-        <div className="provider-card__head">
-          <span className="provider-card__brand"><OpenAIIcon /></span>
-          <h4>{t("settings.account.oauthTitle")}</h4>
-          <span className="provider-card__eyebrow">{t("settings.account.primaryEyebrow")}</span>
-          <span className={`provider-chip provider-chip--${statusTone(oauth?.status)}`}>
-            {statusLabel(t, oauth?.status)}
-          </span>
-        </div>
-        <div className="settings-row__copy">
-          <p>{t("settings.account.oauthBody")}</p>
-        </div>
-        <CodexQuota data={quota.data} loading={quota.loading} onRefresh={quota.refreshQuota} />
-      </article>
+      {!webInstance && (
+        <article className="provider-card">
+          <div className="provider-card__head">
+            <span className="provider-card__brand"><OpenAIIcon /></span>
+            <h4>{t("settings.account.oauthTitle")}</h4>
+            <span className="provider-card__eyebrow">{t("settings.account.primaryEyebrow")}</span>
+            <span className={`provider-chip provider-chip--${statusTone(oauth?.status)}`}>
+              {statusLabel(t, oauth?.status)}
+            </span>
+          </div>
+          <div className="settings-row__copy">
+            <p>{t("settings.account.oauthBody")}</p>
+          </div>
+          <CodexQuota data={quota.data} loading={quota.loading} onRefresh={quota.refreshQuota} />
+        </article>
+      )}
 
       {showApiKeyCard ? (
         <article className="provider-card">
@@ -109,20 +112,22 @@ export function AccountSettings() {
         </article>
       ) : null}
 
-      <article className="provider-card">
-        <div className="provider-card__head">
-          <span className="provider-card__brand"><GrokIcon /></span>
-          <h4>{t("settings.account.grokTitle")}</h4>
-          <span className="provider-card__eyebrow">{t("settings.account.grokEyebrow")}</span>
-          <span className={`provider-chip provider-chip--${statusTone(grok?.status)}`}>
-            {statusLabel(t, grok?.status)}
-          </span>
-        </div>
-        <div className="settings-row__copy">
-          <p>{t("settings.account.grokBody")}</p>
-        </div>
-        <GrokQuota data={quota.data} loading={quota.loading} onRefresh={quota.refreshQuota} />
-      </article>
+      {!webInstance && (
+        <article className="provider-card">
+          <div className="provider-card__head">
+            <span className="provider-card__brand"><GrokIcon /></span>
+            <h4>{t("settings.account.grokTitle")}</h4>
+            <span className="provider-card__eyebrow">{t("settings.account.grokEyebrow")}</span>
+            <span className={`provider-chip provider-chip--${statusTone(grok?.status)}`}>
+              {statusLabel(t, grok?.status)}
+            </span>
+          </div>
+          <div className="settings-row__copy">
+            <p>{t("settings.account.grokBody")}</p>
+          </div>
+          <GrokQuota data={quota.data} loading={quota.loading} onRefresh={quota.refreshQuota} />
+        </article>
+      )}
 
       {keyStatus?.nai?.configured && (
         <article className="provider-card">
@@ -145,35 +150,37 @@ export function AccountSettings() {
         </article>
       )}
 
-      <article className="provider-card">
-        <div className="provider-card__head">
-          <span className="provider-card__brand"><GeminiIcon /></span>
-          <h4>{t("settings.account.agyTitle")}</h4>
-          <span className="provider-card__eyebrow">{t("settings.account.agyEyebrow")}</span>
-          <span className={`provider-chip provider-chip--${agy?.installed ? "ok" : "warn"}`}>
-            {agy?.installed ? t("settings.account.agyInstalled") : t("settings.account.agyMissing")}
-          </span>
-        </div>
-        <div className="settings-row__copy">
-          {agy?.installed ? (
-            <p>{t("settings.account.agyInstalledBody")}</p>
-          ) : (
-            <p>
-              {t("settings.account.agyMissingBody")}{" "}
-              <a
-                href="https://antigravity.google/docs/cli-install"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t("settings.account.agyMissingLink")}
-              </a>
+      {!webInstance && (
+        <article className="provider-card">
+          <div className="provider-card__head">
+            <span className="provider-card__brand"><GeminiIcon /></span>
+            <h4>{t("settings.account.agyTitle")}</h4>
+            <span className="provider-card__eyebrow">{t("settings.account.agyEyebrow")}</span>
+            <span className={`provider-chip provider-chip--${agy?.installed ? "ok" : "warn"}`}>
+              {agy?.installed ? t("settings.account.agyInstalled") : t("settings.account.agyMissing")}
+            </span>
+          </div>
+          <div className="settings-row__copy">
+            {agy?.installed ? (
+              <p>{t("settings.account.agyInstalledBody")}</p>
+            ) : (
+              <p>
+                {t("settings.account.agyMissingBody")}{" "}
+                <a
+                  href="https://antigravity.google/docs/cli-install"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t("settings.account.agyMissingLink")}
+                </a>
+              </p>
+            )}
+            <p style={{ fontSize: "12px", color: "var(--text-dim, #888)", marginTop: "4px" }}>
+              {t("settings.account.agyFineprint")}
             </p>
-          )}
-          <p style={{ fontSize: "12px", color: "var(--text-dim, #888)", marginTop: "4px" }}>
-            {t("settings.account.agyFineprint")}
-          </p>
-        </div>
-      </article>
+          </div>
+        </article>
+      )}
 
       {keyStatus && (
         <article className="settings-row settings-accordion">

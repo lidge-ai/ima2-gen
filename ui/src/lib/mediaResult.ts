@@ -1,4 +1,5 @@
 import type { MediaModel } from "./mediaCatalog";
+import { formProblem } from "./mediaForm";
 import { resolveRoute } from "./mediaRoutes";
 import { reconcileSelection, type Adjustment, type MediaSelection } from "./mediaSelection";
 import { inferTask, isClassicTask } from "./mediaTasks";
@@ -49,18 +50,18 @@ export function resultCost(item: MediaResultFacts): ResultCost | null {
 }
 
 export type RemakePlan =
-  | { ok: true; selection: MediaSelection; adjusted: Adjustment[]; inputsDropped: boolean }
+  | { ok: true; selection: MediaSelection; adjusted: Adjustment[]; inputsDropped: boolean; voiceNeeded: boolean }
   | { ok: false; reason: "not-media" | "model-gone" };
 
 /**
  * The selection that makes this result again: the same model, the same route pinned, and the settings
  * it was made with, re-checked against today's catalog. A route the catalog no longer lists falls back
  * to Automatic and the change is reported with the rest. Input images are not kept with a result, so
- * a result made from images asks for them again.
+ * a result made from images asks for them again; a voice is not kept either, so speech asks for one.
  */
 export function remakePlan(item: MediaResultFacts, models: readonly MediaModel[]): RemakePlan {
   if (!isMediaResult(item)) return { ok: false, reason: "not-media" };
-  const kind = item.mediaType === "video" ? "video" : "image";
+  const kind = item.mediaType === "video" ? "video" : item.mediaType === "audio" ? "audio" : "image";
   const model = models.find((entry) => entry.id === item.model && entry.kind === kind);
   if (!model) return { ok: false, reason: "model-gone" };
   const settings = item.media ?? {};
@@ -79,5 +80,6 @@ export function remakePlan(item: MediaResultFacts, models: readonly MediaModel[]
   if (typeof settings.audio === "boolean") made.audio = settings.audio;
   const pinned = stillListed && resolved.route.adapter === adapter;
   const next = reconcileSelection(model, resolved.route, task, made, pinned ? "pinned" : "auto");
-  return { ok: true, selection: next.selection, adjusted: next.adjusted, inputsDropped: inputs > 0 };
+  const voiceNeeded = formProblem(resolved.route, next.selection)?.code === "voice";
+  return { ok: true, selection: next.selection, adjusted: next.adjusted, inputsDropped: inputs > 0, voiceNeeded };
 }

@@ -6,6 +6,7 @@ import { fetchApi } from "./api-core";
  */
 import type { GenerateItem } from "../types";
 import { isVideoItem } from "./videoMedia";
+import { isAudioItem } from "./audioMedia";
 
 /* ── Action definitions ── */
 
@@ -22,17 +23,17 @@ export const CHAINING_ACTIONS: ChainingAction[] = [
   {
     id: "animate",
     labelKey: "chain.animate",
-    available: (item) => Boolean(item.filename) && !isVideoItem(item),
+    available: (item) => Boolean(item.filename) && !isVideoItem(item) && !isAudioItem(item),
   },
   {
     id: "edit",
     labelKey: "chain.edit",
-    available: (item) => Boolean(item.filename) && !isVideoItem(item),
+    available: (item) => Boolean(item.filename) && !isVideoItem(item) && !isAudioItem(item),
   },
   {
     id: "useAsRef",
     labelKey: "chain.useAsRef",
-    available: (item) => Boolean(item.image || item.url),
+    available: (item) => Boolean(item.image || item.url) && !isAudioItem(item),
   },
   {
     id: "rebake",
@@ -42,12 +43,12 @@ export const CHAINING_ACTIONS: ChainingAction[] = [
   {
     id: "saveToAssets",
     labelKey: "chain.saveToAssets",
-    available: (item) => Boolean(item.filename),
+    available: (item) => Boolean(item.filename) && !isAudioItem(item),
   },
   {
     id: "saveAsElement",
     labelKey: "chain.saveAsElement",
-    available: (item) => Boolean(item.filename) && !isVideoItem(item),
+    available: (item) => Boolean(item.filename) && !isVideoItem(item) && !isAudioItem(item),
   },
 ];
 

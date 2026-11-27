@@ -18,6 +18,7 @@ import { useI18n } from "../i18n";
 import type { SettingsSection } from "../types";
 import { Select } from "./controls";
 import { LanSessionControls } from "./LanSignIn";
+import { isWebInstance } from "../lib/webInstance";
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
   "providers",
@@ -60,6 +61,7 @@ export function SettingsWorkspace() {
   const galleryDefaultScope = useAppStore((s) => s.galleryDefaultScope);
   const setGalleryDefaultScope = useAppStore((s) => s.setGalleryDefaultScope);
   const provider = useAppStore((s) => s.provider);
+  const webInstance = isWebInstance();
   const contentRef = useRef<HTMLElement | null>(null);
   const unlockTimerRef = useRef<number | null>(null);
   const isProgrammaticScroll = useRef(false);
@@ -190,9 +192,20 @@ export function SettingsWorkspace() {
 
           <section ref={contentRef} className="settings-content" aria-label={t("settings.contentAria")}>
             <SettingsSectionBlock id="providers" setRef={setSectionRef}>
-              <AccountSettings />
-              <McpProviderConnections />
-              <ComfyWorkflowManager />
+              <AccountSettings webInstance={webInstance} />
+              {webInstance ? (
+                <article className="settings-row" id="web-instance-settings-note">
+                  <div className="settings-row__copy">
+                    <h4>{t("webAccess.settingsNoteTitle")}</h4>
+                    <p>{t("webAccess.settingsNoteBody")}</p>
+                  </div>
+                </article>
+              ) : (
+                <>
+                  <McpProviderConnections />
+                  <ComfyWorkflowManager />
+                </>
+              )}
               <article className="settings-row">
                 <div className="settings-row__copy">
                   <h4>{t("readiness.settingsTitle")}</h4>

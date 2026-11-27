@@ -50,6 +50,24 @@ test("a registration sends the chosen fields and every file input with its role"
   assert.equal("inputs" in buildBind({ prompt: "6.text", output: "9" }, [], {}), false);
 });
 
+test("a setting the graph writes in several nodes is registered with every one of them", () => {
+  // The size of a FLUX.2 graph is in the latent node and again in the scheduler: binding one would run a graph that disagrees with itself.
+  const candidates = [
+    { field: "prompt" as const, node: "74", input: "text", classType: "CLIPTextEncode", unambiguous: true },
+    { field: "width" as const, node: "62", input: "width", classType: "Flux2Scheduler", unambiguous: true, also: [{ node: "66", input: "width" }] },
+    { field: "duration" as const, node: "94", input: "duration", classType: "TextEncodeAceStepAudio1.5", unambiguous: true, also: [{ node: "98", input: "seconds" }] },
+    { field: "length" as const, node: "55", input: "length", classType: "Wan22ImageToVideoLatent", unambiguous: true },
+  ];
+  const bind = buildBind({ prompt: "74.text", width: "62.width", duration: "94.duration", length: "55.length", fps: "57.fps", output: "9" }, [], {}, candidates);
+  assert.deepEqual(bind, {
+    prompt: { node: "74", input: "text" }, width: { node: "62", input: "width", also: [{ node: "66", input: "width" }] },
+    length: { node: "55", input: "length" }, fps: { node: "57", input: "fps" },
+    duration: { node: "94", input: "duration", also: [{ node: "98", input: "seconds" }] }, output: { node: "9" },
+  });
+  // Choosing another node than the one the list came with drops that list.
+  assert.deepEqual(buildBind({ width: "66.width", output: "9" }, [], {}, candidates).width, { node: "66", input: "width" });
+});
+
 test("the server report is read as one of four plain states", () => {
   assert.deepEqual(reportSummary(undefined), { state: "unknown" });
   assert.deepEqual(reportSummary({ origin: "http://127.0.0.1:8188", reachable: false, reason: "connect ECONNREFUSED" }),

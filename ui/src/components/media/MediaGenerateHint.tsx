@@ -1,6 +1,7 @@
 import { useI18n } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
 import { quoteAmount } from "./MediaEstimate";
+import { formProblemText } from "./mediaLabels";
 import { useMediaQuote } from "./useMediaQuote";
 import type { MediaReadiness } from "./useMediaReadiness";
 
@@ -17,6 +18,7 @@ export function MediaGenerateHint({ id, readiness }: { id: string; readiness: Me
   let text: string;
   if (blocker?.code === "key") text = t("mediaPicker.blockKey", { provider: blocker.route.label });
   else if (blocker?.code === "input") text = t(`mediaPicker.problem.${blocker.problem.code}`, { min: blocker.problem.min, max: blocker.problem.max, have: blocker.problem.have });
+  else if (blocker?.code === "form") text = formProblemText(blocker.problem, t);
   else if (failed) text = t("mediaPicker.failure.hint", { model: name });
   else {
     const amount = quoteAmount(view, t);

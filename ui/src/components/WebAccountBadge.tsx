@@ -1,22 +1,5 @@
 import { useI18n } from "../i18n";
-
-const USER_COOKIE = "ima2_web_user";
-const MODE_COOKIE = "ima2_web_auth";
-
-function readCookie(cookie: string, name: string): string | null {
-  for (const part of cookie.split(";")) {
-    const [key, ...rest] = part.trim().split("=");
-    if (key !== name) continue;
-    try { return decodeURIComponent(rest.join("=")); } catch { return null; }
-  }
-  return null;
-}
-
-/** Email the web instance's sign-in gate put in a readable cookie (lib/webAccess); absent on a local install. */
-export function readWebUser(cookie: string): string | null {
-  const email = readCookie(cookie, USER_COOKIE);
-  return email && email.includes("@") ? email : null;
-}
+import { readWebAuthMode, readWebUser } from "../lib/webInstance";
 
 /**
  * Who is signed in on the shared web instance. Google sign-in logs out with a
@@ -28,7 +11,7 @@ export function WebAccountBadge() {
   const cookie = typeof document === "undefined" ? "" : document.cookie;
   const email = readWebUser(cookie);
   if (!email) return null;
-  const google = readCookie(cookie, MODE_COOKIE) === "google";
+  const google = readWebAuthMode(cookie) === "google";
   return (
     <div className="web-account-badge" role="status">
       <span className="web-account-badge__email">{t("webAccess.signedInAs", { email })}</span>

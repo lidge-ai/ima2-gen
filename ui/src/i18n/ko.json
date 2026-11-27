@@ -1,7 +1,9 @@
 {
   "webAccess": {
     "signedInAs": "{email}(으)로 로그인됨",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "settingsNoteTitle": "공유 웹 인스턴스에서",
+    "settingsNoteBody": "구독 로그인(GPT, Grok, Antigravity), MCP 제공자, ComfyUI는 내 컴퓨터의 앱에서만 쓸 수 있어 여기서는 보이지 않습니다. 미디어 모델은 이 인스턴스에 설정된 키를 씁니다."
   },
   "mediaPicker": {
     "model": "모델",
@@ -49,7 +51,7 @@
       "minute": "분",
       "character": "문자"
     },
-    "cardIdle": "내 API 키로 이미지·영상 모델을 제공업체 가격 그대로 실행해요.",
+    "cardIdle": "내 API 키로 이미지·영상·오디오 모델을 제공업체 가격 그대로 실행해요.",
     "change": "모델 바꾸기",
     "useBuiltin": "기본 제공자로",
     "browseAll": "모든 모델 보기…",
@@ -63,14 +65,16 @@
       "image-to-image": "이미지 편집",
       "text-to-video": "텍스트로",
       "image-to-video": "이미지로",
-      "reference-to-video": "레퍼런스로"
+      "reference-to-video": "레퍼런스로",
+      "text-to-audio": "텍스트로"
     },
     "taskNeeds": {
       "text-to-image": "프롬프트만 써요.",
       "image-to-image": "작성기의 첫 이미지를 편집해요. 여러 장을 받는 모델은 나머지를 참고 이미지로 써요.",
       "text-to-video": "프롬프트만 써요.",
       "image-to-video": "작성기의 이미지 1장을 첫 프레임으로 써요.",
-      "reference-to-video": "작성기의 이미지를 참고해 새 장면을 만들어요."
+      "reference-to-video": "작성기의 이미지를 참고해 새 장면을 만들어요.",
+      "text-to-audio": "프롬프트만 써요."
     },
     "search": "모델 검색",
     "maker": "제작사",
@@ -120,6 +124,17 @@
     },
     "noPrice": "공개 가격 없음",
     "audioTag": "사운드",
+    "voiceTag": "목소리",
+    "use": {"label": "만들 소리", "speech": "음성", "sound": "음악·효과음"},
+    "useNeeds": {"speech": "고른 목소리가 프롬프트에 적은 글을 그대로 읽어요.", "sound": "프롬프트에 만들 음악이나 소리를 설명해요."},
+    "lengthUnit": "초",
+    "lengthAuto": "모델이 정함",
+    "lengthHint": "{min}~{max}초",
+    "lengthHintOptional": "{min}~{max}초. 비워 두면 모델이 정해요.",
+    "form": {"voice": "생성하려면 목소리를 골라 주세요.", "lengthRequired": "길이를 {min}~{max}초 사이로 정해 주세요.", "lengthRange": "길이는 {min}~{max}초여야 해요.", "option": "생성하려면 {name} 값을 정해 주세요."},
+    "option": {"voice_id": "목소리", "force_instrumental": "연주곡만 (보컬 없음)", "loop": "끊김 없이 반복"},
+    "voice": {"choose": "목소리 고르기", "change": "바꾸기", "search": "목소리 검색", "mine": "내 목소리", "library": "목소리 라이브러리", "loading": "목소리를 불러오는 중…", "failed": "{provider}에서 목소리를 불러오지 못했어요.", "empty": "이 계정에는 아직 목소리가 없어요.", "none": "검색과 맞는 목소리가 없어요.", "needsKey": "{provider} 키를 추가하면 목소리 목록을 불러와요.", "play": "{name} 샘플 재생", "stop": "{name} 샘플 정지", "more": "{n}개 더 있어요. 검색으로 좁혀 보세요.", "female": "여성", "male": "남성", "neutral": "중성"},
+    "unitKCharacters": "1,000자",
     "seconds": "{n}초",
     "secondsRange": "{min}–{max}초",
     "emptyFiltered": "일치하는 모델이 없어요.",
@@ -397,6 +412,7 @@
     "footerHint": "이 패널을 닫아도 생성은 계속됩니다.",
     "kindImage": "이미지",
     "kindVideo": "비디오",
+    "kindAudio": "오디오",
     "kindNode": "노드",
     "kindMcp": "MCP",
     "progressAria": "생성 진행률: {n}%"
@@ -740,6 +756,8 @@
     "refRemoveAria": "참조 이미지 {n} 제거",
     "placeholder": "원하는 이미지를 설명하고, 드래그 앤 드롭이나 붙여넣기로 참조 이미지를 추가할 수 있어요...",
     "placeholderWithRefs": "첨부한 이미지로 무엇을 만들지 설명해 주세요...",
+    "placeholderSpeech": "목소리가 읽을 글을 적어 주세요...",
+    "placeholderSound": "만들 음악이나 소리를 설명해 주세요...",
     "attach": "첨부",
     "attachTitle": "참조 이미지 첨부",
     "useCurrent": "현재 결과 사용",
@@ -776,6 +794,7 @@
     "openAria": "캔버스 모드에서 이미지 열기",
     "dragToComposer": "작성창으로 드래그해서 참조 추가",
     "dragHint": "드래그",
+    "audioResult": "생성된 오디오",
     "annotationInstructionsChip": "캔버스 노트",
     "close": "캔버스 닫기",
     "blank": {
@@ -1241,6 +1260,7 @@
     "remakeTitle": "이 결과의 모델, 경로, 설정, 프롬프트를 복원해요. 생성을 누르기 전에는 아무것도 보내지 않아요.",
     "remakeReady": "모델, 설정, 프롬프트를 복원했어요. 예상 비용을 확인하고 생성을 눌러 주세요.",
     "remakeNeedsImages": "모델, 설정, 프롬프트를 복원했어요. 이 결과는 이미지로 만들었으니 생성 전에 이미지를 다시 넣어 주세요.",
+    "remakeNeedsVoice": "모델, 설정, 프롬프트를 복원했어요. 목소리를 고른 뒤 생성을 눌러 주세요.",
     "remakeModelGone": "이 모델은 이제 카탈로그에 없어서 여기서 다시 만들 수 없어요.",
     "moreActions": "더 보기",
     "fewerActions": "접기"
@@ -2816,6 +2836,9 @@
       "height": "세로",
       "seed": "시드",
       "refImage": "참조 이미지",
+      "length": "프레임 수",
+      "fps": "초당 프레임",
+      "duration": "길이(초)",
       "output": "출력 노드"
     },
     "kindAudio": "오디오",

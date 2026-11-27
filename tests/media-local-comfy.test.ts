@@ -129,6 +129,25 @@ test("a run binds the request into the graph, never the Comfy account key, and r
   assert.deepEqual(outputs.map((out) => [out.kind, out.mimeType, out.bytes?.byteLength]), [["image", "image/png", FAKE_PNG.length]]);
 });
 
+test("a setting typed on a command line arrives as text and is read as the type the workflow declares", async () => {
+  const fake = await fakeComfy();
+  await register(fake.origin, "klein", { paidNodes: ["KlingTextToVideoNode"] });
+  await register(fake.origin, "clip", { bind: { ...T2I_BIND, length: { node: "5", input: "batch_size" }, fps: { node: "5", input: "fps" } } });
+  await adapter.submit(ctx(), { model: "comfy/klein", task: "text-to-image", prompt: "x", vendorOptions: { "KSampler.steps": "8", "KSampler.sampler_name": "dpmpp_2m", allowPaidNodes: "true" }, inputs: [] });
+  await adapter.submit(ctx(), { model: "comfy/clip", task: "text-to-image", prompt: "x", vendorOptions: { length: "49", fps: "23.976" }, inputs: [] });
+  const sent = fake.prompts.map((entry) => (entry.body as { prompt: Record<string, { inputs: Record<string, unknown> }> }).prompt);
+  assert.deepEqual([sent[0]!["3"]!.inputs.steps, sent[0]!["3"]!.inputs.sampler_name], [8, "dpmpp_2m"]);
+  assert.deepEqual([sent[1]!["5"]!.inputs.batch_size, sent[1]!["5"]!.inputs.fps], [49, 23.976]);
+  // Text that is not a number is still refused, and so is a number outside the range.
+  for (const [options, pattern] of [
+    [{ "KSampler.steps": "many" }, /'KSampler\.steps' must be a number/], [{ "KSampler.steps": "" }, /must be a number/],
+    [{ "KSampler.steps": "500" }, /between 1 and 100/], [{ length: "long" }, /'length' must be a positive number/],
+  ] as const) {
+    await assert.rejects(() => adapter.submit(ctx(), { model: "comfy/clip", task: "text-to-image", prompt: "x", vendorOptions: options, inputs: [] }), (error: unknown) => pattern.test((error as Error).message));
+  }
+  assert.equal(fake.prompts.length, 2);
+});
+
 test("files are uploaded into the slot of their role and the graph uses the name the server gave", async () => {
   const fake = await fakeComfy({
     outputs: { "9": { images: [{ filename: "talk_00001_.mp4", subfolder: "video", type: "output" }], animated: [true] }, "12": { audio: [{ filename: "talk.mp3", subfolder: "", type: "output" }] } },
@@ -166,6 +185,36 @@ test("a workflow with no text input runs as it is, and a prompt sent to it is re
   // An empty prompt is no prompt.
   await runToEnd(await adapter.submit(ctx(), { model: "comfy/blank", task: "text-to-image", prompt: "", inputs: [] }));
   assert.equal(fake.prompts.length, 2);
+});
+
+test("a length in seconds reaches every input bound to it, and a workflow with none says its length is fixed", async () => {
+  const fake = await fakeComfy();
+  const graph = { "1": { class_type: "EmptyAudio", inputs: { duration: 30, sample_rate: 44100, channels: 2 } }, "2": { class_type: "Encoder", inputs: { duration: 30, tags: "stored" } },
+    "9": { class_type: "SaveAudioMP3", inputs: { audio: ["1", 0], filename_prefix: "ima2" } } };
+  const bind = { prompt: { node: "2", input: "tags" }, output: { node: "9" }, duration: { node: "1", input: "duration", also: [{ node: "2", input: "duration" }] } };
+  await register(fake.origin, "song", { graph, bind, params: [], mediaKind: "audio", durationRange: { minSec: 1, maxSec: 600 } });
+  await register(fake.origin, "jingle", { graph, bind: { prompt: bind.prompt, output: bind.output }, params: [], mediaKind: "audio" });
+  await register(fake.origin, "frames", { graph, bind: { prompt: bind.prompt, output: bind.output, length: { node: "1", input: "duration" } }, params: [], mediaKind: "audio" });
+  const specs = Object.fromEntries(listLocalSpecs().map((spec) => [spec.id, spec.params.durationRange]));
+  assert.deepEqual(specs, { "comfy/frames": undefined, "comfy/jingle": undefined, "comfy/song": { minSec: 1, maxSec: 600 } });
+  await runToEnd(await adapter.submit(ctx(), { model: "comfy/song", task: "text-to-audio", prompt: "soft piano", durationSec: 12, inputs: [] }));
+  const queued = fake.prompts[0]!.body.prompt as Record<string, { inputs: Record<string, unknown> }>;
+  assert.deepEqual([queued["1"]!.inputs.duration, queued["2"]!.inputs.duration], [12, 12]);
+  // Without a length in the request the registered one stays.
+  await runToEnd(await adapter.submit(ctx(), { model: "comfy/song", task: "text-to-audio", prompt: "soft piano", inputs: [] }));
+  assert.equal((fake.prompts[1]!.body.prompt as typeof queued)["1"]!.inputs.duration, 30);
+  for (const [request, pattern] of [
+    [{ model: "comfy/song", durationSec: 900 }, /comfy\/song takes a length from 1 to 600 seconds/],
+    [{ model: "comfy/jingle", durationSec: 12 }, /comfy\/jingle has a fixed length: its workflow has no length input bound/],
+    // A video graph counts its length in frames: seconds are not converted behind the caller's back.
+    [{ model: "comfy/frames", durationSec: 5 }, /comfy\/frames sets its length in frames: send vendorOptions\.length/],
+  ] as const) {
+    await assert.rejects(() => adapter.submit(ctx(), { task: "text-to-audio", prompt: "x", inputs: [], ...request }), (error: unknown) => {
+      const failure = error as { code?: string; message?: string };
+      return failure.code === "COMFY_OPTION_INVALID" && pattern.test(failure.message ?? "");
+    });
+  }
+  assert.equal(fake.prompts.length, 2, "a refused request queues nothing");
 });
 
 test("an audio workflow returns audio", async () => {

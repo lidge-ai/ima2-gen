@@ -303,12 +303,32 @@ test("a ComfyUI workflow runs on this computer: no key, no price, a run time, an
     // A keyless lane is never listed among the keys to add.
     assert.equal((await client.keys.list()).some((k) => k.keyVocabulary === "comfy-local"), false);
     const estimate = await client.media.estimate({ model: "comfy/klein", task: "text-to-image", prompt: "a fox", inputs: [] });
-    assert.deepEqual(estimate, { route: "local", usd: 0, local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
+    assert.deepEqual(estimate, { route: "local", usd: 0, quote: { state: "local" }, note: "runs locally; no provider charge", local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
     const { jobId } = await client.media.submit({ model: "comfy/klein", task: "text-to-image", prompt: "[fail:comfy-offline] a fox", inputs: [] });
     const done = await client.watchJob(jobId);
     assert.equal(done.status, "failed");
     assert.equal(done.error?.code, "COMFY_OFFLINE");
     assert.match(done.error?.message ?? "", /Lost contact with ComfyUI/);
+  });
+});
+
+test("a saved result is answered as a ComfyUI graph, or with the reason there is none", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    const make = async (model: string, prompt: string) => {
+      const done = await client.watchJob((await client.media.submit({ model, task: "text-to-image", prompt, inputs: [] })).jobId);
+      return done.outputs[0]!.historyId!;
+    };
+    const local = await client.comfy.resultGraph(await make("comfy/klein", "a fox"));
+    assert.equal(local.source, "comfy-history");
+    assert.equal((local.graph["6"] as { inputs: { text: string } }).inputs.text, "a fox");
+    const paid = await client.comfy.resultGraph(await make("openai/gpt-image-2", "a heron"));
+    assert.equal(paid.source, "ima2-node");
+    assert.deepEqual((paid.graph["1"] as { class_type: string; inputs: Record<string, unknown> }).inputs, { model: "openai/gpt-image-2", prompt: "a heron", max_usd: 0, seed: 0, send_seed: "no" });
+    assert.match(paid.notes.join(" "), /max_usd is 0/);
+    const gone = await make("comfy/klein", "[graph:gone] a fox");
+    await assert.rejects(() => client.comfy.resultGraph(gone), (error: unknown) =>
+      error instanceof StudioApiError && error.status === 409 && error.code === "COMFY_GRAPH_UNAVAILABLE" && /no longer has job/.test(error.message));
+    await assert.rejects(() => client.comfy.resultGraph("nope.png"), (error: unknown) => error instanceof StudioApiError && error.code === "COMFY_RESULT_NOT_FOUND");
   });
 });
 
@@ -346,5 +366,19 @@ test("a route that declares an edit task refuses fields outside it and a task it
       (e: unknown) => e instanceof StudioApiError && e.code === "MEDIA_TASK_UNSUPPORTED",
     );
     await client.keys.remove("xai");
+  });
+});
+
+test("estimates come from the server's rule, including rows a studio-side matcher could not read", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    // PixVerse "720p audio off, no video references; 9 credits/s": extend sends no sound flag.
+    const extend = await client.media.estimate({ model: "pixverse/pixverse-v6", provider: "pixverse", task: "video-extend", durationSec: 5, resolution: "720p", inputs: [] });
+    assert.equal(extend.quote.state, "exact");
+    assert.equal(extend.usd, 0.2);
+    // MiniMax "768P to 2K output": priced for the clip's length, unknown without it.
+    const upscale = { model: "minimax/hailuo-h3-regen", provider: "minimax", task: "video-upscale" as const, resolution: "2K", inputs: [] };
+    assert.equal((await client.media.estimate(upscale)).quote.state, "unknown");
+    const sized = await client.media.estimate({ ...upscale, durationSec: 6 });
+    assert.deepEqual([sized.quote.state, sized.usd], ["exact", 0.3]);
   });
 });

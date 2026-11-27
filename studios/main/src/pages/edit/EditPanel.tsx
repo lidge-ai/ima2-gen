@@ -31,7 +31,7 @@ const M = messages(
     route: "Run through", automatic: "Automatic", direct: "direct", aggregator: "aggregator", local: "this computer, no provider charge", noKey: "no key",
     follows: "Length, size and sound follow the source video.",
     generate: "Generate", sending: "Sending", nokey: "Add a key to generate.",
-    estimate: "Estimated {cost} · {seconds} s", unpriced: "Price not published", noMatch: "No price listed for these settings", afterVideo: "Add the video to see the price",
+    estimate: "{cost} · {seconds} s", unpriced: "Price not published", noMatch: "No price listed for these settings", afterVideo: "Add the video to see the price",
     reading: "Reading the length", unknownLength: "Length unknown, no price",
     unreadable: "This browser could not read the length of the video, so the price is not shown.",
     none: "This catalog has no model that edits, extends or upscales a video yet.",
@@ -53,7 +53,7 @@ const M = messages(
     route: "실행 경로", automatic: "자동", direct: "직접", aggregator: "어그리게이터", local: "이 컴퓨터에서 실행, 요금 없음", noKey: "키 없음",
     follows: "길이, 크기, 사운드는 원본 영상을 따라요.",
     generate: "생성", sending: "요청 중", nokey: "생성하려면 키를 추가해 주세요.",
-    estimate: "예상 {cost} · {seconds}초", unpriced: "공개 가격 없음", noMatch: "이 설정의 가격이 공개되지 않았어요", afterVideo: "영상을 넣으면 가격이 계산돼요",
+    estimate: "{cost} · {seconds}초", unpriced: "공개 가격 없음", noMatch: "이 설정의 가격이 공개되지 않았어요", afterVideo: "영상을 넣으면 가격이 계산돼요",
     reading: "길이를 읽는 중이에요", unknownLength: "길이를 몰라 가격이 없어요",
     unreadable: "이 브라우저에서 영상 길이를 읽지 못해 가격을 표시하지 않아요.",
     none: "이 카탈로그에는 영상을 편집, 연장, 업스케일할 수 있는 모델이 아직 없어요.",
@@ -145,8 +145,13 @@ function Settings({ form, edit }: { form: EditForm; edit: Edit }) {
 
 /** The estimate, or the reason there is none yet: an unpublished price is not the same as a length still to come. */
 function costText(edit: Edit, t: T): string {
+  const { cost } = edit;
+  if (cost.kind === "local") return cost.text;
   if (!edit.priced || edit.priced.pricing.length === 0) return t("unpriced");
-  if (edit.billed !== null) return edit.cost ? t("estimate", { cost: edit.cost, seconds: edit.billed }) : t("noMatch");
+  if (edit.billed !== null) {
+    if (cost.kind === "figure") return t("estimate", { cost: cost.text, seconds: edit.billed });
+    return cost.kind === "unknown" ? t("noMatch") : cost.text;
+  }
   if (!edit.form?.source.billedLength) return t("unpriced");
   if (!edit.state.source) return t("afterVideo");
   return t(edit.state.sourceSec === null ? "unknownLength" : "reading");
@@ -160,7 +165,7 @@ function Foot({ edit }: { edit: Edit }) {
       {!edit.canSend && !edit.sending && hint ? <p className="form-hint">{hint}</p> : null}
       <button className="btn btn-primary btn-generate" type="submit" disabled={!edit.canSend} title={edit.blocked ?? undefined}>
         <span>{edit.sending ? t("sending") : t("generate")}</span>
-        <span className="btn-cost">{costText(edit, t)}</span>
+        <span className="btn-cost" title={edit.cost.title || undefined}>{costText(edit, t)}</span>
       </button>
     </div>
   );

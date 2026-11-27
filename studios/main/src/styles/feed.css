@@ -305,6 +305,20 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+/* What an action reported sits under the row of buttons, whichever button it belongs to. */
+.lightbox-note {
+  order: 1;
+  flex-basis: 100%;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+.lightbox-note p {
+  margin: 0;
+}
 
 .gallery {
   display: grid;

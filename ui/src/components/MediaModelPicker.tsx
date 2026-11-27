@@ -1,6 +1,7 @@
 import { useI18n } from "../i18n";
 import { loadMediaCatalog, useMediaCatalog } from "../lib/mediaCatalogStore";
 import type { MediaSelection } from "../lib/mediaSelection";
+import type { ClassicKind } from "../lib/mediaTasks";
 import { useAppStore } from "../store/useAppStore";
 import { MediaFailureCard } from "./media/MediaFailureCard";
 import { MediaLogo } from "./media/MediaLogo";
@@ -18,7 +19,7 @@ function taskLine(selection: MediaSelection, t: (key: string) => string): string
  * Nothing here asks the server for media data until the window is opened or a media model is already
  * selected, so the default classic flow keeps exactly its old network traffic.
  */
-export function MediaModelPicker({ kind }: { kind?: "image" | "video" }) {
+export function MediaModelPicker({ kind }: { kind?: ClassicKind }) {
   const { t } = useI18n();
   const selection = useAppStore((s) => s.mediaSelection);
   const setSelection = useAppStore((s) => s.setMediaSelection);
