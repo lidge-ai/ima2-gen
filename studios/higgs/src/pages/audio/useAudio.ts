@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { StudioApiError, estimateCost, formatUsd, type Catalog, type CatalogModel, type MediaVoice } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { spendBlock } from "../../studio/spend.ts";
+import { useLocalCost } from "../../ui/localCost.ts";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 import { mediaSeconds } from "../speak/useSpeak.ts";
 import {
@@ -48,6 +49,8 @@ export function useAudio(catalog: Catalog, requested: { tool?: string; model?: s
   const shown = route ?? (choice.kind === "needs-key" ? choice.route : undefined);
   const amount = model && shown ? priced(model, shown, state) : {};
   const quote = shown ? estimateCost(shown.pricing, amount) : null;
+  // A ComfyUI workflow on this computer: run time instead of a price.
+  const local = useLocalCost(model, route, () => (model && route ? toBody(model, route, state) : null));
   const missing = problem(model, shown, state);
   // A shared web instance runs only what it can price, so the reason is given before sending.
   const blocked = missing ?? (route && webSpend && model ? spendBlock(webSpend, [{ label: model.label, usd: quote?.usd ?? null }], quote?.usd ?? null) : null);
@@ -72,7 +75,7 @@ export function useAudio(catalog: Catalog, requested: { tool?: string; model?: s
     }
   };
   return {
-    state, model, choice, route, shown, blocked, sending, error,
+    state, model, choice, route, shown, blocked, sending, error, local,
     cost: quote && quote.usd !== null ? formatUsd(quote) : null,
     canSend: !!route && !blocked && !sending,
     setTool: (tool: AudioTool) => setState((s) => withModel({ ...s, tool }, defaultModel(catalog, tool))),

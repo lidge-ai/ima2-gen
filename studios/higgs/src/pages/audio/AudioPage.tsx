@@ -112,6 +112,7 @@ function SoundSettings({ audio }: { audio: Audio }) {
 
 /** The estimate, or what it is waiting for. "Not published" is only for a route without a price. */
 function costText(audio: Audio, t: T): string {
+  if (audio.local) return audio.local.text;
   if (!audio.shown || audio.shown.pricing.length === 0) return t("unpriced");
   if (audio.cost) return t("estimate", { cost: audio.cost });
   if (audio.state.tool === "speech") return t("perCharacter");
@@ -129,7 +130,7 @@ function Foot({ audio }: { audio: Audio }) {
       {!audio.canSend && !audio.sending && hint ? <p className="form-hint">{hint}</p> : null}
       <button className="btn btn-primary btn-generate" type="submit" disabled={!audio.canSend} title={audio.blocked ?? undefined}>
         <span>{audio.sending ? t("sending") : t("generate")}</span>
-        <span className="btn-cost">{costText(audio, t)}</span>
+        <span className="btn-cost" title={audio.local?.title || undefined}>{costText(audio, t)}</span>
       </button>
     </div>
   );

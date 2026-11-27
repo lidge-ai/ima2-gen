@@ -292,6 +292,26 @@ test("wire keys, validation, session filtering and workflow field errors", async
   }
 });
 
+test("a ComfyUI workflow runs on this computer: no key, no price, a run time, and its own failure", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    const catalog = await client.catalog();
+    const klein = catalog.models.find((m) => m.id === "comfy/klein");
+    assert.equal(klein?.routes[0]?.route, "local");
+    assert.equal(klein?.routes[0]?.keyless, true);
+    assert.equal(klein?.routes[0]?.keyConfigured, true);
+    assert.equal(klein?.defaultRoute, "comfy-local");
+    // A keyless lane is never listed among the keys to add.
+    assert.equal((await client.keys.list()).some((k) => k.keyVocabulary === "comfy-local"), false);
+    const estimate = await client.media.estimate({ model: "comfy/klein", task: "text-to-image", prompt: "a fox", inputs: [] });
+    assert.deepEqual(estimate, { route: "local", usd: 0, local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
+    const { jobId } = await client.media.submit({ model: "comfy/klein", task: "text-to-image", prompt: "[fail:comfy-offline] a fox", inputs: [] });
+    const done = await client.watchJob(jobId);
+    assert.equal(done.status, "failed");
+    assert.equal(done.error?.code, "COMFY_OFFLINE");
+    assert.match(done.error?.message ?? "", /Lost contact with ComfyUI/);
+  });
+});
+
 test("voices need a key, and a voice's sample address plays", async () => {
   await withServer({}, async ({ client, url }) => {
     await client.keys.remove("elevenlabs").catch(() => undefined);

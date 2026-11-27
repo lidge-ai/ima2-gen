@@ -4,10 +4,10 @@ import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
 import { Http, StudioApiError, type HttpOptions } from "./http.ts";
 import type {
-  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, JobOutput, KeySaveBody, KeyStatus, MediaSubmitBody, ShowcaseItem, UploadedInput, VoiceList,
+  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, JobOutput, KeySaveBody, KeyStatus, MediaEstimateResult, MediaSubmitBody, ShowcaseItem, UploadedInput, VoiceList,
   WebSpend, WorkflowDef, WorkflowEstimate, WorkflowRunBody,
 } from "./types.ts";
-import type { WireAccepted, WireCatalog, WireEstimateResponse, WireHistoryPage, WireInput, WireJob, WireWorkflow } from "./wire.ts";
+import type { WireAccepted, WireCatalog, WireEstimateResponse, WireHistoryPage, WireInput, WireJob, WireMediaEstimate, WireWorkflow } from "./wire.ts";
 
 export type { StreamStatus };
 
@@ -103,6 +103,13 @@ function mediaApi(http: Http, cache: JobCache, sessionId: string | undefined) {
       return { jobId: wire.requestId, provider: wire.adapter ?? body.provider ?? "" };
     },
     job,
+    /** The server's own estimate; for a local route this is the run time instead of a price. */
+    estimate: async (body: MediaSubmitBody): Promise<MediaEstimateResult> => {
+      const request = toWireSubmit(body);
+      delete request.requestId;
+      const wire = await http.request<WireMediaEstimate>("POST", "/api/media/estimate", { body: request });
+      return { route: wire.route, usd: wire.usd, ...(wire.local ? { local: wire.local } : {}) };
+    },
     cancel: async (jobId: string) => {
       await http.request<unknown>("POST", "/api/media/" + enc(jobId) + "/cancel");
       return { job: await job(jobId) };

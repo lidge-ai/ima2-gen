@@ -3,6 +3,7 @@ import { StudioApiError, estimateCost, type Catalog } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { spendBlock } from "../../studio/spend.ts";
 import { estimateLabel } from "../../ui/format.ts";
+import { useLocalCost, type CostText } from "../../ui/localCost.ts";
 import { defaultsFor, problem, routeFor, toBody, type CreateForm } from "./form.ts";
 
 /** Shared submit logic for the panel and the dock: route choice, cost, blocking problem, send. */
@@ -19,7 +20,8 @@ export function useCreate(catalog: Catalog, form: CreateForm, set: (patch: Parti
   // A shared web instance refuses an unpriced or over-limit job; name the reason before sending.
   const blocked =
     problem(model, form) ?? (quote && model ? spendBlock(webSpend, [{ label: model.label, usd: quote.usd }], quote.usd) : null);
-  const cost = estimateLabel(priced, form);
+  const localCostText = useLocalCost(model, route, () => (model && route ? toBody(model, form, route.providerId) : null));
+  const cost: CostText = localCostText ?? estimateLabel(priced, form);
   const pickModel = (id: string) => {
     const next = catalog.models.find((m) => m.id === id);
     set({ model: id, provider: "", ...defaultsFor(next, form) });

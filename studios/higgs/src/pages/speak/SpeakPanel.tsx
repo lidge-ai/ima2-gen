@@ -160,6 +160,7 @@ function Settings({ form, speak }: { form: TaskForm; speak: Speak }) {
  * is only for a route without a price; a route billed by length names the upload the price is waiting for.
  */
 function costText(speak: Speak, t: (key: keyof typeof M.en, vars?: Record<string, string | number>) => string): string {
+  if (speak.local) return speak.local.text;
   if (!speak.priced || speak.priced.pricing.length === 0) return t("unpriced");
   if (speak.cost && speak.billed !== null) return t("estimate", { cost: speak.cost, seconds: speak.billed });
   const billed = (speak.form?.inputs ?? []).filter((need) => need.billedLength);
@@ -186,7 +187,7 @@ function Foot({ speak }: { speak: Speak }) {
       {!speak.canSend && !speak.sending && hint ? <p className="form-hint">{hint}</p> : null}
       <button className="btn btn-primary btn-generate" type="submit" disabled={!speak.canSend} title={speak.blocked ?? undefined}>
         <span>{speak.sending ? t("sending") : t("generate")}</span>
-        <span className="btn-cost">{costText(speak, t)}</span>
+        <span className="btn-cost" title={speak.local?.title || undefined}>{costText(speak, t)}</span>
       </button>
     </div>
   );

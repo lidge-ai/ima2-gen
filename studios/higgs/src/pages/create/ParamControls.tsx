@@ -60,10 +60,16 @@ const opts = <T extends string | number>(
   label: (v: T) => string = String,
 ): TileOption<T>[] => (values ?? []).map((value) => ({ value, label: label(value) }));
 
+/** "1024x1024" (a ComfyUI workflow's size) reads "1024 × 1024". */
+function pixelSize(value: string): string | null {
+  const sides = value.toLowerCase().split("x").map((side) => side.trim());
+  return sides.length === 2 && sides.every((side) => /^\d+$/.test(side)) ? sides.join(" × ") : null;
+}
+
 /** "1080p-esr & 60fps" reads "1080p · enhanced upscale · 60 fps"; "1k" reads "1K". */
 export function resolutionLabel(value: string): string {
   const parts = resolutionParts(value);
-  if (!parts) return value;
+  if (!parts) return pixelSize(value) ?? value;
   const tier = parts.tier ? tr(M, parts.tier === "esr" ? "enhanced" : "upscaled") : "";
   return [parts.base, tier, parts.fps ? parts.fps + " fps" : ""].filter(Boolean).join(" · ");
 }
