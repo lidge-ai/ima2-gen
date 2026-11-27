@@ -50,6 +50,21 @@ export interface MediaModel {
   defaultRoute: string | null;
 }
 
+/** A provider lane as the catalog lists it; never contains a key value. */
+export interface MediaAdapter {
+  id: string;
+  label: string;
+  route: "direct" | "aggregator";
+  logo: MediaLogo | null;
+  keyVocabulary: string;
+  consoleUrl: string;
+  keyPrefix: string | null;
+  hasKey: boolean;
+  keySource?: string;
+  maskedKey?: string | null;
+  extraFields: { name: string; secret: boolean; required: boolean; configured?: boolean; source?: string; value?: string | null }[];
+}
+
 export function fetchMediaCatalog(kind: "image" | "video") {
   return jsonFetch<{ models: MediaModel[]; adapters: unknown[] }>(`/api/media/catalog?kind=${kind}`);
 }

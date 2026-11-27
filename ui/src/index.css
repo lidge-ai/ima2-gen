@@ -272,6 +272,7 @@ body::after {
 @import "./styles/nav-rail.css";
 @import "./styles/sidebar.css";
 @import "./styles/form-controls.css";
+@import "./styles/media-models.css";
 @import "./styles/canvas-viewer.css";
 @import "./styles/canvas-accordion.css";
 @import "./styles/right-panel.css";

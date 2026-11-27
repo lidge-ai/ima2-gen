@@ -1,0 +1,128 @@
+/* Media models in the classic UI: the model window, the model card in generation settings, and
+   the per-model settings. Neutral controls; the selected state is a border and a soft fill, and
+   colour is kept for problems. */
+
+/* ── Model card (generation settings) ── */
+.media-card { gap: 6px; }
+.media-card__idle { margin: 0; color: var(--text-muted); font-size: 11px; line-height: 1.45; }
+.media-card__current { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.media-card__name { display: grid; min-width: 0; font-size: 12px; color: var(--text); overflow-wrap: anywhere; }
+.media-card__name small { color: var(--text-muted); font-size: 11px; }
+.media-card__actions { display: flex; gap: 4px; }
+/* One square slot for every maker and provider: the official symbol on a light tile, or a monogram. */
+.media-mark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 4px; overflow: hidden; }
+.media-mark { border-radius: var(--r-sm); }
+.media-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.media-mark--sm { width: 24px; height: 24px; padding: 3px; }
+.media-mark--monogram { padding: 0; border: 1px solid var(--hairline); background: var(--surface-3); color: var(--text); font-size: 14px; font-weight: 600; line-height: 1; }
+.media-mark--sm.media-mark--monogram { font-size: 11px; }
+
+/* ── Per-model settings ── */
+.media-routes { min-width: 0; margin: 0; padding: 0; border: 0; }
+.media-route { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 0; padding: 6px 8px; border: 1px solid var(--hairline-soft); background: var(--control-bg); color: var(--text); font-size: 12px; cursor: pointer; }
+.media-route { border-radius: var(--r-sm); }
+.media-route:has(input:checked) { border-color: var(--hairline); background: var(--accent-soft); }
+.media-route:has(input:focus-visible) { outline: 2px solid var(--text); outline-offset: 1px; }
+.media-route--single { cursor: default; }
+.media-route__main { display: grid; min-width: 0; }
+.media-route__main { flex: 1 1 auto; }
+.media-route__name { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 6px; }
+.media-route__main small { color: var(--text-muted); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.media-route__key { flex: none; padding: 1px 6px; border: 1px solid var(--hairline); color: var(--text-muted); font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.media-route__key { border-radius: var(--r-xs); }
+.media-route__key--ready { color: var(--text); }
+.media-note { padding: 8px 10px; border: 1px solid var(--hairline); background: var(--control-bg); color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+.media-note { border-radius: var(--r-sm); }
+.media-note ul { margin: 4px 0; padding-left: 16px; }
+.media-inputs { margin: 0; color: var(--text-muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.media-inputs--problem { padding: 8px 10px; border: 1px solid var(--amber); color: var(--text); }
+.media-inputs--problem { border-radius: var(--r-sm); }
+.media-fixed { margin: 0; color: var(--text-dim); font: 11px/1.5 var(--mono); }
+.media-parameter input[aria-invalid="true"] { border-color: var(--red); }
+.media-field-error { grid-column: 1 / -1; margin: 0; color: var(--text-dim); font-size: 11px; line-height: 1.4; }
+.media-prices { margin-top: 2px; }
+/* Labels sit above their field: the panel is too narrow for a label column in every language. */
+.media-controls .media-parameter { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+
+/* ── Model window ── */
+/* Above the mobile compose sheet (180), which is where the model card lives on a phone. */
+.modal-backdrop.media-dialog-backdrop { z-index: 210; padding: 16px; }
+.modal.media-dialog { display: flex; flex-direction: column; width: min(880px, 100%); height: min(760px, calc(100dvh - 32px)); padding: 0; overflow: hidden; }
+.media-dialog__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 12px 10px 18px; }
+.media-dialog__title { margin: 0; color: var(--text); font-size: 16px; font-weight: 600; }
+.media-dialog__intro { max-width: 64ch; margin: 4px 0 0; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
+.media-dialog__close { flex: 0 0 44px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--text-dim); font-size: 22px; line-height: 1; cursor: pointer; }
+.media-dialog__close { border-radius: var(--r-sm); }
+.media-dialog__close:hover { background: var(--control-hover); color: var(--text); }
+.media-dialog__what { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 0 18px 10px; }
+.media-dialog__needs { flex-basis: 100%; margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+.media-tabs { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.media-tabs__tab { min-height: 36px; padding: 6px 12px; border: 1px solid var(--hairline-soft); background: var(--control-bg); color: var(--text-dim); font-size: 12px; cursor: pointer; }
+.media-tabs__tab { border-radius: var(--r-sm); }
+.media-tabs__tab:hover { background: var(--control-hover); color: var(--text); }
+.media-tabs__tab[aria-pressed="true"] { border-color: var(--hairline); background: var(--accent-soft); color: var(--accent-bright); }
+.media-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, auto) minmax(120px, auto); align-items: end; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.media-tools__search { min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--hairline); background: var(--control-bg); color: var(--text); font-size: 13px; }
+.media-tools__search { border-radius: var(--r-sm); }
+.media-tools__select { display: grid; gap: 2px; min-width: 0; color: var(--text-muted); font-size: 11px; }
+.media-tools__select select { min-height: 40px; padding: 6px 8px; border: 1px solid var(--hairline); background: var(--surface-2); color: var(--text); font-size: 12px; }
+.media-tools__select select { border-radius: var(--r-sm); }
+.media-tools__chips { display: flex; flex-wrap: wrap; grid-column: 1 / -1; gap: 6px; }
+.media-chip { min-height: 32px; padding: 4px 12px; border: 1px solid var(--hairline-soft); background: var(--control-bg); color: var(--text-dim); font-size: 12px; cursor: pointer; }
+.media-chip { border-radius: var(--r-pill); }
+.media-chip:hover { background: var(--control-hover); color: var(--text); }
+.media-chip[aria-pressed="true"] { border-color: var(--hairline); background: var(--accent-soft); color: var(--accent-bright); }
+.media-dialog__list { flex: 1 1 auto; min-height: 0; padding: 8px 18px 18px; overflow-y: auto; overscroll-behavior: contain; }
+.media-count { margin: 2px 0 8px; color: var(--text-muted); font: 11px/1.4 var(--mono); }
+.media-empty { padding: 28px 0; color: var(--text-dim); font-size: 13px; line-height: 1.5; text-align: center; }
+.media-empty p { margin: 0 0 8px; }
+.media-group { margin-bottom: 16px; }
+.media-group__title { margin: 0 0 6px; color: var(--text-dim); font-size: 12px; font-weight: 600; }
+.media-group__list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.media-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) minmax(120px, auto) 16px; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px; border: 1px solid var(--hairline-soft); background: var(--control-bg); color: var(--text); text-align: left; cursor: pointer; transition: background-color 0.15s, border-color 0.15s; }
+.media-row { border-radius: var(--r-md); }
+.media-row:hover { border-color: var(--hairline); background: var(--control-hover); }
+.media-row[aria-current="true"] { border-color: var(--border-strong); background: var(--accent-soft); }
+.media-row__main { display: grid; gap: 2px; min-width: 0; }
+.media-row__name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.media-row__sub { color: var(--text-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.media-row__tag { padding: 1px 6px; border: 1px solid var(--hairline); color: var(--text-dim); font-size: 10px; font-weight: 500; }
+.media-row__tag { border-radius: var(--r-xs); }
+.media-row__facts { display: grid; gap: 2px; justify-items: end; font: 11px/1.4 var(--mono); white-space: nowrap; }
+.media-row__price { color: var(--text); }
+.media-row__spec { color: var(--text-muted); }
+.media-row__check { display: flex; color: var(--text); }
+.media-row--builtin { grid-template-columns: minmax(0, 1fr); }
+.media-row--skeleton { cursor: default; }
+.media-row--skeleton span { height: 14px; background: var(--control-hover); }
+.media-row--skeleton span { border-radius: var(--r-xs); }
+.media-row--skeleton span:first-child { width: 32px; height: 32px; }
+.media-unsupported { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.media-unsupported summary { min-height: 32px; cursor: pointer; }
+.media-unsupported p { margin: 4px 0 8px; }
+.media-unsupported ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 12px; margin: 0; padding: 0; list-style: none; }
+.media-unsupported li { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.media-dialog button:focus-visible, .media-dialog input:focus-visible, .media-dialog select:focus-visible, .media-dialog summary:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+
+@media (max-width: 800px) {
+  /* A full-height sheet: the list needs every pixel on a phone, and the close button stays in thumb reach of the title. */
+  .modal-backdrop.media-dialog-backdrop { align-items: stretch; padding: 0; }
+  /* The whole sheet scrolls under a pinned title, so search and filters do not take half of a phone screen from the list. */
+  .modal.media-dialog { width: 100%; height: 100dvh; border: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .media-dialog__head { position: sticky; top: 0; z-index: 1; padding: 12px 8px 8px 14px; background: var(--surface); }
+  .media-dialog__list { flex: none; overflow: visible; }
+  .media-dialog__what, .media-tools, .media-dialog__list { padding-left: 14px; padding-right: 14px; }
+  .media-tabs__tab { min-height: 44px; }
+  .media-chip { min-height: 40px; }
+  /* The introduction and the per-task line are dropped and the chips share one scrolling row, so the list starts within the first screen. */
+  .media-dialog__intro, .media-dialog__needs { display: none; }
+  .media-tools__chips { flex-wrap: nowrap; margin: 0 -14px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
+  .media-chip { flex: none; }
+  .media-tools { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .media-tools__search { grid-column: 1 / -1; min-height: 44px; font-size: 16px; }
+  .media-tools__select select { min-height: 44px; }
+  .media-row { grid-template-columns: 32px minmax(0, 1fr) 16px; gap: 4px 10px; }
+  .media-row__facts { display: flex; flex-wrap: wrap; grid-column: 2; grid-row: 2; gap: 2px 10px; justify-items: start; white-space: normal; }
+  .media-row__check { grid-column: 3; grid-row: 1; }
+  .media-row--builtin { grid-template-columns: minmax(0, 1fr); }
+}

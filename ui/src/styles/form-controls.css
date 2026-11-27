@@ -353,18 +353,13 @@
 .media-link, .media-price { color: var(--text-muted); font: 11px/1.5 var(--mono); }
 .media-link { display: inline-block; align-self: flex-start; padding: 4px 0; text-align: left; text-decoration: underline; cursor: pointer; }
 .media-price a { color: inherit; text-decoration: underline; }
-.media-logo { display: flex; flex: 0 0 88px; width: 88px; height: 28px; align-items: center; justify-content: center; padding: 4px; border-radius: var(--r-xs); background: #e8eaed; overflow: hidden; }
+.media-logo { display: flex; flex: 0 0 88px; width: 88px; height: 28px; align-items: center; justify-content: center; padding: 4px; border-radius: var(--r-xs); overflow: hidden; }
+/* Official logo files are shown unaltered on one light tile, in the wordmark slot and in the square mark slot alike. */
+.media-logo, .media-mark { background: #e8eaed; }
 .media-logo--dark { background: #26262b; }
 .media-logo img { display: block; max-width: 100%; max-height: 20px; width: auto; height: auto; object-fit: contain; }
 .media-logo__fallback { background: var(--control-bg); color: var(--text-dim); font-size: 10px; font-weight: 600; text-align: center; overflow-wrap: anywhere; line-height: 1.1; }
-.media-list { display: grid; gap: 4px; min-width: 0; }
-/* About a hundred models: keep the list to a scroll area so the controls below stay in reach. */
-.media-list--models { max-height: min(360px, 50vh); overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
 .media-error-detail { display: block; color: var(--text-dim); font: 11px/1.4 var(--mono); overflow-wrap: anywhere; }
-.media-list__item.option-btn { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 8px; text-align: left; white-space: normal; overflow-wrap: anywhere; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
-.media-list__item.option-btn.active { color: var(--text); background: var(--control-hover); }
-.media-list__item[aria-disabled="true"] { cursor: default; }
-.media-list__item > span:last-child { min-width: 0; }
 .media-picker__open.option-btn { min-height: 44px; white-space: normal; overflow-wrap: anywhere; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
 .media-link { min-height: 24px; overflow-wrap: anywhere; }
 .media-price, .media-provider-keys { overflow-wrap: anywhere; }
@@ -372,5 +367,3 @@
 .media-provider-keys__provider label { display: block; margin: 4px 0; }
 .media-provider-keys__heading { min-width: 0; overflow-wrap: anywhere; }
 
-.media-list__classic.option-btn { min-height: 44px; white-space: normal; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
-.media-list__classic.option-btn.active { color: var(--text); background: var(--control-hover); }
