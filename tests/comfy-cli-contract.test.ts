@@ -45,10 +45,12 @@ describe("comfy CLI surface", () => {
     assert.match(source, /a prompt binding and an output node are required/);
   });
 
-  it("supports media kind and keeps video workflows catalog-only", () => {
-    assert.match(source, /--kind image\|video/);
+  it("supports media kind and points every workflow at the media route that runs it", () => {
+    assert.match(source, /--kind image\|video\|audio/);
     assert.match(source, /mediaKind/);
-    assert.match(source, /catalog-only: ComfyUI video execution is not supported yet/);
+    // A video or audio workflow used to be registered with "not supported yet"; it now runs as comfy/<id>.
+    assert.match(source, /run it with: ima2 media run --model \$\{resp\.media\.model\} --task \$\{resp\.media\.task\}/);
+    assert.doesNotMatch(source, /catalog-only/);
   });
 
   it("prints workflow labels and model-level lock status", () => {
