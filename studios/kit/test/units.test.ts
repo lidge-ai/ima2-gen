@@ -34,3 +34,22 @@ test("routing prefers direct then keyed aggregator and reports missing key", () 
   if (choice.kind === "default") assert.equal(choice.route.providerId, "fal");
   assert.equal(chooseRoute(model, "openai").kind, "needs-key");
 });
+
+test("a task is only routed to a route that serves it, whatever key or choice is there", () => {
+  const base = makeCatalog(new Set(["openai", "fal"])).models.find((m) => m.id === "openai/gpt-image-2")!;
+  // The direct route serves only text-to-image; the aggregator also edits.
+  const model = { ...base, routes: base.routes.map((r) => ({ ...r, tasks: r.providerId === "openai" ? ["text-to-image" as const] : ["text-to-image" as const, "image-to-image" as const] })) };
+  const create = chooseRoute(model, undefined, "text-to-image");
+  assert.ok(create.kind === "default" && create.route.providerId === "openai");
+  const edit = chooseRoute(model, undefined, "image-to-image");
+  assert.ok(edit.kind === "default" && edit.route.providerId === "fal");
+  // A route picked for another task is not kept for one it cannot run.
+  const kept = chooseRoute(model, "openai", "image-to-image");
+  assert.ok(kept.kind === "default" && kept.route.providerId === "fal");
+  assert.equal(chooseRoute(model, undefined, "video-extend").kind, "unavailable");
+  const keyless = { ...model, routes: model.routes.map((r) => ({ ...r, keyConfigured: false })) };
+  const ask = chooseRoute(keyless, undefined, "image-to-image");
+  assert.ok(ask.kind === "needs-key" && ask.candidates.every((r) => r.providerId === "fal"));
+  // A server that does not say which tasks a route serves is treated as before.
+  assert.equal(chooseRoute(base, undefined, "image-to-image").kind, "default");
+});

@@ -42,7 +42,8 @@ function recordingCtx(adapter: MediaProviderAdapter): { ctx: MediaAdapterContext
 
 const declared = BUILTIN_MEDIA_ADAPTERS.flatMap((adapter) => adapter.listModels()
   .filter((spec) => spec.params.inputs?.length)
-  .flatMap((spec) => spec.tasks.filter((task) => forTask(spec.params.inputs, task).length > 0).map((task) => ({ adapter, spec, task }))));
+  // Edit, extend and upscale forms are checked in media-task-fields.test.ts.
+  .flatMap((spec) => spec.tasks.filter((task) => TALKING.includes(task) && forTask(spec.params.inputs, task).length > 0).map((task) => ({ adapter, spec, task }))));
 
 test("the direct talking-video routes say which inputs they need", () => {
   const byRoute = new Map(declared.map((d) => [d.adapter.id + ":" + d.spec.id + ":" + d.task, d.spec]));
