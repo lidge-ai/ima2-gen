@@ -183,7 +183,7 @@ function InputStatus({ route, selection }: { route: MediaRoute; selection: Media
   const limits = inputLimits(selection.task, route);
   const problem = inputProblem(selection.task, route, have);
   // Sound takes no image: the line says what the prompt is used for instead (read aloud, or a description).
-  if (!problem && selection.kind === "audio") return <p className="media-inputs" role="note">{t("mediaPicker.useNeeds." + audioUse(route, selection.task))}</p>;
+  if (!problem && selection.kind === "audio") return <p className="media-inputs" role="note">{t(`mediaPicker.useNeeds.${audioUse(route, selection.task)}`)}</p>;
   if (!problem && (!limits || limits.max === 0)) return null;
   return (
     <p className={`media-inputs${problem ? " media-inputs--problem" : ""}`} role="status">

@@ -3526,5 +3526,26 @@
     "selector": ".media-failure",
     "expected": "var(--r-md)",
     "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".media-voice__scroll",
+    "expected": "var(--r-sm)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".result-audio",
+    "expected": "var(--r-md)",
+    "important": false
+  },
+  {
+    "file": "ui/src/styles/media-models.css",
+    "atRule": null,
+    "selector": ".result-audio__mark",
+    "expected": "var(--r-sm)",
+    "important": false
   }
 ]

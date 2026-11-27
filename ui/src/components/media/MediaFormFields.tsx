@@ -15,7 +15,7 @@ const VOICE_PAGE = 60;
 
 /** The option's name in words where this screen knows it; a provider's own name is read as words ("output_format" → "output format"). */
 export function optionLabel(name: string, t: Translate): string {
-  return NAMED_OPTIONS.includes(name) ? t("mediaPicker.option." + name) : name.replace(/[_-]+/g, " ");
+  return NAMED_OPTIONS.includes(name) ? t(`mediaPicker.option.${name}`) : name.replace(/[_-]+/g, " ");
 }
 
 /** A free length in seconds. What is typed is what is stored, so a value outside the range is named, not silently moved. */
@@ -78,7 +78,7 @@ function languageName(tag: string, locale: string): string {
 
 function VoiceRow({ voice, chosen, playing, onPick, onPlay }: { voice: MediaVoice; chosen: boolean; playing: boolean; onPick: () => void; onPlay: () => void }) {
   const { t, locale } = useI18n();
-  const facts = [voice.language ? languageName(voice.language, locale) : null, voice.gender ? t("mediaPicker.voice." + voice.gender) : null].filter(Boolean).join(" · ");
+  const facts = [voice.language ? languageName(voice.language, locale) : null, voice.gender ? t(`mediaPicker.voice.${voice.gender}`) : null].filter(Boolean).join(" · ");
   return (
     <li className="media-voice__row">
       <button type="button" className="media-voice__pick" aria-pressed={chosen} data-voice={voice.id} onClick={onPick}>
@@ -126,7 +126,7 @@ function VoiceList({ voices, value, onPick }: { voices: readonly MediaVoice[]; v
       <div className="media-voice__scroll">
         {groups.map((group) => (group.voices.length === 0 ? null : (
           <section key={group.key}>
-            {titled ? <h4 className="media-voice__group">{t("mediaPicker.voice." + group.key)}</h4> : null}
+            {titled ? <h4 className="media-voice__group">{t(`mediaPicker.voice.${group.key}`)}</h4> : null}
             <ul className="media-voice__list">
               {group.voices.map((voice) => <VoiceRow key={voice.id} voice={voice} chosen={voice.id === value} playing={playing === voice.id} onPick={() => onPick(voice)} onPlay={() => play(voice)} />)}
             </ul>

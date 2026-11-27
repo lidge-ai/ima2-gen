@@ -15,7 +15,7 @@ export function unitPrice(price: MediaPrice, t: Translate): string {
 export function formProblemText(problem: FormProblem, t: Translate): string {
   if (problem.code === "voice") return t("mediaPicker.form.voice");
   if (problem.code === "option") return t("mediaPicker.form.option", { name: problem.name.replace(/[_-]+/g, " ") });
-  return t("mediaPicker.form." + problem.code, { min: problem.min, max: problem.max });
+  return t(`mediaPicker.form.${problem.code}`, { min: problem.min, max: problem.max });
 }
 
 /** "from $0.05/s", or the plain statement that the provider publishes no price. */
