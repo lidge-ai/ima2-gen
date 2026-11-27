@@ -19,8 +19,12 @@ after(() => { db.closeDb(); rmSync(dir, { recursive: true, force: true, maxRetri
 
 const fakeManager = { status: () => ({ provider: "runway", state: "connected" }) };
 
+let tempMediaCount = 0;
 function makeDeps(overrides: { failSidecar?: boolean; capture?: Array<Record<string, unknown>> } = {}) {
-  const tempMedia = join(dir, "temp-media.png");
+  // One file per set of deps: the route moves or still holds the previous one, and on Windows
+  // writing over a file another handle has open fails with EBUSY.
+  tempMediaCount += 1;
+  const tempMedia = join(dir, "temp-media-" + String(tempMediaCount) + ".png");
   writeFileSync(tempMedia, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   return {
     execute: async (_manager: unknown, _adapter: unknown, request: Record<string, unknown>) => {

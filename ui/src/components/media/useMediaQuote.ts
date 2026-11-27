@@ -3,6 +3,8 @@ import { jsonFetch } from "../../lib/api-core";
 import type { MediaRoute } from "../../lib/mediaCatalog";
 import { estimateBody, quoteFromEstimate, type MediaQuote } from "../../lib/mediaEstimate";
 import type { MediaSelection } from "../../lib/mediaSelection";
+import { composePrompt } from "../../store/storePersistence";
+import { useAppStore } from "../../store/useAppStore";
 
 // One request per distinct estimate; the settings panel and the Generate hint ask for the same one.
 const asked = new Map<string, Promise<MediaQuote>>();
@@ -29,7 +31,10 @@ export interface QuoteView {
  * until the answer arrives the quote is "pending", and a request that fails leaves it "unknown".
  */
 export function useMediaQuote(route: MediaRoute | undefined, selection: MediaSelection): QuoteView {
-  const key = route ? JSON.stringify(estimateBody(selection, route.adapter)) : "";
+  // Only a route priced per character needs the length of the prompt; other routes do not ask again as it is typed.
+  const perCharacter = route?.pricing.some((price) => price.unit === "character") === true;
+  const characters = useAppStore((s) => (perCharacter ? composePrompt(s.prompt, s.insertedPrompts).length : 0));
+  const key = route ? JSON.stringify(estimateBody(selection, route.adapter, characters)) : "";
   const [answer, setAnswer] = useState<{ key: string; quote: MediaQuote } | null>(null);
   useEffect(() => {
     if (!key) return undefined;

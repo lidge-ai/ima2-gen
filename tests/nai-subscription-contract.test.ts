@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import * as realFs from "node:fs";
 import { readFileSync } from "node:fs";
 import { request } from "node:http";
+import { createRequire } from "node:module";
 import test, { mock } from "node:test";
 import express from "express";
 import config from "../config.ts";
@@ -14,8 +15,12 @@ import {
 import type { QuotaResult } from "../routes/quota.ts";
 
 // Keep mounted quota tests independent of the developer's local credentials.
+// Only exports that can be redefined are passed on: newer Node 24 releases refuse to redefine
+// fs.constants ("Cannot redefine property: constants") when the mock is installed.
+const fsExports = createRequire(import.meta.url)("node:fs") as Record<string, unknown>;
+const redefinable = Object.fromEntries(Object.entries(realFs).filter(([name]) => name !== "default" && Object.getOwnPropertyDescriptor(fsExports, name)?.configurable !== false));
 mock.module("node:fs", { namedExports: {
-  ...realFs,
+  ...redefinable,
   readFileSync: (...args: unknown[]) => String(args[0]).endsWith("auth.json")
     ? "{}" : Reflect.apply(readFileSync, undefined, args),
 } });
