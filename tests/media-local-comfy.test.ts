@@ -168,6 +168,33 @@ test("a workflow with no text input runs as it is, and a prompt sent to it is re
   assert.equal(fake.prompts.length, 2);
 });
 
+test("a length in seconds reaches every input bound to it, and a workflow with none says its length is fixed", async () => {
+  const fake = await fakeComfy();
+  const graph = { "1": { class_type: "EmptyAudio", inputs: { duration: 30, sample_rate: 44100, channels: 2 } }, "2": { class_type: "Encoder", inputs: { duration: 30, tags: "stored" } },
+    "9": { class_type: "SaveAudioMP3", inputs: { audio: ["1", 0], filename_prefix: "ima2" } } };
+  const bind = { prompt: { node: "2", input: "tags" }, output: { node: "9" }, duration: { node: "1", input: "duration", also: [{ node: "2", input: "duration" }] } };
+  await register(fake.origin, "song", { graph, bind, params: [], mediaKind: "audio", durationRange: { minSec: 1, maxSec: 600 } });
+  await register(fake.origin, "jingle", { graph, bind: { prompt: bind.prompt, output: bind.output }, params: [], mediaKind: "audio" });
+  const specs = Object.fromEntries(listLocalSpecs().map((spec) => [spec.id, spec.params.durationRange]));
+  assert.deepEqual(specs, { "comfy/jingle": undefined, "comfy/song": { minSec: 1, maxSec: 600 } });
+  await runToEnd(await adapter.submit(ctx(), { model: "comfy/song", task: "text-to-audio", prompt: "soft piano", durationSec: 12, inputs: [] }));
+  const queued = fake.prompts[0]!.body.prompt as Record<string, { inputs: Record<string, unknown> }>;
+  assert.deepEqual([queued["1"]!.inputs.duration, queued["2"]!.inputs.duration], [12, 12]);
+  // Without a length in the request the registered one stays.
+  await runToEnd(await adapter.submit(ctx(), { model: "comfy/song", task: "text-to-audio", prompt: "soft piano", inputs: [] }));
+  assert.equal((fake.prompts[1]!.body.prompt as typeof queued)["1"]!.inputs.duration, 30);
+  for (const [request, pattern] of [
+    [{ model: "comfy/song", durationSec: 900 }, /comfy\/song takes a length from 1 to 600 seconds/],
+    [{ model: "comfy/jingle", durationSec: 12 }, /comfy\/jingle has a fixed length: its workflow has no length input bound/],
+  ] as const) {
+    await assert.rejects(() => adapter.submit(ctx(), { task: "text-to-audio", prompt: "x", inputs: [], ...request }), (error: unknown) => {
+      const failure = error as { code?: string; message?: string };
+      return failure.code === "COMFY_OPTION_INVALID" && pattern.test(failure.message ?? "");
+    });
+  }
+  assert.equal(fake.prompts.length, 2, "a refused request queues nothing");
+});
+
 test("an audio workflow returns audio", async () => {
   const fake = await fakeComfy({ outputs: { "9": { audio: [{ filename: "song.mp3", subfolder: "audio", type: "output" }] } }, files: { "song.mp3": MP3 } });
   await register(fake.origin, "song", { mediaKind: "audio", bind: { prompt: T2I_BIND.prompt, output: T2I_BIND.output }, params: [] });

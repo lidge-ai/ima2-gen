@@ -73,6 +73,13 @@ describe("comfy workflow manager", () => {
     assert.match(source, /originInvalid/);
   });
 
+  it("says a field matched several nodes only while one is still to be chosen", () => {
+    assert.match(source, /unresolved\.length > 0 \? \(\s*<div className="muted">\{t\("comfy\.bindAmbiguous"\)\}<\/div>/);
+    assert.doesNotMatch(source, /inspection\.needsConfirmation/);
+    // Frame count, frame rate and a length in seconds are offered like the other fields.
+    assert.match(source, /"length", "fps", "duration"/);
+  });
+
   it("does not encode status by colour alone", () => {
     const table = read("ui/src/components/settings/ComfyWorkflowTable.tsx");
     assert.match(table, /t\("comfy\.statusReady"\)/);
