@@ -80,7 +80,7 @@ routes/
 | File | Lines | Responsibility |
 |---|---:|---|
 | `server.ts` | 642 | Express bootstrap, middleware wiring, OAuth startup, runtime advertisement, port fallback, post-listen MCP restore, coordinated shutdown, route registration, static serving |
-| `config.ts` | 579 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
+| `config.ts` | 582 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 107 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, studios, showcase, media tools (tool descriptors, estimate, workflow schema), and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
 | `routes/showcase.ts` | 141 | `GET /api/showcase` lists finished example clips from `showcase.json` in `IMA2_SHOWCASE_DIR` (default `<config dir>/showcase`); `GET /api/showcase/media/:file` serves its files with Range support |
@@ -275,7 +275,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/comfyWorkflowStore.ts` | 253 | Comfy lane model registry: per-record origin and image/video kind, legacy image normalization, id/kind validation, corrupt-file tolerance |
 | `lib/comfyGraphBind.ts` | 273 | API-format graph parsing, grouped SDXL/H3 binding inference, SaveImage/SaveVideo kind inference, non-mutating value injection, parameter derivation |
 | `lib/comfyPngWorkflow.ts` | 100 | PNG tEXt/zTXt/iTXt reader that extracts ComfyUI's embedded API graph |
-| `lib/comfyImageAdapter.ts` | 422 | Comfy lane runtime: /prompt submit with bound graph, /history polling cross-checked against /queue, /view download with bounded parameters, state-split cancel, parallel per-origin health |
+| `lib/comfyImageAdapter.ts` | 427 | Comfy lane runtime: /prompt submit with bound graph, /history polling cross-checked against /queue, /view download with bounded parameters, state-split cancel, parallel per-origin health |
 | `lib/comfy/access.ts` | 197 | Which ComfyUI servers ima2 may call: loopback always, others by exact origin from config.json, optional bearer token (write-only) |
 | `lib/comfy/client.ts` | 195 | ComfyUI HTTP calls: token attach, no redirects, jobs cancel with legacy fallback, queue position, rejection and execution errors as sentences |
 | `lib/comfy/progress.ts` | 179 | Live job progress over /ws: per-job client id, graph fraction, running node and sampler step |
@@ -305,7 +305,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/capabilities.ts` | 275 | Runtime provider and feature capability resolution |
 | `lib/characterBindings.ts` | 112 | Character provider binding validation, refs preservation guard, and drift detection |
 | `lib/composerSnapshot.ts` | 34 | Composer state snapshot normalization |
-| `lib/configKeys.ts` | 83 | Runtime configuration key definitions and validation |
+| `lib/configKeys.ts` | 84 | Runtime configuration key definitions and validation |
 | `lib/elementCompiler.ts` | 200 | Structured element prompt compilation and validation |
 | `lib/geminiApiImageAdapter.ts` | 2 | Compatibility reexport of Gemini native operation/result |
 | `lib/providers/adapters/geminiOperations.ts` | 276 | Actual public/Vertex image payload, auth selection and unchanged native response/error handling |
