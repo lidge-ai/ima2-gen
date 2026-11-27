@@ -39,6 +39,13 @@ test("workflow and history adapters translate values, estimates and cursors", ()
   const wire = workflows.find((w) => w.id === "director-cast")!,
     def = toWorkflowDef(wire);
   assert.equal(def.inputs.find((i) => i.name === "prompt")?.required, true);
+  // A step shows the server's one-sentence description only; reviewer notes never reach the screen.
+  const slot = { ...wire.slots[0]!, description: "Draws the character sheet." };
+  assert.equal(toWorkflowDef({ ...wire, slots: [slot] }).steps[0]?.description, "Draws the character sheet.");
+  const { description: _shown, ...bare } = slot;
+  const older = toWorkflowDef({ ...wire, slots: [Object.assign(bare, { rationale: "reviewer note" })] });
+  assert.equal(older.steps[0]?.description, undefined);
+  assert.equal("rationale" in older.steps[0]!, false);
   assert.deepEqual(
     toWireRun({ inputs: { images: [{ role: "reference-image", inputId: "input:a.png" }], prompt: "scene" } }, def)
       .values,

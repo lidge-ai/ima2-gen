@@ -134,8 +134,7 @@ export interface WireSlot {
   alternatives: readonly string[];
   tierModels?: Readonly<Record<string, string>>;
   defaultRoute?: string;
-  rationale: string;
-  /** One plain sentence for people; newer servers. */
+  /** One plain sentence for people: what the step does. */
   description?: string;
   /** Projects and papers the step follows (shown once per workflow, collapsed). */
   credits?: readonly WorkflowCredit[];
