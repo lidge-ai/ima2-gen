@@ -64,9 +64,19 @@ function absentStat(path: string): Stats | null {
   }
 }
 
+/**
+ * Whether a PATH entry is a directory that can be searched. One that cannot be read at all (missing,
+ * denied, or a link Node cannot follow, which Windows reports as UNKNOWN) offers no executable; that is
+ * the machine's PATH, not something the test did. Errors about the executable itself are still raised.
+ */
+export function usablePathDirectory(dir: string, stat: (path: string) => { isDirectory(): boolean } = statSync): boolean {
+  try { return stat(dir).isDirectory(); } catch { return false; }
+}
+
 function findExecutable(originalPath: string): string | null {
   for (const dir of originalPath.split(delimiter)) {
     if (!isAbsolute(dir)) continue; // Never search cwd or a relative PATH entry.
+    if (!usablePathDirectory(dir)) continue;
     try {
       const path = realpathSync(join(dir, process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg"));
       if (!statSync(path).isFile()) continue;
