@@ -74,8 +74,9 @@ export function VendorLogo({ id, shape = "mark", size = 20, withName = false, cl
     );
   }
   const { file } = pick;
-  // White ink sits on a dark tile, every other file on a light one; app icons bring their own.
-  const plate = file.tile ? "plate-tile" : file.variant === "dark" ? "plate-dark" : "plate-light";
+  // Light ink sits on a dark tile, dark and coloured ink on a light one; app icons bring their own.
+  const ink = file.ink ?? (file.variant === "dark" ? "light" : "dark");
+  const plate = file.tile ? "plate-tile" : ink === "light" ? "plate-dark" : "plate-light";
   const ratio = file.width && file.height ? file.width / file.height : 3;
   const maxWidth = shape === "mark" ? size : Math.round(size * Math.min(ratio, MAX_WORDMARK_RATIO));
   const inset = Math.max(1, Math.round(size * 0.12));

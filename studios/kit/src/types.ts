@@ -33,6 +33,8 @@ export interface CatalogModel {
   id: string;
   vendor: string;
   label: string;
+  /** The catalog marks this model as being retired (its label carried "(deprecated)"). */
+  retiring?: boolean;
   kind: MediaKind;
   tasks: readonly MediaTask[];
   /** Union of what the routes accept; a route may accept less (see routeParams). */
@@ -238,8 +240,23 @@ export interface WorkflowStepSpec {
   pricingBasis?: string;
   /** model id -> whether a registered route can run it for this step. */
   available?: Readonly<Record<string, boolean>>;
+  /** model id -> whether it can run now: a saved key, or the step's signed-in session. Absent when the server cannot tell. */
+  runnable?: Readonly<Record<string, boolean>>;
+  /** Route the step uses by default when it is not a keyed provider route, e.g. a subscription session ("openai-oauth"). */
+  route?: string;
   /** Why the workflow uses this model, with its evidence. */
   rationale?: string;
+}
+
+/**
+ * One language's text for a workflow (GET /api/workflows i18n.<lang>). Every key is optional and
+ * falls back to the English fields. Keys follow the wire: field names, option values, slot names.
+ */
+export interface WorkflowText {
+  label?: string;
+  description?: string;
+  fields?: Readonly<Record<string, { label?: string; help?: string; options?: Readonly<Record<string, string>> }>>;
+  slots?: Readonly<Record<string, string>>;
 }
 
 export interface WorkflowDef {
@@ -252,6 +269,8 @@ export interface WorkflowDef {
   inputs: readonly WorkflowInputSpec[];
   params: readonly WorkflowParamSpec[];
   steps: readonly WorkflowStepSpec[];
+  /** Text in other languages as the server sent it; see localizeWorkflow. */
+  i18n?: Readonly<Record<string, WorkflowText>>;
 }
 
 export interface WorkflowRunBody {
@@ -263,8 +282,19 @@ export interface WorkflowRunBody {
 }
 
 export interface WorkflowEstimate {
-  steps: readonly { id: string; label?: string; model?: string; estimate: CostEstimate }[];
+  /** Per planned step: the model and route the server will actually use (its plan, not the defaults). */
+  steps: readonly { id: string; label?: string; model?: string; route?: string; slot?: string; estimate: CostEstimate }[];
   total: CostEstimate;
+}
+
+/**
+ * Spend limits of a shared web instance (GET /api/web/session). Such a server runs only jobs whose
+ * published-price estimate is complete and fits both caps; a local server has none (null).
+ */
+export interface WebSpend {
+  spentUsd: number;
+  dailyCapUsd: number;
+  requestCapUsd: number;
 }
 
 /** A finished example clip from the server's showcase folder (GET /api/showcase). */
@@ -287,4 +317,6 @@ export interface ShowcaseItem {
   /** What the example cost when it was made, or null when a price was not published. */
   estimate?: { usd: number | null; basis?: string };
   durationSec?: number;
+  /** Kind of clip, e.g. "motion-transfer", "restyle", "text-to-video". */
+  type?: string;
 }

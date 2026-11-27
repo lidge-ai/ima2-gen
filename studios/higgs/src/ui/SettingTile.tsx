@@ -90,7 +90,7 @@ export function SettingTile<T extends string | number>(props: Props<T>) {
       >
         {icon ? <Icon name={icon} size={15} /> : null}
         {variant === "tile" ? <span className="setting-caption">{caption}</span> : null}
-        <span className="setting-value picker-value">
+        <span className="setting-value picker-value" title={current?.label}>
           {current?.icon}
           {valueText(current, variant, chipText)}
         </span>

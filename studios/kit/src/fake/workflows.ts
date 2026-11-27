@@ -1,4 +1,5 @@
 import type { WireField, WireSlot, WireWorkflow, WireEstimateResponse } from "../wire.ts";
+import { koText } from "./workflowsKo.ts";
 import type { Catalog } from "../types.ts";
 
 const text = (name: string, label: string, required = false): WireField => ({
@@ -255,6 +256,7 @@ export const workflows: WireWorkflow[] = [
 ];
 for (const workflow of workflows) {
   if (workflow.id === "remix-motion-transfer" || workflow.id === "remix-object-swap") workflow.tierField = "tier";
+  workflow.i18n = { ko: koText(workflow) };
 }
 export function estimateWorkflow(
   def: WireWorkflow,
@@ -275,6 +277,7 @@ export function estimateWorkflow(
       catalog.models.find((m) => m.id === (models[slot.name] ?? slot.defaultModel))?.routes.find((r) => r.keyConfigured)
         ?.providerId ??
       "fal",
+    slot: slot.name,
     final: index === def.slots.length - 1,
   }));
   const estimates = steps.map((step) => {

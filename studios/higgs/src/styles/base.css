@@ -133,6 +133,10 @@ code {
   font-weight: 560;
   margin-left: 6px;
 }
+/* Being retired by the provider: a warning word, not a new accent. */
+.tag.tag-retiring {
+  color: var(--amber);
+}
 
 .btn {
   display: inline-flex;
@@ -311,3 +315,9 @@ code {
 }
 
 .menu-item[aria-pressed="true"] { background: var(--surface-2); }
+
+/* Korean breaks between words, never inside one ("레퍼런\n스"); very long tokens still wrap. */
+:root:lang(ko) body {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

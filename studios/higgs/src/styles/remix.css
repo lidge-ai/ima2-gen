@@ -51,6 +51,15 @@
   background: var(--surface-2);
   border-radius: var(--radius-s);
 }
+.workflow-switch-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.workflow-switch .setting-value {
+  color: var(--text);
+  font-size: 14px;
+}
 .workflow-step {
   display: grid;
   gap: 4px;

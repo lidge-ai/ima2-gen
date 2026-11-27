@@ -123,6 +123,9 @@ export class Jobs {
     const code = "FAKE_" + failure.toUpperCase().replaceAll("-", "_");
     record.status = "error";
     record.errorCode = code;
+    // Stored the way the server is asked to store it (L7 request: category in the job meta),
+    // so a reloaded job list still knows why the job failed.
+    record.meta = { ...record.meta, category: failure, retryable: false };
     record.finishedAt = Date.now();
     this.emit("error", job, {
       code,

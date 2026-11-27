@@ -2,7 +2,7 @@
  * Translates the server's wire shapes (wire.ts) into the UI-facing kit types
  * (types.ts) and back. Pure functions; client.ts does the I/O.
  */
-import type { Catalog, CatalogModel, CatalogProvider, Job, KeyStatus, MediaModelSpec, MediaSubmitBody, SubmitInput } from "./types.ts";
+import type { Catalog, CatalogModel, CatalogProvider, Job, JobError, KeyStatus, MediaModelSpec, MediaSubmitBody, SubmitInput } from "./types.ts";
 import type { WireAdapter, WireCatalog, WireJob, WireModel, WireRoute } from "./wire.ts";
 
 /* ---------- catalog and keys ---------- */
@@ -26,7 +26,7 @@ function toModel(model: WireModel): CatalogModel {
   return {
     id: model.id,
     vendor: model.vendor,
-    label: model.label,
+    ...nameParts(model.label),
     kind: model.kind,
     tasks: model.tasks,
     params: unionParams(routes),
@@ -37,6 +37,22 @@ function toModel(model: WireModel): CatalogModel {
     routeParams: Object.fromEntries(routes.map((r) => [r.adapter, r.params])),
     defaultRoute: model.defaultRoute,
   };
+}
+
+/**
+ * Catalog labels mark a model being retired with a suffix ("GPT Image 2 (deprecated)"). The name is
+ * kept clean everywhere; screens that choose a model read retiring and show their own badge.
+ */
+const RETIRING = new Set(["deprecated", "legacy", "retiring"]);
+
+export function nameParts(label: string): { label: string; retiring?: true } {
+  // Plain string checks (no backtracking regex on catalog text).
+  const text = label.trimEnd();
+  const open = text.lastIndexOf("(");
+  if (!text.endsWith(")") || open <= 0) return { label };
+  const word = text.slice(open + 1, -1).trim().toLowerCase();
+  const name = text.slice(0, open).trimEnd();
+  return RETIRING.has(word) && name ? { label: name, retiring: true } : { label };
 }
 
 function toProvider(a: WireAdapter): CatalogProvider {
@@ -113,8 +129,17 @@ export function fromWireJob(wire: WireJob): Job {
   };
   const provider = str("adapter");
   if (provider) job.provider = provider;
+  // A finished job is complete whether its progress came from events or only from this record.
+  if (status === "succeeded") job.progress = 1;
   if (status === "failed" && wire.errorCode) {
-    job.error = { code: wire.errorCode, message: wire.errorCode, category: "unknown", retryable: false };
+    // The live "error" event carries the category; a record read back after a reload only has it
+    // when the server stored it in meta. Without it the card falls back to the generic message.
+    const category = CATEGORIES.find((c) => c === str("category")) ?? "unknown";
+    job.error = { code: wire.errorCode, message: wire.errorCode, category, retryable: meta.retryable === true };
   }
   return job;
 }
+
+const CATEGORIES: readonly JobError["category"][] = [
+  "auth", "quota", "rate-limit", "invalid-request", "moderation", "not-found", "upstream", "timeout", "unknown",
+];
