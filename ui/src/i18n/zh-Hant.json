@@ -173,7 +173,7 @@
       "prefix": "此提供商的金鑰以 {prefix} 開頭。",
       "extra": "請填寫必填欄位。",
       "required": "（必填）",
-      "field": {"region": "區域", "secretKey": "密鑰（Secret Key）", "vodSubAppId": "VOD 子應用程式 ID", "location": "位置（區域）"},
+      "field": {"region": "區域", "secretKey": "密鑰（Secret Key）", "secretAccessKey": "秘密存取金鑰（Secret Access Key）", "vodSubAppId": "VOD 子應用程式 ID", "location": "位置（區域）"},
       "subscription": "ChatGPT 和 Grok 的登入模型不需要金鑰，它們由內建提供商執行。",
       "fileOnly": "此提供商使用服務帳號檔案登入，請在設定中新增。",
       "rejected": "{provider} 沒有接受此金鑰，請檢查後重試。",
