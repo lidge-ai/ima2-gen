@@ -1,7 +1,7 @@
 // The guard scripts/run-tests.mjs loads into every test process (tests/helpers/processGuard.mjs).
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,8 +9,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const guard = pathToFileURL(fileURLToPath(new URL("./helpers/processGuard.mjs", import.meta.url))).href;
 
-function run(script: string) {
-  const result = spawnSync(process.execPath, ["--import", guard, "--input-type=module", "-e", script], { encoding: "utf8", timeout: 20_000 });
+function run(script: string, env: Record<string, string> = {}) {
+  const result = spawnSync(process.execPath, ["--import", guard, "--input-type=module", "-e", script], { encoding: "utf8", timeout: 20_000, env: { ...process.env, ...env } });
   return { code: result.status, stderr: result.stderr };
 }
 
@@ -51,6 +51,32 @@ test("a SQLite file the test opened itself and left open fails the file; closed 
   assert.match(left.stderr, /a SQLite file opened by the test is still open/);
   assert.deepEqual(run(open('join(dir, "own.sqlite")', ' db.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });')), { code: 0, stderr: "" });
   assert.deepEqual(run(open('":memory:"', "")), { code: 0, stderr: "" });
+});
+
+test("the temp directory is recognised under either of its names: a link and its target, a Windows short path and its long one", () => {
+  const opened = (path: string) => state + " state.opened.push(" + JSON.stringify(path) + ");";
+  const real = realpathSync.native(mkdtempSync(join(tmpdir(), "ima2-guard-root-")));
+  try {
+    const db = (root: string) => join(root, "ima2-probe", "sessions.db");
+    let other: string;
+    if (process.platform === "win32") {
+      // The 8.3 form GitHub's Windows runners use for TEMP (C:\Users\RUNNER~1\...).
+      other = spawnSync("cmd", ["/d", "/c", "for %I in ("" + real + "") do @echo %~sI"], { encoding: "utf8", windowsVerbatimArguments: true }).stdout.trim();
+      assert.ok(other.length > 0, "the short path of the temp root");
+    } else {
+      other = real + "-link";
+      symlinkSync(real, other, "dir");
+    }
+    const temp = (root: string) => ({ TMPDIR: root, TEMP: root, TMP: root });
+    // TEMP names the directory one way and the database path the other, in both directions.
+    assert.deepEqual(run(opened(db(real)), temp(other)), { code: 0, stderr: "" });
+    assert.deepEqual(run(opened(db(other)), temp(real)), { code: 0, stderr: "" });
+    // A path that is in neither is still refused.
+    assert.equal(run(opened(join(fileURLToPath(new URL("..", import.meta.url)), "not-temp", "sessions.db")), temp(other)).code, 1);
+    if (process.platform !== "win32") rmSync(other, { force: true, maxRetries: 10, retryDelay: 100 });
+  } finally {
+    rmSync(real, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
 });
 
 test("a failing test keeps its own exit code", () => {
