@@ -16,7 +16,7 @@
 import { realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 
 function inside(root, path) {
   const base = resolve(root).toLowerCase();
@@ -32,8 +32,26 @@ for (const expand of [realpathSync, realpathSync.native]) {
   try { tempRoots.push(expand(tmpdir())); } catch { /* the plain path is enough */ }
 }
 
+/**
+ * The path with its nearest existing folder spelled the way the system does (links followed, a Windows
+ * short name expanded). The database file itself is usually gone by the time the process exits.
+ */
+function expanded(path) {
+  let folder = resolve(path);
+  const rest = [];
+  for (;;) {
+    try { return join(realpathSync.native(folder), ...rest); } catch { /* try the parent */ }
+    const parent = dirname(folder);
+    if (parent === folder) return path;
+    rest.unshift(basename(folder));
+    folder = parent;
+  }
+}
+
 function isTemp(path) {
-  return path === ":memory:" || tempRoots.some((root) => inside(root, path));
+  if (path === ":memory:") return true;
+  // Either side can be the other spelling: the temp root (handled at load) or the opened path.
+  return [path, expanded(path)].some((candidate) => tempRoots.some((root) => inside(root, candidate)));
 }
 
 /** Every better-sqlite3 handle this process used, whoever opened it. */
