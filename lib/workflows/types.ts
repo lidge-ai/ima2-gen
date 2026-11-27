@@ -249,8 +249,6 @@ export interface WorkflowDefinition {
   description: string;
   /** Text in other languages. Korean is generated from lib/workflows/i18n/ko.ts; a definition may override parts here. */
   i18n?: { ko?: WorkflowText };
-  /** Public products this workflow matches in function (ids from Sume's public list). */
-  equivalents: readonly string[];
   /** Set on variants that trade quality for running on particular accounts (e.g. subscriptions only). */
   preset?: WorkflowPreset;
   /** Named model/route combinations the UI can offer as one choice. */

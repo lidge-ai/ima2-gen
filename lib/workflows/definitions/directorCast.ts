@@ -4,7 +4,7 @@ import { countField, imageSlot, promptField, resolutionField, stillStep } from "
 
 export const directorCast: WorkflowDefinition = {
   id: "director-cast", label: "Director cast", description: "Create a consistent character reference sheet.",
-  equivalents: ["sume/sume-director-cast-1"], slots: [imageSlot],
+  slots: [imageSlot],
   fields: [
     promptField,
     { name: "images", type: "media", label: "Reference images", accept: "image", min: 1, max: 4, required: false },

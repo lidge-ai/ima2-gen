@@ -74,3 +74,14 @@ test("the Korean block has every slot description and no English paragraphs anyw
     assert.deepEqual(prose, [], w.id + " Korean text has no English prose");
   }
 });
+
+test("GET /api/workflows names no other product: no competitor names in any field, English or Korean", () => {
+  // Credits keep open-source project names and licences (attribution); those names are not products.
+  const banned = /sume|higgs|genjutsu|parity/i;
+  for (const w of WORKFLOWS) {
+    const d = describeWorkflow(w);
+    const hits = strings(d).filter((s) => banned.test(s));
+    assert.deepEqual(hits, [], w.id);
+    assert.equal("equivalents" in d, false, w.id + " sends no equivalents");
+  }
+});

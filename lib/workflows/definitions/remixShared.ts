@@ -7,7 +7,7 @@ import type {
 import { checkModelFit, inputsFrom, joinPrompt, option, refsOf, textOf, videoResolutionField, wholeSeconds } from "./shared.js";
 import { videoTokenUnits } from "../videoTokens.js";
 
-/** Source limits shared by every Remix workflow (4-15 s, 200 MB), matching Sume's public Remix schema. */
+/** Source limits shared by every Remix workflow (4-15 s, 200 MB), matching the common public remix limits. */
 export function sourceVideoField(): WorkflowField {
   return {
     name: "video", type: "media", accept: "video", label: "Source video", required: true, min: 1, max: 1,

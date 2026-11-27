@@ -32,7 +32,7 @@ const VIDEO_URL = "https://cdn.fake.example/out/clip.mp4";
 
 function flow(id: string, seconds: number, model = "acme/clip-1") {
   return {
-    id, label: id, description: "one fake clip", equivalents: [],
+    id, label: id, description: "one fake clip",
     fields: [{ type: "text", name: "prompt", label: "Prompt", required: true, maxLength: 200 }],
     slots: [{ name: "render", label: "Render", task: "text-to-video", defaultModel: model, alternatives: [], rationale: "test" }],
     plan(values: Record<string, unknown>, slots: Record<string, { model: string }>) {

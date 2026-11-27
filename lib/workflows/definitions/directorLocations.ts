@@ -4,7 +4,7 @@ import { countField, imageSlot, promptField, resolutionField, stillStep } from "
 
 export const directorLocations: WorkflowDefinition = {
   id: "director-locations", label: "Director locations", description: "Create a cinematic location study.",
-  equivalents: ["sume/sume-director-locations-1"], slots: [imageSlot],
+  slots: [imageSlot],
   fields: [
     promptField,
     { name: "images", type: "media", label: "Reference image", accept: "image", min: 0, max: 1, required: false },

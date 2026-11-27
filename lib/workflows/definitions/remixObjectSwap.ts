@@ -14,7 +14,6 @@ export const remixObjectSwap: WorkflowDefinition = {
   id: "remix-object-swap",
   label: "Remix: object swap",
   description: "Swap selected people, products or objects in a 4-15 second clip and keep the rest of the shot.",
-  equivalents: ["sume/sume-remix-object-swap", "sume/sume-remix-lite-object-swap"],
   fields: [
     sourceVideoField(),
     referenceImagesField("1-8 images of the replacements, in order."),

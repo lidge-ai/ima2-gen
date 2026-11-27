@@ -144,7 +144,6 @@ export const directorStudio: WorkflowDefinition = {
   id: "director-studio",
   label: "Director studio",
   description: "A directed 4-30 second clip from one prompt: planned shots, a look and a sound bed, with image, video and audio references.",
-  equivalents: ["sume/sume-director-studio-1"],
   fields: [
     { name: "prompt", type: "text", label: "Scene", required: true, maxLength: 4000, multiline: true, help: "What happens. Name references as image 1, video 1, audio 1." },
     { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },

@@ -4,7 +4,7 @@ import { imageSlot, promptField, resolutionField, stillStep } from "./stillsShar
 
 export const directorCinema: WorkflowDefinition = {
   id: "director-cinema", label: "Director cinema", description: "Create a cinematic film still.",
-  equivalents: ["sume/sume-director-cinema-1"], slots: [imageSlot],
+  slots: [imageSlot],
   fields: [
     promptField,
     { name: "images", type: "media", label: "Scene reference", accept: "image", min: 0, max: 1, required: false },
