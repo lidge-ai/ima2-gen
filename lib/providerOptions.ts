@@ -92,6 +92,13 @@ export function resolveProviderOptions(ctx: RuntimeContext | null | undefined, {
     const comfyCheck = normalizeComfyWorkflowModel(rawModel);
     if (comfyCheck.error !== undefined) return { error: comfyCheck.error, code: comfyCheck.code, status: comfyCheck.status };
     const workflow = ctx?.comfyWorkflows?.find((entry) => entry.id === comfyCheck.model);
+    if (workflow?.mediaKind === "audio") {
+      return {
+        error: "This ComfyUI workflow produces audio. Run it from the media models (comfy/" + comfyCheck.model + ").",
+        code: "COMFY_AUDIO_WRONG_ENDPOINT",
+        status: 400,
+      };
+    }
     if (workflow?.mediaKind === "video") {
       return {
         // The workflow is runnable; it just belongs on the other endpoint. The

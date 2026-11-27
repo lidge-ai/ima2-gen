@@ -72,7 +72,8 @@ for (const adapter of subjects) {
 
   test(`${adapter.id}: every model spec is well formed and priced only from a cited source`, () => {
     const models = adapter.listModels();
-    assert.ok(models.length > 0, "listModels() must not be empty");
+    // A live catalog holds what the user registered; with nothing registered it is rightly empty.
+    if (!adapter.liveModels) assert.ok(models.length > 0, "listModels() must not be empty");
     const ids = new Set<string>();
     for (const m of models) {
       assert.match(m.id, MODEL_ID, m.id);
@@ -105,7 +106,9 @@ for (const adapter of subjects) {
   });
 
   for (const [status, expected] of [[401, "auth"], [429, "rate-limit"]] as const) {
-    test(`${adapter.id}: HTTP ${status} on submit is classified ${expected} through ctx.fetch, without the key`, async () => {
+    // A keyless local route has no provider key to leak and no provider rate limit; its own suite covers its refusals.
+    const skip = adapter.credential.keyless ? "keyless local route: no provider key or rate limit to classify" : false;
+    test(`${adapter.id}: HTTP ${status} on submit is classified ${expected} through ctx.fetch, without the key`, { skip }, async () => {
       const model = adapter.listModels()[0]!;
       const calls: string[] = [];
       const ctx = { apiKey: SECRET, extra: Object.fromEntries((adapter.credential.extraFields ?? []).map((f) => [f.name, "x-extra"])), fetch: statusFetch(status, calls) };

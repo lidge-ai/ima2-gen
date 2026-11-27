@@ -50,7 +50,7 @@ export function createComfyAdapter(ctx: RuntimeContext): ProviderAdapterV1 {
     prepareImageExecution: prepareLaneImageExecution,
 
     validateAuth(): AuthResult {
-      const workflows = (ctx.comfyWorkflows ?? []).filter((workflow) => workflow.mediaKind !== "video");
+      const workflows = (ctx.comfyWorkflows ?? []).filter((workflow) => workflow.mediaKind === "image");
       return workflows.length > 0
         ? { ok: true }
         : { ok: false, reason: "No ComfyUI workflow registered" };
@@ -61,7 +61,7 @@ export function createComfyAdapter(ctx: RuntimeContext): ProviderAdapterV1 {
       // runtime-catalog lane. Edit support is per workflow: only a graph with a
       // reference-image binding can accept an input image.
       return (ctx.comfyWorkflows ?? [])
-        .filter((workflow) => workflow.mediaKind !== "video")
+        .filter((workflow) => workflow.mediaKind === "image")
         .map((workflow) => ({
         id: workflow.id,
         kind: "image" as const,

@@ -4,6 +4,10 @@
 //
 // Flags:
 //   --check             Fail if the on-disk inventory is stale.
+//
+// The file lists the tests and states no count. A count line cannot survive two pull requests that
+// each add a test: both regenerate it against their own base and the merged number is one short.
+// The counts are printed instead.
 //   --fail-js-runtime   Fail if any test is still .test.js / .test.mjs
 //                       (every test is TypeScript after the full conversion;
 //                       the flag name is kept for script compatibility).
@@ -44,8 +48,6 @@ const output = [
   "",
   `_Tests considered "runtime-importing" if they import from \`../lib/\`, \`../routes/\`, \`../bin/\`, \`../server\`, or \`../config\`._`,
   "",
-  `Total: ${files.length} (runtime: ${runtime.length}, contract: ${contract.length})`,
-  "",
   "## Runtime-importing tests",
   renderList(runtime),
   "",
@@ -54,16 +56,24 @@ const output = [
   "",
 ].join("\n");
 
+const counts = `${files.length} test files (${runtime.length} runtime, ${contract.length} contract)`;
+
 if (check) {
   const existing = existsSync(outPath) ? readFileSync(outPath, "utf8").replace(/\r\n/g, "\n") : null;
   if (existing !== output) {
     console.error(`${outPath} is stale. Run: node scripts/classify-tests.mjs`);
+    const listed = new Set([...(existing ?? "").matchAll(/^- `(tests\/[^`]+)`$/gm)].map((match) => match[1]));
+    const present = new Set(files.map((file) => join(testDir, file)));
+    for (const path of present) if (!listed.has(path)) console.error(`  not listed: ${path}`);
+    for (const path of listed) if (!present.has(path)) console.error(`  listed but gone: ${path}`);
+    if ([...present].every((path) => listed.has(path)) && [...listed].every((path) => present.has(path))) console.error("  every file is listed; one is under the wrong heading or the lines are out of order");
     process.exit(1);
   }
+  console.log(`${outPath} is current: ${counts}.`);
 } else {
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, output);
-  console.log(`Wrote ${outPath} (${runtime.length} runtime / ${contract.length} contract).`);
+  console.log(`Wrote ${outPath}: ${counts}.`);
 }
 
 if (failJsRuntime) {
