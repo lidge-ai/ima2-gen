@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { LOCALES, record, shoot } from "./lib.ts";
 
 // State × width captures of the talking-video form (lip sync, avatar, dubbing) on the fake server.
-// Run: npx playwright test -c audit/playwright.audit.config.ts --project studio speak.audit.ts
+// Run: npx playwright test -c audit/playwright.audit.config.ts speak.audit.ts --project=studio
 
 const CLIP = fileURLToPath(new URL("../public/samples/orbit.mp4", import.meta.url));
 function wav(seconds: number): Buffer {
