@@ -2818,6 +2818,9 @@
       "height": "高",
       "seed": "种子",
       "refImage": "参考图",
+      "length": "帧数",
+      "fps": "每秒帧数",
+      "duration": "时长（秒）",
       "output": "输出节点"
     },
     "kindAudio": "音频",

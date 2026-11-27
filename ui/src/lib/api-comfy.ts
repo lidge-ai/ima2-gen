@@ -17,6 +17,8 @@ export interface ComfyHealth {
 export interface ComfyBinding {
   node: string;
   input: string;
+  /** Other inputs that must carry the same value (a size or a length the graph writes twice). */
+  also?: Array<{ node: string; input: string }>;
 }
 
 export interface ComfyWorkflowBindings {
@@ -27,6 +29,10 @@ export interface ComfyWorkflowBindings {
   height?: ComfyBinding;
   seed?: ComfyBinding;
   refImage?: ComfyBinding;
+  /** Frame count and frame rate of a video graph, and a length in seconds (audio). */
+  length?: ComfyBinding;
+  fps?: ComfyBinding;
+  duration?: ComfyBinding;
   /** Every node input that takes an uploaded file, with the role its file plays. */
   inputs?: ComfyMediaSlot[];
   output: { node: string };
@@ -96,6 +102,8 @@ export interface ComfyBindCandidate {
   title?: string;
   /** False when several nodes match and a human must choose. */
   unambiguous: boolean;
+  /** Inputs that hold the same value and are bound together with this one. */
+  also?: Array<{ node: string; input: string }>;
 }
 
 export interface ComfyInspectResult {

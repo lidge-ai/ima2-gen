@@ -134,6 +134,8 @@ function draftFields(graph: ComfyGraph, info: ComfyObjectInfo): Draft[] {
     single("refImage", images),
     single("length", namedInts(graph, info, ["length", "num_frames", "frames"])),
     single("fps", namedInts(graph, info, ["fps", "frame_rate"], ["INT", "FLOAT"])),
+    // An audio graph often states its length twice (the empty latent and the text encoder): one setting when they agree.
+    sharedValue(graph, "duration", namedInts(graph, info, ["seconds", "duration"], ["INT", "FLOAT"])),
   ];
 }
 

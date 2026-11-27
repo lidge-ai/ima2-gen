@@ -2818,6 +2818,9 @@
       "height": "高",
       "seed": "種子",
       "refImage": "參考圖",
+      "length": "幀數",
+      "fps": "每秒幀數",
+      "duration": "長度（秒）",
       "output": "輸出節點"
     },
     "kindAudio": "音訊",

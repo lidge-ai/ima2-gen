@@ -93,6 +93,17 @@ class SendTest(unittest.TestCase):
         self.assertEqual(ima2_send.send_workflow(client, GRAPH, "wan", ORIGIN)["ok"], True)
         self.assertEqual(fake.calls[-1][2]["bind"], {"prompt": {"node": "6", "input": "text"}, "negativePrompt": {"node": "7", "input": "text"}, "output": {"node": "58"}})
 
+    def test_length_and_settings_written_in_several_nodes_are_registered_whole(self):
+        width = dict(candidate("width", "62", "width"), also=[{"node": "66", "input": "width"}])
+        duration = dict(candidate("duration", "94", "duration"), also=[{"node": "98", "input": "seconds"}])
+        fake, client = self.serve({"candidates": [candidate("prompt", "6", "text"), width, duration, candidate("length", "55", "length"), candidate("fps", "57", "fps"),
+                                                  candidate("output", "9", "")], "mediaSlots": [], "server": READY})
+        self.assertEqual(ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)["ok"], True)
+        self.assertEqual(fake.calls[-1][2]["bind"], {
+            "prompt": {"node": "6", "input": "text"}, "width": {"node": "62", "input": "width", "also": [{"node": "66", "input": "width"}]},
+            "length": {"node": "55", "input": "length"}, "fps": {"node": "57", "input": "fps"},
+            "duration": {"node": "94", "input": "duration", "also": [{"node": "98", "input": "seconds"}]}, "output": {"node": "9"}})
+
     def test_a_choice_only_a_person_can_make_is_handed_back_and_nothing_is_registered(self):
         slots = [{"kind": "image", "node": "52", "input": "image", "classType": "LoadImage"}, {"kind": "image", "node": "53", "input": "image", "classType": "LoadImage"}]
         fake, client = self.serve({"candidates": [candidate("prompt", "6", "text", False), candidate("prompt", "7", "text", False), candidate("output", "9", "")],

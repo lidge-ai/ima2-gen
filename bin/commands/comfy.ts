@@ -16,7 +16,7 @@ const HELP = `
     workflow add <file> --id <id> [--label <text>] [--kind image|video|audio] [--origin <url>]
                         [--prompt <node.input>] [--negative <node.input>]
                         [--width <node.input>] [--height <node.input>]
-                        [--seed <node.input>] [--ref <node.input>]
+                        [--seed <node.input>] [--ref <node.input>] [--duration <node.input>]
                         [--input <role>=<node.input>]...
                         [--output <node>] [--yes] [--replace]
      workflow rm <id>
@@ -59,7 +59,7 @@ const WORKFLOW_FLAGS = {
   negative: { type: "string" },
   width: { type: "string" },
   height: { type: "string" },
-  seed: { type: "string" },
+  seed: { type: "string" }, duration: { type: "string" },
   ref: { type: "string" },
   output: { type: "string" },
   input: { type: "string", repeatable: true },
@@ -286,10 +286,10 @@ async function workflowInspect(args: ParsedArgs): Promise<void> {
   for (const slot of resp.mediaSlots ?? []) {
     out(`  ${slot.role ? color.green("auto") : color.yellow("pick")}  ${(slot.kind + " file").padEnd(15)} ${`${slot.node}.${slot.input}`.padEnd(12)} ${slot.classType ?? ""}${slot.role ? `  as ${slot.role}` : ""}`);
   }
-  if (resp.needsConfirmation) {
-    out("");
-    out("Some fields have several candidates; pass them explicitly when adding, e.g. --prompt 6.text");
-  }
+  // Said only for a field nothing settles: one marked auto needs no flag, whatever else is listed beside it.
+  const fields = [...new Set((resp.candidates ?? []).map((candidate) => candidate.field))];
+  const open = fields.filter((field) => !(resp.candidates ?? []).some((candidate) => candidate.field === field && candidate.unambiguous));
+  if (open.length > 0) out("\n" + open.join(", ") + ": several candidates and none settled; pass each when adding, e.g. --prompt 6.text");
 }
 
 async function workflowAdd(args: ParsedArgs): Promise<void> {
@@ -316,7 +316,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
     width: parseBinding(args.width, "width"),
     height: parseBinding(args.height, "height"),
     seed: parseBinding(args.seed, "seed"),
-    refImage: parseBinding(args.ref, "ref"),
+    refImage: parseBinding(args.ref, "ref"), duration: parseBinding(args.duration, "duration"),
   };
 
   const bind: Record<string, unknown> = {};
@@ -349,7 +349,7 @@ async function workflowAdd(args: ParsedArgs): Promise<void> {
   if (unresolved.length > 0) {
     const flagFor: Record<string, string> = {
       prompt: "--prompt", negativePrompt: "--negative", width: "--width",
-      height: "--height", seed: "--seed", refImage: "--ref", output: "--output",
+      height: "--height", seed: "--seed", refImage: "--ref", output: "--output", duration: "--duration",
     };
     die(2, `ambiguous bindings: ${unresolved.join(", ")}\n`
       + `Run: ima2 comfy workflow inspect ${file}\n`

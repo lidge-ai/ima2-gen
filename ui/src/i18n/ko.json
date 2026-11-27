@@ -2818,6 +2818,9 @@
       "height": "세로",
       "seed": "시드",
       "refImage": "참조 이미지",
+      "length": "프레임 수",
+      "fps": "초당 프레임",
+      "duration": "길이(초)",
       "output": "출력 노드"
     },
     "kindAudio": "오디오",
