@@ -35,7 +35,8 @@ function minimalRequest(spec: MediaModelSpec, task: MediaTask): MediaSubmitReque
 function recordingCtx(adapter: MediaProviderAdapter): { ctx: MediaAdapterContext; calls: string[] } {
   const calls: string[] = [];
   const fetchImpl = (async (input: RequestInfo | URL) => { calls.push(String(input)); return new Response("{}", { status: 200, headers: { "content-type": "application/json" } }); }) as typeof fetch;
-  const extra = Object.fromEntries((adapter.credential.extraFields ?? []).map((f) => [f.name, "extra-value"]));
+  // Only the fields a key needs; optional ones (a region) keep the adapter's default.
+  const extra = Object.fromEntries((adapter.credential.extraFields ?? []).filter((f) => f.required).map((f) => [f.name, "extra-value"]));
   return { ctx: { apiKey: "test-key-0123456789", extra, fetch: fetchImpl }, calls };
 }
 
