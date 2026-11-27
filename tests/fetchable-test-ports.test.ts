@@ -1,6 +1,7 @@
 // tests/helpers/fetchablePorts.mjs: listen(0) never settles on a port fetch refuses.
 // scripts/run-tests.mjs loads it into every test process, so no test server has to ask for it.
 import { strict as assert } from "node:assert";
+import dns from "node:dns";
 import http from "node:http";
 import net from "node:net";
 import { test } from "node:test";
@@ -74,6 +75,30 @@ test("every way of asking for any port is covered, and a fixed port is left alon
     assert.equal(fixed, ports[0]);
     assert.equal(seen.length, ports.length, "a port the test chose is not second-guessed");
   } finally { uninstall(); }
+});
+
+test("the move does not use a DNS lookup a test has forbidden since it called listen", async () => {
+  // Some fixtures replace dns.lookup with one that throws once the test is under way. The server was
+  // already listening by then, so moving it must not be what trips that guard.
+  const refused: number[] = [];
+  const uninstall = installFetchablePorts({ isBlocked: (port: number) => { if (refused.length === 0) refused.push(port); return refused.includes(port); } });
+  const server = net.createServer();
+  const real = dns.lookup;
+  const denied: string[] = [];
+  try {
+    const listening = new Promise<void>((resolve, reject) => { server.once("error", reject); server.listen(0, HOST, resolve); });
+    // From here on, as in those fixtures, a default lookup is an error.
+    (dns as { lookup: unknown }).lookup = (host: string) => { denied.push(host); throw new Error("Default DNS lookup forbidden"); };
+    await listening;
+    assert.equal(refused.length, 1);
+    assert.notEqual((server.address() as net.AddressInfo).port, refused[0]);
+    assert.deepEqual(denied, [], "the helper's own listen calls did not reach the test's lookup");
+    assert.throws(() => dns.lookup("example.test", () => {}), /forbidden/, "and the test's guard is still in place afterwards");
+  } finally {
+    (dns as { lookup: unknown }).lookup = real;
+    uninstall();
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("a listen error still reaches the test", async () => {
