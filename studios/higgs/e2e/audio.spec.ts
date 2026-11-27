@@ -54,7 +54,7 @@ test("audio: without the provider's key the voice list is not asked for, and the
   await page.goto("/#/audio?tool=speech");
   await expect(page.getByRole("region", { name: "Add a key to run this model" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Voice: / })).toBeDisabled();
-  await expect(page.getByRole("button", { name: /^Voice: / })).toContainText("Add the key to see this provider's voices.");
+  await expect(page.getByRole("button", { name: /^Voice: / })).toContainText("Needs the key");
   await page.getByLabel("Script").fill("Hello");
   await expect(generate(page)).toBeDisabled();
   expect(asked).toBe(0);
@@ -62,7 +62,7 @@ test("audio: without the provider's key the voice list is not asked for, and the
 
 test("audio: music and sound sends a description, a length inside the route's range and its switch", async ({ page }) => {
   await page.goto("/#/audio?tool=sound");
-  await expect(page.getByRole("button", { name: "Music & SFX" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: /^Model: / }).click();
   await page.getByRole("dialog", { name: "Choose a model" }).getByRole("button", { name: /Eleven Music 2\.5/ }).click();
   // An optional length starts empty: the model decides.
@@ -71,6 +71,7 @@ test("audio: music and sound sends a description, a length inside the route's ra
   await page.getByLabel(/^Length in seconds/).fill("2");
   await expect(page.getByText("Length must be 3 to 600 seconds.")).toBeVisible();
   await expect(generate(page)).toBeDisabled();
+  await expect(generate(page)).toContainText("Priced by length");
   await page.getByLabel(/^Length in seconds/).fill("30");
   // fal lists $0.20 per minute in the fixture catalog.
   await expect(generate(page)).toContainText("Estimated $0.10");

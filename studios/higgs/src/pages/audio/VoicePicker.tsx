@@ -9,13 +9,13 @@ const M = messages(
   {
     voice: "Voice", choose: "Choose a voice", label: "Voice: {name}", search: "Search voices", mine: "My voices", library: "Voice library",
     loading: "Loading voices", failed: "Could not load voices: {error}", retry: "Try again", none: "No voice matches your search.",
-    empty: "This account has no voices yet.", needsKey: "Add the key to see this provider's voices.", play: "Play a sample of {name}", stop: "Stop the sample of {name}",
+    empty: "This account has no voices yet.", needsKey: "Needs the key", play: "Play a sample of {name}", stop: "Stop the sample of {name}",
     female: "Female", male: "Male", neutral: "Neutral",
   },
   {
     voice: "목소리", choose: "목소리 고르기", label: "목소리: {name}", search: "목소리 검색", mine: "내 목소리", library: "목소리 라이브러리",
     loading: "목소리를 불러오는 중이에요", failed: "목소리를 불러오지 못했어요: {error}", retry: "다시 시도", none: "검색과 맞는 목소리가 없어요.",
-    empty: "이 계정에는 아직 목소리가 없어요.", needsKey: "키를 추가하면 이 제공업체의 목소리가 보여요.", play: "{name} 샘플 재생", stop: "{name} 샘플 정지",
+    empty: "이 계정에는 아직 목소리가 없어요.", needsKey: "키가 필요해요", play: "{name} 샘플 재생", stop: "{name} 샘플 정지",
     female: "여성", male: "남성", neutral: "중성",
   },
 );

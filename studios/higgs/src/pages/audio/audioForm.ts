@@ -120,8 +120,9 @@ export function problem(model: CatalogModel | undefined, route: CatalogRoute | u
 export function priced(model: CatalogModel, route: CatalogRoute, state: AudioState): { characters?: number; durationSec?: number } {
   if (state.tool === "speech") return state.text.trim() ? { characters: state.text.trim().length } : {};
   if (state.tool === "video") return state.videoSeconds ? { durationSec: Math.ceil(state.videoSeconds) } : {};
-  const value = Number(state.seconds);
-  return lengthRange(model, route.providerId, state.tool) && state.seconds.trim() && Number.isFinite(value) ? { durationSec: value } : {};
+  // Only a length the route accepts is priced; a typo should not show a figure.
+  const range = lengthRange(model, route.providerId, state.tool);
+  return range && state.seconds.trim() && lengthProblem(range, state.seconds) === null ? { durationSec: Number(state.seconds) } : {};
 }
 
 export function toBody(model: CatalogModel, route: CatalogRoute, state: AudioState): MediaSubmitBody {

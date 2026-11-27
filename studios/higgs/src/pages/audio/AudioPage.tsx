@@ -14,7 +14,7 @@ import "../../styles/audio.css";
 
 const M = messages(
   {
-    title: "Create audio", tool: "Tool", speech: "Speech", sound: "Music & SFX", video: "Video sound",
+    title: "Create audio", tool: "Tool", speech: "Speech", sound: "Sound", video: "For video",
     speechHelp: "A voice reads your text.", soundHelp: "Music or a sound effect from a description.", videoHelp: "Sound effects made to fit your clip.",
     script: "Script", scriptHint: "Write exactly what the voice should say", describe: "Description", describeHint: "Genre, mood and instruments, or the sound you need",
     notes: "Notes", notesHint: "Optional: what the sound should be like", clip: "Video", required: "Required", count: "{n} characters",
