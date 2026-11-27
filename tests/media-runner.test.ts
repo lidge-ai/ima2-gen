@@ -144,6 +144,28 @@ test("the sidecar keeps what the provider billed and the submit-time estimate, a
   }
 });
 
+test("the sidecar keeps the declared option values a job was sent with, and nothing key-like, so the result can be made again", async () => {
+  const model = fakeSpec("acme/voice-1", { kind: "audio", tasks: ["text-to-audio"], pricing: [],
+    params: { options: [{ name: "voice_id", type: "voice", required: true }, { name: "loop", type: "boolean" }, { name: "api_key", type: "voice" }, { name: "note", type: "text" }] } });
+  const adapter = makeFakeAdapter({ models: [model], script: { submitted: [], states: [{ status: "succeeded", outputs: [{ kind: "audio", url: VIDEO_URL, mimeType: "audio/mpeg" }] }] } });
+  const s = await setup([adapter]);
+  try {
+    const sent = { voice_id: "21m00Tcm4TlvDq8ikWAM", loop: true, api_key: "sk-proj-abcdefghijklmnopqrstuvwxyz012345", note: "read it slowly", undeclared: "x" };
+    const prepared = await prepareMediaJob(s.deps, parseMediaJobBody({ model: "acme/voice-1", task: "text-to-audio", prompt: "hello", vendorOptions: sent }));
+    const result = await launchMediaJob(s.deps, prepared, { requestId: "req-options" }).done;
+    const filename = result.outputs[0]!.filename;
+    const raw = await readFile(join(s.deps.generatedDir, `${filename}.json`), "utf8");
+    assert.deepEqual(JSON.parse(raw).media.options, { voice_id: "21m00Tcm4TlvDq8ikWAM", loop: true });
+    for (const leaked of ["sk-proj-", "read it slowly", "undeclared", "api_key"]) assert.ok(!raw.includes(leaked), leaked + " must not be written");
+    const row = (await listHistoryRows(s.deps.generatedDir)).find((item) => item.filename === filename)!;
+    assert.deepEqual((row.media as { options?: unknown }).options, { voice_id: "21m00Tcm4TlvDq8ikWAM", loop: true });
+    // The provider still received everything the request sent.
+    assert.deepEqual(adapter.script.submitted?.[0]?.vendorOptions, sent);
+  } finally {
+    await s.done();
+  }
+});
+
 test("a job without a bill or an estimate leaves both out of the sidecar and null on the history row", async () => {
   const adapter = makeFakeAdapter({ script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }] } });
   const s = await setup([adapter]);
