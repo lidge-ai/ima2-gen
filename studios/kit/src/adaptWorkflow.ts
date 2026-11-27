@@ -55,8 +55,41 @@ export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
       model: slot.defaultModel,
       modelChoices: [slot.defaultModel, ...slot.alternatives].filter((m, i, all) => all.indexOf(m) === i),
       available: slot.available,
+      ...(slot.runnable ? { runnable: slot.runnable } : {}),
+      ...(slot.defaultRoute ? { route: slot.defaultRoute } : {}),
       rationale: slot.rationale,
     })),
+    ...(wire.i18n ? { i18n: wire.i18n } : {}),
+  };
+}
+
+/**
+ * The workflow with its visible text in the given language (label, description, field labels,
+ * help and option labels, step names); anything the server did not translate stays English.
+ * Names, values and ids never change.
+ */
+export function localizeWorkflow(def: WorkflowDef, locale: string): WorkflowDef {
+  const text = def.i18n?.[locale];
+  if (!text) return def;
+  const field = (name: string) => text.fields?.[name];
+  return {
+    ...def,
+    label: text.label ?? def.label,
+    description: text.description ?? def.description,
+    inputs: def.inputs.map((input) => {
+      const f = field(input.name);
+      const description = f?.help ?? input.description;
+      return { ...input, label: f?.label ?? input.label, ...(description !== undefined ? { description } : {}) };
+    }),
+    params: def.params.map((param) => {
+      const f = field(param.name);
+      return {
+        ...param,
+        label: f?.label ?? param.label,
+        ...(param.options ? { options: param.options.map((o) => ({ ...o, label: f?.options?.[o.value] ?? o.label })) } : {}),
+      };
+    }),
+    steps: def.steps.map((step) => ({ ...step, label: text.slots?.[step.id] ?? step.label })),
   };
 }
 
@@ -94,7 +127,9 @@ export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
     return {
       id: e.stepId,
       ...(summary ? { label: summary.label } : {}),
-      ...(e.model ? { model: e.model } : {}),
+      ...(e.model ? { model: e.model } : summary?.model ? { model: summary.model } : {}),
+      ...(summary?.route ? { route: summary.route } : {}),
+      ...(summary?.slot ? { slot: summary.slot } : {}),
       estimate: { usd: e.usd, basis: e.usd === null ? "No published price" : basis },
     };
   });

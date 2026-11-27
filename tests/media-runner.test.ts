@@ -14,7 +14,8 @@ const { MediaRegistry } = await import("../lib/providers/media/registry.ts");
 const { launchMediaJob, prepareMediaJob } = await import("../lib/providers/media/runner.ts");
 const { parseMediaJobBody } = await import("../lib/providers/media/validate.ts");
 const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts");
-const { abortJob, _resetForTests: resetInflight } = await import("../lib/inflight.ts");
+const { abortJob, listTerminalJobs, _resetForTests: resetInflight } = await import("../lib/inflight.ts");
+const { listHistoryRows } = await import("../lib/historyList.ts");
 const { configureLogger } = await import("../lib/logger.ts");
 const { FAKE_KEY, fakeSpec, fakeTransport, makeFakeAdapter, FakeHttpError } = await import("./_mediaFakeAdapter.ts");
 const { closeDb } = await import("../lib/db.ts");
@@ -108,8 +109,54 @@ test("a failed state becomes an error event with the vendor code, its category a
     assert.equal(err.category, "quota");
     assert.equal(err.status, 402);
     assert.match(String(err.error), /\[redacted\]/);
+    // A reloaded UI reads the terminal job, not the event: it needs the same next-action facts.
+    const terminal = listTerminalJobs().find((job) => job.requestId === "req-fail")!;
+    assert.equal(terminal.status, "error");
+    assert.equal(terminal.meta.category, "quota");
+    assert.equal(terminal.meta.retryable, false);
+    assert.equal(terminal.meta.adapter, "fake", "admission meta survives the failure meta");
     assertNoKey(s.events);
     assertNoKey(logLines);
+  } finally {
+    await s.done();
+  }
+});
+
+test("the sidecar keeps what the provider billed and the submit-time estimate, and history rows expose them with route and settings", async () => {
+  const adapter = makeFakeAdapter({ id: "agg", route: "aggregator", script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }], billed: { usd: 0.31, units: 5, unit: "second" } }] } });
+  const s = await setup([adapter], { keys: { aggApiKey: FAKE_KEY } });
+  try {
+    const prepared = await prepareMediaJob(s.deps, body({ resolution: "720p", aspectRatio: "16:9", seed: 7 }));
+    const result = await launchMediaJob(s.deps, prepared, { requestId: "req-cost", estimate: { usd: 0.25, basis: "exact" } }).done;
+    const filename = result.outputs[0]!.filename;
+    const meta = JSON.parse(await readFile(join(s.deps.generatedDir, `${filename}.json`), "utf8"));
+    assert.deepEqual(meta.billed, { usd: 0.31, units: 5, unit: "second" });
+    assert.deepEqual(meta.estimate, { usd: 0.25, basis: "exact" });
+    const row = (await listHistoryRows(s.deps.generatedDir)).find((item) => item.filename === filename)!;
+    assert.equal(row.adapter, "agg");
+    assert.equal(row.route, "aggregator");
+    assert.deepEqual(row.media, { task: "text-to-video", durationSec: 5, resolution: "720p", aspectRatio: "16:9", seed: 7, audio: null, inputRoles: [] });
+    assert.deepEqual(row.billed, { usd: 0.31, units: 5, unit: "second" });
+    assert.deepEqual(row.estimate, { usd: 0.25, basis: "exact" });
+    assertNoKey(row);
+  } finally {
+    await s.done();
+  }
+});
+
+test("a job without a bill or an estimate leaves both out of the sidecar and null on the history row", async () => {
+  const adapter = makeFakeAdapter({ script: { states: [{ status: "succeeded", outputs: [{ kind: "video", url: VIDEO_URL, mimeType: "video/mp4" }] }] } });
+  const s = await setup([adapter]);
+  try {
+    const result = await launchMediaJob(s.deps, await prepareMediaJob(s.deps, body()), { requestId: "req-plain" }).done;
+    const filename = result.outputs[0]!.filename;
+    const meta = JSON.parse(await readFile(join(s.deps.generatedDir, `${filename}.json`), "utf8"));
+    assert.equal("billed" in meta, false);
+    assert.equal("estimate" in meta, false);
+    const row = (await listHistoryRows(s.deps.generatedDir)).find((item) => item.filename === filename)!;
+    assert.equal(row.route, "direct");
+    assert.equal(row.billed, null);
+    assert.equal(row.estimate, null);
   } finally {
     await s.done();
   }
@@ -194,6 +241,32 @@ test("route choice: direct before aggregator, explicit adapter honored, keyless 
   } finally {
     await s3.done();
   }
+});
+
+test("route choice without an adapter is the catalog's defaultRoute: keyed direct, else the cheapest keyed aggregator that can do the task", async () => {
+  const price = (usd: number) => [{ unit: "second" as const, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27" }];
+  const unpriced = makeFakeAdapter({ id: "agg-unpriced", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: [] })] });
+  const dear = makeFakeAdapter({ id: "agg-dear", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: price(0.09) })] });
+  const cheap = makeFakeAdapter({ id: "agg-cheap", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: price(0.04), tasks: ["text-to-video"] })] });
+  const direct = makeFakeAdapter({ id: "acme-direct", route: "direct", models: [fakeSpec("acme/clip-1", { pricing: price(0.2) })] });
+  const all = [unpriced, dear, cheap, direct];
+  const aggregatorKeys = { aggUnpricedApiKey: "k-unpriced-000", aggDearApiKey: "k-dear-000000", aggCheapApiKey: "k-cheap-000000" };
+  const chosen = async (keys: Record<string, string>, extra: Record<string, unknown> = {}) => {
+    const s = await setup(all, { keys });
+    try {
+      const picked = (await prepareMediaJob(s.deps, body(extra))).adapter.id;
+      const { MediaKeySnapshot } = await import("../lib/providers/media/credentials.ts");
+      const { buildMediaCatalog } = await import("../lib/providers/media/catalog.ts");
+      const listed = buildMediaCatalog(s.deps.registry, new MediaKeySnapshot({ env: {}, fileConfig: keys })).models.find((m) => m.id === "acme/clip-1")!.defaultRoute;
+      return { picked, listed };
+    } finally { await s.done(); }
+  };
+  assert.deepEqual(await chosen(aggregatorKeys), { picked: "agg-cheap", listed: "agg-cheap" }, "the request runs the route the catalog names");
+  assert.deepEqual(await chosen({ ...aggregatorKeys, acmeDirectApiKey: "k-direct-00000" }), { picked: "acme-direct", listed: "acme-direct" });
+  assert.deepEqual(await chosen({ aggUnpricedApiKey: "k-unpriced-000", aggDearApiKey: "k-dear-000000" }), { picked: "agg-dear", listed: "agg-dear" });
+  // The cheapest route cannot do image-to-video, so the request takes the cheapest one that can.
+  const refs = { task: "image-to-video", inputs: [{ role: "first-frame", url: "https://example.com/a.png" }] };
+  assert.equal((await chosen(aggregatorKeys, refs)).picked, "agg-dear");
 });
 
 test("parameters outside the chosen spec are refused before anything is sent", async () => {

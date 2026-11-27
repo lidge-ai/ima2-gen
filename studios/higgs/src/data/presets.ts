@@ -139,3 +139,8 @@ export function presetsFor(kind: "image" | "video"): readonly Preset[] {
 export function findPreset(id: string | undefined): Preset | undefined {
   return id ? PRESETS.find((preset) => preset.id === id) : undefined;
 }
+
+/** First-frame still for a video sample (public/samples/<name>-poster.jpg), shown before or instead of playback. */
+export function posterOf(sample: string): string | undefined {
+  return sample.endsWith(".mp4") ? sample.replace(/\.mp4$/, "-poster.jpg") : undefined;
+}

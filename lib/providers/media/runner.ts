@@ -66,7 +66,7 @@ async function uploadInputs(adapter: MediaProviderAdapter, actx: MediaAdapterCon
   return { ...request, inputs };
 }
 
-function sidecar(prepared: PreparedMediaJob, opts: MediaLaunchOptions, job: MediaJobRef, elapsed: number): Record<string, unknown> {
+function sidecar(prepared: PreparedMediaJob, opts: MediaLaunchOptions, job: MediaJobRef, elapsed: number, billed?: MediaJobResult["billed"]): Record<string, unknown> {
   const { adapter, spec, request } = prepared;
   const inputRoles = request.inputs.map((i) => i.role);
   return {
@@ -78,6 +78,9 @@ function sidecar(prepared: PreparedMediaJob, opts: MediaLaunchOptions, job: Medi
     media: { task: request.task, durationSec: request.durationSec ?? null, resolution: request.resolution ?? null,
       aspectRatio: request.aspectRatio ?? null, seed: request.seed ?? null, audio: request.audio ?? null, inputRoles },
     ...(spec.kind === "video" ? { video: { mode: request.task, duration: request.durationSec ?? null, resolution: request.resolution ?? null, aspectRatio: request.aspectRatio ?? null } } : {}),
+    // What the provider reported charging, and what the published prices predicted at submit.
+    ...(billed ? { billed } : {}),
+    ...(opts.estimate ? { estimate: opts.estimate } : {}),
     ...(opts.meta ?? {}),
   };
 }
@@ -112,7 +115,7 @@ async function runToCompletion(deps: MediaRunnerDeps, prepared: PreparedMediaJob
   const outputs: SavedMediaOutput[] = [];
   for (const out of terminal.outputs) {
     const data = await materializeOutput(deps, out, actx.signal!);
-    outputs.push(await saveOutput(deps, out.kind ?? spec.kind, data, sidecar(prepared, opts, job, elapsed)));
+    outputs.push(await saveOutput(deps, out.kind ?? spec.kind, data, sidecar(prepared, opts, job, elapsed, terminal.billed)));
   }
   if (outputs.length === 0) throw new MediaJobError("MEDIA_NO_OUTPUT", "The provider finished without an output", { status: 502, category: "upstream" });
   const result: MediaJobResult = { requestId: opts.requestId, adapter: adapter.id, model: spec.id, providerJobId: job.providerJobId, outputs, ...(terminal.billed ? { billed: terminal.billed } : {}), elapsed };
@@ -136,7 +139,8 @@ async function executeMediaJob(deps: MediaRunnerDeps, prepared: PreparedMediaJob
       throw makeGenerationCanceledError();
     }
     const err = adapterJobError(adapter, error, credential.secrets);
-    state.finish = { status: "error", httpStatus: err.status, errorCode: err.code };
+    // The terminal job carries category and retryable so a reloaded UI can offer the same next step as the live event.
+    state.finish = { status: "error", httpStatus: err.status, errorCode: err.code, meta: { category: err.category, retryable: err.retryable } };
     emitter(opts.requestId, credential.secrets)("error", { code: err.code, error: err.message, status: err.status, category: err.category, retryable: err.retryable, adapter: adapter.id });
     logEvent("media", "failed", { requestId: opts.requestId, adapter: adapter.id, code: err.code, category: err.category });
     throw err;

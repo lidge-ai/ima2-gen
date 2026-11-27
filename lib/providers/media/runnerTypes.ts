@@ -53,6 +53,8 @@ export interface MediaLaunchOptions {
   parentSignal?: AbortSignal;
   /** Extra sidecar metadata, e.g. the workflow and step that produced the file. */
   meta?: Record<string, unknown>;
+  /** Published-price estimate made at submit time; saved beside the output so a result can show it. */
+  estimate?: { usd: number | null; basis: string };
 }
 
 export const DEFAULT_POLL_MS = 3_000;

@@ -30,7 +30,7 @@ export const remixObjectSwap: WorkflowDefinition = {
     if (!slot) throw new Error("render slot missing");
     checkRemixFit(env, slot.model, values, refsOf(values, "images").length);
     const text = instruction(refsOf(values, "images").length, textOf(values, "target"));
-    const render = renderStep({ slot, values, dependsOn: [], instruction: text, includeUserImages: true });
+    const render = renderStep({ slot, values, dependsOn: [], instruction: text, includeUserImages: true, catalog: env.catalog });
     return { workflowId: "remix-object-swap", steps: finishRemix(values, [], render) };
   },
 };

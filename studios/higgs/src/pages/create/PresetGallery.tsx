@@ -1,6 +1,6 @@
 import { messages, useT } from "../../i18n.ts";
 import { useState } from "react";
-import { PRESETS, type Preset } from "../../data/presets.ts";
+import { PRESETS, posterOf, type Preset } from "../../data/presets.ts";
 import { presetText } from "./defaults.ts";
 import { Icon } from "../../ui/Icon.tsx";
 
@@ -65,7 +65,7 @@ function PresetTile({ preset, selected, onPick }: { preset: Preset; selected: bo
   return (
     <button type="button" className="preset-tile" aria-pressed={selected} onClick={onPick}>
       {preset.sampleKind === "video" ? (
-        <video src={preset.sample} muted loop autoPlay playsInline aria-hidden />
+        <video src={preset.sample} poster={posterOf(preset.sample)} preload="metadata" muted loop autoPlay playsInline aria-hidden />
       ) : (
         <img src={preset.sample} alt="" loading="lazy" />
       )}

@@ -90,3 +90,16 @@ test("a missing folder or broken JSON is an empty list", async () => {
   }
 });
 
+
+test("items are sorted by order (unordered ones keep file order, after) and keep their type", async () => {
+  const dir = await mkdtemp(join(configDir, "order-"));
+  for (const name of ["a", "b", "c", "d"]) await writeFile(join(dir, name + ".mp4"), Buffer.alloc(8, 1));
+  const item = (id: string, extra: Record<string, unknown>) => ({ id, title: id, result: id + ".mp4", models: [], keys: [], ...extra });
+  await writeFile(
+    join(dir, "showcase.json"),
+    JSON.stringify({ items: [item("a", { type: "restyle" }), item("b", { order: 2, type: "motion-transfer" }), item("c", { order: 1, type: "Not Safe!" }), item("d", {})] }),
+  );
+  const items = readShowcase(dir);
+  assert.deepEqual(items.map((i) => i.id), ["c", "b", "a", "d"]);
+  assert.deepEqual(items.map((i) => i.type ?? null), [null, "motion-transfer", "restyle", null]);
+});

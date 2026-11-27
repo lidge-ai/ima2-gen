@@ -14,6 +14,8 @@ process.env.IMA2_CONFIG_DIR = isolatedConfigDir;
 
 const { config } = await import("../config.ts");
 const { MediaRegistry } = await import("../lib/providers/media/registry.ts");
+const { buildMediaCatalog } = await import("../lib/providers/media/catalog.ts");
+const { MediaKeySnapshot } = await import("../lib/providers/media/credentials.ts");
 const { registerMediaRoutes } = await import("../routes/media.ts");
 const { registerWorkflowRoutes } = await import("../routes/workflows.ts");
 const { mountStudioUi, registerStudioRoutes } = await import("../routes/studios.ts");
@@ -166,8 +168,27 @@ test("POST /api/media answers 202 and the job finishes on /api/events", async ()
     assert.equal((await (await fetch(`${base}/api/media/jobs/r1`)).json()).job.requestId, "r1");
     assert.equal((await fetch(`${base}/api/media/jobs/nope`)).status, 404);
     assert.equal(await readFile(join(root, "generated", String(done.data.filename)), "utf8"), "mp4");
+    // 5 s at the one published $0.05/s price; saved so the result can show what was expected.
+    const sidecar = JSON.parse(await readFile(join(root, "generated", `${String(done.data.filename)}.json`), "utf8"));
+    assert.equal(sidecar.estimate.usd, 0.25);
     assert.ok(!JSON.stringify(events).includes(FAKE_KEY));
   });
+});
+
+test("catalog defaultRoute: a keyed direct route first, otherwise the keyed aggregator with the lowest published price", () => {
+  const price = (usd: number) => [{ unit: "second" as const, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27" }];
+  const direct = makeFakeAdapter({ id: "acme-direct", route: "direct", models: [fakeSpec("acme/clip-1", { pricing: price(0.2) })] });
+  const unpriced = makeFakeAdapter({ id: "agg-unpriced", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: [] })] });
+  const dear = makeFakeAdapter({ id: "agg-dear", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: price(0.09) })] });
+  const cheap = makeFakeAdapter({ id: "agg-cheap", route: "aggregator", models: [fakeSpec("acme/clip-1", { pricing: [...price(0.3), ...price(0.04)] })] });
+  const registry = new MediaRegistry([unpriced, dear, cheap, direct]);
+  const pick = (fileConfig: Record<string, string>) => buildMediaCatalog(registry, new MediaKeySnapshot({ env: {}, fileConfig })).models.find((m) => m.id === "acme/clip-1")!.defaultRoute;
+  const aggregators = { aggUnpricedApiKey: "k-unpriced-000", aggDearApiKey: "k-dear-000000", aggCheapApiKey: "k-cheap-000000" };
+  assert.equal(pick({ ...aggregators, acmeDirectApiKey: "k-direct-00000" }), "acme-direct", "direct wins even when an aggregator is cheaper");
+  assert.equal(pick(aggregators), "agg-cheap", "lowest published price among keyed aggregators");
+  assert.equal(pick({ aggUnpricedApiKey: "k-unpriced-000", aggDearApiKey: "k-dear-000000" }), "agg-dear", "a published price beats an unpublished one");
+  assert.equal(pick({ aggUnpricedApiKey: "k-unpriced-000" }), "agg-unpriced", "an unpriced keyed route is still runnable");
+  assert.equal(pick({}), null, "no key, no default");
 });
 
 test("POST /api/media refuses bad bodies and keyless routes synchronously", async () => {

@@ -83,7 +83,7 @@ routes/
 | `config.ts` | 579 | Centralized runtime config (env > `~/.ima2/config.json` > defaults), prompt import/index caps, web-search/reasoning-effort defaults, API-provider defaults, and backward-compatible flat re-exports |
 | `routes/index.ts` | 107 | Route registration hub: health, capabilities, events, storage, metadata, history, imageImport, sessions, edit, nodes, multimode, generate, agent, prompt builder, generationRequestLog, annotations, canvasVersions, comfy, prompts, prompt import, keys, auth, quota, grok, agy, video, videoExtended, mcpMultishot, studios, showcase, media tools (tool descriptors, estimate, workflow schema), and (when `features.cardNews`) cardNews |
 | `routes/mcpMultishot.ts` | 120 | Multishot (multi-scene) video generation route via Runway MCP |
-| `routes/showcase.ts` | 131 | `GET /api/showcase` lists finished example clips from `showcase.json` in `IMA2_SHOWCASE_DIR` (default `<config dir>/showcase`); `GET /api/showcase/media/:file` serves its files with Range support |
+| `routes/showcase.ts` | 141 | `GET /api/showcase` lists finished example clips from `showcase.json` in `IMA2_SHOWCASE_DIR` (default `<config dir>/showcase`); `GET /api/showcase/media/:file` serves its files with Range support |
 | `routes/capabilities.ts` | 47 | `GET /api/capabilities` — agent-facing runtime defaults; `GET/PATCH /api/config/grok-planner` — Grok planner model query/update |
 | `routes/generate.ts` | 13 | Classic generation API route wiring |
 | `routes/edit.ts` | 461 | Edit API, mask validation, cancellation, OAuth/API edit response save, alpha verification (alphaVerified/alphaReason), provider/web-search/reasoning-effort plumbing |
@@ -125,7 +125,7 @@ routes/
 | `bin/lib/mcpMediaHandlers.ts` | 87 | Media MCP tool handlers and response projection |
 | `bin/lib/mcpWorkflowHandlers.ts` | 25 | Workflow MCP tool handlers |
 | `lib/providers/media/toolSchema.ts` | 171 | Media and workflow tool descriptors and schemas |
-| `lib/providers/media/estimate.ts` | 48 | Published media price estimates |
+| `lib/providers/media/estimate.ts` | 57 | Published media price estimates |
 | `routes/mediaTools.ts` | 47 | Media descriptors, estimates and workflow schema routes |
 | `bin/lib/media/catalogCmd.ts` | 14 | Catalog display |
 | `bin/lib/media/common.ts` | 74 | Shared media CLI inputs and options |
@@ -198,7 +198,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/packageCli.ts` | 54 | Package-local dependency CLI resolution and Node invocation contract |
 | `lib/errorClassify.ts` | 110 | Upstream/OAuth error classifier for stable error codes, including provider validation errors |
 | `lib/generationErrors.ts` | 271 | Generation error normalization, retry classification, status mapping |
-| `lib/historyList.ts` | 231 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows |
+| `lib/historyList.ts` | 235 | History reconstruction from generated assets, sidecars, embedded XMP metadata fallback, session-aware rows; media rows expose route, settings, billed and estimate |
 | `lib/videoContinuity.ts` | 193 | Video active-prompt guard, generated video sidecar lineage read/normalize/append, max-4 continuity retention, planner context formatting |
 | `lib/videoFrameExtract.ts` | 100 | Generated-dir-safe MP4 validation and ffmpeg frame extraction for video frame/analyze/continue workflows |
 | `lib/videoGenerationRequest.ts` | 166 | Shared generate-request contract: mode inference, mutually-exclusive source guard, and duration/resolution/aspect defaults for UI, CLI, agent, and route |

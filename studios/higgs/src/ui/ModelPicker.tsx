@@ -9,6 +9,7 @@ import { VendorLogo, vendorDisplayName } from "./VendorLogo.tsx";
 const M = messages(
   {
     "audio": "Audio",
+    "retiring": "Retiring soon",
     "nonePrice": "No published price",
         "all": "All",
     "search": "Search models",
@@ -33,6 +34,7 @@ const M = messages(
   },
   {
     "audio": "오디오",
+    "retiring": "곧 종료",
     "nonePrice": "공개 가격 없음",
         "all": "전체",
     "search": "모델 검색",
@@ -77,12 +79,26 @@ function matches(model: CatalogModel, query: string, vendor: string | null): boo
     .every((word) => hay.includes(word));
 }
 
+/** Lines of the base resolution ("1080p", "4k"); upscale variants such as "4k-esr" count as their base. */
+function lines(value: string): number | null {
+  const m = /^(\d+)(p|k)/i.exec(value);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return m[2]!.toLowerCase() === "k" ? n * 540 : n;
+}
+
+const resName = (h: number) => (h >= 2160 ? h / 540 + "K" : h + "p");
+
+/** Short ranges a person reads at a glance: "480p–4K", "4–15s". Never the option ids. */
 function specChips(model: CatalogModel): string[] {
   const chips: string[] = [];
-  const res = model.params.resolutions;
-  if (res?.length) chips.push(res.length > 1 ? res[0] + "-" + res[res.length - 1] : String(res[0]));
+  const heights = (model.params.resolutions ?? []).map(String).map(lines).filter((h): h is number => h !== null);
+  if (heights.length) {
+    const lo = Math.min(...heights), hi = Math.max(...heights);
+    chips.push(lo === hi ? resName(lo) : resName(lo) + "–" + resName(hi));
+  }
   const d = model.params.durationsSec;
-  if (d?.length) chips.push(d.length > 1 ? Math.min(...d) + "s-" + Math.max(...d) + "s" : d[0] + "s");
+  if (d?.length) chips.push(d.length > 1 ? Math.min(...d) + "–" + Math.max(...d) + "s" : d[0] + "s");
   return chips;
 }
 
@@ -96,6 +112,7 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
           <span className="model-row-label">
             {model.label}
             {model.params.nativeAudio ? <span className="tag">{t("audio")}</span> : null}
+            {model.retiring ? <span className="tag tag-retiring">{t("retiring")}</span> : null}
           </span>
           <span className="model-row-sub">
             {specChips(model).map((chip) => (
@@ -213,7 +230,9 @@ function PickerPanel({ models, value, onPick }: PanelProps) {
     (m) => matches(m, query, vendor) && features.every((f) => FEATURES.find((x) => x.id === f)!.test(m)),
   );
   const narrowed = !!query || !!vendor || features.length > 0;
-  const recent = narrowed ? [] : recentIds().flatMap((id) => shown.filter((m) => m.id === id));
+  // Recent holds only models that can run now; a keyless one stays under "Needs a key" even after
+  // it was picked, so the top of the list never promises something that cannot run.
+  const recent = narrowed ? [] : recentIds().flatMap((id) => shown.filter((m) => m.id === id && modelHasKey(m)));
   const rest = shown.filter((m) => !recent.includes(m));
   const pick = (id: string) => {
     remember(id);

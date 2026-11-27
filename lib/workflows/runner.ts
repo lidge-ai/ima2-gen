@@ -71,6 +71,7 @@ export async function prepareWorkflow(definition: WorkflowDefinition, request: u
     catalog: (id: string) => deps.gateway.catalog(id),
     canPlanText: typeof deps.gateway.planText === "function",
     ...(deps.gateway.canRun ? { canRun: (id: string, route: string | undefined) => deps.gateway.canRun!(id, route) } : {}),
+    ...(deps.gateway.subscription ? { subscription: (route: string) => deps.gateway.subscription!(route) } : {}),
   };
   const { slots, notes: slotNotes } = resolveSlotPlan(definition, readSelection(rawSelection), values, env);
   const plan = definition.plan(values, slots, env);
@@ -82,6 +83,7 @@ export function summarizeSteps(plan: WorkflowPlan): StepSummary[] {
   return plan.steps.map((step) => {
     const summary: StepSummary = { id: step.id, label: step.label, kind: step.kind, dependsOn: step.dependsOn, final: step.final === true };
     if (step.kind === "media") {
+      summary.slot = step.slot;
       summary.model = step.model;
       if (step.route) summary.route = step.route;
     }

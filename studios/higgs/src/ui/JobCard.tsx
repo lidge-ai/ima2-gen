@@ -1,15 +1,15 @@
 import { messages, useT } from "../i18n.ts";
 import { isTerminal, type Job, type JobError } from "@ima2/studio-kit";
 import { useStudioApi } from "../studio/context.tsx";
-import { href } from "../router.ts";
 import { Icon } from "./Icon.tsx";
 import { MediaView, downloadName } from "./MediaView.tsx";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
+import { JobRecovery } from "./JobRecovery.tsx";
 
 const M = messages(
-  { queued: "Queued", running: "Generating", succeeded: "Done", failed: "Failed", canceled: "Canceled", auth: "The provider rejected the key. Check it on the API keys page.", quota: "The provider account is out of credit or quota.", rate: "The provider is rate limiting this key. Try again in a moment.", moderation: "The provider's safety filter blocked this request. Change the prompt or inputs.", invalid: "The provider did not accept these settings. Check the settings and try again.", timeout: "The provider took too long to answer. Try again.", upstream: "The provider had a server error. Try again.", unknown: "The job failed. Check the settings and try again.", keys: "Open API keys", steps: "Steps", progress: "Progress", via: "via", cancel: "Cancel", download: "Download" },
-  { queued: "대기 중", running: "생성 중", succeeded: "완료", failed: "실패", canceled: "취소됨", auth: "제공업체가 키를 거부했어요. API 키 페이지에서 확인해 주세요.", quota: "제공업체 계정의 크레딧이나 할당량이 부족해요.", rate: "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.", moderation: "제공업체의 안전 필터가 요청을 차단했어요. 프롬프트나 입력을 바꿔주세요.", invalid: "제공업체가 설정을 거부했어요. 설정을 확인하고 다시 시도해 주세요.", timeout: "제공업체 응답이 늦어요. 다시 시도해 주세요.", upstream: "제공업체에 오류가 생겼어요. 다시 시도해 주세요.", unknown: "작업에 실패했어요. 설정을 확인하고 다시 시도해 주세요.", keys: "API 키 열기", steps: "단계", progress: "진행률", via: "경로", cancel: "취소", download: "다운로드" },
+  { queued: "Queued", running: "Generating", succeeded: "Done", failed: "Failed", canceled: "Canceled", auth: "The provider rejected the key. Check it on the API keys page.", quota: "The provider account is out of credit or quota.", rate: "The provider is rate limiting this key. Try again in a moment.", moderation: "The provider's safety filter blocked this request. Change the prompt or inputs.", invalid: "The provider did not accept these settings. Check the settings and try again.", timeout: "The provider took too long to answer. Try again.", upstream: "The provider had a server error. Try again.", unknown: "The job failed. Check the settings and try again.", keys: "Open API keys", steps: "Steps", progress: "Progress", via: "via", cancel: "Cancel", download: "Download", billed: "Cost about {usd}" },
+  { queued: "대기 중", running: "생성 중", succeeded: "완료", failed: "실패", canceled: "취소됨", auth: "제공업체가 키를 거부했어요. API 키 페이지에서 확인해 주세요.", quota: "제공업체 계정의 크레딧이나 할당량이 부족해요.", rate: "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.", moderation: "제공업체의 안전 필터가 요청을 차단했어요. 프롬프트나 입력을 바꿔주세요.", invalid: "제공업체가 설정을 거부했어요. 설정을 확인하고 다시 시도해 주세요.", timeout: "제공업체 응답이 늦어요. 다시 시도해 주세요.", upstream: "제공업체에 오류가 생겼어요. 다시 시도해 주세요.", unknown: "작업에 실패했어요. 설정을 확인하고 다시 시도해 주세요.", keys: "API 키 열기", steps: "단계", progress: "진행률", via: "경로", cancel: "취소", download: "다운로드", billed: "비용 약 {usd}" },
 );
 const ERROR_KEY: Partial<Record<JobError["category"], keyof typeof M.en>> = {
   auth: "auth", quota: "quota", "rate-limit": "rate", moderation: "moderation",
@@ -21,7 +21,7 @@ function prompt(job: Job): string {
   return request.prompt ?? job.target;
 }
 
-function ErrorBlock({ error }: { error: JobError }) {
+function ErrorBlock({ job, error }: { job: Job; error: JobError }) {
   const t = useT(M);
   return (
     <div className="job-error" role="alert">
@@ -31,7 +31,9 @@ function ErrorBlock({ error }: { error: JobError }) {
         <p className="job-error-detail">
           <code>{error.code}</code> {error.message}
         </p>
-        {error.category === "auth" ? <a href={href("keys")}>{t("keys")}</a> : null}
+        <div className="job-error-actions">
+          <JobRecovery job={job} error={error} />
+        </div>
       </div>
     </div>
   );
@@ -119,7 +121,10 @@ export function JobCard({ job }: { job: Job }) {
           <Icon name="stop" size={14} /> {t("cancel")}
         </button>
       ) : null}
-      {job.status === "failed" && job.error ? <ErrorBlock error={job.error} /> : null}
+      {job.status === "failed" && job.error ? <ErrorBlock job={job} error={job.error} /> : null}
+      {job.status === "succeeded" && typeof job.billed?.usd === "number" ? (
+        <p className="job-billed">{t("billed", { usd: "$" + job.billed.usd.toFixed(2) })}</p>
+      ) : null}
       {job.outputs.length > 0 ? (
         <div className="job-outputs">
           {job.outputs.map((output) => (
