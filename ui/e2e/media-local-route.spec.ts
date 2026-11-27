@@ -14,6 +14,8 @@ const SHOTS = process.env.L13_SHOTS;
 
 async function pickLocal(page: Page): Promise<void> {
   await page.locator(MODEL_CONTROL).click();
+  // "All models…" in the page's language: the one option that opens the model window.
+  await page.getByRole("option").filter({ hasText: "…" }).first().click();
   const row = dialog(page).locator('.media-row[data-model="' + MODEL + '"]');
   // The output tabs are named in the page's language; the image tab is the one that lists this model.
   const tabs = dialog(page).locator(".media-tabs").first().locator("button");
