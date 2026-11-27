@@ -49,7 +49,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
   const onEnter = (event: KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") { event.preventDefault(); void save(); } };
   const hint = apiKey.trim() === "" ? null : problem === "short" ? t("mediaPicker.key.short")
     : problem === "prefix" ? t("mediaPicker.key.prefix", { prefix: adapter.keyPrefix ?? "" }) : problem === "extra" ? t("mediaPicker.key.extra") : null;
-  const fieldLabel = (name: string) => { const key = extraFieldLabelKey(name); return key ? t(key) : name; };
+  const fieldLabel = (name: string) => (extraFieldLabelKey(name) ? t(`mediaPicker.key.field.${name}`) : name);
   return (
     <section className="media-key" aria-labelledby={id + "-title"}>
       <h4 className="media-key__title" id={id + "-title"}>{t(replacing ? "mediaPicker.key.replaceTitle" : "mediaPicker.key.title", { provider })}</h4>
