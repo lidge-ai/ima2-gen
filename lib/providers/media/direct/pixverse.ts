@@ -45,6 +45,15 @@ function model(id: "v6" | "c1", rates: readonly number[]): MediaModelSpec {
       ...(id === "v6" ? { maxReferenceVideos: 2 } : {}),
       nativeAudio: true,
       seed: true,
+      ...(id === "v6"
+        ? {
+            // Extend keeps the source's ratio and sound.
+            inputs: [{ role: "source-video" as const, min: 1, max: 1, tasks: ["video-extend" as const] }],
+            taskFields: {
+              "video-extend": { accepts: ["prompt", "durationSec", "resolution", "seed"], requires: ["prompt", "durationSec", "resolution"] },
+            } satisfies MediaModelSpec["params"]["taskFields"],
+          }
+        : {}),
     },
     pricing: [
       ...rates.map((credits, i) => ({
