@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readSse } from "../src/sse.ts";
 import { formatUsd, sumEstimates } from "../src/pricing.ts";
 import { chooseRoute } from "../src/routing.ts";
+import { chooseImageRoute, imageForm, imageRoles, imageRoutes } from "../src/imageForm.ts";
 import { chooseEditRoute, editForm, editRoutes } from "../src/editForm.ts";
 import { makeCatalog } from "../src/fake/catalog.ts";
 
@@ -78,4 +79,31 @@ test("an edit tool is offered only through routes that declare it, with the fiel
   // A required choice with nothing to choose from is not a form.
   const stuck = { ...grok, routeParams: { xai: { ...grok.routeParams!.xai, taskFields: { "video-extend": { accepts: ["resolution" as const], requires: ["resolution" as const], resolutions: [] } } } } };
   assert.equal(editForm(stuck, "xai", "video-extend"), null);
+});
+
+test("an image tool reads the images, mask and fields each route declares, and places images in the roles it takes", () => {
+  const models = makeCatalog(new Set(["fal"])).models;
+  const gpt = models.find((m) => m.id === "openai/gpt-image-2.6")!;
+  const direct = imageForm(gpt, "openai", "image-to-image")!;
+  assert.deepEqual([direct.min, direct.max], [1, 4]);
+  assert.deepEqual(imageRoles(direct, 3), ["source-image", "reference-image", "reference-image"]);
+  assert.equal(imageRoles(direct, 5), null);
+  assert.equal(imageRoles(direct, 0), null);
+  assert.deepEqual(direct.mask?.conventions, ["vendor", "repaint-white"]);
+  assert.deepEqual([direct.resolutions.length > 0, direct.aspectRatios], [true, []]);
+  const list = imageForm(gpt, "fal", "image-to-image")!;
+  assert.deepEqual(imageRoles(list, 3), ["source-image", "source-image", "source-image"]);
+  assert.equal(list.mask, null);
+  assert.deepEqual([list.resolutions, list.aspectRatios.length > 0], [[], true]);
+  // The keyed aggregator runs it by default; the direct route is offered and asks for its key when chosen.
+  const auto = chooseImageRoute(gpt, "image-to-image");
+  assert.ok(auto.kind === "default" && auto.route.providerId === "fal");
+  assert.equal(chooseImageRoute(gpt, "image-to-image", "openai").kind, "needs-key");
+
+  const flux = models.find((m) => m.id === "black-forest-labs/flux-2-pro")!;
+  // Lists the task but no route declares a form for it.
+  assert.equal(imageRoutes(flux, "image-to-image").length, 0);
+  const topaz = models.find((m) => m.id === "topaz-labs/topaz-image-upscale")!;
+  assert.deepEqual(imageForm(topaz, "fal", "image-upscale")!.fields.accepts, []);
+  assert.equal(imageForm(topaz, "fal", "image-to-image"), null);
 });
