@@ -129,6 +129,7 @@ async function estimate(req: IncomingMessage, res: ServerResponse, keys: Keys): 
     ...(typeof data.audio === "boolean" ? { audio: data.audio } : {}),
     ...(num(data.durationSec) !== undefined ? { durationSec: num(data.durationSec)! } : {}),
     ...(num(data.count) !== undefined ? { count: num(data.count)! } : {}),
+    ...(num(data.characters) !== undefined ? { characters: num(data.characters)! } : {}),
   };
   const params = routeParamsFor(model, selected.providerId);
   const quote = quoteFor({ pricing: selected.pricing, params }, request);
