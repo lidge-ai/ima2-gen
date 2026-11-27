@@ -47,26 +47,27 @@ export function installFetchablePorts(options = {}) {
     if (callback) server.once("listening", callback);
     const emit = server.emit;
     let asks = 1;
-    let moving = false;
+    /** Set while a refused port is being given back: what to do once the server has closed. */
+    let afterClose = null;
     const restore = () => { if (server.emit === intercept) delete server.emit; if (server.emit !== emit) server.emit = emit; };
     function intercept(event, ...rest) {
-      // The close of a refused port belongs to this helper, not to the test.
-      if (moving && event === "close") return false;
+      // The close of a refused port belongs to this helper, not to the test: nobody else hears it.
+      if (afterClose && event === "close") { const next = afterClose; afterClose = null; next(); return false; }
       if (event === "error") restore();
       if (event !== "listening") return emit.call(server, event, ...rest);
       const address = server.address();
       const port = address && typeof address === "object" ? address.port : null;
       if (port === null || !isBlocked(port) || asks >= MAX_ASKS) { restore(); return emit.call(server, event, ...rest); }
       asks += 1;
-      moving = true;
       const host = address.address;
-      net.Server.prototype.close.call(server, () => {
+      afterClose = () => {
         // The refused port is held while asking again, so the system cannot hand it straight back.
         const holder = net.createServer();
-        const again = () => { moving = false; server.once("listening", () => holder.close()); original.apply(server, args); };
+        const again = () => { server.once("listening", () => holder.close()); original.apply(server, args); };
         holder.once("error", again);
         original.call(holder, port, host, again);
-      });
+      };
+      net.Server.prototype.close.call(server);
       return false;
     }
     server.emit = intercept;
