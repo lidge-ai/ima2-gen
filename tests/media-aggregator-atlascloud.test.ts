@@ -53,7 +53,7 @@ test("atlas catalog serves Sume ids across video, image and audio with starting 
   assert.deepEqual(rows("kling/kling-4"), [["second", 0.11, "text-to-video"], ["second", 0.11, "image-to-video"], ["second", 0.11, "reference-to-video"], ["second", 0.11, "video-to-video"]]);
   assert.deepEqual(rows("minimax/hailuo-2.3"), [["request", 0.49, "text-to-video"], ["request", 0.49, "image-to-video"]]);
   assert.deepEqual(rows("minimax/hailuo-2.3-fast"), [["request", 0.19, "image-to-video"]]);
-  assert.deepEqual(rows("pixverse/v6"), [["second", 0.025, "text-to-video"], ["second", 0.025, "image-to-video"], ["second", 0.025, "reference-to-video"]]);
+  assert.deepEqual(rows("pixverse/pixverse-v6"), [["second", 0.025, "text-to-video"], ["second", 0.025, "image-to-video"], ["second", 0.025, "reference-to-video"]]);
   assert.equal(adapter.inputTransport, "upload");
   assert.equal(adapter.cancel, undefined);
 });
