@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { useI18n } from "../../i18n";
-import type { MediaModel } from "../../lib/mediaCatalog";
+import { makerName, type MediaModel } from "../../lib/mediaCatalog";
 import { modelFacts, type ModelFacts, type Suggestion } from "../../lib/mediaModelList";
 import type { ClassicTask } from "../../lib/mediaTasks";
 import { CheckIcon } from "../controls";
@@ -33,7 +33,7 @@ export function MediaModelRow({ model, task, selected, onPick, reason, facts: gi
             {facts.audio ? <span className="media-row__tag">{t("mediaPicker.audioTag")}</span> : null}
             {model.retiring ? <span className="media-row__tag">{t("mediaPicker.retiring")}</span> : null}
           </span>
-          <span className="media-row__sub">{reason ?? (model.logo?.name || model.vendor)}</span>
+          <span className="media-row__sub">{reason ?? makerName(model)}</span>
         </span>
         <span className="media-row__facts">
           <span className="media-row__price">{fromPrice(facts.price, t)}</span>

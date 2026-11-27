@@ -183,11 +183,11 @@ test("a runnable model is described by the route that would run; a model that ne
 test("switching model keeps allowed settings, moves the rest to listed values and reports each move", () => {
   const from = route("fal", { hasKey: true, params: { durationsSec: [5, 10, 15], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16"], nativeAudio: true, seed: true, negativePrompt: true } });
   const first = reconcileSelection(model("acme/a", [from]), from, "text-to-video", null, "auto");
-  assert.deepEqual(first, { selection: { kind: "video", model: "acme/a", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "a", vendor: "acme", routeLabel: "fal", durationSec: 5, resolution: "720p" }, adjusted: [] });
+  assert.deepEqual(first, { selection: { kind: "video", model: "acme/a", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "a", vendor: "Acme", routeLabel: "fal", durationSec: 5, resolution: "720p" }, adjusted: [] });
   const tuned = { ...first.selection, durationSec: 15, resolution: "1080p", aspectRatio: "9:16", audio: true, seed: 42, negativePrompt: "blur" };
   const to = route("kling", { route: "direct", hasKey: true, tasks: ["image-to-video"], params: { durationsSec: [5, 10], resolutions: ["720P", "1080P"], aspectRatios: ["16:9"] } });
   const next = reconcileSelection(model("acme/b", [to]), to, "text-to-video", tuned, "pinned");
-  assert.deepEqual(next.selection, { kind: "video", model: "acme/b", adapter: "kling", task: "image-to-video", routeMode: "pinned", label: "b", vendor: "acme", routeLabel: "kling", durationSec: 10, resolution: "1080P" });
+  assert.deepEqual(next.selection, { kind: "video", model: "acme/b", adapter: "kling", task: "image-to-video", routeMode: "pinned", label: "b", vendor: "Acme", routeLabel: "kling", durationSec: 10, resolution: "1080P" });
   assert.deepEqual(next.adjusted, [
     { field: "task", from: "text-to-video", to: "image-to-video" }, { field: "durationSec", from: "15", to: "10" },
     { field: "aspectRatio", from: "9:16", to: null }, { field: "audio", from: "true", to: null },
@@ -235,7 +235,7 @@ test("making a result again restores its model, pinned route and settings agains
   const row = { provider: "media:fal", adapter: "fal", model: "acme/clip", mediaType: "video",
     media: { task: "text-to-video", durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true, inputRoles: [] } };
   assert.deepEqual(remakePlan(row, models), { ok: true, adjusted: [], inputsDropped: false,
-    selection: { kind: "video", model: "acme/clip", adapter: "fal", task: "text-to-video", routeMode: "pinned", label: "clip", vendor: "acme", routeLabel: "fal",
+    selection: { kind: "video", model: "acme/clip", adapter: "fal", task: "text-to-video", routeMode: "pinned", label: "clip", vendor: "Acme", routeLabel: "fal",
       durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true } });
   // The route it ran on is gone: Automatic takes over and says which settings moved.
   const gone = remakePlan({ ...row, adapter: "replicate", provider: "media:replicate" }, models);
@@ -351,4 +351,24 @@ test("a price per megapixel or per token is said to be billed by usage, not left
   // A per-image row still wins when the route has one.
   assert.equal(quoteQuality({ pricing: [row("megapixel"), row("image")] }, selection).state, "exact");
   assert.deepEqual(quoteQuality({ pricing: [] }, selection), { state: "unpriced" });
+});
+
+test("a model's sizes are shown by the catalog's labels, and the choice keeps the provider's value", async () => {
+  const { modelFacts } = await import("../ui/src/lib/mediaModelList.js");
+  const { resolutionChoices } = await import("../ui/src/lib/mediaCatalog.js");
+  const route = { adapter: "minimax", route: "direct", label: "MiniMax", logo: null, upstreamId: "h3", tasks: ["text-to-video"], docsUrl: "", hasKey: true, pricing: [],
+    params: { durationsSec: [6], resolutions: ["768P", "1080P"] }, resolutionOptions: [{ value: "768P", label: "768p" }, { value: "1080P", label: "1080p" }] } as MediaRoute;
+  const model: MediaModel = { id: "minimax/hailuo-3", label: "Hailuo 3", vendor: "minimax", logo: null, kind: "video", tasks: ["text-to-video"], routes: [route], defaultRoute: "minimax" };
+  assert.deepEqual(modelFacts(model, "text-to-video").resolutions, { low: "768p", high: "1080p", rank: 1080 });
+  assert.deepEqual(resolutionChoices(route), [{ value: "768P", label: "768p" }, { value: "1080P", label: "1080p" }]);
+  // A catalog without the labels (an older server) still lists what it has.
+  const { resolutionOptions: _labels, ...plain } = route;
+  assert.deepEqual(resolutionChoices(plain as MediaRoute), [{ value: "768P", label: "768P" }, { value: "1080P", label: "1080P" }]);
+});
+
+test("a maker without a logo entry is still named like a name, not shown as its id", async () => {
+  const { makerName } = await import("../ui/src/lib/mediaCatalog.js");
+  assert.equal(makerName({ vendor: "alibaba", logo: null }), "Alibaba");
+  assert.equal(makerName({ vendor: "black-forest-labs", logo: null }), "Black Forest Labs");
+  assert.equal(makerName({ vendor: "bytedance", logo: { id: "bytedance", name: "ByteDance", urls: {}, source: null } }), "ByteDance");
 });

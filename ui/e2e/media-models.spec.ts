@@ -177,3 +177,18 @@ test("L11-M7 a retiring model is named plainly; the model window alone marks it"
   await expect(card(page)).toContainText("GPT Image 2");
   await expect(card(page)).not.toContainText("deprecated");
 }));
+
+test("L11-M8 sizes read the same on every route, and the provider is sent its own spelling", run({ keys: ["minimax"] }, async (page, media) => {
+  await openWindow(page);
+  await dialog(page).getByRole("group", { name: "Output" }).getByRole("button", { name: "Video", exact: true }).click();
+  // The direct route lists 768P and 1080P; the row and the setting read 768p–1080p.
+  await expect(row(page, "minimax/hailuo-3")).toContainText("768p–1080p");
+  await row(page, "minimax/hailuo-3").click();
+  await expect(card(page).getByRole("button", { name: "768p", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await card(page).getByRole("button", { name: "1080p", exact: true }).click();
+  await expect(card(page).getByRole("button", { name: "1080P", exact: true })).toHaveCount(0);
+  await composer(page).fill(PROMPT);
+  await page.locator(".generate-btn:visible").click();
+  await expect.poll(() => media.submissions.length).toBe(1);
+  expect(media.submissions[0]).toMatchObject({ model: "minimax/hailuo-3", adapter: "minimax", resolution: "1080P" });
+}));
