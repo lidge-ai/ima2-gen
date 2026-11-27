@@ -681,3 +681,4 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/vite-dev-port-contract.test.ts`
 - `tests/wand-erase.test.ts`
 - `tests/web-search-toggle-contract.test.ts`
+- `tests/windows-host-conditions.test.ts`
