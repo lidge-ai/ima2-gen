@@ -593,7 +593,7 @@ grokProvider.plannerModel     grokProvider.plannerTimeoutMs
 grokProvider.defaultImageModel
 log.level                    features.cardNews
 cardNewsPlanner.{enabled,model,timeoutMs,deterministicFallback}
-comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes,healthTimeoutMs,pollIntervalMs,generationTimeoutMs,maxDownloadBytes}
+comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes,healthTimeoutMs,pollIntervalMs,generationTimeoutMs,maxDownloadBytes,liveProgress}
 storage.{generatedDir,generatedDirName}
 server.{port,host,bodyLimit}
 oauth.{proxyPort,proxyEditsBody,statusTimeoutMs,restartDelayMs}

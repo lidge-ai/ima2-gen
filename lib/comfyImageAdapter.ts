@@ -342,11 +342,16 @@ async function awaitResult(run: ComfyRun, promptId: string): Promise<ComfyImageR
  * Opens the progress socket for a job, when the caller left I/O to this module.
  *
  * A caller that injects its own fetch owns every byte of I/O, so no socket is
- * opened behind its back unless it also injects one.
+ * opened behind its back unless it also injects one. comfy.liveProgress=false
+ * turns the socket off for a server whose proxy does not pass WebSockets.
  */
+function progressSocket(options: ComfyVideoGenerateOptions, cfg: ComfyRun["cfg"]): OpenComfySocket | null {
+  return options.openSocket ?? (options.fetchImpl || cfg.liveProgress === false ? null : openComfySocket);
+}
+
 function startProgress(run: ComfyRun, graph: ComfyGraph, clientId: string, promptId: string | null): ComfyProgressWatch | null {
   const { options } = run;
-  const open = options.openSocket ?? (options.fetchImpl ? null : openComfySocket);
+  const open = progressSocket(options, run.cfg);
   if (!open) return null;
   return watchComfyProgress(run.target, clientId, graph, promptId, (progress) => {
     options.onQueue?.({ running: true, position: 0, ...progress });
@@ -394,7 +399,7 @@ async function runComfyWorkflow(
   }, workflow.params);
 
   const requestId = options.requestId;
-  const live = Boolean(options.openSocket ?? !options.fetchImpl);
+  const live = progressSocket(options, cfg) !== null;
   // ComfyUI sends a job's node and step events only to the socket whose client
   // id submitted it, so a watched job gets an id of its own.
   const clientId = live ? "ima2-" + randomUUID() : "ima2";
