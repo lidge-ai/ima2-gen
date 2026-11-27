@@ -48,8 +48,10 @@ def _plan(inspection):
     bind = {}
     for field in (*FIELDS, "output"):
         options = by_field.get(field) or []
+        # ima2 marks the one it settled (the text a sampler's positive input leads to) and may list other
+        # candidates beside it for a person to pick instead. One settled candidate is the answer.
         settled = [entry for entry in options if entry.get("unambiguous")]
-        if len(settled) == 1 and len(options) == 1:
+        if len(settled) == 1:
             entry = settled[0]
             bind[field] = {"node": entry["node"]} if field == "output" else {"node": entry["node"], "input": entry["input"]}
         elif options:
