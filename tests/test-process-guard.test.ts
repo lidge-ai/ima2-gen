@@ -61,7 +61,7 @@ test("the temp directory is recognised under either of its names: a link and its
     let other: string;
     if (process.platform === "win32") {
       // The 8.3 form GitHub's Windows runners use for TEMP (C:\Users\RUNNER~1\...).
-      other = spawnSync("cmd", ["/d", "/c", "for %I in ("" + real + "") do @echo %~sI"], { encoding: "utf8", windowsVerbatimArguments: true }).stdout.trim();
+      other = spawnSync("cmd", ["/d", "/c", 'for %I in ("' + real + '") do @echo %~sI'], { encoding: "utf8", windowsVerbatimArguments: true }).stdout.trim();
       assert.ok(other.length > 0, "the short path of the temp root");
     } else {
       other = real + "-link";
