@@ -34,7 +34,8 @@ function studiosRoot(ctx: RuntimeContext, options: StudioOptions): string {
  * that already exists under root.
  */
 function builtDist(root: string, name: string): string | null {
-  if (!STUDIO_NAME.test(name) || NOT_A_STUDIO.has(name)) return null;
+  // An earlier name is never a studio of its own, even if a checkout still holds its old build folder.
+  if (!STUDIO_NAME.test(name) || NOT_A_STUDIO.has(name) || Object.hasOwn(STUDIO_ALIASES, name)) return null;
   let entry: string | undefined;
   try {
     entry = readdirSync(root, { withFileTypes: true }).find((d) => d.isDirectory() && d.name === name)?.name;
@@ -58,7 +59,7 @@ export function listStudios(root: string): StudioEntry[] {
     return [];
   }
   return names
-    .filter((n) => STUDIO_NAME.test(n) && !NOT_A_STUDIO.has(n))
+    .filter((n) => STUDIO_NAME.test(n) && !NOT_A_STUDIO.has(n) && !Object.hasOwn(STUDIO_ALIASES, n))
     .sort()
     .map((name) => ({ name, built: isBuilt(root, name), url: `/studio/${name}/` }));
 }

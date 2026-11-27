@@ -322,7 +322,11 @@ test("studios: served under /studio/<name>/, SPA fallback, default UI redirect a
 });
 
 test("studios: the studio renamed from higgs to main still answers to its old name", async () => {
-  await withApp(async ({ base, configFile }) => {
+  await withApp(async ({ base, configFile, root }) => {
+    // A checkout updated in place can keep the old, git-ignored build folder; it is not a second studio.
+    await mkdir(join(root, "studios", "higgs", "dist"), { recursive: true });
+    await writeFile(join(root, "studios", "higgs", "dist", "index.html"), "<html>stale build</html>");
+    assert.deepEqual((await (await fetch(`${base}/api/studios`)).json()).studios.map((s: { name: string }) => s.name), ["main"]);
     // A bookmark such as /studio/higgs/?from=x#/remix/remix-restyle: the browser sends no fragment, and keeps
     // it across a redirect whose Location has none. Path and query must survive; the #route then opens the same screen.
     const bookmark = await fetch(`${base}/studio/higgs/?from=bookmark`, { redirect: "manual" });
