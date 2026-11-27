@@ -79,7 +79,7 @@ export type PersistedInFlight = {
   sessionId?: string | null;
   parentNodeId?: string | null;
   clientNodeId?: string | null;
-  kind?: "classic" | "node" | "multimode" | "image" | "video" | "mcp-image" | "mcp-video" | `mcp-action-${string}`;
+  kind?: "classic" | "node" | "multimode" | "image" | "video" | "audio" | "mcp-image" | "mcp-video" | `mcp-action-${string}`;
   /** What is running, as shown to the person (media jobs: the model's name). */
   model?: string;
 };

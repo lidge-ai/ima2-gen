@@ -1,4 +1,5 @@
 import { resolutionChoices, type MediaModel, type MediaPrice } from "./mediaCatalog";
+import { audioUse, lengthRange, taskParams, voiceOption, type AudioUse } from "./mediaForm";
 import { autoRoute, candidateRoutes, lowestPrice, modelRunnable } from "./mediaRoutes";
 import { modelTasks, type ClassicKind, type ClassicTask } from "./mediaTasks";
 
@@ -23,6 +24,10 @@ export interface ModelFacts {
   resolutions: { low: string; high: string; rank: number } | null;
   durations: { min: number; max: number } | null;
   audio: boolean;
+  /** A voice reads the prompt (text to speech). */
+  voice: boolean;
+  /** It runs on the user's own machine: there is no provider price to publish. */
+  local: boolean;
   routes: number;
   runnable: boolean;
 }
@@ -39,7 +44,11 @@ export function modelFacts(model: MediaModel, task?: string): ModelFacts {
   const prices = routes.map((route) => lowestPrice(route, model.kind)).filter((price): price is MediaPrice => price !== null);
   const ranked = [...new Set(routes.flatMap((route) => resolutionChoices(route).map((option) => option.label)))]
     .map((label) => ({ label, rank: resolutionRank(label) })).filter((entry) => entry.rank > 0).sort((a, b) => a.rank - b.rank);
-  const seconds = routes.flatMap((route) => route.params.durationsSec ?? []);
+  const seconds = routes.flatMap((route) => {
+    const params = task ? taskParams(route, task) : route.params;
+    const range = lengthRange(params);
+    return range ? [range.minSec, range.maxSec] : [...(params.durationsSec ?? [])];
+  });
   const low = ranked[0];
   const high = ranked[ranked.length - 1];
   return {
@@ -47,6 +56,8 @@ export function modelFacts(model: MediaModel, task?: string): ModelFacts {
     resolutions: low && high ? { low: low.label, high: high.label, rank: high.rank } : null,
     durations: seconds.length ? { min: Math.min(...seconds), max: Math.max(...seconds) } : null,
     audio: routes.some((route) => route.params.nativeAudio === true),
+    voice: routes.some((route) => voiceOption(task ? taskParams(route, task) : route.params) !== undefined),
+    local: routes.length > 0 && routes.every((route) => route.route === "local"),
     routes: candidates.length,
     runnable: running !== undefined,
   };
@@ -54,8 +65,8 @@ export function modelFacts(model: MediaModel, task?: string): ModelFacts {
 
 export type ModelFeature = "mine" | "audio" | "sharp" | "long";
 export type ModelSort = "catalog" | "price" | "resolution" | "duration";
-/** "Sharp" means 1080p for video and 2K for images. */
-export const SHARP_RANK: Record<ClassicKind, number> = { video: 1080, image: 2000 };
+/** "Sharp" means 1080p for video and 2K for images; sound has no resolution. */
+export const SHARP_RANK: Record<ClassicKind, number> = { video: 1080, image: 2000, audio: Number.POSITIVE_INFINITY };
 export const LONG_SECONDS = 10;
 
 const FEATURE_TEST: Record<ModelFeature, (facts: ModelFacts, kind: ClassicKind) => boolean> = {
@@ -71,6 +82,8 @@ export interface ModelFilter {
   query?: string;
   features?: readonly ModelFeature[];
   vendor?: string | null;
+  /** For audio: models whose routes read the prompt aloud, or the ones that make sound from a description. */
+  use?: AudioUse;
 }
 
 function matchesQuery(model: MediaModel, query: string): boolean {
@@ -82,6 +95,7 @@ function matchesQuery(model: MediaModel, query: string): boolean {
 export function filterModels(models: readonly MediaModel[], filter: ModelFilter): MediaModel[] {
   return models.filter((model) => {
     if (model.kind !== filter.kind || !modelTasks(model).includes(filter.task)) return false;
+    if (filter.use && !candidateRoutes(model, filter.task).some((route) => audioUse(route, filter.task) === filter.use)) return false;
     if (filter.vendor && model.vendor !== filter.vendor) return false;
     if (filter.query && !matchesQuery(model, filter.query)) return false;
     const facts = modelFacts(model, filter.task);
@@ -137,6 +151,8 @@ export interface Suggestion { model: MediaModel; reason: SuggestionReason; facts
  * choice is already small or the fact does not separate the models.
  */
 export function suggestModels(models: readonly MediaModel[], task: ClassicTask): Suggestion[] {
+  // Sound is sold per character, per minute or per clip: the cheapest of those is not a comparison.
+  if (task === "text-to-audio") return [];
   const entries = models.map((model) => ({ model, facts: modelFacts(model, task) })).filter((entry) => entry.facts.runnable);
   if (entries.length < 4) return [];
   const picks: Suggestion[] = [];

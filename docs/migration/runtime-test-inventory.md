@@ -555,6 +555,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/mcp-schema-spike-contract.test.ts`
 - `tests/mcp-selection-helpers.test.ts`
 - `tests/mcp-settings-states-contract.test.ts`
+- `tests/media-ui-audio.test.ts`
 - `tests/media-vendor-assets.test.ts`
 - `tests/minimax-ui-registration-contract.test.ts`
 - `tests/mobile-compose-sheet-accessibility-contract.test.ts`

@@ -3,6 +3,8 @@ import { useAppStore } from "../store/useAppStore";
 import { useI18n } from "../i18n";
 import { handleHorizontalWheel } from "../lib/horizontalWheel";
 import { isVideoItem, isVideoUrl } from "../lib/videoMedia";
+import { isAudioItem } from "../lib/audioMedia";
+import { AudioThumbPlaceholder } from "./AudioThumbPlaceholder";
 import { buildVideoDragPayload } from "../lib/videoContinuity";
 import {
   getGalleryItemKey,
@@ -277,6 +279,15 @@ export function HistoryStrip() {
 
         if (item.sequenceId && completedSequences.has(item.sequenceId) && !sequenceFirstKeys.has(key)) {
           return null;
+        }
+
+        if (isAudioItem(item)) {
+          // Sound has no picture and cannot be a reference image, so the tile is not draggable.
+          return renderLazyThumb(key, (
+            <div className={`history-thumb history-thumb--audio${active ? " active" : ""}`} onClick={() => selectHistory(item)}>
+              <AudioThumbPlaceholder />
+            </div>
+          ));
         }
 
         if (isVideoItem(item)) {
