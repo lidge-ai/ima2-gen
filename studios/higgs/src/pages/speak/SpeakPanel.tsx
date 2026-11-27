@@ -20,7 +20,7 @@ const M = messages(
     subtitlesHelp: "Captions are added from the speech in your video.",
     optional: "Optional", required: "Required",
     resolution: "Resolution", route: "Run through", automatic: "Automatic", default: "Default",
-    noPrice: "No published price", direct: "direct", aggregator: "aggregator", noKey: "no key",
+    noPrice: "No published price", direct: "direct", aggregator: "aggregator", local: "this computer, no provider charge", noKey: "no key",
     generate: "Generate", sending: "Sending",
     estimate: "Estimated {cost} · {seconds} s", unpriced: "Price not published",
     afterAudio: "Add the audio to see the price", afterVideo: "Add the video to see the price", reading: "Reading the length", unknownLength: "Length unknown, no price",
@@ -36,7 +36,7 @@ const M = messages(
     subtitlesHelp: "영상 속 말소리로 자막을 넣어요.",
     optional: "선택", required: "필수",
     resolution: "해상도", route: "실행 경로", automatic: "자동", default: "기본값",
-    noPrice: "공개 가격 없음", direct: "직접", aggregator: "어그리게이터", noKey: "키 없음",
+    noPrice: "공개 가격 없음", direct: "직접", aggregator: "어그리게이터", local: "이 컴퓨터에서 실행, 요금 없음", noKey: "키 없음",
     generate: "생성", sending: "요청 중",
     estimate: "예상 {cost} · {seconds}초", unpriced: "공개 가격 없음",
     afterAudio: "오디오를 넣으면 가격이 계산돼요", afterVideo: "영상을 넣으면 가격이 계산돼요", reading: "길이를 읽는 중이에요", unknownLength: "길이를 몰라 가격이 없어요",
@@ -128,7 +128,8 @@ function RouteTile({ speak }: { speak: Speak }) {
   const options = routes.map((route) => ({
     value: route.providerId,
     label: route.label,
-    meta: [t(route.route), price(route.pricing), ...(route.keyConfigured ? [] : [t("noKey")])].join(" · "),
+    // A route on the user's own machine has no price and no key to be missing.
+    meta: route.route === "local" ? t("local") : [t(route.route), price(route.pricing), ...(route.keyConfigured ? [] : [t("noKey")])].join(" · "),
   }));
   return <SettingTile caption={t("route")} value={state.provider} options={[{ value: "", label: t("automatic") }, ...options]} onChange={speak.pickRoute} />;
 }
