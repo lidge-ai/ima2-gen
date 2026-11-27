@@ -11,6 +11,8 @@ function unionParams(routes: readonly WireRoute[]): MediaModelSpec["params"] {
   const out: Record<string, unknown> = {};
   for (const route of routes) {
     for (const [key, value] of Object.entries(route.params)) {
+      // What a task needs is a property of one route's form, not of the model: read it from routeParams.
+      if (key === "inputs" || key === "options") continue;
       const prev = out[key];
       if (Array.isArray(value)) out[key] = [...new Set([...((prev as unknown[]) ?? []), ...value])];
       else if (typeof value === "number") out[key] = Math.max(Number(prev ?? 0), value);

@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
-import { modelHasKey, type CatalogModel, type CatalogRoute, type MediaKind } from "@ima2/studio-kit";
+import { TALKING_TASKS, formRoutes, modelHasKey, type CatalogModel, type CatalogRoute, type MediaKind } from "@ima2/studio-kit";
 import { href } from "../../router.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
@@ -100,6 +100,8 @@ function RouteLine({ route }: { route: CatalogRoute }) {
 function ModelCard({ model }: { model: CatalogModel }) {
   const t = useT(M);
   const target = model.kind === "image" ? "image" : "video";
+  // Lip-sync, avatar, dubbing and subtitle models open the talking form, the only one that can fill their inputs.
+  const talking = TALKING_TASKS.some((task) => formRoutes(model, task).length > 0);
   return (
     <article className="model-card" aria-labelledby={"model-" + model.id}>
       <header className="model-card-head">
@@ -126,7 +128,7 @@ function ModelCard({ model }: { model: CatalogModel }) {
       </ul>
       <div className="model-card-foot">
         {model.kind !== "audio" ? (
-          <a className="btn" href={href(target, { model: model.id })}>
+          <a className="btn" href={href(target, { model: model.id, ...(talking ? { mode: "speak" } : {}) })}>
             {modelHasKey(model) ? t("use") : t("openAdd")}
             <Icon name="arrowRight" size={14} />
           </a>

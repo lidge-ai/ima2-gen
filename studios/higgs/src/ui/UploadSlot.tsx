@@ -45,9 +45,15 @@ function useSlotUpload(role: MediaInputRole, onChange: Props["onChange"]) {
 function SlotPreview({ value, label, onRemove }: { value: SlotValue; label: string; onRemove: () => void }) {
   const t = useT(M);
   const isVideo = value.upload.mimeType.startsWith("video/");
+  const isAudio = value.upload.mimeType.startsWith("audio/");
   return (
     <>
-      {isVideo ? (
+      {isAudio ? (
+        <div className="slot-audio">
+          <span className="slot-audio-name">{value.name}</span>
+          <audio src={value.upload.url} controls preload="metadata" aria-label={value.name} />
+        </div>
+      ) : isVideo ? (
         <video className="slot-preview" src={value.upload.url} muted playsInline aria-label={value.name} />
       ) : (
         <img className="slot-preview" src={value.upload.url} alt={value.name} />

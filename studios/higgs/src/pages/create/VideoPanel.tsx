@@ -10,6 +10,9 @@ import { PresetCard } from "./PresetCard.tsx";
 import { RefSlots } from "./RefSlots.tsx";
 import { EDIT_TASKS, type CreateForm } from "./form.ts";
 import { useCreate } from "./useCreate.ts";
+import { VideoModeTabs } from "./VideoModeTabs.tsx";
+import { availableTasks } from "../speak/speakForm.ts";
+import { navigate } from "../../router.ts";
 
 const M = messages(
   {
@@ -25,9 +28,7 @@ const M = messages(
     "createPlaceholder": "Describe the shot: subject, motion, camera, light",
     "soundOn": "Sound on",
     "soundOff": "Sound off",
-    "mode": "Video mode",
     "create": "Create video",
-    "edit": "Edit video",
     "sending": "Sending",
     "generate": "Generate",
     "estimate": "Estimated {cost}",
@@ -50,9 +51,7 @@ const M = messages(
     "createPlaceholder": "장면의 피사체, 움직임, 카메라, 조명을 설명해 주세요",
     "soundOn": "사운드 켬",
     "soundOff": "사운드 끔",
-    "mode": "영상 모드",
     "create": "영상 생성",
-    "edit": "영상 편집",
     "sending": "요청 중",
     "generate": "생성",
     "estimate": "예상 {cost}",
@@ -171,28 +170,6 @@ function PromptCard({ model, form, set }: { model: CatalogModel | undefined; for
   );
 }
 
-function ModeTabs({ mode, set }: { mode: CreateForm["mode"]; set: Props["set"] }) {
-  const t = useT(M);
-  return (
-    <div className="panel-tabs" role="group" aria-label={t("mode")}>
-      <button
-        type="button"
-        aria-pressed={mode === "create"}
-        onClick={() => set({ mode: "create", model: undefined })}
-      >
-        {t("create")}
-      </button>
-      <button
-        type="button"
-        aria-pressed={mode === "edit"}
-        onClick={() => set({ mode: "edit", model: undefined })}
-      >
-        {t("edit")}
-      </button>
-    </div>
-  );
-}
-
 type Create = ReturnType<typeof useCreate>;
 
 function PanelFoot({ create }: { create: Create }) {
@@ -279,7 +256,11 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
         void create.submit();
       }}
     >
-      <ModeTabs mode={form.mode} set={set} />
+      <VideoModeTabs
+        mode={form.mode}
+        modes={availableTasks(catalog).length > 0 ? ["create", "edit", "speak"] : ["create", "edit"]}
+        onPick={(mode) => navigate("video", mode === "create" ? undefined : { mode })}
+      />
       <div className="panel-body">
         <SourceInputs model={model} form={form} set={set} onOpenPresets={onOpenPresets} />
         <PromptCard model={model} form={form} set={set} />
