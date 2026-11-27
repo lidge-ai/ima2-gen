@@ -30,7 +30,7 @@ export function MediaEstimate({ route, selection }: { route: MediaRoute; selecti
   return (
     <div className="cost-estimate media-estimate" role="status">
       <span>{t("mediaPicker.estimate.label")}</span>
-      <span className="price">{amount ?? (quote.state === "local" ? t("mediaPicker.localFree") : quote.state === "unpriced" ? t("mediaPicker.noPrice") : quote.state === "usage" ? t("mediaPicker.estimate.usage") : t("mediaPicker.estimate.unknown"))}</span>
+      <span className="price">{amount ?? (quote.state === "pending" ? t("mediaPicker.estimate.pending") : quote.state === "local" ? t("mediaPicker.localFree") : quote.state === "unpriced" ? t("mediaPicker.noPrice") : quote.state === "usage" ? t("mediaPicker.estimate.usage") : t("mediaPicker.estimate.unknown"))}</span>
       {quote.state === "exact" || quote.state === "from" ? (
         <small>{quote.unit === "second" ? t("mediaPicker.estimate.basisSeconds", { n: quote.quantity, price: unitPrice(quote.price, t) }) : unitPrice(quote.price, t)}</small>
       ) : null}

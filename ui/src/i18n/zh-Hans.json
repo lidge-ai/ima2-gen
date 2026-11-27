@@ -156,6 +156,7 @@
     "routeKeyNeeded": "需要密钥",
     "blockKey": "需要先填写 {provider} 的 API 密钥才能生成。",
     "estimate": {
+      "pending": "计算中…",
       "usage": "按用量计费",
       "usageNote": "{provider} 按{unit}对该模型计费，金额取决于生成结果。请查看下方价格表。",
       "hintUsage": "{model} · 按用量计费",

@@ -20,7 +20,7 @@ export function MediaGenerateHint({ id, readiness }: { id: string; readiness: Me
   else if (failed) text = t("mediaPicker.failure.hint", { model: name });
   else {
     const amount = quoteAmount(view, t);
-    text = amount ? t("mediaPicker.estimate.hint", { model: name, amount })
+    text = amount ? t("mediaPicker.estimate.hint", { model: name, amount }) : view.quote.state === "pending" ? name
       : view.quote.state === "local" ? t("mediaPicker.estimate.hintLocal", { model: name })
       : view.quote.state === "usage" ? t("mediaPicker.estimate.hintUsage", { model: name }) : t("mediaPicker.estimate.hintNoPrice", { model: name });
   }

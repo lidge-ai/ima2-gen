@@ -254,8 +254,9 @@ test("making a result again restores its model, pinned route and settings agains
 });
 
 const quality = await import("../ui/src/lib/mediaSelection.js");
-const { quoteFor: quoteQuality, estimateBody: estimateQuality } = await import("../ui/src/lib/mediaEstimate.js");
-const estimateWording = await import("../ui/src/lib/mediaEstimate.js");
+const { estimateBody: estimateQuality } = await import("../ui/src/lib/mediaEstimate.js");
+const estimateWording = await import("../lib/providers/media/priceQuote.ts");
+const { quoteFor: quoteQuality } = estimateWording;
 const { remakePlan: remakeQuality } = await import("../ui/src/lib/mediaResult.js");
 const { modelName } = await import("../ui/src/lib/mediaCatalog.js");
 
@@ -274,7 +275,7 @@ test("a model priced by quality gets a quality setting, one price for it, and th
   assert.equal((quoteQuality(graded, { ...low, resolution: "2K" }) as { usd: number }).usd, 0.012);
   const { quality: _none, ...unset } = first;
   assert.deepEqual(quoteQuality(graded, unset), { state: "range", min: 0.006, max: 0.2108, unit: "image", quantity: 1 }, "without a quality the rows still span a range");
-  assert.equal(estimateQuality(low, "sume", graded.pricing[0]!).quality, "low");
+  assert.equal(estimateQuality(low, "sume").quality, "low");
   assert.equal(buildMediaSubmitBody(low, "cup", "r1", null, []).quality, "low");
   // "high" is not "xhigh", and other providers spell the row differently.
   const wide = { ...graded, params: { qualities: ["auto", "high", "xhigh"] }, pricing: [row(0.05, "model variant=auto"), row(0.2, "model variant=high"), row(0.4, "model variant=xhigh")] } as MediaRoute;
