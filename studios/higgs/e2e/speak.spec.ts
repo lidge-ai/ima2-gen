@@ -134,7 +134,7 @@ test("talking video: without a key, the key form fits inside the panel", async (
   await expect(notice).toBeVisible();
   const panel = (await page.locator("form.panel").boundingBox())!;
   // Each route chip shows its mark and then its name, with space between them.
-  const chips = notice.getByRole("group", { name: "Key for" }).getByRole("button");
+  const chips = notice.locator(".chip-logo");
   expect(await chips.count()).toBeGreaterThan(1);
   for (const chip of await chips.all()) {
     const gap = await chip.evaluate((el) => {
