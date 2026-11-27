@@ -49,6 +49,7 @@ function place(anchor: DOMRect, panel: DOMRect, placement: Placement): CSSProper
 export function Popover({ open, onClose, label, children, anchor, placement = "bottom", className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
+  const focusPending = useRef(false);
   useLayoutEffect(() => {
     if (!open) return;
     const update = () => {
@@ -56,12 +57,7 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
       setStyle(place(anchor.current.getBoundingClientRect(), ref.current.getBoundingClientRect(), placement));
     };
     update();
-    // A choice menu opens on the current value (scrolled into view in a long list such as 1-30 s).
-    const panel = ref.current;
-    (
-      panel?.querySelector<HTMLElement>('button[aria-pressed="true"]:not(:disabled)') ??
-      panel?.querySelector<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)")
-    )?.focus();
+    focusPending.current = true;
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
     return () => {
@@ -69,6 +65,17 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
       window.removeEventListener("scroll", update, true);
     };
   }, [open, anchor, placement]);
+  // Focus moves in once the panel is placed: a still-hidden panel (first open) cannot take focus.
+  // A choice menu opens on the current value, scrolled into view in a long list such as 1-30 s.
+  useLayoutEffect(() => {
+    const panel = ref.current;
+    if (!open || !focusPending.current || !panel || style.visibility === "hidden") return;
+    focusPending.current = false;
+    (
+      panel.querySelector<HTMLElement>('button[aria-pressed="true"]:not(:disabled)') ??
+      panel.querySelector<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)")
+    )?.focus();
+  }, [open, style]);
   useEffect(() => {
     if (!open) return;
     const trigger = anchor.current;
