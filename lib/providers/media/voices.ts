@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { randomBytes, scryptSync } from "node:crypto";
 import type { MediaVoice } from "./contract.js";
 
 export interface VoiceList {
@@ -16,18 +16,22 @@ export interface VoiceCache {
 const DEFAULT_TTL_MS = 10 * 60_000;
 
 /**
- * Voice lists per provider and key. The key itself is never stored: entries are found by a hash of it,
- * so a list read with one key is not served to another, and saving a new key reads a fresh list.
+ * Voice lists per provider and key. The key itself is never stored: entries are found by a tag derived
+ * from it with scrypt and a salt that lives only in this process, so a list read with one key is not
+ * served to another, saving a new key reads a fresh list, and the tag is useless outside the process.
  * A failed read is not kept, and callers that arrive during a read share it instead of starting another.
  */
 export function createVoiceCache(options: { ttlMs?: number; now?: () => number } = {}): VoiceCache {
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
   const now = options.now ?? Date.now;
+  const salt = randomBytes(16);
+  // A small work factor: this runs on every read, and the salt never leaves memory.
+  const tag = (apiKey: string) => scryptSync(apiKey, salt, 24, { N: 1024, r: 8, p: 1 }).toString("base64url");
   const entries = new Map<string, { voices: readonly MediaVoice[]; fetchedAt: number }>();
   const pending = new Map<string, Promise<VoiceList>>();
   return {
     get(adapterId, apiKey, load, refresh = false) {
-      const id = adapterId + ":" + createHash("sha256").update(apiKey).digest("hex");
+      const id = adapterId + ":" + tag(apiKey);
       const hit = entries.get(id);
       if (hit && !refresh && now() - hit.fetchedAt < ttlMs) return Promise.resolve({ ...hit, cached: true });
       const running = pending.get(id);
