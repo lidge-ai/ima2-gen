@@ -365,3 +365,10 @@ test("a model's sizes are shown by the catalog's labels, and the choice keeps th
   const { resolutionOptions: _labels, ...plain } = route;
   assert.deepEqual(resolutionChoices(plain as MediaRoute), [{ value: "768P", label: "768P" }, { value: "1080P", label: "1080P" }]);
 });
+
+test("a maker without a logo entry is still named like a name, not shown as its id", async () => {
+  const { makerName } = await import("../ui/src/lib/mediaCatalog.js");
+  assert.equal(makerName({ vendor: "alibaba", logo: null }), "Alibaba");
+  assert.equal(makerName({ vendor: "black-forest-labs", logo: null }), "Black Forest Labs");
+  assert.equal(makerName({ vendor: "bytedance", logo: { id: "bytedance", name: "ByteDance", urls: {}, source: null } }), "ByteDance");
+});
