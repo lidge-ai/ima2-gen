@@ -6,21 +6,21 @@ import { Icon } from "./Icon.tsx";
 
 const M = messages(
   {
-    button: "ComfyUI graph", loading: "Getting the graph",
-    ran: "Saved {file}. It is the graph ComfyUI ran for this result, with the values it used.",
-    node: "Saved {file}. It repeats this request with the ima2 node in ComfyUI.",
-    open: "Drop the file onto the ComfyUI canvas to open it.",
-    pack: "ComfyUI needs the ima2 node pack (comfyui-ima2), and ima2 must be running on the same computer.",
-    budget: "The node's spending limit is $0, so a paid model is refused until you raise it. Opening or queueing the graph as it is costs nothing.",
+    button: "Save ComfyUI graph", loading: "Getting the graph",
+    saved: "Saved the graph file (.comfy.json). Drop it onto the ComfyUI canvas to open it.",
+    ran: "It is the graph ComfyUI ran for this result, with the values it used.",
+    node: "It repeats this request with the ima2 node in ComfyUI.",
+    pack: "ComfyUI needs the comfyui-ima2 node pack, with ima2 running on the same computer.",
+    budget: "The node's spending limit is $0: a paid model is refused until you raise it.",
     none: "There is no ComfyUI graph for this result.",
   },
   {
-    button: "ComfyUI 그래프", loading: "그래프를 가져오는 중",
-    ran: "{file} 파일을 저장했어요. ComfyUI가 이 결과를 만들 때 실행한 그래프이고, 그때 쓴 값이 들어 있어요.",
-    node: "{file} 파일을 저장했어요. ComfyUI의 ima2 노드로 같은 요청을 다시 보내는 그래프예요.",
-    open: "파일을 ComfyUI 캔버스에 끌어다 놓으면 열려요.",
-    pack: "ComfyUI에 ima2 노드 팩(comfyui-ima2)이 설치되어 있고, 같은 컴퓨터에서 ima2가 켜져 있어야 해요.",
-    budget: "노드의 지출 한도가 $0이라 유료 모델은 한도를 올리기 전까지 거절돼요. 그래프를 그대로 열거나 실행해도 비용이 들지 않아요.",
+    button: "ComfyUI 그래프 저장", loading: "그래프를 가져오는 중",
+    saved: "그래프 파일(.comfy.json)을 저장했어요. ComfyUI 캔버스에 끌어다 놓으면 열려요.",
+    ran: "ComfyUI가 이 결과를 만들 때 실행한 그래프이고, 그때 쓴 값이 들어 있어요.",
+    node: "ComfyUI의 ima2 노드로 같은 요청을 다시 보내는 그래프예요.",
+    pack: "ComfyUI에 comfyui-ima2 노드 팩이 있고, 같은 컴퓨터에서 ima2가 켜져 있어야 해요.",
+    budget: "노드의 지출 한도가 $0이라, 한도를 올리기 전에는 유료 모델이 거절돼요.",
     none: "이 결과에는 ComfyUI 그래프가 없어요.",
   },
 );
@@ -46,15 +46,17 @@ function saveFile(name: string, graph: ComfyResultGraph["graph"]): void {
 type State = { phase: "idle" | "loading" } | { phase: "saved"; result: ComfyResultGraph } | { phase: "failed"; reason: string };
 
 /**
- * Saves a result's ComfyUI graph as a file and says what the file is. A shared web instance has no
- * ComfyUI routes, so the button is not shown there.
+ * Saves a result's ComfyUI graph as a file and says what the file is. It is offered to someone who can
+ * open the file: the result came from ComfyUI, or this server has a ComfyUI workflow registered. A shared
+ * web instance has no ComfyUI routes, so it is never shown there.
  */
 export function ComfyGraphButton({ item }: { item: HistoryItem }) {
   const t = useT(M);
   const studio = useStudioApi();
   const web = useStudio((s) => s.webSpend !== null);
+  const hasComfy = useStudio((s) => s.catalog?.models.some((model) => model.routes.some((route) => route.route === "local")) ?? false);
   const [state, setState] = useState<State>({ phase: "idle" });
-  if (web) return null;
+  if (web || !(hasComfy || item.model.startsWith("comfy/"))) return null;
   const file = graphFileName(item.historyId);
   const fetchGraph = async () => {
     setState({ phase: "loading" });
@@ -73,9 +75,8 @@ export function ComfyGraphButton({ item }: { item: HistoryItem }) {
       </button>
       {state.phase === "saved" ? (
         <div className="lightbox-note" role="status">
-          <p>
-            {t(state.result.source === "ima2-node" ? "node" : "ran", { file })} {t("open")}
-          </p>
+          <p>{t("saved")}</p>
+          <p>{t(state.result.source === "ima2-node" ? "node" : "ran")}</p>
           {state.result.source === "ima2-node" ? (
             <>
               <p>{t("pack")}</p>

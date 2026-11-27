@@ -90,6 +90,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
       <a className="btn" href={item.url} download={downloadName(item.url, item.historyId)}>
         <Icon name="download" size={15} /> {t("download")}
       </a>
+      <ComfyGraphButton key={item.historyId} item={item} />
       {again && item.prompt ? (
         <button type="button" className="btn" onClick={runAgain}>
           <Icon name="sparkle" size={15} /> {t("again")}
@@ -108,7 +109,6 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
           <Icon name={r.icon} size={15} /> {t(r.label)}
         </button>
       ))}
-      <ComfyGraphButton key={item.historyId} item={item} />
       <button type="button" className="btn btn-danger" onClick={() => void actions.remove()}>
         <Icon name="trash" size={15} /> {t("delete")}
       </button>
