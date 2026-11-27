@@ -1,7 +1,9 @@
 {
   "webAccess": {
     "signedInAs": "Signed in as {email}",
-    "logout": "Log out"
+    "logout": "Log out",
+    "settingsNoteTitle": "On the shared web instance",
+    "settingsNoteBody": "Subscription sign-in (GPT, Grok, Antigravity), MCP providers and ComfyUI work only in the app on your own computer, so they are hidden here. Media models use the keys this instance was set up with."
   },
   "mediaPicker": {
     "model": "Model",

@@ -1,7 +1,9 @@
 {
   "webAccess": {
     "signedInAs": "已登录：{email}",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "settingsNoteTitle": "在共享网页实例上",
+    "settingsNoteBody": "订阅登录（GPT、Grok、Antigravity）、MCP 提供方和 ComfyUI 只能在你自己电脑上的应用中使用，因此这里不显示。媒体模型使用此实例配置的密钥。"
   },
   "mediaPicker": {
     "model": "模型",

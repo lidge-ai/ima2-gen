@@ -1,7 +1,9 @@
 {
   "webAccess": {
     "signedInAs": "已登入：{email}",
-    "logout": "登出"
+    "logout": "登出",
+    "settingsNoteTitle": "在共用網頁執行個體上",
+    "settingsNoteBody": "訂閱登入（GPT、Grok、Antigravity）、MCP 提供者和 ComfyUI 只能在你自己電腦上的應用程式中使用，因此這裡不顯示。媒體模型使用此執行個體設定的金鑰。"
   },
   "mediaPicker": {
     "model": "模型",

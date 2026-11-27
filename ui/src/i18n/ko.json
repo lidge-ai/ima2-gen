@@ -1,7 +1,9 @@
 {
   "webAccess": {
     "signedInAs": "{email}(으)로 로그인됨",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "settingsNoteTitle": "공유 웹 인스턴스에서",
+    "settingsNoteBody": "구독 로그인(GPT, Grok, Antigravity), MCP 제공자, ComfyUI는 내 컴퓨터의 앱에서만 쓸 수 있어 여기서는 보이지 않습니다. 미디어 모델은 이 인스턴스에 설정된 키를 씁니다."
   },
   "mediaPicker": {
     "model": "모델",
