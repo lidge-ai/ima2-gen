@@ -235,6 +235,14 @@ const PRISTINE: Cell[] = [
   },
   { id: "models__token-prices", hash: "/models/bytedance", setup: tokenPrices },
   {
+    id: "remix__one-reference",
+    hash: "/remix/remix-motion-transfer",
+    act: async (p) => {
+      await p.getByLabel(/^(Reference images|레퍼런스 이미지)$/).first().setInputFiles({ name: "a.png", mimeType: "image/png", buffer: Buffer.from("png") });
+      await p.waitForTimeout(800);
+    },
+  },
+  {
     id: "remix__step-credits",
     hash: "/remix/remix-restyle",
     act: async (p) => {
