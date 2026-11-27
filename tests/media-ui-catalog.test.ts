@@ -352,3 +352,16 @@ test("a price per megapixel or per token is said to be billed by usage, not left
   assert.equal(quoteQuality({ pricing: [row("megapixel"), row("image")] }, selection).state, "exact");
   assert.deepEqual(quoteQuality({ pricing: [] }, selection), { state: "unpriced" });
 });
+
+test("a model's sizes are shown by the catalog's labels, and the choice keeps the provider's value", async () => {
+  const { modelFacts } = await import("../ui/src/lib/mediaModelList.js");
+  const { resolutionChoices } = await import("../ui/src/lib/mediaCatalog.js");
+  const route = { adapter: "minimax", route: "direct", label: "MiniMax", logo: null, upstreamId: "h3", tasks: ["text-to-video"], docsUrl: "", hasKey: true, pricing: [],
+    params: { durationsSec: [6], resolutions: ["768P", "1080P"] }, resolutionOptions: [{ value: "768P", label: "768p" }, { value: "1080P", label: "1080p" }] } as MediaRoute;
+  const model: MediaModel = { id: "minimax/hailuo-3", label: "Hailuo 3", vendor: "minimax", logo: null, kind: "video", tasks: ["text-to-video"], routes: [route], defaultRoute: "minimax" };
+  assert.deepEqual(modelFacts(model, "text-to-video").resolutions, { low: "768p", high: "1080p", rank: 1080 });
+  assert.deepEqual(resolutionChoices(route), [{ value: "768P", label: "768p" }, { value: "1080P", label: "1080p" }]);
+  // A catalog without the labels (an older server) still lists what it has.
+  const { resolutionOptions: _labels, ...plain } = route;
+  assert.deepEqual(resolutionChoices(plain as MediaRoute), [{ value: "768P", label: "768P" }, { value: "1080P", label: "1080P" }]);
+});

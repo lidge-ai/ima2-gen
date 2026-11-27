@@ -1,4 +1,5 @@
 import { quoteFor, quoteUnit } from "../../../lib/providers/media/priceQuote";
+import { resolutionOptions } from "../../../lib/providers/media/resolutionLabel";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 
 // Synthetic media catalog for the classic model window. Shapes mirror GET /api/media/catalog;
@@ -127,7 +128,7 @@ function catalog(fixture: MediaFixture, kind: string | null) {
   const models = MODELS.filter((model) => !kind || model.kind === kind).map((model) => {
     const routes = model.routes.map((route) => ({ adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, label: ADAPTERS[route.adapter]!.label,
       logo: logo(ADAPTERS[route.adapter]!.label, ADAPTERS[route.adapter]!.logo ?? null), upstreamId: model.id,
-      tasks: route.tasks, params: route.params ?? {}, pricing: route.pricing ?? [], docsUrl: "https://example.com/docs/" + route.adapter, hasKey: hasKey(route.adapter) }));
+      tasks: route.tasks, params: route.params ?? {}, resolutionOptions: resolutionOptions(route.params?.resolutions ?? []), pricing: route.pricing ?? [], docsUrl: "https://example.com/docs/" + route.adapter, hasKey: hasKey(route.adapter) }));
     const vendor = VENDOR_LOGO[model.vendor];
     return { id: model.id, label: model.label, vendor: model.vendor, logo: vendor ? logo(vendor[0], vendor[1]) : null, kind: model.kind,
       tasks: [...new Set(routes.flatMap((route) => route.tasks))], routes,
