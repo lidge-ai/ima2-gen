@@ -1,6 +1,7 @@
 import { constants as fsConstants } from "node:fs";
 import { access, readFile, realpath, stat } from "node:fs/promises";
 import { basename, extname, isAbsolute, join, relative } from "node:path";
+import type { ComfyTarget } from "./comfy/access.js";
 
 export const COMFY_ERROR = {
   URL_NOT_LOCAL: "COMFY_URL_NOT_LOCAL",
@@ -193,7 +194,7 @@ async function readGeneratedImage(ctx: ComfyCtx, filename: unknown): Promise<Gen
  * i2i references arrive as base64 in a request, not as files on disk.
  */
 export async function uploadBufferToComfy(
-  origin: string,
+  origin: ComfyTarget | string,
   buffer: Buffer,
   baseName: string,
   timeoutMs: number,
@@ -213,7 +214,9 @@ export async function uploadBufferToComfy(
   );
 }
 
-async function postToComfy(origin: string, image: GeneratedImage, timeoutMs: number, fetchImpl: ComfyUploadFetch = fetch): Promise<string> {
+async function postToComfy(server: ComfyTarget | string, image: GeneratedImage, timeoutMs: number, fetchImpl: ComfyUploadFetch = fetch): Promise<string> {
+  const origin = typeof server === "string" ? server : server.origin;
+  const headers = typeof server === "string" ? {} : server.headers;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -223,6 +226,7 @@ async function postToComfy(origin: string, image: GeneratedImage, timeoutMs: num
     const res = await fetchImpl(`${origin}/upload/image`, {
       method: "POST",
       body: form,
+      ...(Object.keys(headers).length > 0 ? { headers: { ...headers } } : {}),
       redirect: "manual",
       signal: controller.signal,
     });
@@ -248,10 +252,15 @@ async function postToComfy(origin: string, image: GeneratedImage, timeoutMs: num
 interface ExportInput { filename: unknown; }
 /** The subset of fetch the upload relies on, so callers can inject a stub. */
 type ComfyUploadFetch = (input: string, init: RequestInit) => Promise<Pick<Response, "ok" | "status" | "json">>;
-interface ExportOptions { comfyUrl?: string; fetchImpl?: ComfyUploadFetch; }
+interface ExportOptions {
+  comfyUrl?: string;
+  fetchImpl?: ComfyUploadFetch;
+  /** An allow-listed server resolved by the caller; wins over comfyUrl and the configured default. */
+  target?: ComfyTarget;
+}
 
 export async function exportImageToComfy(ctx: ComfyCtx, input: ExportInput, options: ExportOptions = {}) {
-  const origin = normalizeComfyOrigin(options.comfyUrl ?? ctx.config.comfy.defaultUrl);
+  const origin = options.target ?? normalizeComfyOrigin(options.comfyUrl ?? ctx.config.comfy.defaultUrl);
   const image = await readGeneratedImage(ctx, input.filename);
   const uploadedFilename = await postToComfy(
     origin,

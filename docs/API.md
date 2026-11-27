@@ -1209,6 +1209,9 @@ Most server routes under `/api/*` have a CLI wrapper. The exception is **Agent M
 | `DELETE /api/comfy/workflows/:id` | `ima2 comfy workflow rm` |
 | `POST /api/comfy/inspect` | `ima2 comfy workflow inspect` |
 | `POST /api/comfy/probe` | Web UI only (origin reachability in the workflow form) |
+| `GET /api/comfy/remotes` | `ima2 comfy remote ls` |
+| `PUT /api/comfy/remotes` | `ima2 comfy remote add` |
+| `DELETE /api/comfy/remotes?origin=` | `ima2 comfy remote rm` |
 | `GET /api/inflight` / `DELETE /api/inflight/:id` | `ima2 inflight ls` (alias `ps`) / `ima2 inflight rm` (alias `cancel`) |
 | `GET /api/events` (SSE multiplex) | Web UI only (persistent `EventSource`; no CLI wrapper) |
 | `GET /api/storage/status` / `POST /api/storage/open-generated-dir` | `ima2 storage status` / `ima2 storage open` |
