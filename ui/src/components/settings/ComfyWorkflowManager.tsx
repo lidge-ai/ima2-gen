@@ -196,7 +196,7 @@ export function ComfyWorkflowManager() {
   };
 
   return (
-    <div aria-labelledby="comfy-workflow-manager-title">
+    <div className="comfy-manager" aria-labelledby="comfy-workflow-manager-title">
       <article className="settings-row">
         <div className="settings-row-main">
           <div className="section-title" id="comfy-workflow-manager-title">{t("comfy.workflowsTitle")}</div>

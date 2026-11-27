@@ -291,6 +291,18 @@
   overflow-x: auto;
 }
 
+/* The row's column takes its narrowest size from this box: without a floor of zero, an address field's
+   natural width (about twenty characters) pushes the row past a phone screen. */
+.comfy-manager .settings-row-main {
+  min-width: 0;
+}
+
+/* Hints sit under 12px labels and read at the same size. */
+.comfy-manager .muted {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 /* Ids, addresses and one-word states stay on one line; the table scrolls rather than breaking them apart. */
 .comfy-workflow-table th,
 .comfy-workflow-table td {
