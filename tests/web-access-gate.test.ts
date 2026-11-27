@@ -116,7 +116,7 @@ test("remote-unsafe routes and unpriced generation are closed; everyday routes s
     assert.equal(res.status, 403, method + " " + path);
     assert.equal((await res.json()).error.code, code, method + " " + path);
   }
-  for (const [method, path] of [["GET", "/api/health"], ["GET", "/api/media/catalog"], ["POST", "/api/media"], ["POST", "/api/media/inputs"],
+  for (const [method, path] of [["GET", "/api/health"], ["GET", "/api/media/catalog"], ["POST", "/api/media"], ["POST", "/api/media/estimate"], ["POST", "/api/media/inputs"],
     ["POST", "/api/media/r1/cancel"], ["GET", "/api/keys/status"], ["POST", "/api/sessions"], ["PATCH", "/api/sessions/s1"],
     ["POST", "/api/workflows/director-studio/estimate"], ["POST", "/api/workflows/director-studio"], ["GET", "/api/history"], ["POST", "/api/history/favorite"], ["DELETE", "/api/inflight/r1"]]) {
     const res = await call(path!, { method: method! });
