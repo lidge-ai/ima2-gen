@@ -192,7 +192,7 @@ test("replicate mode tiers and rendering speeds are listed as qualities and sent
   // A mode that is not a price tier is not a quality.
   assert.equal(spec("bytedance/seedance-2.5").params.qualities, undefined);
   const { fetch, calls } = fakeFetch([[/predictions/, () => json(prediction("p-mode"), 201)]]);
-  await adapter.submit(ctx(fetch), request({ model: "kling/kling-o1", task: "text-to-video", quality: "pro" }));
+  await adapter.submit(ctx(fetch), request({ model: "kling/kling-3", task: "text-to-video", quality: "pro" }));
   assert.equal(((calls[0].body as { input: Record<string, unknown> }).input).mode, "pro");
-  assert.equal((await errorOf(adapter.submit(ctx(fetch), request({ model: "kling/kling-o1", task: "text-to-video", quality: "4k" })))).code, "REPLICATE_UNSUPPORTED_OPTION");
+  assert.equal((await errorOf(adapter.submit(ctx(fetch), request({ model: "kling/kling-3", task: "text-to-video", quality: "ultra" })))).code, "REPLICATE_UNSUPPORTED_OPTION");
 });
