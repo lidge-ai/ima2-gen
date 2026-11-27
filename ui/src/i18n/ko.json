@@ -153,7 +153,7 @@
     "blockKey": "{provider} API 키를 넣어야 생성할 수 있어요.",
     "estimate": {
       "usage": "사용량에 따라 청구",
-      "usageNote": "{provider}는 이 모델을 {unit} 단위로 청구해서 금액이 결과물에 따라 달라져요. 아래 가격표를 확인해 주세요.",
+      "usageNote": "이 모델은 {provider}에서 {unit} 단위로 청구돼서 금액이 결과물에 따라 달라져요. 아래 가격표를 확인해 주세요.",
       "hintUsage": "{model} · 사용량에 따라 청구",
       "label": "예상 비용",
       "basis": "가격 기준",
