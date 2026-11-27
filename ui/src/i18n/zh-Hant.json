@@ -179,6 +179,7 @@
       "basis": "計價依據",
       "unknown": "價格表中沒有",
       "basisSeconds": "{n} 秒 × {price}",
+      "basisCharacters": "{n} 個字元 × {price}",
       "rangeNote": "此模型的價格表有多個級距，實際費用取決於此畫面未設定的選項。",
       "unpricedNote": "{provider} 未公布此模型的價格，請在其主控台查看費用。",
       "localNote": "透過 {provider} 在本機執行，沒有服務商費用。",

@@ -4,19 +4,23 @@ import { MediaJobError } from "../lib/providers/media/errors.js";
 import { estimateMediaJob } from "../lib/providers/media/estimate.js";
 import type { MediaRunnerDeps } from "../lib/providers/media/runner.js";
 import { buildMediaToolDescriptors, MEDIA_TOOL_SCHEMA_VERSION, workflowValuesSchema, type WorkflowSchemaSource } from "../lib/providers/media/toolSchema.js";
-import { parseMediaJobBody } from "../lib/providers/media/validate.js";
+import { MAX_PROMPT_CHARS, parseMediaJobBody } from "../lib/providers/media/validate.js";
 import { WORKFLOWS } from "../lib/workflows/index.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { mediaRunnerDeps, sendMediaError } from "./media.js";
 
-function parseEstimateBody(raw: unknown) {
+/** The POST /api/media body plus the two estimate-only fields: priceVariant names a row, characters is the length of the text. */
+export function parseEstimateBody(raw: unknown) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return parseMediaJobBody(raw);
-  const { priceVariant, ...rest } = raw as Record<string, unknown>;
+  const { priceVariant, characters, ...rest } = raw as Record<string, unknown>;
+  if (characters !== undefined && characters !== null && (typeof characters !== "number" || !Number.isInteger(characters) || characters < 0 || characters > MAX_PROMPT_CHARS)) {
+    throw new MediaJobError("MEDIA_INVALID_REQUEST", "characters must be a whole number from 0 to " + String(MAX_PROMPT_CHARS));
+  }
   if (priceVariant !== undefined && priceVariant !== null && priceVariant !== "" && (typeof priceVariant !== "string" || priceVariant.length > 200)) {
     throw new MediaJobError("MEDIA_INVALID_REQUEST", "priceVariant must be a string up to 200 characters");
   }
   const body = parseMediaJobBody(rest);
-  return typeof priceVariant === "string" && priceVariant !== "" ? { ...body, priceVariant } : body;
+  return { ...body, ...(typeof priceVariant === "string" && priceVariant !== "" ? { priceVariant } : {}), ...(typeof characters === "number" ? { characters } : {}) };
 }
 
 export function registerMediaToolRoutes(app: Express, ctxRaw: RouteRuntimeContext, options: { workflows?: readonly WorkflowSchemaSource[]; deps?: Partial<MediaRunnerDeps> } = {}) {

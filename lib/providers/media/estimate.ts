@@ -44,7 +44,7 @@ function noteFor(quote: MediaQuote<MediaPrice>, prices: readonly MediaPrice[], u
   return undefined;
 }
 
-export function estimateMediaJob(registry: MediaRegistry, keys: MediaKeySnapshot, body: MediaJobBody & { priceVariant?: string }): MediaEstimate {
+export function estimateMediaJob(registry: MediaRegistry, keys: MediaKeySnapshot, body: MediaJobBody & { priceVariant?: string; characters?: number }): MediaEstimate {
   const model = registry.getModel(body.model);
   const options = { modelId: body.model, adapterId: body.adapter, task: body.task, hasKey: (adapter: Parameters<MediaKeySnapshot["hasKey"]>[0]) => keys.hasKey(adapter) };
   let selection = selectMediaRoute(model, options);
@@ -67,12 +67,15 @@ export function estimateMediaJob(registry: MediaRegistry, keys: MediaKeySnapshot
   const quantity = unit === "second" ? durationSec ?? null : unit === "image" ? body.count ?? 1 : 1;
   // vendorOptions.quality is the older spelling of the same setting.
   const quality = body.quality ?? (typeof body.vendorOptions?.quality === "string" ? body.vendorOptions.quality : undefined);
+  const characters = body.characters ?? (body.prompt ? body.prompt.length : undefined);
   const named = body.priceVariant !== undefined ? namedQuote(spec.pricing, unit, quantity, body.priceVariant) : undefined;
   const quote = named?.quote ?? quoteFor({ pricing: spec.pricing, params: spec.params }, {
     kind: spec.kind, task: body.task,
     ...(body.resolution !== undefined ? { resolution: body.resolution } : {}), ...(quality !== undefined ? { quality } : {}),
     ...(body.audio !== undefined ? { audio: body.audio } : {}), ...(body.durationSec !== undefined ? { durationSec: body.durationSec } : {}),
     ...(body.count !== undefined ? { count: body.count } : {}),
+    // Speech is priced by the text: its length as the client counted it, else the prompt's.
+    ...(characters !== undefined ? { characters } : {}),
   });
   const note = named ? named.note : noteFor(quote, spec.pricing, unit, quantity);
   return { model: spec.id, adapter: adapter.id, route: adapter.route, hasKey: keys.hasKey(adapter), unit, quantity,

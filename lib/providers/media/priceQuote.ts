@@ -125,6 +125,8 @@ export interface QuoteRequest {
   quality?: string;
   audio?: boolean;
   durationSec?: number;
+  /** Length of the text a per-character route is sent (speech). */
+  characters?: number;
   /** Images asked for; one when absent. */
   count?: number;
 }
@@ -146,21 +148,53 @@ export function roundUsd(usd: number): number {
   return Math.ceil(Math.round(usd * 1_000_000) / 100) / 10_000;
 }
 
+/**
+ * How many units a usage-priced request is, when the request itself says: minutes from the requested
+ * length (by the second, not by the started minute) and characters as counted. null for megapixels and
+ * tokens, which depend on the output, and when the length or the text is not given.
+ */
+export function usageQuantity(unit: string, request: { durationSec?: number; characters?: number }): number | null {
+  if (unit === "minute") return request.durationSec !== undefined && request.durationSec > 0 ? request.durationSec / 60 : null;
+  if (unit === "character") return request.characters !== undefined && request.characters > 0 ? request.characters : null;
+  return null;
+}
+
+/** price x quantity for a usage unit, rounded like every estimate (roundUsd). Minutes are multiplied as seconds so 45 s of $0.15 is $0.1125 exactly. */
+export function usageUsd(unit: string, unitUsd: number, request: { durationSec?: number; characters?: number }): number | null {
+  const quantity = usageQuantity(unit, request);
+  if (quantity === null) return null;
+  return roundUsd(unit === "minute" ? (unitUsd * request.durationSec!) / 60 : unitUsd * quantity);
+}
+
+/** A per-minute or per-character price with a known amount is a figure; otherwise the answer stays "usage". */
+function usageQuote<T extends PriceRow>(pricing: readonly T[], unit: string, want: PriceWant, request: QuoteRequest): MediaQuote<T> {
+  const amount = { ...(request.durationSec !== undefined ? { durationSec: request.durationSec } : {}), ...(request.characters !== undefined ? { characters: request.characters } : {}) };
+  const quantity = usageQuantity(unit, amount);
+  if (quantity === null) return { state: "usage", unit };
+  // The length is the amount here, not a way to tell rows apart.
+  const { durationSec: _length, ...rows } = want;
+  const pick = pickPrice(pricing, unit, rows);
+  const shown = Math.round(quantity * 10_000) / 10_000;
+  if (pick.price) return { state: pick.floor ? "from" : "exact", usd: usageUsd(unit, pick.price.usd, amount)!, unit, quantity: shown, price: pick.price };
+  if (pick.range) return { state: "range", min: usageUsd(unit, pick.range.min, amount)!, max: usageUsd(unit, pick.range.max, amount)!, unit, quantity: shown };
+  return { state: "usage", unit };
+}
+
 /** What the published prices say this request costs. One image and the route's default clip length are assumed when not given. */
 export function quoteFor<T extends PriceRow>(route: { pricing: readonly T[]; params?: { qualities?: readonly string[]; durationsSec?: readonly number[] } }, request: QuoteRequest): MediaQuote<T> {
   if (route.pricing.length === 0) return { state: "unpriced" };
   const unit = quoteUnit(request.kind, route.pricing);
   const durationSec = request.durationSec ?? (request.kind === "image" ? undefined : defaultDuration(route.params?.durationsSec));
   const quantity = unit === "second" ? durationSec ?? null : unit === "image" ? request.count ?? 1 : 1;
-  if (!route.pricing.some((price) => price.unit === unit)) {
-    const usage = route.pricing.find((price) => USAGE_UNITS.includes(price.unit));
-    if (usage) return { state: "usage", unit: usage.unit };
-  }
   const want: PriceWant = { task: request.task };
   if (request.quality !== undefined && route.params?.qualities?.length) { want.quality = request.quality; want.qualities = route.params.qualities; }
   if (request.resolution !== undefined) want.resolution = request.resolution;
   if (request.audio !== undefined) want.audio = request.audio;
   if (durationSec !== undefined) want.durationSec = durationSec;
+  if (!route.pricing.some((price) => price.unit === unit)) {
+    const usage = route.pricing.find((price) => USAGE_UNITS.includes(price.unit));
+    if (usage) return usageQuote(route.pricing, usage.unit, want, request);
+  }
   const pick = pickPrice(route.pricing, unit, want);
   if (quantity === null || (!pick.price && !pick.range)) return { state: "unknown" };
   if (pick.price) return { state: pick.floor ? "from" : "exact", usd: roundUsd(pick.price.usd * quantity), unit, quantity, price: pick.price };

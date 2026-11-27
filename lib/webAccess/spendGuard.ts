@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { atomicWriteJson } from "../atomicWrite.js";
 import { MediaJobError } from "../providers/media/errors.js";
 import type { MediaModelSpec, MediaPrice, MediaSubmitRequest } from "../providers/media/contract.js";
-import { pickPrice } from "../providers/media/priceQuote.js";
+import { pickPrice, usageQuantity, usageUsd } from "../providers/media/priceQuote.js";
 
 /**
  * Instance-wide spend guard for the shared-key web deployment. Every admitted
@@ -28,11 +28,13 @@ function quantityFor(unit: MediaPrice["unit"], spec: MediaModelSpec, request: Me
     const longest = Math.max(0, ...(spec.params.durationsSec ?? []));
     return longest > 0 ? { quantity: longest, exact: false } : null;
   }
-  if (unit === "minute" && typeof request.durationSec === "number" && request.durationSec > 0) {
-    return { quantity: Math.ceil(request.durationSec / 60), exact: true };
-  }
-  if (unit === "character" && typeof request.prompt === "string" && request.prompt.length > 0) return { quantity: request.prompt.length, exact: true };
-  return null;
+  // Minutes and characters: the same amount the estimate route quotes (priceQuote.usageQuantity).
+  const quantity = usageQuantity(unit, usageAmount(request));
+  return quantity === null ? null : { quantity, exact: true };
+}
+
+function usageAmount(request: MediaSubmitRequest): { durationSec?: number; characters?: number } {
+  return { ...(typeof request.durationSec === "number" ? { durationSec: request.durationSec } : {}), ...(typeof request.prompt === "string" ? { characters: request.prompt.length } : {}) };
 }
 
 /** The request's quality, sent as a top-level field (vendorOptions.quality is the older spelling). */
@@ -63,7 +65,8 @@ export function estimateMediaUsd(spec: MediaModelSpec, request: MediaSubmitReque
     });
     const usd = pick.price ? pick.price.usd : pick.range ? pick.range.max : Math.max(...prices.map((p) => p.usd));
     const basis = !pick.price || !qty.exact ? "upper-bound" : pick.floor ? "estimate" : "exact";
-    return { usd: round(usd * qty.quantity), basis };
+    // A per-minute or per-character charge is the figure the estimate shows, rounded the same way.
+    return { usd: usageUsd(unit, usd, usageAmount(request)) ?? round(usd * qty.quantity), basis };
   }
   return { usd: null, basis: "upper-bound" };
 }
