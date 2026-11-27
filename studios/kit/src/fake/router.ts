@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { makeCatalog, wireCatalog } from "./catalog.ts";
 import { workflows, estimateWorkflow } from "./workflows.ts";
 import { fakeShowcase } from "./showcase.ts";
+import { fakeResultGraph } from "./comfyGraph.ts";
 import type { Jobs } from "./jobs.ts";
 import { fixture } from "./media.ts";
 import type { Keys } from "./keys.ts";
@@ -353,6 +354,12 @@ async function dispatchOther(
   const method = req.method;
   if (p[1] === "history") {
     await history(req, res, p, url, jobs);
+    return;
+  }
+  if (method === "GET" && url.pathname === "/api/comfy/result-graph") {
+    const answer = fakeResultGraph(jobs.history.items, url.searchParams.get("filename"));
+    if (!answer.ok) throw new Fault(answer.status, answer.code, answer.message);
+    send(res, 200, { ok: true, ...answer.body });
     return;
   }
   if (method === "GET" && url.pathname === "/api/workflows") {

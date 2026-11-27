@@ -9,6 +9,7 @@ import { restoreDraft } from "../studio/draft.ts";
 import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
+import { ComfyGraphButton } from "./ComfyGraphButton.tsx";
 
 const M = messages(
   { animate: "Animate", edit: "Edit", remix: "Remix", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
@@ -100,6 +101,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
           <Icon name={r.icon} size={15} /> {t(r.label)}
         </button>
       ))}
+      <ComfyGraphButton key={item.historyId} item={item} />
       <button type="button" className="btn btn-danger" onClick={() => void actions.remove()}>
         <Icon name="trash" size={15} /> {t("delete")}
       </button>

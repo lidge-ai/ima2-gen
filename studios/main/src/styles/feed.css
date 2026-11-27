@@ -305,6 +305,18 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+.lightbox-note {
+  flex-basis: 100%;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+.lightbox-note p {
+  margin: 0;
+}
 
 .gallery {
   display: grid;

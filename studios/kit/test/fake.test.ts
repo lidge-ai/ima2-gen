@@ -312,6 +312,26 @@ test("a ComfyUI workflow runs on this computer: no key, no price, a run time, an
   });
 });
 
+test("a saved result is answered as a ComfyUI graph, or with the reason there is none", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    const make = async (model: string, prompt: string) => {
+      const done = await client.watchJob((await client.media.submit({ model, task: "text-to-image", prompt, inputs: [] })).jobId);
+      return done.outputs[0]!.historyId!;
+    };
+    const local = await client.comfy.resultGraph(await make("comfy/klein", "a fox"));
+    assert.equal(local.source, "comfy-history");
+    assert.equal((local.graph["6"] as { inputs: { text: string } }).inputs.text, "a fox");
+    const paid = await client.comfy.resultGraph(await make("openai/gpt-image-2", "a heron"));
+    assert.equal(paid.source, "ima2-node");
+    assert.deepEqual((paid.graph["1"] as { class_type: string; inputs: Record<string, unknown> }).inputs, { model: "openai/gpt-image-2", prompt: "a heron", max_usd: 0, seed: 0, send_seed: "no" });
+    assert.match(paid.notes.join(" "), /max_usd is 0/);
+    const gone = await make("comfy/klein", "[graph:gone] a fox");
+    await assert.rejects(() => client.comfy.resultGraph(gone), (error: unknown) =>
+      error instanceof StudioApiError && error.status === 409 && error.code === "COMFY_GRAPH_UNAVAILABLE" && /no longer has job/.test(error.message));
+    await assert.rejects(() => client.comfy.resultGraph("nope.png"), (error: unknown) => error instanceof StudioApiError && error.code === "COMFY_RESULT_NOT_FOUND");
+  });
+});
+
 test("voices need a key, and a voice's sample address plays", async () => {
   await withServer({}, async ({ client, url }) => {
     await client.keys.remove("elevenlabs").catch(() => undefined);
