@@ -62,10 +62,11 @@ if (check) {
   const existing = existsSync(outPath) ? readFileSync(outPath, "utf8").replace(/\r\n/g, "\n") : null;
   if (existing !== output) {
     console.error(`${outPath} is stale. Run: node scripts/classify-tests.mjs`);
-    const listed = new Set([...(existing ?? "").matchAll(/^- \`(tests\/[^\`]+)\`$/gm)].map((match) => match[1]));
+    const listed = new Set([...(existing ?? "").matchAll(/^- `(tests\/[^`]+)`$/gm)].map((match) => match[1]));
     const present = new Set(files.map((file) => join(testDir, file)));
     for (const path of present) if (!listed.has(path)) console.error(`  not listed: ${path}`);
     for (const path of listed) if (!present.has(path)) console.error(`  listed but gone: ${path}`);
+    if ([...present].every((path) => listed.has(path)) && [...listed].every((path) => present.has(path))) console.error("  every file is listed; one is under the wrong heading or the lines are out of order");
     process.exit(1);
   }
   console.log(`${outPath} is current: ${counts}.`);
