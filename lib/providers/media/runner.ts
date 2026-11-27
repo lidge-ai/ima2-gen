@@ -1,5 +1,6 @@
 import type { MediaAdapterContext, MediaInput, MediaJobRef, MediaProviderAdapter, MediaSubmitRequest } from "./contract.js";
 import { MediaKeySnapshot, credentialReady } from "./credentials.js";
+import { declaredResultOptions } from "./resultOptions.js";
 import { MediaJobError, mediaJobErrorFromProvider } from "./errors.js";
 import { resolveMediaInputRef } from "./inputs.js";
 import { redactDeep, redactSecrets } from "./redact.js";
@@ -73,6 +74,7 @@ async function uploadInputs(adapter: MediaProviderAdapter, actx: MediaAdapterCon
 function sidecar(prepared: PreparedMediaJob, opts: MediaLaunchOptions, job: MediaJobRef, elapsed: number, billed?: MediaJobResult["billed"]): Record<string, unknown> {
   const { adapter, spec, request } = prepared;
   const inputRoles = request.inputs.map((i) => i.role);
+  const options = declaredResultOptions(spec, request);
   return {
     kind: spec.kind, mediaType: spec.kind, generator: "media", provider: `media:${adapter.id}`,
     model: spec.id, upstreamModel: spec.upstreamId, vendor: spec.vendor, adapter: adapter.id, route: adapter.route,
@@ -81,7 +83,9 @@ function sidecar(prepared: PreparedMediaJob, opts: MediaLaunchOptions, job: Medi
     createdAt: Date.now(), elapsed, providerJobId: job.providerJobId,
     media: { task: request.task, durationSec: request.durationSec ?? null, resolution: request.resolution ?? null,
       aspectRatio: request.aspectRatio ?? null, seed: request.seed ?? null, audio: request.audio ?? null, inputRoles,
-      ...(request.quality ? { quality: request.quality } : {}) },
+      ...(request.quality ? { quality: request.quality } : {}),
+      // Declared switches, choices and the voice id only, so the result can be made again as it was.
+      ...(options ? { options } : {}) },
     ...(spec.kind === "video" ? { video: { mode: request.task, duration: request.durationSec ?? null, resolution: request.resolution ?? null, aspectRatio: request.aspectRatio ?? null } } : {}),
     // What the provider reported charging, and what the published prices predicted at submit.
     ...(billed ? { billed } : {}),

@@ -148,7 +148,9 @@ export function VoicePicker({ option, route, ready, selection, update }: { optio
   const value = typeof selection.options?.[option.name] === "string" ? selection.options[option.name] as string : undefined;
   const [open, setOpen] = useState(value === undefined);
   useEffect(() => { if (value === undefined) setOpen(true); }, [value, route.adapter]);
-  const { load, retry } = useVoices(route.adapter, ready && open);
+  // A voice restored from a result is an id without a name: the list is read to show the name.
+  const { load, retry } = useVoices(route.adapter, ready && (open || (value !== undefined && !selection.voiceName)));
+  const listed = load.status === "ready" && value !== undefined ? load.voices.find((voice) => voice.id === value)?.name : undefined;
   const pick = (voice: MediaVoice) => {
     update({ ...selection, options: { ...selection.options, [option.name]: voice.id }, voiceName: voice.name });
     setOpen(false);
@@ -159,7 +161,7 @@ export function VoicePicker({ option, route, ready, selection, update }: { optio
       {!ready ? <p className="media-inputs" role="status">{t("mediaPicker.voice.needsKey", { provider: route.label })}</p> : (
         <>
           <button type="button" className="option-btn media-voice__current" aria-expanded={open} onClick={() => setOpen(!open)}>
-            <span>{value === undefined ? t("mediaPicker.voice.choose") : selection.voiceName ?? value}</span>
+            <span>{value === undefined ? t("mediaPicker.voice.choose") : selection.voiceName ?? listed ?? value}</span>
             {value === undefined ? null : <span className="media-voice__change">{t(open ? "mediaPicker.close" : "mediaPicker.voice.change")}</span>}
           </button>
           {open && load.status === "loading" ? <p className="media-inputs" role="status">{t("mediaPicker.voice.loading")}</p> : null}

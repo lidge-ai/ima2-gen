@@ -177,6 +177,7 @@
       "basis": "Price basis",
       "unknown": "Not in the price list",
       "basisSeconds": "{n} s × {price}",
+      "basisCharacters": "{n} characters × {price}",
       "rangeNote": "The price list has several tiers for this model; the charge depends on an option this screen does not set.",
       "unpricedNote": "{provider} publishes no price for this model. Check the charge in its console.",
       "localNote": "Runs on your own machine through {provider}. No provider bills this.",

@@ -14,6 +14,8 @@ export interface MediaResultSettings {
   seed?: number | null;
   audio?: boolean | null;
   inputRoles?: readonly string[] | null;
+  /** The declared option values the job was sent with (a voice id, switches, listed choices). Absent on results made before the server kept them. */
+  options?: Readonly<Record<string, unknown>> | null;
 }
 export interface MediaResultFacts {
   provider?: string | null;
@@ -57,7 +59,8 @@ export type RemakePlan =
  * The selection that makes this result again: the same model, the same route pinned, and the settings
  * it was made with, re-checked against today's catalog. A route the catalog no longer lists falls back
  * to Automatic and the change is reported with the rest. Input images are not kept with a result, so
- * a result made from images asks for them again; a voice is not kept either, so speech asks for one.
+ * a result made from images asks for them again. The voice comes back with the other options when the
+ * result recorded them; an older speech result asks for one.
  */
 export function remakePlan(item: MediaResultFacts, models: readonly MediaModel[]): RemakePlan {
   if (!isMediaResult(item)) return { ok: false, reason: "not-media" };
@@ -78,6 +81,8 @@ export function remakePlan(item: MediaResultFacts, models: readonly MediaModel[]
   if (typeof settings.aspectRatio === "string") made.aspectRatio = settings.aspectRatio;
   if (typeof settings.seed === "number") made.seed = settings.seed;
   if (typeof settings.audio === "boolean") made.audio = settings.audio;
+  const options = Object.entries(settings.options ?? {}).filter((entry): entry is [string, string | boolean] => typeof entry[1] === "boolean" || (typeof entry[1] === "string" && entry[1] !== ""));
+  if (options.length > 0) made.options = Object.fromEntries(options);
   const pinned = stillListed && resolved.route.adapter === adapter;
   const next = reconcileSelection(model, resolved.route, task, made, pinned ? "pinned" : "auto");
   const voiceNeeded = formProblem(resolved.route, next.selection)?.code === "voice";

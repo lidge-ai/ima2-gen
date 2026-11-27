@@ -177,6 +177,7 @@
       "basis": "计价依据",
       "unknown": "价格表中没有",
       "basisSeconds": "{n} 秒 × {price}",
+      "basisCharacters": "{n} 个字符 × {price}",
       "rangeNote": "此模型的价格表有多个档位，实际费用取决于此界面未设置的选项。",
       "unpricedNote": "{provider} 未公布此模型的价格，请在其控制台查看费用。",
       "localNote": "通过 {provider} 在本机运行，没有服务商费用。",
