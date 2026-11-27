@@ -66,7 +66,9 @@ export async function startFakeComfy(options: FakeComfyOptions = {}): Promise<Fa
 
   const send = (res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) => {
     const payload = Buffer.isBuffer(body) ? body : Buffer.from(body === undefined ? "" : JSON.stringify(body));
-    res.writeHead(status, { "Content-Type": Buffer.isBuffer(body) ? "image/png" : "application/json", ...headers });
+    // One request per connection: a later fixture can be handed the port of one that just closed (seen on
+    // Windows), and a client that kept a socket to the old one would fail its first request to the new one.
+    res.writeHead(status, { "Content-Type": Buffer.isBuffer(body) ? "image/png" : "application/json", Connection: "close", ...headers });
     res.end(payload);
   };
   const authorized = (req: IncomingMessage) => !options.token || req.headers.authorization === "Bearer " + options.token;
