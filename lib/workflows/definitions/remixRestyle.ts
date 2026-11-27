@@ -2,7 +2,7 @@ import type { LocalStep, MediaStep, ModelSlot, ResolvedSlot, WorkflowDefinition,
 import { checkRemixFit, finishRemix, REMIX_FIELDS_TAIL, renderSlot, renderStep, sourceOf, sourceVideoField } from "./remixShared.js";
 import { joinPrompt, option, refsOf, textOf } from "./shared.js";
 import { checkReferenceLimit } from "../validate.js";
-import { STYLE_PRESETS } from "./styles.js";
+import { KEEP_PEOPLE, STYLE_PRESETS } from "./styles.js";
 
 const STYLIZE_SLOT: ModelSlot = {
   name: "stylize", label: "Restyle the first frame", task: "image-to-image",
@@ -31,6 +31,7 @@ function stylePrompt(values: WorkflowValues): string {
   const plate = refsOf(values, "styleImage").length > 0;
   return joinPrompt(
     "Redraw image 1 in a new visual style. Keep its composition, framing, poses, and every person and object in place.",
+    KEEP_PEOPLE,
     preset ? "Style: " + preset.prompt : undefined,
     plate ? "Match the look of image 2: medium, palette, line and texture." : undefined,
     textOf(values, "prompt"),
@@ -54,7 +55,7 @@ function stylizeStep(slot: ResolvedSlot, values: WorkflowValues): MediaStep {
 }
 
 const RENDER_INSTRUCTION = "Edit the source video so the whole clip takes the look of image 1, which is its first frame redrawn in the target style. "
-  + "Keep the source's motion, timing, camera movement and composition; change only the rendering style.";
+  + "Keep the source's motion, timing, camera movement and composition; change only the rendering style. " + KEEP_PEOPLE;
 
 export const remixRestyle: WorkflowDefinition = {
   id: "remix-restyle",

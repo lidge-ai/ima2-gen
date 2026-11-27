@@ -6,6 +6,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { adaptFetchAssignmentsForNativeOAuth } from "./_oauthNativeFixture.ts";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 // GPT OAuth plans then renders; keep this file's one-call image fixtures (see the helper).
 adaptFetchAssignmentsForNativeOAuth();
@@ -15,11 +16,10 @@ process.env.IMA2_CONFIG_DIR = TEST_DIR;
 process.env.IMA2_DB_PATH = join(TEST_DIR, "sessions.db");
 
 const { registerAgentRoutes } = await import("../routes/agent.ts");
-const db = await import("../lib/db.ts");
 const originalFetch = globalThis.fetch;
 
 afterEach(() => { globalThis.fetch = originalFetch; });
-after(() => { db.closeDb(); rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
+after(async () => { await releaseDatabase(); rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 function sseResponse(events: unknown[]) {
   const encoder = new TextEncoder();

@@ -82,3 +82,24 @@ test("concurrent admissions cannot overshoot the daily cap", async t => {
   assert.equal(results.filter(r => r.status === "fulfilled").length, 3);
   assert.equal((await guard.status()).spentUsd, 0.9);
 });
+
+test("the request's quality (top-level field) picks its own price row, whatever the provider calls it", () => {
+  // Classic UI and the studio send quality as a top-level field.
+  assert.deepEqual(estimateMediaUsd(imageSpec, req({ resolution: "1K", quality: "low" })), { usd: 0.006, basis: "exact" });
+  assert.deepEqual(estimateMediaUsd(imageSpec, req({ resolution: "1K", quality: "high" })), { usd: 0.2108, basis: "exact" });
+  const turbo = { ...imageSpec, id: "ideogram/ideogram-v3", pricing: [
+    { unit: "image", usd: 0.03, variant: "turbo", ...source }, { unit: "image", usd: 0.06, variant: "default", ...source }, { unit: "image", usd: 0.09, variant: "quality", ...source },
+  ] } as unknown as MediaModelSpec;
+  assert.deepEqual(estimateMediaUsd(turbo, req({ quality: "turbo" })), { usd: 0.03, basis: "exact" });
+  const upper = { ...turbo, pricing: [{ unit: "image", usd: 0.03, variant: "TURBO", ...source }, { unit: "image", usd: 0.09, variant: "QUALITY", ...source }] } as unknown as MediaModelSpec;
+  assert.deepEqual(estimateMediaUsd(upper, req({ quality: "turbo" })), { usd: 0.03, basis: "exact" });
+  const byTask = { ...imageSpec, id: "ideogram/ideogram-v4.5", tasks: ["text-to-image", "image-to-image"], pricing: [
+    { unit: "image", usd: 0.03, variant: "text-to-image:low", ...source }, { unit: "image", usd: 0.1, variant: "text-to-image:high", ...source },
+    { unit: "image", usd: 0.008, variant: "image-to-image:very_low", ...source }, { unit: "image", usd: 0.22, variant: "image-to-image:high", ...source },
+  ] } as unknown as MediaModelSpec;
+  assert.deepEqual(estimateMediaUsd(byTask, req({ quality: "low" })), { usd: 0.03, basis: "exact" });
+  assert.deepEqual(estimateMediaUsd(byTask, req({ task: "image-to-image", quality: "very_low" })), { usd: 0.008, basis: "exact" });
+  // A quality with no published row, or a row naming something the request does not say, is never guessed.
+  assert.deepEqual(estimateMediaUsd(imageSpec, req({ resolution: "1K", quality: "ultra" })), { usd: 0.2108, basis: "upper-bound" });
+  assert.deepEqual(estimateMediaUsd(imageSpec, req({ quality: "low" })), { usd: 0.2108, basis: "upper-bound" });
+});
