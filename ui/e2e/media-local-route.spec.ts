@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { openCreateScreen, openStaticApp, type StaticLocale } from "./fixtures/staticClassicApp";
+import { MODEL_CONTROL, openCreateScreen, openStaticApp, type StaticLocale } from "./fixtures/staticClassicApp";
 
 // A model that runs on the user's own machine (route "local"): the classic studio says where it runs,
 // that it needs no key and that no provider charges for it, instead of "no published price".
@@ -13,7 +13,7 @@ const card = (page: Page) => page.locator("#right-panel-tab-settings .media-card
 const SHOTS = process.env.L13_SHOTS;
 
 async function pickLocal(page: Page): Promise<void> {
-  await card(page).locator(".media-picker__open").first().click();
+  await page.locator(MODEL_CONTROL).click();
   const row = dialog(page).locator('.media-row[data-model="' + MODEL + '"]');
   // The output tabs are named in the page's language; the image tab is the one that lists this model.
   const tabs = dialog(page).locator(".media-tabs").first().locator("button");
@@ -56,11 +56,14 @@ for (const locale of ["en", "ko"] as const) {
       const app = await open(browser, locale, viewport);
       try {
         await pickLocal(app.page);
-        const estimate = card(app.page).locator(".media-estimate");
-        await expect(estimate).toBeVisible();
-        await estimate.scrollIntoViewIfNeeded();
-        const box = await card(app.page).boundingBox();
-        expect(box && box.x >= 0 && box.x + box.width <= viewport.width + 1, "the card stays inside the viewport").toBeTruthy();
+        // The line beside Generate is on every width; the settings card is a side panel on wide screens only.
+        await expect(app.page.locator(".generate-row__media:visible")).toContainText("FLUX.2 klein (my workflow)");
+        if (viewport.width >= 1024) {
+          const estimate = card(app.page).locator(".media-estimate");
+          await expect(estimate).toBeVisible();
+          await estimate.scrollIntoViewIfNeeded();
+        }
+        expect(await app.page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), "no sideways scroll").toBe(true);
         const name = "local-route-" + locale + "-" + String(viewport.width) + ".png";
         await app.page.screenshot({ path: info.outputPath(name) });
         if (SHOTS) { mkdirSync(SHOTS, { recursive: true }); await app.page.screenshot({ path: join(SHOTS, name) }); }
