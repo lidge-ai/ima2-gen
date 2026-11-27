@@ -3,7 +3,7 @@ import type { WorkflowDef } from "@ima2/studio-kit";
 import { messages, tr, useT } from "../../i18n.ts";
 import { PRESETS, type Preset } from "../../data/presets.ts";
 import { useStudio } from "../../studio/context.tsx";
-import { handOffFile, takeHandOff } from "../../studio/handoff.ts";
+import { handOffFile, takeHandOff, watchHandOff } from "../../studio/handoff.ts";
 import { Feed } from "../../ui/Feed.tsx";
 import { Showcase } from "../../ui/Showcase.tsx";
 import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workflow/WorkflowFields.tsx";
@@ -142,23 +142,27 @@ function useRemixHandOff(form: WorkflowForm) {
   useEffect(() => {
     const input = form.def.inputs.find((entry) => entry.kind === "video");
     if (!input) return;
-    const handoff = takeHandOff("remix");
-    if (!handoff) return;
-    // A showcase "make one like this" also carries the example's field values.
-    for (const [name, value] of Object.entries(handoff.values ?? {})) {
-      if (form.def.inputs.some((entry) => entry.kind === "text" && entry.name === name))
-        form.setTexts((old) => ({ ...old, [name]: String(value) }));
-      else if (form.def.params.some((param) => param.name === name)) form.setParams((old) => ({ ...old, [name]: value }));
-    }
-    void handOffFile(handoff)
-      .then((file) => form.studio.upload(file))
-      .then((upload) => {
-        form.setFiles((old) => ({
-          ...old,
-          [input.name]: [{ role: input.role ?? "source-video", upload, name: handoff.name }],
-        }));
-      })
-      .catch((err: unknown) => form.setError(err instanceof Error ? err.message : tr(M, "videoFailed")));
+    // Also listens while open: "Remix" on a result in this screen's history sends it here.
+    return watchHandOff(() => {
+      const handoff = takeHandOff("remix", form.def.id);
+      if (!handoff) return false;
+      // A showcase "make one like this" also carries the example's field values.
+      for (const [name, value] of Object.entries(handoff.values ?? {})) {
+        if (form.def.inputs.some((entry) => entry.kind === "text" && entry.name === name))
+          form.setTexts((old) => ({ ...old, [name]: String(value) }));
+        else if (form.def.params.some((param) => param.name === name)) form.setParams((old) => ({ ...old, [name]: value }));
+      }
+      void handOffFile(handoff)
+        .then((file) => form.studio.upload(file))
+        .then((upload) => {
+          form.setFiles((old) => ({
+            ...old,
+            [input.name]: [{ role: input.role ?? "source-video", upload, name: handoff.name }],
+          }));
+        })
+        .catch((err: unknown) => form.setError(err instanceof Error ? err.message : tr(M, "videoFailed")));
+      return true;
+    });
   }, [form.def, form.studio, form.setFiles, form.setError, form.setTexts, form.setParams]);
 }
 

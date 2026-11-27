@@ -191,6 +191,11 @@ export function ImageDock({ catalog, form, set }: Props) {
           {create.error}
         </p>
       ) : null}
+      {form.notice ? (
+        <p className="form-error" role="alert">
+          {form.notice}
+        </p>
+      ) : null}
       {!create.canSend && !create.sending ? <p className="form-hint">{create.blocked ?? (create.choice.kind === "needs-key" ? t("nokey") : t("unavailable"))}</p> : null}
       <div className="dock-main">
         <DockFields catalog={catalog} form={form} set={set} create={create} />
