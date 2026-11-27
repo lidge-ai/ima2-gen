@@ -504,6 +504,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/event-channel-replay-gap.test.ts`
 - `tests/execution-network-isolation.test.ts`
 - `tests/execution-process-isolation.test.ts`
+- `tests/fetchable-test-ports.test.ts`
 - `tests/frame-extraction-fallback.test.ts`
 - `tests/frontend-connection-state-contract.test.ts`
 - `tests/frontend-sse-risk-contract.test.ts`
