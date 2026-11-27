@@ -128,6 +128,8 @@ test("edit video: a model no route here can edit is named instead of being swapp
   await page.goto("/#/video?mode=edit&model=bytedance%2Fseedance-2-mini");
   await expect(page.getByRole("status").filter({ hasText: "Seedance 2.0 Mini has no route this form can run yet" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Model: / })).not.toContainText("Mini");
+  await page.goto("about:blank");
   await page.goto("/#/video?mode=edit&model=xai%2Fgrok-imagine-video");
+  await expect(page.getByRole("button", { name: /^Model: / })).toContainText("Grok Imagine Video");
   await expect(page.getByText("has no route this form can run yet")).toHaveCount(0);
 });
