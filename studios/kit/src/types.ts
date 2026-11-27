@@ -269,6 +269,16 @@ export interface WorkflowText {
   slots?: Readonly<Record<string, string>>;
   /** Translated slot descriptions, keyed by slot name. */
   slotDescriptions?: Readonly<Record<string, string>>;
+  /** Translated preset text; losses align by index with WorkflowPreset.losses. */
+  preset?: { label?: string; losses?: readonly (string | null)[]; billingNote?: string };
+}
+
+/** A variant that trades quality for running on particular accounts (e.g. subscriptions only). */
+export interface WorkflowPreset {
+  label: string;
+  /** What the result gives up compared with the full workflow. */
+  losses: readonly { aspect: string; detail: string }[];
+  billingNote?: string;
 }
 
 export interface WorkflowDef {
@@ -281,6 +291,7 @@ export interface WorkflowDef {
   inputs: readonly WorkflowInputSpec[];
   params: readonly WorkflowParamSpec[];
   steps: readonly WorkflowStepSpec[];
+  preset?: WorkflowPreset;
   /** Text in other languages as the server sent it; see localizeWorkflow. */
   i18n?: Readonly<Record<string, WorkflowText>>;
 }

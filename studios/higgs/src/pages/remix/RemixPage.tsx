@@ -10,11 +10,12 @@ import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workf
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
 import { useWorkflows } from "../../studio/workflows.ts";
+import { RUN_STYLES, RunStyles, baseOf, styleOf, variantId } from "./RunStyles.tsx";
 import "../../styles/remix.css";
 
 const M = messages(
-  { noVideo: "This workflow has no source video input", sampleUnavailable: "Sample clip is unavailable", sampleFailed: "Could not load sample clip", preview: "Preview unavailable", library: "Motion library", libraryHint: "Choose a clip to use as your source video.", categories: "Motion categories", all: "All", camera: "Camera", mood: "Mood", product: "Product", videoFailed: "Could not load video", slowPush: "Slow push", orbit: "Orbit", crane: "Crane up", handheld: "Handheld follow", rain: "Neon rain", turn: "Product turntable", motion: "Motion transfer", swap: "Object swap", restyle: "Restyle", workflow: "Remix workflow", runOn: "Run on", api: "API keys", subscription: "Subscription", apiHelp: "Uses your provider API keys and their usage-based prices.", subscriptionHelp: "Uses connected subscription routes. Grok billing is unverified; estimates show xAI API prices and charges may be separate.", views: "Remix views", history: "History", empty: "No remix results yet", emptyHint: "Generate a remix to see it here.", loadError: "Could not load workflows: {error}", none: "No remix workflows available", loading: "Loading remix workflows" },
-  { noVideo: "이 워크플로에는 원본 영상 입력이 없어요", sampleUnavailable: "샘플 영상을 사용할 수 없어요", sampleFailed: "샘플 영상을 불러오지 못했어요", preview: "미리보기를 사용할 수 없어요", library: "모션 라이브러리", libraryHint: "원본 영상으로 쓸 클립을 골라 주세요.", categories: "모션 카테고리", all: "전체", camera: "카메라", mood: "분위기", product: "제품", videoFailed: "영상을 불러오지 못했어요", slowPush: "천천히 다가가기", orbit: "주변 회전", crane: "위로 상승", handheld: "핸드헬드 추적", rain: "네온 비", turn: "제품 회전", motion: "동작 따라하기", swap: "사물 바꾸기", restyle: "스타일 바꾸기", workflow: "리믹스 워크플로", runOn: "실행 방식", api: "API 키", subscription: "구독", apiHelp: "내 제공업체 API 키를 사용하며 사용량에 따라 제공업체 요금이 청구돼요.", subscriptionHelp: "연결된 구독 경로를 사용해요. Grok 청구 방식은 확인되지 않았으며 예상 비용은 xAI API 가격 기준이에요. 별도 요금이 청구될 수 있어요.", views: "리믹스 화면", history: "기록", empty: "아직 리믹스 결과가 없어요", emptyHint: "리믹스를 생성하면 여기에 표시돼요.", loadError: "워크플로를 불러오지 못했어요: {error}", none: "사용할 수 있는 리믹스 워크플로가 없어요", loading: "리믹스 워크플로를 불러오는 중이에요" },
+  { noVideo: "This workflow has no source video input", sampleUnavailable: "Sample clip is unavailable", sampleFailed: "Could not load sample clip", preview: "Preview unavailable", library: "Motion library", libraryHint: "Choose a clip to use as your source video.", categories: "Motion categories", all: "All", camera: "Camera", mood: "Mood", product: "Product", videoFailed: "Could not load video", slowPush: "Slow push", orbit: "Orbit", crane: "Crane up", handheld: "Handheld follow", rain: "Neon rain", turn: "Product turntable", motion: "Motion transfer", swap: "Object swap", restyle: "Restyle", workflow: "Remix workflow", views: "Remix views", history: "History", empty: "No remix results yet", emptyHint: "Generate a remix to see it here.", loadError: "Could not load workflows: {error}", none: "No remix workflows available", loading: "Loading remix workflows" },
+  { noVideo: "이 워크플로에는 원본 영상 입력이 없어요", sampleUnavailable: "샘플 영상을 사용할 수 없어요", sampleFailed: "샘플 영상을 불러오지 못했어요", preview: "미리보기를 사용할 수 없어요", library: "모션 라이브러리", libraryHint: "원본 영상으로 쓸 클립을 골라 주세요.", categories: "모션 카테고리", all: "전체", camera: "카메라", mood: "분위기", product: "제품", videoFailed: "영상을 불러오지 못했어요", slowPush: "천천히 다가가기", orbit: "주변 회전", crane: "위로 상승", handheld: "핸드헬드 추적", rain: "네온 비", turn: "제품 회전", motion: "동작 따라하기", swap: "사물 바꾸기", restyle: "스타일 바꾸기", workflow: "리믹스 워크플로", views: "리믹스 화면", history: "기록", empty: "아직 리믹스 결과가 없어요", emptyHint: "리믹스를 생성하면 여기에 표시돼요.", loadError: "워크플로를 불러오지 못했어요: {error}", none: "사용할 수 있는 리믹스 워크플로가 없어요", loading: "리믹스 워크플로를 불러오는 중이에요" },
 );
 
 function useMotionSelection(form: WorkflowForm) {
@@ -170,38 +171,24 @@ const modes = [
 
 function RemixModes({ def, workflows }: { def: WorkflowDef; workflows: readonly WorkflowDef[] }) {
   const t = useT(M);
-  const base = def.id.replace(/-subscription$/, "");
-  const subscription = def.id.endsWith("-subscription");
+  const base = baseOf(def.id);
+  const style = styleOf(def.id);
   const has = (id: string) => workflows.some((item) => item.id === id);
+  // Switching what to remix keeps how it runs when that variant exists.
+  const target = (mode: string) =>
+    [variantId(mode, style), ...RUN_STYLES.map((s) => variantId(mode, s))].find(has) ?? mode;
   return (
     <>
       <nav className="remix-modes" aria-label={t("workflow")}>
         {modes
-          .filter((mode) => has(mode.id) || has(mode.id + "-subscription"))
+          .filter((mode) => RUN_STYLES.some((s) => has(variantId(mode.id, s))))
           .map((mode) => (
-            <a
-              key={mode.id}
-              href={`#/remix/${subscription && has(mode.id + "-subscription") ? mode.id + "-subscription" : has(mode.id) ? mode.id : mode.id + "-subscription"}`}
-              aria-current={mode.id === base ? "page" : undefined}
-            >
+            <a key={mode.id} href={`#/remix/${target(mode.id)}`} aria-current={mode.id === base ? "page" : undefined}>
               {t(mode.label as "motion" | "swap" | "restyle")}
             </a>
           ))}
       </nav>
-      {has(base) && has(base + "-subscription") ? (
-        <>
-        <span className="workflow-label">{t("runOn")}</span>
-        <nav className="remix-modes" aria-label={t("runOn")}>
-          <a href={`#/remix/${base}`} aria-current={!subscription ? "page" : undefined}>
-            {t("api")}
-          </a>
-          <a href={`#/remix/${base}-subscription`} aria-current={subscription ? "page" : undefined}>
-            {t("subscription")}
-          </a>
-        </nav>
-        <p className="form-hint">{t(subscription ? "subscriptionHelp" : "apiHelp")}</p>
-        </>
-      ) : null}
+      <RunStyles def={def} workflows={workflows} />
     </>
   );
 }

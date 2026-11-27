@@ -151,7 +151,7 @@ export interface WireWorkflow {
   fields: readonly WireField[];
   slots: readonly WireSlot[];
   tierField?: string;
-  preset?: unknown;
+  preset?: { label?: string; losses?: readonly { aspect?: string; detail?: string }[]; billingNote?: string };
   i18n?: Readonly<Record<string, WorkflowText>>;
 }
 
