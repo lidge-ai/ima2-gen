@@ -19,6 +19,8 @@ function adapterEntry(adapter: MediaProviderAdapter, keys: MediaKeySnapshot, log
     consoleUrl: cred.consoleUrl,
     keyPrefix: cred.keyPrefix ?? null,
     hasKey: keys.hasKey(adapter),
+    // A keyless lane has no entry on a key screen; clients list keys only for the others.
+    keyless: cred.keyless === true,
     keySource: resolved.source,
     maskedKey: resolved.apiKey ? maskKey(resolved.apiKey) : null,
     extraFields: (cred.extraFields ?? []).map((f) => ({
@@ -45,6 +47,7 @@ function modelEntry(model: MediaCatalogModel, keys: MediaKeySnapshot, logos: Ven
     pricing: spec.pricing,
     docsUrl: spec.docsUrl,
     hasKey: keys.hasKey(adapter),
+    keyless: adapter.credential.keyless === true,
   }));
   return {
     id: model.id,

@@ -113,7 +113,8 @@ function tool(name: string, title: string, description: string, inputSchema: Obj
 }
 
 const billedDescription = "BILLED: runs on the user's own provider key and is charged by that provider. Call media_estimate (or workflow_estimate) first. requestId is the job handle. Before submitting, ima2 checks whether it already knows this requestId (running, recent, or saved in history) and refuses it if so. The check is best-effort: it is not atomic with the submit and cannot see very old or pre-restart ids, so a retry can still create a second, separately billed job. Check media_job_status before retrying. If you cancel after the job was submitted, it keeps running; check media_job_status with your requestId.";
-const estimateOutput = { model: string, adapter: string, usd: { type: ["number", "null"] }, prices: { type: "array" }, quantity: { type: ["number", "null"] }, unit: string, note: string, route: string, hasKey: { type: "boolean" } };
+const estimateOutput = { model: string, adapter: string, usd: { type: ["number", "null"] }, prices: { type: "array" }, quantity: { type: ["number", "null"] }, unit: string, note: string, route: string, hasKey: { type: "boolean" },
+  local: { type: "object", properties: { expectedSec: { type: ["number", "null"] }, basis: string, mayBill: { type: "boolean" } } } };
 const jobOutput = { requestId: string, jobId: string, model: string, adapter: string, outputs: { type: "array" },
   filename: { type: ["string", "null"] }, url: { type: ["string", "null"] }, mediaType: { type: ["string", "null"] }, elapsed: { type: "number" } };
 const statusOutput = { job: { type: "object" }, pollAfterSeconds: { type: "number" }, timedOut: { type: "boolean" } };
