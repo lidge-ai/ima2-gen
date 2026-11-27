@@ -23,10 +23,16 @@ const POLL_MS = 10_000;
 /** A job id that cannot exist; the lookup tells a rejected key (401) from an accepted one (404). */
 const PROBE_JOB_ID = "00000000-0000-0000-0000-000000000000";
 
+/** https://api.veed.io/docs/api/post-v1-dubbing "Languages" (read 2026-11-27). */
+const DUBBING_LANGUAGES = "af ar as ast az be bg bn bs ca ceb cs cy da de el en es et fa fi fil fr ga gl gu ha he hi hr hu hy id is it ja jv ka kk kn ko ky lb ln lt lv mi mk ml mn mr ms mt my ne nl no ny oc or pa pl ps pt ro ru sd sk sl so sr sv sw ta te tg th tl tr uk ur uz vi yo yue zh".split(" ");
+
 const MODELS: readonly MediaModelSpec[] = [
   {
     id: "veed/veed-fabric-1.0", upstreamId: "fabric-1.0", vendor: "veed", label: "VEED Fabric 1.0",
-    kind: "video", tasks: ["avatar"], params: { resolutions: ["480p", "720p"] },
+    kind: "video", tasks: ["avatar"], params: {
+      resolutions: ["480p", "720p"],
+      inputs: [{ role: "source-image", min: 1, max: 1 }, { role: "source-audio", min: 1, max: 1, billedLength: true }],
+    },
     pricing: [
       { unit: "second", usd: 0.08, variant: "480p", source: PRICING, checkedAt: CHECKED },
       { unit: "second", usd: 0.15, variant: "720p", source: PRICING, checkedAt: CHECKED },
@@ -35,13 +41,22 @@ const MODELS: readonly MediaModelSpec[] = [
   },
   {
     id: "veed/veed-lipsync", upstreamId: "lipsync-2.0", vendor: "veed", label: "VEED Lipsync 2.0",
-    kind: "video", tasks: ["lipsync"], params: {},
+    kind: "video", tasks: ["lipsync"], params: {
+      inputs: [{ role: "source-video", min: 1, max: 1, billedLength: true }, { role: "source-audio", min: 1, max: 1, billedLength: true }],
+    },
     pricing: [{ unit: "second", usd: 0.07, source: PRICING, checkedAt: CHECKED }],
     docsUrl: "https://api.veed.io/docs/api/post-v1-lipsync-2-0",
   },
   {
     id: "veed/veed-dubbing", upstreamId: "dubbing", vendor: "veed", label: "VEED Dubbing",
-    kind: "video", tasks: ["dubbing"], params: {},
+    kind: "video", tasks: ["dubbing"], params: {
+      inputs: [{ role: "source-video", min: 1, max: 1, billedLength: true }],
+      options: [
+        { name: "target_language", type: "enum", values: DUBBING_LANGUAGES, required: true },
+        { name: "tier", type: "enum", values: ["standard", "pro"] },
+        { name: "source_language", type: "enum", values: ["auto", ...DUBBING_LANGUAGES] },
+      ],
+    },
     pricing: [
       { unit: "second", usd: 0.11, variant: "standard", source: PRICING, checkedAt: CHECKED },
       { unit: "second", usd: 0.18, variant: "pro", source: PRICING, checkedAt: CHECKED },
