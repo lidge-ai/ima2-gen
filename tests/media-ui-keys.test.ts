@@ -26,7 +26,9 @@ test("media status takes precedence and secret values stay absent", () => {
 
 // ── Keys, estimates and failures in the classic picker (L11) ──
 const { keyDraftProblem, keyEntrySupported, keySaveRequests } = await import("../ui/src/lib/mediaKeyEntry.js");
-const { estimateBody, pickPrice, quoteFor } = await import("../ui/src/lib/mediaEstimate.js");
+const { estimateBody } = await import("../ui/src/lib/mediaEstimate.js");
+// The price rule lives on the server; the UI shows the server's answer.
+const { pickPrice, quoteFor } = await import("../lib/providers/media/priceQuote.ts");
 const { buildMediaFailure, failureAction, failureCategory, parseMediaFailure } = await import("../ui/src/lib/mediaFailure.js");
 
 test("a key is checked with the provider before it is stored, and legacy vocabularies save extras on their own route", () => {
@@ -88,10 +90,11 @@ test("a quote multiplies the applicable row by the clip length, and says when it
   const image = { kind: "image" as const, model: "acme/still", adapter: "openai", task: "text-to-image" };
   assert.deepEqual(quoteFor({ pricing: [row(0.011, "low", "image"), row(0.167, "high", "image")] }, image), { state: "range", min: 0.011, max: 0.167, unit: "image", quantity: 1 });
   assert.deepEqual(quoteFor({ pricing: [row(0.05, undefined, "request")] }, selection), { state: "exact", usd: 0.05, unit: "request", quantity: 1, price: row(0.05, undefined, "request") });
-  assert.deepEqual(estimateBody({ ...selection, aspectRatio: "16:9", audio: true, seed: 3, negativePrompt: "x" }, "fal", pricing[1]!),
-    { model: "acme/clip", adapter: "fal", task: "text-to-video", durationSec: 5, resolution: "720p", aspectRatio: "16:9", audio: true, priceVariant: "text-to-video:720p" });
+  // The estimate request names the settings, never a price row: choosing the row is the server's job.
+  assert.deepEqual(estimateBody({ ...selection, aspectRatio: "16:9", audio: true, seed: 3, negativePrompt: "x" }, "fal"),
+    { model: "acme/clip", adapter: "fal", task: "text-to-video", durationSec: 5, resolution: "720p", aspectRatio: "16:9", audio: true });
   assert.equal((quoteFor({ pricing: [row(0.07, "2K", "image")] }, { ...image, resolution: "2K" }) as { usd: number }).usd, 0.07, "binary fractions do not add a hundredth of a cent");
-  assert.deepEqual(estimateBody(image, "openai", row(0.04, undefined, "image")), { model: "acme/still", adapter: "openai", task: "text-to-image", count: 1 });
+  assert.deepEqual(estimateBody(image, "openai"), { model: "acme/still", adapter: "openai", task: "text-to-image", count: 1 });
 });
 
 test("a failure names one next step, from the server category or from the status when a reload lost the category", () => {
