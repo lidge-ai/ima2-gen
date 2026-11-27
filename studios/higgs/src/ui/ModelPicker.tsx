@@ -29,6 +29,8 @@ const M = messages(
     "maker": "Maker",
     "count": "{n} of {total}",
     "recent": "Recent",
+    "local": "On this computer (ComfyUI)",
+    "localPrice": "No charge",
     "ready": "Ready with your keys",
     "needsKey": "Needs a key (add it after picking)",
   },
@@ -54,6 +56,8 @@ const M = messages(
     "maker": "제작사",
     "count": "{total}개 중 {n}개",
     "recent": "최근 사용",
+    "local": "이 컴퓨터에서 실행 (ComfyUI)",
+    "localPrice": "요금 없음",
     "ready": "내 키로 바로 쓸 수 있어요",
     "needsKey": "키가 필요해요 (고른 뒤 넣을 수 있어요)",
   },
@@ -102,8 +106,12 @@ function specChips(model: CatalogModel): string[] {
   return chips;
 }
 
+/** A registered ComfyUI workflow: it runs on this computer, with no key and no provider price. */
+const isLocal = (model: CatalogModel) => model.routes.length > 0 && model.routes.every((route) => route.route === "local");
+
 function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: boolean; onPick: () => void }) {
   const t = useT(M);
+  const price = isLocal(model) ? t("localPrice") : (fromPrice(model.routes) ?? t("nonePrice"));
   return (
     <li>
       <button type="button" className="model-row" aria-current={selected} onClick={onPick}>
@@ -126,7 +134,7 @@ function ModelRow({ model, selected, onPick }: { model: CatalogModel; selected: 
           </span>
         </span>
         <span className="model-row-meta">
-          <span className="model-row-price">{fromPrice(model.routes) ?? t("nonePrice")}</span>
+          <span className="model-row-price">{price}</span>
         </span>
         {selected ? <Icon name="check" size={16} /> : <span className="check-space" />}
       </button>
@@ -253,7 +261,8 @@ function PickerPanel({ models, value, onPick }: PanelProps) {
       </p>
       <ul className="model-list" aria-label={t("models")}>
         <Group title={t("recent")} models={recent} value={value} onPick={pick} />
-        <Group title={t("ready")} models={rest.filter(modelHasKey)} value={value} onPick={pick} />
+        <Group title={t("local")} models={rest.filter(isLocal)} value={value} onPick={pick} />
+        <Group title={t("ready")} models={rest.filter((m) => modelHasKey(m) && !isLocal(m))} value={value} onPick={pick} />
         <Group title={t("needsKey")} models={rest.filter((m) => !modelHasKey(m))} value={value} onPick={pick} />
         {shown.length === 0 ? <li className="empty-line">{t("empty")}</li> : null}
       </ul>

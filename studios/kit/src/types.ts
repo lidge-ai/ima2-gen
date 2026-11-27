@@ -69,6 +69,23 @@ export interface Catalog {
   providers: readonly CatalogProvider[];
 }
 
+/** A run on the person's own machine (route "local"): no provider price, only the time it usually takes. */
+export interface LocalRunEstimate {
+  /** Median of earlier runs of this workflow, or null before the first one. */
+  expectedSec: number | null;
+  basis: string;
+  /** The workflow holds paid partner nodes, so a charge can still come from elsewhere; the amount is unknown. */
+  mayBill: boolean;
+}
+
+/** The server's estimate for one media request (POST /api/media/estimate). */
+export interface MediaEstimateResult {
+  route: "direct" | "aggregator" | "local";
+  /** Null when no single price applies, or when a local run may be billed by a paid node. */
+  usd: number | null;
+  local?: LocalRunEstimate;
+}
+
 export interface KeyStatus {
   keyVocabulary: string;
   providerIds: readonly string[];

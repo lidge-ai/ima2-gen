@@ -88,6 +88,24 @@ function route(modelId: string, adapter: string | undefined, keys: Keys) {
   if (!selected || !selected.keyConfigured) throw new Fault(400, "MEDIA_KEY_MISSING", "Provider key required", "auth");
   return { model, selected };
 }
+/** POST /api/media/estimate: a local route answers with run time (median of earlier runs) and no charge. */
+async function estimate(req: IncomingMessage, res: ServerResponse, keys: Keys): Promise<void> {
+  const data = await json(req);
+  if (typeof data.model !== "string" || (data.adapter !== undefined && typeof data.adapter !== "string")) throw invalid();
+  const { model, selected } = route(data.model, data.adapter as string | undefined, keys);
+  if (selected.route === "local") {
+    send(res, 200, {
+      model: model.id, adapter: selected.providerId, route: "local", usd: 0, quote: { state: "local" },
+      local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false }, note: "runs locally; no provider charge",
+    });
+    return;
+  }
+  const price = selected.pricing[0];
+  send(res, 200, {
+    model: model.id, adapter: selected.providerId, route: selected.route, usd: price ? price.usd : null,
+    quote: { state: price ? "exact" : "unpriced" },
+  });
+}
 async function submit(req: IncomingMessage, res: ServerResponse, jobs: Jobs, keys: Keys): Promise<void> {
   const data = await json(req);
   if (
@@ -282,6 +300,10 @@ async function dispatch(req: IncomingMessage, res: ServerResponse, jobs: Jobs, k
   }
   if (method === "POST" && url.pathname === "/api/media") {
     await submit(req, res, jobs, keys);
+    return;
+  }
+  if (method === "POST" && url.pathname === "/api/media/estimate") {
+    await estimate(req, res, keys);
     return;
   }
   if (p[1] === "media" && p[2] === "jobs") {

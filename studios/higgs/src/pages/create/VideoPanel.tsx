@@ -184,7 +184,7 @@ function PanelFoot({ create }: { create: Create }) {
         title={create.blocked ?? undefined}
       >
         <span>{create.sending ? t("sending") : t("generate")}</span>
-        <span className="btn-cost">{create.cost.text === "-" || create.cost.text === "Price not published" ? t("noPrice") : t("estimate", { cost: create.cost.text })}</span>
+        <span className="btn-cost" title={create.cost.title || undefined}>{create.cost.plain ? create.cost.text : create.cost.text === "-" || create.cost.text === "Price not published" ? t("noPrice") : t("estimate", { cost: create.cost.text })}</span>
       </button>
     </div>
   );

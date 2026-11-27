@@ -82,6 +82,8 @@ export const VENDOR_NAMES: Readonly<Record<string, string>> = {
   replicate: "Replicate",
   atlascloud: "AtlasCloud",
   sume: "Sume",
+  // A registered ComfyUI workflow runs on the person's own machine; no logo file, so a letter mark.
+  comfy: "ComfyUI",
 };
 
 /** Adapter and provider ids that are spelled differently from the vendor id. */
@@ -102,6 +104,7 @@ export const VENDOR_ALIASES: Readonly<Record<string, string>> = {
   "tencent-cloud": "tencent",
   hunyuan: "tencent",
   "sand.ai": "sand-ai",
+  "comfy-local": "comfy",
 };
 
 export function vendorId(idOrAlias: string): string {
