@@ -308,7 +308,7 @@ export function ComfyWorkflowManager() {
 
               <ComfyFileSlots slots={slots} roles={slotRoles} onChange={(key, role) => setSlotRoles((prev) => ({ ...prev, [key]: role }))} />
 
-              <button type="button" onClick={() => void submit()} disabled={!canSubmit}>
+              <button type="button" className="settings-action-btn" onClick={() => void submit()} disabled={!canSubmit}>
                 {t("comfy.register")}
               </button>
             </>

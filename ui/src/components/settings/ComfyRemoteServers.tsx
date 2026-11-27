@@ -82,7 +82,7 @@ export function ComfyRemoteServers() {
         <input id="comfy-remote-token" type="password" value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" aria-describedby="comfy-remote-token-hint" />
         <div className="muted" id="comfy-remote-token-hint">{t("comfy.remoteTokenHint")}</div>
       </div>
-      <button type="button" onClick={() => void add()} disabled={busy || !origin.trim()}>{t("comfy.remoteAdd")}</button>
+      <button type="button" className="settings-action-btn" onClick={() => void add()} disabled={busy || !origin.trim()}>{t("comfy.remoteAdd")}</button>
       {notice ? <div className="status-warn" role="status">{notice}</div> : null}
       {error ? <div className="status-err" role="alert">{error}</div> : null}
     </details>

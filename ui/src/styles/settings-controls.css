@@ -346,6 +346,24 @@
   padding-left: 18px;
 }
 
+/* Steps are numbered and missing items bulleted: the order and the count are part of what is said. */
+.comfy-report ol {
+  list-style: decimal;
+}
+
+.comfy-report ul {
+  list-style: disc;
+}
+
+.comfy-manager .settings-action-btn {
+  margin-top: 10px;
+}
+
+.comfy-manager .settings-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .comfy-report .mono,
 .comfy-bind-row .mono,
 .comfy-remote-list .mono {
@@ -364,10 +382,6 @@
 .comfy-remotes p {
   margin: 6px 0 0;
   font-size: 12px;
-}
-
-.comfy-remotes > button {
-  margin-top: 10px;
 }
 
 .comfy-remote-list button {
