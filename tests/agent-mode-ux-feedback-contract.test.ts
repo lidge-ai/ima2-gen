@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { adaptFetchAssignmentsForNativeOAuth } from "./_oauthNativeFixture.ts";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 // GPT OAuth plans then renders; keep this file's one-call image fixtures (see the helper).
 adaptFetchAssignmentsForNativeOAuth();
@@ -25,8 +26,8 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-after(() => {
-  db.closeDb();
+after(async () => {
+  await releaseDatabase();
   rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 

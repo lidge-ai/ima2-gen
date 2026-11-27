@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import express from "express";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 const testDir = mkdtempSync(join(tmpdir(), "ima2-card-news-db-"));
 process.env.IMA2_CONFIG_DIR = testDir;
 process.env.IMA2_DB_PATH = join(testDir, "sessions.db");
@@ -23,7 +24,7 @@ const { configureRoutes } = await import("../routes/index.ts");
 const { closeDb, getDbPath } = await import("../lib/db.ts");
 
 after(async () => {
-  closeDb();
+  await releaseDatabase();
   await rm(testDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 

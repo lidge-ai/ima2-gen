@@ -6,6 +6,7 @@ import { mkdtemp, rm, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 const TEST_DIR = await mkdtemp(join(tmpdir(), "ima2-structured-filename-"));
 process.env.IMA2_CONFIG_DIR = TEST_DIR;
@@ -29,7 +30,7 @@ afterEach(() => {
 });
 
 after(async () => {
-  db.closeDb();
+  await releaseDatabase();
   await rm(TEST_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
