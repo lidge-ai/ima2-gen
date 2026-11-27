@@ -53,12 +53,14 @@ for (const adapter of subjects) {
     // Codes are "<ERROR_PREFIX>_<REASON>" (contract.ts), so the prefix itself has no trailing underscore.
     assert.match(adapter.errorPrefix, /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/, "errorPrefix like FAL or TOPAZ_VIDEO, without a trailing underscore");
     assert.ok(adapter.label.trim());
-    assert.ok(adapter.route === "direct" || adapter.route === "aggregator");
+    assert.ok(adapter.route === "direct" || adapter.route === "aggregator" || adapter.route === "local");
+    // A local route runs on the user's own machine: it cannot also require a provider key.
+    if (adapter.route === "local") assert.equal(adapter.credential.keyless, true, "a local route is keyless");
     assert.ok(["url", "inline", "upload"].includes(adapter.inputTransport));
     if (adapter.inputTransport === "upload") assert.equal(typeof adapter.uploadInput, "function");
     const cred = adapter.credential;
     assert.match(cred.keyVocabulary, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-    assert.ok(cred.envVars.length > 0);
+    if (!cred.keyless) assert.ok(cred.envVars.length > 0);
     for (const v of cred.envVars) assert.match(v, /^[A-Z][A-Z0-9_]*$/);
     assert.match(cred.configKey, /^[a-zA-Z][a-zA-Z0-9]*$/);
     assert.ok(https(cred.consoleUrl), "consoleUrl must be https");

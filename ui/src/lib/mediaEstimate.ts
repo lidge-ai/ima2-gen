@@ -14,10 +14,12 @@ export type MediaQuote =
   /** Priced per megapixel, token, minute or character: it depends on the output, so no figure is shown. */
   | { state: "usage"; unit: string }
   | { state: "unpriced" }
+  /** The route runs on the user's own machine: there is no provider price to quote. */
+  | { state: "local" }
   | { state: "unknown" }
   | { state: "pending" };
 
-const STATES: readonly string[] = ["exact", "from", "range", "usage", "unpriced", "unknown"];
+const STATES: readonly string[] = ["exact", "from", "range", "usage", "unpriced", "unknown", "local"];
 
 /** The quote in a POST /api/media/estimate answer; "unknown" when the answer carries none. */
 export function quoteFromEstimate(answer: unknown): MediaQuote {

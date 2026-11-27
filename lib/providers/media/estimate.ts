@@ -1,4 +1,4 @@
-import type { MediaPrice } from "./contract.js";
+import type { MediaLocalEstimate, MediaPrice } from "./contract.js";
 import type { MediaKeySnapshot } from "./credentials.js";
 import { MediaJobError } from "./errors.js";
 import { defaultDuration, quoteFor, quoteUnit, roundUsd, type MediaQuote } from "./priceQuote.js";
@@ -8,7 +8,7 @@ import type { MediaJobBody } from "./validate.js";
 export interface MediaEstimate {
   model: string;
   adapter: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   hasKey: boolean;
   unit: "image" | "second" | "request";
   /** One image and the route's default clip length are assumed when the request names neither. */
@@ -17,9 +17,14 @@ export interface MediaEstimate {
   usd: number | null;
   prices: readonly MediaPrice[];
   /** The same answer in full: exact, from, range (min and max), usage, unpriced or unknown. Every client shows this. */
-  quote: MediaQuote<MediaPrice>;
+  quote: MediaQuote<MediaPrice> | LocalQuote;
   note?: string;
+  /** Present on a "local" route: there is no provider price, only time on the user's own machine. */
+  local?: MediaLocalEstimate;
 }
+
+/** A "local" route has no provider price: the answer is time on the user's own machine (see local). */
+export type LocalQuote = { state: "local" };
 
 type Unit = MediaEstimate["unit"];
 
@@ -50,6 +55,13 @@ export function estimateMediaJob(registry: MediaRegistry, keys: MediaKeySnapshot
     throw new MediaJobError(selection.code, selection.message, { status: selection.status, category: selection.status === 404 ? "not-found" : "invalid-request" });
   }
   const { adapter, spec } = selection;
+  if (adapter.route === "local") {
+    const local = adapter.estimateLocal?.(spec) ?? { expectedSec: null, basis: "no runs yet", mayBill: false };
+    // A local run costs nothing from a provider. When the workflow can still be charged elsewhere, the amount is unknown, not zero.
+    return { model: spec.id, adapter: adapter.id, route: "local", hasKey: true, unit: "request", quantity: 1,
+      usd: local.mayBill ? null : 0, prices: [], quote: { state: "local" }, local,
+      note: local.mayBill ? "runs locally, but this workflow may be charged by a paid node; ima2 cannot price it" : "runs locally; no provider charge" };
+  }
   const unit = quoteUnit(spec.kind, spec.pricing);
   const durationSec = body.durationSec ?? (spec.kind === "image" ? undefined : defaultDuration(spec.params.durationsSec));
   const quantity = unit === "second" ? durationSec ?? null : unit === "image" ? body.count ?? 1 : 1;
