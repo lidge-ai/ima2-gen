@@ -199,6 +199,7 @@ Total: 661 (runtime: 353, contract: 308)
 - `tests/media-mp4-probe.test.ts`
 - `tests/media-price-quote.test.ts`
 - `tests/media-publish-input.test.ts`
+- `tests/media-resolution-label.test.ts`
 - `tests/media-routes.test.ts`
 - `tests/media-runner.test.ts`
 - `tests/media-session-routes.test.ts`
@@ -206,6 +207,7 @@ Total: 661 (runtime: 353, contract: 308)
 - `tests/media-tools-routes.test.ts`
 - `tests/media-ui-catalog.test.ts`
 - `tests/media-ui-keys.test.ts`
+- `tests/media-voices.test.ts`
 - `tests/media-workflow-error-redaction.test.ts`
 - `tests/media-workflow-planner.test.ts`
 - `tests/minimax-key-validation-route.test.ts`

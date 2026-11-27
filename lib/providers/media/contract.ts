@@ -60,13 +60,28 @@ export interface MediaInputRequirement {
 export interface MediaOptionSpec {
   /** The vendorOptions key. */
   name: string;
-  type: "enum" | "text" | "boolean";
+  /** "voice": an id from the route's voice list (adapter.listVoices, GET /api/media/voices). */
+  type: "enum" | "text" | "boolean" | "voice";
   /** For "enum", in the provider's spelling. */
   values?: readonly string[];
   required?: boolean;
   /** Tasks this applies to. Absent: every task of the spec. */
   tasks?: readonly MediaTask[];
   maxLength?: number;
+}
+
+/** One voice a text-to-speech route can use; id is the value of its "voice" option. */
+export interface MediaVoice {
+  id: string;
+  name: string;
+  description?: string;
+  /** Language tag as the provider gives it ("en", "ko"). */
+  language?: string;
+  gender?: "female" | "male" | "neutral";
+  /** A sample a browser can play without credentials. Absent when the provider's sample needs the key. */
+  previewUrl?: string;
+  /** The key's own voice (cloned or created), as opposed to the provider's library. */
+  owned?: boolean;
 }
 
 export interface MediaModelSpec {
@@ -218,6 +233,8 @@ export interface MediaProviderAdapter {
   estimateLocal?(spec: MediaModelSpec): MediaLocalEstimate;
   /** Live catalog for adapters whose upstream exposes one. */
   discoverModels?(ctx: MediaAdapterContext): Promise<readonly MediaModelSpec[]>;
+  /** The voices this key can speak with, for routes with a "voice" option. A free read; never a generation. */
+  listVoices?(ctx: MediaAdapterContext): Promise<readonly MediaVoice[]>;
   /** A free call that proves the key works. Never a generation. */
   validateKey(ctx: MediaAdapterContext): Promise<{ ok: boolean; reason?: string }>;
   /** Required when inputTransport is "upload". */

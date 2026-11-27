@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { useI18n } from "../../i18n";
 import { useModalFocus } from "../../hooks/useModalFocus";
 import { useMediaCatalog, loadMediaCatalog } from "../../lib/mediaCatalogStore";
-import type { MediaModel } from "../../lib/mediaCatalog";
+import { makerName, type MediaModel } from "../../lib/mediaCatalog";
 import { filterModels, groupModels, offeredFeatures, sortModels, suggestModels, unsupportedModels, type ModelFeature, type ModelSort } from "../../lib/mediaModelList";
 import { resolveRoute } from "../../lib/mediaRoutes";
 import { reconcileSelection } from "../../lib/mediaSelection";
@@ -34,7 +34,7 @@ function Tools({ models, kind, task, narrowing, setNarrowing }: {
   models: readonly MediaModel[]; kind: ClassicKind; task: ClassicTask; narrowing: Narrowing; setNarrowing: (next: Narrowing) => void;
 }) {
   const { t } = useI18n();
-  const vendors = useMemo(() => [...new Map(models.map((model) => [model.vendor, model.logo?.name || model.vendor])).entries()]
+  const vendors = useMemo(() => [...new Map(models.map((model) => [model.vendor, makerName(model)])).entries()]
     .sort((a, b) => a[1].localeCompare(b[1])), [models]);
   const features = useMemo(() => offeredFeatures(models, kind, task), [models, kind, task]);
   const toggle = (feature: ModelFeature) => setNarrowing({ ...narrowing,

@@ -1,4 +1,4 @@
-import type { MediaModel, MediaPrice } from "./mediaCatalog";
+import { resolutionChoices, type MediaModel, type MediaPrice } from "./mediaCatalog";
 import { autoRoute, candidateRoutes, lowestPrice, modelRunnable } from "./mediaRoutes";
 import { modelTasks, type ClassicKind, type ClassicTask } from "./mediaTasks";
 
@@ -37,7 +37,7 @@ export function modelFacts(model: MediaModel, task?: string): ModelFacts {
   const running = autoRoute(model, task);
   const routes = running ? [running] : candidates;
   const prices = routes.map((route) => lowestPrice(route, model.kind)).filter((price): price is MediaPrice => price !== null);
-  const ranked = [...new Set(routes.flatMap((route) => route.params.resolutions ?? []))]
+  const ranked = [...new Set(routes.flatMap((route) => resolutionChoices(route).map((option) => option.label)))]
     .map((label) => ({ label, rank: resolutionRank(label) })).filter((entry) => entry.rank > 0).sort((a, b) => a.rank - b.rank);
   const seconds = routes.flatMap((route) => route.params.durationsSec ?? []);
   const low = ranked[0];
