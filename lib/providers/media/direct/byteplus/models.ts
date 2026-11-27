@@ -92,6 +92,18 @@ function seedance(
       maxReferenceImages: limits.images,
       maxReferenceVideos: limits.videos,
       nativeAudio: true,
+      // 2.5 keeps the source's ratio for an edit or extension, and an edit keeps its length too.
+      inputs: [
+        { role: "source-video", min: 1, max: 1, tasks: ["video-to-video"], ...(family === "2.5" ? { billedLength: true } : {}) },
+        { role: "source-video", min: 1, max: 1, tasks: ["video-extend"] },
+      ],
+      taskFields:
+        family === "2.5"
+          ? { "video-to-video": { accepts: ["prompt", "resolution", "audio"] }, "video-extend": { accepts: ["prompt", "durationSec", "resolution", "audio"] } }
+          : {
+              "video-to-video": { accepts: ["prompt", "durationSec", "resolution", "aspectRatio", "audio"] },
+              "video-extend": { accepts: ["prompt", "durationSec", "resolution", "aspectRatio", "audio"] },
+            },
     },
     pricing,
     docsUrl: VIDEO_DOCS,

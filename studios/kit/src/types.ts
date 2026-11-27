@@ -31,6 +31,8 @@ export interface CatalogRoute {
   docsUrl: string;
   /** True when the server holds a usable key for this provider, or the route needs none. Never the key itself. */
   keyConfigured: boolean;
+  /** Tasks this route serves; a route may serve fewer than the model lists. Absent on older servers. */
+  tasks?: readonly MediaTask[];
   /** The route needs no key: screens must not ask for one or list it among keys. */
   keyless?: boolean;
 }
