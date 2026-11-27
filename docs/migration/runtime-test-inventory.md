@@ -203,6 +203,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/media-routes.test.ts`
 - `tests/media-runner.test.ts`
 - `tests/media-session-routes.test.ts`
+- `tests/media-task-fields.test.ts`
 - `tests/media-tool-schema-contract.test.ts`
 - `tests/media-tools-routes.test.ts`
 - `tests/media-ui-catalog.test.ts`
