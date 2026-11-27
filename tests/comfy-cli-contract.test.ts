@@ -42,7 +42,7 @@ describe("comfy CLI surface", () => {
 
   it("requires an id and a prompt/output binding before it will register", () => {
     assert.match(source, /--id is required/);
-    assert.match(source, /a prompt binding and an output node are required/);
+    assert.match(source, /an output node is required: the node that saves the result/);
   });
 
   it("supports media kind and points every workflow at the media route that runs it", () => {

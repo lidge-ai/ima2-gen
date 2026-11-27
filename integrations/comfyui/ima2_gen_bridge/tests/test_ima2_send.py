@@ -95,11 +95,10 @@ class SendTest(unittest.TestCase):
         self.assertIn("ima2 Settings", result["message"])
         self.assertEqual([call[0] for call in fake.calls], ["/api/comfy/inspect"])
 
-    def test_no_prompt_or_no_output_is_said_plainly(self):
-        _fake, client = self.serve({"candidates": [candidate("output", "9", "")], "mediaSlots": [], "server": READY})
-        result = ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)
-        self.assertEqual((result["ok"], result["code"]), (False, "NO_PROMPT"))
-        self.assertIn("text input", result["message"])
+    def test_a_workflow_with_no_text_input_is_registered_without_a_prompt_and_no_output_is_said_plainly(self):
+        fake, client = self.serve({"candidates": [candidate("output", "9", "")], "mediaSlots": [], "server": READY})
+        self.assertEqual(ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)["ok"], True)
+        self.assertEqual(fake.calls[-1][2]["bind"], {"output": {"node": "9"}})
         _fake, client = self.serve({"candidates": [candidate("prompt", "6", "text")], "mediaSlots": [], "server": READY})
         self.assertEqual(ima2_send.send_workflow(client, GRAPH, "fox", ORIGIN)["code"], "NO_OUTPUT")
 

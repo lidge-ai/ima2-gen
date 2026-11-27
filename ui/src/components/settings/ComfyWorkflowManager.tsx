@@ -64,12 +64,15 @@ export function ComfyWorkflowManager() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const originTouched = useRef(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const response = await listComfyWorkflows();
       setWorkflows(response.workflows);
+      // The address field starts from the configured server, until a person types in it.
+      if (response.defaultOrigin && !originTouched.current) setOrigin(response.defaultOrigin);
     } catch {
       setWorkflows([]);
     } finally {
@@ -146,7 +149,8 @@ export function ComfyWorkflowManager() {
     .filter((field) => !selection[field]);
   const slotsWaiting = unassignedSlots(slots, slotRoles).length;
 
-  const canSubmit = Boolean(inspection && workflowId && selection.prompt && selection.output && unresolved.length === 0 && slotsWaiting === 0 && !busy);
+  // A workflow with no text input registers without a prompt: only the node that saves the result is required.
+  const canSubmit = Boolean(inspection && workflowId && selection.output && unresolved.length === 0 && slotsWaiting === 0 && !busy);
 
   const submit = async () => {
     if (!canSubmit || !source) return;
@@ -224,7 +228,7 @@ export function ComfyWorkflowManager() {
               <input
                 id="comfy-origin"
                 value={origin}
-                onChange={(event) => { setOrigin(event.target.value); setOriginState({ kind: "idle" }); }}
+                onChange={(event) => { originTouched.current = true; setOrigin(event.target.value); setOriginState({ kind: "idle" }); }}
                 spellCheck={false}
               />
               <button type="button" onClick={() => void checkOrigin()}>{t("comfy.checkOrigin")}</button>
@@ -304,7 +308,8 @@ export function ComfyWorkflowManager() {
                   </div>
                 );
               })}
-              {!selection.prompt ? <div className="muted">{t("comfy.promptRequired")}</div> : null}
+              {!selection.prompt ? <div className="muted">{t("comfy.promptNone")}</div> : null}
+              {!selection.output ? <div className="status-warn">{t("comfy.outputRequired")}</div> : null}
 
               <ComfyFileSlots slots={slots} roles={slotRoles} onChange={(key, role) => setSlotRoles((prev) => ({ ...prev, [key]: role }))} />
 
