@@ -7,7 +7,7 @@ import type { SlotValue } from "../../ui/UploadSlot.tsx";
 import { availableTasks, defaultModel, defaultOptions, emptyState, problem, resolve, seconds, toBody, type SpeakState } from "./speakForm.ts";
 
 /** Length of an uploaded audio or video file as the browser reads it; null when it cannot. */
-function mediaSeconds(url: string, kind: "audio" | "video"): Promise<number | null> {
+export function mediaSeconds(url: string, kind: "audio" | "video"): Promise<number | null> {
   return new Promise((done) => {
     const element = document.createElement(kind);
     element.preload = "metadata";

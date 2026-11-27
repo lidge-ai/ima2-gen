@@ -127,12 +127,10 @@ function ModelCard({ model }: { model: CatalogModel }) {
         ))}
       </ul>
       <div className="model-card-foot">
-        {model.kind !== "audio" ? (
-          <a className="btn" href={href(target, { model: model.id, ...(talking ? { mode: "speak" } : {}) })}>
-            {modelHasKey(model) ? t("use") : t("openAdd")}
-            <Icon name="arrowRight" size={14} />
-          </a>
-        ) : null}
+        <a className="btn" href={href(model.kind === "audio" ? "audio" : target, { model: model.id, ...(talking ? { mode: "speak" } : {}) })}>
+          {modelHasKey(model) ? t("use") : t("openAdd")}
+          <Icon name="arrowRight" size={14} />
+        </a>
       </div>
     </article>
   );

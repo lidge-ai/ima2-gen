@@ -21,8 +21,7 @@ function AssetEmpty({ tab, model, clearModel }: { tab: Tab; model: string; clear
       <h2>{text}</h2>
       {model ? <button className="btn" type="button" onClick={clearModel}>{t("clearModel")}</button>
         : tab === "saved" ? <a href="#/assets/all">{t("browse")}</a>
-        : tab === "audio" ? <><p>{t("audioNext")}</p><a href="#/assets/all">{t("browse")}</a></>
-        : <a href={tab === "images" ? "#/image" : "#/video"}>{t(tab === "images" ? "createImage" : "createVideo")}</a>}
+        : <a href={tab === "images" ? "#/image" : tab === "audio" ? "#/audio" : "#/video"}>{t(tab === "images" ? "createImage" : tab === "audio" ? "createAudio" : "createVideo")}</a>}
     </div>
   );
 }

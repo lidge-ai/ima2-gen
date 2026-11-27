@@ -7,6 +7,8 @@ export interface PricedRequest {
   count?: number;
   /** Output megapixels, for megapixel-priced image models. */
   megapixels?: number;
+  /** Characters of text sent, for speech priced per character. */
+  characters?: number;
 }
 
 function money(usd: number): string {
@@ -58,6 +60,8 @@ function unitsFor(price: MediaPrice, request: PricedRequest): { units: number; l
       return { units: count, label: count + " image" + (count > 1 ? "s" : "") };
     case "request":
       return { units: count, label: count + " request" + (count > 1 ? "s" : "") };
+    case "character":
+      return request.characters ? { units: request.characters, label: request.characters + " characters" } : null;
     case "megapixel":
       return request.megapixels ? { units: request.megapixels * count, label: request.megapixels + " MP" } : null;
     default:
