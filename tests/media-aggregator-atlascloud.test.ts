@@ -43,8 +43,17 @@ test("atlas catalog serves Sume ids across video, image and audio with starting 
     assert.deepEqual(spec.pricing.map((price) => price.variant).sort(), spec.tasks.map((task) => task + ": starting price").sort(), spec.id);
     for (const price of spec.pricing) assert.deepEqual([price.unit, price.usd > 0], ["image", true], spec.id);
   }
-  // Kling 4.0 reference-to-video carried a neighbouring model's price.
-  assert.deepEqual(specs.find((spec) => spec.id === "kling/kling-4")?.pricing.map((price) => price.usd), [0.11]);
+  // Every task Atlas serves has its published base price: video and audio by the second, except Hailuo 2.3, which Atlas bills per run.
+  const perRun = new Set(["minimax/hailuo-2.3", "minimax/hailuo-2.3-fast"]);
+  for (const spec of specs.filter((entry) => entry.kind !== "image")) {
+    assert.deepEqual(spec.pricing.map((price) => price.variant).sort(), spec.tasks.map((task) => task + ": starting price").sort(), spec.id);
+    for (const price of spec.pricing) assert.deepEqual([price.unit, price.usd > 0], [perRun.has(spec.id) ? "request" : "second", true], spec.id);
+  }
+  const rows = (id: string) => specs.find((spec) => spec.id === id)?.pricing.map((price) => [price.unit, price.usd, price.variant?.split(":")[0]]);
+  assert.deepEqual(rows("kling/kling-4"), [["second", 0.11, "text-to-video"], ["second", 0.11, "image-to-video"], ["second", 0.11, "reference-to-video"], ["second", 0.11, "video-to-video"]]);
+  assert.deepEqual(rows("minimax/hailuo-2.3"), [["request", 0.49, "text-to-video"], ["request", 0.49, "image-to-video"]]);
+  assert.deepEqual(rows("minimax/hailuo-2.3-fast"), [["request", 0.19, "image-to-video"]]);
+  assert.deepEqual(rows("pixverse/v6"), [["second", 0.025, "text-to-video"], ["second", 0.025, "image-to-video"], ["second", 0.025, "reference-to-video"]]);
   assert.equal(adapter.inputTransport, "upload");
   assert.equal(adapter.cancel, undefined);
 });
