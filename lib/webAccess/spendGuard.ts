@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import { atomicWriteJson } from "../atomicWrite.js";
 import { MediaJobError } from "../providers/media/errors.js";
 import type { MediaModelSpec, MediaPrice, MediaSubmitRequest } from "../providers/media/contract.js";
-import { matchPriceVariant } from "../providers/media/priceMatch.js";
+import { pickPrice } from "../providers/media/priceQuote.js";
 
 /**
  * Instance-wide spend guard for the shared-key web deployment. Every admitted
@@ -41,16 +41,29 @@ function requestQuality(request: MediaSubmitRequest): string | undefined {
   return typeof request.vendorOptions?.quality === "string" ? request.vendorOptions.quality : undefined;
 }
 
-/** Published price for this request; the highest listed price when the variant cannot be matched. Never guesses a missing price. */
+/**
+ * Published price for this request, from the same rule the estimate route uses (providers/media/priceQuote).
+ * One applicable row is charged as it is. When several rows still apply the highest of them is charged, and
+ * when none applies the highest price on the list is: the guard never charges less than the job can cost.
+ * A published starting price is a floor, so it is recorded as an estimate. Never guesses a missing price.
+ */
 export function estimateMediaUsd(spec: MediaModelSpec, request: MediaSubmitRequest): SpendEstimate {
   for (const unit of [...new Set(spec.pricing.map((p) => p.unit))]) {
     const qty = quantityFor(unit, spec, request);
     if (!qty) continue;
     const prices = spec.pricing.filter((p) => p.unit === unit);
-    const match = matchPriceVariant(prices, { resolution: request.resolution, quality: requestQuality(request), task: request.task, audio: request.audio })
-      ?? (prices.length === 1 && prices[0]!.variant === undefined ? prices[0] : undefined);
-    const usd = match ? match.usd : Math.max(...prices.map((p) => p.usd));
-    return { usd: round(usd * qty.quantity), basis: match && qty.exact ? "exact" : "upper-bound" };
+    const quality = requestQuality(request);
+    const pick = pickPrice(prices, unit, {
+      task: request.task,
+      ...(request.resolution !== undefined ? { resolution: request.resolution } : {}),
+      ...(quality !== undefined ? { quality } : {}),
+      ...(spec.params.qualities ? { qualities: spec.params.qualities } : {}),
+      ...(request.audio !== undefined ? { audio: request.audio } : {}),
+      ...(typeof request.durationSec === "number" ? { durationSec: request.durationSec } : {}),
+    });
+    const usd = pick.price ? pick.price.usd : pick.range ? pick.range.max : Math.max(...prices.map((p) => p.usd));
+    const basis = !pick.price || !qty.exact ? "upper-bound" : pick.floor ? "estimate" : "exact";
+    return { usd: round(usd * qty.quantity), basis };
   }
   return { usd: null, basis: "upper-bound" };
 }

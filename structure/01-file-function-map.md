@@ -125,7 +125,7 @@ routes/
 | `bin/lib/mcpMediaHandlers.ts` | 87 | Media MCP tool handlers and response projection |
 | `bin/lib/mcpWorkflowHandlers.ts` | 25 | Workflow MCP tool handlers |
 | `lib/providers/media/toolSchema.ts` | 171 | Media and workflow tool descriptors and schemas |
-| `lib/providers/media/estimate.ts` | 57 | Published media price estimates |
+| `lib/providers/media/estimate.ts` | 69 | Published media price estimates |
 | `routes/mediaTools.ts` | 47 | Media descriptors, estimates and workflow schema routes |
 | `bin/lib/media/catalogCmd.ts` | 14 | Catalog display |
 | `bin/lib/media/common.ts` | 74 | Shared media CLI inputs and options |

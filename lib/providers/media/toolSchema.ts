@@ -113,7 +113,7 @@ function tool(name: string, title: string, description: string, inputSchema: Obj
 }
 
 const billedDescription = "BILLED: runs on the user's own provider key and is charged by that provider. Call media_estimate (or workflow_estimate) first. requestId is the job handle. Before submitting, ima2 checks whether it already knows this requestId (running, recent, or saved in history) and refuses it if so. The check is best-effort: it is not atomic with the submit and cannot see very old or pre-restart ids, so a retry can still create a second, separately billed job. Check media_job_status before retrying. If you cancel after the job was submitted, it keeps running; check media_job_status with your requestId.";
-const estimateOutput = { model: string, adapter: string, usd: { type: ["number", "null"] }, prices: { type: "array" }, quantity: { type: ["number", "null"] }, unit: string, note: string, route: string, hasKey: { type: "boolean" } };
+const estimateOutput = { model: string, adapter: string, usd: { type: ["number", "null"] }, quote: { type: "object" }, prices: { type: "array" }, quantity: { type: ["number", "null"] }, unit: string, note: string, route: string, hasKey: { type: "boolean" } };
 const jobOutput = { requestId: string, jobId: string, model: string, adapter: string, outputs: { type: "array" },
   filename: { type: ["string", "null"] }, url: { type: ["string", "null"] }, mediaType: { type: ["string", "null"] }, elapsed: { type: "number" } };
 const statusOutput = { job: { type: "object" }, pollAfterSeconds: { type: "number" }, timedOut: { type: "boolean" } };
@@ -127,7 +127,7 @@ function catalogTools(): MediaToolDescriptor[] {
   return [
     tool("media_catalog", "Media catalog", "List available media models and routes; maxUsd filters by the cheapest published price.", object({ kind, vendor: shortString, task, model: shortString, adapter: shortString, keyed: { type: "boolean" }, maxUsd: { type: "number" } }), { models: { type: "array" }, adapters: { type: "array" } }),
     tool("media_keys_status", "Media keys status", "Inspect provider key availability.", object({}), { vocabularies: { type: "array" } }),
-    tool("media_estimate", "Estimate media", "Informational: published price x quantity for the chosen route. usd is set only when one published price applies (or priceVariant names one); the provider's actual bill may differ.", estimate, estimateOutput),
+    tool("media_estimate", "Estimate media", "Informational: published price x quantity for the chosen route. The price row is chosen from the request (task, resolution, quality, audio, duration); one image and the route's default clip length are assumed when not given. usd is set when one published price applies; quote carries the full answer (exact, from, range, usage, unpriced, unknown). The provider's actual bill may differ.", estimate, estimateOutput),
     tool("media_submit", "Submit media", billedDescription, submit, jobOutput, "billed"),
   ];
 }
