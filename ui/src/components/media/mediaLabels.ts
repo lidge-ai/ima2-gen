@@ -25,3 +25,11 @@ export function durationText(facts: ModelFacts, t: Translate): string | null {
   const { min, max } = facts.durations;
   return min === max ? t("mediaPicker.seconds", { n: min }) : t("mediaPicker.secondsRange", { min, max });
 }
+
+const QUALITY_NAMES: readonly string[] = ["auto", "very_low", "low", "medium", "high", "xhigh", "max"];
+
+/** A quality tier in words where it is one of the common names; a provider's own tier name is shown as it is. */
+export function qualityLabel(value: string, t: (key: string) => string): string {
+  const name = value.toLowerCase();
+  return QUALITY_NAMES.includes(name) ? t(`mediaPicker.qualities.${name}`) : value;
+}

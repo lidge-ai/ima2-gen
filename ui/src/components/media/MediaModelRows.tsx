@@ -31,6 +31,7 @@ export function MediaModelRow({ model, task, selected, onPick, reason, facts: gi
           <span className="media-row__name">
             {model.label}
             {facts.audio ? <span className="media-row__tag">{t("mediaPicker.audioTag")}</span> : null}
+            {model.retiring ? <span className="media-row__tag">{t("mediaPicker.retiring")}</span> : null}
           </span>
           <span className="media-row__sub">{reason ?? (model.logo?.name || model.vendor)}</span>
         </span>

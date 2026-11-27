@@ -1,3 +1,4 @@
+import { modelName } from "./mediaCatalog";
 import type { MediaSelection } from "./mediaSelection";
 import { MEDIA_FAILURE_STORAGE_KEY, MEDIA_RECENT_MODELS_STORAGE_KEY, MEDIA_SELECTION_STORAGE_KEY } from "../store/persistenceRegistry";
 
@@ -27,13 +28,14 @@ export function parseMediaSelection(raw: unknown): MediaSelection | null {
   const v = raw as Record<string, unknown>;
   if ((v.kind !== "image" && v.kind !== "video") || !text(v.model) || !text(v.adapter) || !text(v.task)) return null;
   const selection: MediaSelection = { kind: v.kind, model: v.model, adapter: v.adapter, task: v.task, routeMode: v.routeMode === "auto" ? "auto" : "pinned" };
-  if (text(v.label)) selection.label = v.label;
+  if (text(v.label)) selection.label = modelName(v.label).label;
   if (text(v.vendor)) selection.vendor = v.vendor;
   if (text(v.routeLabel)) selection.routeLabel = v.routeLabel;
   // Only a logo this server serves is ever put in an <img>.
   if (text(v.routeMark, 300) && v.routeMark.startsWith("/media-assets/")) selection.routeMark = v.routeMark;
   if (typeof v.durationSec === "number" && Number.isFinite(v.durationSec) && v.durationSec > 0) selection.durationSec = v.durationSec;
   if (text(v.resolution)) selection.resolution = v.resolution;
+  if (text(v.quality)) selection.quality = v.quality;
   if (text(v.aspectRatio)) selection.aspectRatio = v.aspectRatio;
   if (typeof v.audio === "boolean") selection.audio = v.audio;
   if (text(v.negativePrompt, 20_000)) selection.negativePrompt = v.negativePrompt;

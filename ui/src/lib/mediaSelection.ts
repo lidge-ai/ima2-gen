@@ -19,6 +19,7 @@ export interface MediaSelection {
   routeMark?: string;
   durationSec?: number;
   resolution?: string;
+  quality?: string;
   aspectRatio?: string;
   audio?: boolean;
   negativePrompt?: string;
@@ -50,7 +51,7 @@ export interface MediaSelectionState {
   remakeMediaResult: (item: import("../types").GenerateItem) => Promise<void>;
 }
 
-export type AdjustedField = "task" | "durationSec" | "resolution" | "aspectRatio" | "audio" | "seed" | "negativePrompt";
+export type AdjustedField = "task" | "durationSec" | "resolution" | "quality" | "aspectRatio" | "audio" | "seed" | "negativePrompt";
 export interface Adjustment { field: AdjustedField; from: string; to: string | null }
 
 export const MAX_SEED = 2_147_483_647;
@@ -81,6 +82,12 @@ export function defaultResolution(allowed: readonly string[] | undefined): strin
   return ranked[0]?.label ?? allowed[0];
 }
 
+/** "auto" when the route lists it, else "medium", else the first tier: the provider's own middle of the road, never the dearest by accident. */
+export function defaultQuality(allowed: readonly string[] | undefined): string | undefined {
+  if (!allowed?.length) return undefined;
+  return allowed.find((label) => sameLabel(label, "auto")) ?? allowed.find((label) => sameLabel(label, "medium")) ?? allowed[0];
+}
+
 function keepDuration(previous: number | undefined, allowed: readonly number[] | undefined): number | undefined {
   if (!allowed?.length) return undefined;
   if (previous === undefined) return defaultDuration(allowed);
@@ -109,8 +116,10 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   const durationSec = keepDuration(previous?.durationSec, params.durationsSec);
   const resolution = keepLabel(previous?.resolution, params.resolutions, defaultResolution(params.resolutions));
   const aspectRatio = keepLabel(previous?.aspectRatio, params.aspectRatios, undefined);
+  const quality = keepLabel(previous?.quality, params.qualities, defaultQuality(params.qualities));
   if (durationSec !== undefined) next.durationSec = durationSec;
   if (resolution !== undefined) next.resolution = resolution;
+  if (quality !== undefined) next.quality = quality;
   if (aspectRatio !== undefined) next.aspectRatio = aspectRatio;
   if (params.nativeAudio && previous?.audio !== undefined) next.audio = previous.audio;
   if (params.negativePrompt && previous?.negativePrompt) next.negativePrompt = previous.negativePrompt;
@@ -125,6 +134,7 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   if (previous.kind === next.kind) note("task", previous.task, next.task);
   note("durationSec", previous.durationSec, next.durationSec);
   note("resolution", previous.resolution, next.resolution);
+  note("quality", previous.quality, next.quality);
   note("aspectRatio", previous.aspectRatio, next.aspectRatio);
   note("audio", previous.audio, next.audio);
   note("seed", previous.seed, next.seed);

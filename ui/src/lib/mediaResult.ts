@@ -8,6 +8,7 @@ export interface MediaResultSettings {
   task?: string | null;
   durationSec?: number | null;
   resolution?: string | null;
+  quality?: string | null;
   aspectRatio?: string | null;
   seed?: number | null;
   audio?: boolean | null;
@@ -72,6 +73,7 @@ export function remakePlan(item: MediaResultFacts, models: readonly MediaModel[]
   const made: MediaSelection = { kind, model: model.id, adapter: adapter ?? resolved.route.adapter, task };
   if (typeof settings.durationSec === "number") made.durationSec = settings.durationSec;
   if (typeof settings.resolution === "string") made.resolution = settings.resolution;
+  if (typeof settings.quality === "string") made.quality = settings.quality;
   if (typeof settings.aspectRatio === "string") made.aspectRatio = settings.aspectRatio;
   if (typeof settings.seed === "number") made.seed = settings.seed;
   if (typeof settings.audio === "boolean") made.audio = settings.audio;

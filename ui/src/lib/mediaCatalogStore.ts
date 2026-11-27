@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { jsonFetch } from "./api-core";
-import type { MediaAdapter, MediaModel } from "./mediaCatalog";
+import { namedModels, type MediaAdapter, type MediaModel } from "./mediaCatalog";
 
 export interface MediaCatalogState {
   status: "idle" | "loading" | "ready" | "error";
@@ -27,7 +27,7 @@ export function loadMediaCatalog(force = false): Promise<void> {
   if (state.status === "ready" && !force) return Promise.resolve();
   if (state.status !== "ready") set({ ...state, status: "loading", error: "" });
   pending = jsonFetch<{ models: MediaModel[]; adapters: MediaAdapter[] }>("/api/media/catalog")
-    .then((body) => set({ status: "ready", models: body.models ?? [], adapters: body.adapters ?? [], error: "" }))
+    .then((body) => set({ status: "ready", models: namedModels(body.models ?? []), adapters: body.adapters ?? [], error: "" }))
     .catch((error: unknown) => set({ ...state, status: state.models.length ? "ready" : "error", error: error instanceof Error ? error.message : String(error) }))
     .finally(() => { pending = null; });
   return pending;

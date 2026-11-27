@@ -68,6 +68,7 @@ export function parseMediaJobBody(raw: unknown): MediaJobBody {
     negativePrompt: optString(body, "negativePrompt", MAX_PROMPT_CHARS),
     durationSec: optNumber(body, "durationSec"),
     resolution: optString(body, "resolution"),
+    quality: optString(body, "quality"),
     aspectRatio: optString(body, "aspectRatio"),
     seed: optNumber(body, "seed", true),
     audio: typeof audio === "boolean" ? audio : undefined,
@@ -94,6 +95,8 @@ export function validateAgainstSpec(spec: MediaModelSpec, body: MediaJobBody): v
   checkListed(body.durationSec, p.durationsSec, "duration", spec.id);
   checkListed(body.resolution, p.resolutions, "resolution", spec.id);
   checkListed(body.aspectRatio, p.aspectRatios, "aspect ratio", spec.id);
+  if (body.quality !== undefined && !p.qualities?.length) throw invalid(`${spec.id} does not take a quality`);
+  checkListed(body.quality, p.qualities, "quality", spec.id);
   if (body.negativePrompt && !p.negativePrompt) throw invalid(`${spec.id} does not accept a negative prompt`);
   if (body.seed !== undefined && !p.seed) throw invalid(`${spec.id} does not accept a seed`);
   if (body.audio === true && !p.nativeAudio) throw invalid(`${spec.id} does not generate audio`);

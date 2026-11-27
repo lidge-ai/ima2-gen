@@ -19,6 +19,8 @@ export interface MediaParams {
   durationsSec?: readonly number[];
   resolutions?: readonly string[];
   aspectRatios?: readonly string[];
+  /** Quality tiers this route prices separately, in the provider's spelling. */
+  qualities?: readonly string[];
   maxReferenceImages?: number;
   maxReferenceVideos?: number;
   nativeAudio?: boolean;
@@ -48,6 +50,8 @@ export interface MediaModel {
   tasks: readonly string[];
   routes: readonly MediaRoute[];
   defaultRoute: string | null;
+  /** The provider is retiring this model; only the model window says so. */
+  retiring?: boolean;
 }
 
 /** A provider lane as the catalog lists it; never contains a key value. */
@@ -63,6 +67,25 @@ export interface MediaAdapter {
   keySource?: string;
   maskedKey?: string | null;
   extraFields: { name: string; secret: boolean; required: boolean; configured?: boolean; source?: string; value?: string | null }[];
+}
+
+const RETIRING: readonly string[] = ["deprecated", "legacy", "retiring"];
+
+/**
+ * Catalog labels mark a model being retired with a suffix ("GPT Image 2 (deprecated)"). The name is shown
+ * clean everywhere; the model window reads the flag and shows its own badge (studios/kit does the same).
+ */
+export function modelName(label: string): { label: string; retiring: boolean } {
+  const text = label.trimEnd();
+  const open = text.lastIndexOf("(");
+  if (!text.endsWith(")") || open <= 0) return { label, retiring: false };
+  const name = text.slice(0, open).trimEnd();
+  return RETIRING.includes(text.slice(open + 1, -1).trim().toLowerCase()) && name ? { label: name, retiring: true } : { label, retiring: false };
+}
+
+/** Catalog models with clean names; a model that is not retiring carries no flag. */
+export function namedModels(models: readonly MediaModel[]): MediaModel[] {
+  return models.map((model) => { const name = modelName(model.label); return name.retiring ? { ...model, label: name.label, retiring: true } : model; });
 }
 
 export function fetchMediaCatalog(kind: "image" | "video") {
