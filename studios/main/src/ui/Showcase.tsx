@@ -119,13 +119,15 @@ export function resolveWorkflow(item: ShowcaseItem, workflows: readonly Workflow
 function NeedsLine({ item, workflow }: { item: ShowcaseItem; workflow: WorkflowDef | undefined }) {
   const t = useT(M);
   const keys = useStudio((s) => s.keys);
+  const keysLoaded = useStudio((s) => s.keysLoaded);
   const catalog = useStudio((s) => s.catalog);
   const needs = showcaseNeeds(item, workflow, catalog, keys);
   const name = (n: Need) => (n.signIn ? t("signInName", { name: n.label }) : n.label);
   const ready = needs.filter((n) => n.ready === true);
   const missing = needs.filter((n) => n.ready === false);
   const unknown = needs.filter((n) => n.ready === null);
-  if (!needs.length) return null;
+  // Until the key list arrives, "needs a key" would be a guess.
+  if (!needs.length || !keysLoaded) return null;
   return (
     <>
       {ready.length ? (

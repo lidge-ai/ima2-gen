@@ -20,6 +20,8 @@ export interface StudioState {
   catalog: Catalog | null;
   catalogError: string | null;
   keys: readonly KeyStatus[];
+  /** The key list has arrived once; before that, "no keys" is not known. */
+  keysLoaded: boolean;
   workflows: readonly WorkflowDef[];
   workflowsLoaded: boolean;
   workflowsError: string | null;
@@ -40,6 +42,7 @@ const initial: StudioState = {
   catalog: null,
   catalogError: null,
   keys: [],
+  keysLoaded: false,
   workflows: [],
   workflowsLoaded: false,
   workflowsError: null,
@@ -137,7 +140,7 @@ export class Studio {
 
   async refreshKeys(): Promise<void> {
     try {
-      this.set({ keys: await this.client.keys.list() });
+      this.set({ keys: await this.client.keys.list(), keysLoaded: true });
     } catch {
       // The keys screen shows its own error state on its next load.
     }
