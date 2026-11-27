@@ -83,3 +83,10 @@ test("the audio screen reads a local ComfyUI workflow the same way: run time, no
   await expect(page.getByRole("button", { name: /^Generate/ })).not.toContainText("Price not published");
   await expect(page.getByText("Add a key to run this model")).toHaveCount(0);
 });
+
+test("in Korean, the ComfyUI route reads as your own server, not the server's English name", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
+  await page.goto("/#/models");
+  await expect(page.getByText("ComfyUI (내 서버)").first()).toBeVisible();
+  await expect(page.getByText("ComfyUI (your server)")).toHaveCount(0);
+});

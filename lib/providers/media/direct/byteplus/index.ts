@@ -1,6 +1,7 @@
 // BytePlus ModelArk direct adapter: Seedance video (async tasks) and Seedream images (sync).
 // Auth: Authorization: Bearer <ARK_API_KEY>.
 // https://docs.byteplus.com/en/docs/ModelArk/base-url-and-authentication (read 2026-11-26)
+import { withImageForms, type ImageForm } from "../_l2/imageForm.js";
 import type {
   MediaAdapterContext,
   MediaJobRef,
@@ -83,7 +84,7 @@ export const adapter: MediaProviderAdapter = {
   },
   // Images and audio may be inline data URIs; video must be a public URL or an asset:// id.
   inputTransport: "inline",
-  listModels: () => MODELS,
+  listModels: () => DECLARED,
   async validateKey(ctx) {
     // A one-row task list is a read, never a generation.
     const url = joinUrl(baseUrl(ctx), TASKS_PATH + "?page_num=1&page_size=1");
@@ -120,3 +121,15 @@ export const adapter: MediaProviderAdapter = {
   },
   normalizeError: (error) => normalizeUnknownError(P, error),
 };
+
+const edit = (images: number, accepts: ImageForm["accepts"], more: Partial<ImageForm> = {}): ImageForm =>
+  ({ task: "image-to-image", images, accepts: ["prompt", ...accepts], requires: ["prompt"], ...more });
+// Seedream takes its images in either role; a form sends them all as the image to edit.
+const DECLARED = withImageForms(MODELS, {
+  "bytedance/seedream-5.5": edit(10, ["resolution", "aspectRatio"]),
+  "bytedance/seedream-5-pro": edit(10, ["resolution", "aspectRatio"]),
+  "bytedance/seedream-5-lite": edit(14, ["resolution", "aspectRatio", "count"]),
+  "bytedance/seedream-4-5-edit": edit(14, ["resolution", "aspectRatio", "count"]),
+  "bytedance/seedream-v4": edit(14, ["resolution", "aspectRatio", "count"]),
+  "bytedance/seedream-5.5-layers": { task: "image-segment", images: 1, accepts: ["prompt", "resolution"] },
+});

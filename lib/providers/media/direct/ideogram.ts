@@ -9,6 +9,7 @@ import { fail, makeError, normalizeUnknownError, MediaAdapterError } from "./_l4
 import { asRecord, httpError, readBody, readString, type ResponseBody } from "./_l4kit/http.js";
 import { withResolvedInputs } from "./_l4kit/inputBytes.js";
 import { findModel, requireApiKey } from "./_l4kit/request.js";
+import { vendorMask } from "../maskConvention.js";
 import { buildIdeogramBody } from "./ideogramBody.js";
 import { IDEOGRAM_MODELS } from "./ideogramModels.js";
 
@@ -49,7 +50,8 @@ async function call(ctx: MediaAdapterContext, path: string, init: RequestInit, k
 async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest): Promise<MediaJobRef> {
   const key = requireApiKey(P, LABEL, ctx);
   const model = findModel(P, IDEOGRAM_MODELS, request.model);
-  const { path, form, mimeType } = buildIdeogramBody(model, await withResolvedInputs(P, ctx, request));
+  // Ideogram edits the black regions of a mask and keeps the white ones (see ideogramModels.ts).
+  const { path, form, mimeType } = buildIdeogramBody(model, await vendorMask(await withResolvedInputs(P, ctx, request), "black-repaints"));
   const body = await call(ctx, `/v2/${path}`, { method: "POST", headers: headers(key), body: form }, key);
   const id = readString(asRecord(body.json), "generation_id");
   if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) fail(P, "BAD_RESPONSE", "Ideogram did not return a valid generation_id", { category: "upstream", retryable: false });

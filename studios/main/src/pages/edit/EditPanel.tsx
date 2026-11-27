@@ -2,7 +2,7 @@ import { useState } from "react";
 import { EDIT_TASKS, editRoutes, type Catalog, type EditForm, type EditTask } from "@ima2/studio-kit";
 import { messages, useT } from "../../i18n.ts";
 import { navigate } from "../../router.ts";
-import { routePrice } from "../../ui/format.ts";
+import { routeName, routePrice } from "../../ui/format.ts";
 import { Icon } from "../../ui/Icon.tsx";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { ModelPicker } from "../../ui/ModelPicker.tsx";
@@ -111,7 +111,7 @@ function RouteTile({ edit }: { edit: Edit }) {
   const routes = edit.model ? editRoutes(edit.model, edit.state.tool) : [];
   if (routes.length < 2) return null;
   const options = routes.map((route) => ({
-    value: route.providerId, label: route.label,
+    value: route.providerId, label: routeName(route),
     meta: route.route === "local" ? t("local") : [t(route.route), routePrice(route), ...(route.keyConfigured ? [] : [t("noKey")])].join(" · "),
   }));
   return <SettingTile caption={t("route")} value={edit.state.provider} options={[{ value: "", label: t("automatic") }, ...options]} onChange={edit.pickRoute} />;

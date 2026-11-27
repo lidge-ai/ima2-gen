@@ -47,6 +47,7 @@ export async function runBody(base: string, args: ParsedArgs): Promise<Dict> {
     ...(args.aspect && { aspectRatio: args.aspect }), ...(args.duration !== undefined && { durationSec: numberFlag(args, "duration") }),
     ...(args.seed !== undefined && { seed: numberFlag(args, "seed") }), ...(args.count !== undefined && { count: numberFlag(args, "count") }),
     ...(args.audio || args["no-audio"] ? { audio: Boolean(args.audio) } : {}),
+    ...(args["mask-convention"] && { maskConvention: args["mask-convention"] }),
     inputs: await inputs(base, args.input), vendorOptions: { ...vendorJson(args["vendor-json"]), ...pairs(args["vendor-option"]) } };
 }
 export async function outputFiles(base: string, data: Dict, target?: string): Promise<string[]> {

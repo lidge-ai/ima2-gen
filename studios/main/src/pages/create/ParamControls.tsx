@@ -1,7 +1,7 @@
 import { messages, tr, useT } from "../../i18n.ts";
 import { resolutionParts, type CatalogModel } from "@ima2/studio-kit";
 import { SettingTile, type TileOption } from "../../ui/SettingTile.tsx";
-import { routePrice } from "../../ui/format.ts";
+import { routeName, routePrice } from "../../ui/format.ts";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
 import type { CreateForm } from "./form.ts";
 
@@ -79,7 +79,7 @@ export function routeOptions(model: CatalogModel): TileOption<string>[] {
     { value: "", label: tr(M, "automatic"), meta: tr(M, "directFirst") },
     ...model.routes.map((route) => ({
       value: route.providerId,
-      label: route.label,
+      label: routeName(route),
       icon: <VendorLogo id={route.providerId} size={16} />,
       // A local route has no price and no key: it says where it runs instead.
       meta: route.route === "local"
