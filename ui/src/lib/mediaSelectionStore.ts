@@ -51,6 +51,7 @@ export function parseMediaSelection(raw: unknown): MediaSelection | null {
   const options = parseOptions(v.options);
   if (options) selection.options = options;
   if (text(v.voiceName)) selection.voiceName = v.voiceName;
+  if (selection.kind === "audio" && (v.use === "speech" || v.use === "sound")) selection.use = v.use;
   return selection;
 }
 

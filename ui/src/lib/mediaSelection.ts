@@ -1,5 +1,5 @@
 import { makerName, type MediaModel, type MediaRoute } from "./mediaCatalog";
-import { lengthRange, startLength, taskParams, type LengthRange } from "./mediaForm";
+import { audioUse, lengthRange, startLength, taskParams, type AudioUse, type LengthRange } from "./mediaForm";
 import { resolutionRank } from "./mediaModelList";
 import { routeTasks, type ClassicKind, type ClassicTask } from "./mediaTasks";
 
@@ -29,6 +29,8 @@ export interface MediaSelection {
   options?: Record<string, string | boolean>;
   /** The chosen voice's name, kept so the closed control can show it without the voice list. */
   voiceName?: string;
+  /** For audio: whether the prompt is read aloud or describes a sound, kept so the composer can say so without the catalog. */
+  use?: AudioUse;
 }
 
 export interface MediaSelectionState {
@@ -149,6 +151,7 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   const params = taskParams(route, task);
   const next: MediaSelection = { kind: model.kind, model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: makerName(model), routeLabel: route.label };
   if (route.logo?.urls.mark) next.routeMark = route.logo.urls.mark;
+  if (model.kind === "audio") next.use = audioUse(route, task);
   const range = lengthRange(params);
   const durationSec = range ? keepLength(previous?.durationSec, range) : keepDuration(previous?.durationSec, params.durationsSec);
   const resolution = keepLabel(previous?.resolution, params.resolutions, defaultResolution(params.resolutions));

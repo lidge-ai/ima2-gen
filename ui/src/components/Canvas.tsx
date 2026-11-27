@@ -187,8 +187,9 @@ export function Canvas() {
 
   const displayQuality = formatQualityAlias(currentImage?.quality);
   const displaySize = formatSizeAlias(currentImage?.size);
-  const displayModel = (currentImage?.provider?.startsWith("media:") ? mediaModels.find((model) => model.id === currentImage.model)?.label : undefined)
-    ?? getImageModelShortLabel(currentImage?.model, currentImage?.provider);
+  // The catalog's name for a media model, once the catalog has been loaded by something else; the id until then.
+  const mediaLabel = currentImage?.provider?.startsWith("media:") ? mediaModels.find((model) => model.id === currentImage.model)?.label : undefined;
+  const displayModel = mediaLabel ?? getImageModelShortLabel(currentImage?.model, currentImage?.provider);
   const imageSrc = currentImage ? getClassicImageSrc(currentImage) : null;
   const resultFavorite = resolveResultFavorite(
     currentImage?.filename,
@@ -240,7 +241,7 @@ export function Canvas() {
               />
             ) : null}
             {isAudioItem(currentImage) ? (
-              <MediaAudioResult item={currentImage} src={imageSrc} model={displayModel ?? null} />
+              <MediaAudioResult item={currentImage} src={imageSrc} model={mediaLabel} />
             ) : isVideoItem(currentImage) ? (
               <>
                 <video

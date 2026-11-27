@@ -39,7 +39,7 @@ export function LengthField({ range, selection, update }: { range: LengthRange; 
   };
   return (
     <div className="media-parameter">
-      <label className="section-title" htmlFor={id}>{t("mediaPicker.length")}</label>
+      <label className="section-title" htmlFor={id}>{t("mediaPicker.duration")}</label>
       <span className="media-length">
         <input id={id} className="video-topic-input" type="text" inputMode="decimal" autoComplete="off" value={text}
           placeholder={range.required ? "" : t("mediaPicker.lengthAuto")} aria-invalid={invalid} aria-describedby={id + "-hint"}

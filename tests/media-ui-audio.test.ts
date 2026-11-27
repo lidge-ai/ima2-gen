@@ -93,6 +93,8 @@ test("picking an audio model starts a required length at ten seconds and leaves 
   assert.equal(reconcileSelection(model("s/s", [short]), short, "text-to-audio", null, "auto").selection.durationSec, 6);
   const fresh = reconcileSelection(musicModel, music, "text-to-audio", null, "auto").selection;
   assert.equal(fresh.kind, "audio");
+  assert.equal(fresh.use, "sound", "kept so the composer can say what the prompt is for without the catalog");
+  assert.equal(reconcileSelection(voiceModel, speech, "text-to-audio", null, "auto").selection.use, "speech");
   assert.equal(fresh.durationSec, undefined);
   assert.equal(fresh.options, undefined);
 });
@@ -169,9 +171,9 @@ test("the request carries the declared options as vendorOptions and nothing when
 
 test("a saved audio selection is read back with its options and voice name; other shapes are dropped", () => {
   const saved = parseMediaSelection({ kind: "audio", model: voiceModel.id, adapter: "elevenlabs", task: "text-to-audio", routeMode: "auto",
-    durationSec: 12.5, options: { voice_id: "v-rachel", loop: true, bad: 3, nested: { a: 1 } }, voiceName: "Rachel" });
+    durationSec: 12.5, options: { voice_id: "v-rachel", loop: true, bad: 3, nested: { a: 1 } }, voiceName: "Rachel", use: "speech" });
   assert.deepEqual(saved, { kind: "audio", model: voiceModel.id, adapter: "elevenlabs", task: "text-to-audio", routeMode: "auto", durationSec: 12.5,
-    options: { voice_id: "v-rachel", loop: true }, voiceName: "Rachel" });
+    options: { voice_id: "v-rachel", loop: true }, voiceName: "Rachel", use: "speech" });
   assert.equal(parseMediaSelection({ kind: "audio", model: "m", adapter: "a", task: "text-to-audio", options: ["x"] })?.options, undefined);
   assert.equal(parseMediaSelection({ kind: "sound", model: "m", adapter: "a", task: "text-to-audio" }), null);
 });

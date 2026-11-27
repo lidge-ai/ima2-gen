@@ -73,6 +73,7 @@ test("AU2 speech: the voice is chosen from the provider's list with a sample, Ge
   await expect(card(page)).toContainText("Eleven v4");
   await expect(card(page).locator(".media-card__name small")).toHaveText("ElevenLabs · Audio");
   await expect(card(page).locator(".media-inputs[role=note]")).toHaveText("A voice reads the prompt aloud, exactly as written.");
+  await expect(composer(page)).toHaveAttribute("placeholder", "Write what the voice should say...");
 
   // No voice yet: the list is open, and Generate says what it is waiting for.
   await expect(voice(page).locator(".media-voice__current")).toHaveText("Choose a voice");
@@ -128,7 +129,7 @@ test("AU2 speech: the voice is chosen from the provider's list with a sample, Ge
   const result = page.locator(".result-audio:visible");
   await expect(result.locator("audio")).toHaveAttribute("src", /l11-speech\.mp3/);
   await expect(result.locator(".result-audio__title")).toHaveText("Eleven v4");
-  await expect(result.locator(".result-audio__prompt")).toHaveText("Welcome aboard. Please keep your seatbelt fastened.");
+  await expect(page.locator(".result-audio__prompt"), "the prompt is shown once, under the result").toHaveCount(0);
   expect(await result.locator("audio").evaluate((node: HTMLAudioElement) => new Promise<number>((resolve) => {
     if (node.readyState >= 1) resolve(node.duration); else { node.onloadedmetadata = () => resolve(node.duration); node.onerror = () => resolve(-1); }
   })), "the player loads the file").toBeGreaterThan(0);
@@ -146,9 +147,10 @@ test("AU3 sound: a required length starts in range, a value outside it is named 
   await composer(page).fill("rain on a tin roof, distant thunder");
   await pick(page, "Music and sound effects", "mirelo/mirelo-sfx-2.0");
   await expect(card(page).locator(".media-inputs[role=note]")).toHaveText("The prompt describes the music or sound to make.");
+  await expect(composer(page)).toHaveAttribute("placeholder", "Describe the music or sound to make...");
   // Automatic says why it is not on the maker's own route.
   await expect(card(page).locator(".media-routes")).toContainText("Now: fal (Mirelo direct needs a key)");
-  const length = card(page).getByLabel("Length", { exact: true });
+  const length = card(page).getByLabel("Duration", { exact: true });
   await expect(length).toHaveValue("10");
   await expect(card(page).locator(".media-field-hint")).toHaveText("1–600 seconds");
   const estimate = card(page).locator(".media-estimate");
@@ -156,11 +158,11 @@ test("AU3 sound: a required length starts in range, a value outside it is named 
   await expect(estimate.locator("small").first()).toHaveText("10 s × $0.02/s");
 
   await length.fill("700");
-  await expect(card(page).locator(".media-field-error")).toHaveText("Length must be 1 to 600 seconds.");
-  await expect(hint(page)).toHaveText("Length must be 1 to 600 seconds.");
+  await expect(card(page).locator(".media-field-error")).toHaveText("Duration must be 1 to 600 seconds.");
+  await expect(hint(page)).toHaveText("Duration must be 1 to 600 seconds.");
   await expect(generate(page)).toHaveAttribute("aria-disabled", "true");
   await length.fill("");
-  await expect(card(page).locator(".media-field-error")).toHaveText("Set a length from 1 to 600 seconds.");
+  await expect(card(page).locator(".media-field-error")).toHaveText("Set a duration from 1 to 600 seconds.");
   await length.fill("12.5");
   await expect(estimate.locator(".price")).toHaveText("$0.25");
   await expect(card(page).locator(".media-field-error")).toHaveCount(0);
@@ -173,7 +175,7 @@ test("AU3 sound: a required length starts in range, a value outside it is named 
 test("AU4 music: the length may be left to the model, and a declared switch is sent only when it is on", run({}, async (page, media) => {
   await composer(page).fill("slow lo-fi piano for a rainy evening");
   await pick(page, "Music and sound effects", "elevenlabs/elevenlabs-music-2.5");
-  const length = card(page).getByLabel("Length", { exact: true });
+  const length = card(page).getByLabel("Duration", { exact: true });
   await expect(length).toHaveValue("");
   await expect(length).toHaveAttribute("placeholder", "Model decides");
   await expect(card(page).locator(".media-field-hint")).toHaveText("3–600 seconds. Leave empty to let the model decide.");
@@ -241,7 +243,7 @@ test("AU8 a sound result opens with a player, and Make again restores its model 
   await actions.getByRole("button", { name: "Make again", exact: true }).click();
   await expect(page.locator(".toast")).toContainText("Model, settings and prompt restored. Check the estimate, then press Generate.");
   await expect(card(page)).toContainText("Eleven Music 2.5");
-  await expect(card(page).getByLabel("Length", { exact: true })).toHaveValue("45");
+  await expect(card(page).getByLabel("Duration", { exact: true })).toHaveValue("45");
   await expect(composer(page)).toHaveValue("slow lo-fi piano for a rainy evening");
   expect(media.submissions).toEqual([]);
 }));

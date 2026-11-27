@@ -101,7 +101,11 @@ export function PromptComposer({ variant = "sidebar" }: PromptComposerProps) {
   const afterPrompts = insertedPrompts.filter((item) => item.placement === "after");
   const visualPromptIds = [...beforePrompts.map((item) => item.id), "__main_prompt__", ...afterPrompts.map((item) => item.id)];
   const canAddMore = trayItems.length < maxRefs;
-  const placeholder = multimode
+  // A sound model uses the prompt differently (a script to read, or a sound to describe); the placeholder says which.
+  const audioUse = useAppStore((s) => (s.uiMode === "classic" && s.mediaSelection?.kind === "audio" ? s.mediaSelection.use ?? "speech" : null));
+  const placeholder = audioUse
+    ? t(audioUse === "sound" ? "prompt.placeholderSound" : "prompt.placeholderSpeech")
+    : multimode
     ? trayItems.length > 0
       ? t("multimode.promptPlaceholderWithRefs")
       : t("multimode.promptPlaceholder")

@@ -146,7 +146,7 @@ capture("result", { storage: { "ima2.selectedFilename": "l11-music.mp3" } }, asy
   const actions = stage.page.locator(".result-actions:visible").first();
   await expect(stage.page.locator(".result-audio:visible audio")).toBeVisible();
   await stage.shot("result");
-  if (stage.mobile) { await stage.page.locator(".result-actions__toggle:visible").first().click(); await stage.shot("result-more"); await stage.page.locator(".result-actions__toggle:visible").first().click(); }
+  if (stage.mobile) { await stage.page.locator(".result-actions__toggle:visible").first().click(); await stage.shot("result-more"); }
   await actions.locator(".action-btn", { hasText: /Info|정보/ }).first().click();
   await expect(stage.page.locator("[aria-labelledby=metadata-modal-title]")).toBeVisible();
   await stage.shot("result-details");
