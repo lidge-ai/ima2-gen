@@ -148,9 +148,6 @@ async function captureKeysAndFailures(stage: Stage): Promise<void> {
   await stage.card.locator(".media-estimate details summary").click();
   await stage.card.locator(".media-estimate").screenshot({ path: join(OUT, "estimate-basis-crop__" + stage.width + "__" + stage.locale + ".png") });
   await stage.card.locator(".media-estimate details summary").click();
-  if (stage.mobile) await page.locator("#mobile-generate-sheet [role=tab]").nth(0).click();
-  await page.locator(".generate-row:visible").screenshot({ path: join(OUT, "generate-estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
-
   // A model priced by quality: the retiring badge in the window, then the quality setting and its one price.
   await stage.openWindow();
   await stage.kind(0);
@@ -162,6 +159,12 @@ async function captureKeysAndFailures(stage: Stage): Promise<void> {
   await stage.card.locator(".media-estimate").scrollIntoViewIfNeeded();
   await stage.shot("quality");
   await stage.card.screenshot({ path: join(OUT, "quality-crop__" + stage.width + "__" + stage.locale + ".png") });
+  await stage.openWindow();
+  await stage.kind(1);
+  await stage.pick("bytedance/seedance-2.5");
+  await stage.showCard();
+  if (stage.mobile) await page.locator("#mobile-generate-sheet [role=tab]").nth(0).click();
+  await page.locator(".generate-row:visible").screenshot({ path: join(OUT, "generate-estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
 
   await page.locator(".composer:visible .composer__textarea").fill(PROMPT[stage.locale] ?? PROMPT.en!);
   await page.locator(".generate-btn:visible").click();
