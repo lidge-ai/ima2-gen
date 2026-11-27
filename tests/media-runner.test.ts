@@ -386,7 +386,7 @@ test("quality runs only where the route lists it, reaches the adapter and is kep
   const graded = fakeSpec("acme/still-1", { kind: "image", tasks: ["text-to-image"], params: { resolutions: ["1K"], qualities: ["low", "high"] } });
   assert.throws(() => validateAgainstSpec(graded, parseMediaJobBody({ model: graded.id, task: "text-to-image", quality: "max" })), /does not support quality max \(allowed: low, high\)/);
   assert.throws(() => validateAgainstSpec(fakeSpec("acme/clip-1"), body({ quality: "low" })), /does not take a quality/);
-  const script = { states: [{ status: "succeeded" as const, outputs: [{ kind: "video" as const, url: VIDEO_URL, mimeType: "video/mp4" }] }], submitted: [] as { quality?: string }[] };
+  const script = { states: [{ status: "succeeded" as const, outputs: [{ kind: "video" as const, url: VIDEO_URL, mimeType: "video/mp4" }] }], submitted: [] as import("../lib/providers/media/contract.ts").MediaSubmitRequest[] };
   const s = await setup([makeFakeAdapter({ models: [graded], script })]);
   try {
     const prepared = await prepareMediaJob(s.deps, parseMediaJobBody({ model: graded.id, task: "text-to-image", prompt: "a fox", quality: "low" }));

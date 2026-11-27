@@ -151,6 +151,18 @@ async function captureKeysAndFailures(stage: Stage): Promise<void> {
   if (stage.mobile) await page.locator("#mobile-generate-sheet [role=tab]").nth(0).click();
   await page.locator(".generate-row:visible").screenshot({ path: join(OUT, "generate-estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
 
+  // A model priced by quality: the retiring badge in the window, then the quality setting and its one price.
+  await stage.openWindow();
+  await stage.kind(0);
+  await page.locator('.media-dialog .media-row[data-model="openai/gpt-image-2"]').first().scrollIntoViewIfNeeded();
+  await stage.shot("window-retiring");
+  await stage.pick("openai/gpt-image-2");
+  await stage.showCard();
+  await expect(stage.card.locator(".media-estimate .price")).toContainText("$");
+  await stage.card.locator(".media-estimate").scrollIntoViewIfNeeded();
+  await stage.shot("quality");
+  await stage.card.screenshot({ path: join(OUT, "quality-crop__" + stage.width + "__" + stage.locale + ".png") });
+
   await page.locator(".composer:visible .composer__textarea").fill(PROMPT[stage.locale] ?? PROMPT.en!);
   await page.locator(".generate-btn:visible").click();
   await expect.poll(() => app.media.submissions.length).toBeGreaterThan(0);
