@@ -209,3 +209,14 @@ export interface WireHistoryPage {
   total: number;
   nextCursor: { before: number; beforeFilename: string } | null;
 }
+
+/** POST /api/media/estimate answer (lib/providers/media/estimate.ts). Only the fields the studio reads. */
+export interface WireMediaEstimate {
+  model: string;
+  adapter: string;
+  route: "direct" | "aggregator" | "local";
+  usd: number | null;
+  quote: { state: string };
+  local?: { expectedSec: number | null; basis: string; mayBill: boolean };
+  note?: string;
+}

@@ -9,7 +9,7 @@ from `ui/` (the classic UI), and the server needs no changes to host a new one.
 |---|---|
 | `kit/` | UI-agnostic TypeScript client: catalog, keys, uploads, media jobs, workflow jobs, live events, history, prices, route choice, vendor logos. Also a development fake server. |
 | `kit/assets/vendors/` | Official logos of every model maker and route provider, with `manifest.json` recording source, date and usage notes. The server serves this folder at `/media-assets/vendors/`. |
-| `higgs/` | Studio with a feed, image, video, remix, director, models and assets layout (Vite + React). |
+| `main/` | Studio with a feed, image, video, remix, director, models and assets layout (Vite + React). |
 
 ## Run a studio
 
@@ -17,7 +17,7 @@ Against the fake server (no keys, no provider calls):
 
 ```bash
 cd studios/kit && npm ci
-cd ../higgs && npm ci
+cd ../main && npm ci
 npm run dev:fake          # fake server on :8790, studio on :5190
 ```
 
@@ -35,7 +35,7 @@ writes `studios/<name>/dist`). Set `IMA2_DEFAULT_UI=<name>` or config
 
 1. Create `studios/<name>/` with its own `package.json`. Any framework works.
 2. Depend on the kit by path. With Vite, alias `@ima2/studio-kit` to
-   `../kit/src/index.ts` (see `higgs/vite.config.ts`) and set `base: "./"` so the build
+   `../kit/src/index.ts` (see `main/vite.config.ts`) and set `base: "./"` so the build
    works under `/studio/<name>/`.
 3. Create one client and follow events:
 
@@ -61,7 +61,7 @@ const job = await client.watchJob(jobId, { onUpdate: (j) => console.log(j.status
    name as text when a wordmark slot has no file. Give every logo box a fixed height and
    a maximum width so no file can grow past it. Do not redraw or recolor logos.
 7. Put the studio's screen tests next to it (Playwright against `kit`'s fake server,
-   see `higgs/playwright.config.ts`).
+   see `main/playwright.config.ts`).
 
 ## Client surface
 

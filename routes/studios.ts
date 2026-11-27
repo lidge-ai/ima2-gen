@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { readConfigFileSafe } from "../lib/providers/media/credentials.js";
 import { updateConfigFileAtomic } from "../lib/configFileStore.js";
 import { requireRuntimeContext, type RouteRuntimeContext, type RuntimeContext } from "../lib/runtimeContext.js";
+import { STUDIO_ALIASES, studioName } from "../lib/studioNames.js";
 
 export const CLASSIC_UI = "classic";
 const STUDIO_NAME = /^[a-z0-9][a-z0-9-]{0,40}$/;
@@ -33,7 +34,8 @@ function studiosRoot(ctx: RuntimeContext, options: StudioOptions): string {
  * that already exists under root.
  */
 function builtDist(root: string, name: string): string | null {
-  if (!STUDIO_NAME.test(name) || NOT_A_STUDIO.has(name)) return null;
+  // An earlier name is never a studio of its own, even if a checkout still holds its old build folder.
+  if (!STUDIO_NAME.test(name) || NOT_A_STUDIO.has(name) || Object.hasOwn(STUDIO_ALIASES, name)) return null;
   let entry: string | undefined;
   try {
     entry = readdirSync(root, { withFileTypes: true }).find((d) => d.isDirectory() && d.name === name)?.name;
@@ -57,18 +59,30 @@ export function listStudios(root: string): StudioEntry[] {
     return [];
   }
   return names
-    .filter((n) => STUDIO_NAME.test(n) && !NOT_A_STUDIO.has(n))
+    .filter((n) => STUDIO_NAME.test(n) && !NOT_A_STUDIO.has(n) && !Object.hasOwn(STUDIO_ALIASES, n))
     .sort()
     .map((name) => ({ name, built: isBuilt(root, name), url: `/studio/${name}/` }));
 }
 
-/** env IMA2_DEFAULT_UI wins over config.json ui.defaultUi; anything unknown means the classic UI. */
+/** env IMA2_DEFAULT_UI wins over config.json ui.defaultUi; anything unknown means the classic UI. An earlier name reads as the current one. */
 export async function readDefaultUi(ctx: RuntimeContext, options: StudioOptions = {}): Promise<string> {
   const env = options.env ?? process.env;
-  if (env.IMA2_DEFAULT_UI) return env.IMA2_DEFAULT_UI;
+  if (env.IMA2_DEFAULT_UI) return studioName(env.IMA2_DEFAULT_UI);
   const file = await readConfigFileSafe(ctx.config.storage.configFile);
   const ui = file.ui as { defaultUi?: unknown } | undefined;
-  return typeof ui?.defaultUi === "string" && ui.defaultUi ? ui.defaultUi : CLASSIC_UI;
+  return typeof ui?.defaultUi === "string" && ui.defaultUi ? studioName(ui.defaultUi) : CLASSIC_UI;
+}
+
+/**
+ * /studio/<earlier name>/rest?query moves permanently to /studio/<current name>/rest?query. The
+ * Location carries no fragment, so a browser keeps the bookmark's #/route on the new address.
+ */
+function aliasRedirect(req: Request, res: Response, next: NextFunction) {
+  const old = String(req.params.name ?? "");
+  if (!Object.hasOwn(STUDIO_ALIASES, old)) return next();
+  const rest = req.originalUrl.slice(("/studio/" + old).length);
+  const tail = rest === "" || rest.startsWith("?") ? "/" + rest : rest;
+  return res.redirect(301, "/studio/" + studioName(old) + tail);
 }
 
 function studioHandler(root: string): RequestHandler {
@@ -106,7 +120,7 @@ export function mountStudioUi(app: Express, ctxRaw: RouteRuntimeContext, options
     if (preferred !== CLASSIC_UI && isBuilt(root, preferred)) return res.redirect(302, `/studio/${preferred}/`);
     return next();
   });
-  app.use("/studio/:name", studioHandler(root));
+  app.use("/studio/:name", aliasRedirect, studioHandler(root));
 }
 
 export function registerStudioRoutes(app: Express, ctxRaw: RouteRuntimeContext, options: StudioOptions = {}) {
@@ -116,7 +130,7 @@ export function registerStudioRoutes(app: Express, ctxRaw: RouteRuntimeContext, 
     res.json({ studios: listStudios(root), defaultUi: await readDefaultUi(ctx, options) });
   });
   app.put("/api/studios/default", async (req: Request, res: Response) => {
-    const name = req.body?.name;
+    const name = typeof req.body?.name === "string" ? studioName(req.body.name) : req.body?.name;
     if (typeof name !== "string" || (name !== CLASSIC_UI && !isBuilt(root, name))) {
       return res.status(400).json({ ok: false, code: "STUDIO_UNKNOWN", error: "name must be \"classic\" or a built studio" });
     }

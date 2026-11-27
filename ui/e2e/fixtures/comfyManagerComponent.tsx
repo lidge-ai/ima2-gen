@@ -39,7 +39,8 @@ async function api(path: string, init: RequestInit = {}): Promise<unknown> {
         models: { image: workflows.map(({ id, label }) => ({ id, label })), video: [] } } } };
     }
     if (method === "POST" && path === "/api/comfy/inspect") {
-      assertBody(body, { graph: GRAPH }); inspectionDone = true; call.outcome = "success";
+      // The inspection names the server the workflow will run on.
+      assertBody(body, { graph: GRAPH, origin: "http://127.0.0.1:8188" }); inspectionDone = true; call.outcome = "success";
       return { ok: true, mediaKind: "image", nodes: [], needsConfirmation: false, candidates: [
         { field: "prompt", node: "1", input: "text", classType: "CLIPTextEncode", unambiguous: true },
         { field: "output", node: "2", input: "", classType: "SaveImage", unambiguous: true },

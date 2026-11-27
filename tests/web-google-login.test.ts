@@ -79,7 +79,7 @@ function cookiesOf(res: Response): Map<string, string> {
 }
 const valueOf = (line: string | undefined) => line ? line.split(";")[0]!.slice(line.indexOf("=") + 1) : "";
 
-async function startLogin(h: Awaited<ReturnType<typeof withApp>>, returnTo = "/studio/higgs/") {
+async function startLogin(h: Awaited<ReturnType<typeof withApp>>, returnTo = "/studio/main/") {
   const res = await h.call("/auth/google/start?return=" + encodeURIComponent(returnTo));
   assert.equal(res.status, 302);
   const location = new URL(res.headers.get("location")!);
@@ -109,7 +109,7 @@ test("config: google mode needs a client, a long session secret, an https origin
 
 test("before sign-in, pages redirect to the login screen and everything else gets 401", async t => {
   const h = await withApp(t);
-  for (const path of ["/", "/studio/higgs/", "/index.html"]) {
+  for (const path of ["/", "/studio/main/", "/index.html"]) {
     const res = await h.call(path, { headers: { accept: "text/html" } });
     assert.equal(res.status, 302, path);
     assert.equal(res.headers.get("location"), "/auth/login?return=" + encodeURIComponent(path));
@@ -119,9 +119,9 @@ test("before sign-in, pages redirect to the login screen and everything else get
     assert.equal(res.status, 401, path);
     assert.equal((await res.json()).error.code, "WEB_LOGIN_REQUIRED");
   }
-  const page = await h.call("/auth/login?return=%2Fstudio%2Fhiggs%2F");
+  const page = await h.call("/auth/login?return=%2Fstudio%2Fmain%2F");
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /href="\/auth\/google\/start\?return=%2Fstudio%2Fhiggs%2F"/);
+  assert.match(await page.text(), /href="\/auth\/google\/start\?return=%2Fstudio%2Fmain%2F"/);
 });
 
 test("start sends PKCE S256, state and nonce to Google with the fixed callback", async t => {
@@ -143,7 +143,7 @@ test("a verified allowed account gets a 24h signed session and reaches the app",
   const h = await withApp(t);
   const { res, location, session, sessionCookie } = await login(h);
   assert.equal(res.status, 302);
-  assert.equal(res.headers.get("location"), "/studio/higgs/");
+  assert.equal(res.headers.get("location"), "/studio/main/");
   assert.ok(session);
   assert.match(session!, /Path=\//);
   assert.match(session!, /HttpOnly/);
@@ -156,9 +156,9 @@ test("a verified allowed account gets a 24h signed session and reaches the app",
   assert.equal(token.get("client_secret"), "client-secret");
   assert.equal(token.get("redirect_uri"), ORIGIN + "/auth/google/callback");
   assert.equal(createHash("sha256").update(token.get("code_verifier")!).digest("base64url"), location.searchParams.get("code_challenge"));
-  const page = await h.call("/studio/higgs/", { headers: { cookie: sessionCookie } });
+  const page = await h.call("/studio/main/", { headers: { cookie: sessionCookie } });
   assert.equal(page.status, 200);
-  assert.deepEqual(await page.json(), { reached: "GET /studio/higgs/", email: "jun@example.test" });
+  assert.deepEqual(await page.json(), { reached: "GET /studio/main/", email: "jun@example.test" });
   const badge = cookiesOf(page);
   assert.equal(valueOf(badge.get("ima2_web_user")), "jun%40example.test");
   assert.equal(valueOf(badge.get("ima2_web_auth")), "google");

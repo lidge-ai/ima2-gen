@@ -49,7 +49,7 @@ test("config: off unless IMA2_WEB_ACCESS=cloudflare, and incomplete settings sto
 
 test("requests without a valid Access token get 401 on pages, API and media alike", async t => {
   const { call } = await withGate(t);
-  for (const path of ["/", "/studio/higgs/", "/api/health", "/generated/a.png"]) {
+  for (const path of ["/", "/studio/main/", "/api/health", "/generated/a.png"]) {
     const missing = await call(path, { token: null });
     assert.equal(missing.status, 401, path);
     assert.equal((await missing.json()).error.code, "WEB_ACCESS_REQUIRED");
@@ -64,9 +64,9 @@ test("requests without a valid Access token get 401 on pages, API and media alik
 
 test("a valid token reaches the app with the email in context and a readable cookie", async t => {
   const { call } = await withGate(t);
-  const res = await call("/studio/higgs/");
+  const res = await call("/studio/main/");
   assert.equal(res.status, 200);
-  assert.deepEqual(await res.json(), { reached: "GET /studio/higgs/", email: "jun@example.test" });
+  assert.deepEqual(await res.json(), { reached: "GET /studio/main/", email: "jun@example.test" });
   const cookie = res.headers.get("set-cookie") ?? "";
   assert.match(cookie, /^ima2_web_user=jun%40example\.test;/);
   assert.match(cookie, /Secure/);
@@ -98,6 +98,7 @@ test("remote-unsafe routes and unpriced generation are closed; everyday routes s
     ["POST", "/api/comfy/workflows", "WEB_ROUTE_DISABLED"],
     ["POST", "/api/comfy/inspect", "WEB_ROUTE_DISABLED"],
     ["POST", "/api/comfy/export-image", "WEB_ROUTE_DISABLED"],
+    ["GET", "/api/comfy/result-graph?filename=x.png", "WEB_ROUTE_DISABLED"],
     ["GET", "/api/comfy/remotes", "WEB_ROUTE_DISABLED"],
     ["PUT", "/api/comfy/remotes", "WEB_ROUTE_DISABLED"],
     ["DELETE", "/api/comfy/remotes", "WEB_ROUTE_DISABLED"],

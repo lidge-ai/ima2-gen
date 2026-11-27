@@ -18,6 +18,8 @@ interface ProviderDef {
   route: "direct" | "aggregator" | "local";
   consoleUrl: string;
   extraFields?: CatalogProvider["extraFields"];
+  /** A route on the person's own machine (ComfyUI): no key, no provider price. */
+  keyless?: boolean;
 }
 
 const PROVIDERS: Record<string, ProviderDef> = {
@@ -49,6 +51,7 @@ const PROVIDERS: Record<string, ProviderDef> = {
   elevenlabs: { label: "ElevenLabs", route: "direct", consoleUrl: "https://elevenlabs.io/app/settings/api-keys" },
   fal: { label: "fal", route: "aggregator", consoleUrl: "https://fal.ai/dashboard/keys" },
   replicate: { label: "Replicate", route: "aggregator", consoleUrl: "https://replicate.com/account/api-tokens" },
+  "comfy-local": { label: "ComfyUI (your server)", route: "local", consoleUrl: "", keyless: true },
 };
 
 type Params = MediaModelSpec["params"];
@@ -338,6 +341,15 @@ const MODELS: ModelRow[] = [
     V_FULL,
     { byteplus: 0.03, fal: 0.04 },
   ],
+  // A registered ComfyUI workflow, as the server lists it (comfy/<workflow id>, route "local", sizes as WIDTHxHEIGHT).
+  [
+    "comfy/klein",
+    "FLUX.2 klein",
+    "image",
+    T2I,
+    { resolutions: ["1024x1024", "1536x1024", "1024x1536"], seed: true },
+    { "comfy-local": null },
+  ],
 ];
 
 /**
@@ -374,7 +386,8 @@ function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
     upstreamId: providerId === "fal" || providerId === "replicate" ? providerId + ":" + id : id.split("/")[1]!,
     pricing: pricing(kind, tasks, usd, id),
     docsUrl: PROVIDERS[providerId]!.consoleUrl,
-    keyConfigured: keyed.has(providerId),
+    keyConfigured: keyed.has(providerId) || !!PROVIDERS[providerId]!.keyless,
+    ...(PROVIDERS[providerId]!.keyless ? { keyless: true } : {}),
     ...(ROUTE_TASKS[id]?.[providerId] ? { tasks: ROUTE_TASKS[id]![providerId]! } : {}),
   }));
   const rank = (r: (typeof entries)[number]) => (r.keyConfigured ? 0 : 2) + (r.route === "direct" ? 0 : 1);
@@ -397,7 +410,8 @@ export function makeCatalog(keyed: ReadonlySet<string>): Catalog {
     route: def.route,
     keyVocabulary: id,
     consoleUrl: def.consoleUrl,
-    keyConfigured: keyed.has(id),
+    keyConfigured: keyed.has(id) || !!def.keyless,
+    ...(def.keyless ? { keyless: true } : {}),
     ...(def.extraFields ? { extraFields: def.extraFields } : {}),
   }));
   return { providers, models: MODELS.map((row) => toModel(row, keyed)) };
@@ -425,6 +439,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
       pricing: route.pricing,
       docsUrl: route.docsUrl,
       hasKey: route.keyConfigured,
+      ...(route.keyless ? { keyless: true } : {}),
     })),
     defaultRoute: model.routes.find((route) => route.keyConfigured)?.providerId ?? null,
   }));
@@ -436,6 +451,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
     consoleUrl: provider.consoleUrl,
     keyPrefix: provider.keyPrefix ?? null,
     hasKey: provider.keyConfigured,
+    ...(provider.keyless ? { keyless: true } : {}),
     keySource: keys.env.has(provider.id) ? "env" : provider.keyConfigured ? "config" : null,
     maskedKey: null,
     extraFields: (provider.extraFields ?? []).map((field) => ({

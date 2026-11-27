@@ -1,0 +1,29 @@
+{
+  "name": "@ima2/studio-main",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ima2 studio with a feed, image, video, remix and director layout. Talks to the server only through studios/kit.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:fake": "node scripts/dev-fake.mjs",
+    "fake": "node ../kit/src/fake/cli.ts",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^25.9.9",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8"
+  }
+}

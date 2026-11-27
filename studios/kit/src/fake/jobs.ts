@@ -83,7 +83,7 @@ export class Jobs {
   finish(job: JobStart): void {
     const record = this.jobs.get(job.requestId);
     if (!record || record.status) return;
-    const failure = /\[fail:(auth|quota|rate-limit|invalid-request|moderation|upstream|timeout)\]/.exec(
+    const failure = /\[fail:(auth|quota|rate-limit|invalid-request|moderation|upstream|timeout|comfy-offline)\]/.exec(
       job.prompt,
     )?.[1];
     if (failure) {
@@ -120,19 +120,22 @@ export class Jobs {
     });
   }
   fail(job: JobStart, record: WireJob, failure: string): void {
-    const code = "FAKE_" + failure.toUpperCase().replaceAll("-", "_");
+    // A local ComfyUI that stopped answering fails the way the server reports it (lib/providers/media/local/comfy.ts).
+    const comfy = failure === "comfy-offline";
+    const code = comfy ? "COMFY_OFFLINE" : "FAKE_" + failure.toUpperCase().replaceAll("-", "_");
+    const category = comfy ? "upstream" : failure;
     record.status = "error";
     record.errorCode = code;
     // Stored the way the server is asked to store it (L7 request: category in the job meta),
     // so a reloaded job list still knows why the job failed.
-    record.meta = { ...record.meta, category: failure, retryable: false };
+    record.meta = { ...record.meta, category, retryable: comfy };
     record.finishedAt = Date.now();
     this.emit("error", job, {
       code,
-      error: "Simulated provider failure",
+      error: comfy ? "Lost contact with ComfyUI at http://127.0.0.1:8188: connect ECONNREFUSED" : "Simulated provider failure",
       status: 500,
-      category: failure,
-      retryable: false,
+      category,
+      retryable: comfy,
     });
   }
   cancel(id: string): void {

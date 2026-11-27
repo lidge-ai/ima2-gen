@@ -1,6 +1,11 @@
 import { jsonFetch } from "./api-core";
 
-export type ComfyMediaKind = "image" | "video";
+/** A request with a JSON body. The server reads a body only when it is declared as JSON; undeclared, it arrives empty. */
+function sendJson<T>(url: string, method: "POST" | "PUT", body: unknown): Promise<T> {
+  return jsonFetch<T>(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+}
+
+export type ComfyMediaKind = "image" | "video" | "audio";
 
 export interface ComfyHealth {
   ok: boolean;
@@ -21,8 +26,41 @@ export interface ComfyWorkflowBindings {
   height?: ComfyBinding;
   seed?: ComfyBinding;
   refImage?: ComfyBinding;
+  /** Every node input that takes an uploaded file, with the role its file plays. */
+  inputs?: ComfyMediaSlot[];
   output: { node: string };
 }
+
+export type ComfyInputRole =
+  | "first-frame" | "last-frame" | "reference-image" | "reference-video" | "reference-audio"
+  | "source-image" | "source-video" | "source-audio" | "mask";
+
+export interface ComfyMediaSlot {
+  role: ComfyInputRole;
+  kind: "image" | "video" | "audio";
+  node: string;
+  input: string;
+}
+
+/** A file picker the inspection found. role is absent when a person must say which file it is. */
+export interface ComfyMediaSlotCandidate {
+  kind: "image" | "video" | "audio";
+  node: string;
+  input: string;
+  classType: string;
+  title?: string;
+  role?: ComfyInputRole;
+}
+
+export interface ComfyMissingChoice { node: string; classType: string; input: string; value: string; model: boolean }
+
+/** What the server the workflow will run on says about it, or why it could not be asked. */
+export type ComfyServerReport =
+  | { origin: string; reachable: true; missingNodes: Array<{ classType: string; nodes: string[] }>; missingChoices: ComfyMissingChoice[]; paidNodes: string[] }
+  | { origin: string; reachable: false; reason: string };
+
+/** A ComfyUI server beyond this computer. The token is write-only: only whether one is saved comes back. */
+export interface ComfyRemote { origin: string; hasToken: boolean; insecure: boolean }
 
 export interface ComfyWorkflowParam {
   name: string;
@@ -47,7 +85,7 @@ export interface ComfyWorkflowRecord {
   health?: ComfyHealth;
 }
 
-export type ComfyBindField = keyof ComfyWorkflowBindings;
+export type ComfyBindField = Exclude<keyof ComfyWorkflowBindings, "inputs">;
 
 export interface ComfyBindCandidate {
   field: ComfyBindField;
@@ -65,15 +103,21 @@ export interface ComfyInspectResult {
   candidates: ComfyBindCandidate[];
   needsConfirmation: boolean;
   mediaKind?: ComfyMediaKind;
+  /** File pickers in the graph; empty when the server could not be asked. */
+  mediaSlots?: ComfyMediaSlotCandidate[];
+  server?: ComfyServerReport;
 }
 
 export function listComfyWorkflows(): Promise<{ ok: true; workflows: ComfyWorkflowRecord[] }> {
   return jsonFetch("/api/comfy/workflows");
 }
 
-/** Parses a workflow file without saving it, so bindings can be confirmed first. */
-export function inspectComfyWorkflow(source: { graph?: unknown; pngBase64?: string }): Promise<ComfyInspectResult> {
-  return jsonFetch("/api/comfy/inspect", { method: "POST", body: JSON.stringify(source) });
+/**
+ * Parses a workflow file without saving it, so bindings can be confirmed first.
+ * With an origin, that server is asked what its nodes accept and what the workflow needs that it lacks.
+ */
+export function inspectComfyWorkflow(source: { graph?: unknown; pngBase64?: string }, origin?: string): Promise<ComfyInspectResult> {
+  return sendJson("/api/comfy/inspect", "POST", origin ? { ...source, origin } : source);
 }
 
 /**
@@ -85,7 +129,7 @@ export function inspectComfyWorkflow(source: { graph?: unknown; pngBase64?: stri
  * problems that deserve two different messages.
  */
 export function probeComfyOrigin(origin: string): Promise<{ ok: true; origin: string; health: ComfyHealth }> {
-  return jsonFetch("/api/comfy/probe", { method: "POST", body: JSON.stringify({ origin }) });
+  return sendJson("/api/comfy/probe", "POST", { origin });
 }
 
 export function createComfyWorkflow(input: {
@@ -97,12 +141,26 @@ export function createComfyWorkflow(input: {
   graph?: unknown;
   pngBase64?: string;
   replace?: boolean;
-}): Promise<{ ok: true; workflow: ComfyWorkflowRecord }> {
-  return jsonFetch("/api/comfy/workflows", { method: "POST", body: JSON.stringify(input) });
+}): Promise<{ ok: true; workflow: ComfyWorkflowRecord; server?: ComfyServerReport; media?: { model: string; task: string } }> {
+  return sendJson("/api/comfy/workflows", "POST", input);
 }
 
 export function deleteComfyWorkflow(id: string): Promise<{ ok: true; id: string }> {
   return jsonFetch(`/api/comfy/workflows/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export function listComfyRemotes(): Promise<{ ok: true; remotes: ComfyRemote[] }> {
+  return jsonFetch("/api/comfy/remotes");
+}
+
+/** Adds a server, or updates its token. An empty token leaves a saved one as it is. */
+export function putComfyRemote(origin: string, token?: string): Promise<{ ok: true; remote: ComfyRemote }> {
+  return sendJson("/api/comfy/remotes", "PUT", token ? { origin, token } : { origin });
+}
+
+/** strandedWorkflows: registered workflows that still point at the removed server and can no longer run. */
+export function deleteComfyRemote(origin: string): Promise<{ ok: true; origin: string; strandedWorkflows: string[] }> {
+  return jsonFetch(`/api/comfy/remotes?origin=${encodeURIComponent(origin)}`, { method: "DELETE" });
 }
 
 export interface ComfyLaneModel {
