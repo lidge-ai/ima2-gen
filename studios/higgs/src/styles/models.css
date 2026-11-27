@@ -14,7 +14,12 @@
 .chip-logo {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 0 10px 0 5px;
+}
+/* The mark keeps its box; without this the chip squeezes it and the label runs over the logo. */
+.chip-logo .vendor-logo {
+  flex: none;
 }
 .results-bar {
   display: flex;

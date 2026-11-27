@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useI18n } from "../../i18n";
-import type { MediaAdapter, MediaModel, MediaRoute } from "../../lib/mediaCatalog";
+import { resolutionChoices, type MediaAdapter, type MediaModel, type MediaRoute } from "../../lib/mediaCatalog";
 import { candidateRoutes, cheapestRoute, lowestPrice, resolveRoute, type ResolvedRoute } from "../../lib/mediaRoutes";
 import { parseSeed, reconcileSelection, type Adjustment, type MediaSelection } from "../../lib/mediaSelection";
 import { inputLimits, inputProblem, modelTasks, type ClassicTask } from "../../lib/mediaTasks";
@@ -139,6 +139,7 @@ function RouteParams({ route, selection, update }: { route: MediaRoute; selectio
   const { t } = useI18n();
   const params = route.params;
   const durations = [...(params.durationsSec ?? [])].sort((a, b) => a - b);
+  const sizes = resolutionChoices(route);
   const { aspectRatio: _aspect, ...withoutAspect } = selection;
   return (
     <>
@@ -148,9 +149,9 @@ function RouteParams({ route, selection, update }: { route: MediaRoute; selectio
             onChange={(next) => update({ ...selection, durationSec: next ?? durations[0]! })} />
         </div>
       ) : durations.length === 1 ? <p className="media-fixed">{t("mediaPicker.duration")}: {t("mediaPicker.seconds", { n: durations[0]! })}</p> : null}
-      {params.resolutions?.length ? (params.resolutions.length > 1
-        ? <Choice title={t("mediaPicker.resolution")} value={selection.resolution ?? ""} items={params.resolutions.map((item) => ({ value: item, label: item }))} update={(resolution) => update({ ...selection, resolution })} />
-        : <p className="media-fixed">{t("mediaPicker.resolution")}: {params.resolutions[0]}</p>) : null}
+      {sizes.length ? (sizes.length > 1
+        ? <Choice title={t("mediaPicker.resolution")} value={selection.resolution ?? ""} items={sizes} update={(resolution) => update({ ...selection, resolution })} />
+        : <p className="media-fixed">{t("mediaPicker.resolution")}: {sizes[0]!.label}</p>) : null}
       {params.qualities?.length ? (params.qualities.length > 1
         ? <Choice title={t("mediaPicker.quality")} value={selection.quality ?? ""} items={params.qualities.map((item) => ({ value: item, label: qualityLabel(item, t) }))} update={(quality) => update({ ...selection, quality })} />
         : <p className="media-fixed">{t("mediaPicker.quality")}: {qualityLabel(params.qualities[0]!, t)}</p>) : null}

@@ -4,8 +4,42 @@ import type { MediaInputRole, UploadedInput } from "@ima2/studio-kit";
 import { useStudioApi } from "../studio/context.tsx";
 import { Icon } from "./Icon.tsx";
 
-const M = messages({ failed: "Upload failed", remove: "Remove {label}", uploading: "Uploading" },
-  { failed: "업로드에 실패했어요", remove: "{label} 삭제", uploading: "업로드 중" });
+const M = messages({ failed: "Upload failed", remove: "Remove {label}", uploading: "Uploading", play: "Play {name}", pause: "Pause {name}" },
+  { failed: "업로드에 실패했어요", remove: "{label} 삭제", uploading: "업로드 중", play: "{name} 재생", pause: "{name} 일시정지" });
+
+const clock = (seconds: number) => Math.floor(seconds / 60) + ":" + String(Math.floor(seconds % 60)).padStart(2, "0");
+
+/** An audio file in a slot: its name and length, and one button to hear it. Native controls do not fit a half-width slot. */
+function AudioPreview({ value }: { value: SlotValue }) {
+  const t = useT(M);
+  const audio = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [length, setLength] = useState<number | null>(null);
+  const toggle = () => {
+    const element = audio.current;
+    if (!element) return;
+    if (element.paused) void element.play().catch(() => setPlaying(false));
+    else element.pause();
+  };
+  return (
+    <div className="slot-audio">
+      <button type="button" className="slot-audio-play" aria-pressed={playing} aria-label={t(playing ? "pause" : "play", { name: value.name })} onClick={toggle}>
+        <Icon name={playing ? "stop" : "play"} size={16} />
+      </button>
+      <span className="slot-audio-name">{value.name}</span>
+      {length !== null ? <span className="slot-hint">{clock(length)}</span> : null}
+      <audio
+        ref={audio}
+        src={value.upload.url}
+        preload="metadata"
+        onLoadedMetadata={(e) => setLength(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : null)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+    </div>
+  );
+}
 
 export interface SlotValue {
   role: MediaInputRole;
@@ -45,9 +79,12 @@ function useSlotUpload(role: MediaInputRole, onChange: Props["onChange"]) {
 function SlotPreview({ value, label, onRemove }: { value: SlotValue; label: string; onRemove: () => void }) {
   const t = useT(M);
   const isVideo = value.upload.mimeType.startsWith("video/");
+  const isAudio = value.upload.mimeType.startsWith("audio/");
   return (
     <>
-      {isVideo ? (
+      {isAudio ? (
+        <AudioPreview value={value} />
+      ) : isVideo ? (
         <video className="slot-preview" src={value.upload.url} muted playsInline aria-label={value.name} />
       ) : (
         <img className="slot-preview" src={value.upload.url} alt={value.name} />

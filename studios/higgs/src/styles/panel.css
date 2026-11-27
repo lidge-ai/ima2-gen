@@ -46,6 +46,7 @@
   padding: 12px;
   border-top: 1px solid var(--line);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   background: var(--surface);
 }
@@ -57,12 +58,19 @@
 .btn-generate {
   width: 100%;
   justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
 .btn-cost {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   opacity: 0.7;
   font-size: 13px;
+  /* A reason such as "add the audio to see the price" wraps onto two lines instead of widening the button. */
+  min-width: 0;
+  white-space: normal;
+  text-align: right;
+  line-height: 1.2;
 }
 
 .prompt-editor {
@@ -425,7 +433,8 @@
 
 .notice {
   display: grid;
-  grid-template-columns: auto 1fr;
+  /* minmax(0, ...): the key field inside must shrink with a narrow panel instead of pushing the notice wider. */
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   padding: 12px;
   border-radius: var(--radius);
@@ -461,11 +470,13 @@
 }
 .key-notice > div {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   min-width: 0;
 }
 .key-entry {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding: 10px;
   border-radius: var(--radius-s);

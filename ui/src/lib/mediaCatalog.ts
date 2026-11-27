@@ -36,6 +36,8 @@ export interface MediaRoute {
   upstreamId: string;
   tasks: readonly string[];
   params: MediaParams;
+  /** The route's resolutions with the catalog's label for each: value is what the provider is sent. */
+  resolutionOptions?: readonly { value: string; label: string }[];
   pricing: readonly MediaPrice[];
   docsUrl: string;
   hasKey: boolean;
@@ -86,6 +88,24 @@ export function modelName(label: string): { label: string; retiring: boolean } {
 /** Catalog models with clean names; a model that is not retiring carries no flag. */
 export function namedModels(models: readonly MediaModel[]): MediaModel[] {
   return models.map((model) => { const name = modelName(model.label); return name.retiring ? { ...model, label: name.label, retiring: true } : model; });
+}
+
+/** The sizes a route offers: the provider's value and the label the catalog gives it (the value itself from a server without labels). */
+export function resolutionChoices(route: Pick<MediaRoute, "params" | "resolutionOptions">): { value: string; label: string }[] {
+  if (route.resolutionOptions?.length) return route.resolutionOptions.map((option) => ({ value: option.value, label: option.label }));
+  return (route.params.resolutions ?? []).map((value) => ({ value, label: value }));
+}
+
+/** How a saved resolution reads today: the catalog's label for that route when it still lists the value. */
+export function resolutionShown(models: readonly MediaModel[], modelId: string | null | undefined, adapter: string | null | undefined, value: string): string {
+  const route = models.find((model) => model.id === modelId)?.routes.find((entry) => entry.adapter === adapter);
+  return (route ? resolutionChoices(route).find((option) => option.value === value)?.label : undefined) ?? value;
+}
+
+/** The maker's name: the catalog's logo entry when it has one, otherwise the id read as a name ("black-forest-labs" → "Black Forest Labs"). */
+export function makerName(model: Pick<MediaModel, "vendor" | "logo">): string {
+  if (model.logo?.name) return model.logo.name;
+  return model.vendor.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 
 export function fetchMediaCatalog(kind: "image" | "video") {

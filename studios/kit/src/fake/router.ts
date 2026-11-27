@@ -21,6 +21,26 @@ class Fault extends Error {
 }
 const invalid = () => new Fault(400, "MEDIA_INVALID_REQUEST", "Invalid request");
 const missing = () => new Fault(404, "NOT_FOUND", "Not found", "not-found");
+/** A route that declares a form refuses a body that does not fill it, as a real adapter would. */
+function checkForm(params: import("../types.ts").MediaModelSpec["params"] | undefined, data: Record<string, unknown>): void {
+  const forTask = (entry: { tasks?: readonly string[] }) => !entry.tasks || entry.tasks.includes(String(data.task));
+  const needs = (params?.inputs ?? []).filter(forTask);
+  if (needs.length === 0) return;
+  const roles = (Array.isArray(data.inputs) ? data.inputs : []).map((input) => String((input as { role?: unknown }).role));
+  for (const need of needs) {
+    const count = roles.filter((role) => role === need.role).length;
+    if (count < need.min || count > need.max) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Needs " + need.min + " " + need.role + " input");
+  }
+  if (roles.some((role) => !needs.some((need) => need.role === role))) throw invalid();
+  if (data.prompt !== undefined || data.durationSec !== undefined || data.aspectRatio !== undefined) throw invalid();
+  const options = (data.vendorOptions ?? {}) as Record<string, unknown>;
+  for (const option of (params?.options ?? []).filter(forTask)) {
+    const value = options[option.name];
+    if (value === undefined ? option.required : option.values && !option.values.includes(String(value))) {
+      throw new Fault(400, "MEDIA_INVALID_REQUEST", "Invalid option " + option.name);
+    }
+  }
+}
 async function body(req: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) chunks.push(Buffer.from(chunk as Uint8Array));
@@ -82,6 +102,7 @@ async function submit(req: IncomingMessage, res: ServerResponse, jobs: Jobs, key
   if (jobs.jobs.has(requestId)) throw new Fault(409, "MEDIA_DUPLICATE_REQUEST", "Duplicate request");
   const { model, selected } = route(data.model, data.adapter as string | undefined, keys);
   if (!model.tasks.includes(data.task as never)) throw new Fault(400, "MEDIA_TASK_UNSUPPORTED", "Unsupported task");
+  checkForm(model.routeParams?.[selected.providerId], data);
   jobs.start({
     requestId,
     jobKind: "media",
