@@ -63,12 +63,17 @@ async function call(ctx: MediaAdapterContext, url: string, body?: unknown): Prom
 
 export function makeFakeAdapter(options: {
   id?: string;
-  route?: "direct" | "aggregator";
+  route?: "direct" | "aggregator" | "local";
   vocabulary?: string;
   models?: MediaModelSpec[];
   script?: FakeScript;
   inputTransport?: "url" | "inline" | "upload";
   extraFields?: MediaProviderAdapter["credential"]["extraFields"];
+  /** A route that needs no key (a local server). */
+  keyless?: boolean;
+  /** Models read on every lookup, under this id prefix. */
+  liveModels?: { idPrefix: string; list: () => MediaModelSpec[] };
+  estimateLocal?: MediaProviderAdapter["estimateLocal"];
 } = {}): MediaProviderAdapter & { script: FakeScript } {
   const id = options.id ?? "fake";
   const prefix = id.toUpperCase().replace(/-/g, "_");
@@ -85,10 +90,13 @@ export function makeFakeAdapter(options: {
       configKey: `${id.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase())}ApiKey`,
       consoleUrl: "https://example.com/keys",
       ...(options.extraFields ? { extraFields: options.extraFields } : {}),
+      ...(options.keyless ? { keyless: true as const } : {}),
     },
     inputTransport: options.inputTransport ?? "inline",
     script,
-    listModels: () => options.models ?? [fakeSpec("acme/clip-1")],
+    listModels: () => options.liveModels?.list() ?? options.models ?? [fakeSpec("acme/clip-1")],
+    ...(options.liveModels ? { liveModels: { idPrefix: options.liveModels.idPrefix } } : {}),
+    ...(options.estimateLocal ? { estimateLocal: options.estimateLocal } : {}),
     async validateKey(ctx) {
       try {
         await call(ctx, "https://fake.example/v1/me");

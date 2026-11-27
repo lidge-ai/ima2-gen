@@ -15,7 +15,7 @@ import type {
 
 interface ProviderDef {
   label: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   consoleUrl: string;
   extraFields?: CatalogProvider["extraFields"];
 }

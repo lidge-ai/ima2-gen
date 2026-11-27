@@ -30,7 +30,8 @@ export interface MediaParams {
 
 export interface MediaRoute {
   adapter: string;
-  route: "direct" | "aggregator";
+  /** "local" runs on the user's own machine: no provider price and no key. */
+  route: "direct" | "aggregator" | "local";
   label: string;
   logo: MediaLogo | null;
   upstreamId: string;
@@ -41,6 +42,7 @@ export interface MediaRoute {
   pricing: readonly MediaPrice[];
   docsUrl: string;
   hasKey: boolean;
+  keyless?: boolean;
 }
 
 export interface MediaModel {
@@ -60,12 +62,13 @@ export interface MediaModel {
 export interface MediaAdapter {
   id: string;
   label: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   logo: MediaLogo | null;
   keyVocabulary: string;
   consoleUrl: string;
   keyPrefix: string | null;
   hasKey: boolean;
+  keyless?: boolean;
   keySource?: string;
   maskedKey?: string | null;
   extraFields: { name: string; secret: boolean; required: boolean; configured?: boolean; source?: string; value?: string | null }[];

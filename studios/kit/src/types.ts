@@ -22,18 +22,20 @@ export type {
   MediaInputRequirement, MediaInputRole, MediaKind, MediaModelSpec, MediaOptionSpec, MediaPrice, MediaProviderError, MediaTask, MediaVoice,
 };
 
-/** One adapter that can run a model: a direct maker API or an aggregator. */
+/** One adapter that can run a model: a direct maker API, an aggregator, or the user's own machine ("local"). */
 export interface CatalogRoute {
   providerId: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   label: string;
   upstreamId: string;
   pricing: readonly MediaPrice[];
   docsUrl: string;
-  /** True when the server holds a usable key for this provider. Never the key itself. */
+  /** True when the server holds a usable key for this provider, or the route needs none. Never the key itself. */
   keyConfigured: boolean;
   /** Tasks this route serves; a route may serve fewer than the model lists. Absent on older servers. */
   tasks?: readonly MediaTask[];
+  /** The route needs no key: screens must not ask for one or list it among keys. */
+  keyless?: boolean;
 }
 
 /** GET /api/media/voices: the voices a route with a "voice" option can use. */
@@ -64,11 +66,12 @@ export interface CatalogModel {
 export interface CatalogProvider {
   id: string;
   label: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   keyVocabulary: string;
   consoleUrl: string;
   keyPrefix?: string;
   keyConfigured: boolean;
+  keyless?: boolean;
   extraFields?: readonly { name: string; secret: boolean; required: boolean }[];
 }
 

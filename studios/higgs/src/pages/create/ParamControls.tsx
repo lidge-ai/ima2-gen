@@ -11,6 +11,7 @@ const M = messages(
     "directFirst": "direct first, keyed only",
     "direct": "direct",
     "aggregator": "aggregator",
+    "local": "this computer, no provider charge",
     "noKey": "no key",
     "duration": "Duration",
     "aspect": "Aspect ratio",
@@ -30,6 +31,7 @@ const M = messages(
     "directFirst": "키가 있는 직접 연결 우선",
     "direct": "직접 연결",
     "aggregator": "중개 서비스",
+    "local": "이 컴퓨터에서 실행, 요금 없음",
     "noKey": "키 없음",
     "duration": "길이",
     "aspect": "화면 비율",
@@ -73,11 +75,13 @@ export function routeOptions(model: CatalogModel): TileOption<string>[] {
       value: route.providerId,
       label: route.label,
       icon: <VendorLogo id={route.providerId} size={16} />,
-      meta:
-        (tr(M, route.route === "direct" ? "direct" : "aggregator")) +
-        " · " +
-        routePrice(route) +
-        (route.keyConfigured ? "" : " · " + tr(M, "noKey")),
+      // A local route has no price and no key: it says where it runs instead.
+      meta: route.route === "local"
+        ? tr(M, "local")
+        : (tr(M, route.route === "direct" ? "direct" : "aggregator")) +
+          " · " +
+          routePrice(route) +
+          (route.keyConfigured ? "" : " · " + tr(M, "noKey")),
     })),
   ];
 }

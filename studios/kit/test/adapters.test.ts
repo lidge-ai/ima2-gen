@@ -152,3 +152,22 @@ test("resolution values read as a size, an upscale tier and a frame rate", () =>
   assert.equal(resolutionParts("2x"), null);
   assert.deepEqual(tidyResolutions(["4k", "1080p", "2x", "480P", "480p", "1440p-sr"]), ["480P", "1080p", "1440p-sr", "4k", "2x"]);
 });
+
+test("a keyless local route keeps its place in the catalog and has no key status", () => {
+  const wire = wireCatalog(new Keys(["openai"]));
+  const local = {
+    id: "comfy-local", label: "ComfyUI (this computer)", route: "local" as const, keyVocabulary: "comfy-local", consoleUrl: "https://docs.comfy.org",
+    keyPrefix: null, hasKey: true, keyless: true, keySource: "none", extraFields: [], modelCount: 1,
+  };
+  const model = {
+    id: "comfy/klein", label: "Klein", vendor: "comfy", kind: "image" as const, tasks: ["text-to-image" as const], defaultRoute: "comfy-local",
+    routes: [{ adapter: "comfy-local", route: "local" as const, label: local.label, upstreamId: "klein", tasks: ["text-to-image" as const], params: {}, pricing: [], docsUrl: "https://docs.comfy.org", hasKey: true, keyless: true }],
+  };
+  const withLocal = { models: [...wire.models, model], adapters: [...wire.adapters, local] };
+  const catalog = toCatalog(withLocal);
+  assert.deepEqual(catalog.models.find((m) => m.id === "comfy/klein")?.routes.map((r) => [r.providerId, r.route, r.keyConfigured, r.keyless]), [["comfy-local", "local", true, true]]);
+  assert.equal(catalog.providers.find((p) => p.id === "comfy-local")?.keyless, true);
+  assert.equal(catalog.providers.find((p) => p.id === "openai")?.keyless, undefined);
+  assert.equal(toKeyStatuses(withLocal).some((k) => k.keyVocabulary === "comfy-local"), false, "nothing to save a key for");
+  assert.equal(toKeyStatuses(withLocal).length, toKeyStatuses(wire).length);
+});

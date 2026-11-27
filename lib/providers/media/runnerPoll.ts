@@ -42,7 +42,7 @@ export interface PollLoopArgs {
   job: MediaJobRef;
   signal: AbortSignal;
   secrets: readonly string[];
-  onProgress: (state: { status: "queued" | "running"; progress?: number | undefined }) => void;
+  onProgress: (state: { status: "queued" | "running"; progress?: number | undefined; detail?: string | undefined }) => void;
 }
 
 async function pollOnce(args: PollLoopArgs, failures: number): Promise<{ state?: MediaJobState; failures: number }> {
@@ -73,7 +73,7 @@ export async function pollUntilTerminal(args: PollLoopArgs): Promise<TerminalSta
     if (!step.state) { delay = clampPollMs(delay * 2); continue; }
     const state: MediaJobState = step.state;
     if (state.status === "queued" || state.status === "running") {
-      args.onProgress({ status: state.status, progress: state.progress });
+      args.onProgress({ status: state.status, progress: state.progress, detail: state.detail });
       delay = clampPollMs(state.pollAfterMs);
       continue;
     }

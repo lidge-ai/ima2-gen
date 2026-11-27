@@ -130,6 +130,12 @@ export interface MediaCredentialSpec {
   consoleUrl: string;
   /** Extra non-secret fields some vendors need (region, endpoint id, access-key pair). */
   extraFields?: readonly { name: string; envVar: string; secret: boolean; required: boolean }[];
+  /**
+   * The route needs no key: it runs on something the user already operates (a local ComfyUI server).
+   * Such a route is always "keyed" for route selection, envVars may be empty, and no key is stored,
+   * validated or asked for. Whether its server is reachable is a separate question, answered at submit.
+   */
+  keyless?: true;
 }
 
 export interface MediaAdapterContext {
@@ -192,23 +198,44 @@ export interface MediaProviderError {
 }
 
 export type MediaJobState =
-  | { status: "queued" | "running"; progress?: number; pollAfterMs?: number }
+  | { status: "queued" | "running"; progress?: number; pollAfterMs?: number; /** What it is doing now, in a few words ("3 ahead in the queue", "KSampler 7/20"). */ detail?: string }
   | { status: "succeeded"; outputs: readonly MediaOutput[]; billed?: { usd?: number; units?: number; unit?: MediaPrice["unit"] } }
   | { status: "failed"; error: MediaProviderError }
   | { status: "canceled" };
+
+/** What a job on a "local" route costs: no provider charge, only time on the user's own machine. */
+export interface MediaLocalEstimate {
+  /** Seconds a run is expected to take, from this machine's own past runs. null when there is no record; never guessed. */
+  expectedSec: number | null;
+  /** Where expectedSec came from, e.g. "median of 5 runs", or "no runs yet". */
+  basis: string;
+  /** The job may still be charged by someone else (a workflow that calls paid nodes). ima2 cannot price that. */
+  mayBill: boolean;
+}
 
 export interface MediaProviderAdapter {
   /** Lane id, lowercase kebab: "fal", "replicate", "byteplus", "kling". */
   readonly id: string;
   readonly label: string;
-  /** "direct" calls the model maker; "aggregator" resells many makers under one key. */
-  readonly route: "direct" | "aggregator";
+  /**
+   * "direct" calls the model maker; "aggregator" resells many makers under one key; "local" runs on
+   * the user's own machine or server, with no provider price.
+   */
+  readonly route: "direct" | "aggregator" | "local";
   readonly errorPrefix: string;
   readonly credential: MediaCredentialSpec;
   /** How inputs must arrive: public URL, base64 in the body, or the adapter's own upload call. */
   readonly inputTransport: "url" | "inline" | "upload";
   /** Compiled catalog. Aggregators with huge catalogs list the curated set here. */
   listModels(): readonly MediaModelSpec[];
+  /**
+   * Set when listModels() changes while the server runs (workflows a user registers). The registry
+   * then reads it on every lookup instead of once. Every id it returns starts with idPrefix, which no
+   * other adapter's model may use, so a live model can never shadow or join a compiled one.
+   */
+  readonly liveModels?: { readonly idPrefix: string };
+  /** For route "local": the time a run is expected to take. Absent means unknown. */
+  estimateLocal?(spec: MediaModelSpec): MediaLocalEstimate;
   /** Live catalog for adapters whose upstream exposes one. */
   discoverModels?(ctx: MediaAdapterContext): Promise<readonly MediaModelSpec[]>;
   /** The voices this key can speak with, for routes with a "voice" option. A free read; never a generation. */

@@ -39,6 +39,7 @@ function toModel(model: WireModel): CatalogModel {
     routes: routes.map((r) => ({
       providerId: r.adapter, route: r.route, label: r.label, upstreamId: r.upstreamId,
       pricing: r.pricing, docsUrl: r.docsUrl, keyConfigured: r.hasKey, tasks: r.tasks,
+      ...(r.keyless ? { keyless: true } : {}),
     })),
     routeParams: Object.fromEntries(routes.map((r) => [r.adapter, r.params])),
     defaultRoute: model.defaultRoute,
@@ -66,6 +67,7 @@ function toProvider(a: WireAdapter): CatalogProvider {
     id: a.id, label: a.label, route: a.route, keyVocabulary: a.keyVocabulary, consoleUrl: a.consoleUrl,
     ...(a.keyPrefix ? { keyPrefix: a.keyPrefix } : {}),
     keyConfigured: a.hasKey,
+    ...(a.keyless ? { keyless: true } : {}),
     extraFields: a.extraFields.map((f) => ({ name: f.name, secret: f.secret, required: f.required })),
   };
 }
@@ -77,7 +79,8 @@ export function toCatalog(wire: WireCatalog): Catalog {
 /** One status per key vocabulary, built from the catalog's adapter list (several adapters can share a key). */
 export function toKeyStatuses(wire: WireCatalog): KeyStatus[] {
   const byVocab = new Map<string, WireAdapter[]>();
-  for (const a of wire.adapters) byVocab.set(a.keyVocabulary, [...(byVocab.get(a.keyVocabulary) ?? []), a]);
+  // A keyless lane (a local server) has no key to show a status for.
+  for (const a of wire.adapters.filter((adapter) => !adapter.keyless)) byVocab.set(a.keyVocabulary, [...(byVocab.get(a.keyVocabulary) ?? []), a]);
   return [...byVocab.entries()].map(([vocab, adapters]) => {
     const first = adapters[0]!;
     const source = first.keySource === "env" ? "env" : first.keySource === "config" ? "config" : null;
