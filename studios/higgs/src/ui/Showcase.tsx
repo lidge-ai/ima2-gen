@@ -168,7 +168,7 @@ function Tile({ item, hide = "" }: { item: ShowcaseItem; hide?: string }) {
   const workflow = resolveWorkflow(item, workflows);
   const make = () => {
     if (!workflow) return;
-    if (item.source) handOff({ url: item.source, mimeType: "video/mp4", name: item.id + "-source.mp4", target: "remix", ...(item.values ? { values: item.values } : {}) });
+    if (item.source) handOff({ url: item.source, mimeType: "video/mp4", name: item.id + "-source.mp4", target: "remix", workflow: workflow.id, ...(item.values ? { values: item.values } : {}) });
     navigate("remix/" + workflow.id);
   };
   // Details sit over the clip: open while hovered or while focus is inside (keyboard), toggled by

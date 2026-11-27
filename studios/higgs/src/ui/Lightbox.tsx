@@ -5,7 +5,7 @@ import { useStudioApi } from "../studio/context.tsx";
 import { Icon, type IconName } from "./Icon.tsx";
 import { MediaView, downloadName } from "./MediaView.tsx";
 import { handOff } from "../studio/handoff.ts";
-import { writeDraft } from "../studio/draft.ts";
+import { restoreDraft } from "../studio/draft.ts";
 import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
@@ -59,17 +59,19 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
   const actions = useItemActions(item, onClose);
   const [copied, setCopied] = useState(false);
   const reuse = (target: Target) => {
-    handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target });
+    const taken = handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target });
     onClose();
-    navigate(target);
+    // The target screen may already be open behind this dialog; it took the result itself.
+    if (!taken) navigate(target);
   };
-  // Same prompt and model on the screen that made it; the prompt arrives as that screen's draft.
+  // Same prompt and model on the screen that made it: filled in place when that screen is open
+  // behind this dialog, otherwise the screen opens with them as its draft.
   const again = item.kind === "image" || item.kind === "video" ? item.kind : null;
   const runAgain = () => {
     if (!again) return;
-    writeDraft(again, item.prompt ?? "");
+    const filled = restoreDraft(again, item.prompt ?? "", item.model);
     onClose();
-    navigate(again, { model: item.model });
+    if (!filled) navigate(again, { model: item.model });
   };
   const copy = async () => {
     await navigator.clipboard.writeText(item.prompt ?? "");
