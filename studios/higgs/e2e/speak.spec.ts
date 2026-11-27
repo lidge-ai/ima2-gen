@@ -122,3 +122,18 @@ test("talking video: the tabs move between create, edit and talking, and Korean 
   await page.getByRole("button", { name: /언어|Language/ }).first().click();
 });
 
+
+test("talking video: without a key, the key form fits inside the panel", async ({ page }) => {
+  await page.route("**/api/media/catalog*", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replaceAll('"hasKey":true', '"hasKey":false') });
+  });
+  await page.goto("/#/video?mode=speak");
+  const notice = page.getByRole("region", { name: "Add a key to run this model" });
+  await expect(notice).toBeVisible();
+  const panel = (await page.locator("form.panel").boundingBox())!;
+  for (const part of [notice, notice.getByLabel("API key"), notice.getByRole("button", { name: "Show" })]) {
+    const box = (await part.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(panel.x + panel.width);
+  }
+});

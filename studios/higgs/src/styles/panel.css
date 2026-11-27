@@ -462,11 +462,13 @@
 }
 .key-notice > div {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   min-width: 0;
 }
 .key-entry {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding: 10px;
   border-radius: var(--radius-s);
