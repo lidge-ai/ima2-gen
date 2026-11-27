@@ -35,8 +35,16 @@ test("atlas catalog serves Sume ids across video, image and audio with starting 
   for (const spec of specs) for (const price of spec.pricing) assert.match(price.variant ?? "", /starting price/);
   // Image prices are per image, as Atlas publishes them (model pages checked 2026-11-27).
   const imagePrice = (id: string) => specs.find((spec) => spec.id === id)?.pricing.map((price) => [price.unit, price.usd, price.variant]);
-  assert.deepEqual(imagePrice("bytedance/seedream-5.5"), [["image", 0.016, "text-to-image: starting price"]]);
-  assert.deepEqual(imagePrice("openai/gpt-image-2.6-sunburst"), [["image", 0.008, "image-to-image: starting price"]]);
+  assert.deepEqual(imagePrice("bytedance/seedream-5.5"), [["image", 0.016, "text-to-image: starting price"], ["image", 0.016, "image-to-image: starting price"]]);
+  assert.deepEqual(imagePrice("openai/gpt-image-2.6-sunburst"), [["image", 0.007, "text-to-image: starting price"], ["image", 0.008, "image-to-image: starting price"]]);
+  assert.deepEqual(imagePrice("google/nano-banana-pro"), [["image", 0.14, "text-to-image: starting price"], ["image", 0.14, "image-to-image: starting price"]]);
+  // Atlas publishes a base price for every image endpoint it serves, so each task of each image model has one row, per image.
+  for (const spec of specs.filter((entry) => entry.kind === "image")) {
+    assert.deepEqual(spec.pricing.map((price) => price.variant).sort(), spec.tasks.map((task) => task + ": starting price").sort(), spec.id);
+    for (const price of spec.pricing) assert.deepEqual([price.unit, price.usd > 0], ["image", true], spec.id);
+  }
+  // Kling 4.0 reference-to-video carried a neighbouring model's price.
+  assert.deepEqual(specs.find((spec) => spec.id === "kling/kling-4")?.pricing.map((price) => price.usd), [0.11]);
   assert.equal(adapter.inputTransport, "upload");
   assert.equal(adapter.cancel, undefined);
 });
