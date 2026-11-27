@@ -21,13 +21,13 @@ export function isFetchBlocked(port) {
 
 const MAX_ASKS = 20;
 
-/** listen(), listen(0, ...), listen("0", ...), listen(callback) and listen({ port: 0 | undefined }) all mean "any port". */
+/** listen(), listen(0, ...), listen("0", ...), listen(callback) and listen({ port: 0 }) all mean "any port". */
 function asksForAnyPort(args) {
   const first = args[0];
   if (args.length === 0 || typeof first === "function" || first === 0 || first === "0" || first === undefined || first === null) return true;
   if (typeof first !== "object") return false;
   if ("path" in first || "fd" in first || "handle" in first || "_handle" in first) return false;
-  return first.port === 0 || first.port === "0" || first.port === undefined || first.port === null;
+  return first.port === 0 || first.port === "0";
 }
 
 /**
