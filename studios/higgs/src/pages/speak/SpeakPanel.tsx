@@ -22,7 +22,8 @@ const M = messages(
     resolution: "Resolution", route: "Run through", automatic: "Automatic", default: "Default",
     noPrice: "No published price", direct: "direct", aggregator: "aggregator", noKey: "no key",
     generate: "Generate", sending: "Sending",
-    estimate: "Estimated {cost} · {seconds} s", byLength: "Priced by length", unpriced: "Price not published",
+    estimate: "Estimated {cost} · {seconds} s", unpriced: "Price not published",
+    afterAudio: "Add the audio to see the price", afterVideo: "Add the video to see the price", reading: "Reading the length", unknownLength: "Length unknown, no price",
     measuring: "Reading the length", unreadable: "This browser could not read the length of {label}, so the price is not shown.",
     nokey: "Add a key to generate.", none: "No model in this catalog can make a talking video yet.",
   },
@@ -37,7 +38,8 @@ const M = messages(
     resolution: "해상도", route: "실행 경로", automatic: "자동", default: "기본값",
     noPrice: "공개 가격 없음", direct: "직접", aggregator: "어그리게이터", noKey: "키 없음",
     generate: "생성", sending: "요청 중",
-    estimate: "예상 {cost} · {seconds}초", byLength: "길이에 따라 과금", unpriced: "공개 가격 없음",
+    estimate: "예상 {cost} · {seconds}초", unpriced: "공개 가격 없음",
+    afterAudio: "오디오를 넣으면 가격이 계산돼요", afterVideo: "영상을 넣으면 가격이 계산돼요", reading: "길이를 읽는 중이에요", unknownLength: "길이를 몰라 가격이 없어요",
     measuring: "길이를 읽는 중이에요", unreadable: "이 브라우저에서 {label}의 길이를 읽지 못해 가격을 표시하지 않아요.",
     nokey: "생성하려면 키를 추가해 주세요.", none: "이 카탈로그에는 말하는 영상을 만들 수 있는 모델이 아직 없어요.",
   },
@@ -152,11 +154,17 @@ function Settings({ form, speak }: { form: TaskForm; speak: Speak }) {
   );
 }
 
-/** What the price line under Generate says: the estimate, or why there is none yet. */
+/**
+ * What the price line under Generate says: the estimate, or the reason there is none yet. "Not published"
+ * is only for a route without a price; a route billed by length names the upload the price is waiting for.
+ */
 function costText(speak: Speak, t: (key: keyof typeof M.en, vars?: Record<string, string | number>) => string): string {
   if (!speak.priced || speak.priced.pricing.length === 0) return t("unpriced");
   if (speak.cost && speak.billed !== null) return t("estimate", { cost: speak.cost, seconds: speak.billed });
-  return t("byLength");
+  const billed = (speak.form?.inputs ?? []).filter((need) => need.billedLength);
+  const missing = billed.find((need) => !speak.state.files[need.role]);
+  if (missing) return t(missing.role.endsWith("audio") ? "afterAudio" : "afterVideo");
+  return t(billed.some((need) => speak.state.lengths[need.role] === null) ? "unknownLength" : "reading");
 }
 
 /** A file whose length the browser could not read: say so instead of leaving the price blank without a reason. */

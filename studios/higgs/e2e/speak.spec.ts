@@ -29,12 +29,13 @@ test("talking video: lip sync asks for a video and audio, prices the longer one 
   await expect(page.getByRole("button", { name: "Lip sync" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: /^Model: / })).toContainText("Sync Lipsync 3");
   await expect(generate(page)).toBeDisabled();
-  await expect(generate(page)).toContainText("Priced by length");
+  await expect(generate(page)).toContainText("Add the video to see the price");
   await expect(page.getByText("Add: Video of the speaker.")).toBeVisible();
   await expect(page.getByLabel("Prompt")).toHaveCount(0);
 
   await page.getByLabel("Video of the speaker").setInputFiles(CLIP);
   await expect(page.getByText("Add: Audio to speak.")).toBeVisible();
+  await expect(generate(page)).toContainText("Add the audio to see the price");
   await page.getByLabel("Audio to speak").setInputFiles(audio);
   await expect(page.getByRole("button", { name: "Play line.wav" })).toBeVisible();
   await expect(page.locator(".slot-audio")).toContainText("0:02");
@@ -132,6 +133,20 @@ test("talking video: without a key, the key form fits inside the panel", async (
   const notice = page.getByRole("region", { name: "Add a key to run this model" });
   await expect(notice).toBeVisible();
   const panel = (await page.locator("form.panel").boundingBox())!;
+  // Each route chip shows its mark and then its name, with space between them.
+  const chips = notice.getByRole("group", { name: "Key for" }).getByRole("button");
+  expect(await chips.count()).toBeGreaterThan(1);
+  for (const chip of await chips.all()) {
+    const gap = await chip.evaluate((el) => {
+      const logo = el.querySelector(".vendor-logo-box")!.getBoundingClientRect();
+      const text = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent!.trim()).pop()!;
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      const start = [...range.getClientRects()].find((r) => r.width > 0)!.left;
+      return start - logo.right;
+    });
+    expect(gap, await chip.innerText()).toBeGreaterThanOrEqual(4);
+  }
   for (const part of [notice, notice.getByLabel("API key"), notice.getByRole("button", { name: "Show" })]) {
     const box = (await part.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(panel.x + panel.width);
