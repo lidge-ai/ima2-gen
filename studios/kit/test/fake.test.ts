@@ -303,7 +303,7 @@ test("a ComfyUI workflow runs on this computer: no key, no price, a run time, an
     // A keyless lane is never listed among the keys to add.
     assert.equal((await client.keys.list()).some((k) => k.keyVocabulary === "comfy-local"), false);
     const estimate = await client.media.estimate({ model: "comfy/klein", task: "text-to-image", prompt: "a fox", inputs: [] });
-    assert.deepEqual(estimate, { route: "local", usd: 0, local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
+    assert.deepEqual(estimate, { route: "local", usd: 0, quote: { state: "local" }, note: "runs locally; no provider charge", local: { expectedSec: 42, basis: "median of 3 earlier runs", mayBill: false } });
     const { jobId } = await client.media.submit({ model: "comfy/klein", task: "text-to-image", prompt: "[fail:comfy-offline] a fox", inputs: [] });
     const done = await client.watchJob(jobId);
     assert.equal(done.status, "failed");
@@ -346,5 +346,19 @@ test("a route that declares an edit task refuses fields outside it and a task it
       (e: unknown) => e instanceof StudioApiError && e.code === "MEDIA_TASK_UNSUPPORTED",
     );
     await client.keys.remove("xai");
+  });
+});
+
+test("estimates come from the server's rule, including rows a studio-side matcher could not read", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    // PixVerse "720p audio off, no video references; 9 credits/s": extend sends no sound flag.
+    const extend = await client.media.estimate({ model: "pixverse/pixverse-v6", provider: "pixverse", task: "video-extend", durationSec: 5, resolution: "720p", inputs: [] });
+    assert.equal(extend.quote.state, "exact");
+    assert.equal(extend.usd, 0.2);
+    // MiniMax "768P to 2K output": priced for the clip's length, unknown without it.
+    const upscale = { model: "minimax/hailuo-h3-regen", provider: "minimax", task: "video-upscale" as const, resolution: "2K", inputs: [] };
+    assert.equal((await client.media.estimate(upscale)).quote.state, "unknown");
+    const sized = await client.media.estimate({ ...upscale, durationSec: 6 });
+    assert.deepEqual([sized.quote.state, sized.usd], ["exact", 0.3]);
   });
 });

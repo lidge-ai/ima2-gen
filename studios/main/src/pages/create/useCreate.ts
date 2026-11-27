@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { StudioApiError, estimateCost, type Catalog } from "@ima2/studio-kit";
+import { StudioApiError, type Catalog } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { spendBlock } from "../../studio/spend.ts";
-import { estimateLabel } from "../../ui/format.ts";
-import { useLocalCost, type CostText } from "../../ui/localCost.ts";
+import { quoteText, useServerQuote } from "../../ui/quote.ts";
 import { defaultsFor, problem, routeFor, toBody, type CreateForm } from "./form.ts";
 
 /** Shared submit logic for the panel and the dock: route choice, cost, blocking problem, send. */
@@ -16,12 +15,12 @@ export function useCreate(catalog: Catalog, form: CreateForm, set: (patch: Parti
   const route = choice.kind === "chosen" || choice.kind === "default" ? choice.route : undefined;
   const priced = route ?? (choice.kind === "needs-key" ? choice.route : undefined);
   const webSpend = useStudio((s) => s.webSpend);
-  const quote = route && webSpend ? estimateCost(route.pricing, form) : null;
+  // The server prices the request this form would send (also the route a key would use, before it is added).
+  const quote = useServerQuote(model && priced ? toBody(model, form, priced.providerId) : null);
+  const cost = quoteText(quote);
   // A shared web instance refuses an unpriced or over-limit job; name the reason before sending.
   const blocked =
-    problem(model, form) ?? (quote && model ? spendBlock(webSpend, [{ label: model.label, usd: quote.usd }], quote.usd) : null);
-  const localCostText = useLocalCost(model, route, () => (model && route ? toBody(model, form, route.providerId) : null));
-  const cost: CostText = localCostText ?? estimateLabel(priced, form);
+    problem(model, form) ?? (route && webSpend && model && !quote.pending ? spendBlock(webSpend, [{ label: model.label, usd: cost.usd }], cost.usd) : null);
   const pickModel = (id: string) => {
     const next = catalog.models.find((m) => m.id === id);
     set({ model: id, provider: "", ...defaultsFor(next, form) });
@@ -48,6 +47,7 @@ export function useCreate(catalog: Catalog, form: CreateForm, set: (patch: Parti
     error,
     pickModel,
     submit,
-    canSend: !!model && !blocked && !!route && !sending,
+    // On a shared server the price must be known before a run can be checked against its limits.
+    canSend: !!model && !blocked && !!route && !sending && !(webSpend && quote.pending),
   };
 }

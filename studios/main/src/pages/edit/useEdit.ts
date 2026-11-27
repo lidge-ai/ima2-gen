@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { StudioApiError, editRoutes, estimateCost, formatUsd, type Catalog, type CatalogModel, type EditTask } from "@ima2/studio-kit";
+import { StudioApiError, editRoutes, type Catalog, type CatalogModel, type EditTask } from "@ima2/studio-kit";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { syncModelToUrl } from "../../studio/draft.ts";
 import { spendBlock } from "../../studio/spend.ts";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
+import { quoteText, useServerQuote } from "../../ui/quote.ts";
 import { mediaSeconds } from "../speak/useSpeak.ts";
 import { availableTools, billedSeconds, defaultModel, emptyState, problem, resolve, toBody, withForm, type EditState } from "./editState.ts";
 
@@ -36,12 +37,13 @@ export function useEdit(catalog: Catalog, requested: string | undefined) {
   const route = choice.kind === "chosen" || choice.kind === "default" ? choice.route : undefined;
   const priced = route ?? (choice.kind === "needs-key" ? choice.route : undefined);
   const billed = billedSeconds(form, state);
-  const quote = priced && billed !== null
-    ? estimateCost(priced.pricing, { durationSec: billed, ...(state.resolution ? { resolution: state.resolution } : {}) })
-    : null;
+  // The server prices what the tool would send, for the billed length (the source clip when the route bills by it).
+  const quotable = model && form && priced && (billed !== null || priced.route === "local");
+  const quote = useServerQuote(quotable ? { ...toBody(model, form, state, priced.providerId), ...(billed !== null ? { durationSec: billed } : {}) } : null);
+  const cost = quoteText(quote);
   const missing = problem(model, form, state);
   // A shared web instance runs only what it can price, so an unmeasured length is named before sending.
-  const blocked = missing ?? (route && webSpend && model ? spendBlock(webSpend, [{ label: model.label, usd: quote?.usd ?? null }], quote?.usd ?? null) : null);
+  const blocked = missing ?? (route && webSpend && model && !quote.pending ? spendBlock(webSpend, [{ label: model.label, usd: cost.usd }], cost.usd) : null);
 
   const setSource = (value: SlotValue | null) => {
     setState((s) => ({ ...s, source: value, sourceSec: undefined }));
@@ -65,9 +67,8 @@ export function useEdit(catalog: Catalog, requested: string | undefined) {
     }
   };
   return {
-    state, model, form, choice, route, priced, billed, blocked, sending, error,
-    cost: quote && quote.usd !== null ? formatUsd(quote) : null,
-    canSend: !!route && !blocked && !sending,
+    state, model, form, choice, route, priced, billed, blocked, sending, error, cost,
+    canSend: !!route && !blocked && !sending && !(webSpend && quote.pending),
     setTool,
     pickModel: (id: string) => setState((s) => withModel(s, catalog.models.find((m) => m.id === id))),
     pickRoute: (provider: string) => setState((s) => withModel(s, catalog.models.find((m) => m.id === s.model), provider)),

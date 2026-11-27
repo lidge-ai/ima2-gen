@@ -51,8 +51,9 @@ const job = await client.watchJob(jobId, { onUpdate: (j) => console.log(j.status
 4. Use `chooseRoute` before submitting: it returns the route the server would use,
    or `needs-key` with the candidate providers. Never submit a keyless route; show
    the key form instead.
-5. Show prices with `estimateCost` / `formatUsd`. A price is only ever the
-   provider's published number; `usd: null` means none is published.
+5. Show the server's price: `client.media.estimate(body)` returns the quote the server works out
+   (`lib/providers/media/priceQuote.ts`) for the request the form would send; print it with `formatUsd`.
+   Never pick a published price row in the studio. `usd: null` means no single published price applies.
 6. Show makers and providers with their logos from `kit/assets/vendors`
    (`pickLogo(manifest, id, { background, shape })`). Each manifest file records its
    `shape` (`mark`, `wordmark`, `stacked`) and size: small square slots (chips, list

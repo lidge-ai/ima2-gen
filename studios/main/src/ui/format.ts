@@ -1,5 +1,4 @@
 import {
-  estimateCost,
   formatUsd,
   type CatalogModel,
   type CatalogRoute,
@@ -104,15 +103,6 @@ export function routePrice(route: CatalogRoute): string {
   if (route.pricing.length === 0) return tr(M, "none");
   const cheapest = route.pricing.reduce((min, price) => (price.usd < min.usd ? price : min));
   return route.pricing.length > 1 ? tr(M, "from", { price: perUnit(cheapest) }) : perUnit(cheapest);
-}
-
-export function estimateLabel(
-  route: CatalogRoute | undefined,
-  request: Parameters<typeof estimateCost>[1],
-): { text: string; title: string } {
-  if (!route) return { text: "-", title: "" };
-  const estimate = estimateCost(route.pricing, request);
-  return { text: formatUsd(estimate), title: estimate.basis };
 }
 
 export function modelKinds(model: CatalogModel): string {
