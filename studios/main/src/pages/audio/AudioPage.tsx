@@ -6,6 +6,7 @@ import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { ModelPicker } from "../../ui/ModelPicker.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import { UploadSlot } from "../../ui/UploadSlot.tsx";
+import { routeName } from "../../ui/format.ts";
 import { HowItWorks } from "../create/HowItWorks.tsx";
 import { availableTools, lengthRange, modelsFor, switchLabel, switchesOf, toolRoutes, type AudioTool } from "./audioForm.ts";
 import { useAudio } from "./useAudio.ts";
@@ -78,7 +79,7 @@ function RouteTile({ audio }: { audio: Audio }) {
   const routes = audio.model ? toolRoutes(audio.model, audio.state.tool) : [];
   if (routes.length < 2) return null;
   const options = routes.map((route) => ({
-    value: route.providerId, label: route.label,
+    value: route.providerId, label: routeName(route),
     meta: route.route === "local"
       ? t("local")
       : [t(route.route), route.pricing.length ? "" : t("noPrice"), route.keyConfigured ? "" : t("noKey")].filter(Boolean).join(" · "),
