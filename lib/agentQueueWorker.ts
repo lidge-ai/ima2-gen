@@ -25,6 +25,8 @@ const DEFAULT_LIMITS: AgentQueueLimits = {
   maxSessionRunning: 1,
 };
 
+/** Read by tests/helpers/processGuard.mjs: a ticking worker reopens a database that was just closed. */
+const RUNNING = Symbol.for("ima2.agentQueueWorker");
 let workerTimer: NodeJS.Timeout | null = null;
 let ticking = false;
 let startupRecovered = false;
@@ -43,6 +45,7 @@ export function ensureAgentQueueWorker(ctx: RuntimeContext) {
     void tickAgentQueueWorker(ctx);
   }, 1_500);
   workerTimer.unref?.();
+  (globalThis as Record<symbol, unknown>)[RUNNING] = true;
   void tickAgentQueueWorker(ctx);
 }
 
@@ -50,6 +53,7 @@ export function stopAgentQueueWorker() {
   if (workerTimer) {
     clearInterval(workerTimer);
     workerTimer = null;
+    delete (globalThis as Record<symbol, unknown>)[RUNNING];
   }
   for (const controller of runningControllers.values()) controller.abort("Worker stopped");
   runningControllers.clear();

@@ -1,3 +1,4 @@
+import "./helpers/isolatedConfig.ts";
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import express from "express";

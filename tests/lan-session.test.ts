@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createLanAuthThrottle, createLanSessionStore } from "../lib/lanSessionStore.ts";
 import type { RuntimeContext } from "../lib/runtimeContext.js";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 test("pure store: absolute origin-bound expiry and response revocation", () => {
   let now = 1000, closes = 0;
@@ -326,8 +327,8 @@ test("hosted real app: expiry and disposal close admitted SSE before server clos
   const isolation = await isolateExecution();
   let teardown = async () => {};
   t.after(async () => { try { await teardown(); } finally { await isolation.close(); } });
-  const [{ buildApp }, { config }, { createTestRuntimeContext }, { createServer }, { publish }, { closeDb }] = await Promise.all([
-    import("../server.ts"), import("../config.ts"), import("../lib/runtimeContext.ts"), import("node:http"), import("../lib/eventBus.ts"), import("../lib/db.ts"),
+  const [{ buildApp }, { config }, { createTestRuntimeContext }, { createServer }, { publish }] = await Promise.all([
+    import("../server.ts"), import("../config.ts"), import("../lib/runtimeContext.ts"), import("node:http"), import("../lib/eventBus.ts"),
   ]);
   for (const key of ["dbPath", "configDir", "generatedDir"] as const) assertOwned(isolation.rootDir, config.storage[key]);
   let clock = Date.now();
@@ -341,7 +342,7 @@ test("hosted real app: expiry and disposal close admitted SSE before server clos
     } finally { Date.now = originalNow; }
   })();
   const server = createServer(app);
-  teardown = async () => { app.locals.disposeLocalLanAccess(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); closeDb(); };
+  teardown = async () => { app.locals.disposeLocalLanAccess(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await releaseDatabase(); };
   await new Promise<void>(resolve => listenOwnedLoopback(() => server.listen(0, "127.0.0.1", resolve)));
   const address = server.address(); assert.ok(address && typeof address === "object");
   const base = `http://127.0.0.1:${address.port}`;

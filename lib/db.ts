@@ -5,6 +5,8 @@ import { dirname } from "path";
 import { config } from "../config.js";
 
 let db: Database.Database | null = null;
+/** Read by tests/helpers/processGuard.mjs: the open handle's path, and every path opened in this process. */
+const handleState = ((globalThis as Record<symbol, unknown>)[Symbol.for("ima2.dbHandle")] ??= { open: null, opened: [] }) as { open: string | null; opened: string[] };
 
 export function getDbPath() {
   return config.storage.dbPath;
@@ -17,6 +19,8 @@ export function getDb() {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
   db = new Database(dbPath);
+  handleState.open = dbPath;
+  handleState.opened.push(dbPath);
   db.pragma("busy_timeout = 5000");
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
@@ -395,5 +399,6 @@ export function closeDb() {
   if (db) {
     db.close();
     db = null;
+    handleState.open = null;
   }
 }
