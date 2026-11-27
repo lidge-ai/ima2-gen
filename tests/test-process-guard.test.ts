@@ -42,6 +42,17 @@ test("a database opened outside the temp directory fails the file even when it w
   assert.match(result.stderr, /outside the temp directory/);
 });
 
+test("a SQLite file the test opened itself and left open fails the file; closed or in-memory ones do not", () => {
+  const open = (path: string, after: string) => 'import { createRequire } from "node:module"; import { mkdtempSync, rmSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path";'
+    + ' const Database = createRequire(' + JSON.stringify(import.meta.url) + ')("better-sqlite3"); const dir = mkdtempSync(join(tmpdir(), "ima2-guard-own-"));'
+    + ' const db = new Database(' + path + '); db.exec("CREATE TABLE t (a)");' + after;
+  const left = run(open('join(dir, "own.sqlite")', ""));
+  assert.equal(left.code, 1);
+  assert.match(left.stderr, /a SQLite file opened by the test is still open/);
+  assert.deepEqual(run(open('join(dir, "own.sqlite")', ' db.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });')), { code: 0, stderr: "" });
+  assert.deepEqual(run(open('":memory:"', "")), { code: 0, stderr: "" });
+});
+
 test("a failing test keeps its own exit code", () => {
   assert.equal(run("process.exitCode = 3;").code, 3);
 });
