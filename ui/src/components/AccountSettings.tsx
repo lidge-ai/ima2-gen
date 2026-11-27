@@ -50,7 +50,7 @@ function statusTone(status?: string): "ok" | "warn" | "err" {
   return "warn";
 }
 
-/** webInstance: the shared web instance, where subscription sign-in on the host is refused (lib/webAccess). */
+/** webInstance: the shared web instance, where subscription sign-in and key changes on the host are refused (lib/webAccess). */
 export function AccountSettings({ webInstance = false }: { webInstance?: boolean } = {}) {
   const { t } = useI18n();
   const oauth = useOAuthStatus();
@@ -182,7 +182,7 @@ export function AccountSettings({ webInstance = false }: { webInstance?: boolean
         </article>
       )}
 
-      {keyStatus && (
+      {keyStatus && !webInstance && (
         <article className="settings-row settings-accordion">
           <button
             type="button"

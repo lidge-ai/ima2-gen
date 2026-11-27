@@ -8,6 +8,10 @@ const key = (page: Page, method: "PUT" | "DELETE") =>
   page.request.fetch("/api/keys/elevenlabs", { method, ...(method === "PUT" ? { data: { apiKey: "audio-spec-key" } } : {}) });
 
 test("audio: speech needs a script and a voice from the provider's list, prices by characters and sends the voice id", async ({ page }) => {
+  const estimates: Record<string, unknown>[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && new URL(r.url()).pathname === "/api/media/estimate") estimates.push(r.postDataJSON() as Record<string, unknown>);
+  });
   await key(page, "PUT");
   try {
     await page.goto("/#/");
@@ -20,8 +24,11 @@ test("audio: speech needs a script and a voice from the provider's list, prices 
     await page.getByLabel("Script").fill("Welcome aboard. Doors close in two minutes.");
     await expect(page.getByText("43 characters")).toBeVisible();
     await expect(page.getByText("Choose a voice.")).toBeVisible();
-    // 43 characters at $0.00008.
-    await expect(generate(page)).toContainText("Estimated $0.0034");
+    // 43 characters at $0.00008 is $0.00344; the figure is the server's, rounded up to a hundredth of a cent.
+    await expect(generate(page)).toContainText("Estimated $0.0035");
+    // The estimate carries the length of the script, not the script.
+    expect(estimates.at(-1)).toMatchObject({ characters: 43 });
+    expect(estimates.at(-1)).not.toHaveProperty("prompt");
 
     await page.getByRole("button", { name: "Voice: Choose a voice" }).click();
     const picker = page.getByRole("dialog", { name: "Choose a voice" });

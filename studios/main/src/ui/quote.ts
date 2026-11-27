@@ -62,13 +62,19 @@ export interface QuoteState {
 
 /**
  * Asks the server for the estimate of the request a form would send, a moment after its settings stop
- * changing. The prompt and request id are not sent; they never change a price.
+ * changing. The prompt and request id are not sent. A form priced by its text (speech) asks again when the
+ * text's length changes; other forms do not ask again while the prompt is typed.
  */
-export function useServerQuote(body: MediaSubmitBody | null): QuoteState {
+export function useServerQuote(body: MediaSubmitBody | null, options: { pricedByText?: boolean } = {}): QuoteState {
   const studio = useStudioApi();
   // Pending from the first render, so nothing (a spend limit, a figure) reads an empty answer as "no price".
   const [state, setState] = useState<QuoteState>(() => ({ pending: body !== null, failed: false, result: null }));
-  const key = body ? JSON.stringify({ ...body, prompt: undefined, negativePrompt: undefined, clientRequestId: undefined, inputs: body.inputs.map((i) => i.role) }) : "";
+  const key = body
+    ? JSON.stringify({
+        ...body, prompt: undefined, negativePrompt: undefined, clientRequestId: undefined, inputs: body.inputs.map((i) => i.role),
+        characters: options.pricedByText ? (body.prompt?.length ?? 0) : undefined,
+      })
+    : "";
   useEffect(() => {
     if (!body) {
       setState({ pending: false, failed: false, result: null });
@@ -108,17 +114,7 @@ function localText(result: MediaEstimateResult): CostText {
   return { text: tr(M, "freeTime", { time }), title: local?.basis ?? "", kind: "local", usd: 0 };
 }
 
-/**
- * A usage-billed answer ("per character") becomes a figure only when the screen knows the amount and the
- * route lists exactly one price in that unit, so nothing here chooses between published rows.
- */
-function usageFigure(unit: string, pricing: readonly MediaPrice[], amount: Readonly<Record<string, number>> | undefined): number | null {
-  const units = amount?.[unit];
-  const rows = pricing.filter((price) => price.unit === unit);
-  return units !== undefined && units > 0 && rows.length === 1 ? rows[0]!.usd * units : null;
-}
-
-export function quoteText(state: QuoteState, usage?: { pricing: readonly MediaPrice[]; amount: Readonly<Record<string, number>> }): CostText {
+export function quoteText(state: QuoteState): CostText {
   if (state.pending) return { text: tr(M, "pending"), title: "", kind: "pending", usd: null };
   if (state.failed) return { text: tr(M, "failed"), title: "", kind: "failed", usd: null };
   const result = state.result;
@@ -133,12 +129,9 @@ export function quoteText(state: QuoteState, usage?: { pricing: readonly MediaPr
       return { text: tr(M, "from", { cost: money(quote.usd) }), title: basis(quote), kind: "figure", usd: quote.usd };
     case "range":
       return { text: tr(M, "range", { min: money(quote.min), max: money(quote.max) }), title: tr(M, "rangeTitle"), kind: "figure", usd: quote.max };
-    case "usage": {
-      const usd = usage ? usageFigure(quote.unit, usage.pricing, usage.amount) : null;
-      return usd !== null
-        ? { text: tr(M, "estimate", { cost: money(usd) }), title: usage!.amount[quote.unit] + " " + unitLabel(quote.unit), kind: "figure", usd }
-        : { text: tr(M, "usage", { unit: unitLabel(quote.unit) }), title: result.note ?? "", kind: "usage", usd: null };
-    }
+    case "usage":
+      // The server has no amount to count yet (no length, no text): say what the price is counted in.
+      return { text: tr(M, "usage", { unit: unitLabel(quote.unit) }), title: result.note ?? "", kind: "usage", usd: null };
     case "local":
       return localText(result);
     case "unpriced":
