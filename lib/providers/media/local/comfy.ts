@@ -88,10 +88,22 @@ function sizeFromResolution(record: ComfyWorkflowRecord, resolution: string | un
   return { width: Number(match[1]), height: Number(match[2]) };
 }
 
-function checkParam(record: ComfyWorkflowRecord, name: string, value: unknown): number | string | boolean {
+/**
+ * A command line sends every setting as text ("--vendor-option length=49"). Where the workflow declares a number
+ * or a yes/no, text that spells one is read as that type; anything else goes on to be refused as before.
+ */
+function asDeclared(value: unknown, type: "number" | "string" | "boolean"): unknown {
+  if (typeof value !== "string") return value;
+  if (type === "number" && /^-?(\d+\.?\d*|\.\d+)$/.test(value)) return Number(value);
+  if (type === "boolean" && (value === "true" || value === "false")) return value === "true";
+  return value;
+}
+
+function checkParam(record: ComfyWorkflowRecord, name: string, raw: unknown): number | string | boolean {
   const model = COMFY_MODEL_PREFIX + record.id;
   const param = record.params.find((entry) => entry.name === name);
   if (!param) throw invalid(COMFY_ERR.OPTION_INVALID, "Unknown option '" + name + "' for " + model + ".");
+  const value = asDeclared(raw, param.type);
   if (typeof value !== param.type) throw invalid(COMFY_ERR.OPTION_INVALID, model + " option '" + name + "' must be a " + param.type + ".");
   const typed = value as number | string | boolean;
   if (param.options && !param.options.some((choice) => choice === typed)) {
@@ -106,15 +118,16 @@ function checkParam(record: ComfyWorkflowRecord, name: string, value: unknown): 
 /** Reads vendorOptions. Unknown keys are refused, not dropped. */
 function readSettings(record: ComfyWorkflowRecord, request: MediaSubmitRequest): RunSettings {
   const settings: RunSettings = { ...sizeFromResolution(record, request.resolution), params: {} };
-  for (const [name, value] of Object.entries(request.vendorOptions ?? {})) {
+  for (const [name, raw] of Object.entries(request.vendorOptions ?? {})) {
     if (name === "allowPaidNodes") continue;
     if (name === "length" || name === "fps") {
+      const value = asDeclared(raw, "number");
       if (!record.bind[name] || typeof value !== "number" || !(value > 0)) {
         throw invalid(COMFY_ERR.OPTION_INVALID, COMFY_MODEL_PREFIX + record.id + (record.bind[name] ? " option '" + name + "' must be a positive number." : " has no " + name + " setting bound."));
       }
       settings[name] = value;
     } else {
-      settings.params[name] = checkParam(record, name, value);
+      settings.params[name] = checkParam(record, name, raw);
     }
   }
   return settings;
@@ -139,7 +152,7 @@ function readDuration(record: ComfyWorkflowRecord, request: MediaSubmitRequest):
 
 function refusePaidNodes(record: ComfyWorkflowRecord, request: MediaSubmitRequest): void {
   const paid = record.paidNodes ?? [];
-  if (paid.length === 0 || request.vendorOptions?.allowPaidNodes === true) return;
+  if (paid.length === 0 || asDeclared(request.vendorOptions?.allowPaidNodes, "boolean") === true) return;
   throw invalid(COMFY_ERR.PAID_NODES, COMFY_MODEL_PREFIX + record.id + " uses paid ComfyUI partner nodes (" + paid.join(", ")
     + "). ComfyUI may charge your Comfy account and ima2 cannot price it. Send vendorOptions.allowPaidNodes: true to run it anyway.");
 }
