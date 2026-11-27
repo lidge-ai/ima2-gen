@@ -1,6 +1,6 @@
 import type { MediaKind, MediaProviderAdapter } from "./contract.js";
 import type { MediaKeySnapshot } from "./credentials.js";
-import type { MediaCatalogModel, MediaRegistry } from "./registry.js";
+import { preferredCandidate, type MediaCatalogModel, type MediaRegistry } from "./registry.js";
 import { VendorLogos } from "./vendorAssets.js";
 
 function maskKey(key: string): string {
@@ -54,7 +54,8 @@ function modelEntry(model: MediaCatalogModel, keys: MediaKeySnapshot, logos: Ven
     kind: model.kind,
     tasks: model.tasks,
     routes,
-    defaultRoute: routes.find((r) => r.hasKey)?.adapter ?? null,
+    // The same rule a request without an adapter runs by (registry.preferredCandidate).
+    defaultRoute: preferredCandidate(model.candidates, (adapter) => keys.hasKey(adapter))?.adapter.id ?? null,
   };
 }
 

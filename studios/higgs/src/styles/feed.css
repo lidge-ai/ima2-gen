@@ -107,6 +107,21 @@
   margin-top: 2px;
   word-break: break-word;
 }
+.job-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.job-error-actions:empty {
+  display: none;
+}
+.job-billed {
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
 .job-steps {
   list-style: none;
   margin: 0;

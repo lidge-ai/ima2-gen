@@ -5,6 +5,7 @@ import type {
   WorkflowStep, WorkflowValues,
 } from "../types.js";
 import { checkModelFit, inputsFrom, joinPrompt, option, refsOf, textOf, videoResolutionField, wholeSeconds } from "./shared.js";
+import { videoTokenUnits } from "../videoTokens.js";
 
 /** Source limits shared by every Remix workflow (4-15 s, 200 MB), matching Sume's public Remix schema. */
 export function sourceVideoField(): WorkflowField {
@@ -55,6 +56,7 @@ export function checkRemixFit(env: PlanEnv, model: string, values: WorkflowValue
 export function renderSlot(withLite: boolean): ModelSlot {
   const slot: ModelSlot = {
     name: "render", label: "Video edit", task: "video-to-video",
+    description: "Edits the source clip with your references, keeping its timing and camera.",
     defaultModel: "bytedance/seedance-2.5",
     alternatives: ["bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini", "xai/grok-imagine-video"],
     rationale: RENDER_EVIDENCE,
@@ -77,6 +79,8 @@ export interface RenderSpec {
   /** Extra inputs that come from earlier steps (e.g. a stylized first frame). */
   extraInputs?(rt: StepRuntime): Promise<MediaInput[]>;
   includeUserImages: boolean;
+  /** The plan's catalog: models billed per token get token units (lib/workflows/videoTokens.ts). */
+  catalog?: PlanEnv["catalog"];
 }
 
 /** The edit call: source video plus reference images, prompt = our instruction + the user's text. */
@@ -86,10 +90,13 @@ export function renderStep(spec: RenderSpec): MediaStep {
   const resolution = textOf(values, "resolution") ?? "720p";
   const sound = textOf(values, "sound") ?? "source";
   const seconds = wholeSeconds(source);
+  // A video edit bills the source as input and returns the same length.
+  const tokens = videoTokenUnits(spec.catalog?.(slot.model), { resolution, inSec: source.durationSec ?? seconds, outSec: source.durationSec ?? seconds, width: source.width, height: source.height });
   const step: MediaStep = {
     id: "render", label: "Edit the source video", kind: "media", slot: "render",
     model: slot.model, outputKind: "video", dependsOn: spec.dependsOn,
-    units: { unit: "second", quantity: seconds, variant: resolution + (sound === "generate" ? "+audio" : "") },
+    units: tokens?.units ?? { unit: "second", quantity: seconds, variant: resolution + (sound === "generate" ? "+audio" : "") },
+    ...(tokens ? { unitsApproximate: tokens.note } : {}),
     async build(rt) {
       const inputs: MediaInput[] = [await rt.asInput(source, "source-video")];
       if (spec.extraInputs) inputs.push(...await spec.extraInputs(rt));

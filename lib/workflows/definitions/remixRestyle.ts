@@ -6,6 +6,7 @@ import { STYLE_PRESETS } from "./styles.js";
 
 const STYLIZE_SLOT: ModelSlot = {
   name: "stylize", label: "Restyle the first frame", task: "image-to-image",
+  description: "Redraws the first frame of the source in the chosen style.",
   defaultModel: "bytedance/seedream-5.5",
   alternatives: ["openai/gpt-image-2.6", "google/nano-banana-pro", "black-forest-labs/flux-2-max", "black-forest-labs/flux-3-image", "black-forest-labs/flux-kontext-max"],
   rationale: "Volcengine Ark image API (https://docs.volcengine.com/docs/ark/image-generation-api?lang=en, read 2026-11-26): "
@@ -78,7 +79,7 @@ export const remixRestyle: WorkflowDefinition = {
     checkReferenceLimit(env, stylize.model, refsOf(values, "styleImage").length, "styleImage");
     checkRemixFit(env, render.model, values, 1);
     const renderSpec = renderStep({
-      slot: render, values, dependsOn: ["style-frame"], instruction: RENDER_INSTRUCTION, includeUserImages: false,
+      slot: render, values, dependsOn: ["style-frame"], instruction: RENDER_INSTRUCTION, includeUserImages: false, catalog: env.catalog,
       async extraInputs(rt) {
         const styled = rt.artifactsOf("style-frame")[0];
         if (!styled) throw new Error("styled frame missing");

@@ -3,6 +3,7 @@ import { chooseRoute, type WorkflowDef, type WorkflowEstimate, type WorkflowRunB
 import { messages, tr } from "../../i18n.ts";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
+import { spendBlock } from "../../studio/spend.ts";
 
 const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요" });
 
@@ -88,20 +89,36 @@ export function useWorkflow(def: WorkflowDef) {
   const form = useWorkflowForm(def);
   const estimate = useWorkflowEstimate(def, form.body);
   const run = useWorkflowRun(def, form.body);
+  // What the server planned for a slot: steps name their slot; older servers only by id ("subject-first").
+  const planned = (slot: string) =>
+    estimate.estimate?.steps.find((s) => s.model && (s.slot ? s.slot === slot : s.id === slot || s.id.startsWith(slot + "-")))?.model;
+  /** The model a slot runs: the person's choice, else the server's plan, else the workflow default. */
+  const slotModel = (slot: string, fallback?: string) => form.steps[slot]?.model ?? planned(slot) ?? fallback;
   const choices = def.steps.flatMap((step) => {
-    const id = form.steps[step.id]?.model ?? step.model;
+    const id = slotModel(step.id, step.model);
     if (!id) return [];
     const model = catalog?.models.find((item) => item.id === id);
     return [{ step, model, choice: model ? chooseRoute(model) : null, available: step.available?.[id] }];
   });
+  const webSpend = useStudio((s) => s.webSpend);
+  const quote = estimate.estimate;
+  // A shared web instance refuses unpriced or over-limit runs; say so before Generate is pressed.
+  const spendReason = quote
+    ? spendBlock(
+        webSpend,
+        quote.steps.map((s) => ({ label: def.steps.find((d) => d.id === s.id)?.label ?? s.label ?? s.id, usd: s.estimate.usd })),
+        quote.total.usd,
+      )
+    : null;
   const blocked =
     !catalog ||
+    !!spendReason ||
     choices.some(
       (item) =>
         item.available === false ||
         (item.available === undefined &&
           (!item.choice || item.choice.kind === "needs-key" || item.choice.kind === "unavailable")),
     );
-  return { def, studio, catalog, ...form, ...estimate, ...run, blocked, choices };
+  return { def, studio, catalog, ...form, ...estimate, ...run, blocked, choices, spendReason, slotModel };
 }
 export type WorkflowForm = ReturnType<typeof useWorkflow>;

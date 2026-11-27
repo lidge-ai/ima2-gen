@@ -5,13 +5,14 @@ import { useStudioApi } from "../studio/context.tsx";
 import { Icon, type IconName } from "./Icon.tsx";
 import { MediaView, downloadName } from "./MediaView.tsx";
 import { handOff } from "../studio/handoff.ts";
+import { writeDraft } from "../studio/draft.ts";
 import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
 
 const M = messages(
-  { animate: "Animate", edit: "Edit", remix: "Remix", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt" },
-  { animate: "영상 만들기", edit: "편집", remix: "리믹스", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음" },
+  { animate: "Animate", edit: "Edit", remix: "Remix", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
+  { animate: "영상 만들기", edit: "편집", remix: "리믹스", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 모델로", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
 );
 
 interface Props {
@@ -56,16 +57,39 @@ function useItemActions(item: HistoryItem, onClose: () => void) {
 function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => void }) {
   const t = useT(M);
   const actions = useItemActions(item, onClose);
+  const [copied, setCopied] = useState(false);
   const reuse = (target: Target) => {
     handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target });
     onClose();
     navigate(target);
+  };
+  // Same prompt and model on the screen that made it; the prompt arrives as that screen's draft.
+  const again = item.kind === "image" || item.kind === "video" ? item.kind : null;
+  const runAgain = () => {
+    if (!again) return;
+    writeDraft(again, item.prompt ?? "");
+    onClose();
+    navigate(again, { model: item.model });
+  };
+  const copy = async () => {
+    await navigator.clipboard.writeText(item.prompt ?? "");
+    setCopied(true);
   };
   return (
     <div className="lightbox-actions">
       <a className="btn" href={item.url} download={downloadName(item.url, item.historyId)}>
         <Icon name="download" size={15} /> {t("download")}
       </a>
+      {again && item.prompt ? (
+        <button type="button" className="btn" onClick={runAgain}>
+          <Icon name="sparkle" size={15} /> {t("again")}
+        </button>
+      ) : null}
+      {item.prompt ? (
+        <button type="button" className="btn" onClick={() => void copy().catch(() => setCopied(false))}>
+          {t("copy")}
+        </button>
+      ) : null}
       <button type="button" className="btn" aria-pressed={!!item.favorite} onClick={() => void actions.save()}>
         <Icon name="heart" size={15} /> {item.favorite ? t("saved") : t("save")}
       </button>
@@ -78,6 +102,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
         <Icon name="trash" size={15} /> {t("delete")}
       </button>
       {actions.error ? <p role="alert">{t("actionFailed", { error: actions.error })}</p> : null}
+      {copied ? <p role="status">{t("copied")}</p> : null}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { aspectField, checkLook, checkModelFit, inputsFrom, intOf, joinPrompt, l
 
 const RENDER_SLOT: ModelSlot = {
   name: "render", label: "Video", task: "reference-to-video",
+  description: "Generates the video for each planned shot.",
   defaultModel: "bytedance/seedance-2.5",
   alternatives: [
     "bytedance/seedance-2.5-flash", "bytedance/seedance-2", "bytedance/seedance-2-mini",
@@ -17,6 +18,7 @@ const RENDER_SLOT: ModelSlot = {
 
 const SOUND_SLOT: ModelSlot = {
   name: "sound", label: "Sound bed", task: "video-to-audio",
+  description: "Adds a sound bed when the video model makes no sound.",
   defaultModel: "mirelo/mirelo-sfx-2.0", alternatives: [],
   rationale: "Used only when the video model makes no sound. Mirelo SFX 2.0 makes synchronized effects from video (mirelo.ai/changelog, read 2026-11-26).",
 };

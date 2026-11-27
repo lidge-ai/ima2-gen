@@ -3,7 +3,7 @@
  * routes/history.ts, routes/keys.ts). Only adapt.ts reads these; the rest of
  * the kit and every studio work with the UI-facing types in types.ts.
  */
-import type { MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask } from "./types.ts";
+import type { MediaKind, MediaModelSpec, MediaPrice, MediaProviderError, MediaTask, WorkflowText } from "./types.ts";
 
 export interface WireLogo {
   id: string;
@@ -136,6 +136,8 @@ export interface WireSlot {
   defaultRoute?: string;
   rationale: string;
   available: Readonly<Record<string, boolean>>;
+  /** model id -> can run now (a saved key, or the slot's signed-in session). Absent when the server cannot tell. */
+  runnable?: Readonly<Record<string, boolean>>;
 }
 
 export interface WireWorkflow {
@@ -147,6 +149,7 @@ export interface WireWorkflow {
   slots: readonly WireSlot[];
   tierField?: string;
   preset?: unknown;
+  i18n?: Readonly<Record<string, WorkflowText>>;
 }
 
 export interface WireStepEstimate {
@@ -166,6 +169,8 @@ export interface WireStepSummary {
   dependsOn: readonly string[];
   model?: string;
   route?: string;
+  /** Workflow slot this media step fills (servers with step slots). */
+  slot?: string;
   final: boolean;
 }
 

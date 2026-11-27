@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { StudioApiError, type Catalog } from "@ima2/studio-kit";
-import { useStudioApi } from "../../studio/context.tsx";
+import { StudioApiError, estimateCost, type Catalog } from "@ima2/studio-kit";
+import { useStudio, useStudioApi } from "../../studio/context.tsx";
+import { spendBlock } from "../../studio/spend.ts";
 import { estimateLabel } from "../../ui/format.ts";
 import { defaultsFor, problem, routeFor, toBody, type CreateForm } from "./form.ts";
 
@@ -13,7 +14,11 @@ export function useCreate(catalog: Catalog, form: CreateForm, set: (patch: Parti
   const choice = routeFor(model, form);
   const route = choice.kind === "chosen" || choice.kind === "default" ? choice.route : undefined;
   const priced = route ?? (choice.kind === "needs-key" ? choice.route : undefined);
-  const blocked = problem(model, form);
+  const webSpend = useStudio((s) => s.webSpend);
+  const quote = route && webSpend ? estimateCost(route.pricing, form) : null;
+  // A shared web instance refuses an unpriced or over-limit job; name the reason before sending.
+  const blocked =
+    problem(model, form) ?? (quote && model ? spendBlock(webSpend, [{ label: model.label, usd: quote.usd }], quote.usd) : null);
   const cost = estimateLabel(priced, form);
   const pickModel = (id: string) => {
     const next = catalog.models.find((m) => m.id === id);

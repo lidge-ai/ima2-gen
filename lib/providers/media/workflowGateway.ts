@@ -53,6 +53,9 @@ export async function createWorkflowGateway(deps: MediaRunnerDeps, extras: Gatew
       const model = deps.registry.getModel(modelId);
       return model ? pick(model, keys, undefined)?.spec : undefined;
     },
+    subscription(route: string): string | undefined {
+      return extras.sessionRoutes?.[route]?.label;
+    },
     canRun(modelId: string, route: string | undefined): boolean {
       const session = route ? extras.sessionRoutes?.[route] : undefined;
       const model = deps.registry.getModel(modelId);

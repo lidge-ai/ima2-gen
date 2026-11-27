@@ -8,6 +8,7 @@ import {
   type KeyStatus,
   type MediaSubmitBody,
   type ShowcaseItem,
+  type WebSpend,
   type StreamStatus,
   type StudioClient,
   type UploadedInput,
@@ -31,6 +32,8 @@ export interface StudioState {
   stream: StreamStatus;
   /** Example clips from the server's showcase folder; empty hides the showcase. */
   showcase: readonly ShowcaseItem[];
+  /** Spend limits of a shared web instance; null on a local server. */
+  webSpend: WebSpend | null;
 }
 
 const initial: StudioState = {
@@ -47,6 +50,7 @@ const initial: StudioState = {
   historyLoaded: false,
   stream: "connecting",
   showcase: [],
+  webSpend: null,
 };
 
 function message(error: unknown): string {
@@ -95,6 +99,7 @@ export class Studio {
       (showcase) => this.set({ showcase }),
       () => undefined,
     );
+    void this.refreshSpend();
     void this.client.media.jobs({ status: "all" }).then(
       (jobs) => {
         for (const job of jobs.reverse()) this.upsertJob(job);
@@ -122,6 +127,12 @@ export class Studio {
     } catch (error) {
       this.set({ catalogError: message(error) });
     }
+  }
+
+  /** A local server has no web session route; any failure reads as "no spend limits". */
+  async refreshSpend(): Promise<void> {
+    const webSpend = await this.client.web.spend().catch(() => null);
+    this.set({ webSpend });
   }
 
   async refreshKeys(): Promise<void> {
@@ -166,6 +177,7 @@ export class Studio {
     const accepted = await this.client.media.submit(body);
     const job = await this.client.media.job(accepted.jobId);
     this.upsertJob(job);
+    if (this.state.webSpend) void this.refreshSpend();
     return accepted.jobId;
   }
 
@@ -173,6 +185,7 @@ export class Studio {
     const accepted = await this.client.workflows.run(id, body);
     const job = await this.client.media.job(accepted.jobId);
     this.upsertJob(job);
+    if (this.state.webSpend) void this.refreshSpend();
     return accepted.jobId;
   }
 

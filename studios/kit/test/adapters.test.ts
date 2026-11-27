@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { toCatalog, toKeyStatuses, toWireSubmit, fromWireJob } from "../src/adapt.ts";
-import { toWorkflowDef, toWireRun, toEstimate } from "../src/adaptWorkflow.ts";
+import { toCatalog, toKeyStatuses, toWireSubmit, fromWireJob, nameParts } from "../src/adapt.ts";
+import { JobCache } from "../src/client.ts";
+import { toWorkflowDef, toWireRun, toEstimate, localizeWorkflow } from "../src/adaptWorkflow.ts";
 import { toHistoryPage, historyParams } from "../src/adaptHistory.ts";
 import { reduceJobEvent } from "../src/jobReducer.ts";
 import { wireCatalog } from "../src/fake/catalog.ts";
@@ -31,6 +32,8 @@ test("catalog, key, submit and job adapters translate wire records", () => {
     },
   );
   assert.equal(fromWireJob({ requestId: "r", kind: "media", startedAt: 0, status: "canceled" }).status, "canceled");
+  // A job read back after it finished (no events seen) still reads as complete.
+  assert.equal(fromWireJob({ requestId: "r", kind: "media", startedAt: 0, status: "completed" }).progress, 1);
 });
 test("workflow and history adapters translate values, estimates and cursors", () => {
   const wire = workflows.find((w) => w.id === "director-cast")!,
@@ -81,4 +84,42 @@ test("reducer applies planned, step, done and cancellation events", () => {
   assert.equal(done.job.status, "succeeded");
   assert.equal(done.job.outputs[0]?.historyId, "a.png");
   assert.equal(reduceJobEvent(started.job, "error", { ...base, code: "GENERATION_CANCELED" })?.job.status, "canceled");
+});
+
+test("a retiring model keeps a clean name and a retiring flag", () => {
+  assert.deepEqual(nameParts("GPT Image 2 (deprecated)"), { label: "GPT Image 2", retiring: true });
+  assert.deepEqual(nameParts("Seedance 2.5"), { label: "Seedance 2.5" });
+  assert.deepEqual(nameParts("Kling 3 (Legacy) "), { label: "Kling 3", retiring: true });
+  assert.deepEqual(nameParts("Veo 3.1 (fast)"), { label: "Veo 3.1 (fast)" });
+  assert.deepEqual(nameParts("(deprecated)"), { label: "(deprecated)" });
+});
+
+test("a workflow reads in Korean from the server's i18n.ko, and stays English where nothing was translated", () => {
+  const def = toWorkflowDef(workflows.find((w) => w.id === "remix-object-swap")!);
+  const ko = localizeWorkflow(def, "ko");
+  assert.equal(ko.label, "리믹스: 사물 바꾸기");
+  assert.equal(ko.inputs.find((i) => i.name === "images")?.description, "공연할 사람이나 사물 이미지 1~8장, 순서대로.");
+  assert.deepEqual(ko.params.find((p) => p.name === "tier")?.options?.map((o) => [o.value, o.label]), [["standard", "표준"], ["lite", "라이트"]]);
+  assert.equal(ko.steps.find((s) => s.id === "render")?.label, "영상 만들기");
+  assert.equal(ko.id, def.id);
+  assert.equal(localizeWorkflow(def, "en"), def);
+});
+
+test("an estimate carries the model and route the server planned for each step", () => {
+  const est = toEstimate({
+    estimate: { usd: 0.4, complete: true, steps: [{ stepId: "subject-first", usd: 0.035 }] },
+    steps: [{ id: "subject-first", label: "Subject frame", kind: "media", dependsOn: [], model: "bytedance/seedream-5.5", route: "byteplus", slot: "subject", final: false }],
+  } as never);
+  assert.equal(est.steps[0]?.model, "bytedance/seedream-5.5");
+  assert.equal(est.steps[0]?.route, "byteplus");
+  assert.equal(est.steps[0]?.slot, "subject");
+});
+
+test("a running job that the server reports finished reads as complete, whatever events showed", () => {
+  const cache = new JobCache();
+  const running = fromWireJob({ requestId: "r", kind: "media", startedAt: 0, phase: "running", meta: { model: "m" } });
+  cache.remember({ ...running, progress: 0.4 });
+  const merged = cache.merge({ requestId: "r", kind: "media", startedAt: 0, status: "completed", finishedAt: 10, meta: { model: "m" } });
+  assert.equal(merged.status, "succeeded");
+  assert.equal(merged.progress, 1);
 });

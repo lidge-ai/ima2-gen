@@ -23,6 +23,8 @@ export interface VendorAssetFile {
    * without editing the file.
    */
   trim?: number;
+  /** Ink of the drawing: "light" needs a dark tile, "dark" a light one; "color" works on a light tile. */
+  ink?: "dark" | "light" | "color";
 }
 
 export interface VendorAsset {
@@ -118,10 +120,11 @@ export function vendorName(idOrAlias: string, manifest?: VendorManifest): string
   return findVendor(manifest, idOrAlias)?.name ?? VENDOR_NAMES[vendorId(idOrAlias)] ?? idOrAlias;
 }
 
-const ORDER: Record<"dark" | "light", readonly LogoVariant[]> = {
-  // Ink drawn for this background first, then neutral marks, then the other files.
-  dark: ["dark", "mark", "primary", "light"],
-  light: ["light", "mark", "primary", "dark"],
+const ORDER: Record<"dark" | "light", Record<"mark" | "full", readonly LogoVariant[]>> = {
+  // Wordmarks: ink drawn for this background first. Marks sit on their own tile, so a dark or
+  // coloured symbol on a light tile reads best at 16-20 px on either page background.
+  dark: { full: ["dark", "mark", "primary", "light"], mark: ["mark", "primary", "light", "dark"] },
+  light: { full: ["light", "mark", "primary", "dark"], mark: ["mark", "primary", "light", "dark"] },
 };
 
 /** The file's shape, from the manifest or, for older entries, from its proportions. */
@@ -149,7 +152,7 @@ export function pickLogo(
   const asset = findVendor(manifest, idOrAlias);
   if (!asset || asset.files.length === 0) return null;
   for (const shape of SHAPES[options.shape]) {
-    for (const variant of ORDER[options.background]) {
+    for (const variant of ORDER[options.background][options.shape]) {
       const file = asset.files.find((f) => f.variant === variant && logoShape(f) === shape);
       if (file) return { asset, file };
     }

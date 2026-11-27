@@ -5,7 +5,7 @@
  * Every stage runs on a commercial model through the media adapters, with the user's keys.
  */
 import { WorkflowError } from "../../errors.js";
-import type { ModelSlot, PlanEnv, PlanNote, ResolvedSlot, StepRuntime, WorkflowCombo, WorkflowDefinition, WorkflowField, WorkflowStep, WorkflowValues } from "../../types.js";
+import type { ModelSlot, PlanEnv, SlotCredit, PlanNote, ResolvedSlot, StepRuntime, WorkflowCombo, WorkflowDefinition, WorkflowField, WorkflowStep, WorkflowValues } from "../../types.js";
 import { checkReferenceLimit } from "../../validate.js";
 import { referenceImagesField, sourceVideoField } from "../remixShared.js";
 import { inputsFrom, option, refsOf, textOf, videoResolutionField } from "../shared.js";
@@ -17,7 +17,12 @@ import {
   type OpenMode,
 } from "./stages.js";
 
-const OPEN_SOURCES = "Stage layout after D3voz/openjutsu (MIT), SydFloyd/openjutsu (Apache-2.0) and alisson-anjos/Henge (MIT), read 2026-11-26.";
+/** Open projects whose stage layout these presets follow (licences read 2026-11-26). */
+const OPEN_CREDITS: readonly SlotCredit[] = [
+  { name: "D3voz/openjutsu", url: "https://github.com/D3voz/openjutsu", license: "MIT" },
+  { name: "SydFloyd/openjutsu", url: "https://github.com/SydFloyd/openjutsu", license: "Apache-2.0" },
+  { name: "alisson-anjos/Henge", url: "https://github.com/alisson-anjos/Henge", license: "MIT" },
+];
 
 const IMAGE_EDITORS = ["bytedance/seedream-5.5", "openai/gpt-image-2.6", "openai/gpt-image-2", "google/nano-banana-2.1", "google/nano-banana-pro", "black-forest-labs/flux-2-pro", "black-forest-labs/flux-kontext-pro", "kling/kling-image-o1"];
 /** GPT image over the ChatGPT sign-in (lib/codexBackend), tried first for every image stage. */
@@ -31,14 +36,19 @@ function subjectSlot(mode: OpenMode): ModelSlot {
   return {
     name: "subject", label: mode === "restyle" ? "Restyle the first frame" : "Put the subject into the first frame", task: "image-to-image", optional: true,
     defaultModel: GPT_OAUTH_IMAGE, alternatives: EDITORS_AFTER(next), modelRoutes: { [GPT_OAUTH_IMAGE]: "openai-oauth" },
-    rationale: OPEN_SOURCES + " The open pipelines anchor identity or look in the first frame before video generation; an image edit model does that here. "
-      + "GPT image over the ChatGPT subscription goes first; keyed editors follow when there is no sign-in. "
-      + (mode === "swap" ? "OpenAI edits take the segment mask as the edit area." : ""),
+    description: mode === "restyle" ? "Redraws the first frame of the source in the chosen style."
+      : mode === "swap" ? "Puts the replacement into the source's first frame." : "Puts your subject into the source's first frame.",
+    credits: OPEN_CREDITS,
+    // Route order (subscription first, then keyed editors) reaches people as the plan's "fallback" note.
+    rationale: "The open pipelines anchor identity or look in the first frame before video generation; an image edit model does that here."
+      + (mode === "swap" ? " OpenAI edits take the segment mask as the edit area." : ""),
   };
 }
 
 const SEGMENT_SLOT: ModelSlot = {
   name: "segment", label: "Mask the target", task: "image-segment", optional: true, defaultModel: "meta/sam-3", alternatives: [],
+  description: "Marks the target to replace in the first frame.",
+  credits: OPEN_CREDITS,
   rationale: "openjutsu tracks the target with SAM 3.1 before the swap; hosted SAM 3 (fal-ai/sam-3/image) masks it in the first frame.",
 };
 
@@ -51,7 +61,10 @@ function renderSlot(mode: OpenMode): ModelSlot {
     name: "render", label: motion ? "Render with the source as motion reference" : "Edit the source video",
     task: motion ? "reference-to-video" : "video-to-video", defaultModel: "bytedance/seedance-2.5",
     alternatives: motion ? REFERENCE_RENDERERS : EDIT_RENDERERS,
-    rationale: OPEN_SOURCES + " Their guide-conditioned render (MiniMax H3 / Wan Animate / VACE with masks and pose) has no public API with the same inputs; "
+    description: motion ? "Renders a new clip that follows the source's motion and camera."
+      : mode === "swap" ? "Edits the source clip to match the prepared first frame." : "Edits the source clip to match the restyled first frame.",
+    credits: OPEN_CREDITS,
+    rationale: "The open pipelines' guide-conditioned render (MiniMax H3 / Wan Animate / VACE with masks and pose) has no public API with the same inputs; "
       + (motion ? "models that take a reference video carry the motion instead, and Grok 1.5 regenerates between pinned anchor frames."
         : "video edit models take the source video plus the prepared first frame."),
   };
