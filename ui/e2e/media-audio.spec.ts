@@ -121,7 +121,7 @@ test("AU2 speech: the voice is chosen from the provider's list with a sample, Ge
   const id = String(sent.requestId);
   await media.emit(page, "submitted", id, {});
   await media.emit(page, "progress", id, { status: "running" });
-  await expect(page.locator(".in-flight-rich-item:visible, .in-flight-item:visible").first()).toHaveAttribute("aria-label", /Eleven v4/);
+  await expect(generate(page).locator(".generate-btn__count")).toHaveText("1");
   media.history.push(audioHistoryRow({ filename: "l11-speech.mp3", url: "/generated/l11-speech.mp3", model: "elevenlabs/eleven-v4", requestId: id,
     prompt: sent.prompt, userPrompt: sent.prompt, media: { task: "text-to-audio", durationSec: null, resolution: null, aspectRatio: null, seed: null, audio: null, inputRoles: [] } }));
   await media.emit(page, "done", id, { outputs: [{ filename: "l11-speech.mp3", url: "/generated/l11-speech.mp3", mediaType: "audio" }] });
