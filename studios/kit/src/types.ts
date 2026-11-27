@@ -248,6 +248,15 @@ export interface HistoryItem {
   favorite?: boolean;
 }
 
+/** A saved result as a ComfyUI graph in API format (GET /api/comfy/result-graph). */
+export interface ComfyResultGraph {
+  /** The graph ComfyUI ran (inside the saved image, or from that server's job history), or one built for the ima2 node pack. */
+  source: "embedded" | "comfy-history" | "ima2-node";
+  graph: Readonly<Record<string, unknown>>;
+  /** What a person should know before running it, in the server's words. */
+  notes: readonly string[];
+}
+
 export interface HistoryQuery {
   kind?: MediaKind;
   model?: string;
