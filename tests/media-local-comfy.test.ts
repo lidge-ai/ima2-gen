@@ -259,6 +259,7 @@ test("through the server: registered, listed, priced as local, run, saved to his
   assert.equal(saved.length, 1);
   const sidecar = JSON.parse(await readFile(join(generatedDir, saved[0]! + ".json"), "utf8"));
   assert.deepEqual([sidecar.adapter, sidecar.route, sidecar.model, sidecar.prompt], ["comfy-local", "local", "comfy/klein", "a red fox"]);
+  assert.deepEqual(sidecar.estimate, { usd: 0, basis: "exact" }, "a local result is recorded as costing nothing, not as unpriced");
   const after = await (await post("/api/media/estimate", { model: "comfy/klein", task: "text-to-image" })).json();
   assert.equal(typeof after.local.expectedSec, "number", "the run that just finished is the basis of the next estimate");
   assert.equal(after.local.basis, "median of 1 run on this machine");

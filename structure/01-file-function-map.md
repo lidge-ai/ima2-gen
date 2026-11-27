@@ -283,6 +283,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/comfy/objectInfo.ts` | 102 | ComfyUI node schemas (GET /object_info/{class}): input types, ranges, choice lists in both encodings, upload lists, output slot types and names |
 | `lib/comfy/detect.ts` | 241 | Workflow slots from graph + schemas: prompt and negative by following sampler wiring, sizes bound together, seed, frame, length, fps, output; missing nodes, model files and paid nodes; ranged parameters |
 | `lib/comfy/inspect.ts` | 67 | Inspects a workflow with its server; falls back to class-name rules and says so when the server does not answer |
+| `lib/comfy/submit.ts` | 75 | POST /prompt with reasons on refusal; file upload into the server input folder (image, video, audio) |
+| `lib/comfy/outputs.ts` | 76 | Files a finished job saved, of any kind; bounded download; kind decided from the bytes |
+| `lib/comfy/register.ts` | 55 | Validates the file slots a workflow is registered with; keeps the classic single reference in step |
+| `lib/comfy/localCatalog.ts` | 124 | Registered workflows as media models (comfy/<id>): task from file slots, options, run-time record and local estimate |
 | `lib/cardNewsTemplateStore.ts` | 253 | Card-news image template registry and preview reads |
 | `lib/cardNewsRoleTemplateStore.ts` | 48 | Built-in role-template list (`mid-5`, etc.) |
 | `lib/cardNewsManifestStore.ts` | 150 | Per-set manifest and sidecar persistence under `~/.ima2/generated/cardnews/` |
