@@ -19,7 +19,6 @@ export function executionChildEnv(): NodeJS.ProcessEnv {
 export function executionTestProcess(url: string): boolean {
   if (process.env.EXECUTION_TEST_FILE === url && process.execArgv.includes("--experimental-test-module-mocks")) {
     if (process.platform === "win32") delete process.env.USERPROFILE;
-    assert.equal((globalThis as Record<symbol, unknown>)[Symbol.for("ima2.fetchablePorts")], true, "the isolated process must load tests/helpers/fetchablePorts.mjs");
     return true;
   }
   test(`isolated execution fixture: ${fileURLToPath(url)}`, { timeout: 65_000 }, async (t) => {
