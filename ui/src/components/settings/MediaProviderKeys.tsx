@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useI18n } from "../../i18n";
 import { jsonFetch } from "../../lib/api-core";
 import { logoPlate, logoUrl } from "../../lib/mediaCatalog";
+import { extraFieldLabelKey } from "../../lib/mediaKeyEntry";
 import { extraFieldStatus, type MediaKeyAdapter, type MediaKeyStatus, type MediaVocabulary } from "../../lib/mediaKeys";
 
 interface Snapshot {
@@ -88,7 +89,7 @@ function MediaKeyForm({ vocabulary: v, status, adapters, refresh }: {
         {status?.source === "env" && <p>{t("media.envImmutable")}</p>}
       </>}
       {fields.map((field, index) => <div className="media-provider-keys__field" key={field.name}>
-        <label htmlFor={`${id}-field-${index}`}>{field.name}{field.required ? " *" : ""}</label>
+        <label htmlFor={`${id}-field-${index}`}>{extraFieldLabelKey(field.name) ? t(`mediaPicker.key.field.${field.name}`) : field.name}{field.required ? " *" : ""}</label>
         <span>{field.configured ? t("media.configured") : t("media.notConfigured")}{field.source && ` · ${field.source}`} {field.secret ? "" : field.value ?? ""}</span>
         <div className="api-key-input-group"><input id={`${id}-field-${index}`} className="api-key-input" type={field.secret ? "password" : "text"} autoComplete="off"
           value={extra[field.name] ?? ""} onChange={(e) => setExtra({ ...extra, [field.name]: e.target.value })} />

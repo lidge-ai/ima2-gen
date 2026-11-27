@@ -2,7 +2,7 @@ import { useId, useState, type KeyboardEvent } from "react";
 import { useI18n } from "../../i18n";
 import type { MediaAdapter } from "../../lib/mediaCatalog";
 import { loadMediaCatalog } from "../../lib/mediaCatalogStore";
-import { keyDraftProblem, keyEntrySupported, keySaveProblem, saveMediaKey, type KeySaveProblem } from "../../lib/mediaKeyEntry";
+import { extraFieldLabelKey, keyDraftProblem, keyEntrySupported, keySaveProblem, saveMediaKey, type KeySaveProblem } from "../../lib/mediaKeyEntry";
 import { useAppStore } from "../../store/useAppStore";
 
 /**
@@ -49,6 +49,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
   const onEnter = (event: KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") { event.preventDefault(); void save(); } };
   const hint = apiKey.trim() === "" ? null : problem === "short" ? t("mediaPicker.key.short")
     : problem === "prefix" ? t("mediaPicker.key.prefix", { prefix: adapter.keyPrefix ?? "" }) : problem === "extra" ? t("mediaPicker.key.extra") : null;
+  const fieldLabel = (name: string) => (extraFieldLabelKey(name) ? t(`mediaPicker.key.field.${name}`) : name);
   return (
     <section className="media-key" aria-labelledby={id + "-title"}>
       <h4 className="media-key__title" id={id + "-title"}>{t(replacing ? "mediaPicker.key.replaceTitle" : "mediaPicker.key.title", { provider })}</h4>
@@ -63,7 +64,7 @@ export function MediaKeyEntry({ adapter, replacing = false, onDone }: { adapter:
         <button type="button" className="option-btn media-key__show" aria-pressed={shown} onClick={() => setShown(!shown)}>{t(shown ? "mediaPicker.key.hide" : "mediaPicker.key.show")}</button>
       </div>
       {adapter.extraFields.map((field) => (
-        <label key={field.name} className="media-key__label">{field.name}{field.required && !field.configured ? " " + t("mediaPicker.key.required") : ""}
+        <label key={field.name} className="media-key__label">{fieldLabel(field.name)}{field.required && !field.configured ? " " + t("mediaPicker.key.required") : ""}
           <input className="api-key-input" type={field.secret ? "password" : "text"} autoComplete="off" spellCheck={false}
             placeholder={field.secret ? "" : field.value ?? ""} value={extra[field.name] ?? ""}
             onChange={(event) => setExtra({ ...extra, [field.name]: event.target.value })} onKeyDown={onEnter} />

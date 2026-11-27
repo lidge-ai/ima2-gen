@@ -149,6 +149,7 @@
     "blockKey": "需要先填写 {provider} 的 API 密钥才能生成。",
     "estimate": {
       "label": "预计费用",
+      "basis": "计价依据",
       "unknown": "价格表中没有",
       "basisSeconds": "{n} 秒 × {price}",
       "rangeNote": "此模型的价格表有多个档位，实际费用取决于此界面未设置的选项。",
@@ -172,6 +173,7 @@
       "prefix": "此提供商的密钥以 {prefix} 开头。",
       "extra": "请填写必填项。",
       "required": "（必填）",
+      "field": {"region": "区域", "secretKey": "密钥（Secret Key）", "secretAccessKey": "秘密访问密钥（Secret Access Key）", "vodSubAppId": "VOD 子应用 ID", "location": "位置（区域）"},
       "subscription": "ChatGPT 和 Grok 的登录模型不需要密钥，它们由内置提供商运行。",
       "fileOnly": "此提供商使用服务账号文件登录，请在设置中添加。",
       "rejected": "{provider} 没有接受此密钥，请检查后重试。",

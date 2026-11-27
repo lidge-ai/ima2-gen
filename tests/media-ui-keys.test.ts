@@ -163,3 +163,22 @@ test("the cheapest route to add a key for is offered only when it is not the one
   assert.equal(cheapestRoute(m([r("direct", "direct", 0.05), r("agg", "aggregator", 0.09)]), "text-to-video")?.adapter, "direct");
   assert.equal(cheapestRoute(m([r("a", "aggregator"), r("b", "aggregator")]), "text-to-video"), undefined, "no published price, no claim about which is cheapest");
 });
+
+const { extraFieldLabelKey } = await import("../ui/src/lib/mediaKeyEntry.js");
+const { BUILTIN_MEDIA_ADAPTERS } = await import("../lib/providers/media/adapters.js");
+const { readFile } = await import("node:fs/promises");
+
+test("every extra key field an adapter asks for has a name in all four languages", async () => {
+  const names = [...new Set(BUILTIN_MEDIA_ADAPTERS.flatMap((adapter) => (adapter.credential.extraFields ?? []).map((field) => field.name)))].sort();
+  assert.ok(names.includes("region"));
+  for (const locale of ["en", "ko", "zh-Hans", "zh-Hant"]) {
+    const strings = JSON.parse(await readFile(new URL("../ui/src/i18n/" + locale + ".json", import.meta.url), "utf8")) as Record<string, unknown>;
+    for (const name of names) {
+      const key = extraFieldLabelKey(name);
+      assert.ok(key, name + " has no label key");
+      const text = key.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], strings);
+      assert.ok(typeof text === "string" && text.trim() !== "" && text !== name, locale + " " + key);
+    }
+  }
+  assert.equal(extraFieldLabelKey("somethingNew"), null, "an unknown field keeps its own name on screen");
+});

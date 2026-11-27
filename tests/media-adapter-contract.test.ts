@@ -82,6 +82,8 @@ for (const adapter of subjects) {
       assert.ok(https(m.docsUrl), `${m.id} docsUrl`);
       for (const p of m.pricing) {
         assert.ok(PRICE_UNITS.has(p.unit), `${m.id} price unit`);
+        // A still image has no duration: a per-second row there is a video price filed under the wrong model.
+        if (m.kind === "image") assert.notEqual(p.unit, "second", `${m.id}: image model priced per second (${p.usd})`);
         assert.ok(Number.isFinite(p.usd) && p.usd >= 0, `${m.id} price usd`);
         assert.ok(https(p.source), `${m.id} price source`);
         assert.match(p.checkedAt, /^\d{4}-\d{2}-\d{2}$/);

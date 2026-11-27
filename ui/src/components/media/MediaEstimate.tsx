@@ -27,8 +27,10 @@ export function MediaEstimate({ route, selection }: { route: MediaRoute; selecti
       <span>{t("mediaPicker.estimate.label")}</span>
       <span className="price">{amount ?? (quote.state === "unpriced" ? t("mediaPicker.noPrice") : t("mediaPicker.estimate.unknown"))}</span>
       {quote.state === "exact" || quote.state === "from" ? (
-        <small>{quote.unit === "second" ? t("mediaPicker.estimate.basisSeconds", { n: quote.quantity, price: unitPrice(quote.price, t) }) : unitPrice(quote.price, t)}
-          {quote.price.variant ? " · " + quote.price.variant : ""}</small>
+        <small>{quote.unit === "second" ? t("mediaPicker.estimate.basisSeconds", { n: quote.quantity, price: unitPrice(quote.price, t) }) : unitPrice(quote.price, t)}</small>
+      ) : null}
+      {(quote.state === "exact" || quote.state === "from") && quote.price.variant ? (
+        <details className="media-details"><summary>{t("mediaPicker.estimate.basis")}</summary><p>{quote.price.variant}</p></details>
       ) : null}
       {quote.state === "range" ? <small>{t("mediaPicker.estimate.rangeNote")}</small> : null}
       {quote.state === "unpriced" ? <small>{t("mediaPicker.estimate.unpricedNote", { provider: route.label })}</small> : null}
