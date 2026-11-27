@@ -78,12 +78,13 @@ test("L11-K2 the estimate follows the settings and is confirmed by the server fo
   await basis.getByText("Price basis", { exact: true }).click();
   await expect(basis.locator("p")).toHaveText("text-to-video:720p");
   await expect(hint(page)).toHaveText("Seedance 2.5 · est. $2.37");
-  const estimates = () => media.calls.filter((call) => call.path === "/api/media/estimate").map((call) => call.body?.priceVariant);
-  await expect.poll(estimates).toEqual(["text-to-video:720p"]);
+  // The request names the settings; the server chooses the price row.
+  const estimates = () => media.calls.filter((call) => call.path === "/api/media/estimate").map((call) => call.body?.resolution);
+  await expect.poll(estimates).toEqual(["720p"]);
   await card(page).getByRole("button", { name: "480p", exact: true }).click();
   await expect(estimate).toContainText("$1.11");
   await expect(hint(page)).toHaveText("Seedance 2.5 · est. $1.11");
-  await expect.poll(estimates).toEqual(["text-to-video:720p", "text-to-video:480p"]);
+  await expect.poll(estimates).toEqual(["720p", "480p"]);
   expect(media.calls.find((call) => call.path === "/api/media/estimate")?.body).toMatchObject({ model: "bytedance/seedance-2.5", adapter: "fal", task: "text-to-video", durationSec: 5 });
   // A price list with tiers this screen does not set is shown as a range, not as one number.
   await pick(page, "Image", "openai/gpt-image-2.5");
@@ -153,7 +154,7 @@ test("L11-K6 a model priced by quality offers the quality, quotes one price for 
   await quality.getByRole("button", { name: "Low", exact: true }).click();
   await expect(estimate.locator(".price")).toHaveText("$0.006");
   await expect(hint(page)).toHaveText("GPT Image 2 · est. $0.006");
-  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)?.body).toMatchObject({ quality: "low", priceVariant: "1K · low" });
+  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)?.body).toMatchObject({ quality: "low", resolution: "1K" });
   await composer(page).fill("a paper boat");
   await generate(page).click();
   await expect.poll(() => media.submissions.length).toBe(1);
@@ -171,7 +172,7 @@ test("L11-K7 a speed tier is a setting with one price; a price per megapixel say
   await expect(estimate.locator(".price")).toHaveText("$0.06");
   await tiers.getByRole("button", { name: "Turbo", exact: true }).click();
   await expect(estimate.locator(".price")).toHaveText("$0.03");
-  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)?.body).toMatchObject({ quality: "TURBO", priceVariant: "TURBO" });
+  await expect.poll(() => media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)?.body).toMatchObject({ quality: "TURBO" });
 
   await pick(page, "Image", "alibaba/z-image");
   await expect(card(page).locator(".media-estimate .price")).toHaveText("Billed by usage");

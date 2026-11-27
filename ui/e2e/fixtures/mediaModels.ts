@@ -1,3 +1,4 @@
+import { quoteFor, quoteUnit } from "../../../lib/providers/media/priceQuote";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 
 // Synthetic media catalog for the classic model window. Shapes mirror GET /api/media/catalog;
@@ -139,22 +140,19 @@ function catalog(fixture: MediaFixture, kind: string | null) {
   return { models, adapters };
 }
 
-/** Mirrors lib/providers/media/estimate.ts: a price needs one row, or the named variant. */
+/** Answers like lib/providers/media/estimate.ts, with the server's own price rule. */
 function estimate(fixture: MediaFixture, body: Record<string, unknown>) {
   const model = MODELS.find((entry) => entry.id === body.model);
   const route = model?.routes.find((entry) => entry.adapter === body.adapter) ?? model?.routes[0];
   if (!model || !route) return { status: 404, json: { ok: false, code: "MEDIA_MODEL_UNKNOWN", error: "Unknown media model", category: "not-found", retryable: false } };
   const pricing = route.pricing ?? [];
-  let unit = model.kind === "image" ? "image" : "second";
-  let quantity: number | null = model.kind === "image" ? (typeof body.count === "number" ? body.count : null) : (typeof body.durationSec === "number" ? body.durationSec : null);
-  if (!pricing.some((row) => row.unit === unit) && pricing.some((row) => row.unit === "request")) { unit = "request"; quantity = 1; }
-  const rows = pricing.filter((row) => row.unit === unit);
-  const row = typeof body.priceVariant === "string" ? rows.find((entry) => entry.variant === body.priceVariant) : rows.length === 1 && !rows[0]!.variant ? rows[0] : undefined;
-  const base = { model: model.id, adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, hasKey: fixture.keys.has(ADAPTERS[route.adapter]!.vocabulary), unit, quantity, prices: pricing };
-  if (rows.length === 0) return { status: 200, json: { ...base, usd: null, note: "no published price for " + unit } };
-  if (!row) return { status: 200, json: { ...base, usd: null, note: typeof body.priceVariant === "string" ? "priceVariant not found" : "several published variants: pass priceVariant" } };
-  if (quantity === null) return { status: 200, json: { ...base, usd: null, note: "quantity unknown: pass durationSec/count" } };
-  return { status: 200, json: { ...base, usd: Math.ceil(row.usd * quantity * 10000) / 10000 } };
+  const text = (key: string) => (typeof body[key] === "string" ? { [key]: body[key] as string } : {});
+  const number = (key: string) => (typeof body[key] === "number" ? { [key]: body[key] as number } : {});
+  const quote = quoteFor({ pricing, params: route.params ?? {} }, { kind: model.kind, task: String(body.task), ...text("resolution"), ...text("quality"),
+    ...(typeof body.audio === "boolean" ? { audio: body.audio } : {}), ...number("durationSec"), ...number("count") });
+  const unit = quoteUnit(model.kind, pricing);
+  return { status: 200, json: { model: model.id, adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, hasKey: fixture.keys.has(ADAPTERS[route.adapter]!.vocabulary),
+    unit, quantity: "quantity" in quote ? quote.quantity : null, usd: quote.state === "exact" || quote.state === "from" ? quote.usd : null, prices: pricing, quote } };
 }
 
 async function answer(route: Route, fixture: MediaFixture): Promise<void> {

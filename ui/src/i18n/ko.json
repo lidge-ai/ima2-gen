@@ -152,6 +152,7 @@
     "routeKeyNeeded": "키 필요",
     "blockKey": "{provider} API 키를 넣어야 생성할 수 있어요.",
     "estimate": {
+      "pending": "계산 중…",
       "usage": "사용량에 따라 청구",
       "usageNote": "이 모델은 {provider}에서 {unit} 단위로 청구돼서 금액이 결과물에 따라 달라져요. 아래 가격표를 확인해 주세요.",
       "hintUsage": "{model} · 사용량에 따라 청구",
