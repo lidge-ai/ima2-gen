@@ -12,6 +12,9 @@ const LABELS: Record<string, [string, string]> = {
   "remix-motion-transfer-subscription": ["리믹스: 동작 따라하기 (구독)", "GPT로 원본의 고정 프레임에 피사체를 넣고 Grok 1.5로 그 사이 영상을 만들어요."],
   "remix-object-swap-subscription": ["리믹스: 사물 바꾸기 (구독)", "GPT로 원본의 고정 프레임에 피사체를 넣고 Grok 1.5로 그 사이 영상을 만들어요."],
   "remix-restyle-subscription": ["리믹스: 스타일 바꾸기 (구독)", "Grok으로 4~15초 영상을 최대 8.7초씩 나눠 스타일을 바꾸고 원본 소리를 더해요."],
+  "remix-motion-transfer-open": ["리믹스: 동작 따라하기 (단계별)", "첫 프레임을 먼저 만들고 영상을 렌더해요."],
+  "remix-object-swap-open": ["리믹스: 사물 바꾸기 (단계별)", "첫 프레임을 먼저 만들고 영상을 렌더해요."],
+  "remix-restyle-open": ["리믹스: 스타일 바꾸기 (단계별)", "첫 프레임을 먼저 만들고 영상을 렌더해요."],
   "director-studio": ["디렉터 스튜디오", "프롬프트와 이미지, 영상, 오디오 레퍼런스로 장면과 소리를 갖춘 4~30초 영상을 만들어요."],
   "director-cinema": ["디렉터 시네마", "영화 같은 스틸 이미지를 만들어요."],
   "director-cast": ["디렉터 인물", "일관된 인물 레퍼런스 시트를 만들어요."],
@@ -32,7 +35,13 @@ const SLOTS: Record<string, string> = {
   render: "영상 만들기", stylize: "첫 프레임 스타일 바꾸기", composite: "프레임에 피사체 넣기", edit: "구간별 스타일 바꾸기", image: "이미지", sound: "사운드",
 };
 
+const LOSSES: Record<string, string> = {
+  "Motion is regenerated between pinned frames, so fine timing can drift.": "고정 프레임 사이를 다시 만들어서 세밀한 타이밍이 어긋날 수 있어요.",
+  "720p at most; no 1080p.": "최대 720p, 1080p는 안 돼요.",
+  "The style comes from text only; Grok's edit takes no style image.": "스타일은 글로만 정해요. Grok 편집은 스타일 이미지를 받지 않아요.",
+};
 const SLOT_TEXT: Record<string, string> = {
+  subject: "원본의 첫 프레임에 내 대상을 넣어요.",
   stylize: "원본의 첫 프레임을 고른 스타일로 다시 그려요.",
   render: "다시 그린 첫 프레임을 따라 원본 영상을 새로 만들어요.",
 };
@@ -47,6 +56,9 @@ export function koText(wire: WireWorkflow): WorkflowText {
     if (Object.keys(entry).length) fields[name] = entry;
   }
   const slots = Object.fromEntries(wire.slots.filter((s) => SLOTS[s.name]).map((s) => [s.name, SLOTS[s.name]!]));
-  const slotDescriptions = Object.fromEntries(wire.slots.filter((s) => s.description && SLOT_TEXT[s.name]).map((s) => [s.name, SLOT_TEXT[s.name]!]));
-  return { ...(label ? { label } : {}), ...(description ? { description } : {}), fields, slots, slotDescriptions };
+  const slotText = (name: string) => (name === "subject" && wire.id.includes("restyle") ? SLOT_TEXT.stylize : name === "render" && wire.id.endsWith("-open") ? "준비한 첫 프레임으로 영상을 렌더해요." : SLOT_TEXT[name]);
+  const slotDescriptions = Object.fromEntries(wire.slots.filter((s) => s.description && slotText(s.name)).map((s) => [s.name, slotText(s.name)!]));
+  const losses = wire.preset?.losses?.map((l) => LOSSES[l.detail ?? ""] ?? null);
+  const preset = wire.preset ? { label: "구독만 (ChatGPT + Grok)", ...(losses?.some(Boolean) ? { losses } : {}) } : undefined;
+  return { ...(label ? { label } : {}), ...(description ? { description } : {}), fields, slots, slotDescriptions, ...(preset ? { preset } : {}) };
 }

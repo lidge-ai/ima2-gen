@@ -8,12 +8,12 @@ test("remix switches modes and subscription variants", async ({ page }) => {
   await page.getByRole("link", { name: "Object swap" }).click();
   await expect(page).toHaveURL(/#\/remix\/remix-object-swap$/);
   await expect(page.getByLabel("What to replace")).toBeVisible();
-  await page.getByRole("link", { name: "Subscription" }).click();
+  await page.getByRole("navigation", { name: "How to run" }).getByRole("link", { name: "With your subscriptions" }).click();
   await expect(page).toHaveURL(/#\/remix\/remix-object-swap-subscription$/);
   await expect(page.getByText("Pinned keyframes")).toBeVisible();
   await page.getByRole("link", { name: "Restyle" }).click();
   await expect(page).toHaveURL(/#\/remix\/remix-restyle-subscription$/);
-  await page.getByRole("navigation", { name: "Run on" }).getByRole("link", { name: "API keys", exact: true }).click();
+  await page.getByRole("navigation", { name: "How to run" }).getByRole("link", { name: "In one go" }).click();
   await expect(page.getByRole("button", { name: "Style reference" })).toBeVisible();
   await page.getByRole("switch", { name: "Prompt" }).check();
   await page.getByLabel("Notes").fill("A soft watercolor look");
@@ -153,4 +153,29 @@ test("before any upload, a step shows the model this server can run, not an unru
   await page.goto("/#/remix/remix-restyle");
   await page.getByRole("button", { name: "Remove Source video" }).click().catch(() => undefined);
   await expect(page.getByRole("button", { name: /^Restyle the first frame: / })).toHaveAccessibleName("Restyle the first frame: Seedream 5.5");
+});
+
+test("Remix offers three ways to run, each saying what differs; step by step is reachable from the menu", async ({ page }) => {
+  await page.goto("/#/remix/remix-motion-transfer");
+  const ways = page.getByRole("navigation", { name: "How to run" });
+  await expect(ways.getByRole("link")).toHaveText(["In one go", "With your subscriptions", "Step by step"]);
+  await expect(ways.getByRole("link", { name: "In one go" })).toHaveAttribute("aria-current", "page");
+  // Each way names its models, its step count and who bills it; the subscription way lists what it gives up.
+  await expect(ways.getByRole("link", { name: "In one go" })).toHaveAccessibleDescription(/Seedance 2\.5 · 1 steps · your keys, provider prices/);
+  await expect(ways.getByRole("link", { name: "With your subscriptions" })).toHaveAccessibleDescription(/720p at most/);
+  await expect(ways.getByRole("link", { name: "Step by step" })).toHaveAccessibleDescription(/GPT Image 2 → Seedance 2\.5 · 2 steps/);
+  await ways.getByRole("link", { name: "Step by step" }).click();
+  await expect(page).toHaveURL(/#\/remix\/remix-motion-transfer-open$/);
+  // Switching what to remix keeps the chosen way.
+  await page.getByRole("link", { name: "Restyle" }).click();
+  await expect(page).toHaveURL(/#\/remix\/remix-restyle-open$/);
+  await expect(page.getByRole("navigation", { name: "How to run" }).getByRole("link", { name: "Step by step" })).toHaveAttribute("aria-current", "page");
+});
+
+test("in Korean the ways read 한 번에 / 구독으로 / 단계별로, with translated trade-offs", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
+  await page.goto("/#/remix/remix-restyle-subscription");
+  const ways = page.getByRole("navigation", { name: "실행 방식" });
+  await expect(ways.getByRole("link")).toHaveText(["한 번에", "구독으로", "단계별로"]);
+  await expect(ways.getByText("최대 720p, 1080p는 안 돼요.")).toBeVisible();
 });
