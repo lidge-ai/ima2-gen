@@ -100,7 +100,9 @@ function applyScalars(prefix: string, schema: EndpointSchema, request: MediaSubm
   for (const key of Object.keys(SCALAR_FIELDS) as ScalarKey[]) {
     const raw = request[key];
     if (raw === undefined || raw === "") continue;
-    const name = pickField(schema, SCALAR_FIELDS[key], used, SCALAR_FILTER[key]);
+    // A quality goes to the tier field the endpoint prices by; an endpoint that only takes a free-text quality keeps that field.
+    const tier = key === "quality" ? qualityField(schema) : undefined;
+    const name = tier && !used.has(tier) ? tier : pickField(schema, SCALAR_FIELDS[key], used, SCALAR_FILTER[key]);
     if (!name) throw invalidRequest(prefix, `${schema.endpoint} does not accept ${key}`, "UNSUPPORTED_OPTION");
     const field = schema.fields[name] ?? {};
     const encoded = encodeScalar(field, raw);
@@ -171,10 +173,28 @@ function stringsOf(field: InputField | undefined): string[] {
   return field?.enum ? field.enum.map(String) : [];
 }
 
-/** A "quality" enum of tier names. Some endpoints use that field name for a resolution list, which is not a quality setting. */
-function qualitiesOf(field: InputField | undefined): string[] {
+/** Fields a provider prices by tier: quality, Ideogram's rendering speed, Kling's mode. Tried in this order. */
+const TIER_FIELDS = ["quality", "rendering_speed", "mode"] as const;
+
+/**
+ * The tier names a field offers, or none when the field is something else: some endpoints use "quality"
+ * for a resolution list, and "mode" is a price tier only where it offers a standard and a pro setting.
+ */
+function tiersOf(name: string, field: InputField | undefined): string[] {
   const values = stringsOf(field);
+  if (values.length < 2) return [];
+  if (name === "mode") return values.some((value) => /^(?:std|standard)$/i.test(value)) && values.some((value) => /^pro$/i.test(value)) ? values : [];
   return values.some((value) => /^\d+(?:\.\d+)?[pk]$/i.test(value)) ? [] : values;
+}
+
+/** The field a request's quality is sent on for this endpoint. */
+export function qualityField(schema: EndpointSchema): string | undefined {
+  return TIER_FIELDS.find((name) => tiersOf(name, schema.fields[name]).length > 0);
+}
+
+function qualitiesOf(schema: EndpointSchema): string[] {
+  const name = qualityField(schema);
+  return name ? tiersOf(name, schema.fields[name]) : [];
 }
 
 function union<T>(lists: readonly T[][]): T[] {
@@ -243,7 +263,7 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
   const durations = union(schemas.map((s) => durationsOf(s.fields.duration ?? s.fields.duration_seconds))).sort((a, b) => a - b);
   const resolutions = union(schemas.map((s) => stringsOf(s.fields.resolution)));
   const aspectRatios = union(schemas.map((s) => stringsOf(s.fields.aspect_ratio ?? s.fields.ratio)));
-  const qualities = union(schemas.map((s) => qualitiesOf(s.fields.quality)));
+  const qualities = union(schemas.map(qualitiesOf));
   const maxRefImages = maxArrayItems(schemas, "reference-image");
   const maxRefVideos = maxArrayItems(schemas, "reference-video");
   // One form per task: the first endpoint that a form can fill.

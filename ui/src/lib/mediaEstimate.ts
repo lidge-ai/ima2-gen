@@ -13,6 +13,7 @@ export function estimateQuantity(unit: "image" | "second" | "request", selection
   return 1;
 }
 
+const USAGE_UNITS: readonly string[] = ["megapixel", "1k-tokens", "minute", "character"];
 const TASK_NAME = /(?:text|image|reference|video)-to-(?:image|video)/g;
 const RESOLUTION = /\b(?:\d{3,4}p|\d(?:\.\d)?k)\b/gi;
 
@@ -36,6 +37,8 @@ function variantScore(variant: string | undefined, want: PriceWant): number | nu
   if (/\beach input\b|\bper input\b/.test(text)) return null;
   // The classic composer never sends a video, so rows priced for a video input do not apply.
   if (/video[ _-]in(?:put)?\b|\bvideo references\b/.test(text) && !/\b(?:no|non|without)[ _-]video[ _-]in|\bno video references\b/.test(text)) return null;
+  // Rows for a request that carries source images are the edit price.
+  if (/with[ _-]source[ _-]images/.test(text)) { if (want.task !== "image-to-image") return null; score += 4; }
   const tasks = text.match(TASK_NAME);
   if (tasks) { if (!tasks.includes(want.task)) return null; score += 4; }
   const resolutions = text.match(RESOLUTION);
@@ -88,6 +91,8 @@ export type MediaQuote =
   | { state: "exact"; usd: number; unit: string; quantity: number; price: MediaPrice }
   | { state: "from"; usd: number; unit: string; quantity: number; price: MediaPrice }
   | { state: "range"; min: number; max: number; unit: string; quantity: number }
+  /** The route publishes a price, but per megapixel, token, minute or character: it depends on the output, so no figure is shown. */
+  | { state: "usage"; unit: string }
   | { state: "unpriced" }
   | { state: "unknown" };
 
@@ -96,6 +101,10 @@ export function quoteFor(route: Pick<MediaRoute, "pricing"> & { params?: MediaPa
   if (route.pricing.length === 0) return { state: "unpriced" };
   const unit = estimateUnit(selection.kind, route.pricing);
   const quantity = estimateQuantity(unit, selection);
+  if (!route.pricing.some((price) => price.unit === unit)) {
+    const usage = route.pricing.find((price) => USAGE_UNITS.includes(price.unit));
+    if (usage) return { state: "usage", unit: usage.unit };
+  }
   const want: PriceWant = { task: selection.task };
   if (selection.quality !== undefined && route.params?.qualities?.length) { want.quality = selection.quality; want.qualities = route.params.qualities; }
   if (selection.resolution !== undefined) want.resolution = selection.resolution;

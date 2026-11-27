@@ -82,10 +82,13 @@ export function defaultResolution(allowed: readonly string[] | undefined): strin
   return ranked[0]?.label ?? allowed[0];
 }
 
-/** "auto" when the route lists it, else "medium", else the first tier: the provider's own middle of the road, never the dearest by accident. */
+const MIDDLE_TIERS: readonly string[] = ["auto", "medium", "default", "balanced", "standard", "std"];
+
+/** The provider's own middle setting ("auto", else "medium", "default", "balanced", "standard"), else the first tier: never the dearest by accident. */
 export function defaultQuality(allowed: readonly string[] | undefined): string | undefined {
   if (!allowed?.length) return undefined;
-  return allowed.find((label) => sameLabel(label, "auto")) ?? allowed.find((label) => sameLabel(label, "medium")) ?? allowed[0];
+  for (const name of MIDDLE_TIERS) { const found = allowed.find((label) => sameLabel(label, name)); if (found) return found; }
+  return allowed[0];
 }
 
 function keepDuration(previous: number | undefined, allowed: readonly number[] | undefined): number | undefined {

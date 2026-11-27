@@ -85,3 +85,25 @@ test("GET /api/workflows names no other product: no competitor names in any fiel
     assert.equal("equivalents" in d, false, w.id + " sends no equivalents");
   }
 });
+
+test("slot rationale is a reviewer note kept in code: GET /api/workflows sends none, with or without a gateway", () => {
+  const gateway = { catalog: () => undefined, canRun: () => true };
+  for (const w of WORKFLOWS) {
+    assert.ok(w.slots.every((s) => s.rationale.length > 0), w.id + " definitions keep their notes");
+    for (const d of [describeWorkflow(w), describeWorkflow(w, gateway)]) {
+      for (const slot of d.slots) assert.equal("rationale" in slot, false, w.id + "/" + slot.name + " sends no rationale");
+      assert.doesNotMatch(JSON.stringify(d), /"rationale"/, w.id);
+    }
+  }
+});
+
+test("open-source project names appear only in credits", () => {
+  const names = [...new Set(WORKFLOWS.flatMap((w) => w.slots.flatMap((s) => s.credits ?? []))
+    .flatMap((c) => c.name.toLowerCase().split("/")))];
+  assert.ok(names.includes("openjutsu") && names.includes("henge"), "credits name the open projects");
+  for (const w of WORKFLOWS) {
+    const withoutCredits: unknown = JSON.parse(JSON.stringify(describeWorkflow(w), (key, value: unknown) => (key === "credits" ? undefined : value)));
+    const hits = strings(withoutCredits).filter((s) => names.some((n) => s.toLowerCase().includes(n)));
+    assert.deepEqual(hits, [], w.id);
+  }
+});

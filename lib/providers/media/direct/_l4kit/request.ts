@@ -55,6 +55,7 @@ export function refuseUnsupportedFields(prefix: string, model: MediaModelSpec, r
   if (request.negativePrompt !== undefined && !params.negativePrompt) refuse("negativePrompt");
   if (request.seed !== undefined && !params.seed) refuse("seed");
   if (request.resolution !== undefined && !params.resolutions?.includes(request.resolution)) refuse(`resolution ${request.resolution}`);
+  if (request.quality !== undefined && !params.qualities?.includes(request.quality)) refuse(`quality ${request.quality}`);
   if (request.aspectRatio !== undefined && !params.aspectRatios?.includes(request.aspectRatio)) refuse(`aspectRatio ${request.aspectRatio}`);
   const refs = inputsWithRoles(request, ["reference-image", "source-image"]).length;
   if (refs > (params.maxReferenceImages ?? 0)) refuse(`${refs} input images (max ${params.maxReferenceImages ?? 0})`);

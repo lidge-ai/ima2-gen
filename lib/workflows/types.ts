@@ -82,7 +82,10 @@ export interface ModelSlot {
   modelRoutes?: Readonly<Record<string, string>>;
   /** The workflow still runs without this step; when no listed model can run, the step is left out and a note says what it needs. */
   optional?: boolean;
-  /** Why this model fits, with the evidence source: a note for reviewers. People see description and credits. */
+  /**
+   * Why this model fits, with the evidence source: a note for reviewers that stays in code.
+   * describeWorkflow() leaves it out of GET /api/workflows; people see description and credits.
+   */
   rationale: string;
   /** One plain sentence for people: what this step does. Shown under the step; translated in i18n.ko.slotDescriptions. */
   description?: string;

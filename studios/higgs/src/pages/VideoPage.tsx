@@ -10,7 +10,7 @@ import { PresetGallery } from "./create/PresetGallery.tsx";
 import { VideoPanel } from "./create/VideoPanel.tsx";
 import { SpeakPanel } from "./speak/SpeakPanel.tsx";
 import { defaultModel } from "./create/defaults.ts";
-import { EDIT_TASKS, defaultsFor, emptyForm, type CreateForm } from "./create/form.ts";
+import { EDIT_TASKS, defaultsFor, emptyForm, handOffFailed, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
 import { readDraft, syncModelToUrl, useRestore, writeDraft } from "../studio/draft.ts";
 
@@ -111,7 +111,7 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
   const speaking = mode === "speak";
   const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("video"), mode: mode === "edit" ? "edit" : "create" }));
   const [view, setView] = useState<View>("history");
-  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, ...patch }));
   useEffect(() => writeDraft("video", form.prompt), [form.prompt]);
   // The talking form keeps its own model in the address.
   useEffect(() => { if (!speaking) syncModelToUrl("video", form.model); }, [form.model, speaking]);
@@ -128,8 +128,11 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
       return m && m.id !== f.model ? { ...f, prompt, model: m.id, provider: "", ...defaultsFor(m, f) } : { ...f, prompt };
     }),
   );
-  useHandOff("video", (upload, name) =>
-    set({ mode: "create", refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
+  // "Animate" on an image result: it becomes the start frame, here or after opening this screen.
+  useHandOff(
+    "video",
+    (upload, name) => set({ mode: "create", refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
+    () => set({ notice: handOffFailed() }),
   );
   useEffect(() => {
     if (!catalog || form.model) return;

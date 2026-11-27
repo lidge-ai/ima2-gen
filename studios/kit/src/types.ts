@@ -248,9 +248,7 @@ export interface WorkflowStepSpec {
   runnable?: Readonly<Record<string, boolean>>;
   /** Route the step uses by default when it is not a keyed provider route, e.g. a subscription session ("openai-oauth"). */
   route?: string;
-  /** Why the workflow uses this model, with its evidence. */
-  rationale?: string;
-  /** One sentence telling a person what the step does (server description, else its rationale). */
+  /** One sentence telling a person what the step does (the server's slot description). */
   description?: string;
   credits?: readonly WorkflowCredit[];
 }
@@ -273,6 +271,16 @@ export interface WorkflowText {
   slots?: Readonly<Record<string, string>>;
   /** Translated slot descriptions, keyed by slot name. */
   slotDescriptions?: Readonly<Record<string, string>>;
+  /** Translated preset text; losses align by index with WorkflowPreset.losses. */
+  preset?: { label?: string; losses?: readonly (string | null)[]; billingNote?: string };
+}
+
+/** A variant that trades quality for running on particular accounts (e.g. subscriptions only). */
+export interface WorkflowPreset {
+  label: string;
+  /** What the result gives up compared with the full workflow. */
+  losses: readonly { aspect: string; detail: string }[];
+  billingNote?: string;
 }
 
 export interface WorkflowDef {
@@ -285,6 +293,7 @@ export interface WorkflowDef {
   inputs: readonly WorkflowInputSpec[];
   params: readonly WorkflowParamSpec[];
   steps: readonly WorkflowStepSpec[];
+  preset?: WorkflowPreset;
   /** Text in other languages as the server sent it; see localizeWorkflow. */
   i18n?: Readonly<Record<string, WorkflowText>>;
 }

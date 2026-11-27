@@ -103,7 +103,7 @@ async function swapRunnable(page: import("@playwright/test").Page, subjectRuns: 
         defaultModel: "openai/gpt-image-2",
         alternatives: ["bytedance/seedream-5.5"],
         defaultRoute: "openai-oauth",
-        rationale: "test",
+        description: "Turns the source's first frame into the new subject.",
         available: { "openai/gpt-image-2": true, "bytedance/seedream-5.5": true },
         runnable: subjectRuns,
       },

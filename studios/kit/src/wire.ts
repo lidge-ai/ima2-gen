@@ -134,8 +134,7 @@ export interface WireSlot {
   alternatives: readonly string[];
   tierModels?: Readonly<Record<string, string>>;
   defaultRoute?: string;
-  rationale: string;
-  /** One plain sentence for people; newer servers. */
+  /** One plain sentence for people: what the step does. */
   description?: string;
   /** Projects and papers the step follows (shown once per workflow, collapsed). */
   credits?: readonly WorkflowCredit[];
@@ -151,7 +150,7 @@ export interface WireWorkflow {
   fields: readonly WireField[];
   slots: readonly WireSlot[];
   tierField?: string;
-  preset?: unknown;
+  preset?: { label?: string; losses?: readonly { aspect?: string; detail?: string }[]; billingNote?: string };
   i18n?: Readonly<Record<string, WorkflowText>>;
 }
 

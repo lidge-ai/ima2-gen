@@ -67,13 +67,13 @@ test("models display routes and price", async () => fixture(async (base) => {
 test("run uploads input, submits parsed options and waits for matching SSE", async () => fixture(async (base, calls) => {
   const image = join(root, "input.png"); await writeFile(image, "image-data");
   const target = join(root, "out");
-  const result = await cli(base, ["run", "--model", "vendor/a", "--task", "image-to-video", "--input", `first-frame=${image}`, "--input", "reference-image=https://example.test/a.png", "--duration", "5", "--no-audio", "--vendor-option", "foo=bar", "--out", target, "--json"]);
+  const result = await cli(base, ["run", "--model", "vendor/a", "--task", "image-to-video", "--input", `first-frame=${image}`, "--input", "reference-image=https://example.test/a.png", "--duration", "5", "--quality", "low", "--no-audio", "--vendor-option", "foo=bar", "--out", target, "--json"]);
   assert.equal(result.code, 0, result.stderr); assert.deepEqual(JSON.parse(result.stdout).paths, [join(target, "result.png")]);
   assert.equal(await readFile(join(target, "result.png"), "utf8"), "saved");
   const upload = calls.find((c) => c.url === "/api/media/inputs"); assert.equal(upload?.type, "image/png"); assert.equal(upload?.body, "image-data");
   const body = JSON.parse(calls.find((c) => c.url === "/api/media")!.body);
   assert.deepEqual(body.inputs, [{ role: "first-frame", ref: "input:fake.png" }, { role: "reference-image", url: "https://example.test/a.png" }]);
-  assert.equal(body.durationSec, 5); assert.equal(body.audio, false); assert.deepEqual(body.vendorOptions, { foo: "bar" });
+  assert.equal(body.durationSec, 5); assert.equal(body.quality, "low"); assert.equal(body.audio, false); assert.deepEqual(body.vendorOptions, { foo: "bar" });
   assert.ok(calls.findIndex((c) => c.url === "/api/events") < calls.findIndex((c) => c.url === "/api/media"));
 }));
 test("server error retains code and category and exits nonzero", async () => fixture(async (base) => {

@@ -43,7 +43,7 @@ export async function runBody(base: string, args: ParsedArgs): Promise<Dict> {
   if (!args.model || !args.task) throw new Error("--model and --task are required");
   if (args.audio && args["no-audio"]) throw new Error("Choose --audio or --no-audio");
   return { model: args.model, task: args.task, ...(args.prompt && { prompt: args.prompt }), ...(args.adapter && { adapter: args.adapter }),
-    ...(args.negative && { negativePrompt: args.negative }), ...(args.resolution && { resolution: args.resolution }),
+    ...(args.negative && { negativePrompt: args.negative }), ...(args.resolution && { resolution: args.resolution }), ...(args.quality && { quality: args.quality }),
     ...(args.aspect && { aspectRatio: args.aspect }), ...(args.duration !== undefined && { durationSec: numberFlag(args, "duration") }),
     ...(args.seed !== undefined && { seed: numberFlag(args, "seed") }), ...(args.count !== undefined && { count: numberFlag(args, "count") }),
     ...(args.audio || args["no-audio"] ? { audio: Boolean(args.audio) } : {}),

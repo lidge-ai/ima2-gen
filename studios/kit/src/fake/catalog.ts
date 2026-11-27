@@ -293,6 +293,21 @@ const MODELS: ModelRow[] = [
   ],
 ];
 
+/**
+ * Routes that list a setting their own way, as real aggregator catalogs do: short clips appended
+ * after the long ones, a size spelled in another case, provider upscale tiers ("720p-sr").
+ */
+const ROUTE_PARAMS: Readonly<Record<string, Readonly<Record<string, Params>>>> = {
+  "bytedance/seedance-2.5": {
+    fal: {
+      ...V_FULL,
+      durationsSec: [4, 5, 8, 10, 12, 15, 1, 2, 3],
+      resolutions: ["480P", "720p", "1080p", "720p-sr", "1080p-esr & 60fps"],
+    },
+  },
+  "openai/gpt-image-2": { fal: { aspectRatios: ["1:1", "3:2", "2:3"], resolutions: ["1k", "2k", "4k"] } },
+};
+
 function unitFor(kind: MediaKind, tasks: readonly MediaTask[]): MediaPrice["unit"] {
   if (kind === "image") return "image";
   return tasks.length > 0 ? "second" : "request";
@@ -358,7 +373,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
       label: route.label,
       upstreamId: route.upstreamId,
       tasks: model.tasks,
-      params: model.routeParams?.[route.providerId] ?? model.params,
+      params: model.routeParams?.[route.providerId] ?? ROUTE_PARAMS[model.id]?.[route.providerId] ?? model.params,
       pricing: route.pricing,
       docsUrl: route.docsUrl,
       hasKey: route.keyConfigured,

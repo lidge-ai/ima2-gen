@@ -227,7 +227,7 @@ function SourceInputs({
   );
 }
 
-function PanelNotices({ create, catalog }: { create: Create; catalog: Catalog }) {
+function PanelNotices({ create, catalog, notice }: { create: Create; catalog: Catalog; notice?: string | undefined }) {
   return (
     <>
       {create.choice.kind === "needs-key" ? (
@@ -236,6 +236,11 @@ function PanelNotices({ create, catalog }: { create: Create; catalog: Catalog })
       {create.error ? (
         <p className="form-error" role="alert">
           {create.error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="form-error" role="alert">
+          {notice}
         </p>
       ) : null}
     </>
@@ -273,7 +278,7 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
         />
         {model ? <ParamControls model={model} form={form} set={set} /> : null}
         {model ? <AdvancedFields model={model} form={form} set={set} /> : null}
-        <PanelNotices create={create} catalog={catalog} />
+        <PanelNotices create={create} catalog={catalog} notice={form.notice} />
       </div>
       <PanelFoot create={create} />
     </form>

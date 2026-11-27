@@ -13,6 +13,7 @@ export { readSse, type SseMessage } from "./sse.ts";
 export { estimateCost, formatUsd, pickPrice, sumEstimates, type PricedRequest } from "./pricing.ts";
 export { chooseRoute, modelHasKey, type RouteChoice } from "./routing.ts";
 export { TALKING_TASKS, billedSeconds, chooseFormRoute, formRoutes, taskForm, type TalkingTask, type TaskForm } from "./taskForm.ts";
+export { resolutionParts, sameResolution, tidyResolutions, type ResolutionParts, type UpscaleTier } from "./resolutions.ts";
 export {
   VENDOR_ALIASES,
   VENDOR_NAMES,
