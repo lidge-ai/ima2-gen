@@ -23,6 +23,7 @@ const { registerMediaRoutes } = await import("../routes/media.ts");
 const { registerMediaToolRoutes } = await import("../routes/mediaTools.ts");
 const { FAKE_PNG, startFakeComfy } = await import("./_fakeComfyServer.ts");
 import type { FakeComfy, FakeComfyOptions } from "./_fakeComfyServer.ts";
+import { releaseDatabase } from "./helpers/releaseDatabase.ts";
 
 (config.comfy as { pollIntervalMs: number }).pollIntervalMs = 500;
 const MP4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from("ftypisom"), Buffer.alloc(32)]);
@@ -30,6 +31,7 @@ const MP3 = Buffer.concat([Buffer.from("ID3"), Buffer.alloc(40)]);
 const closers: Array<() => Promise<void>> = [];
 
 test.after(async () => {
+  await releaseDatabase();
   await rm(configDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 test.afterEach(async () => {
