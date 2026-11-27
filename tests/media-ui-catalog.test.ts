@@ -255,6 +255,7 @@ test("making a result again restores its model, pinned route and settings agains
 
 const quality = await import("../ui/src/lib/mediaSelection.js");
 const { quoteFor: quoteQuality, estimateBody: estimateQuality } = await import("../ui/src/lib/mediaEstimate.js");
+const estimateWording = await import("../ui/src/lib/mediaEstimate.js");
 const { remakePlan: remakeQuality } = await import("../ui/src/lib/mediaResult.js");
 const { modelName } = await import("../ui/src/lib/mediaCatalog.js");
 
@@ -294,4 +295,26 @@ test("a retiring model keeps a clean name and carries the fact separately", () =
   assert.deepEqual(modelName("Wan 2.2 (Legacy)"), { label: "Wan 2.2", retiring: true });
   assert.deepEqual(modelName("FLUX.1 (dev)"), { label: "FLUX.1 (dev)", retiring: false });
   assert.deepEqual(modelName("(deprecated)"), { label: "(deprecated)", retiring: false });
+});
+
+test("price rows are matched however the provider words sound, video input and clip length", () => {
+  const { pickPrice } = estimateWording;
+  const row = (usd: number, variant: string, unit = "second") => ({ unit, usd, variant, source: "https://example.com", checkedAt: "2026-11-27" }) as MediaRoute["pricing"][number];
+  const price = (rows: MediaRoute["pricing"], want: Parameters<typeof pickPrice>[2], unit = "second") => pickPrice(rows, unit, want).price?.usd ?? pickPrice(rows, unit, want).range;
+  const t2v = { task: "text-to-video" };
+  for (const [off, on] of [["audio off, no video references", "audio on, no video references"], ["with audio=False", "with audio=True"], ["sound disabled", "sound enabled"],
+    ["model variant=without_audio", "model variant=with_audio"], ["without audio", "with audio"]] as const) {
+    const rows = [row(0.1, off), row(0.2, on)];
+    assert.equal(price(rows, { ...t2v, audio: false }), 0.1, off);
+    assert.equal(price(rows, t2v), 0.1, off + " (sound not asked for)");
+    assert.equal(price(rows, { ...t2v, audio: true }), 0.2, on);
+  }
+  // The classic composer sends no video, however the row spells that.
+  assert.equal(price([row(0.1, "model variant=no-video-input, target resolution=720p"), row(0.3, "model variant=video-input, target resolution=720p")], { ...t2v, resolution: "720p" }), 0.1);
+  assert.equal(price([row(0.1, "model variant=std"), row(0.3, "model variant=std-with-video-input")], t2v), 0.1);
+  // A row priced for one clip length applies to that length only.
+  const perRun = [row(0.28, "768P 6s", "request"), row(0.56, "768P 10s", "request"), row(0.49, "1080P 6s", "request")];
+  assert.equal(price(perRun, { ...t2v, resolution: "768P", durationSec: 10 }, "request"), 0.56);
+  assert.equal(price(perRun, { ...t2v, resolution: "1080P", durationSec: 6 }, "request"), 0.49);
+  assert.equal(price(perRun, { ...t2v, resolution: "1080P", durationSec: 10 }, "request"), undefined, "no row for a length the price list does not name");
 });
