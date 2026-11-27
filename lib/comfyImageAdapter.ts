@@ -19,9 +19,9 @@ import {
   downloadArtifact, readJson, sleep, type ComfyJson, type HistoryEntry,
 } from "./comfy/artifacts.js";
 import {
-  COMFY_UUID_RE, cancelComfyJob, comfyFetch, comfyQueuePosition, explainComfyExecution, explainComfyRejection,
-  localTarget, redactForTarget, type ComfyRejection,
+  COMFY_UUID_RE, cancelComfyJob, comfyFetch, comfyQueuePosition, explainComfyExecution, localTarget, redactForTarget,
 } from "./comfy/client.js";
+import { submitComfyPrompt } from "./comfy/submit.js";
 import { openComfySocket, watchComfyProgress, type ComfyProgress, type ComfyProgressWatch, type OpenComfySocket } from "./comfy/progress.js";
 
 export { COMFY_ERR, buildViewUrl, comfyError } from "./comfy/artifacts.js";
@@ -190,42 +190,8 @@ interface ComfyRun {
 }
 
 /** POST /prompt. Returns the id ComfyUI queued the job under. */
-async function submitPrompt(run: ComfyRun, body: Record<string, unknown>): Promise<string> {
-  const { target, fetchImpl, options } = run;
-  let submitJson: ComfyJson;
-  try {
-    const res = await comfyFetch(target, fetchImpl, "/prompt", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      ...(options.signal ? { signal: options.signal } : {}),
-    });
-    submitJson = await readJson(res);
-    if (!res.ok) {
-      const reasons = explainComfyRejection(submitJson as ComfyRejection);
-      const detail = reasons.length > 0 ? reasons.join("; ") : "HTTP " + String(res.status);
-      throw comfyError(
-        COMFY_ERR.SUBMIT_REJECTED,
-        redactForTarget(target, "ComfyUI rejected the workflow: " + detail),
-        res.status === 400 ? 400 : 502,
-      );
-    }
-  } catch (error: unknown) {
-    if ((error as { code?: string }).code) throw error;
-    if (options.signal?.aborted) throw canceled();
-    throw comfyError(COMFY_ERR.OFFLINE, redactForTarget(target, "Could not reach ComfyUI at " + target.origin + ": " + (error instanceof Error ? error.message : "unknown error")));
-  }
-  // A 200 can still carry per-node validation failures.
-  const nodeErrors = submitJson?.node_errors;
-  if (nodeErrors && typeof nodeErrors === "object" && Object.keys(nodeErrors).length > 0) {
-    const reasons = explainComfyRejection({ node_errors: nodeErrors } as ComfyRejection);
-    throw comfyError(COMFY_ERR.SUBMIT_REJECTED, redactForTarget(target, "ComfyUI rejected nodes: " + reasons.join("; ")), 400);
-  }
-  const promptId = typeof submitJson?.prompt_id === "string" ? submitJson.prompt_id : null;
-  if (!promptId) {
-    throw comfyError(COMFY_ERR.SUBMIT_REJECTED, "ComfyUI did not return a prompt_id.");
-  }
-  return promptId;
+function submitPrompt(run: ComfyRun, body: Record<string, unknown>): Promise<string> {
+  return submitComfyPrompt(run.target, run.fetchImpl, body, run.options.signal);
 }
 
 /** Reads a finished history entry into the downloaded artifact, or null while outputs have not landed. */

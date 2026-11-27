@@ -100,7 +100,7 @@ routes/
 | `routes/metadata.ts` | 81 | `/api/metadata/read` for embedded XMP image metadata extraction |
 | `routes/annotations.ts` | 119 | `GET/PUT/DELETE /api/annotations/:filename` for canvas annotation overlays |
 | `routes/canvasVersions.ts` | 100 | `POST/PUT /api/canvas-versions` for canvas version snapshots |
-| `routes/comfy.ts` | 289 | Comfy workflow inspect/register/list/delete/probe plus `POST /api/comfy/export-image`; media-kind inference and mismatch validation |
+| `routes/comfy.ts` | 295 | Comfy workflow inspect/register/list/delete/probe plus `POST /api/comfy/export-image`; media-kind inference and mismatch validation |
 | `routes/models.ts` | 549 | Canonical runtime model catalog; Comfy image/video workflow partition and model-level execution locks |
 | `routes/prompts.ts` | 429 | Prompt library CRUD, favorites, import/export, and folder management |
 | `routes/promptImport.ts` | 380 | Prompt library preview/commit import API plus PR2 curated search, PR3 GitHub folder browse/preview, and PR4 discovery review endpoints |
@@ -146,7 +146,7 @@ routes/
 | `bin/commands/annotate.ts` | 121 | CLI annotation read/write/delete client |
 | `bin/commands/canvas-versions.ts` | 82 | CLI canvas version list/save client |
 | `bin/commands/metadata.ts` | 51 | CLI image metadata read client |
-| `bin/commands/comfy.ts` | 440 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
+| `bin/commands/comfy.ts` | 494 | CLI ComfyUI export and workflow inspect/register/list/delete; image/video kind and catalog-only video copy |
 | `bin/commands/models.ts` | 101 | Human/JSON model catalog with lane/kind/id/label/lane status/model lock status/capabilities |
 | `bin/lib/modelResolver.ts` | 208 | CLI model target resolution, kind/lane/default validation, model-level execution lock enforcement |
 | `bin/commands/cardnews.ts` | 251 | CLI dev-gated card-news client |
@@ -243,7 +243,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/providers/adapters/openaiTypes.ts` | 34 | Original positional-operation reference/options types, unchanged optional fields |
 | `lib/providers/adapters/openaiOperations.ts` | 392 | Actual OpenAI generate/edit/multimode operation bodies and reference normalization |
 | `lib/providers/adapters/openaiExecution.ts` | 168 | Typed four-surface OpenAI owner, classic retry and native callback/result mapping |
-| `lib/providerOptions.ts` | 184 | Per-provider option assembly; rejects catalog-only Comfy video workflows on the classic image path |
+| `lib/providerOptions.ts` | 191 | Per-provider option assembly; rejects catalog-only Comfy video workflows on the classic image path |
 | `lib/runtimeContext.ts` | 244 | Per-request runtime context plumbing for routes and lib helpers |
 | `lib/errInfo.ts` | 73 | Error info shape and helpers shared across routes/lib |
 | `lib/oauthNormalize.ts` | 80 | Upstream OAuth response field normalization |
@@ -272,10 +272,10 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/providers/execution/legacyEdit.ts` | 14 | Remaining-provider single edit dispatch and native result metadata |
 | `lib/providers/execution/legacyMultimode.ts` | 14 | Native sequence dispatch and existing one-image projections |
 | `lib/pngInfo.ts` | 27 | PNG IHDR parsing (dimensions, bit depth, colour type / alpha detection). Despite the name it reads NO text chunks — `lib/comfyPngWorkflow.ts` owns those. |
-| `lib/comfyWorkflowStore.ts` | 262 | Comfy lane model registry: per-record origin and image/video kind, legacy image normalization, id/kind validation, corrupt-file tolerance |
-| `lib/comfyGraphBind.ts` | 283 | API-format graph parsing, grouped SDXL/H3 binding inference, SaveImage/SaveVideo kind inference, non-mutating value injection, parameter derivation |
+| `lib/comfyWorkflowStore.ts` | 295 | Comfy lane model registry: per-record origin and image/video kind, legacy image normalization, id/kind validation, corrupt-file tolerance |
+| `lib/comfyGraphBind.ts` | 285 | API-format graph parsing, grouped SDXL/H3 binding inference, SaveImage/SaveVideo kind inference, non-mutating value injection, parameter derivation |
 | `lib/comfyPngWorkflow.ts` | 100 | PNG tEXt/zTXt/iTXt reader that extracts ComfyUI's embedded API graph |
-| `lib/comfyImageAdapter.ts` | 427 | Comfy lane runtime: /prompt submit with bound graph, /history polling cross-checked against /queue, /view download with bounded parameters, state-split cancel, parallel per-origin health |
+| `lib/comfyImageAdapter.ts` | 393 | Comfy lane runtime: /prompt submit with bound graph, /history polling cross-checked against /queue, /view download with bounded parameters, state-split cancel, parallel per-origin health |
 | `lib/cardNewsTemplateStore.ts` | 253 | Card-news image template registry and preview reads |
 | `lib/cardNewsRoleTemplateStore.ts` | 48 | Built-in role-template list (`mid-5`, etc.) |
 | `lib/cardNewsManifestStore.ts` | 150 | Per-set manifest and sidecar persistence under `~/.ima2/generated/cardnews/` |

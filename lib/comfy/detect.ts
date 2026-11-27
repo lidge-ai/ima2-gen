@@ -6,7 +6,7 @@
 // Where the graph does not settle it, every candidate is listed and a person
 // chooses; nothing here guesses from a title.
 import type { BindCandidate, ComfyBindField } from "../comfyGraphBind.js";
-import type { ComfyGraph, ComfyMediaKind, ComfyWorkflowBindings, ComfyWorkflowParam } from "../comfyWorkflowStore.js";
+import type { ComfyGraph, ComfyInputRole, ComfyMediaKind, ComfyWorkflowBindings, ComfyWorkflowParam } from "../comfyWorkflowStore.js";
 import { inputSpec, outputName, outputType, type ComfyObjectInfo } from "./objectInfo.js";
 
 interface Slot { node: string; input: string }
@@ -163,7 +163,7 @@ export function detectBindCandidates(graph: ComfyGraph, info: ComfyObjectInfo): 
 }
 
 /** What the chosen output node saves, when its inputs say so. Undefined means a person must say. */
-export function detectMediaKind(graph: ComfyGraph, info: ComfyObjectInfo, outputNode?: string): ComfyMediaKind | "audio" | undefined {
+export function detectMediaKind(graph: ComfyGraph, info: ComfyObjectInfo, outputNode?: string): ComfyMediaKind | undefined {
   const nodes = outputNode === undefined ? outputNodes(graph, info) : [outputNode];
   if (nodes.length !== 1 || !graph[nodes[0]!]) return undefined;
   const classType = graph[nodes[0]!]!.class_type;
@@ -207,7 +207,9 @@ export function findWorkflowProblems(graph: ComfyGraph, info: ComfyObjectInfo): 
 
 function boundKeys(bind: ComfyWorkflowBindings): Set<string> {
   const bound = new Set<string>();
-  for (const value of Object.values(bind)) {
+  for (const slot of bind.inputs ?? []) bound.add(key(slot));
+  for (const [field, value] of Object.entries(bind)) {
+    if (field === "inputs") continue;
     const entry = value as { node: string; input?: string; also?: Slot[] } | undefined;
     if (!entry?.input) continue;
     bound.add(entry.node + "." + entry.input);
@@ -237,4 +239,45 @@ export function describeParams(graph: ComfyGraph, bind: ComfyWorkflowBindings, i
     params.push(param);
   }
   return params;
+}
+/** A file picker in the graph, and the role its file plays when the graph settles that. */
+export interface MediaSlotCandidate {
+  kind: "image" | "video" | "audio";
+  node: string;
+  input: string;
+  classType: string;
+  title?: string;
+  /** Absent when a person must say, e.g. which of two images is the first frame. */
+  role?: ComfyInputRole;
+}
+
+/**
+ * Every input that takes an uploaded file. One image on a video workflow is the
+ * frame it starts from and on an image workflow the image it edits; one video or
+ * one audio file is the source. Two files of a kind are not told apart here.
+ */
+export function detectMediaSlots(graph: ComfyGraph, info: ComfyObjectInfo, mediaKind: ComfyMediaKind | undefined): MediaSlotCandidate[] {
+  const found: MediaSlotCandidate[] = [];
+  for (const slot of scalarSlots(graph, (node, input) => {
+    const upload = inputSpec(info, graph[node]!.class_type, input)?.upload;
+    return upload === "image" || upload === "video" || upload === "audio";
+  })) {
+    const entry = graph[slot.node]!;
+    const kind = inputSpec(info, entry.class_type, slot.input)!.upload as MediaSlotCandidate["kind"];
+    found.push({ kind, node: slot.node, input: slot.input, classType: entry.class_type, ...(entry._meta?.title ? { title: entry._meta.title } : {}) });
+  }
+  const masks = found.filter((slot) => slot.classType === "LoadImageMask");
+  if (masks.length === 1) masks[0]!.role = "mask";
+  const alone = (kind: MediaSlotCandidate["kind"]) => {
+    const list = found.filter((slot) => slot.kind === kind && slot.classType !== "LoadImageMask");
+    return list.length === 1 ? list[0]! : undefined;
+  };
+  const image = alone("image");
+  if (image && mediaKind === "video") image.role = "first-frame";
+  if (image && mediaKind === "image") image.role = "source-image";
+  const video = alone("video");
+  if (video) video.role = "source-video";
+  const audio = alone("audio");
+  if (audio) audio.role = "source-audio";
+  return found;
 }

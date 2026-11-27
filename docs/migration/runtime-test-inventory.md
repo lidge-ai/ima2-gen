@@ -197,6 +197,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/media-direct-xai.test.ts`
 - `tests/media-input-requirements.test.ts`
 - `tests/media-key-validate-route.test.ts`
+- `tests/media-local-comfy.test.ts`
 - `tests/media-local-route.test.ts`
 - `tests/media-mp4-probe.test.ts`
 - `tests/media-price-quote.test.ts`

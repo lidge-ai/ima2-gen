@@ -104,7 +104,11 @@ export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, o
       const spend = ctx.webAccess?.spend;
       // Lip-sync, avatar and dubbing are billed by the length of an input, which the request does not state.
       const billedSeconds = await billedInputSeconds(prepared.spec, prepared.request, d.probeInputLength);
-      const estimate = estimateMediaUsd(prepared.spec, withBilledLength(prepared.request, billedSeconds));
+      // A local route has no price list to estimate from: it costs nothing, unless the workflow itself may be charged elsewhere.
+      const local = prepared.adapter.route === "local" ? prepared.adapter.estimateLocal?.(prepared.spec) ?? { mayBill: false } : null;
+      const estimate = local
+        ? { usd: local.mayBill ? null : 0, basis: "exact" as const }
+        : estimateMediaUsd(prepared.spec, withBilledLength(prepared.request, billedSeconds));
       if (spend) {
         await spend.admit({ requestId, model: prepared.spec.id, email: email ?? "unknown", estimate });
       }

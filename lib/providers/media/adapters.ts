@@ -32,6 +32,7 @@ import { adapter as atlascloud } from "./aggregator/atlascloud.js";
 import { adapter as replicate } from "./aggregator/replicate.js";
 import { adapter as openrouter } from "./aggregator/openrouter.js";
 import { adapter as wavespeed } from "./aggregator/wavespeed.js";
+import { adapter as comfyLocal } from "./local/comfy.js";
 
 /**
  * Every media adapter the server can route to, in registration order. Within a
@@ -49,4 +50,6 @@ export const BUILTIN_MEDIA_ADAPTERS: readonly MediaProviderAdapter[] = [
   bfl, ideogram, recraft, topazImage, stability, openai,
   // L1 aggregators (after every direct route)
   fal, replicate, wavespeed, openrouter, atlascloud, sume,
+  // Local routes (the user's own server): keyless, with a catalog that changes while the server runs
+  comfyLocal,
 ];

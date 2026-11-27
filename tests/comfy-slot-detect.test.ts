@@ -7,7 +7,7 @@ import { afterEach, describe, it } from "node:test";
 import express from "express";
 
 import { config } from "../config.js";
-import { describeParams, detectBindCandidates, detectMediaKind, findWorkflowProblems } from "../lib/comfy/detect.ts";
+import { describeParams, detectBindCandidates, detectMediaKind, detectMediaSlots, findWorkflowProblems } from "../lib/comfy/detect.ts";
 import { fetchComfyObjectInfo, parseInputSpec, type ComfyObjectInfo } from "../lib/comfy/objectInfo.ts";
 import { bindGraph, parseApiGraph, unambiguousBindings } from "../lib/comfyGraphBind.ts";
 import type { ComfyGraph, ComfyWorkflowBindings } from "../lib/comfyWorkflowStore.ts";
@@ -117,6 +117,22 @@ describe("comfy slot detection", () => {
       output: { node: "61" },
     });
     assert.equal(detectMediaKind(I2V, INFO), "video");
+    // Its one image is the frame the clip starts from; nothing else in the graph is a file.
+    assert.deepEqual(detectMediaSlots(I2V, INFO, "video"), [{ kind: "image", node: "52", input: "image", classType: "LoadImage", role: "first-frame" }]);
+    assert.deepEqual(detectMediaSlots(KLEIN, INFO, "image"), []);
+  });
+
+  it("assigns a lone file its role and leaves two of a kind for a person to tell apart", () => {
+    const talk: ComfyGraph = {
+      "1": { class_type: "LoadImage", inputs: { image: "a.png" } }, "2": { class_type: "LoadAudio", inputs: { audio: "a.mp3" } },
+      "3": { class_type: "LoadVideo", inputs: { file: "a.mp4" } }, "4": { class_type: "LoadImageMask", inputs: { image: "m.png", channel: "alpha" } },
+    };
+    assert.deepEqual(detectMediaSlots(talk, INFO, "video").map((slot) => [slot.node, slot.kind, slot.role]), [
+      ["1", "image", "first-frame"], ["2", "audio", "source-audio"], ["3", "video", "source-video"], ["4", "image", "mask"],
+    ]);
+    assert.equal(detectMediaSlots(talk, INFO, "image")[0]!.role, "source-image");
+    const two: ComfyGraph = { ...talk, "5": { class_type: "LoadImage", inputs: { image: "b.png" } } };
+    assert.deepEqual(detectMediaSlots(two, INFO, "video").filter((slot) => slot.kind === "image").map((slot) => [slot.node, slot.role]), [["1", undefined], ["4", "mask"], ["5", undefined]]);
   });
 
   it("asks when the graph does not settle it", () => {
@@ -239,7 +255,7 @@ describe("comfy inspect and register against a server", () => {
     assert.deepEqual(body.candidates.filter((c: any) => c.field === "prompt").map((c: any) => c.unambiguous), [false, false]);
   });
 
-  it("registers with ranged parameters and the server report, and refuses a workflow that saves audio", async () => {
+  it("registers with ranged parameters, the server report and the media model it became; audio and file slots included", async () => {
     const { base, fake } = await setup({ objectInfo: INFO });
     const res = await post(base, "/api/comfy/workflows", { id: "klein", graph: KLEIN, bind: settled(KLEIN) });
     const body = await res.json();
@@ -249,10 +265,20 @@ describe("comfy inspect and register against a server", () => {
     assert.deepEqual(body.workflow.bind.width, { node: "62", input: "width", also: [{ node: "66", input: "width" }] });
     assert.deepEqual(body.workflow.params.find((p: any) => p.name === "Flux2Scheduler.steps"), { name: "Flux2Scheduler.steps", node: "62", input: "steps", type: "number", default: 4, min: 1, max: 4096 });
     assert.deepEqual(body.server, { origin: fake!.origin, reachable: true, missingNodes: [], missingChoices: [], paidNodes: [] });
+    assert.deepEqual(body.media, { model: "comfy/klein", task: "text-to-image" });
     const audio = { "1": { class_type: "SaveAudioMP3", inputs: { audio: ["2", 0], filename_prefix: "x", quality: "V0" } }, "3": { class_type: "CLIPTextEncode", inputs: { text: "" } } };
-    const refused = await post(base, "/api/comfy/workflows", { id: "song", graph: audio, bind: { prompt: { node: "3", input: "text" }, output: { node: "1" } } });
-    assert.equal(refused.status, 400);
-    assert.deepEqual((await refused.json()).error.code, "COMFY_WORKFLOW_MEDIA_KIND_INVALID");
+    const song = await (await post(base, "/api/comfy/workflows", { id: "song", graph: audio, bind: { prompt: { node: "3", input: "text" }, output: { node: "1" } } })).json();
+    assert.deepEqual([song.workflow.mediaKind, song.media], ["audio", { model: "comfy/song", task: "text-to-audio" }]);
+    // A file slot is stored with its role; one image slot also serves the classic lane's single reference.
+    const inspected = await (await post(base, "/api/comfy/inspect", { graph: I2V })).json();
+    assert.deepEqual(inspected.mediaSlots, [{ kind: "image", node: "52", input: "image", classType: "LoadImage", role: "first-frame" }]);
+    const clip = await (await post(base, "/api/comfy/workflows", { id: "clip", graph: I2V, bind: { ...settled(I2V), refImage: undefined, inputs: inspected.mediaSlots.map(({ classType: _c, ...slot }: any) => slot) } })).json();
+    assert.deepEqual(clip.workflow.bind.inputs, [{ kind: "image", role: "first-frame", node: "52", input: "image" }]);
+    assert.deepEqual(clip.workflow.bind.refImage, { node: "52", input: "image" });
+    assert.deepEqual(clip.media, { model: "comfy/clip", task: "image-to-video" });
+    const wrong = await post(base, "/api/comfy/workflows", { id: "bad", graph: I2V, bind: { ...settled(I2V), inputs: [{ kind: "image", role: "source-audio", node: "52", input: "image" }] } });
+    assert.equal(wrong.status, 400);
+    assert.match((await wrong.json()).error.message, /image slot's role must be one of/);
   });
 
   it("explains an editor-format file where it is refused", async () => {
