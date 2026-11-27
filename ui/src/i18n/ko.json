@@ -149,6 +149,7 @@
     "blockKey": "{provider} API 키를 넣어야 생성할 수 있어요.",
     "estimate": {
       "label": "예상 비용",
+      "basis": "가격 기준",
       "unknown": "가격표에 없음",
       "basisSeconds": "{n}초 × {price}",
       "rangeNote": "이 모델은 가격표에 단계가 여러 개예요. 이 화면에서 정하지 않는 옵션에 따라 청구액이 달라져요.",
@@ -172,6 +173,7 @@
       "prefix": "이 제공업체의 키는 {prefix}(으)로 시작해요.",
       "extra": "필수 칸을 채워 주세요.",
       "required": "(필수)",
+      "field": {"region": "리전", "secretKey": "시크릿 키", "vodSubAppId": "VOD 서브 애플리케이션 ID", "location": "위치(리전)"},
       "subscription": "ChatGPT·Grok 로그인으로 쓰는 모델은 키가 필요 없어요. 기본 제공자에서 실행해요.",
       "fileOnly": "이 제공업체는 서비스 계정 파일로 로그인해요. 설정에서 추가해 주세요.",
       "rejected": "{provider}가 이 키를 받지 않았어요. 키를 다시 확인해 주세요.",

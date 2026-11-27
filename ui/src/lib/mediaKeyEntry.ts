@@ -9,6 +9,13 @@ export function keyEntrySupported(adapter: Pick<MediaAdapter, "keyVocabulary">):
   return adapter.keyVocabulary !== "vertex";
 }
 
+const EXTRA_FIELD_LABELS: readonly string[] = ["region", "secretKey", "vodSubAppId", "location"];
+
+/** The translation key that names an extra credential field, or null for a field with no wording yet (its own name is shown). */
+export function extraFieldLabelKey(name: string): string | null {
+  return EXTRA_FIELD_LABELS.includes(name) ? "mediaPicker.key.field." + name : null;
+}
+
 export interface KeyDraft { apiKey: string; extra: Record<string, string> }
 
 /** Why the draft cannot be sent yet, or null when it can. Mirrors the checks the server makes before calling the provider. */

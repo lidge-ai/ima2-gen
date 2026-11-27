@@ -149,6 +149,7 @@
     "blockKey": "Add a {provider} API key to generate.",
     "estimate": {
       "label": "Estimated cost",
+      "basis": "Price basis",
       "unknown": "Not in the price list",
       "basisSeconds": "{n} s × {price}",
       "rangeNote": "The price list has several tiers for this model; the charge depends on an option this screen does not set.",
@@ -172,6 +173,7 @@
       "prefix": "Keys for this provider start with {prefix}.",
       "extra": "Fill in the required fields.",
       "required": "(required)",
+      "field": {"region": "Region", "secretKey": "Secret key", "vodSubAppId": "VOD sub-application ID", "location": "Location"},
       "subscription": "ChatGPT and Grok sign-in models need no key. They run from the built-in providers.",
       "fileOnly": "This provider signs in with a service-account file, which is added in Settings.",
       "rejected": "{provider} did not accept this key. Check it and try again.",

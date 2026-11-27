@@ -145,6 +145,9 @@ async function captureKeysAndFailures(stage: Stage): Promise<void> {
   await stage.card.locator(".media-estimate").scrollIntoViewIfNeeded();
   await stage.shot("estimate");
   await stage.card.locator(".media-estimate").screenshot({ path: join(OUT, "estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
+  await stage.card.locator(".media-estimate details summary").click();
+  await stage.card.locator(".media-estimate").screenshot({ path: join(OUT, "estimate-basis-crop__" + stage.width + "__" + stage.locale + ".png") });
+  await stage.card.locator(".media-estimate details summary").click();
   if (stage.mobile) await page.locator("#mobile-generate-sheet [role=tab]").nth(0).click();
   await page.locator(".generate-row:visible").screenshot({ path: join(OUT, "generate-estimate-crop__" + stage.width + "__" + stage.locale + ".png") });
 
@@ -225,6 +228,8 @@ for (const locale of LOCALES) {
         await stage.showCard();
         await stage.card.locator(".media-routes").scrollIntoViewIfNeeded();
         await stage.shot("no-key");
+        await stage.card.locator(".media-key").scrollIntoViewIfNeeded();
+        await stage.card.locator(".media-key").screenshot({ path: join(OUT, "key-fields-crop__" + width + "__" + locale + ".png") });
         expect(app.errors).toEqual([]);
       } finally { await app.close(); }
     });
