@@ -14,7 +14,7 @@ import "../../styles/audio.css";
 
 const M = messages(
   {
-    title: "Create audio", tool: "Tool", speech: "Speech", sound: "Music and sound", video: "Sound for video",
+    title: "Create audio", tool: "Tool", speech: "Speech", sound: "Music & SFX", video: "Video sound",
     speechHelp: "A voice reads your text.", soundHelp: "Music or a sound effect from a description.", videoHelp: "Sound effects made to fit your clip.",
     script: "Script", scriptHint: "Write exactly what the voice should say", describe: "Description", describeHint: "Genre, mood and instruments, or the sound you need",
     notes: "Notes", notesHint: "Optional: what the sound should be like", clip: "Video", required: "Required", count: "{n} characters",
@@ -25,7 +25,7 @@ const M = messages(
     nokey: "Add a key to generate.", none: "No model in this catalog makes audio yet.", loading: "Loading models", history: "History", views: "Audio views",
   },
   {
-    title: "오디오 만들기", tool: "도구", speech: "음성", sound: "음악과 효과음", video: "영상에 소리",
+    title: "오디오 만들기", tool: "도구", speech: "음성", sound: "음악·효과음", video: "영상 소리",
     speechHelp: "목소리가 내 글을 읽어요.", soundHelp: "설명으로 음악이나 효과음을 만들어요.", videoHelp: "내 영상에 맞는 효과음을 만들어요.",
     script: "대본", scriptHint: "목소리가 읽을 내용을 그대로 적어 주세요", describe: "설명", describeHint: "장르, 분위기, 악기나 필요한 소리를 적어 주세요",
     notes: "메모", notesHint: "선택: 어떤 소리면 좋은지 적어 주세요", clip: "영상", required: "필수", count: "{n}자",

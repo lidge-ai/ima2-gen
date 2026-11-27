@@ -62,7 +62,7 @@ test("audio: without the provider's key the voice list is not asked for, and the
 
 test("audio: music and sound sends a description, a length inside the route's range and its switch", async ({ page }) => {
   await page.goto("/#/audio?tool=sound");
-  await expect(page.getByRole("button", { name: "Music and sound" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Music & SFX" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: /^Model: / }).click();
   await page.getByRole("dialog", { name: "Choose a model" }).getByRole("button", { name: /Eleven Music 2\.5/ }).click();
   // An optional length starts empty: the model decides.
@@ -114,9 +114,9 @@ test("audio: Korean names the tools and steps; Models and the empty audio tab le
   await page.getByRole("article").filter({ hasText: "Eleven Music 2.5" }).getByRole("link").last().click();
   await expect(page).toHaveURL(/#\/audio\?tool=sound&model=elevenlabs/);
   await page.getByRole("button", { name: /Language/ }).click();
-  await expect(page.getByRole("button", { name: "음악과 효과음" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "음악·효과음" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText("만들 소리를 설명해 주세요.")).toBeVisible();
-  await page.getByRole("button", { name: "영상에 소리" }).click();
+  await page.getByRole("button", { name: "영상 소리" }).click();
   await expect(generate(page).or(page.getByRole("button", { name: /^생성/ }))).toContainText("영상을 넣으면 가격이 계산돼요");
   await page.getByRole("button", { name: /언어|Language/ }).first().click();
 });
