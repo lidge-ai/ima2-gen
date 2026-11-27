@@ -19,7 +19,7 @@ test("media help is pure before parsing or side effects", async () => {
   try {
     for (const args of [[], ["--help"], ["run", "--help"], ["keys", "set", "x", "--key-stdin", "--help"],
       ["keys", "set", "x", "--extra", "--help"], ["keys", "delete", "x", "--help"],
-      ["studio", "open", "higgs", "--help"], ["wait", "x", "--help"]]) {
+      ["studio", "open", "main", "--help"], ["wait", "x", "--help"]]) {
       const child = spawn(process.execPath, ["--import", "tsx", "bin/ima2.ts", "media", ...args], { env: {
         PATH: `${root}:${process.env.PATH}`, TMPDIR: process.env.TMPDIR, NO_COLOR: "1", HOME: root, USERPROFILE: root,
         IMA2_CONFIG_DIR: root, IMA2_GENERATED_DIR: root, IMA2_ADVERTISE_FILE: advertise,

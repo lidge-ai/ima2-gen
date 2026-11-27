@@ -1,5 +1,5 @@
 {
-  "name": "@ima2/studio-higgs",
+  "name": "@ima2/studio-main",
   "private": true,
   "version": "0.1.0",
   "description": "ima2 studio with a feed, image, video, remix and director layout. Talks to the server only through studios/kit.",

@@ -19,6 +19,7 @@ function browserId(): string {
   return id;
 }
 
+// The session id keeps the studio's first name: the server files this studio's jobs under it, and a new id would hide earlier jobs.
 const studio = new Studio(createStudioClient({ browserId: browserId(), sessionId: "studio-higgs" }));
 studio.start();
 

@@ -5,9 +5,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { existsSync } from "node:fs";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const isolatedConfigDir = await mkdtemp(join(tmpdir(), "ima2-media-routes-"));
 process.env.IMA2_CONFIG_DIR = isolatedConfigDir;
@@ -18,7 +19,7 @@ const { buildMediaCatalog } = await import("../lib/providers/media/catalog.ts");
 const { MediaKeySnapshot } = await import("../lib/providers/media/credentials.ts");
 const { registerMediaRoutes } = await import("../routes/media.ts");
 const { registerWorkflowRoutes } = await import("../routes/workflows.ts");
-const { mountStudioUi, registerStudioRoutes } = await import("../routes/studios.ts");
+const { mountStudioUi, readDefaultUi, registerStudioRoutes } = await import("../routes/studios.ts");
 const { mountKeyRoutes } = await import("../routes/keys.ts");
 const { subscribe, _resetForTest: resetBus } = await import("../lib/eventBus.ts");
 const { _resetForTests: resetInflight } = await import("../lib/inflight.ts");
@@ -80,9 +81,9 @@ async function withApp(fn: (h: { base: string; root: string; configFile: string;
   const registry = new MediaRegistry([adapter, aggregator]);
   const transport = fakeTransport({ downloads: { [VIDEO_URL]: { body: "mp4", type: "video/mp4" } }, ...(opts.status ? { status: opts.status } : {}) });
   const studiosRoot = join(root, "studios");
-  await mkdir(join(studiosRoot, "higgs", "dist", "assets"), { recursive: true });
-  await writeFile(join(studiosRoot, "higgs", "dist", "index.html"), "<html>higgs studio</html>");
-  await writeFile(join(studiosRoot, "higgs", "dist", "assets", "app.js"), "console.log(1)");
+  await mkdir(join(studiosRoot, "main", "dist", "assets"), { recursive: true });
+  await writeFile(join(studiosRoot, "main", "dist", "index.html"), "<html>main studio</html>");
+  await writeFile(join(studiosRoot, "main", "dist", "assets", "app.js"), "console.log(1)");
   await mkdir(join(studiosRoot, "kit", "assets", "vendors"), { recursive: true });
   await writeFile(join(studiosRoot, "kit", "assets", "vendors", "acme.svg"), "<svg xmlns='http://www.w3.org/2000/svg'/>");
   await writeFile(join(studiosRoot, "kit", "assets", "vendors", "manifest.json"), JSON.stringify({ generatedAt: "2026-11-26", vendors: [
@@ -300,24 +301,78 @@ test("workflows: a session route runs a keyless adapter with the signed-in token
 test("studios: served under /studio/<name>/, SPA fallback, default UI redirect and classic escape", async () => {
   await withApp(async ({ base }) => {
     const studios = await (await fetch(`${base}/api/studios`)).json();
-    assert.deepEqual(studios, { studios: [{ name: "higgs", built: true, url: "/studio/higgs/" }], defaultUi: "classic" });
-    assert.equal(await (await fetch(`${base}/studio/higgs/`)).text(), "<html>higgs studio</html>");
-    assert.equal(await (await fetch(`${base}/studio/higgs/library/item-3`)).text(), "<html>higgs studio</html>");
-    assert.equal(await (await fetch(`${base}/studio/higgs/assets/app.js`)).text(), "console.log(1)");
-    assert.equal((await fetch(`${base}/studio/higgs/assets/missing.js`)).status, 404);
+    assert.deepEqual(studios, { studios: [{ name: "main", built: true, url: "/studio/main/" }], defaultUi: "classic" });
+    assert.equal(await (await fetch(`${base}/studio/main/`)).text(), "<html>main studio</html>");
+    assert.equal(await (await fetch(`${base}/studio/main/library/item-3`)).text(), "<html>main studio</html>");
+    assert.equal(await (await fetch(`${base}/studio/main/assets/app.js`)).text(), "console.log(1)");
+    assert.equal((await fetch(`${base}/studio/main/assets/missing.js`)).status, 404);
     assert.equal((await fetch(`${base}/studio/kit/`)).status, 404);
-    const noSlash = await fetch(`${base}/studio/higgs`, { redirect: "manual" });
-    assert.equal(noSlash.headers.get("location"), "/studio/higgs/");
+    const noSlash = await fetch(`${base}/studio/main`, { redirect: "manual" });
+    assert.equal(noSlash.headers.get("location"), "/studio/main/");
     assert.equal(await (await fetch(`${base}/`)).text(), "classic ui");
     const bad = await fetch(`${base}/api/studios/default`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "kit" }) });
     assert.equal(bad.status, 400);
-    const set = await fetch(`${base}/api/studios/default`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "higgs" }) });
-    assert.equal((await set.json()).defaultUi, "higgs");
+    const set = await fetch(`${base}/api/studios/default`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "main" }) });
+    assert.equal((await set.json()).defaultUi, "main");
     const home = await fetch(`${base}/`, { redirect: "manual" });
     assert.equal(home.status, 302);
-    assert.equal(home.headers.get("location"), "/studio/higgs/");
+    assert.equal(home.headers.get("location"), "/studio/main/");
     assert.equal(await (await fetch(`${base}/?ui=classic`)).text(), "classic ui");
   });
+});
+
+test("studios: the studio renamed from higgs to main still answers to its old name", async () => {
+  await withApp(async ({ base, configFile }) => {
+    // A bookmark such as /studio/higgs/?from=x#/remix/remix-restyle: the browser sends no fragment, and keeps
+    // it across a redirect whose Location has none. Path and query must survive; the #route then opens the same screen.
+    const bookmark = await fetch(`${base}/studio/higgs/?from=bookmark`, { redirect: "manual" });
+    assert.equal(bookmark.status, 301);
+    assert.equal(bookmark.headers.get("location"), "/studio/main/?from=bookmark");
+    const deep = await fetch(`${base}/studio/higgs/remix/item-3?view=history`, { redirect: "manual" });
+    assert.equal(deep.headers.get("location"), "/studio/main/remix/item-3?view=history");
+    const bare = await fetch(`${base}/studio/higgs`, { redirect: "manual" });
+    assert.equal(bare.headers.get("location"), "/studio/main/");
+    for (const res of [bookmark, deep, bare]) assert.ok(!res.headers.get("location")?.includes("#"));
+    assert.equal(await (await fetch(`${base}/studio/higgs/remix/item-3`)).text(), "<html>main studio</html>");
+    // The old name as a saved default, from the API or from a config file written before the rename.
+    const set = await fetch(`${base}/api/studios/default`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "higgs" }) });
+    assert.equal((await set.json()).defaultUi, "main");
+    assert.equal(JSON.parse(await readFile(configFile, "utf8")).ui.defaultUi, "main");
+    await writeFile(configFile, JSON.stringify({ ui: { defaultUi: "higgs" } }));
+    assert.equal((await fetch(`${base}/`, { redirect: "manual" })).headers.get("location"), "/studio/main/");
+  });
+  // IMA2_DEFAULT_UI=higgs on a deployment keeps opening the studio.
+  assert.equal(await readDefaultUi({ config: { storage: { configFile: join(tmpdir(), "ima2-no-config.json") } } } as never, { env: { IMA2_DEFAULT_UI: "higgs" } }), "main");
+});
+
+test("studios: the main studio's screens, page and built asset paths never say higgs", async () => {
+  const dir = fileURLToPath(new URL("../studios/main/", import.meta.url));
+  const files: string[] = [];
+  const walk = async (rel: string) => {
+    for (const entry of await readdir(join(dir, rel), { withFileTypes: true })) {
+      const path = rel ? rel + "/" + entry.name : entry.name;
+      if (entry.isDirectory()) await walk(path);
+      else files.push(path);
+    }
+  };
+  await walk("src");
+  await walk("public");
+  files.push("index.html", "vite.config.ts", "package.json");
+  const found: string[] = [];
+  for (const file of files) {
+    assert.ok(!/higgs/i.test(file), "asset path " + file);
+    if (!/\.(tsx?|css|html|json|svg|webmanifest)$/.test(file)) continue;
+    const lines = (await readFile(join(dir, file), "utf8")).split("\n");
+    lines.forEach((line, i) => {
+      if (!/higgs/i.test(line)) return;
+      // The job-list session key is stored data, never shown, and keeps its first name on purpose.
+      if (file === "src/main.tsx" && line.includes('sessionId: "studio-higgs"')) return;
+      found.push(file + ":" + String(i + 1) + " " + line.trim());
+    });
+  }
+  assert.deepEqual(found, []);
+  // A relative base keeps every built asset under /studio/main/.
+  assert.match(await readFile(join(dir, "vite.config.ts"), "utf8"), /base: "\.\/"/);
 });
 
 test("keys: media vocabularies are validated by the adapter, saved with extras, masked in status", async () => {
