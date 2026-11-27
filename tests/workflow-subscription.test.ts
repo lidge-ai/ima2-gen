@@ -66,6 +66,7 @@ test("subscription restyle cuts a 12.4 s clip into two edits on the Grok OAuth r
   assert.deepEqual(sent.map((r) => new TextDecoder().decode(r?.inputs[0]?.bytes)).sort(), ["cut:0.000+6.200", "cut:6.200+6.200"]);
   assert.ok(sent.every((r) => r?.inputs.length === 1 && r.inputs[0]?.role === "source-video"), "edit sends only the segment");
   assert.match(sent[0]?.prompt ?? "", /Loose watercolor/);
+  assert.match(sent[0]?.prompt ?? "", /skin tone, hair/, "the edit sees only the prompt, so it must say to keep each person's features");
   assert.equal(sent[0]?.prompt, sent[1]?.prompt, "one prompt for every segment");
 });
 
