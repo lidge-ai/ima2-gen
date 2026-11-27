@@ -47,6 +47,8 @@ test("video settings list each length and size once, in order, under readable na
   await expect(page.getByRole("group", { name: "Duration" }).getByRole("button")).toHaveText([
     "1s", "2s", "3s", "4s", "5s", "8s", "10s", "12s", "15s",
   ]);
+  // The menu opens on the current value, so a long list does not start a keyboard user at 1 s.
+  await expect(page.getByRole("group", { name: "Duration" }).getByRole("button", { name: "4s" })).toBeFocused();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /^Resolution: / }).click();
   await expect(page.getByRole("group", { name: "Resolution" }).getByRole("button")).toHaveText([

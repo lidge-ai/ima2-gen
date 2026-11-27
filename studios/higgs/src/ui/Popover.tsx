@@ -56,7 +56,12 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
       setStyle(place(anchor.current.getBoundingClientRect(), ref.current.getBoundingClientRect(), placement));
     };
     update();
-    ref.current?.querySelector<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)")?.focus();
+    // A choice menu opens on the current value (scrolled into view in a long list such as 1-30 s).
+    const panel = ref.current;
+    (
+      panel?.querySelector<HTMLElement>('button[aria-pressed="true"]:not(:disabled)') ??
+      panel?.querySelector<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)")
+    )?.focus();
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
     return () => {
