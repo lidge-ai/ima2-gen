@@ -24,10 +24,16 @@ function inside(root, path) {
   return target === base || target.startsWith(base + sep);
 }
 
+// The temp roots are read once, at load: a test may point TEMP elsewhere later. On Windows
+// tmpdir() can be the 8.3 short form (C:\Users\RUNNER~1\...) while databases are opened by
+// their long path; only the native realpath expands it.
+const tempRoots = [tmpdir()];
+for (const expand of [realpathSync, realpathSync.native]) {
+  try { tempRoots.push(expand(tmpdir())); } catch { /* the plain path is enough */ }
+}
+
 function isTemp(path) {
-  const roots = [tmpdir()];
-  try { roots.push(realpathSync(tmpdir())); } catch { /* the plain path is enough */ }
-  return path === ":memory:" || roots.some((root) => inside(root, path));
+  return path === ":memory:" || tempRoots.some((root) => inside(root, path));
 }
 
 /** Every better-sqlite3 handle this process used, whoever opened it. */
