@@ -1,88 +1,89 @@
-# ima2-gen ComfyUI Bridge
+# ima2 for ComfyUI
 
-This custom node lets ComfyUI call a running local `ima2-gen` server and return
-the generated image as a ComfyUI `IMAGE`.
+Nodes that let a ComfyUI graph use your own ima2 server: any image, video or
+audio model in its catalog, with the keys you saved in ima2, and the result back
+in the graph as `IMAGE`, `VIDEO` or `AUDIO`.
+
+Nothing here holds a key. A workflow you save or share contains no key and no
+server address, because no node takes either as an input.
 
 ## Install
 
-Copy or symlink this folder into your ComfyUI custom nodes directory:
-
-```bash
-ComfyUI/custom_nodes/ima2_gen_bridge
-```
-
-For development from this repository:
+Until the pack is on the Comfy Registry, copy or symlink this folder into your
+ComfyUI custom nodes directory and restart ComfyUI:
 
 ```bash
 ln -s /path/to/ima2-gen/integrations/comfyui/ima2_gen_bridge \
-  /path/to/ComfyUI/custom_nodes/ima2_gen_bridge
+  /path/to/ComfyUI/custom_nodes/comfyui-ima2
 ```
 
-Restart ComfyUI after installing.
+It needs no extra Python packages: it uses the standard library and what ComfyUI
+already ships (torch, numpy, Pillow, PyAV).
 
 ## Prerequisite
 
-Start the ima2 server before queueing the node:
+Start ima2 on the same computer before you queue a graph:
 
 ```bash
 ima2 serve
 ```
 
-The node never asks for OpenAI credentials. It only calls the local ima2 HTTP
-server you already started.
+The nodes find it on their own, in this order: `IMA2_SERVER`, `IMA2_ADVERTISE_FILE`, `IMA2_CONFIG_DIR/server.json`, `~/.ima2/server.json`, `http://127.0.0.1:3333`.
+Only loopback HTTP origins are accepted (`127.0.0.1`, `localhost`, `[::1]`); a remote
+address, credentials in the URL, a path or HTTPS are refused. If your ima2 asks
+for its LAN token, set `IMA2_LAN_TOKEN` in ComfyUI's environment.
 
-## Node
+## Nodes
 
-Add the node from:
+Add them from `Add Node -> ima2`.
 
-```text
-Add Node -> ima2-gen -> Ima2 Generate
-```
+| Node | Output | Optional inputs |
+| --- | --- | --- |
+| `ima2 Image` | `IMAGE` | `image` (as source or reference), `mask` |
+| `ima2 Video` | `VIDEO` | `first_frame`, `last_frame`, `reference_images`, `source_video`, `source_audio` |
+| `ima2 Audio` | `AUDIO` | `source_video` |
 
-Inputs:
+Every node also returns the saved `filename` and a `metadata` JSON string with the
+model, the route that ran, ima2's estimate, what the provider billed when it says,
+and the elapsed time.
 
-| Input | Description |
+Shared inputs:
+
+| Input | Meaning |
 | --- | --- |
-| `prompt` | Text prompt sent to ima2. |
-| `server_url` | Optional loopback ima2 server origin. Leave empty for auto-discovery. |
-| `quality` | `low`, `medium`, or `high`. |
-| `size` | Image size string such as `1024x1024`. |
-| `moderation` | `low` or `auto`. |
-| `timeout` | Request timeout in seconds. |
-| `model` | Optional ima2 image model override. |
-| `mode` | `auto` or `direct` prompt mode. |
-| `web_search` | Maps to ima2 `webSearchEnabled`. |
+| `model` | A model id from your ima2 catalog. The list is read when ComfyUI loads node definitions; after adding a key or a workflow in ima2, refresh them (`R`). Models that can run right now come first. |
+| `prompt` | The text prompt. |
+| `max_usd` | The most this run may cost by ima2's estimate. The node asks ima2 for the estimate first and stops before sending the job when it is higher, or when ima2 cannot price the run. `0` (the default) runs only models that cost nothing, such as your own ComfyUI workflows registered in ima2. `-1` switches the check off. |
+| `seed`, `send_seed` | A new seed makes ComfyUI run the node again. It is sent to the model only when `send_seed` is `yes`, because models that take no seed refuse one. |
+| `route` | An ima2 route id to pin (`fal`, `replicate`, ...`). Empty lets ima2 choose: the model maker's own API when you have its key, otherwise the cheapest route you have a key for. |
+| `task` | Empty picks it from what is connected: a first frame makes it image-to-video, a video with audio lip-sync, and so on. |
+| `negative_prompt`, `resolution`, `aspect_ratio`, `duration`, `audio` | Sent when set. ima2 refuses a value the chosen model does not list, and the node shows its reason. |
+| `vendor_options` | A JSON object passed through as ima2 `vendorOptions`. |
 
-Outputs:
+While a job runs, the node shows ima2's state and the estimate. Stopping the
+ComfyUI run cancels the ima2 job.
 
-| Output | Description |
-| --- | --- |
-| `image` | Generated ComfyUI `IMAGE`. |
-| `filename` | Saved ima2 generated filename. |
-| `metadata` | JSON metadata string with request details. |
+### Cost
 
-## Server Discovery
+A job runs on the route ima2 picks and is charged by that provider to the key you
+saved in ima2. The estimate comes from the provider's published price list; the
+real bill can differ. `max_usd` is a check before the run, not a spending cap on
+your account.
 
-When `server_url` is empty, the node checks:
+### Ima2 Generate
 
-1. `IMA2_SERVER`
-2. `IMA2_ADVERTISE_FILE`
-3. `IMA2_CONFIG_DIR/server.json`
-4. `~/.ima2/server.json`
-5. `http://127.0.0.1:3333`
+The original node is still here under the same id, so saved workflows keep
+loading. It is text-to-image only, through ima2's own image lane
+(`POST /api/generate`, with `webSearchEnabled`). For any catalog model, use
+`ima2 Image`. Its `server_url` input may be left empty.
 
-Only loopback HTTP origins are accepted:
+## Older ComfyUI
 
-```text
-http://127.0.0.1:3333
-http://localhost:3333
-http://[::1]:3333
+The media nodes use ComfyUI's V3 node schema. On a ComfyUI without it, the pack
+registers `Ima2 Generate` alone.
+
+## Tests
+
+```bash
+python3 -B -m unittest discover -s integrations/comfyui/ima2_gen_bridge/tests -t integrations/comfyui
 ```
-
-Remote hosts, credentials, paths, queries, fragments, and HTTPS URLs are
-rejected.
-
-## Scope
-
-This PR2 node is text-to-image only. Image input, edit, reference generation,
-and workflow automation are later follow-ups.
