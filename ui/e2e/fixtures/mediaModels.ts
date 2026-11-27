@@ -7,7 +7,7 @@ import type { BrowserContext, Page, Route } from "@playwright/test";
 
 type Price = { unit: string; usd: number; variant?: string; source: string; checkedAt: string };
 type RouteSpec = { adapter: string; tasks: string[]; params?: Record<string, unknown>; pricing?: Price[] };
-type ModelSpec = { id: string; label: string; vendor: string; kind: "image" | "video"; routes: RouteSpec[] };
+type ModelSpec = { id: string; label: string; vendor: string; kind: "image" | "video" | "audio"; routes: RouteSpec[] };
 
 const price = (usd: number, unit = "second", variant?: string): Price =>
   ({ unit, usd, source: "https://example.com/pricing", checkedAt: "2026-11-27", ...(variant ? { variant } : {}) });
@@ -26,6 +26,10 @@ const ADAPTERS: Record<string, { label: string; route: "direct" | "aggregator" |
   fal: { label: "fal", route: "aggregator", vocabulary: "fal", logo: "fal-mark.png" },
   replicate: { label: "Replicate", route: "aggregator", vocabulary: "replicate", logo: "replicate-mark.svg" },
   sume: { label: "Sume", route: "aggregator", vocabulary: "sume", logo: "sume-mark.svg" },
+  elevenlabs: { label: "ElevenLabs", route: "direct", vocabulary: "elevenlabs", logo: "elevenlabs-mark.svg" },
+  cartesia: { label: "Cartesia", route: "direct", vocabulary: "cartesia", logo: "cartesia-mark.svg" },
+  mirelo: { label: "Mirelo", route: "direct", vocabulary: "mirelo", logo: "mirelo-mark.svg" },
+  stability: { label: "Stability AI", route: "direct", vocabulary: "stability", logo: "stability-ai-mark.png" },
   // Listed only when the fixture is opened with a local route (MediaFixture.local).
   "comfy-local": { label: "ComfyUI (this computer)", route: "local", vocabulary: "comfy-local", logo: null, keyless: true },
 };
@@ -33,6 +37,7 @@ const VENDOR_LOGO: Record<string, [string, string | null]> = {
   bytedance: ["ByteDance", "bytedance-mark.png"], google: ["Google", "google-mark.png"], kling: ["Kling", "kling-mark.png"],
   minimax: ["MiniMax", "minimax-mark.png"], pixverse: ["PixVerse", "pixverse-mark.svg"], "black-forest-labs": ["Black Forest Labs", "black-forest-labs-mark.svg"],
   openai: ["OpenAI", "openai-mark.svg"], recraft: ["Recraft", null], sync: ["Sync", null], heygen: ["HeyGen", "heygen-mark.svg"],
+  elevenlabs: ["ElevenLabs", "elevenlabs-mark.svg"], cartesia: ["Cartesia", "cartesia-mark.svg"], mirelo: ["Mirelo", "mirelo-mark.svg"], stability: ["Stability AI", "stability-ai-mark.png"],
 };
 
 const VIDEO = ["text-to-video", "image-to-video"];
@@ -99,6 +104,28 @@ const MODELS: ModelSpec[] = [
   { id: "recraft/v4", label: "Recraft V4", vendor: "recraft", kind: "image", routes: [
     { adapter: "recraft", tasks: ["text-to-image"], params: { aspectRatios: ["1:1", "16:9", "9:16"] }, pricing: [price(0.04, "image")] },
   ] },
+  // Audio, as the adapters declare it: a voice option for speech, a free length for music and effects.
+  { id: "elevenlabs/eleven-v4", label: "Eleven v4", vendor: "elevenlabs", kind: "audio", routes: [
+    { adapter: "elevenlabs", tasks: ["text-to-audio"], params: { options: [{ name: "voice_id", type: "voice", required: true }] }, pricing: [price(0.00008, "character", "$0.08 per 1K characters")] },
+  ] },
+  { id: "cartesia/sonic-3.6", label: "Sonic 3.6", vendor: "cartesia", kind: "audio", routes: [
+    { adapter: "cartesia", tasks: ["text-to-audio"], params: { options: [{ name: "voice_id", type: "voice", required: true }] }, pricing: [] },
+  ] },
+  { id: "elevenlabs/elevenlabs-music-2.5", label: "Eleven Music 2.5", vendor: "elevenlabs", kind: "audio", routes: [
+    { adapter: "elevenlabs", tasks: ["text-to-audio"], params: { durationRange: { minSec: 3, maxSec: 600 }, options: [{ name: "force_instrumental", type: "boolean" }] }, pricing: [price(0.15, "minute")] },
+  ] },
+  { id: "mirelo/mirelo-sfx-2.0", label: "Mirelo SFX 2.0", vendor: "mirelo", kind: "audio", routes: [
+    { adapter: "mirelo", tasks: ["video-to-audio", "text-to-audio"], pricing: [],
+      params: { durationRange: { minSec: 1, maxSec: 600, tasks: ["text-to-audio"], required: true }, negativePrompt: true, seed: true, inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-audio"], billedLength: true }] } },
+    { adapter: "fal", tasks: ["video-to-audio", "text-to-audio"], pricing: [price(0.02, "second")],
+      params: { durationRange: { minSec: 1, maxSec: 600, tasks: ["text-to-audio"], required: true }, seed: true, inputs: [{ role: "source-video", min: 1, max: 1, tasks: ["video-to-audio"], billedLength: true }] } },
+  ] },
+  { id: "stability/stable-audio-3", label: "Stable Audio 3", vendor: "stability", kind: "audio", routes: [
+    { adapter: "stability", tasks: ["text-to-audio"], params: { seed: true, durationsSec: seconds(1, 380) }, pricing: [price(0.08, "request")] },
+  ] },
+  { id: "mirelo/video-foley", label: "Mirelo Foley", vendor: "mirelo", kind: "audio", routes: [
+    { adapter: "fal", tasks: ["video-to-audio"], params: { inputs: [{ role: "source-video", min: 1, max: 1, billedLength: true }] }, pricing: [price(0.02, "second")] },
+  ] },
 ];
 
 // The catalog offers a square symbol as urls.mark when the kit manifest has one; makers without one get a monogram in the UI.
@@ -106,6 +133,35 @@ const MODELS: ModelSpec[] = [
 const LOCAL_MODEL: ModelSpec = { id: "comfy/flux2-klein", label: "FLUX.2 klein (my workflow)", vendor: "comfy", kind: "image", routes: [
   { adapter: "comfy-local", tasks: ["text-to-image"], params: { seed: true }, pricing: [] },
 ] };
+/** A sound workflow on the same server: it shows under Audio like any other route, keyless and unpriced. */
+const LOCAL_AUDIO: ModelSpec = { id: "comfy/ace-step", label: "ACE-Step (my workflow)", vendor: "comfy", kind: "audio", routes: [
+  { adapter: "comfy-local", tasks: ["text-to-audio"], params: { seed: true, durationsSec: [30, 60, 120] }, pricing: [] },
+] };
+const LOCAL_MODELS: ModelSpec[] = [LOCAL_MODEL, LOCAL_AUDIO];
+
+/** Voices as GET /api/media/voices lists them: the key's own first, samples only where the provider gives a public one. */
+const VOICES = [
+  { id: "v-narrator", name: "My narrator", description: "Cloned from your recordings", language: "en", owned: true },
+  { id: "v-rachel", name: "Rachel", description: "Calm, clear narration", language: "en", gender: "female", previewUrl: "/generated/l11-voice-rachel.wav" },
+  { id: "v-jiho", name: "Jiho", description: "Warm conversational Korean", language: "ko", gender: "male", previewUrl: "/generated/l11-voice-jiho.wav" },
+  { id: "v-adam", name: "Adam", description: "Deep documentary voice", language: "en", gender: "male", previewUrl: "/generated/l11-voice-adam.wav" },
+  { id: "v-sora", name: "Sora", description: "Bright, friendly Korean", language: "ko", gender: "female" },
+  { id: "v-mei", name: "Mei", description: "Soft-spoken Mandarin", language: "zh", gender: "female" },
+  { id: "v-liam", name: "Liam", description: "Energetic promo read", language: "en", gender: "male" },
+  { id: "v-nova", name: "Nova", description: "Neutral assistant", language: "en", gender: "neutral" },
+  { id: "v-hana", name: "Hana", description: "Gentle storyteller", language: "ja", gender: "female" },
+  { id: "v-otto", name: "Otto", description: "Dry news anchor", language: "de", gender: "male" },
+];
+
+/** Two seconds of silence: enough for an <audio> element to load and report a length. */
+function silentWav(): Buffer {
+  const samples = 16000;
+  const head = Buffer.alloc(44);
+  head.write("RIFF", 0); head.writeUInt32LE(36 + samples * 2, 4); head.write("WAVEfmt ", 8); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22);
+  head.writeUInt32LE(8000, 24); head.writeUInt32LE(16000, 28); head.writeUInt16LE(2, 32); head.writeUInt16LE(16, 34); head.write("data", 36); head.writeUInt32LE(samples * 2, 40);
+  return Buffer.concat([head, Buffer.alloc(samples * 2)]);
+}
+const WAV = silentWav();
 
 const logo = (name: string, mark: string | null) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name,
   urls: mark ? { mark: "/media-assets/vendors/" + mark } : {}, source: null });
@@ -120,6 +176,8 @@ export interface MediaFixture {
   catalogMode: "ready" | "error" | "loading";
   /** What the provider says when a key is validated. */
   keyVerdict: "ok" | "reject";
+  /** How GET /api/media/voices answers: the list, an empty account, or a provider error. */
+  voiceMode: "ready" | "empty" | "error";
   /** Every request this fixture answered, in order. */
   calls: { method: string; path: string; body: Record<string, unknown> | null }[];
   submissions: Record<string, unknown>[];
@@ -134,7 +192,7 @@ export interface MediaFixture {
 
 function catalog(fixture: MediaFixture, kind: string | null) {
   const hasKey = (adapter: string) => ADAPTERS[adapter]!.keyless === true || fixture.keys.has(ADAPTERS[adapter]!.vocabulary);
-  const listed = fixture.local ? [...MODELS, LOCAL_MODEL] : MODELS;
+  const listed = fixture.local ? [...MODELS, ...LOCAL_MODELS] : MODELS;
   const models = listed.filter((model) => !kind || model.kind === kind).map((model) => {
     const routes = model.routes.map((route) => ({ adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, label: ADAPTERS[route.adapter]!.label,
       logo: logo(ADAPTERS[route.adapter]!.label, ADAPTERS[route.adapter]!.logo ?? null), upstreamId: model.id,
@@ -154,7 +212,7 @@ function catalog(fixture: MediaFixture, kind: string | null) {
 
 /** Answers like lib/providers/media/estimate.ts, with the server's own price rule. */
 function estimate(fixture: MediaFixture, body: Record<string, unknown>) {
-  const model = (fixture.local ? [...MODELS, LOCAL_MODEL] : MODELS).find((entry) => entry.id === body.model);
+  const model = (fixture.local ? [...MODELS, ...LOCAL_MODELS] : MODELS).find((entry) => entry.id === body.model);
   const route = model?.routes.find((entry) => entry.adapter === body.adapter) ?? model?.routes[0];
   if (!model || !route) return { status: 404, json: { ok: false, code: "MEDIA_MODEL_UNKNOWN", error: "Unknown media model", category: "not-found", retryable: false } };
   if (ADAPTERS[route.adapter]!.route === "local") {
@@ -178,7 +236,9 @@ async function answer(route: Route, fixture: MediaFixture): Promise<void> {
   const path = url.pathname;
   const media = path.startsWith("/api/media");
   const keyWrite = /^\/api\/keys\/[^/]+(\/validate)?$/.test(path) && method !== "GET";
-  if (method === "GET" && path.startsWith("/generated/l11-")) return route.fulfill({ contentType: "image/png", body: PNG });
+  if (method === "GET" && path.startsWith("/generated/l11-")) {
+    return /\.(wav|mp3)$/.test(path) ? route.fulfill({ contentType: "audio/wav", body: WAV }) : route.fulfill({ contentType: "image/png", body: PNG });
+  }
   if (method === "GET" && path === "/api/history" && fixture.history.length && !url.searchParams.has("groupBy")) {
     return route.fulfill({ json: { items: fixture.history, total: fixture.history.length, nextCursor: null } });
   }
@@ -195,6 +255,12 @@ async function answer(route: Route, fixture: MediaFixture): Promise<void> {
     return route.fulfill({ json: catalog(fixture, url.searchParams.get("kind")) });
   }
   if (method === "POST" && path === "/api/media/estimate") { const result = estimate(fixture, body ?? {}); return route.fulfill(result); }
+  if (method === "GET" && path === "/api/media/voices") {
+    const adapter = ADAPTERS[url.searchParams.get("provider") ?? ""];
+    if (!adapter || !fixture.keys.has(adapter.vocabulary)) return route.fulfill({ status: 400, json: { ok: false, code: "MEDIA_KEY_MISSING", error: "Save a key to list its voices", category: "auth", retryable: false } });
+    if (fixture.voiceMode === "error") return route.fulfill({ status: 502, json: { ok: false, code: "ELEVENLABS_UPSTREAM", error: "voices unavailable", category: "upstream", retryable: true } });
+    return route.fulfill({ json: { provider: url.searchParams.get("provider"), voices: fixture.voiceMode === "empty" ? [] : VOICES, fetchedAt: "2026-11-28T00:00:00.000Z", cached: false } });
+  }
   if (method === "POST" && path === "/api/media/inputs") return route.fulfill({ status: 201, json: { ref: "input-" + fixture.calls.length } });
   if (method === "POST" && path === "/api/media") {
     fixture.submissions.push(body ?? {});
@@ -248,7 +314,7 @@ function installEventChannel(): void {
  */
 export async function installMediaFixture(context: BrowserContext, options: { keys?: string[]; local?: boolean } = {}): Promise<MediaFixture> {
   const fixture: MediaFixture = {
-    keys: new Set(options.keys ?? ["fal"]), local: options.local === true, catalogMode: "ready", keyVerdict: "ok", calls: [], submissions: [], history: [], terminalJobs: [],
+    keys: new Set(options.keys ?? ["fal"]), local: options.local === true, catalogMode: "ready", keyVerdict: "ok", voiceMode: "ready", calls: [], submissions: [], history: [], terminalJobs: [],
     mediaReads: () => fixture.calls.filter((call) => call.path.startsWith("/api/media")).length,
     emit: async (page, event, requestId, data) => {
       const delivered = await page.evaluate(([name, payload]) => (window as unknown as { l11Emit(event: string, data: unknown): number }).l11Emit(name, payload),
@@ -271,4 +337,13 @@ export function mediaHistoryRow(over: Record<string, unknown> = {}): Record<stri
     sessionId: "wp02-session", requestId: "media_fixture_1", kind: "image",
     media: { task: "text-to-image", durationSec: null, resolution: "2K", aspectRatio: "16:9", seed: 7, audio: null, inputRoles: [] },
     billed: { usd: 0.07 }, estimate: { usd: 0.07, basis: "exact" }, ...over };
+}
+
+/** A sound result as the history lists it: no thumbnail, mediaType "audio", the length it was asked for. */
+export function audioHistoryRow(over: Record<string, unknown> = {}): Record<string, unknown> {
+  return mediaHistoryRow({ filename: "l11-music.mp3", url: "/generated/l11-music.mp3", mediaType: "audio", format: "mp3", kind: "audio",
+    prompt: "slow lo-fi piano for a rainy evening", userPrompt: "slow lo-fi piano for a rainy evening",
+    provider: "media:elevenlabs", adapter: "elevenlabs", route: "direct", model: "elevenlabs/elevenlabs-music-2.5", requestId: "media_fixture_audio",
+    media: { task: "text-to-audio", durationSec: 45, resolution: null, aspectRatio: null, seed: null, audio: null, inputRoles: [] },
+    billed: null, estimate: null, ...over });
 }
