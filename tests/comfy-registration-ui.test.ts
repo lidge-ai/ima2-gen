@@ -85,3 +85,42 @@ test("a running job's progress is shown only when it reported one between nothin
   assert.equal(jobProgressPercent(1), 100);
   for (const none of [null, undefined, -0.1, 1.2, Number.NaN, "0.5"]) assert.equal(jobProgressPercent(none), null);
 });
+// What the settings screen sends. The server reads a body only when it is declared as JSON
+// (express.json): without the header every one of these arrives empty and is refused.
+const sent: Array<{ url: string; method: string; type: string | null; body: unknown }> = [];
+const realFetch = globalThis.fetch;
+globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+  sent.push({ url: String(url), method: init?.method ?? "GET", type: new Headers(init?.headers).get("content-type"),
+    body: typeof init?.body === "string" ? JSON.parse(init.body) : null });
+  return new Response(JSON.stringify({ ok: true, workflows: [], remotes: [], strandedWorkflows: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
+}) as typeof fetch;
+const api = await import("../ui/src/lib/api-comfy.js");
+
+test("every request that carries a body declares it as JSON, and reads carry none", async () => {
+  try {
+    const graph = { "6": { class_type: "CLIPTextEncode", inputs: { text: "a fox" } } };
+    await api.inspectComfyWorkflow({ graph }, "http://127.0.0.1:8188");
+    await api.inspectComfyWorkflow({ graph });
+    await api.probeComfyOrigin("http://127.0.0.1:8188");
+    await api.createComfyWorkflow({ id: "fox", mediaKind: "image", graph, bind: { prompt: { node: "6", input: "text" }, output: { node: "9" } } });
+    await api.putComfyRemote("https://comfy.example.com", "secret");
+    await api.putComfyRemote("https://comfy.example.com");
+    await api.deleteComfyRemote("https://comfy.example.com");
+    await api.deleteComfyWorkflow("fox");
+    await api.listComfyRemotes();
+    await api.listComfyWorkflows();
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  assert.deepEqual(sent.map((call) => [call.method, call.url, call.type]), [
+    ["POST", "/api/comfy/inspect", "application/json"], ["POST", "/api/comfy/inspect", "application/json"],
+    ["POST", "/api/comfy/probe", "application/json"], ["POST", "/api/comfy/workflows", "application/json"],
+    ["PUT", "/api/comfy/remotes", "application/json"], ["PUT", "/api/comfy/remotes", "application/json"],
+    ["DELETE", "/api/comfy/remotes?origin=https%3A%2F%2Fcomfy.example.com", null], ["DELETE", "/api/comfy/workflows/fox", null],
+    ["GET", "/api/comfy/remotes", null], ["GET", "/api/comfy/workflows", null],
+  ]);
+  assert.deepEqual(sent[0]!.body, { graph: { "6": { class_type: "CLIPTextEncode", inputs: { text: "a fox" } } }, origin: "http://127.0.0.1:8188" });
+  assert.equal("origin" in (sent[1]!.body as object), false, "no origin is sent when none was chosen");
+  assert.deepEqual(sent[4]!.body, { origin: "https://comfy.example.com", token: "secret" });
+  assert.deepEqual(sent[5]!.body, { origin: "https://comfy.example.com" }, "an empty token is not sent, so a saved one is kept");
+});
