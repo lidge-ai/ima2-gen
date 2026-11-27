@@ -36,7 +36,8 @@ function ErrorBlock({ job, error }: { job: Job; error: JobError }) {
       <div>
         <p>{t(headline(error))}</p>
         <p className="job-error-detail">
-          <code>{error.code}</code> {error.message}
+          {/* A job read back from the list carries only its code; do not print it twice. */}
+          <code>{error.code}</code> {error.message !== error.code ? error.message : null}
         </p>
         <div className="job-error-actions">
           <JobRecovery job={job} error={error} />
