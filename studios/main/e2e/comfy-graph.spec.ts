@@ -7,7 +7,7 @@ async function openResult(page: Page, model: string, prompt: string) {
   await page.goto("/#/image?model=" + encodeURIComponent(model));
   await page.getByLabel("Prompt").fill(prompt);
   await page.getByRole("button", { name: /Generate/ }).click();
-  await expect(page.getByRole("article", { name: new RegExp("Done: ") }).filter({ hasText: prompt }).getByRole("img")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("article").filter({ hasText: prompt }).getByRole("img", { name: prompt })).toBeVisible({ timeout: 15_000 });
   await page.reload();
   await page.getByRole("button", { name: "Open " + prompt }).click();
   return page.getByRole("dialog", { name: "Result" });
@@ -71,7 +71,7 @@ test("in Korean the button and its note are Korean", async ({ page }) => {
   await page.goto("/#/image?model=comfy%2Fklein");
   await page.getByLabel("프롬프트").fill(prompt);
   await page.getByRole("button", { name: /생성/ }).click();
-  await expect(page.getByRole("article").filter({ hasText: prompt }).getByRole("img")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("article").filter({ hasText: prompt }).getByRole("img", { name: prompt })).toBeVisible({ timeout: 15_000 });
   await page.reload();
   await page.getByRole("button", { name: new RegExp(prompt) }).first().click();
   const dialog = page.getByRole("dialog");
