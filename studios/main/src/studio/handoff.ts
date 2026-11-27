@@ -7,7 +7,7 @@ export interface HandOff {
   url: string;
   mimeType: string;
   name: string;
-  target: "video" | "remix" | "image";
+  target: "video" | "video-edit" | "remix" | "image";
   /** Only this workflow's form takes it (a showcase example opens its own workflow). */
   workflow?: string;
   /** Field values to prefill on the target screen (prompt, target, style...). */

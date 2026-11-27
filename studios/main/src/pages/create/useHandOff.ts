@@ -9,7 +9,7 @@ import type { UploadedInput } from "@ima2/studio-kit";
  */
 export function useHandOff(
   target: HandOff["target"],
-  accept: (upload: UploadedInput, name: string) => void,
+  accept: (upload: UploadedInput, name: string, values?: HandOff["values"]) => void,
   onError?: () => void,
 ): void {
   const studio = useStudioApi();
@@ -23,7 +23,7 @@ export function useHandOff(
         // No unmount guard: the hand-off is consumed when read, and a remount (React strict mode)
         // must still receive it. Setting state on the same component is safe.
         void handOffFile(value)
-          .then((file) => studio.upload(file).then((upload) => latest.current.accept(upload, file.name)))
+          .then((file) => studio.upload(file).then((upload) => latest.current.accept(upload, file.name, value.values)))
           .catch(() => latest.current.onError?.());
         return true;
       }),

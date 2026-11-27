@@ -112,7 +112,7 @@ test("talking video: a model is run through the route that has a form, not the d
 test("talking video: the tabs move between create, edit and talking, and Korean names every step", async ({ page }) => {
   await page.goto("/#/video?mode=speak");
   await page.getByRole("button", { name: "Edit video" }).click();
-  await expect(page.getByLabel("Video to edit")).toBeAttached();
+  await expect(page.getByLabel("Video to change")).toBeAttached();
   await page.getByRole("button", { name: "Talking video" }).click();
   await page.getByRole("button", { name: /Language/ }).click();
   await expect(page.getByRole("button", { name: "말하는 영상" })).toHaveAttribute("aria-pressed", "true");

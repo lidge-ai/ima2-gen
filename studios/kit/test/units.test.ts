@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readSse } from "../src/sse.ts";
 import { estimateCost, formatUsd, sumEstimates } from "../src/pricing.ts";
 import { chooseRoute } from "../src/routing.ts";
+import { chooseEditRoute, editForm, editRoutes } from "../src/editForm.ts";
 import { makeCatalog } from "../src/fake/catalog.ts";
 
 test("SSE parses split CRLF, comments, ids and multiline data", async () => {
@@ -52,4 +53,28 @@ test("a task is only routed to a route that serves it, whatever key or choice is
   assert.ok(ask.kind === "needs-key" && ask.candidates.every((r) => r.providerId === "fal"));
   // A server that does not say which tasks a route serves is treated as before.
   assert.equal(chooseRoute(base, undefined, "image-to-image").kind, "default");
+});
+
+test("an edit tool is offered only through routes that declare it, with the fields and lists of that route", () => {
+  const models = makeCatalog(new Set(["fal"])).models;
+  const seedance = models.find((m) => m.id === "bytedance/seedance-2")!;
+  // fal has the key but only creates with this model; the direct route edits.
+  assert.deepEqual(editRoutes(seedance, "video-to-video").map((r) => r.providerId), ["byteplus"]);
+  const choice = chooseEditRoute(seedance, "video-to-video");
+  assert.ok(choice.kind === "needs-key" && choice.route.providerId === "byteplus");
+  assert.equal(editForm(seedance, "fal", "video-to-video"), null);
+  assert.equal(editRoutes(seedance, "video-extend").length, 0);
+
+  const grok = models.find((m) => m.id === "xai/grok-imagine-video")!;
+  const edit = editForm(grok, "xai", "video-to-video")!;
+  assert.deepEqual([edit.durationsSec, edit.resolutions, edit.aspectRatios], [[], [], []]);
+  assert.equal(edit.source.billedLength, true);
+  const extend = editForm(grok, "xai", "video-extend")!;
+  assert.ok(extend.durationsSec.length > 0 && extend.resolutions.length === 0);
+
+  const topaz = models.find((m) => m.id === "topaz-labs/topaz-video")!;
+  assert.deepEqual(editRoutes(topaz, "video-upscale").map((r) => r.providerId), ["fal"]);
+  // A required choice with nothing to choose from is not a form.
+  const stuck = { ...grok, routeParams: { xai: { ...grok.routeParams!.xai, taskFields: { "video-extend": { accepts: ["resolution" as const], requires: ["resolution" as const], resolutions: [] } } } } };
+  assert.equal(editForm(stuck, "xai", "video-extend"), null);
 });

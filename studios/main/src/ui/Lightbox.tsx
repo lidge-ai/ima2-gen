@@ -11,8 +11,8 @@ import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
 
 const M = messages(
-  { animate: "Animate", edit: "Edit", remix: "Remix", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
-  { animate: "영상 만들기", edit: "편집", remix: "리믹스", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 모델로", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
+  { animate: "Animate", edit: "Edit", remix: "Remix", extend: "Extend", upscale: "Upscale", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
+  { animate: "영상 만들기", edit: "편집", remix: "리믹스", extend: "연장", upscale: "업스케일", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 모델로", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
 );
 
 interface Props {
@@ -20,14 +20,19 @@ interface Props {
   onClose: () => void;
 }
 
-type Target = "video" | "remix" | "image";
+type Target = "video" | "video-edit" | "remix" | "image";
 
-const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: keyof typeof M.en; icon: IconName }[]> = {
+/** tool: the edit tool a video result opens with. */
+const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: keyof typeof M.en; icon: IconName; tool?: string }[]> = {
   image: [
     { target: "video", label: "animate", icon: "video" },
     { target: "image", label: "edit", icon: "image" },
   ],
-  video: [{ target: "remix", label: "remix", icon: "remix" }],
+  video: [
+    { target: "video-edit", label: "extend", icon: "video", tool: "video-extend" },
+    { target: "video-edit", label: "upscale", icon: "layers", tool: "video-upscale" },
+    { target: "remix", label: "remix", icon: "remix" },
+  ],
   audio: [],
 };
 
@@ -58,11 +63,13 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
   const t = useT(M);
   const actions = useItemActions(item, onClose);
   const [copied, setCopied] = useState(false);
-  const reuse = (target: Target) => {
-    const taken = handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target });
+  const reuse = (target: Target, tool?: string) => {
+    const taken = handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target, ...(tool ? { values: { tool } } : {}) });
     onClose();
     // The target screen may already be open behind this dialog; it took the result itself.
-    if (!taken) navigate(target);
+    if (taken) return;
+    if (target === "video-edit") navigate("video", { mode: "edit" });
+    else navigate(target);
   };
   // Same prompt and model on the screen that made it: filled in place when that screen is open
   // behind this dialog, otherwise the screen opens with them as its draft.
@@ -96,7 +103,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
         <Icon name="heart" size={15} /> {item.favorite ? t("saved") : t("save")}
       </button>
       {REUSE[item.kind].map((r) => (
-        <button key={r.target} type="button" className="btn" onClick={() => reuse(r.target)}>
+        <button key={r.label} type="button" className="btn" onClick={() => reuse(r.target, r.tool)}>
           <Icon name={r.icon} size={15} /> {t(r.label)}
         </button>
       ))}

@@ -330,3 +330,21 @@ test("voices need a key, and a voice's sample address plays", async () => {
     assert.ok((await played.arrayBuffer()).byteLength > 0);
   });
 });
+
+test("a route that declares an edit task refuses fields outside it and a task it does not serve", async () => {
+  await withServer({}, async ({ client }) => {
+    await client.keys.save("xai", { apiKey: SECRET });
+    const upload = await client.uploads.put(new Uint8Array([0, 0, 0, 24]), "video/mp4");
+    const base = { model: "xai/grok-imagine-video", provider: "xai", task: "video-to-video" as const, inputs: [{ role: "source-video" as const, inputId: upload.inputId }] };
+    const refused = (e: unknown) => e instanceof StudioApiError && e.code === "MEDIA_INVALID_REQUEST";
+    await assert.rejects(client.media.submit(base), refused, "the prompt is required");
+    await assert.rejects(client.media.submit({ ...base, prompt: "snow", resolution: "720p" }), refused, "an edit follows its source");
+    const accepted = await client.media.submit({ ...base, prompt: "snow" });
+    assert.ok(accepted.jobId);
+    await assert.rejects(
+      client.media.submit({ model: "bytedance/seedance-2", provider: "fal", task: "video-to-video", prompt: "snow", inputs: base.inputs }),
+      (e: unknown) => e instanceof StudioApiError && e.code === "MEDIA_TASK_UNSUPPORTED",
+    );
+    await client.keys.remove("xai");
+  });
+});
