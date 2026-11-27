@@ -13,6 +13,13 @@ const M = messages(
     "body2": "Presets fill in camera moves and settings. You can edit everything they set.",
     "step3": "Generate",
     "body3": "ima2 runs the model with your own key and saves the result to Assets.",
+    "speak": "Make a face or a clip speak",
+    "speakStep1": "Add the face",
+    "speakBody1": "A photo with one clear face, or a video of the person speaking.",
+    "speakStep2": "Add the audio",
+    "speakBody2": "Upload the line to speak. The audio's length becomes the video's length, and the price follows it.",
+    "speakStep3": "Generate",
+    "speakBody3": "ima2 runs the model with your own key and saves the result to Assets.",
   },
   {
     "label": "사용 방법",
@@ -25,25 +32,37 @@ const M = messages(
     "body2": "프리셋이 카메라 움직임과 설정을 채워요. 모든 설정을 바꿀 수 있어요.",
     "step3": "생성",
     "body3": "ima2가 내 키로 모델을 사용하고 결과를 에셋에 저장해요.",
+    "speak": "얼굴이나 영상 속 인물이 말하게 해요",
+    "speakStep1": "얼굴 추가",
+    "speakBody1": "얼굴 하나가 또렷한 사진이나, 말하는 사람이 나오는 영상을 추가해 주세요.",
+    "speakStep2": "오디오 추가",
+    "speakBody2": "말할 내용을 담은 오디오를 추가해 주세요. 오디오 길이가 영상 길이가 되고, 가격도 길이에 따라 정해져요.",
+    "speakStep3": "생성",
+    "speakBody3": "ima2가 내 키로 모델을 사용하고 결과를 에셋에 저장해요.",
   },
 );
 
-export function HowItWorks({ kind }: { kind: "image" | "video" }) {
+const STEPS = {
+  plain: [["step1", "body1"], ["step2", "body2"], ["step3", "body3"]],
+  speak: [["speakStep1", "speakBody1"], ["speakStep2", "speakBody2"], ["speakStep3", "speakBody3"]],
+} as const;
+
+export function HowItWorks({ kind }: { kind: "image" | "video" | "speak" }) {
   const t = useT(M);
   return (
     <section className="how" aria-label={t("label")}>
-      <h1>{t(kind === "video" ? "video" : "image")}</h1>
+      <h1>{t(kind)}</h1>
       <p className="how-lead">
         {t("lead")}
       </p>
       <ol className="how-steps">
-        {(["step1", "step2", "step3"] as const).map((step, index) => (
+        {STEPS[kind === "speak" ? "speak" : "plain"].map(([step, body], index) => (
           <li key={step}>
             <span className="how-num" aria-hidden>
               {index + 1}
             </span>
             <h2>{t(step)}</h2>
-            <p>{t((["body1", "body2", "body3"] as const)[index])}</p>
+            <p>{t(body)}</p>
           </li>
         ))}
       </ol>
