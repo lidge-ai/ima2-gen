@@ -77,7 +77,7 @@ export type ComfyReportSummary =
 /** "ready" means nothing the workflow needs is missing. Paid nodes do not stop a run, so they are reported beside either state. */
 export function reportSummary(report: ComfyServerReport | undefined): ComfyReportSummary {
   if (!report) return { state: "unknown" };
-  if (!report.reachable) return { state: "unreachable", origin: report.origin, reason: report.reason };
+  if (report.reachable === false) return { state: "unreachable", origin: report.origin, reason: report.reason };
   const missingNodes = report.missingNodes ?? [];
   const choices = report.missingChoices ?? [];
   return {

@@ -2,8 +2,6 @@ import type { ComfyWorkflowRecord } from "../../lib/api-comfy";
 import { workflowMediaModel } from "../../lib/comfyRegistration";
 import { useI18n } from "../../i18n";
 
-const KIND_KEY = { image: "comfy.kindImage", video: "comfy.kindVideo", audio: "comfy.kindAudio" } as const;
-
 /** Registered workflows: what each makes, the media model it is listed as, where it runs and whether that server answered. */
 export function ComfyWorkflowTable({ workflows, busy, onRemove }: {
   workflows: readonly ComfyWorkflowRecord[];
@@ -31,7 +29,7 @@ export function ComfyWorkflowTable({ workflows, busy, onRemove }: {
             return (
               <tr key={workflow.id}>
                 <td>{workflow.label || workflow.id}</td>
-                <td>{t(KIND_KEY[workflow.mediaKind] ?? "comfy.kindImage")}</td>
+                <td>{workflow.mediaKind === "video" ? t("comfy.kindVideo") : workflow.mediaKind === "audio" ? t("comfy.kindAudio") : t("comfy.kindImage")}</td>
                 <td className="mono">{workflowMediaModel(workflow.id)}</td>
                 <td className="mono">{workflow.origin}</td>
                 {/* Status is never encoded by colour alone. */}

@@ -1,4 +1,4 @@
-import type { ComfyMediaSlotCandidate, ComfyServerReport } from "../../lib/api-comfy";
+import type { ComfyInputRole, ComfyMediaSlotCandidate, ComfyServerReport } from "../../lib/api-comfy";
 import { reportSummary, slotKey, SLOT_ROLES } from "../../lib/comfyRegistration";
 import { useI18n } from "../../i18n";
 
@@ -75,6 +75,12 @@ export function ComfyFileSlots({ slots, roles, onChange }: {
 }) {
   const { t } = useI18n();
   if (slots.length === 0) return null;
+  const kindLabel = { image: t("comfy.slotKind.image"), video: t("comfy.slotKind.video"), audio: t("comfy.slotKind.audio") };
+  const roleLabel: Record<ComfyInputRole, string> = {
+    "first-frame": t("comfy.role.first-frame"), "last-frame": t("comfy.role.last-frame"), "reference-image": t("comfy.role.reference-image"),
+    "source-image": t("comfy.role.source-image"), mask: t("comfy.role.mask"), "source-video": t("comfy.role.source-video"),
+    "reference-video": t("comfy.role.reference-video"), "source-audio": t("comfy.role.source-audio"), "reference-audio": t("comfy.role.reference-audio"),
+  };
   return (
     <>
       <div className="section-title">{t("comfy.slotsTitle")}</div>
@@ -85,11 +91,11 @@ export function ComfyFileSlots({ slots, roles, onChange }: {
         return (
           <div key={key} className="comfy-bind-row">
             <label htmlFor={selectId}>
-              {t("comfy.slotKind." + slot.kind)} <span className="mono">{key}</span> — {slot.classType}{slot.title ? ` "${slot.title}"` : ""}
+              {kindLabel[slot.kind]} <span className="mono">{key}</span> — {slot.classType}{slot.title ? ` "${slot.title}"` : ""}
             </label>
             <select id={selectId} value={roles[key] ?? ""} onChange={(event) => onChange(key, event.target.value)} aria-invalid={!roles[key]}>
               <option value="">{t("comfy.choose")}</option>
-              {SLOT_ROLES[slot.kind].map((role) => <option key={role} value={role}>{t("comfy.role." + role)}</option>)}
+              {SLOT_ROLES[slot.kind].map((role) => <option key={role} value={role}>{roleLabel[role]}</option>)}
             </select>
           </div>
         );
