@@ -210,3 +210,45 @@ test("seeds are whole numbers in the provider range, and saved selections are re
     { kind: "video", model: "a/b", adapter: "fal", task: "text-to-video", routeMode: "auto", label: "B", routeLabel: "fal.ai", durationSec: 5 });
   assert.equal(parseMediaSelection({ kind: "image", model: "a/b", adapter: "fal", task: "text-to-image" })?.routeMode, "pinned");
 });
+
+// ── Results: what a media row says and how it is made again (L11) ──
+const { isMediaResult, remakePlan, resultAdapter, resultCost } = await import("../ui/src/lib/mediaResult.js");
+
+test("a media result is recognised by its provider, and its cost prefers what the provider billed", () => {
+  assert.equal(isMediaResult({ provider: "media:fal", model: "acme/clip" }), true);
+  assert.equal(isMediaResult({ provider: "grok", model: "grok-imagine-video" }), false);
+  assert.equal(isMediaResult({ provider: "media:fal", model: "" }), false);
+  assert.equal(resultAdapter({ provider: "media:fal" }), "fal");
+  assert.equal(resultAdapter({ provider: "media:fal", adapter: "replicate" }), "replicate");
+  assert.equal(resultAdapter({ provider: "oauth" }), null);
+  assert.deepEqual(resultCost({ billed: { usd: 0.31 }, estimate: { usd: 0.25, basis: "exact" } }), { kind: "billed", usd: 0.31 });
+  assert.deepEqual(resultCost({ billed: { units: 5 }, estimate: { usd: 0.25, basis: "exact" } }), { kind: "estimate", usd: 0.25 });
+  assert.deepEqual(resultCost({ estimate: { usd: 0.5, basis: "upper-bound" } }), { kind: "ceiling", usd: 0.5 });
+  assert.equal(resultCost({ estimate: { usd: null, basis: "upper-bound" } }), null);
+  assert.equal(resultCost({}), null, "a row from before the server kept costs shows no cost line");
+});
+
+test("making a result again restores its model, pinned route and settings against today's catalog", () => {
+  const fal = route("fal", { hasKey: true, tasks: ["text-to-video", "image-to-video"], params: { durationsSec: [5, 10], resolutions: ["480p", "720p"], aspectRatios: ["16:9", "9:16"], seed: true, nativeAudio: true } });
+  const direct = route("direct", { route: "direct", hasKey: true, params: { durationsSec: [5], resolutions: ["720p"] } });
+  const models = [model("acme/clip", [direct, fal])];
+  const row = { provider: "media:fal", adapter: "fal", model: "acme/clip", mediaType: "video",
+    media: { task: "text-to-video", durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true, inputRoles: [] } };
+  assert.deepEqual(remakePlan(row, models), { ok: true, adjusted: [], inputsDropped: false,
+    selection: { kind: "video", model: "acme/clip", adapter: "fal", task: "text-to-video", routeMode: "pinned", label: "clip", vendor: "acme", routeLabel: "fal",
+      durationSec: 10, resolution: "480p", aspectRatio: "9:16", seed: 7, audio: true } });
+  // The route it ran on is gone: Automatic takes over and says which settings moved.
+  const gone = remakePlan({ ...row, adapter: "replicate", provider: "media:replicate" }, models);
+  assert.equal(gone.ok && gone.selection.adapter, "direct");
+  assert.equal(gone.ok && gone.selection.routeMode, "auto");
+  assert.deepEqual(gone.ok && gone.adjusted.map((entry) => entry.field), ["durationSec", "resolution", "aspectRatio", "audio", "seed"]);
+  // A result made from an image keeps its task and says the image has to be added again.
+  const fromImage = remakePlan({ ...row, media: { task: "image-to-video", inputRoles: ["first-frame"] } }, models);
+  assert.equal(fromImage.ok && fromImage.selection.task, "image-to-video");
+  assert.equal(fromImage.ok && fromImage.inputsDropped, true);
+  // An older row without the settings block still restores the model and route with listed defaults.
+  const bare = remakePlan({ provider: "media:fal", model: "acme/clip", mediaType: "video" }, models);
+  assert.deepEqual(bare.ok && [bare.selection.adapter, bare.selection.task, bare.selection.durationSec, bare.selection.resolution], ["fal", "text-to-video", 5, "720p"]);
+  assert.deepEqual(remakePlan({ ...row, model: "acme/retired" }, models), { ok: false, reason: "model-gone" });
+  assert.deepEqual(remakePlan({ provider: "oauth", model: "gpt-6-luna" }, models), { ok: false, reason: "not-media" });
+});

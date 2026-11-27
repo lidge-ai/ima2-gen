@@ -259,6 +259,12 @@ export function mapHistoryItem(it: Awaited<ReturnType<typeof getHistory>>["items
     sequenceTotalRequested: it.sequenceTotalRequested ?? null,
     sequenceTotalReturned: it.sequenceTotalReturned ?? null,
     sequenceStatus: it.sequenceStatus ?? null,
+    // Only set when the server sent them, so a row from another lane stays exactly as before.
+    ...(it.adapter ? { adapter: it.adapter } : {}),
+    ...(it.route ? { route: it.route } : {}),
+    ...(it.media ? { media: it.media } : {}),
+    ...(it.billed ? { billed: it.billed } : {}),
+    ...(it.estimate ? { estimate: it.estimate } : {}),
   };
 }
 

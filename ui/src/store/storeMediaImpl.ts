@@ -9,6 +9,10 @@ import { HISTORY_LIMIT, mapHistoryItem, saveInFlight, isCanceledGenerationError 
 import { registerFlightAbort, clearFlightAbort } from "./flightAbortRegistry";
 import { addHistory } from "./storeGraphSave";
 import type { StoreGet, StoreSet } from "./storeTypes";
+import type { GenerateItem } from "../types";
+import { getMediaCatalog, loadMediaCatalog } from "../lib/mediaCatalogStore";
+import { remakePlan } from "../lib/mediaResult";
+import { t } from "../i18n";
 
 export function setMediaSelectionImpl(selection: MediaSelection | null, adjusted: Adjustment[] | undefined, set: StoreSet): void {
   saveMediaSelection(selection);
@@ -48,6 +52,23 @@ export function recordTerminalMediaFailure(error: unknown, get: StoreGet): void 
   const selection = current && current.model === media.model ? current : null;
   const { code, status, category, retryable } = error as { code?: unknown; status?: unknown; category?: unknown; retryable?: unknown };
   get().setMediaFailure(buildMediaFailure({ code, status, category, retryable }, { requestId: media.requestId, prompt: media.prompt ?? "", selection, adapter: media.adapter }));
+}
+
+/**
+ * Sets the composer up to make a result again: its model, the route it ran on, its settings and its
+ * prompt. It stops there. The estimate is shown and Generate is one more press, because the run is paid.
+ */
+export async function remakeMediaResultImpl(item: GenerateItem, get: StoreGet): Promise<void> {
+  await loadMediaCatalog();
+  const catalog = getMediaCatalog();
+  if (catalog.status !== "ready") { get().showToast(t("mediaPicker.loadError"), true); return; }
+  const plan = remakePlan(item, catalog.models);
+  if (!plan.ok) { get().showToast(t("result.remakeModelGone"), true); return; }
+  if (get().uiMode !== "classic") get().setUIMode("classic");
+  get().setMediaSelection(plan.selection, plan.adjusted);
+  const prompt = item.userPrompt ?? item.prompt;
+  if (prompt) { get().clearInsertedPrompts(); get().setPrompt(prompt); }
+  get().showToast(t(plan.inputsDropped ? "result.remakeNeedsImages" : "result.remakeReady"));
 }
 
 /** Server job states to the phases the in-flight list has words for. */

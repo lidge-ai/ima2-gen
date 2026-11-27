@@ -1,3 +1,7 @@
+import { getMediaCatalog } from "../lib/mediaCatalogStore";
+import { formatUsd } from "../lib/mediaFormat";
+import { isMediaResult, resultCost } from "../lib/mediaResult";
+import { isClassicTask } from "../lib/mediaTasks";
 import { useMemo } from "react";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { useI18n } from "../i18n";
@@ -91,6 +95,11 @@ function sequenceSummary(item: GenerateItem): string | null {
 
 function providerLabel(provider: string | null | undefined): string | null {
   if (!provider) return null;
+  if (provider.startsWith("media:")) {
+    // The provider lane's own name when the catalog is loaded; its id otherwise, never the "media:" prefix.
+    const id = provider.slice(6);
+    return getMediaCatalog().adapters.find((adapter) => adapter.id === id)?.label ?? id;
+  }
   return PROVIDER_LABELS[provider] ?? provider;
 }
 
@@ -140,10 +149,12 @@ export function ResultMetadataModal({
   const rawJson = useMemo(() => JSON.stringify(item, null, 2), [item]);
   const latestContinuity = item.videoContinuity?.entries?.[item.videoContinuity.entries.length - 1] ?? null;
   const provider = providerLabel(item.provider);
+  const summaryCost = isMediaResult(item) ? resultCost(item) : null;
   const summaryFacts = [
     [provider, item.model].filter(Boolean).join(" · "),
     formatSize(item.size),
     item.elapsed != null ? `${item.elapsed}s` : null,
+    summaryCost ? formatUsd(summaryCost.usd) : null,
     item.usage?.total_tokens != null ? `${item.usage.total_tokens} ${t("metadata.fields.tokens").toLowerCase()}` : null,
   ].filter((value): value is string => Boolean(value));
 
@@ -169,9 +180,26 @@ export function ResultMetadataModal({
   addField(settingsFields, t("metadata.fields.promptMode"), item.promptMode, { compact: true });
   addField(settingsFields, t("metadata.fields.kind"), item.kind, { compact: true });
   addField(settingsFields, t("metadata.fields.mediaType"), item.mediaType, { compact: true });
+  if (isMediaResult(item) && (item.route === "direct" || item.route === "aggregator")) {
+    addField(settingsFields, t("metadata.fields.mediaRoute"), t(item.route === "direct" ? "mediaPicker.direct" : "mediaPicker.aggregator"), { compact: true });
+  }
+  if (isMediaResult(item) && item.media) {
+    const made = item.media;
+    addField(settingsFields, t("mediaPicker.task"), made.task && isClassicTask(made.task) ? t(`mediaPicker.tasks.${made.task}`) : made.task, { compact: true });
+    addField(settingsFields, t("mediaPicker.duration"), made.durationSec != null ? t("mediaPicker.seconds", { n: made.durationSec }) : null, { compact: true });
+    addField(settingsFields, t("mediaPicker.resolution"), made.resolution, { compact: true });
+    addField(settingsFields, t("mediaPicker.aspect"), made.aspectRatio, { compact: true });
+    addField(settingsFields, t("mediaPicker.seed"), made.seed, { compact: true });
+    if (made.audio) addField(settingsFields, t("mediaPicker.nativeAudio"), t("metadata.fields.mediaOn"), { compact: true });
+  }
   if (settingsFields.length) sections.push({ title: t("metadata.sections.settings"), fields: settingsFields, compact: true });
 
   const usageFields: Field[] = [];
+  const cost = isMediaResult(item) ? resultCost(item) : null;
+  if (cost) {
+    addField(usageFields, t(cost.kind === "billed" ? "metadata.fields.mediaBilled" : cost.kind === "estimate" ? "metadata.fields.mediaEstimate" : "metadata.fields.mediaCeiling"),
+      formatUsd(cost.usd), { compact: true });
+  }
   addField(usageFields, t("metadata.fields.elapsed"), item.elapsed != null ? `${item.elapsed}s` : null, { compact: true });
   addField(usageFields, t("metadata.fields.totalTokens"), item.usage?.total_tokens, { compact: true });
   addField(usageFields, t("metadata.fields.inputTokens"), usageNumber(item.usage, "input_tokens"), { compact: true });

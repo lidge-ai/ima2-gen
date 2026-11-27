@@ -570,7 +570,12 @@
       "prompt": "儲存提示",
       "revisedPrompt": "修改提示",
       "composerPrompt": "作曲家提示",
-      "insertedPrompts": "插入的提示"
+      "insertedPrompts": "插入的提示",
+      "mediaRoute": "線路",
+      "mediaOn": "開",
+      "mediaBilled": "計費金額（提供商回報）",
+      "mediaEstimate": "送出時的預估費用",
+      "mediaCeiling": "送出時的預估費用（上限）"
     }
   },
   "starPrompt": {
@@ -1209,7 +1214,12 @@
     "upscaleInvalid": "無效的高檔參數",
     "editVideo": "編輯影片",
     "editVideoTitle": "用提示詞修改此影片（grok-imagine-video）",
-    "editVideoPrompt": "想如何修改這段影片？例如：把衣服改成紅色"
+    "editVideoPrompt": "想如何修改這段影片？例如：把衣服改成紅色",
+    "remake": "再次生成",
+    "remakeTitle": "還原此結果的模型、線路、設定和提示詞。按下生成之前不會傳送任何內容。",
+    "remakeReady": "已還原模型、設定和提示詞。請確認預估費用後按生成。",
+    "remakeNeedsImages": "已還原模型、設定和提示詞。此結果由圖片生成，生成前請重新加入圖片。",
+    "remakeModelGone": "目錄裡已沒有此模型，無法在這裡再次生成。"
   },
   "session": {
     "switchTitle": "切換會話",
