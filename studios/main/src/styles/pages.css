@@ -9,6 +9,9 @@
   min-height: 0;
   overflow-y: auto;
   padding: 16px 16px 8px;
+  /* What scrolls under the dock fades out above it instead of showing between the tool chips. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
 }
 .image-empty {
   display: grid;
