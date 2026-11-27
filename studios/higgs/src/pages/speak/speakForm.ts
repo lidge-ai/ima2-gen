@@ -14,7 +14,7 @@ const M = messages(
     lipsyncVideo: "Video of the speaker", lipsyncAudio: "Audio to speak",
     avatarImage: "Face photo", avatarVideo: "Character video", avatarAudio: "Audio to speak",
     dubbingVideo: "Video to dub", subtitlesVideo: "Video to caption", media: "Media",
-    target_language: "Dub into", source_language: "Spoken language", tier: "Tier", sync_mode: "If lengths differ",
+    target_language: "Dub into", source_language: "Spoken in", tier: "Tier", sync_mode: "If lengths differ",
     motion: "Motion", expressiveness: "Expressiveness", translation_language: "Translate captions to", preset: "Caption style",
     auto: "Detect",
   },

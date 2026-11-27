@@ -36,7 +36,8 @@ test("talking video: lip sync asks for a video and audio, prices the longer one 
   await page.getByLabel("Video of the speaker").setInputFiles(CLIP);
   await expect(page.getByText("Add: Audio to speak.")).toBeVisible();
   await page.getByLabel("Audio to speak").setInputFiles(audio);
-  await expect(page.locator(".slot-audio audio")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Play line.wav" })).toBeVisible();
+  await expect(page.locator(".slot-audio")).toContainText("0:02");
   // fal lists $0.10 per second in the fixture catalog; the clip is longer than the two-second line.
   await expect(generate(page)).toContainText(/Estimated \$\d+\.\d+ · \d+ s/);
   const label = (await generate(page).textContent()) ?? "";

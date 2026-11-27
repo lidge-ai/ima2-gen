@@ -87,11 +87,14 @@ function OptionField({ option, speak }: { option: MediaOptionSpec; speak: Speak 
   const value = speak.state.options[option.name];
   if (option.type === "enum") {
     const choices = (option.values ?? []).map((v) => ({ value: v, label: valueLabel(option, v) }));
+    // A list that has its own "auto" starts there; otherwise an unset choice reads as the provider's default.
+    const unset = option.values?.includes("auto") ? "auto" : "";
+    const listed = unset === "auto" || (option.required && value !== undefined);
     return (
       <SettingTile
         caption={label}
-        value={typeof value === "string" ? value : ""}
-        options={option.required && value !== undefined ? choices : [{ value: "", label: option.required ? "-" : t("default") }, ...choices]}
+        value={typeof value === "string" ? value : unset}
+        options={listed ? choices : [{ value: "", label: option.required ? "-" : t("default") }, ...choices]}
         onChange={(next) => speak.setOption(option.name, next)}
       />
     );

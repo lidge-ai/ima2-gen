@@ -8,18 +8,30 @@
 .slot-audio {
   height: 104px;
   display: grid;
-  align-content: center;
-  gap: 8px;
-  padding: 10px 34px 10px 10px;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 30px;
+  text-align: center;
+}
+.slot-audio-play {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text);
+}
+.slot-audio-play:hover {
+  background: var(--surface);
 }
 .slot-audio-name {
+  max-width: 100%;
   font-size: 12.5px;
-  color: var(--text-muted);
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.slot-audio audio {
-  width: 100%;
-  height: 32px;
 }
