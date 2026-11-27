@@ -300,7 +300,7 @@ test("a retiring model keeps a clean name and carries the fact separately", () =
 test("price rows are matched however the provider words sound, video input and clip length", () => {
   const { pickPrice } = estimateWording;
   const row = (usd: number, variant: string, unit = "second") => ({ unit, usd, variant, source: "https://example.com", checkedAt: "2026-11-27" }) as MediaRoute["pricing"][number];
-  const price = (rows: MediaRoute["pricing"], want: Parameters<typeof pickPrice>[2], unit = "second") => pickPrice(rows, unit, want).price?.usd ?? pickPrice(rows, unit, want).range;
+  const price = (rows: MediaRoute["pricing"], want: Parameters<typeof pickPrice>[2], unit = "second") => pickPrice(rows, unit, want).price?.usd ?? pickPrice(rows, unit, want).range ?? undefined;
   const t2v = { task: "text-to-video" };
   for (const [off, on] of [["audio off, no video references", "audio on, no video references"], ["with audio=False", "with audio=True"], ["sound disabled", "sound enabled"],
     ["model variant=without_audio", "model variant=with_audio"], ["without audio", "with audio"]] as const) {
