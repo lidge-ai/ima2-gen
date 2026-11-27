@@ -152,3 +152,17 @@ test("talking video: without a key, the key form fits inside the panel", async (
     expect(box.x + box.width).toBeLessThanOrEqual(panel.x + panel.width);
   }
 });
+
+test("talking video: the price line's reason stays inside the Generate button, in English and Korean", async ({ page }) => {
+  await page.goto("/#/video?mode=speak");
+  for (const text of ["Add the video to see the price", "영상을 넣으면 가격이 계산돼요"]) {
+    await expect(generate(page).or(page.getByRole("button", { name: /^생성/ }))).toContainText(text);
+    const panel = (await page.locator("form.panel").boundingBox())!;
+    const button = (await page.locator(".btn-generate").boundingBox())!;
+    const cost = (await page.locator(".btn-generate .btn-cost").boundingBox())!;
+    expect(button.x + button.width).toBeLessThanOrEqual(panel.x + panel.width);
+    expect(cost.x + cost.width).toBeLessThanOrEqual(button.x + button.width);
+    expect(cost.y + cost.height).toBeLessThanOrEqual(button.y + button.height);
+    await page.getByRole("button", { name: /Language|언어/ }).click();
+  }
+});
