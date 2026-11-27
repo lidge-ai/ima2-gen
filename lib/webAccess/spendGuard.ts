@@ -34,8 +34,38 @@ function quantityFor(unit: MediaPrice["unit"], spec: MediaModelSpec, request: Me
   return null;
 }
 
+/** Lower-cased parts of a price variant name: "1K · low" → [1k, low], "text-to-image:low" → [text-to-image, low]. */
+function variantParts(variant: string): string[] {
+  return variant.toLowerCase().split(/\s*[·:]\s*|\s+/).filter(Boolean);
+}
+
+/** The request's quality, sent as a top-level field (vendorOptions.quality is the older spelling). */
+function requestQuality(request: MediaSubmitRequest): string | undefined {
+  if (typeof request.quality === "string" && request.quality) return request.quality;
+  return typeof request.vendorOptions?.quality === "string" ? request.vendorOptions.quality : undefined;
+}
+
+/**
+ * A row whose every variant part is said by the request (resolution, quality or task) matches it;
+ * the most specific such row wins. Rows naming anything else never match, so nothing is guessed.
+ */
+function bestVariantMatch(prices: readonly MediaPrice[], request: MediaSubmitRequest): MediaPrice | undefined {
+  const quality = requestQuality(request);
+  const said = new Set([request.resolution, quality, request.task].filter((v): v is string => !!v).map((v) => v.toLowerCase()));
+  let best: MediaPrice | undefined;
+  let bestParts = 0;
+  for (const price of prices) {
+    if (!price.variant) continue;
+    const parts = variantParts(price.variant);
+    if (!parts.every((part) => said.has(part))) continue;
+    if (quality && !parts.includes(quality.toLowerCase()) && prices.some((p) => p.variant && variantParts(p.variant).includes(quality.toLowerCase()))) continue;
+    if (parts.length > bestParts) { best = price; bestParts = parts.length; }
+  }
+  return best;
+}
+
 function variantCandidates(request: MediaSubmitRequest): string[] {
-  const quality = typeof request.vendorOptions?.quality === "string" ? request.vendorOptions.quality : undefined;
+  const quality = requestQuality(request);
   const res = request.resolution;
   return [
     res && quality ? res + " · " + quality : undefined,
@@ -52,7 +82,9 @@ export function estimateMediaUsd(spec: MediaModelSpec, request: MediaSubmitReque
     const prices = spec.pricing.filter((p) => p.unit === unit);
     const candidates = variantCandidates(request);
     const match = candidates.map((c) => prices.find((p) => p.variant === c)).find(Boolean)
+      ?? bestVariantMatch(prices, request)
       ?? (prices.length === 1 && prices[0]!.variant === undefined ? prices[0] : undefined);
+
     const usd = match ? match.usd : Math.max(...prices.map((p) => p.usd));
     return { usd: round(usd * qty.quantity), basis: match && qty.exact ? "exact" : "upper-bound" };
   }
