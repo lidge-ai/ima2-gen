@@ -62,7 +62,9 @@ class Ima2Client:
             with urlopen(request, timeout=timeout or self.timeout) as response:
                 return response.read(MAX_DOWNLOAD_BYTES + 1)
         except HTTPError as exc:
-            raise _error_from_body(exc.code, exc.read().decode("utf-8", errors="replace")) from exc
+            with exc:
+                text = exc.read().decode("utf-8", errors="replace")
+            raise _error_from_body(exc.code, text) from exc
         except URLError as exc:
             raise Ima2BridgeError(
                 f"ima2 is not running at {self.base_url} ({exc.reason}). Start it with 'ima2 serve', or set IMA2_SERVER."

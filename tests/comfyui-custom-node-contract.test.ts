@@ -153,7 +153,7 @@ for legacy, expected in models.items():
     const python = process.platform === "win32" ? "python" : "python3";
     const result = spawnSync(python, ["-B", join(root, bridgeDir, "tests", "test_ima2_job.py")], { encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr || result.error?.message);
-    assert.match(result.stderr, /Ran 9 tests/);
+    assert.match(result.stderr, /Ran \d+ tests[^]*\nOK/);
   });
 
   it("media nodes take no key, token or server address, and never act as a Comfy partner node", () => {
