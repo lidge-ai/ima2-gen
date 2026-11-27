@@ -1,5 +1,5 @@
-import type { MediaAdapterContext, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest } from "../contract.js";
-import { assertAllowed, findModel, httpRaw, invalidRequest, MediaHttpError, normalizeMediaError, parkSyncResult, readVendorOptions, redact, takeSyncResult } from "./l3-http.js";
+import type { MediaAdapterContext, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest, MediaVoice } from "../contract.js";
+import { assertAllowed, findModel, httpJson, httpRaw, invalidRequest, MediaHttpError, normalizeMediaError, parkSyncResult, readVendorOptions, redact, takeSyncResult } from "./l3-http.js";
 
 const prefix = "ELEVENLABS";
 const docs = "https://elevenlabs.io/docs/overview/models";
@@ -10,7 +10,7 @@ const rows = [
   ["eleven-turbo-v2.5", "eleven_turbo_v2_5", 0.04],
 ] as const;
 const models: MediaModelSpec[] = rows.map(([slug, upstreamId, price]) => ({
-  id: `elevenlabs/${slug}`, upstreamId, vendor: "elevenlabs", label: slug, kind: "audio", tasks: ["text-to-audio"], params: {},
+  id: `elevenlabs/${slug}`, upstreamId, vendor: "elevenlabs", label: slug, kind: "audio", tasks: ["text-to-audio"], params: { options: [{ name: "voice_id", type: "voice", required: true }] },
   pricing: [{ unit: "character", usd: price / 1000, variant: `$${price} per 1K characters`, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: docs,
 }));
 models.push({ id: "elevenlabs/elevenlabs-music-2.5", upstreamId: "music_v2_5", vendor: "elevenlabs", label: "Eleven Music 2.5", kind: "audio", tasks: ["text-to-audio"], params: {}, pricing: [{ unit: "minute", usd: 0.15, source: priceUrl, checkedAt: "2026-11-26" }], docsUrl: "https://elevenlabs.io/docs/api-reference/music/compose" });
@@ -55,6 +55,35 @@ async function submit(ctx: MediaAdapterContext, request: MediaSubmitRequest) {
   const mimeType = format.startsWith("mp3") ? "audio/mpeg" : format.startsWith("wav") ? "audio/wav" : "audio/L16";
   return parkSyncResult(prefix, { status: "succeeded", outputs: [{ kind: "audio", bytes: new Uint8Array(await res.arrayBuffer()), mimeType }] });
 }
+/** https://elevenlabs.io/docs/api-reference/voices/search (read 2026-11-27): GET /v2/voices, 100 per page. */
+const VOICE_PAGES = 5;
+type ElevenVoice = { voice_id?: unknown; name?: unknown; category?: unknown; description?: unknown; preview_url?: unknown; labels?: Record<string, unknown> | null };
+const text = (value: unknown): string | undefined => (typeof value === "string" && value.trim() ? value.trim() : undefined);
+function toVoice(raw: ElevenVoice): MediaVoice | undefined {
+  const id = text(raw.voice_id);
+  if (!id) return undefined;
+  const gender = text(raw.labels?.gender)?.toLowerCase();
+  const description = text(raw.description), language = text(raw.labels?.language), previewUrl = text(raw.preview_url);
+  return {
+    id, name: text(raw.name) ?? id,
+    ...(description ? { description } : {}), ...(language ? { language } : {}),
+    ...(gender === "female" || gender === "male" || gender === "neutral" ? { gender } : {}),
+    ...(previewUrl?.startsWith("https://") ? { previewUrl } : {}),
+    ...(raw.category === "cloned" || raw.category === "generated" || raw.category === "professional" ? { owned: true } : {}),
+  };
+}
+async function listVoices(ctx: MediaAdapterContext): Promise<MediaVoice[]> {
+  const voices: MediaVoice[] = [];
+  let token: string | undefined;
+  for (let page = 0; page < VOICE_PAGES; page += 1) {
+    const url = base(ctx) + "/v2/voices?page_size=100&include_total_count=false" + (token ? "&next_page_token=" + encodeURIComponent(token) : "");
+    const body = await httpJson<{ voices?: ElevenVoice[]; has_more?: boolean; next_page_token?: string | null }>(ctx, "ElevenLabs voices", url, { headers: headers(ctx) });
+    for (const raw of body.voices ?? []) { const voice = toVoice(raw); if (voice) voices.push(voice); }
+    token = body.has_more ? text(body.next_page_token) : undefined;
+    if (!token) break;
+  }
+  return voices;
+}
 async function safe<T>(ctx: MediaAdapterContext, work: () => Promise<T>): Promise<T> {
   try { return await work(); } catch (error) {
     if (error instanceof MediaHttpError) {
@@ -75,6 +104,7 @@ export const adapter: MediaProviderAdapter = {
     try { await httpRaw(ctx, "ElevenLabs", `${base(ctx)}/v1/user`, { headers: headers(ctx) }); return { ok: true }; }
     catch (error) { if (error instanceof MediaHttpError && (error.status === 401 || error.status === 403)) return { ok: false, reason: "Invalid or unauthorized key" }; throw error; }
   }); },
+  async listVoices(ctx) { return safe(ctx, () => listVoices(ctx)); },
   async submit(ctx, request) { return safe(ctx, () => submit(ctx, request)); }, async poll(_ctx, job) { return takeSyncResult(prefix, job); },
   // Messages are scrubbed where they are raised (safe, httpRaw); keep the vendor detail.
   normalizeError: (error) => normalizeMediaError(prefix, error),
