@@ -64,6 +64,8 @@ for (const locale of ["en", "ko"] as const) {
           await expect(app.page.locator(".generate-row__media:visible")).toContainText("FLUX.2 klein (my workflow)");
           const estimate = card(app.page).locator(".media-estimate");
           await expect(estimate).toBeVisible();
+          // The estimate is the server's answer: the note under it appears once that answer is in.
+          await expect(estimate.locator("small")).toBeVisible();
           await estimate.scrollIntoViewIfNeeded();
         }
         expect(await app.page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), "no sideways scroll").toBe(true);
