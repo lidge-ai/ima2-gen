@@ -7,6 +7,7 @@ import { buildMediaCatalog } from "../lib/providers/media/catalog.js";
 import { MediaKeySnapshot } from "../lib/providers/media/credentials.js";
 import { MediaJobError, mediaErrorBody } from "../lib/providers/media/errors.js";
 import { storeMediaInput } from "../lib/providers/media/inputs.js";
+import { billedInputSeconds, withBilledLength } from "../lib/providers/media/inputLength.js";
 import { getMediaRegistry } from "../lib/providers/media/registry.js";
 import { VENDOR_ASSET_DIR, VENDOR_ASSET_PREFIX, loadVendorLogos } from "../lib/providers/media/vendorAssets.js";
 import { launchMediaJob, prepareMediaJob, type MediaRunnerDeps } from "../lib/providers/media/runner.js";
@@ -99,7 +100,9 @@ export function registerMediaRoutes(app: Express, ctxRaw: RouteRuntimeContext, o
       const prepared = await prepareMediaJob(d, body);
       const email = webUserEmail(res);
       const spend = ctx.webAccess?.spend;
-      const estimate = estimateMediaUsd(prepared.spec, prepared.request);
+      // Lip-sync, avatar and dubbing are billed by the length of an input, which the request does not state.
+      const billedSeconds = await billedInputSeconds(prepared.spec, prepared.request, d.probeInputLength);
+      const estimate = estimateMediaUsd(prepared.spec, withBilledLength(prepared.request, billedSeconds));
       if (spend) {
         await spend.admit({ requestId, model: prepared.spec.id, email: email ?? "unknown", estimate });
       }

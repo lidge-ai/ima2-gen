@@ -41,6 +41,34 @@ export interface MediaPrice {
   checkedAt: string;
 }
 
+/**
+ * One media input a task needs. Together the entries for a task are a form the route accepts: a client
+ * that sends exactly these (and the required options) has a valid request. A route may take other shapes
+ * too (a saved avatar id, a text-to-speech line) through vendorOptions; those are not listed here.
+ */
+export interface MediaInputRequirement {
+  role: MediaInputRole;
+  min: number;
+  max: number;
+  /** Tasks this applies to. Absent: every task of the spec. */
+  tasks?: readonly MediaTask[];
+  /** The job is billed per second of this input; with several, the longest one is the upper bound. */
+  billedLength?: boolean;
+}
+
+/** A vendorOptions key a client can show as a setting. */
+export interface MediaOptionSpec {
+  /** The vendorOptions key. */
+  name: string;
+  type: "enum" | "text" | "boolean";
+  /** For "enum", in the provider's spelling. */
+  values?: readonly string[];
+  required?: boolean;
+  /** Tasks this applies to. Absent: every task of the spec. */
+  tasks?: readonly MediaTask[];
+  maxLength?: number;
+}
+
 export interface MediaModelSpec {
   /** Stable ima2 id: "<vendor>/<model>", matching Sume's public id where one exists. */
   id: string;
@@ -62,6 +90,10 @@ export interface MediaModelSpec {
     nativeAudio?: boolean;
     negativePrompt?: boolean;
     seed?: boolean;
+    /** Inputs a task needs besides the prompt (lip-sync, avatar, dubbing, subtitles). Absent: the task's usual inputs. */
+    inputs?: readonly MediaInputRequirement[];
+    /** vendorOptions a client can offer for this route. */
+    options?: readonly MediaOptionSpec[];
   };
   /** Empty when the vendor publishes no price; never guessed. */
   pricing: readonly MediaPrice[];

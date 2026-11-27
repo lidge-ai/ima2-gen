@@ -4,7 +4,7 @@ import { useStudio } from "../studio/context.tsx";
 import { Feed } from "../ui/Feed.tsx";
 import { ImageDock } from "./create/ImageDock.tsx";
 import { defaultModel, presetText } from "./create/defaults.ts";
-import { defaultsFor, emptyForm, type CreateForm } from "./create/form.ts";
+import { defaultsFor, emptyForm, handOffFailed, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
 import { readDraft, syncModelToUrl, useRestore, writeDraft } from "../studio/draft.ts";
 import { PRESETS, findPreset } from "../data/presets.ts";
@@ -50,7 +50,7 @@ export function ImagePage({ preset, model: requested }: { preset?: string; model
   const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
   const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("image") }));
-  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, ...patch }));
   useEffect(() => writeDraft("image", form.prompt), [form.prompt]);
   useEffect(() => syncModelToUrl("image", form.model), [form.model]);
   // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here.
@@ -60,7 +60,12 @@ export function ImagePage({ preset, model: requested }: { preset?: string; model
       return m && m.id !== f.model ? { ...f, prompt, model: m.id, provider: "", ...defaultsFor(m, f) } : { ...f, prompt };
     }),
   );
-  useHandOff("image", (upload, name) => set({ sourceImage: { role: "source-image", upload, name } }));
+  // "Edit" on a result: the image becomes the source, here or after opening this screen.
+  useHandOff(
+    "image",
+    (upload, name) => set({ sourceImage: { role: "source-image", upload, name } }),
+    () => set({ notice: handOffFailed() }),
+  );
   useEffect(() => {
     if (!catalog || form.model) return;
     const asked = catalog.models.find((m) => m.id === requested && m.kind === "image");

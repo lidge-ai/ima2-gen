@@ -1,5 +1,5 @@
 import { messages, tr, useT } from "../../i18n.ts";
-import type { CatalogModel } from "@ima2/studio-kit";
+import { resolutionParts, type CatalogModel } from "@ima2/studio-kit";
 import { SettingTile, type TileOption } from "../../ui/SettingTile.tsx";
 import { routePrice } from "../../ui/format.ts";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
@@ -22,6 +22,8 @@ const M = messages(
     "avoidPlaceholder": "What should not appear",
     "seed": "Seed",
     "random": "Random",
+    "upscaled": "upscaled",
+    "enhanced": "enhanced upscale",
   },
   {
     "automatic": "자동",
@@ -39,6 +41,8 @@ const M = messages(
     "avoidPlaceholder": "이미지에 나타나지 않을 내용",
     "seed": "시드",
     "random": "무작위",
+    "upscaled": "업스케일",
+    "enhanced": "고급 업스케일",
   },
 );
 
@@ -53,6 +57,14 @@ const opts = <T extends string | number>(
   values: readonly T[] | undefined,
   label: (v: T) => string = String,
 ): TileOption<T>[] => (values ?? []).map((value) => ({ value, label: label(value) }));
+
+/** "1080p-esr & 60fps" reads "1080p · enhanced upscale · 60 fps"; "1k" reads "1K". */
+export function resolutionLabel(value: string): string {
+  const parts = resolutionParts(value);
+  if (!parts) return value;
+  const tier = parts.tier ? tr(M, parts.tier === "esr" ? "enhanced" : "upscaled") : "";
+  return [parts.base, tier, parts.fps ? parts.fps + " fps" : ""].filter(Boolean).join(" · ");
+}
 
 export function routeOptions(model: CatalogModel): TileOption<string>[] {
   return [
@@ -102,7 +114,7 @@ export function ParamControls({ model, form, set, variant = "tile" }: Props) {
           icon={variant === "chip" ? "layers" : undefined}
           caption={t("resolution")}
           value={form.resolution}
-          options={opts(p.resolutions)}
+          options={opts(p.resolutions, resolutionLabel)}
           onChange={(resolution) => set({ resolution })}
         />
       ) : null}
