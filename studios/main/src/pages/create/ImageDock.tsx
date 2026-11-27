@@ -24,8 +24,6 @@ const M = messages(
     "create": "Create image",
     "sending": "Sending",
     "generate": "Generate",
-    "estimate": "Estimated {cost}",
-    "noPrice": "Price not published",
     "nokey": "Add a key to generate.",
     "unavailable": "No route is available for this model.",
     "uploadError": "Upload failed. Try again.",
@@ -44,8 +42,6 @@ const M = messages(
     "create": "이미지 생성",
     "sending": "요청 중",
     "generate": "생성",
-    "estimate": "예상 {cost}",
-    "noPrice": "공개 가격 없음",
     "nokey": "생성하려면 키를 추가해 주세요.",
     "unavailable": "이 모델을 사용할 수 있는 경로가 없어요.",
     "uploadError": "업로드하지 못했어요. 다시 시도해 주세요.",
@@ -206,7 +202,7 @@ export function ImageDock({ catalog, form, set }: Props) {
           title={create.blocked ?? undefined}
         >
           <span>{create.sending ? t("sending") : t("generate")}</span>
-          <span className="btn-cost" title={create.cost.title || undefined}>{create.cost.plain ? create.cost.text : create.cost.text === "-" || create.cost.text === "Price not published" ? t("noPrice") : t("estimate", { cost: create.cost.text })}</span>
+          <span className="btn-cost" title={create.cost.title || undefined}>{create.cost.text}</span>
         </button>
       </div>
     </form>

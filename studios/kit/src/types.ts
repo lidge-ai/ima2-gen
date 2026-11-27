@@ -96,8 +96,26 @@ export interface MediaEstimateResult {
   route: "direct" | "aggregator" | "local";
   /** Null when no single price applies, or when a local run may be billed by a paid node. */
   usd: number | null;
+  /** The server's answer in full (lib/providers/media/priceQuote.ts): every screen shows this, never its own pick. */
+  quote: MediaQuote;
+  /** The server's reason when there is no figure, in English. */
+  note?: string;
   local?: LocalRunEstimate;
 }
+
+/** What the published prices say a request costs, as the server works it out. */
+export type MediaQuote =
+  | { state: "exact"; usd: number; unit: string; quantity: number; price: MediaPrice }
+  /** A published starting price: the charge can be higher. */
+  | { state: "from"; usd: number; unit: string; quantity: number; price: MediaPrice }
+  /** Several rows still apply at different prices. */
+  | { state: "range"; min: number; max: number; unit: string; quantity: number }
+  /** Billed per megapixel, token, minute or character: the amount depends on the output. */
+  | { state: "usage"; unit: string }
+  | { state: "unpriced" }
+  | { state: "unknown" }
+  /** The route runs on the person's own machine: no provider price. */
+  | { state: "local" };
 
 export interface KeyStatus {
   keyVocabulary: string;

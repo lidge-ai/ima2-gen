@@ -1,4 +1,4 @@
-import { estimateCost, formatUsd, type Catalog } from "@ima2/studio-kit";
+import type { Catalog } from "@ima2/studio-kit";
 import { messages, useT } from "../../i18n.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Feed } from "../../ui/Feed.tsx";
@@ -20,7 +20,7 @@ const M = messages(
     notes: "Notes", notesHint: "Optional: what the sound should be like", clip: "Video", required: "Required", count: "{n} characters",
     length: "Length in seconds", lengthAuto: "Decided by the model", lengthRange: "{min} to {max}",
     route: "Run through", automatic: "Automatic", direct: "direct", aggregator: "aggregator", local: "this computer, no provider charge", noKey: "no key", noPrice: "No published price",
-    generate: "Generate", sending: "Sending", estimate: "Estimated {cost}", unpriced: "Price not published",
+    generate: "Generate", sending: "Sending", unpriced: "Price not published",
     perCharacter: "Priced per character", perLength: "Priced by length", afterVideo: "Add the video to see the price",
     nokey: "Add a key to generate.", none: "No model in this catalog makes audio yet.", loading: "Loading models", history: "History", views: "Audio views",
   },
@@ -31,7 +31,7 @@ const M = messages(
     notes: "메모", notesHint: "선택: 어떤 소리면 좋은지 적어 주세요", clip: "영상", required: "필수", count: "{n}자",
     length: "길이(초)", lengthAuto: "모델이 정해요", lengthRange: "{min}~{max}",
     route: "실행 경로", automatic: "자동", direct: "직접", aggregator: "어그리게이터", local: "이 컴퓨터에서 실행, 요금 없음", noKey: "키 없음", noPrice: "공개 가격 없음",
-    generate: "생성", sending: "요청 중", estimate: "예상 {cost}", unpriced: "공개 가격 없음",
+    generate: "생성", sending: "요청 중", unpriced: "공개 가격 없음",
     perCharacter: "글자 수에 따라 과금", perLength: "길이에 따라 과금", afterVideo: "영상을 넣으면 가격이 계산돼요",
     nokey: "생성하려면 키를 추가해 주세요.", none: "이 카탈로그에는 오디오를 만드는 모델이 아직 없어요.", loading: "모델을 불러오는 중이에요", history: "기록", views: "오디오 화면",
   },
@@ -110,16 +110,14 @@ function SoundSettings({ audio }: { audio: Audio }) {
   );
 }
 
-/** The estimate, or what it is waiting for. "Not published" is only for a route without a price. */
+/** The server's estimate, or what it is waiting for: speech text, a clip, or a length. */
 function costText(audio: Audio, t: T): string {
-  if (audio.local) return audio.local.text;
-  if (!audio.shown || audio.shown.pricing.length === 0) return t("unpriced");
-  if (audio.cost) return t("estimate", { cost: audio.cost });
-  if (audio.state.tool === "speech") return t("perCharacter");
-  if (audio.state.tool === "video") return audio.state.video ? t("perLength") : t("afterVideo");
-  // A flat price per request needs no length; estimateCost gives it as soon as a route is known.
-  const flat = estimateCost(audio.shown.pricing, {});
-  return flat.usd !== null ? t("estimate", { cost: formatUsd(flat) }) : t("perLength");
+  if (!audio.shown) return t("unpriced");
+  const { cost, state } = audio;
+  if (state.tool === "video" && !state.video) return t("afterVideo");
+  if (cost.kind === "usage" && state.tool === "speech") return t("perCharacter");
+  if ((cost.kind === "usage" || cost.kind === "unknown") && state.tool !== "speech") return t("perLength");
+  return cost.text;
 }
 
 function Foot({ audio }: { audio: Audio }) {
@@ -130,7 +128,7 @@ function Foot({ audio }: { audio: Audio }) {
       {!audio.canSend && !audio.sending && hint ? <p className="form-hint">{hint}</p> : null}
       <button className="btn btn-primary btn-generate" type="submit" disabled={!audio.canSend} title={audio.blocked ?? undefined}>
         <span>{audio.sending ? t("sending") : t("generate")}</span>
-        <span className="btn-cost" title={audio.local?.title || undefined}>{costText(audio, t)}</span>
+        <span className="btn-cost" title={audio.cost.title || undefined}>{costText(audio, t)}</span>
       </button>
     </div>
   );

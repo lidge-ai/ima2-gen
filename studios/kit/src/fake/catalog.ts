@@ -3,6 +3,7 @@
  * price here is a fixture (source "fixture:fake") and must never be shown as a
  * real vendor price outside development.
  */
+import { PRICE_ROWS } from "./priceRows.ts";
 import type {
   Catalog,
   CatalogModel,
@@ -63,7 +64,9 @@ const SOURCE = { role: "source-video", min: 1, max: 1 } as const;
 /** Routes that serve fewer tasks than their model lists. */
 const ROUTE_TASKS: Readonly<Record<string, Readonly<Record<string, readonly MediaTask[]>>>> = {
   "bytedance/seedance-2": { fal: ["text-to-video", "image-to-video"] },
+  "pixverse/pixverse-v6": { fal: ["text-to-video", "image-to-video"] },
 };
+
 
 /** Forms the talking-video routes declare, shaped like the real catalog's. */
 const LIPSYNC_FORM: Params = {
@@ -274,7 +277,17 @@ const MODELS: ModelRow[] = [
     { durationsSec: [5, 10] },
     { mirelo: 0.01, fal: 0.012 },
   ],
-  ["pixverse/pixverse-v6", "PixVerse V6", "video", T2V, V_SHORT, { pixverse: 0.06, fal: 0.08 }],
+  [
+    "pixverse/pixverse-v6", "PixVerse V6", "video", [...T2V, "video-extend"], V_SHORT, { pixverse: 0.06, fal: 0.08 },
+    // Extend keeps the source's ratio and sound; the direct route alone extends.
+    { pixverse: { ...V_SHORT, nativeAudio: true, inputs: [{ ...SOURCE, tasks: ["video-extend"] }],
+      taskFields: { "video-extend": { accepts: ["prompt", "durationSec", "resolution", "seed"], requires: ["prompt", "durationSec", "resolution"] } } } },
+  ],
+  [
+    "minimax/hailuo-h3-regen", "H3 Regeneration", "video", ["video-upscale"], { resolutions: ["2K"], nativeAudio: true }, { minimax: 0.05 },
+    { minimax: { resolutions: ["2K"], nativeAudio: true, inputs: [{ ...SOURCE, tasks: ["video-upscale"], billedLength: true }],
+      taskFields: { "video-upscale": { accepts: ["prompt", "resolution", "audio"] } } } },
+  ],
   ["recraft/recraft-v4.1", "Recraft V4.1", "image", T2I, IMG, { recraft: 0.04, fal: 0.05 }],
   ["heygen/heygen-avatar-6", "HeyGen Avatar 6", "video", ["avatar"], V_SHORT, { heygen: null }],
   [
@@ -384,7 +397,7 @@ function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
     route: PROVIDERS[providerId]!.route,
     label: PROVIDERS[providerId]!.label,
     upstreamId: providerId === "fal" || providerId === "replicate" ? providerId + ":" + id : id.split("/")[1]!,
-    pricing: pricing(kind, tasks, usd, id),
+    pricing: PRICE_ROWS[id]?.[providerId] ? [...PRICE_ROWS[id]![providerId]!] : pricing(kind, tasks, usd, id),
     docsUrl: PROVIDERS[providerId]!.consoleUrl,
     keyConfigured: keyed.has(providerId) || !!PROVIDERS[providerId]!.keyless,
     ...(PROVIDERS[providerId]!.keyless ? { keyless: true } : {}),
@@ -417,6 +430,11 @@ export function makeCatalog(keyed: ReadonlySet<string>): Catalog {
   return { providers, models: MODELS.map((row) => toModel(row, keyed)) };
 }
 
+/** The settings one route of a model accepts, as the wire catalog sends them. */
+export function routeParamsFor(model: CatalogModel, providerId: string): Params {
+  return model.routeParams?.[providerId] ?? ROUTE_PARAMS[model.id]?.[providerId] ?? model.params;
+}
+
 /** Providers keyed at start unless the caller overrides it: one direct, one aggregator, so both UI states show. */
 export const DEFAULT_KEYED: readonly string[] = ["openai", "fal"];
 
@@ -435,7 +453,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
       label: route.label,
       upstreamId: route.upstreamId,
       tasks: route.tasks ?? model.tasks,
-      params: model.routeParams?.[route.providerId] ?? ROUTE_PARAMS[model.id]?.[route.providerId] ?? model.params,
+      params: routeParamsFor(model, route.providerId),
       pricing: route.pricing,
       docsUrl: route.docsUrl,
       hasKey: route.keyConfigured,

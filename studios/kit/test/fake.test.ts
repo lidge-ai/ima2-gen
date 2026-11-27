@@ -348,3 +348,17 @@ test("a route that declares an edit task refuses fields outside it and a task it
     await client.keys.remove("xai");
   });
 });
+
+test("estimates come from the server's rule, including rows a studio-side matcher could not read", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    // PixVerse "720p audio off, no video references; 9 credits/s": extend sends no sound flag.
+    const extend = await client.media.estimate({ model: "pixverse/pixverse-v6", provider: "pixverse", task: "video-extend", durationSec: 5, resolution: "720p", inputs: [] });
+    assert.equal(extend.quote.state, "exact");
+    assert.equal(extend.usd, 0.2);
+    // MiniMax "768P to 2K output": priced for the clip's length, unknown without it.
+    const upscale = { model: "minimax/hailuo-h3-regen", provider: "minimax", task: "video-upscale" as const, resolution: "2K", inputs: [] };
+    assert.equal((await client.media.estimate(upscale)).quote.state, "unknown");
+    const sized = await client.media.estimate({ ...upscale, durationSec: 6 });
+    assert.deepEqual([sized.quote.state, sized.usd], ["exact", 0.3]);
+  });
+});
