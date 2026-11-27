@@ -175,8 +175,9 @@ test("a length in seconds reaches every input bound to it, and a workflow with n
   const bind = { prompt: { node: "2", input: "tags" }, output: { node: "9" }, duration: { node: "1", input: "duration", also: [{ node: "2", input: "duration" }] } };
   await register(fake.origin, "song", { graph, bind, params: [], mediaKind: "audio", durationRange: { minSec: 1, maxSec: 600 } });
   await register(fake.origin, "jingle", { graph, bind: { prompt: bind.prompt, output: bind.output }, params: [], mediaKind: "audio" });
+  await register(fake.origin, "frames", { graph, bind: { prompt: bind.prompt, output: bind.output, length: { node: "1", input: "duration" } }, params: [], mediaKind: "audio" });
   const specs = Object.fromEntries(listLocalSpecs().map((spec) => [spec.id, spec.params.durationRange]));
-  assert.deepEqual(specs, { "comfy/jingle": undefined, "comfy/song": { minSec: 1, maxSec: 600 } });
+  assert.deepEqual(specs, { "comfy/frames": undefined, "comfy/jingle": undefined, "comfy/song": { minSec: 1, maxSec: 600 } });
   await runToEnd(await adapter.submit(ctx(), { model: "comfy/song", task: "text-to-audio", prompt: "soft piano", durationSec: 12, inputs: [] }));
   const queued = fake.prompts[0]!.body.prompt as Record<string, { inputs: Record<string, unknown> }>;
   assert.deepEqual([queued["1"]!.inputs.duration, queued["2"]!.inputs.duration], [12, 12]);
@@ -186,6 +187,8 @@ test("a length in seconds reaches every input bound to it, and a workflow with n
   for (const [request, pattern] of [
     [{ model: "comfy/song", durationSec: 900 }, /comfy\/song takes a length from 1 to 600 seconds/],
     [{ model: "comfy/jingle", durationSec: 12 }, /comfy\/jingle has a fixed length: its workflow has no length input bound/],
+    // A video graph counts its length in frames: seconds are not converted behind the caller's back.
+    [{ model: "comfy/frames", durationSec: 5 }, /comfy\/frames sets its length in frames: send vendorOptions\.length/],
   ] as const) {
     await assert.rejects(() => adapter.submit(ctx(), { task: "text-to-audio", prompt: "x", inputs: [], ...request }), (error: unknown) => {
       const failure = error as { code?: string; message?: string };

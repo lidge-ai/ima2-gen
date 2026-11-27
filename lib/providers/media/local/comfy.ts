@@ -125,7 +125,11 @@ function readDuration(record: ComfyWorkflowRecord, request: MediaSubmitRequest):
   const seconds = request.durationSec;
   if (seconds === undefined) return undefined;
   const model = COMFY_MODEL_PREFIX + record.id;
-  if (!record.bind.duration) throw invalid(COMFY_ERR.OPTION_INVALID, model + " has a fixed length: its workflow has no length input bound. Leave the length out, or register the workflow again with one.");
+  if (!record.bind.duration) {
+    throw invalid(COMFY_ERR.OPTION_INVALID, model + (record.bind.length
+      ? " sets its length in frames: send vendorOptions.length (a frame count) instead of a length in seconds."
+      : " has a fixed length: its workflow has no length input bound. Leave the length out, or register the workflow again with one."));
+  }
   const range = record.durationRange;
   if (!(seconds > 0) || (range && (seconds < range.minSec || seconds > range.maxSec))) {
     throw invalid(COMFY_ERR.OPTION_INVALID, model + (range ? " takes a length from " + String(range.minSec) + " to " + String(range.maxSec) + " seconds." : " takes a length above zero seconds."));
