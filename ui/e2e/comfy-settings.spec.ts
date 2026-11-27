@@ -94,8 +94,15 @@ async function shot(page: Page, name: string, target: string): Promise<void> {
 }
 
 /** Neither the page nor the settings column scrolls sideways; only the workflow table may, inside its own box. */
-const noSidewaysScroll = (page: Page) => page.evaluate(() =>
-  [document.documentElement, document.querySelector(".settings-content")!].every((box) => box.scrollWidth <= box.clientWidth + 1));
+const sidewaysScroll = (page: Page) => page.evaluate(() => {
+  const content = document.querySelector(".settings-content")!;
+  const edge = content.getBoundingClientRect().right;
+  const boxes = [document.documentElement, content].filter((box) => box.scrollWidth > box.clientWidth + 1).map((box) => box.tagName + " " + String(box.scrollWidth) + ">" + String(box.clientWidth));
+  // Name what sticks out, so a failure says where to look. The workflow table scrolls inside its own box and is not counted.
+  const past = [...content.querySelectorAll("*")].filter((el) => !el.closest(".comfy-table-scroll") && el.getBoundingClientRect().right > edge + 1)
+    .slice(0, 4).map((el) => el.tagName + "." + String(el.className).slice(0, 40));
+  return boxes.length > 0 ? [...boxes, ...past] : [];
+});
 
 test("a workflow is checked against its server, file inputs need a role, and registering says how to use it", async ({ browser }) => {
   const app = await openStaticApp(browser, { viewport: { width: 1440, height: 900 } });
@@ -210,7 +217,7 @@ for (const locale of ["en", "ko"] as const satisfies readonly StaticLocale[]) {
         await shot(page, "comfy-list-" + tag, "#comfy-workflow-manager-title");
         await chooseFile(page, "canvas.json", EDITOR_GRAPH);
         await expect(page.getByRole("alert")).toBeVisible();
-        await shot(page, "comfy-editor-format-" + tag, "#comfy-origin");
+        await shot(page, "comfy-editor-format-" + tag, ".comfy-report--warn");
         await chooseFile(page, "wan-i2v.json", API_GRAPH);
         await expect(page.locator("#comfy-slot-52-image")).toBeVisible();
         await shot(page, "comfy-report-" + tag, ".comfy-report--warn");
@@ -218,7 +225,7 @@ for (const locale of ["en", "ko"] as const satisfies readonly StaticLocale[]) {
         await page.locator(".comfy-remotes summary").click();
         await expect(page.locator(".comfy-remote-list li")).toHaveCount(2);
         await shot(page, "comfy-remotes-" + tag, ".comfy-remotes");
-        expect(await noSidewaysScroll(page), "no sideways scroll").toBe(true);
+        expect(await sidewaysScroll(page), "no sideways scroll").toEqual([]);
         expect(app.errors).toEqual([]);
       } finally {
         await app.close();

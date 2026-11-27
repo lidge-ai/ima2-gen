@@ -368,6 +368,11 @@
   margin-top: 10px;
 }
 
+.comfy-remote-list button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .comfy-remote-list {
   list-style: none;
   margin: 8px 0 0;
