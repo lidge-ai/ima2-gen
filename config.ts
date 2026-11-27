@@ -545,6 +545,9 @@ export const config = {
       fileCfg.comfy?.maxDownloadBytes,
       100 * 1024 * 1024,
     ),
+    // Node and step progress over ComfyUI's WebSocket. Turning it off leaves
+    // queue position only; jobs run the same either way.
+    liveProgress: pickBool(env.IMA2_COMFY_LIVE_PROGRESS, fileCfg.comfy?.liveProgress, true),
   },
   dev: {
     viteDevMode: pickBool(env.VITE_IMA2_DEV, fileCfg.dev?.viteDevMode, false),

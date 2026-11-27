@@ -593,7 +593,7 @@ grokProvider.plannerModel     grokProvider.plannerTimeoutMs
 grokProvider.defaultImageModel
 log.level                    features.cardNews
 cardNewsPlanner.{enabled,model,timeoutMs,deterministicFallback}
-comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes,healthTimeoutMs,pollIntervalMs,generationTimeoutMs,maxDownloadBytes}
+comfy.{defaultUrl,uploadTimeoutMs,maxUploadBytes,healthTimeoutMs,pollIntervalMs,generationTimeoutMs,maxDownloadBytes,liveProgress}
 storage.{generatedDir,generatedDirName}
 server.{port,host,bodyLimit}
 oauth.{proxyPort,proxyEditsBody,statusTimeoutMs,restartDelayMs}
@@ -612,6 +612,9 @@ To change `provider` / `apiKey`, run `ima2 setup` or `ima2 login` instead.
 | `ima2 comfy workflow inspect <file>` | Show nodes and binding candidates without saving |
 | `ima2 comfy workflow add <file> --id <id>` | Register a workflow from an API-format JSON export or a ComfyUI PNG |
 | `ima2 comfy workflow rm <id>` | Remove a registered workflow |
+| `ima2 comfy remote ls` | List ComfyUI servers allowed beyond this computer (never prints tokens) |
+| `ima2 comfy remote add <origin> [--token-stdin]` | Allow a ComfyUI server by exact origin; the optional bearer token is read from stdin |
+| `ima2 comfy remote rm <origin>` | Stop using a server; its workflows can no longer run |
 
 ## Discovery
 

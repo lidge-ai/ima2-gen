@@ -441,7 +441,12 @@ export async function runGeneratePipeline(req: Request, res: Response, ctx: Runt
           const phase = info.running ? "streaming" : "queued";
           setJobPhase(requestId, phase);
           if (asyncMode) {
-            publish(requestId, "phase", { requestId, phase, queuePosition: info.position });
+            publish(requestId, "phase", {
+              requestId, phase, queuePosition: info.position,
+              ...(info.fraction === undefined ? {} : { progress: info.fraction }),
+              ...(info.nodeType ? { node: info.nodeType } : {}),
+              ...(info.step ? { step: info.step } : {}),
+            });
           }
         },
       });
