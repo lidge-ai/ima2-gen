@@ -289,6 +289,8 @@
 /* A wide table scrolls inside its own box on a narrow screen; the page never scrolls sideways. */
 .comfy-table-scroll {
   overflow-x: auto;
+  /* Holds the visually hidden column label, which is positioned: outside this box it would widen the page. */
+  position: relative;
 }
 
 /* The row's column takes its narrowest size from this box: without a floor of zero, an address field's
