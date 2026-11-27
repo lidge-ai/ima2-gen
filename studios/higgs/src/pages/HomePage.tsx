@@ -68,7 +68,10 @@ function KeyBanner() {
 /** Every maker in the catalog, each linking to its models and prices. */
 function MakerStrip() {
   const t = useT(M);
-  const vendors = useStudio((s) => [...new Set((s.catalog?.models ?? []).map((m) => m.vendor))].sort());
+  // Makers only: a person's own ComfyUI workflows (route local) are not a maker to browse.
+  const vendors = useStudio((s) =>
+    [...new Set((s.catalog?.models ?? []).filter((m) => m.routes.some((r) => r.route !== "local")).map((m) => m.vendor))].sort(),
+  );
   if (vendors.length === 0) return null;
   // A short row on Home; every maker and price is one link away on Models.
   const shown = vendors.slice(0, 10);
