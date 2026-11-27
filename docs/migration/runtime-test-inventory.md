@@ -206,6 +206,7 @@ Total: 661 (runtime: 353, contract: 308)
 - `tests/media-tools-routes.test.ts`
 - `tests/media-ui-catalog.test.ts`
 - `tests/media-ui-keys.test.ts`
+- `tests/media-voices.test.ts`
 - `tests/media-workflow-error-redaction.test.ts`
 - `tests/media-workflow-planner.test.ts`
 - `tests/minimax-key-validation-route.test.ts`
