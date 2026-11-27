@@ -91,7 +91,7 @@ function mediaJobSchema(clientPath: boolean): ObjectSchema {
   return object({
     model: { type: "string", minLength: 1, maxLength: MAX_SHORT_STRING }, task, adapter: shortString,
     prompt: { type: "string", maxLength: MAX_PROMPT_CHARS }, negativePrompt: { type: "string", maxLength: MAX_PROMPT_CHARS },
-    durationSec: { type: "number" }, resolution: shortString, aspectRatio: shortString,
+    durationSec: { type: "number" }, resolution: shortString, quality: shortString, aspectRatio: shortString,
     seed: { type: "integer" }, count: { type: "integer" }, audio: { type: "boolean" }, vendorOptions: { type: "object" },
     inputs: { type: "array", maxItems: MAX_INPUTS, items: clientPath ? withClientPath(mediaInputSchema()) : mediaInputSchema() },
   }, ["model", "task"]);

@@ -52,6 +52,11 @@ export function buildIdeogramBody(model: MediaModelSpec, request: MediaSubmitReq
   appendInputs(form, request, path);
   const allowed = optionNames(vector, v3, masked, request.task === "image-to-image");
   optionFields(form, request, allowed);
+  if (request.quality !== undefined) {
+    const tierField = v3 ? "rendering_speed" : "quality";
+    if (form.has(tierField)) invalid(`quality conflicts with vendorOptions.${tierField}`);
+    form.set(tierField, request.quality);
+  }
   const weight = form.get("image_weight");
   if (weight !== null && !/^(?:[1-9]\d?|100)$/.test(String(weight))) invalid("image_weight must be an integer from 1 to 100");
   if (!v3 && !vector && !request.inputs.length && form.get("quality") === "very_low") invalid("very_low requires source images");
