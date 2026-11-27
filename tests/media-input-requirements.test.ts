@@ -63,6 +63,7 @@ test("the direct talking-video routes say which inputs they need", () => {
 
 test("every declared input set is for a task the model lists, with sane counts", () => {
   assert.ok(declared.length >= 10, "expected the talking routes to declare inputs, got " + declared.length);
+  for (const { adapter, spec, task } of declared) assert.ok(TALKING.includes(task), adapter.id + " " + spec.id + " declares inputs for " + task);
   for (const { adapter, spec } of declared) {
     for (const need of spec.params.inputs!) {
       assert.ok(Number.isInteger(need.min) && need.min >= 0 && need.max >= Math.max(1, need.min), adapter.id + " " + spec.id + " " + need.role);
