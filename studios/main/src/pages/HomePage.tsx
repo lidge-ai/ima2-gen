@@ -52,7 +52,8 @@ const TOOLS: { path: string; icon: IconName; title: keyof typeof M.en; body: key
 function KeyBanner() {
   const t = useT(M);
   const keys = useStudio((s) => s.keys);
-  const loaded = useStudio((s) => s.catalog !== null);
+  // Asked only once the key list says there is none; the catalog can arrive first.
+  const loaded = useStudio((s) => s.keysLoaded);
   if (!loaded || keys.some((k) => k.configured)) return null;
   return (
     <a className="banner" href={href("keys")}>
