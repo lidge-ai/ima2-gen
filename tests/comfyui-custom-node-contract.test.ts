@@ -142,7 +142,54 @@ for legacy, expected in models.items():
     assert.ok(pkg.files.includes("integrations/comfyui/ima2_gen_bridge/__init__.py"));
     assert.ok(pkg.files.includes("integrations/comfyui/ima2_gen_bridge/nodes.py"));
     assert.ok(pkg.files.includes("integrations/comfyui/ima2_gen_bridge/README.md"));
+    for (const name of ["media_nodes.py", "ima2_client.py", "ima2_job.py", "pyproject.toml", "LICENSE"]) {
+      assert.ok(pkg.files.includes(`integrations/comfyui/ima2_gen_bridge/${name}`), name);
+    }
     assert.doesNotMatch(pkg.scripts["lint:pkg"], /'integrations\/'/);
     assert.match(pkg.scripts["lint:pkg"], /integrations\/comfyui\/ima2_gen_bridge\/nodes\.py/);
+  });
+
+  it("runs a media job end to end against a stand-in ima2: budget check, upload, wait, cancel", () => {
+    const python = process.platform === "win32" ? "python" : "python3";
+    const result = spawnSync(python, ["-B", join(root, bridgeDir, "tests", "test_ima2_job.py")], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+    assert.match(result.stderr, /Ran \d+ tests[^]*\nOK/);
+  });
+
+  it("media nodes take no key, token or server address, and never act as a Comfy partner node", () => {
+    const source = readSource(`${bridgeDir}/media_nodes.py`);
+    const inputs = [...source.matchAll(/io\.\w+\.Input\("([a-z_]+)"/g)].map((match) => match[1]);
+    assert.ok(inputs.includes("model") && inputs.includes("max_usd"));
+    // server_url exists only on the original node, kept so saved workflows load; it is loopback-checked there.
+    assert.deepEqual(inputs.filter((name) => /key|token|secret|password|server|url|host/.test(name)), ["server_url"]);
+    // is_api_node would make ComfyUI hand this pack the user's Comfy account token.
+    assert.doesNotMatch(source, /is_api_node/);
+    assert.match(source, /hidden=\[io\.Hidden\.unique_id\]/);
+    for (const file of ["media_nodes.py", "ima2_client.py", "ima2_job.py", "__init__.py"]) {
+      const code = readSource(`${bridgeDir}/${file}`);
+      // Comfy Registry standards: no eval or exec, no installing packages at run time, no shelling out.
+      assert.doesNotMatch(code, /\beval\(|\bexec\(|subprocess|os\.system|pip install|shell=True/, file);
+    }
+  });
+
+  it("loads through the V3 entry point when ComfyUI has it and falls back to the original node when it does not", () => {
+    const init = readSource(`${bridgeDir}/__init__.py`);
+    assert.match(init, /from \.media_nodes import comfy_entrypoint/);
+    assert.match(init, /except ImportError:/);
+    const media = readSource(`${bridgeDir}/media_nodes.py`);
+    assert.match(media, /node_id="Ima2Generate"/, "the original node keeps its id under the V3 entry point");
+    for (const id of ["Ima2MediaImage", "Ima2MediaVideo", "Ima2MediaAudio"]) assert.match(media, new RegExp(`node_id="${id}"|"${id}", "ima2`));
+  });
+
+  it("is packaged for the Comfy Registry under the agreed names", () => {
+    const toml = readSource(`${bridgeDir}/pyproject.toml`);
+    assert.match(toml, /^name = "comfyui-ima2"$/m);
+    assert.match(toml, /^version = "\d+\.\d+\.\d+"$/m);
+    assert.match(toml, /^license = \{ file = "LICENSE" \}$/m);
+    assert.match(toml, /^Repository = "https:\/\/github\.com\/lidge-ai\/ima2-gen\/tree\/main\/integrations\/comfyui\/ima2_gen_bridge"$/m);
+    assert.match(toml, /^PublisherId = "lidge-ai"$/m);
+    assert.match(toml, /^DisplayName = "ima2 for ComfyUI"$/m);
+    assert.match(toml, /^dependencies = \[\]$/m);
+    assert.equal(readSource(`${bridgeDir}/LICENSE`), readSource("LICENSE"));
   });
 });

@@ -13,6 +13,13 @@ const M = messages(
     "body2": "Presets fill in camera moves and settings. You can edit everything they set.",
     "step3": "Generate",
     "body3": "ima2 runs the model with your own key and saves the result to Assets.",
+    "audio": "Make speech, music and sound",
+    "audioStep1": "Pick what to make",
+    "audioBody1": "A voice reading your text, music or a sound effect from a description, or sound made to fit a clip.",
+    "audioStep2": "Write it",
+    "audioBody2": "Type the script or describe the sound. For speech, choose a voice from the provider's own list.",
+    "audioStep3": "Generate",
+    "audioBody3": "ima2 runs the model with your own key and saves the result to Assets.",
     "speak": "Make a face or a clip speak",
     "speakStep1": "Add the face",
     "speakBody1": "A photo with one clear face, or a video of the person speaking.",
@@ -32,6 +39,13 @@ const M = messages(
     "body2": "프리셋이 카메라 움직임과 설정을 채워요. 모든 설정을 바꿀 수 있어요.",
     "step3": "생성",
     "body3": "ima2가 내 키로 모델을 사용하고 결과를 에셋에 저장해요.",
+    "audio": "음성, 음악, 효과음을 만들어요",
+    "audioStep1": "만들 것 고르기",
+    "audioBody1": "내 글을 읽는 목소리, 설명으로 만드는 음악이나 효과음, 영상에 맞춘 소리 중에서 골라요.",
+    "audioStep2": "내용 쓰기",
+    "audioBody2": "대본을 쓰거나 소리를 설명해 주세요. 음성은 제공업체의 목소리 목록에서 목소리를 골라요.",
+    "audioStep3": "생성",
+    "audioBody3": "ima2가 내 키로 모델을 사용하고 결과를 에셋에 저장해요.",
     "speak": "얼굴이나 영상 속 인물이 말하게 해요",
     "speakStep1": "얼굴 추가",
     "speakBody1": "얼굴 하나가 또렷한 사진이나, 말하는 사람이 나오는 영상을 추가해 주세요.",
@@ -45,9 +59,10 @@ const M = messages(
 const STEPS = {
   plain: [["step1", "body1"], ["step2", "body2"], ["step3", "body3"]],
   speak: [["speakStep1", "speakBody1"], ["speakStep2", "speakBody2"], ["speakStep3", "speakBody3"]],
+  audio: [["audioStep1", "audioBody1"], ["audioStep2", "audioBody2"], ["audioStep3", "audioBody3"]],
 } as const;
 
-export function HowItWorks({ kind }: { kind: "image" | "video" | "speak" }) {
+export function HowItWorks({ kind }: { kind: "image" | "video" | "speak" | "audio" }) {
   const t = useT(M);
   return (
     <section className="how" aria-label={t("label")}>
@@ -56,7 +71,7 @@ export function HowItWorks({ kind }: { kind: "image" | "video" | "speak" }) {
         {t("lead")}
       </p>
       <ol className="how-steps">
-        {STEPS[kind === "speak" ? "speak" : "plain"].map(([step, body], index) => (
+        {STEPS[kind === "speak" || kind === "audio" ? kind : "plain"].map(([step, body], index) => (
           <li key={step}>
             <span className="how-num" aria-hidden>
               {index + 1}

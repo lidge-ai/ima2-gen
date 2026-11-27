@@ -3,11 +3,12 @@ import { StudioApiError, estimateCost, formatUsd, type Catalog, type CatalogMode
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { syncModelToUrl } from "../../studio/draft.ts";
 import { spendBlock } from "../../studio/spend.ts";
+import { useLocalCost } from "../../ui/localCost.ts";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 import { availableTasks, defaultModel, defaultOptions, emptyState, problem, resolve, seconds, toBody, type SpeakState } from "./speakForm.ts";
 
 /** Length of an uploaded audio or video file as the browser reads it; null when it cannot. */
-function mediaSeconds(url: string, kind: "audio" | "video"): Promise<number | null> {
+export function mediaSeconds(url: string, kind: "audio" | "video"): Promise<number | null> {
   return new Promise((done) => {
     const element = document.createElement(kind);
     element.preload = "metadata";
@@ -50,6 +51,8 @@ export function useSpeak(catalog: Catalog, requested: string | undefined) {
   const quote = priced && billed !== null
     ? estimateCost(priced.pricing, { durationSec: billed, ...(state.resolution ? { resolution: state.resolution } : {}) })
     : null;
+  // A ComfyUI workflow on this computer: run time instead of a price.
+  const local = useLocalCost(model, route, () => (model && form && route ? toBody(model, form, state, route.providerId) : null));
   const missing = problem(model, form, state);
   // A shared web instance runs only what it can price, so an unmeasured length is named before sending.
   const blocked = missing ?? (route && webSpend && model ? spendBlock(webSpend, [{ label: model.label, usd: quote?.usd ?? null }], quote?.usd ?? null) : null);
@@ -80,7 +83,7 @@ export function useSpeak(catalog: Catalog, requested: string | undefined) {
     }
   };
   return {
-    state, model, form, choice, route, priced, billed, blocked, sending, error,
+    state, model, form, choice, route, priced, billed, blocked, sending, error, local,
     cost: quote ? formatUsd(quote) : null,
     canSend: !!route && !blocked && !sending,
     setTask: (task: TalkingTask) => setState((s) => withModel({ ...s, task }, defaultModel(catalog, task))),

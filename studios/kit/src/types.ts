@@ -15,10 +15,11 @@ import type {
   MediaPrice,
   MediaProviderError,
   MediaTask,
+  MediaVoice,
 } from "../../../lib/providers/media/contract.ts";
 
 export type {
-  MediaInputRequirement, MediaInputRole, MediaKind, MediaModelSpec, MediaOptionSpec, MediaPrice, MediaProviderError, MediaTask,
+  MediaInputRequirement, MediaInputRole, MediaKind, MediaModelSpec, MediaOptionSpec, MediaPrice, MediaProviderError, MediaTask, MediaVoice,
 };
 
 /** One adapter that can run a model: a direct maker API, an aggregator, or the user's own machine ("local"). */
@@ -35,6 +36,14 @@ export interface CatalogRoute {
   tasks?: readonly MediaTask[];
   /** The route needs no key: screens must not ask for one or list it among keys. */
   keyless?: boolean;
+}
+
+/** GET /api/media/voices: the voices a route with a "voice" option can use. */
+export interface VoiceList {
+  provider: string;
+  voices: readonly MediaVoice[];
+  fetchedAt: string;
+  cached: boolean;
 }
 
 export interface CatalogModel {
