@@ -6,6 +6,7 @@ import { ModelName } from "../../ui/ModelName.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import { UploadSlot } from "../../ui/UploadSlot.tsx";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
+import { lengthLimit } from "../../ui/format.ts";
 import type { WorkflowForm } from "./useWorkflow.ts";
 
 /** The server's cross-field rules (lib/workflows/definitions/remix*.ts check), said as the next step. */
@@ -108,7 +109,7 @@ function FileWorkflowInput({ input, form }: { input: WorkflowInputSpec; form: Wo
             role={input.role ?? "reference-image"}
             accept={input.accept ?? `${input.kind}/*`}
             value={values[index] ?? null}
-            hint={input.description}
+            hint={input.description ?? lengthLimit(input.durationSec)}
             onChange={(value) =>
               form.setFiles((old) => {
                 const next = [...(old[input.name] ?? [])];

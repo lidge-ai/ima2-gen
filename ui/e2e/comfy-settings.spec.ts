@@ -145,7 +145,10 @@ test("a workflow is checked against its server, file inputs need a role, and reg
     await expect(register).toBeEnabled();
     await register.click();
 
-    const sent = fixture.calls.find((call) => call.method === "POST" && call.path === "/api/comfy/workflows")?.body as { bind: { inputs: unknown[] }; origin: string };
+    // The click returns before the request is recorded: wait for it instead of reading at once.
+    const registered = () => fixture.calls.find((call) => call.method === "POST" && call.path === "/api/comfy/workflows");
+    await expect.poll(() => registered() !== undefined).toBe(true);
+    const sent = registered()?.body as { bind: { inputs: unknown[] }; origin: string };
     expect(sent.origin).toBe(ORIGIN);
     expect(sent.bind.inputs).toEqual([
       { kind: "image", role: "first-frame", node: "52", input: "image" }, { kind: "image", role: "last-frame", node: "53", input: "image" },
@@ -236,7 +239,10 @@ for (const locale of ["en", "ko"] as const satisfies readonly StaticLocale[]) {
         await expect(register).toBeEnabled();
         await shot(page, "comfy-promptless-" + locale + "-" + String(viewport.width), "#comfy-id");
         await register.click();
-        const sent = fixture.calls.find((call) => call.method === "POST" && call.path === "/api/comfy/workflows")?.body as { bind: Record<string, unknown>; origin: string };
+        // The click returns before the request is recorded: wait for it instead of reading at once.
+        const registered = () => fixture.calls.find((call) => call.method === "POST" && call.path === "/api/comfy/workflows");
+        await expect.poll(() => registered() !== undefined).toBe(true);
+        const sent = registered()?.body as { bind: Record<string, unknown>; origin: string };
         expect(sent.bind).toEqual({ output: { node: "9" } });
         expect(sent.origin).toBe(configured);
         expect(await sidewaysScroll(page), "no sideways scroll").toEqual([]);

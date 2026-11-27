@@ -5,7 +5,19 @@
 //
 // This makes listen(0) ask again when it is given such a port, before anyone hears "listening".
 // Nothing else about listen changes: a fixed port, a pipe or a handle is passed straight through.
+import dns from "node:dns";
 import net from "node:net";
+
+// listen(port, host) resolves the host through dns.lookup, even for an address. Some fixtures replace
+// dns.lookup with one that throws once their test is under way. The test's own listen ran before
+// that; the helper's later listen calls (the holder and the second ask) use the lookup that was in
+// place when this file loaded, for the length of the call, and put the test's back.
+const ownLookup = dns.lookup;
+function withOwnLookup(run) {
+  const current = dns.lookup;
+  dns.lookup = ownLookup;
+  try { return run(); } finally { dns.lookup = current; }
+}
 
 /** Ports fetch refuses (https://fetch.spec.whatwg.org/#port-blocking). tests/fetchable-test-ports.test.ts checks this against the runtime. */
 export const FETCH_BLOCKED_PORTS = new Set([
@@ -63,9 +75,9 @@ export function installFetchablePorts(options = {}) {
       afterClose = () => {
         // The refused port is held while asking again, so the system cannot hand it straight back.
         const holder = net.createServer();
-        const again = () => { server.once("listening", () => holder.close()); original.apply(server, args); };
+        const again = () => { server.once("listening", () => holder.close()); withOwnLookup(() => original.apply(server, args)); };
         holder.once("error", again);
-        original.call(holder, port, host, again);
+        withOwnLookup(() => original.call(holder, port, host, again));
       };
       net.Server.prototype.close.call(server);
       return false;

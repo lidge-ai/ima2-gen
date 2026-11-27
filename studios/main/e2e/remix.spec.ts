@@ -209,3 +209,17 @@ for (const lang of [
     await expect(page.getByRole("button", { name: /^(Generate|생성) \$/ })).toBeEnabled();
   });
 }
+
+for (const lang of [
+  { locale: "en", label: "Source video", hint: "4 to 15 seconds", other: "4~15초" },
+  { locale: "ko", label: "원본 영상", hint: "4~15초", other: "4 to 15 seconds" },
+] as const) {
+  test(`the source clip's length limit reads in the screen's language (${lang.locale})`, async ({ page }) => {
+    await page.addInitScript((locale) => localStorage.setItem("ima2.locale", locale), lang.locale);
+    await page.goto("/#/remix/remix-restyle");
+    // The first visit starts from an example clip; the empty slot carries the limit.
+    await page.getByRole("button", { name: lang.locale === "ko" ? lang.label + " 삭제" : "Remove " + lang.label, exact: true }).click();
+    await expect(page.getByText(lang.hint, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(lang.other, { exact: true })).toHaveCount(0);
+  });
+}

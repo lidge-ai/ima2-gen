@@ -124,11 +124,11 @@ routes/
 | `bin/lib/mcpServer.ts` | 132 | MCP server registration and dispatch |
 | `bin/lib/mcpMediaHandlers.ts` | 87 | Media MCP tool handlers and response projection |
 | `bin/lib/mcpWorkflowHandlers.ts` | 25 | Workflow MCP tool handlers |
-| `lib/providers/media/toolSchema.ts` | 172 | Media and workflow tool descriptors and schemas |
-| `lib/providers/media/estimate.ts` | 81 | Published media price estimates |
-| `routes/mediaTools.ts` | 47 | Media descriptors, estimates and workflow schema routes |
+| `lib/providers/media/toolSchema.ts` | 173 | Media and workflow tool descriptors and schemas |
+| `lib/providers/media/estimate.ts` | 84 | Published media price estimates |
+| `routes/mediaTools.ts` | 51 | Media descriptors, estimates and workflow schema routes |
 | `bin/lib/media/catalogCmd.ts` | 16 | Catalog display |
-| `bin/lib/media/common.ts` | 74 | Shared media CLI inputs and options |
+| `bin/lib/media/common.ts` | 75 | Shared media CLI inputs and options |
 | `bin/lib/media/jobCmd.ts` | 23 | Media job CLI actions |
 | `bin/lib/media/keysCmd.ts` | 58 | Media key CLI actions |
 | `bin/lib/media/progress.ts` | 18 | Media progress output |

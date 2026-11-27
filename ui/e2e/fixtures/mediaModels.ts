@@ -223,7 +223,7 @@ function estimate(fixture: MediaFixture, body: Record<string, unknown>) {
   const text = (key: string) => (typeof body[key] === "string" ? { [key]: body[key] as string } : {});
   const number = (key: string) => (typeof body[key] === "number" ? { [key]: body[key] as number } : {});
   const quote = quoteFor({ pricing, params: route.params ?? {} }, { kind: model.kind, task: String(body.task), ...text("resolution"), ...text("quality"),
-    ...(typeof body.audio === "boolean" ? { audio: body.audio } : {}), ...number("durationSec"), ...number("count") });
+    ...(typeof body.audio === "boolean" ? { audio: body.audio } : {}), ...number("durationSec"), ...number("count"), ...number("characters") });
   const unit = quoteUnit(model.kind, pricing);
   return { status: 200, json: { model: model.id, adapter: route.adapter, route: ADAPTERS[route.adapter]!.route, hasKey: fixture.keys.has(ADAPTERS[route.adapter]!.vocabulary),
     unit, quantity: "quantity" in quote ? quote.quantity : null, usd: quote.state === "exact" || quote.state === "from" ? quote.usd : null, prices: pricing, quote } };

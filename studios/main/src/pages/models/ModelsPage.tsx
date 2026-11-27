@@ -4,7 +4,7 @@ import { href } from "../../router.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
 import { VendorLogo, vendorDisplayName } from "../../ui/VendorLogo.tsx";
-import { modelKindList, routePrice } from "../../ui/format.ts";
+import { modelKindList, routeName, routePrice } from "../../ui/format.ts";
 import { messages, tr, useT } from "../../i18n.ts";
 import "../../styles/models.css";
 
@@ -92,7 +92,7 @@ function RouteLine({ route }: { route: CatalogRoute }) {
     <li className="route-line">
       <VendorLogo id={route.providerId} size={18} />
       <span className="route-line-name">
-        <span className="route-line-label" title={route.label}>{route.label}</span>
+        <span className="route-line-label" title={routeName(route)}>{routeName(route)}</span>
         {route.route === "direct" ? <span className="tag">{t("direct")}</span> : route.route === "local" ? <span className="tag">{t("local")}</span> : null}
       </span>
       {/* A local route has no published price to be missing and no key to be saved. */}

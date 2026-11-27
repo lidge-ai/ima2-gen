@@ -8,6 +8,7 @@
  * https://aistudio.google.com/docs/pricing, https://aistudio.google.com/docs/deprecations,
  * model pages under https://aistudio.google.com/docs/models/. Notes: lanes/L3-notes/google-image.md.
  */
+import { withImageForms, type ImageForm } from "./_l2/imageForm.js";
 import type {
   MediaAdapterContext, MediaInput, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest,
 } from "../contract.js";
@@ -127,7 +128,7 @@ export const adapter: MediaProviderAdapter = {
   id: "google-image", label: "Google Nano Banana", route: "direct", errorPrefix: PREFIX,
   credential: { keyVocabulary: "gemini", configKey: "geminiApiKey", envVars: ["GEMINI_API_KEY"], consoleUrl: "https://aistudio.google.com/apikey" },
   inputTransport: "inline",
-  listModels: () => MODELS,
+  listModels: () => DECLARED,
   async validateKey(ctx) {
     try {
       await httpJson(ctx, "Google models", (ctx.baseUrl ?? API) + "/models?pageSize=1", { headers: headers(ctx) });
@@ -147,3 +148,12 @@ export const adapter: MediaProviderAdapter = {
   },
   normalizeError: (error) => normalizeMediaError(PREFIX, error),
 };
+
+const edit = (images: number, accepts: ImageForm["accepts"], more: Partial<ImageForm> = {}): ImageForm =>
+  ({ task: "image-to-image", images, accepts: ["prompt", ...accepts], requires: ["prompt"], ...more });
+// One image to edit; the 2.1 and Pro models also take up to 13 more to draw from.
+const DECLARED = withImageForms(MODELS, {
+  "google/nano-banana-2.1": edit(1, ["resolution", "aspectRatio"], { references: 13 }),
+  "google/nano-banana-pro": edit(1, ["resolution", "aspectRatio"], { references: 13 }),
+  "google/nano-banana": edit(1, ["aspectRatio"]),
+});

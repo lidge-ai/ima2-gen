@@ -93,6 +93,7 @@ function mediaJobSchema(clientPath: boolean): ObjectSchema {
     prompt: { type: "string", maxLength: MAX_PROMPT_CHARS }, negativePrompt: { type: "string", maxLength: MAX_PROMPT_CHARS },
     durationSec: { type: "number" }, resolution: shortString, quality: shortString, aspectRatio: shortString,
     seed: { type: "integer" }, count: { type: "integer" }, audio: { type: "boolean" }, vendorOptions: { type: "object" },
+    maskConvention: { type: "string", enum: ["vendor", "repaint-white"], description: "What the mask input means. vendor (default): the provider's own rule, passed through. repaint-white: a PNG the size of the image, white = repaint, black = keep; only routes that declare it take it." },
     inputs: { type: "array", maxItems: MAX_INPUTS, items: clientPath ? withClientPath(mediaInputSchema()) : mediaInputSchema() },
   }, ["model", "task"]);
 }

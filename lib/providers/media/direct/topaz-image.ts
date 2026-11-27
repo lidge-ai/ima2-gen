@@ -7,6 +7,7 @@
  * Completed, GET /download/{id} returns a presigned download_url (1 hour) that
  * is fetched without the key; 409 there means "not ready yet".
  */
+import { withImageForms, type ImageForm } from "./_l2/imageForm.js";
 import type {
   MediaAdapterContext, MediaJobRef, MediaJobState, MediaModelSpec, MediaProviderAdapter, MediaSubmitRequest,
 } from "../contract.js";
@@ -150,9 +151,14 @@ export const adapter: MediaProviderAdapter = {
   errorPrefix: PREFIX,
   credential: { keyVocabulary: "topaz", envVars: ["TOPAZ_API_KEY"], configKey: "topazApiKey", consoleUrl: "https://account.topazlabs.com/manage-api" },
   inputTransport: "inline",
-  listModels: () => MODELS,
+  listModels: () => DECLARED,
   validateKey,
   submit,
   poll,
   normalizeError: (error) => normalizeUnknownError(PREFIX, error),
 };
+
+const DECLARED = withImageForms(MODELS, {
+  "topaz-labs/topaz-upscale": { task: "image-upscale", images: 1, accepts: [] },
+  "topaz-labs/topaz-upscale-creative": { task: "image-upscale", images: 1, accepts: ["prompt"] },
+} satisfies Record<string, ImageForm>);

@@ -8,6 +8,7 @@
  * any type) when done. Result state comes from the "finish-reason" header; the
  * JSON field names of the base64 variant are not documented, so bytes are used.
  */
+import { withImageForms, type ImageForm } from "./_l2/imageForm.js";
 import type {
   MediaAdapterContext, MediaJobRef, MediaJobState, MediaKind, MediaProviderAdapter, MediaSubmitRequest,
 } from "../contract.js";
@@ -119,9 +120,15 @@ export const adapter: MediaProviderAdapter = {
   errorPrefix: PREFIX,
   credential: { keyVocabulary: "stability", envVars: ["STABILITY_API_KEY"], configKey: "stabilityApiKey", consoleUrl: "https://platform.stability.ai/dashboard/api-keys" },
   inputTransport: "inline",
-  listModels: () => STABILITY_MODELS,
+  listModels: () => DECLARED,
   validateKey,
   submit,
   poll,
   normalizeError: (error) => normalizeUnknownError(PREFIX, error),
 };
+
+// The two image-to-image models need settings a plain form cannot fill, so they declare none.
+const DECLARED = withImageForms(STABILITY_MODELS, {
+  "stability/upscale-fast": { task: "image-upscale", images: 1, accepts: [] },
+  "stability/upscale-creative": { task: "image-upscale", images: 1, accepts: ["prompt", "negativePrompt", "seed"], requires: ["prompt"] },
+} satisfies Record<string, ImageForm>);

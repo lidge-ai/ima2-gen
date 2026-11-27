@@ -28,7 +28,7 @@ export function quoteFromEstimate(answer: unknown): MediaQuote {
 }
 
 /** POST /api/media/estimate body: the settings the job will send. The server chooses the price row. */
-export function estimateBody(selection: MediaSelection, adapter: string): Record<string, unknown> {
+export function estimateBody(selection: MediaSelection, adapter: string, characters?: number): Record<string, unknown> {
   const body: Record<string, unknown> = { model: selection.model, adapter, task: selection.task };
   if (selection.durationSec !== undefined) body.durationSec = selection.durationSec;
   if (selection.resolution !== undefined) body.resolution = selection.resolution;
@@ -36,5 +36,7 @@ export function estimateBody(selection: MediaSelection, adapter: string): Record
   if (selection.aspectRatio !== undefined) body.aspectRatio = selection.aspectRatio;
   if (selection.audio !== undefined) body.audio = selection.audio;
   if (selection.kind === "image") body.count = 1;
+  // Speech is priced by the text: its length is sent, not the text.
+  if (characters !== undefined && characters > 0) body.characters = characters;
   return body;
 }

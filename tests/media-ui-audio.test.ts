@@ -191,6 +191,10 @@ test("Make again restores an audio result's model and length, and asks for a voi
   }
   const spoken = remakePlan({ ...row, model: voiceModel.id, media: { ...row.media, durationSec: null } }, [voiceModel, musicModel]);
   assert.equal(spoken.ok && spoken.voiceNeeded, true);
+  // A result that recorded its options brings the voice and the switches back.
+  const recorded = remakePlan({ ...row, model: voiceModel.id, media: { ...row.media, durationSec: null, options: { voice_id: "v-rachel", nested: { a: 1 }, undeclared: true } } }, [voiceModel, musicModel]);
+  assert.equal(recorded.ok && recorded.voiceNeeded, false);
+  assert.deepEqual(recorded.ok && recorded.selection.options, { voice_id: "v-rachel" }, "only what the route still declares");
   assert.deepEqual(remakePlan({ ...row, mediaType: "video" }, [voiceModel, musicModel]), { ok: false, reason: "model-gone" });
 });
 

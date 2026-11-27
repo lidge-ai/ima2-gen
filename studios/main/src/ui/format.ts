@@ -131,3 +131,18 @@ export function vendorLabel(vendor: string): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+const NAMES = messages(
+  { comfyLocal: "ComfyUI (your server)", length: "{min} to {max} seconds" },
+  { comfyLocal: "ComfyUI (내 서버)", length: "{min}~{max}초" },
+);
+
+/** A route's name; the server sends English, so routes it names for the person's own machine are worded here. */
+export function routeName(route: Pick<CatalogRoute, "providerId" | "label">): string {
+  return route.providerId === "comfy-local" ? tr(NAMES, "comfyLocal") : route.label;
+}
+
+/** A media input's length limit, e.g. "4 to 15 seconds" / "4~15초". */
+export function lengthLimit(range: { min: number; max: number } | undefined): string | undefined {
+  return range ? tr(NAMES, "length", { min: range.min, max: range.max }) : undefined;
+}

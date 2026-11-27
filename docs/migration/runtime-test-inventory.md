@@ -196,14 +196,17 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/media-direct-veed.test.ts`
 - `tests/media-direct-vidu.test.ts`
 - `tests/media-direct-xai.test.ts`
+- `tests/media-image-forms.test.ts`
 - `tests/media-input-requirements.test.ts`
 - `tests/media-key-validate-route.test.ts`
 - `tests/media-local-comfy.test.ts`
 - `tests/media-local-route.test.ts`
+- `tests/media-mask-convention.test.ts`
 - `tests/media-mp4-probe.test.ts`
 - `tests/media-price-quote.test.ts`
 - `tests/media-publish-input.test.ts`
 - `tests/media-resolution-label.test.ts`
+- `tests/media-result-options.test.ts`
 - `tests/media-routes.test.ts`
 - `tests/media-runner.test.ts`
 - `tests/media-session-routes.test.ts`
@@ -212,6 +215,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/media-tools-routes.test.ts`
 - `tests/media-ui-catalog.test.ts`
 - `tests/media-ui-keys.test.ts`
+- `tests/media-usage-estimate.test.ts`
 - `tests/media-voices.test.ts`
 - `tests/media-workflow-error-redaction.test.ts`
 - `tests/media-workflow-planner.test.ts`
@@ -681,3 +685,4 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/vite-dev-port-contract.test.ts`
 - `tests/wand-erase.test.ts`
 - `tests/web-search-toggle-contract.test.ts`
+- `tests/windows-host-conditions.test.ts`

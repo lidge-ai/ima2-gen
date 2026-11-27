@@ -104,9 +104,18 @@ test("AU2 speech: the voice is chosen from the provider's list with a sample, Ge
   await expect(voice(page).locator(".media-voice__current")).toContainText("Rachel");
   await expect(voice(page).locator(".media-voice__pick")).toHaveCount(0);
   const estimate = card(page).locator(".media-estimate");
+  // Speech is priced by the text: 51 characters at $0.08 per 1,000, the server's figure.
+  await expect(estimate.locator(".price")).toHaveText("$0.0041");
+  await expect(estimate.locator("small").first()).toHaveText("51 characters × $0.08/1K chars");
+  await expect(hint(page)).toHaveText("Eleven v4 · est. $0.0041");
+  expect(media.calls.filter((call) => call.path === "/api/media/estimate").at(-1)!.body).toMatchObject({ characters: 51 });
+  expect(JSON.stringify(media.calls.filter((call) => call.path === "/api/media/estimate")), "the text itself is not sent for an estimate").not.toContain("seatbelt");
+  // With nothing written there is nothing to price yet.
+  await composer(page).fill("");
   await expect(estimate.locator(".price")).toHaveText("Billed by usage");
   await expect(estimate).toContainText("ElevenLabs charges this model per character");
-  await expect(hint(page)).toHaveText("Eleven v4 · billed by usage");
+  await composer(page).fill("Welcome aboard. Please keep your seatbelt fastened.");
+  await expect(estimate.locator(".price")).toHaveText("$0.0041");
   await card(page).locator(".media-prices summary").click();
   await expect(card(page).locator(".media-price").first()).toContainText("$0.08/1K chars");
 
@@ -179,6 +188,12 @@ test("AU4 music: the length may be left to the model, and a declared switch is s
   await expect(length).toHaveValue("");
   await expect(length).toHaveAttribute("placeholder", "Model decides");
   await expect(card(page).locator(".media-field-hint")).toHaveText("3–600 seconds. Leave empty to let the model decide.");
+  // No length yet, so a per-minute price has no figure; with one it does, by the second.
+  await expect(card(page).locator(".media-estimate .price")).toHaveText("Billed by usage");
+  await length.fill("45");
+  await expect(card(page).locator(".media-estimate .price")).toHaveText("$0.113");
+  await expect(card(page).locator(".media-estimate small").first()).toHaveText("45 s × $0.15/min");
+  await length.fill("");
   await expect(card(page).locator(".media-estimate .price")).toHaveText("Billed by usage");
   await expect(generate(page)).not.toHaveAttribute("aria-disabled", "true");
   await card(page).getByLabel("Instrumental only (no vocals)").check();
@@ -248,8 +263,22 @@ test("AU8 a sound result opens with a player, and Make again restores its model 
   expect(media.submissions).toEqual([]);
 }));
 
-test("AU9 Make again for speech restores the model and asks for the voice, which a result does not keep", run({ rows: [audioHistoryRow({ model: "elevenlabs/eleven-v4", filename: "l11-speech.mp3", url: "/generated/l11-speech.mp3",
-  media: { task: "text-to-audio", durationSec: null, resolution: null, aspectRatio: null, seed: null, audio: null, inputRoles: [] } })] }, async (page, media) => {
+const SPOKEN = { task: "text-to-audio", durationSec: null, resolution: null, aspectRatio: null, seed: null, audio: null, inputRoles: [] };
+const speechRow = (media: Record<string, unknown>) => audioHistoryRow({ model: "elevenlabs/eleven-v4", filename: "l11-speech.mp3", url: "/generated/l11-speech.mp3", media });
+
+test("AU9 Make again for speech restores the voice the result recorded, by name", run({ rows: [speechRow({ ...SPOKEN, options: { voice_id: "v-rachel" } })] }, async (page, media) => {
+  await page.locator(".result-actions:visible").first().getByRole("button", { name: "Make again", exact: true }).click();
+  await expect(page.locator(".toast")).toContainText("Model, settings and prompt restored. Check the estimate, then press Generate.");
+  // The result keeps the id; the name comes from the provider's list.
+  await expect(voice(page).locator(".media-voice__current")).toContainText("Rachel");
+  await expect(voice(page).locator(".media-voice__pick")).toHaveCount(0);
+  await expect(generate(page)).not.toHaveAttribute("aria-disabled", "true");
+  await generate(page).click();
+  await expect.poll(() => media.submissions.length).toBe(1);
+  expect(media.submissions[0]!.vendorOptions).toEqual({ voice_id: "v-rachel" });
+}));
+
+test("AU9b a speech result made before voices were recorded asks for the voice", run({ rows: [speechRow(SPOKEN)] }, async (page, media) => {
   await page.locator(".result-actions:visible").first().getByRole("button", { name: "Make again", exact: true }).click();
   await expect(page.locator(".toast")).toContainText("Model, settings and prompt restored. Choose a voice, then press Generate.");
   await expect(voice(page).locator(".media-voice__current")).toHaveText("Choose a voice");
