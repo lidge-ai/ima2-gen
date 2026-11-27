@@ -281,6 +281,8 @@ export interface WorkflowInputSpec {
   accept?: string;
   maxCount?: number;
   description?: string;
+  /** Length limit for a video or audio input, in seconds; screens word it in their own language. */
+  durationSec?: { min: number; max: number };
 }
 
 export interface WorkflowParamSpec {

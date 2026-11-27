@@ -171,3 +171,11 @@ test("a keyless local route keeps its place in the catalog and has no key status
   assert.equal(toKeyStatuses(withLocal).some((k) => k.keyVocabulary === "comfy-local"), false, "nothing to save a key for");
   assert.equal(toKeyStatuses(withLocal).length, toKeyStatuses(wire).length);
 });
+
+test("a clip's length limit arrives as numbers, so each screen words it in its own language", () => {
+  const def = toWorkflowDef(workflows.find((w) => w.id === "remix-restyle")!);
+  const video = def.inputs.find((i) => i.name === "video")!;
+  assert.deepEqual(video.durationSec, { min: 4, max: 15 });
+  assert.equal(video.description, undefined);
+  assert.equal(localizeWorkflow(def, "ko").inputs.find((i) => i.name === "video")?.description, undefined);
+});
