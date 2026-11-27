@@ -25,13 +25,15 @@ function isMediaJob(job: { kind: string; meta?: Record<string, unknown> }): bool
 }
 
 export function mediaRunnerDeps(ctx: RuntimeContext, overrides: Partial<MediaRunnerDeps> = {}): MediaRunnerDeps {
-  return {
+  const deps: MediaRunnerDeps = {
     registry: getMediaRegistry(),
     generatedDir: ctx.config.storage.generatedDir,
     configFile: ctx.config.storage.configFile,
     inputsDir: join(ctx.config.storage.configDir, "media-inputs"),
     ...overrides,
   };
+  // The web instance (lib/webAccess) serves remote people: routes that run on this machine are not theirs to use.
+  return ctx.webAccess ? { ...deps, registry: deps.registry.withoutLocal() } : deps;
 }
 
 export function sendMediaError(res: Response, error: unknown, scope: string): void {

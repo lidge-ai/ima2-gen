@@ -26,6 +26,8 @@ export interface StaticAppOptions {
   storage?: Record<string, string>;
   /** Key vocabularies that start with a key. */
   keys?: string[];
+  /** The catalog also lists a model on a keyless local route. */
+  localRoute?: boolean;
 }
 export interface StaticApp {
   page: Page;
@@ -89,7 +91,7 @@ export async function openStaticApp(browser: Browser, options: StaticAppOptions 
   const errors: string[] = [];
   const handler = (route: Route) => serve(route, unexpected).catch(async (error: unknown) => { unexpected.push("route-error " + String(error)); await route.abort("failed").catch(() => {}); });
   await context.route("**/*", handler);
-  const media = await installMediaFixture(context, options.keys ? { keys: options.keys } : {});
+  const media = await installMediaFixture(context, { ...(options.keys ? { keys: options.keys } : {}), ...(options.localRoute ? { local: true } : {}) });
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
   return { page, context, media, unexpected, errors,

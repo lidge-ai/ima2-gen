@@ -14,7 +14,7 @@ export interface WireLogo {
 
 export interface WireRoute {
   adapter: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   label: string;
   logo?: WireLogo | null;
   upstreamId: string;
@@ -23,6 +23,8 @@ export interface WireRoute {
   pricing: readonly MediaPrice[];
   docsUrl: string;
   hasKey: boolean;
+  /** The route needs no key (a local server); never asked for one. */
+  keyless?: boolean;
 }
 
 export interface WireModel {
@@ -48,12 +50,13 @@ export interface WireExtraField {
 export interface WireAdapter {
   id: string;
   label: string;
-  route: "direct" | "aggregator";
+  route: "direct" | "aggregator" | "local";
   logo?: WireLogo | null;
   keyVocabulary: string;
   consoleUrl: string;
   keyPrefix: string | null;
   hasKey: boolean;
+  keyless?: boolean;
   keySource: string | null;
   maskedKey?: string | null;
   extraFields: readonly WireExtraField[];

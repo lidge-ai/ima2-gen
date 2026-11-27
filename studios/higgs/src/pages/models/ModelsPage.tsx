@@ -23,6 +23,9 @@ const M = messages(
     keySaved: "Key saved",
     noKey: "No key",
     direct: "Direct",
+    local: "This computer",
+    localFree: "No provider charge",
+    noKeyNeeded: "No key needed",
     ways: "Ways to run {model}",
     use: "Use this model",
     openAdd: "Add a key to use it",
@@ -49,6 +52,9 @@ const M = messages(
     keySaved: "키 저장됨",
     noKey: "키 없음",
     direct: "직결",
+    local: "이 컴퓨터",
+    localFree: "요금 없음",
+    noKeyNeeded: "키 필요 없음",
     ways: "{model} 실행 경로",
     use: "이 모델 쓰기",
     openAdd: "키 넣고 쓰기",
@@ -85,13 +91,14 @@ function RouteLine({ route }: { route: CatalogRoute }) {
       <VendorLogo id={route.providerId} size={18} />
       <span className="route-line-name">
         <span className="route-line-label" title={route.label}>{route.label}</span>
-        {route.route === "direct" ? <span className="tag">{t("direct")}</span> : null}
+        {route.route === "direct" ? <span className="tag">{t("direct")}</span> : route.route === "local" ? <span className="tag">{t("local")}</span> : null}
       </span>
-      <span className={"route-line-price" + (priced ? "" : " is-none")} title={priceSource(route)}>
-        {priced ? routePrice(route) : t("notPublished")}
+      {/* A local route has no published price to be missing and no key to be saved. */}
+      <span className={"route-line-price" + (priced || route.route === "local" ? "" : " is-none")} title={route.route === "local" ? undefined : priceSource(route)}>
+        {route.route === "local" ? t("localFree") : priced ? routePrice(route) : t("notPublished")}
       </span>
       <span className={"key-state " + (route.keyConfigured ? "is-on" : "is-off")}>
-        {route.keyConfigured ? t("keySaved") : t("noKey")}
+        {route.keyless ? t("noKeyNeeded") : route.keyConfigured ? t("keySaved") : t("noKey")}
       </span>
     </li>
   );

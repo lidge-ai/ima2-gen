@@ -104,7 +104,10 @@ async function runToCompletion(deps: MediaRunnerDeps, prepared: PreparedMediaJob
   emit("submitted", { model: spec.id, adapter: adapter.id, providerJobId: job.providerJobId });
   const terminal = await pollUntilTerminal({
     deps, adapter, actx, job, signal: actx.signal!, secrets: credential.secrets,
-    onProgress: (p) => emit("progress", { status: p.status, progress: typeof p.progress === "number" ? p.progress : null }),
+    onProgress: (p) => emit("progress", {
+      status: p.status, progress: typeof p.progress === "number" ? p.progress : null,
+      ...(typeof p.detail === "string" && p.detail ? { detail: p.detail.slice(0, 200) } : {}),
+    }),
   });
   // A failed state already carries a normalized error; only strip secrets from its message.
   if (terminal.status === "failed") throw mediaJobErrorFromProvider({ ...terminal.error, message: redactSecrets(String(terminal.error.message ?? ""), credential.secrets) });

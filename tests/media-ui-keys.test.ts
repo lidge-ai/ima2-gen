@@ -83,6 +83,8 @@ test("a quote multiplies the applicable row by the clip length, and says when it
   const pricing = [row(0.2205, "text-to-video:480p"), row(0.473, "text-to-video:720p")];
   assert.deepEqual(quoteFor({ pricing }, selection), { state: "exact", usd: 2.365, unit: "second", quantity: 5, price: pricing[1] });
   assert.deepEqual(quoteFor({ pricing: [] }, selection), { state: "unpriced" });
+  // A local route has no price to be missing: it is quoted as local, never as "no published price".
+  assert.deepEqual(quoteFor({ pricing: [], route: "local" }, selection), { state: "local" });
   assert.deepEqual(quoteFor({ pricing }, { ...selection, task: "image-to-video" }), { state: "unknown" });
   assert.deepEqual(quoteFor({ pricing: [row(0.134, "text-to-video: starting price")] }, selection).state, "from");
   const image = { kind: "image" as const, model: "acme/still", adapter: "openai", task: "text-to-image" };

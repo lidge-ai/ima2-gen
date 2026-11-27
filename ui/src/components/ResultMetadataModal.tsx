@@ -191,8 +191,9 @@ export function ResultMetadataModal({
   addField(settingsFields, t("metadata.fields.promptMode"), item.promptMode, { compact: true });
   addField(settingsFields, t("metadata.fields.kind"), item.kind, { compact: true });
   addField(settingsFields, t("metadata.fields.mediaType"), item.mediaType, { compact: true });
-  if (isMediaResult(item) && (item.route === "direct" || item.route === "aggregator")) {
-    addField(settingsFields, t("metadata.fields.mediaRoute"), t(item.route === "direct" ? "mediaPicker.direct" : "mediaPicker.aggregator"), { compact: true });
+  if (isMediaResult(item) && (item.route === "direct" || item.route === "aggregator" || item.route === "local")) {
+    const routeLabel = item.route === "direct" ? t("mediaPicker.direct") : item.route === "aggregator" ? t("mediaPicker.aggregator") : t("mediaPicker.local");
+    addField(settingsFields, t("metadata.fields.mediaRoute"), routeLabel, { compact: true });
   }
   if (isMediaResult(item) && item.media) {
     const made = item.media;
