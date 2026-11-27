@@ -248,7 +248,7 @@ const CATEGORY: Readonly<Record<string, MediaProviderError["category"]>> = {
   [COMFY_ERR.NO_IMAGE]: "upstream", [COMFY_ERR.OUTPUT_INVALID]: "upstream", [COMFY_ERR.TIMEOUT]: "timeout",
   [COMFY_ERR.WORKFLOW_NOT_FOUND]: "not-found", [COMFY_ERR.SUBMIT_REJECTED]: "invalid-request", [COMFY_ERR.INPUT_INVALID]: "invalid-request",
   [COMFY_ERR.OPTION_INVALID]: "invalid-request", [COMFY_ERR.PAID_NODES]: "invalid-request", [COMFY_ERR.ORIGIN_NOT_ALLOWED]: "invalid-request",
-  [COMFY_ERR.WORKFLOW_BIND_INVALID]: "invalid-request", COMFY_WORKFLOW_BIND_INVALID: "invalid-request",
+  [COMFY_ERR.WORKFLOW_BIND_INVALID]: "invalid-request",
 };
 
 function normalizeError(error: unknown): MediaProviderError {

@@ -67,7 +67,8 @@ export function parseApiGraph(raw: unknown): ComfyGraph {
   return graph;
 }
 
-export type ComfyBindField = keyof ComfyWorkflowBindings;
+/** A request field with one place in the graph. File slots (bind.inputs) are a list and are handled apart. */
+export type ComfyBindField = Exclude<keyof ComfyWorkflowBindings, "inputs">;
 
 export interface BindCandidate {
   field: ComfyBindField;
