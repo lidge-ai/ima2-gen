@@ -3,7 +3,7 @@ import { messages, useT } from "../../i18n.ts";
 import { navigate } from "../../router.ts";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { ModelPicker } from "../../ui/ModelPicker.tsx";
-import { routePrice } from "../../ui/format.ts";
+import { routeName, routePrice } from "../../ui/format.ts";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import { UploadSlot } from "../../ui/UploadSlot.tsx";
 import { VideoModeTabs } from "../create/VideoModeTabs.tsx";
@@ -126,7 +126,7 @@ function RouteTile({ speak }: { speak: Speak }) {
   const price = (route: (typeof routes)[number]) => (route.pricing.length ? routePrice(route) : t("noPrice"));
   const options = routes.map((route) => ({
     value: route.providerId,
-    label: route.label,
+    label: routeName(route),
     // A route on the user's own machine has no price and no key to be missing.
     meta: route.route === "local" ? t("local") : [t(route.route), price(route), ...(route.keyConfigured ? [] : [t("noKey")])].join(" · "),
   }));

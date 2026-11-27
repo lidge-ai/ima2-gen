@@ -13,7 +13,7 @@ import { studioCommand } from "../lib/media/studioCmd.js";
 
 const HELP = `ima2 media models [--kind image|video|audio] [--vendor V] [--task T] [--model ID] [--adapter ID] [--keyed] [--max-usd N] [--json]
 ima2 media estimate --model ID --task TASK [run options] [--price-variant V] [--json]
-ima2 media run --model ID --task TASK [--prompt TEXT] [--adapter ID] [--duration N] [--resolution R] [--quality Q] [--aspect A] [--seed N] [--audio|--no-audio] [--negative TEXT] [--count N] [--input role=path|https-url|filename]... [--vendor-option key=value]... [--vendor-json JSON] [--request-id ID] [--no-wait] [--quiet] [--out DIR] [--json]
+ima2 media run --model ID --task TASK [--prompt TEXT] [--adapter ID] [--duration N] [--resolution R] [--quality Q] [--aspect A] [--seed N] [--audio|--no-audio] [--negative TEXT] [--count N] [--input role=path|https-url|filename]... [--mask-convention vendor|repaint-white] [--vendor-option key=value]... [--vendor-json JSON] [--request-id ID] [--no-wait] [--quiet] [--out DIR] [--json]
 ima2 media status ID | wait ID [--timeout SEC] | result ID [--out DIR] | jobs [--all] | cancel ID
 ima2 media keys | keys set VOCABULARY (--key-stdin | --stdin-json) [--extra name=value]... | keys validate VOCABULARY [--key-stdin | --stdin-json] [--extra name=value]... | keys delete VOCABULARY [--yes]
 ima2 media workflows | workflow ID --schema | workflow ID [--input name=value]... [--slot-model slot=model]... [--slot-route slot=route]... [--estimate] [--request-id ID] [--no-wait] [--quiet] [--out DIR]
@@ -26,13 +26,13 @@ const FLAGS: Record<string, FlagDef> = { server: string, json: boolean, help: { 
   model: string, task: string, prompt: string, adapter: string, duration: string, resolution: string, quality: string, aspect: string,
   seed: string, audio: boolean, "no-audio": boolean, negative: string, count: string, input: repeat,
   "vendor-option": repeat, "no-wait": boolean, out: string, all: boolean, estimate: boolean, "key-stdin": boolean, extra: repeat,
-  vendor: string, keyed: boolean, "max-usd": string, "price-variant": string, "vendor-json": string, "request-id": string,
+  vendor: string, keyed: boolean, "max-usd": string, "price-variant": string, "vendor-json": string, "request-id": string, "mask-convention": string,
   quiet: boolean, timeout: string, "stdin-json": boolean, yes: boolean, schema: boolean, "slot-model": repeat, "slot-route": repeat,
   "no-open": boolean };
-const RUN_FLAGS = "model task prompt adapter duration resolution quality aspect seed audio no-audio negative count input vendor-option".split(" ");
+const RUN_FLAGS = "model task prompt adapter duration resolution quality aspect seed audio no-audio negative count input vendor-option mask-convention".split(" ");
 const LEGACY = "kind model task prompt adapter duration resolution quality aspect seed audio no-audio negative count input vendor-option no-wait out all estimate key-stdin extra".split(" ");
 const ALLOWED: Record<string, string[]> = {
-  models: [...LEGACY, "vendor", "keyed", "max-usd"], run: [...LEGACY, "vendor-json", "request-id", "quiet"],
+  models: [...LEGACY, "vendor", "keyed", "max-usd"], run: [...LEGACY, "vendor-json", "request-id", "quiet", "mask-convention"],
   jobs: LEGACY, cancel: LEGACY, keys: [...LEGACY, "stdin-json", "yes"], workflows: LEGACY,
   workflow: [...LEGACY, "schema", "slot-model", "slot-route", "request-id", "quiet"],
   estimate: [...RUN_FLAGS, "price-variant", "vendor-json"], status: [], wait: ["timeout"], result: ["out"],

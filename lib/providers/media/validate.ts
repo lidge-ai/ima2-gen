@@ -10,6 +10,7 @@ export const MEDIA_TASKS: readonly MediaTask[] = [
 ];
 
 /** POST /api/media body after shape checks; inputs are still request pointers. */
+import { MASK_CONVENTIONS, assertMaskConvention, type MaskConvention } from "./maskConvention.js";
 export interface MediaJobBody extends Omit<MediaSubmitRequest, "inputs"> {
   adapter?: string;
   inputs: readonly MediaInputRef[];
@@ -50,6 +51,12 @@ function parseInputs(raw: unknown): MediaInputRef[] {
   return raw as MediaInputRef[];
 }
 
+function maskConvention(value: unknown): MaskConvention | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!MASK_CONVENTIONS.includes(value as MaskConvention)) throw invalid('maskConvention must be "vendor" or "repaint-white"');
+  return value as MaskConvention;
+}
+
 /** Shape checks only; model-specific limits are checked by validateAgainstSpec. */
 export function parseMediaJobBody(raw: unknown): MediaJobBody {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw invalid("Body must be a JSON object");
@@ -74,6 +81,7 @@ export function parseMediaJobBody(raw: unknown): MediaJobBody {
     audio: typeof audio === "boolean" ? audio : undefined,
     count: optNumber(body, "count", true),
     vendorOptions: optRecord(body, "vendorOptions"),
+    maskConvention: maskConvention(body.maskConvention),
     inputs: parseInputs(body.inputs),
   };
   // Drop absent fields so the body carries no explicit undefined (exactOptionalPropertyTypes).
@@ -92,6 +100,7 @@ function countRole(body: MediaJobBody, role: string): number {
 /** Refuses parameters the chosen route's spec does not list, instead of letting the vendor guess. */
 export function validateAgainstSpec(spec: MediaModelSpec, body: MediaJobBody): void {
   const p = spec.params;
+  assertMaskConvention(spec, body);
   checkListed(body.durationSec, p.durationsSec, "duration", spec.id);
   checkListed(body.resolution, p.resolutions, "resolution", spec.id);
   checkListed(body.aspectRatio, p.aspectRatios, "aspect ratio", spec.id);

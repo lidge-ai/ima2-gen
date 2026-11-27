@@ -14,10 +14,9 @@ function toInput(field: WireField): WorkflowInputSpec | null {
   const base = { name: field.name, label: field.label, required: field.required, ...(field.help ? { description: field.help } : {}) };
   if (field.type === "media") {
     const role = field.accept === "video" ? "source-video" : field.accept === "audio" ? "reference-audio" : "reference-image";
-    const range = field.minDurationSec && field.maxDurationSec ? field.minDurationSec + " to " + field.maxDurationSec + " seconds" : undefined;
     return {
       ...base, kind: field.accept, role, accept: field.accept + "/*", maxCount: field.max,
-      ...(base.description ? {} : range ? { description: range } : {}),
+      ...(field.minDurationSec && field.maxDurationSec ? { durationSec: { min: field.minDurationSec, max: field.maxDurationSec } } : {}),
     };
   }
   if (field.type === "text") return { ...base, kind: "text" };

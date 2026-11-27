@@ -103,11 +103,15 @@ function mediaApi(http: Http, cache: JobCache, sessionId: string | undefined) {
       return { jobId: wire.requestId, provider: wire.adapter ?? body.provider ?? "" };
     },
     job,
-    /** The server's own estimate; for a local route this is the run time instead of a price. */
+    /**
+     * The server's own estimate; for a local route this is the run time instead of a price. The text is not
+     * sent, only its length, which is what a per-character price counts.
+     */
     estimate: async (body: MediaSubmitBody): Promise<MediaEstimateResult> => {
-      const request = toWireSubmit(body);
+      const request: Record<string, unknown> = toWireSubmit(body);
       delete request.requestId;
       delete request.prompt;
+      if (body.prompt) request.characters = body.prompt.length;
       const wire = await http.request<WireMediaEstimate>("POST", "/api/media/estimate", { body: request });
       return {
         route: wire.route, usd: wire.usd, quote: toQuote(wire.quote),

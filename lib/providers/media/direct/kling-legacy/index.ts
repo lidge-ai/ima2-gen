@@ -1,3 +1,4 @@
+import { withImageForms, type ImageForm } from "../_l2/imageForm.js";
 import type {
   MediaAdapterContext,
   MediaJobRef,
@@ -177,7 +178,7 @@ export const adapter: MediaProviderAdapter = {
     extraFields: [{ name: "secretKey", envVar: "KLING_SECRET_KEY", secret: true, required: true }],
   },
   inputTransport: "inline",
-  listModels: () => models,
+  listModels: () => DECLARED,
   async validateKey(ctx) {
     try {
       await request(ctx, `${IMAGE_PATH}?pageNum=1&pageSize=1`, undefined, false, PREFIX);
@@ -198,3 +199,11 @@ export const adapter: MediaProviderAdapter = {
     );
   },
 };
+
+const edit = (images: number, accepts: ImageForm["accepts"], more: Partial<ImageForm> = {}): ImageForm =>
+  ({ task: "image-to-image", images, accepts: ["prompt", ...accepts], requires: ["prompt"], ...more });
+const DECLARED = withImageForms(models, {
+  "kling/kling-image-3": edit(1, ["resolution", "aspectRatio", "count"]),
+  "kling/kling-image-o1": edit(10, ["resolution", "aspectRatio", "count"]),
+  "kling/kling-image-3-omni": edit(10, ["resolution", "aspectRatio", "count"]),
+});

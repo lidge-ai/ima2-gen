@@ -294,6 +294,52 @@ function editFormOf(schema: EndpointSchema): { input: MediaInputRequirement; fie
   };
 }
 
+/** Tasks that rework images: the form is the image (or several), an optional mask and whichever common fields the endpoint has. */
+const IMAGE_TASKS: ReadonlySet<MediaTask> = new Set<MediaTask>(["image-to-image", "image-upscale", "image-vectorize", "image-segment"]);
+/** In the order the body builder places them, so a shared field name goes to the same key here and there. */
+const IMAGE_FIELDS: readonly MediaTaskFieldName[] = ["prompt", "negativePrompt", "resolution", "quality", "aspectRatio", "seed", "count"];
+/** A list field without a stated limit takes as many images as one request may carry. */
+const MAX_LIST_IMAGES = 16;
+
+/** What an image endpoint takes, or undefined when it has no image field or requires something a form cannot fill. */
+function imageFormOf(schema: EndpointSchema): { inputs: MediaInputRequirement[]; fields: MediaTaskFields } | undefined {
+  const used = new Set<string>();
+  const taken = new Map<MediaTaskFieldName, InputField>();
+  const required: MediaTaskFieldName[] = [];
+  for (const key of IMAGE_FIELDS) {
+    const filter = SCALAR_FILTER[key];
+    const tier = key === "quality" ? qualityField(schema) : undefined;
+    if (key === "quality" && !tier) continue;
+    const name = tier ?? pickField(schema, SCALAR_FIELDS[key], used, (field) => SCALAR_VALUE(field) && (!filter || filter(field)));
+    if (!name || used.has(name)) continue;
+    used.add(name);
+    taken.set(key, schema.fields[name] ?? {});
+    if (schema.required.includes(name)) required.push(key);
+  }
+  const role = (["source-image", "reference-image"] as const).find((candidate) => pickField(schema, ROLE_FIELDS[candidate], used, URL_FIELD));
+  const image = role ? pickField(schema, ROLE_FIELDS[role], used, URL_FIELD) : undefined;
+  if (!role || !image) return undefined;
+  used.add(image);
+  const mask = pickField(schema, ROLE_FIELDS.mask, used, URL_FIELD);
+  if (mask) used.add(mask);
+  if (!schema.required.every((name) => used.has(name))) return undefined;
+  const field = schema.fields[image] ?? {};
+  const resolutions = stringsOf(taken.get("resolution")), ratios = stringsOf(taken.get("aspectRatio"));
+  return {
+    inputs: [
+      { role, min: 1, max: field.type === "array" ? field.maxItems ?? MAX_LIST_IMAGES : 1, tasks: [schema.task] },
+      // The mask follows the provider's own rule: an endpoint schema does not say which one that is.
+      ...(mask ? [{ role: "mask" as const, min: schema.required.includes(mask) ? 1 : 0, max: 1, tasks: [schema.task] }] : []),
+    ],
+    fields: {
+      accepts: [...taken.keys()],
+      ...(required.length > 0 ? { requires: required } : {}),
+      ...(resolutions.length > 0 ? { resolutions } : {}),
+      ...(ratios.length > 0 ? { aspectRatios: ratios } : {}),
+    },
+  };
+}
+
 /** Derives the advertised MediaModelSpec params from the endpoints that serve a model. */
 export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaModelSpec["params"] {
   const has = (names: readonly string[]) => schemas.some((s) => names.some((n) => n in s.fields));
@@ -312,12 +358,17 @@ export function paramsFromSchemas(schemas: readonly EndpointSchema[]): MediaMode
   });
   // An edit task runs on the first endpoint listed for it, so that endpoint alone decides its form.
   const edits = schemas.flatMap((schema) => {
-    if (!EDIT_TASKS.has(schema.task) || tasks.has(schema.task)) return [];
+    const image = IMAGE_TASKS.has(schema.task);
+    if ((!image && !EDIT_TASKS.has(schema.task)) || tasks.has(schema.task)) return [];
     tasks.add(schema.task);
+    if (image) {
+      const form = imageFormOf(schema);
+      return form ? [{ task: schema.task, ...form }] : [];
+    }
     const form = editFormOf(schema);
-    return form ? [{ task: schema.task, ...form }] : [];
+    return form ? [{ task: schema.task, inputs: [form.input], fields: form.fields }] : [];
   });
-  const inputs = [...forms.flatMap((form) => form.inputs), ...edits.map((edit) => edit.input)];
+  const inputs = [...forms.flatMap((form) => form.inputs), ...edits.flatMap((edit) => edit.inputs)];
   const options = forms.flatMap((form) => form.options);
   return {
     ...(durations.length > 0 ? { durationsSec: durations } : {}),

@@ -404,3 +404,28 @@ test("the fake server never listens on a port fetch refuses; a refused port is h
     await server.close();
   }
 });
+
+test("per-character and per-minute prices are the server's figure; the text itself is not sent", async () => {
+  const server = await startFakeServer({ timeScale: 0.02 });
+  const sent: Record<string, unknown>[] = [];
+  const watch: typeof fetch = async (input, init) => {
+    if (String(input).endsWith("/api/media/estimate") && typeof init?.body === "string") sent.push(JSON.parse(init.body) as Record<string, unknown>);
+    return fetch(input, init);
+  };
+  try {
+    const client = createStudioClient({ baseUrl: server.url, fetch: watch });
+    const script = "Welcome aboard. Doors close in two minutes.";
+    const speech = await client.media.estimate({ model: "elevenlabs/eleven-v3", task: "text-to-audio", prompt: script, inputs: [] });
+    // 43 characters at $0.00008 is $0.00344; the server rounds up to a hundredth of a cent.
+    assert.deepEqual([speech.quote.state, speech.usd], ["exact", 0.0035]);
+    assert.equal(sent[0]?.characters, script.length);
+    assert.equal(sent[0]?.prompt, undefined);
+    const music = await client.media.estimate({ model: "elevenlabs/elevenlabs-music-2.5", provider: "fal", task: "text-to-audio", prompt: "rain", durationSec: 45, inputs: [] });
+    // 45 s of $0.20 per minute.
+    assert.deepEqual([music.quote.state, music.usd], ["exact", 0.15]);
+    const unsized = await client.media.estimate({ model: "elevenlabs/elevenlabs-music-2.5", provider: "fal", task: "text-to-audio", inputs: [] });
+    assert.equal(unsized.quote.state, "usage");
+  } finally {
+    await server.close();
+  }
+});
