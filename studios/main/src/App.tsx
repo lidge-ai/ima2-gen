@@ -7,6 +7,7 @@ import { LOCALES, messages, setLocale, useLocale, useT } from "./i18n.ts";
 import { HomePage } from "./pages/HomePage.tsx";
 import { ImagePage } from "./pages/ImagePage.tsx";
 import { VideoPage } from "./pages/VideoPage.tsx";
+import { AudioPage } from "./pages/audio/AudioPage.tsx";
 import { PresetsPage } from "./pages/PresetsPage.tsx";
 import { RemixPage } from "./pages/remix/RemixPage.tsx";
 import { DirectorPage } from "./pages/director/DirectorPage.tsx";
@@ -19,6 +20,7 @@ const M = messages(
     home: "Home",
     image: "Image",
     video: "Video",
+    audio: "Audio",
     remix: "Remix",
     director: "Director",
     models: "Models",
@@ -39,6 +41,7 @@ const M = messages(
     home: "홈",
     image: "이미지",
     video: "영상",
+    audio: "오디오",
     remix: "리믹스",
     director: "디렉터",
     models: "모델",
@@ -62,6 +65,7 @@ const NAV: { path: string; label: Key; icon: IconName; match: (r: Route) => bool
   { path: "", label: "home", icon: "explore", match: (r) => r.page === "explore" },
   { path: "image", label: "image", icon: "image", match: (r) => r.page === "create" && r.kind === "image" },
   { path: "video", label: "video", icon: "video", match: (r) => r.page === "create" && r.kind === "video" },
+  { path: "audio", label: "audio", icon: "audio", match: (r) => r.page === "audio" },
   { path: "remix", label: "remix", icon: "remix", match: (r) => r.page === "remix" },
   { path: "director", label: "director", icon: "director", match: (r) => r.page === "director" },
   { path: "models", label: "models", icon: "layers", match: (r) => r.page === "models" },
@@ -158,7 +162,7 @@ function BottomBar({ route }: { route: Route }) {
         <span className="create-pill"><Icon name="sparkle" size={20} /></span>
       </button>
       <Popover open={open} onClose={() => setOpen(false)} label={t("create")} anchor={trigger} placement="top" className="mobile-create-menu">
-        {NAV.filter((entry) => ["image", "video", "remix", "director", "models", "presets"].includes(entry.path)).map((entry) => (
+        {NAV.filter((entry) => ["image", "video", "audio", "remix", "director", "models", "presets"].includes(entry.path)).map((entry) => (
           <a key={entry.path} href={"#/" + entry.path} aria-current={entry.match(route) ? "page" : undefined} onClick={() => setOpen(false)}>
             <Icon name={entry.icon} size={18} /> {t(entry.label)}
           </a>
@@ -174,6 +178,8 @@ function Page({ route }: { route: Route }) {
   switch (route.page) {
     case "create":
       return route.kind === "video" ? <VideoPage key="video" {...route} /> : <ImagePage key="image" {...route} />;
+    case "audio":
+      return <AudioPage key="audio" {...route} />;
     case "remix":
       return <RemixPage {...route} />;
     case "director":

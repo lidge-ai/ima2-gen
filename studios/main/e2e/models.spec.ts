@@ -25,7 +25,8 @@ test("every maker is shown by logo or by its official name", async ({ page }) =>
   await page.goto("/#/");
   const strip = page.getByRole("region", { name: "Models from" });
   await expect(strip.getByRole("link")).not.toHaveCount(0);
-  for (const name of ["ByteDance", "Kling AI", "Google", "OpenAI"]) {
+  // The strip shows the first ten makers by name; these four are among them in the fixture catalog.
+  for (const name of ["ByteDance", "Kling AI", "Google", "ElevenLabs"]) {
     await expect(strip.getByTitle(name)).toBeVisible();
   }
 });

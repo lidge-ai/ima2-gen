@@ -38,7 +38,8 @@ function toModel(model: WireModel): CatalogModel {
     params: unionParams(routes),
     routes: routes.map((r) => ({
       providerId: r.adapter, route: r.route, label: r.label, upstreamId: r.upstreamId,
-      pricing: r.pricing, docsUrl: r.docsUrl, keyConfigured: r.hasKey, ...(r.keyless ? { keyless: true } : {}),
+      pricing: r.pricing, docsUrl: r.docsUrl, keyConfigured: r.hasKey, tasks: r.tasks,
+      ...(r.keyless ? { keyless: true } : {}),
     })),
     routeParams: Object.fromEntries(routes.map((r) => [r.adapter, r.params])),
     defaultRoute: model.defaultRoute,

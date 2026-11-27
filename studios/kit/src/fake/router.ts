@@ -4,6 +4,7 @@ import { makeCatalog, wireCatalog } from "./catalog.ts";
 import { workflows, estimateWorkflow } from "./workflows.ts";
 import { fakeShowcase } from "./showcase.ts";
 import type { Jobs } from "./jobs.ts";
+import { fixture } from "./media.ts";
 import type { Keys } from "./keys.ts";
 
 class Fault extends Error {
@@ -21,22 +22,26 @@ class Fault extends Error {
 }
 const invalid = () => new Fault(400, "MEDIA_INVALID_REQUEST", "Invalid request");
 const missing = () => new Fault(404, "NOT_FOUND", "Not found", "not-found");
+const TALKING = new Set(["lipsync", "avatar", "dubbing", "subtitles"]);
 /** A route that declares a form refuses a body that does not fill it, as a real adapter would. */
 function checkForm(params: import("../types.ts").MediaModelSpec["params"] | undefined, data: Record<string, unknown>): void {
   const forTask = (entry: { tasks?: readonly string[] }) => !entry.tasks || entry.tasks.includes(String(data.task));
   const needs = (params?.inputs ?? []).filter(forTask);
-  if (needs.length === 0) return;
+  const range = params?.durationRange;
+  if (range?.required && (!range.tasks || range.tasks.includes(String(data.task) as never)) && typeof data.durationSec !== "number") {
+    throw new Fault(400, "MEDIA_INVALID_REQUEST", "A length is required");
+  }
   const roles = (Array.isArray(data.inputs) ? data.inputs : []).map((input) => String((input as { role?: unknown }).role));
   for (const need of needs) {
     const count = roles.filter((role) => role === need.role).length;
     if (count < need.min || count > need.max) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Needs " + need.min + " " + need.role + " input");
   }
-  if (roles.some((role) => !needs.some((need) => need.role === role))) throw invalid();
-  if (data.prompt !== undefined || data.durationSec !== undefined || data.aspectRatio !== undefined) throw invalid();
+  if (needs.length > 0 && roles.some((role) => !needs.some((need) => need.role === role))) throw invalid();
+  if (TALKING.has(String(data.task)) && (data.prompt !== undefined || data.durationSec !== undefined || data.aspectRatio !== undefined)) throw invalid();
   const options = (data.vendorOptions ?? {}) as Record<string, unknown>;
   for (const option of (params?.options ?? []).filter(forTask)) {
     const value = options[option.name];
-    if (value === undefined ? option.required : option.values && !option.values.includes(String(value))) {
+    if (value === undefined || value === "" ? option.required : option.values && !option.values.includes(String(value))) {
       throw new Fault(400, "MEDIA_INVALID_REQUEST", "Invalid option " + option.name);
     }
   }
@@ -257,6 +262,21 @@ async function history(
   }
   throw missing();
 }
+/** A voice list like the real route's: only for a keyed provider, and "[fail]" keys are not needed here. */
+const FAKE_VOICES = [
+  { id: "voice-yeji", name: "Yeji", description: "Clear and calm, for narration", language: "ko", gender: "female" },
+  { id: "voice-bella", name: "Bella", description: "Professional, bright, warm", language: "en", gender: "female", previewUrl: "/generated/voice-preview.wav" },
+  { id: "voice-arthur", name: "Arthur", description: "Deep documentary narrator", language: "en", gender: "male" },
+  { id: "voice-sora", name: "Sora", description: "Soft-spoken storyteller", language: "ja", gender: "neutral" },
+  { id: "voice-mine", name: "My studio voice", language: "en", owned: true },
+];
+function voices(res: ServerResponse, url: URL, keys: Keys, jobs: Jobs): void {
+  const provider = url.searchParams.get("provider") ?? "";
+  if (provider !== "elevenlabs") throw new Fault(404, "MEDIA_VOICES_UNSUPPORTED", provider + " has no voice list", "not-found");
+  if (!keys.keyed.has(provider)) throw new Fault(400, "MEDIA_KEY_MISSING", "Save a key for ElevenLabs to list its voices", "auth");
+  if (!jobs.files.has("voice-preview.wav")) jobs.files.set("voice-preview.wav", fixture("audio", "voice-preview"));
+  send(res, 200, { provider, voices: FAKE_VOICES, fetchedAt: new Date().toISOString(), cached: !url.searchParams.has("refresh") });
+}
 async function upload(req: IncomingMessage, res: ServerResponse, jobs: Jobs): Promise<void> {
   const data = await body(req);
   const mimeType = req.headers["content-type"] ?? "application/octet-stream";
@@ -292,6 +312,10 @@ async function dispatch(req: IncomingMessage, res: ServerResponse, jobs: Jobs, k
   }
   if (p[1] === "keys" && p[2]) {
     await key(req, res, p, keys);
+    return;
+  }
+  if (method === "GET" && url.pathname === "/api/media/voices") {
+    voices(res, url, keys, jobs);
     return;
   }
   if (method === "POST" && url.pathname === "/api/media/inputs") {

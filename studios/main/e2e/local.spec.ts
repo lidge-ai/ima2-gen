@@ -61,3 +61,25 @@ test("in Korean, a local workflow reads 요금 없음 with its run time", async 
   await page.getByLabel("프롬프트").fill("눈 속의 여우");
   await expect(page.getByRole("button", { name: /생성/ })).toContainText("요금 없음 · 약 42초");
 });
+
+test("the audio screen reads a local ComfyUI workflow the same way: run time, no price, no key", async ({ page }) => {
+  // The fake catalog has no local audio workflow; add one the way the server lists it.
+  await page.route("**/api/media/catalog*", async (route) => {
+    const body = await (await route.fetch()).json();
+    body.models.push({
+      id: "comfy/sfx", label: "Foley loop", vendor: "comfy", kind: "audio", tasks: ["text-to-audio"],
+      routes: [{ adapter: "comfy-local", route: "local", label: "ComfyUI (your server)", upstreamId: "sfx", tasks: ["text-to-audio"],
+        params: {}, pricing: [], docsUrl: "", hasKey: true, keyless: true }],
+      defaultRoute: "comfy-local",
+    });
+    await route.fulfill({ json: body });
+  });
+  await page.route("**/api/media/estimate", (route) =>
+    route.fulfill({ json: { model: "comfy/sfx", adapter: "comfy-local", route: "local", usd: 0, quote: { state: "local" }, local: { expectedSec: 12, basis: "median of 2 earlier runs", mayBill: false } } }),
+  );
+  await page.goto("/#/audio?tool=sound&model=comfy%2Fsfx");
+  await expect(page.getByRole("button", { name: /^Model: / })).toContainText("Foley loop");
+  await expect(page.getByRole("button", { name: /^Generate/ })).toContainText("No charge · about 12 s");
+  await expect(page.getByRole("button", { name: /^Generate/ })).not.toContainText("Price not published");
+  await expect(page.getByText("Add a key to run this model")).toHaveCount(0);
+});

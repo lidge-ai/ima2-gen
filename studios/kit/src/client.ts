@@ -4,7 +4,7 @@ import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
 import { Http, StudioApiError, type HttpOptions } from "./http.ts";
 import type {
-  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, JobOutput, KeySaveBody, KeyStatus, MediaEstimateResult, MediaSubmitBody, ShowcaseItem, UploadedInput,
+  Accepted, Catalog, HistoryPage, HistoryQuery, Job, JobEvent, JobOutput, KeySaveBody, KeyStatus, MediaEstimateResult, MediaSubmitBody, ShowcaseItem, UploadedInput, VoiceList,
   WebSpend, WorkflowDef, WorkflowEstimate, WorkflowRunBody,
 } from "./types.ts";
 import type { WireAccepted, WireCatalog, WireEstimateResponse, WireHistoryPage, WireInput, WireJob, WireMediaEstimate, WireWorkflow } from "./wire.ts";
@@ -178,6 +178,14 @@ export function createStudioClient(options: StudioClientOptions = {}) {
     media: mediaApi(http, cache, options.sessionId),
     history: historyApi(http, options.browserId),
     workflows: workflowsApi(http, cache, options.sessionId),
+    /** Voices for a text-to-speech route. The server asks the provider only when its key is saved, and caches the list. */
+    voices: {
+      list: (providerId: string, options: { refresh?: boolean; signal?: AbortSignal } = {}): Promise<VoiceList> =>
+        http.request<VoiceList>("GET", "/api/media/voices", {
+          query: { provider: providerId, ...(options.refresh ? { refresh: "1" } : {}) },
+          ...(options.signal ? { signal: options.signal } : {}),
+        }),
+    },
     /** Example clips from the server's showcase folder; empty when the operator added none. */
     showcase: {
       list: async (): Promise<ShowcaseItem[]> =>
