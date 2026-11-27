@@ -130,6 +130,10 @@
   color: var(--text-dim, var(--muted));
   font-variant-numeric: tabular-nums;
 }
+.dock-reason {
+  margin: 0;
+  padding: 0 2px;
+}
 .dock-help {
   margin: 0;
   padding: 0 2px;
@@ -312,7 +316,7 @@
 }
 @media (max-width: 760px) {
   .image-page {
-    height: calc(100dvh - var(--topbar-h) - 64px);
+    height: calc(100dvh - var(--topbar-h) - var(--bottombar-h));
   }
   .dock-main {
     grid-template-columns: 1fr;
@@ -472,6 +476,6 @@
 
 /* The bottom bar is there up to 1000px (shell.css): the page ends above it, and a tall dock scrolls. */
 @media (max-width: 1000px) {
-  .image-page { height: calc(100dvh - var(--topbar-h) - 64px); }
+  .image-page { height: calc(100dvh - var(--topbar-h) - var(--bottombar-h)); }
   .dock { max-height: 60dvh; overflow-y: auto; flex-shrink: 0; }
 }

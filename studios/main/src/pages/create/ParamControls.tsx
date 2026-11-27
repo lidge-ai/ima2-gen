@@ -92,6 +92,9 @@ export function routeOptions(model: CatalogModel): TileOption<string>[] {
   ];
 }
 
+/** The route chip's text, e.g. "via fal". */
+export const routeChipText = (label: string): string => tr(M, "via", { label });
+
 /** Settings the selected model accepts. Options come from the catalog, never a fixed list. */
 export function ParamControls({ model, form, set, variant = "tile" }: Props) {
   const t = useT(M);
