@@ -102,6 +102,12 @@ export function resolutionShown(models: readonly MediaModel[], modelId: string |
   return (route ? resolutionChoices(route).find((option) => option.value === value)?.label : undefined) ?? value;
 }
 
+/** The maker's name: the catalog's logo entry when it has one, otherwise the id read as a name ("black-forest-labs" → "Black Forest Labs"). */
+export function makerName(model: Pick<MediaModel, "vendor" | "logo">): string {
+  if (model.logo?.name) return model.logo.name;
+  return model.vendor.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
 export function fetchMediaCatalog(kind: "image" | "video") {
   return jsonFetch<{ models: MediaModel[]; adapters: unknown[] }>(`/api/media/catalog?kind=${kind}`);
 }

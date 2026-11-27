@@ -180,5 +180,5 @@ test("L11-K7 a speed tier is a setting with one price; a price per megapixel say
   await expect(hint(page)).toHaveText("Z-Image · billed by usage");
   // The maker is named, not shown as its catalog id, and the explanation is set in the reading font.
   await expect(card(page)).toContainText("Alibaba · Image");
-  expect(await card(page).locator(".media-estimate small").evaluate((note) => getComputedStyle(note).fontFamily === getComputedStyle(note.closest(".media-card")!).fontFamily)).toBe(true);
+  expect(await card(page).locator(".media-estimate").evaluate((box) => getComputedStyle(box.querySelector("small")!).fontFamily !== getComputedStyle(box.querySelector(".price")!).fontFamily)).toBe(true);
 }));

@@ -37,9 +37,9 @@ export function MediaEstimate({ route, selection }: { route: MediaRoute; selecti
       {(quote.state === "exact" || quote.state === "from") && quote.price.variant ? (
         <details className="media-details"><summary>{t("mediaPicker.estimate.basis")}</summary><p>{quote.price.variant}</p></details>
       ) : null}
-      {quote.state === "range" ? <small>{t("mediaPicker.estimate.rangeNote")}</small> : null}
-      {quote.state === "usage" ? <small>{t("mediaPicker.estimate.usageNote", { provider: route.label, unit: usageUnit(quote.unit, t) })}</small> : null}
-      {quote.state === "unpriced" ? <small>{t("mediaPicker.estimate.unpricedNote", { provider: route.label })}</small> : null}
+      {quote.state === "range" ? <small className="media-estimate__note">{t("mediaPicker.estimate.rangeNote")}</small> : null}
+      {quote.state === "usage" ? <small className="media-estimate__note">{t("mediaPicker.estimate.usageNote", { provider: route.label, unit: usageUnit(quote.unit, t) })}</small> : null}
+      {quote.state === "unpriced" ? <small className="media-estimate__note">{t("mediaPicker.estimate.unpricedNote", { provider: route.label })}</small> : null}
     </div>
   );
 }
