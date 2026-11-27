@@ -345,9 +345,12 @@ Folder writes preserve tree integrity with stable errors: `INVALID_PARENT` rejec
 | `POST` | `/api/metadata/read` | `{ image }` | `{ metadata, missing? }` |
 | `POST` | `/api/comfy/export-image` | `{ filename, origin? }` | `{ ok, uploadedFilename }` |
 | `GET` | `/api/comfy/workflows` | none | `{ ok, workflows: [{ …record, health }] }` |
-| `POST` | `/api/comfy/workflows` | `{ id, label?, origin?, mediaKind?, graph? \| pngBase64?, bind, params?, replace? }` | `{ ok, workflow }` |
+| `POST` | `/api/comfy/workflows` | `{ id, label?, origin?, mediaKind?, graph? \| pngBase64?, bind, params?, replace? }` | `{ ok, workflow, server }` |
 | `DELETE` | `/api/comfy/workflows/:id` | none | `{ ok, id }` |
-| `POST` | `/api/comfy/inspect` | `{ graph? \| pngBase64? }` | `{ ok, nodes, candidates, mediaKind?, needsConfirmation }` |
+| `POST` | `/api/comfy/inspect` | `{ graph? \| pngBase64?, origin? }` | `{ ok, nodes, candidates, mediaKind?, needsConfirmation, server }` (`server`: `{ origin, reachable, missingNodes, missingChoices, paidNodes }` or `{ origin, reachable: false, reason }`) |
+| `GET` | `/api/comfy/remotes` | none | `{ ok, remotes: [{ origin, hasToken, insecure }] }` |
+| `PUT` | `/api/comfy/remotes` | `{ origin, token?, clearToken? }` | `{ ok, remote }` (the token is never returned) |
+| `DELETE` | `/api/comfy/remotes?origin=` | none | `{ ok, origin, strandedWorkflows }` |
 | `POST` | `/api/comfy/probe` | `{ origin }` | `{ ok, origin, health }` |
 
 Canvas annotation and canvas-version routes are internal editor persistence surfaces. Canvas versions are hidden from the normal Gallery and HistoryStrip visible domain; navigation should prefer source images and only display a matching canvas version inside Canvas Mode.

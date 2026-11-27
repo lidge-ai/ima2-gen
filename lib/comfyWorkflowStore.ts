@@ -30,11 +30,14 @@ export const COMFY_WORKFLOW_ERROR = {
 export class ComfyWorkflowError extends Error {
   code: string;
   status: number;
-  constructor(code: string, message: string, status = 400) {
+  /** A machine-readable reason under the code, so a client can show its own steps ("ui-format"). */
+  hint?: string;
+  constructor(code: string, message: string, status = 400, hint?: string) {
     super(message);
     this.name = "ComfyWorkflowError";
     this.code = code;
     this.status = status;
+    if (hint) this.hint = hint;
   }
 }
 
@@ -56,6 +59,12 @@ export type ComfyMediaKind = "image" | "video";
 export interface ComfyBinding {
   node: string;
   input: string;
+  /**
+   * Other inputs that must carry the same value. A size is often written twice
+   * (the empty latent and the scheduler); binding only one would run a graph
+   * that disagrees with itself.
+   */
+  also?: Array<{ node: string; input: string }>;
 }
 
 export interface ComfyWorkflowBindings {

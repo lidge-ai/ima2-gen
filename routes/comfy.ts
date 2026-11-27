@@ -2,7 +2,9 @@ import type { Express, Request, Response } from "express";
 import { exportImageToComfy, isComfyBridgeError } from "../lib/comfyBridge.js";
 import { ComfyAccess, deleteComfyRemote, isComfyRemoteError, putComfyRemote } from "../lib/comfy/access.js";
 import { probeComfyOrigins } from "../lib/comfyImageAdapter.js";
-import { deriveParams, inferBindCandidates, inferComfyMediaKind, parseApiGraph } from "../lib/comfyGraphBind.js";
+import { deriveParams, parseApiGraph } from "../lib/comfyGraphBind.js";
+import { describeParams } from "../lib/comfy/detect.js";
+import { inspectComfyWorkflow } from "../lib/comfy/inspect.js";
 import { extractComfyApiGraph, isPngBuffer } from "../lib/comfyPngWorkflow.js";
 import {
   deleteWorkflow,
@@ -27,16 +29,18 @@ function hasExactBodyShape(body: unknown): body is { filename: string } {
   return keys.length === 1 && !!onlyKey && ALLOWED_BODY_KEYS.has(onlyKey) && typeof obj.filename === "string";
 }
 
-function errorPayload(code: string, message: string) {
+function errorPayload(code: string, message: string, hint?: string) {
   return {
     ok: false,
-    error: { code, message },
+    error: { code, message, ...(hint ? { hint } : {}) },
   };
 }
 
 export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   const loadAccess = () => ComfyAccess.load(ctx.config.storage.configFile);
+  /** Node schemas are a handful of small reads; the health probe's budget is too tight for a server that is busy rendering. */
+  const schemaTimeoutMs = Math.max(ctx.config.comfy.healthTimeoutMs, 5_000);
 
   /**
    * Keeps ctx.comfyWorkflows in step with the store after a write.
@@ -51,7 +55,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
   const failWorkflow = (res: Response, error: unknown) => {
     if (isComfyWorkflowError(error)) {
-      return res.status(error.status).json(errorPayload(error.code, error.message));
+      return res.status(error.status).json(errorPayload(error.code, error.message, error.hint));
     }
     if (isComfyBridgeError(error)) {
       const bridge = error as Error & { code: string; status: number };
@@ -106,14 +110,18 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
 
   /**
    * Parses without saving, so the caller can confirm ambiguous bindings first.
-   * Two CLIPTextEncode nodes cannot be told apart by the machine, and guessing
-   * swaps positive and negative silently.
+   *
+   * The server the workflow will run on is asked what its nodes accept, so the
+   * prompt a sampler's positive input leads to is found by following the graph,
+   * and the answer lists the nodes and model files that server does not have.
+   * When it cannot be reached, the class-name rules still propose what they can.
    */
   app.post("/api/comfy/inspect", async (req: Request, res: Response) => {
     try {
       const graph = graphFromBody(req.body);
-      const candidates = inferBindCandidates(graph);
-      const mediaKind = inferComfyMediaKind(graph);
+      const requested = (req.body ?? {}) as { origin?: unknown };
+      const target = (await loadAccess()).target(typeof requested.origin === "string" ? requested.origin : ctx.config.comfy.defaultUrl);
+      const { candidates, mediaKind, server } = await inspectComfyWorkflow(graph, target, schemaTimeoutMs);
       return res.json({
         ok: true,
         nodes: Object.entries(graph).map(([id, node]) => ({
@@ -124,6 +132,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         candidates,
         ...(mediaKind ? { mediaKind } : {}),
         needsConfirmation: candidates.some((candidate) => !candidate.unambiguous),
+        server,
       });
     } catch (error) {
       return failWorkflow(res, error);
@@ -205,7 +214,16 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           "A prompt binding and an output node are required. Call /api/comfy/inspect first and confirm the candidates.",
         ));
       }
-      const inferredMediaKind = inferComfyMediaKind(graph, bind.output.node);
+      const access = await loadAccess();
+      const target = access.target(typeof body.origin === "string" ? body.origin : ctx.config.comfy.defaultUrl);
+      const inspection = await inspectComfyWorkflow(graph, target, schemaTimeoutMs, bind.output.node);
+      if (inspection.mediaKind === "audio") {
+        throw new ComfyWorkflowError(
+          COMFY_WORKFLOW_ERROR.MEDIA_KIND_INVALID,
+          `Workflow output node '${bind.output.node}' saves audio. Only image and video workflows can be registered here.`,
+        );
+      }
+      const inferredMediaKind = inspection.mediaKind;
       const mediaKind = body.mediaKind === undefined
         ? inferredMediaKind ?? "image"
         : validateComfyMediaKind(body.mediaKind);
@@ -218,14 +236,16 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const record = await putWorkflow({
         id: typeof body.id === "string" ? body.id : "",
         label: typeof body.label === "string" ? body.label : String(body.id ?? ""),
-        origin: typeof body.origin === "string" ? body.origin : ctx.config.comfy.defaultUrl,
+        origin: target.origin,
         mediaKind,
         graph,
         bind,
-        params: Array.isArray(body.params) ? body.params : deriveParams(graph, bind),
-      }, { allowReplace: body.replace === true });
+        params: Array.isArray(body.params) ? body.params
+          : inspection.info ? describeParams(graph, bind, inspection.info) : deriveParams(graph, bind),
+      }, { allowReplace: body.replace === true, access });
       await refreshWorkflows();
-      return res.json({ ok: true, workflow: record });
+      // Registration does not wait for a missing node or model to be installed; it says what is missing.
+      return res.json({ ok: true, workflow: record, server: inspection.server });
     } catch (error) {
       return failWorkflow(res, error);
     }
