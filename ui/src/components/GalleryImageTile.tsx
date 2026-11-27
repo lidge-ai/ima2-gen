@@ -2,6 +2,8 @@ import type { DragEvent, MouseEvent } from "react";
 import { useCallback, useMemo } from "react";
 import type { GenerateItem } from "../types";
 import { isVideoItem } from "../lib/videoMedia";
+import { isAudioItem } from "../lib/audioMedia";
+import { AudioThumbPlaceholder } from "./AudioThumbPlaceholder";
 import { buildVideoDragPayload } from "../lib/videoContinuity";
 import { VideoThumbPlaceholder } from "./VideoThumbPlaceholder";
 import { CHAINING_ACTIONS, executeChaining, type ChainingActionId } from "../lib/resultChaining";
@@ -106,10 +108,12 @@ export function GalleryImageTile({ item, active, itemRef, onSelect, onDelete, on
         className={`gallery__tile${active ? " gallery__tile--active" : ""}`}
         onClick={() => onSelect(item)}
         title={item.prompt ?? ""}
-        draggable
+        draggable={!isAudioItem(item)}
         onDragStart={onDragStart}
       >
-        {isVideoItem(item) ? (
+        {isAudioItem(item) ? (
+          <div className="gallery__tile-video-wrap"><AudioThumbPlaceholder className="gallery__tile-video" /></div>
+        ) : isVideoItem(item) ? (
           <div className="gallery__tile-video-wrap">
             {item.thumb ? (
               <img

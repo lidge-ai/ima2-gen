@@ -15,8 +15,34 @@ export interface MediaPrice {
   checkedAt: string;
 }
 
+export type MediaKind = "image" | "video" | "audio";
+
+/** A vendorOptions key the route declares as a setting. "voice" takes an id from GET /api/media/voices. */
+export interface MediaOptionSpec {
+  name: string;
+  type: "enum" | "text" | "boolean" | "voice";
+  values?: readonly string[];
+  required?: boolean;
+  tasks?: readonly string[];
+  maxLength?: number;
+}
+
+/** One media input a task needs on a route. */
+export interface MediaInputRequirement { role: string; min: number; max: number; tasks?: readonly string[] }
+
+/** The common fields one task takes on one route, where that differs from the route's lists. */
+export interface MediaTaskFields {
+  accepts: readonly string[];
+  requires?: readonly string[];
+  durationsSec?: readonly number[];
+  resolutions?: readonly string[];
+  aspectRatios?: readonly string[];
+}
+
 export interface MediaParams {
   durationsSec?: readonly number[];
+  /** A free length in seconds instead of a list (audio). */
+  durationRange?: { minSec: number; maxSec: number; tasks?: readonly string[]; required?: boolean };
   resolutions?: readonly string[];
   aspectRatios?: readonly string[];
   /** Quality tiers this route prices separately, in the provider's spelling. */
@@ -26,6 +52,9 @@ export interface MediaParams {
   nativeAudio?: boolean;
   negativePrompt?: boolean;
   seed?: boolean;
+  inputs?: readonly MediaInputRequirement[];
+  options?: readonly MediaOptionSpec[];
+  taskFields?: Readonly<Record<string, MediaTaskFields>>;
 }
 
 export interface MediaRoute {
@@ -50,7 +79,7 @@ export interface MediaModel {
   label: string;
   vendor: string;
   logo: MediaLogo | null;
-  kind: "image" | "video" | "audio";
+  kind: MediaKind;
   tasks: readonly string[];
   routes: readonly MediaRoute[];
   defaultRoute: string | null;
@@ -111,7 +140,7 @@ export function makerName(model: Pick<MediaModel, "vendor" | "logo">): string {
   return model.vendor.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 
-export function fetchMediaCatalog(kind: "image" | "video") {
+export function fetchMediaCatalog(kind: MediaKind) {
   return jsonFetch<{ models: MediaModel[]; adapters: unknown[] }>(`/api/media/catalog?kind=${kind}`);
 }
 

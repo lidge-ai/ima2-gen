@@ -162,6 +162,7 @@ function readJobModel(job: object): string | null {
 function kindLabel(kind: string | undefined, t: Translator): string {
   if (kind?.startsWith("mcp-")) return t("inflight.kindMcp");
   if (kind === "video") return t("inflight.kindVideo");
+  if (kind === "audio") return t("inflight.kindAudio");
   if (kind === "node") return t("inflight.kindNode");
   return t("inflight.kindImage");
 }

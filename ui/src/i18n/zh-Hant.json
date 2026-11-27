@@ -51,7 +51,7 @@
       "minute": "分鐘",
       "character": "個字元"
     },
-    "cardIdle": "用你自己的 API 金鑰執行圖片與影片模型，按提供商的原價計費。",
+    "cardIdle": "使用你自己的 API 金鑰，以服務商原價執行圖片、影片和音訊模型。",
     "change": "更換模型",
     "useBuiltin": "回到內建提供商",
     "browseAll": "查看全部模型…",
@@ -65,14 +65,16 @@
       "image-to-image": "編輯圖片",
       "text-to-video": "文字生成",
       "image-to-video": "圖片生成",
-      "reference-to-video": "參考圖生成"
+      "reference-to-video": "參考圖生成",
+      "text-to-audio": "文字生成"
     },
     "taskNeeds": {
       "text-to-image": "只使用提示詞。",
       "image-to-image": "編輯輸入區的第一張圖片；支援多張的模型會把其餘圖片當作參考。",
       "text-to-video": "只使用提示詞。",
       "image-to-video": "把輸入區的一張圖片作為首幀。",
-      "reference-to-video": "參考輸入區的圖片生成新場景。"
+      "reference-to-video": "參考輸入區的圖片生成新場景。",
+      "text-to-audio": "只使用提示詞。"
     },
     "search": "搜尋模型",
     "maker": "廠商",
@@ -122,6 +124,17 @@
     },
     "noPrice": "未公布價格",
     "audioTag": "聲音",
+    "voiceTag": "語音",
+    "use": {"label": "生成內容", "speech": "語音", "sound": "音樂與音效"},
+    "useNeeds": {"speech": "所選聲音會依原文朗讀提示詞。", "sound": "在提示詞中描述要生成的音樂或聲音。"},
+    "lengthUnit": "秒",
+    "lengthAuto": "由模型決定",
+    "lengthHint": "{min}–{max} 秒",
+    "lengthHintOptional": "{min}–{max} 秒。留空則由模型決定。",
+    "form": {"voice": "請先選擇聲音再生成。", "lengthRequired": "請設定 {min}–{max} 秒之間的時長。", "lengthRange": "時長必須在 {min}–{max} 秒之間。", "option": "請先設定 {name} 再生成。"},
+    "option": {"voice_id": "聲音", "force_instrumental": "僅器樂（無人聲）", "loop": "無縫循環"},
+    "voice": {"choose": "選擇聲音", "change": "更換", "search": "搜尋聲音", "mine": "我的聲音", "library": "聲音庫", "loading": "正在載入聲音…", "failed": "無法從 {provider} 載入聲音。", "empty": "此帳戶還沒有聲音。", "none": "沒有符合的聲音。", "needsKey": "新增 {provider} 金鑰後即可列出聲音。", "play": "播放 {name} 的試聽", "stop": "停止 {name} 的試聽", "more": "還有 {n} 個。請搜尋以縮小範圍。", "female": "女聲", "male": "男聲", "neutral": "中性"},
+    "unitKCharacters": "千字元",
     "seconds": "{n} 秒",
     "secondsRange": "{min}–{max} 秒",
     "emptyFiltered": "沒有符合的模型。",
@@ -399,6 +412,7 @@
     "footerHint": "您可以關閉此面板——生成會繼續。",
     "kindImage": "影像",
     "kindVideo": "影片",
+    "kindAudio": "音訊",
     "kindNode": "節點",
     "kindMcp": "MCP",
     "progressAria": "產生進度：{n}%"
@@ -742,6 +756,8 @@
     "refRemoveAria": "刪除引用 {n}",
     "placeholder": "描述您想要的圖像。拖放或貼上以附加參考圖像...",
     "placeholderWithRefs": "描述如何處理所附圖片...",
+    "placeholderSpeech": "寫下要朗讀的內容...",
+    "placeholderSound": "描述要生成的音樂或聲音...",
     "attach": "附",
     "attachTitle": "附上參考圖片",
     "useCurrent": "使用電流",
@@ -778,6 +794,7 @@
     "openAria": "以畫布模式開啟圖像",
     "dragToComposer": "拖曳到作曲家作為參考",
     "dragHint": "拖",
+    "audioResult": "生成的音訊",
     "annotationInstructionsChip": "畫布筆記",
     "close": "關閉畫布",
     "blank": {
@@ -1243,6 +1260,7 @@
     "remakeTitle": "還原此結果的模型、線路、設定和提示詞。按下生成之前不會傳送任何內容。",
     "remakeReady": "已還原模型、設定和提示詞。請確認預估費用後按生成。",
     "remakeNeedsImages": "已還原模型、設定和提示詞。此結果由圖片生成，生成前請重新加入圖片。",
+    "remakeNeedsVoice": "已還原模型、設定和提示詞。請選擇聲音後再按生成。",
     "remakeModelGone": "目錄裡已沒有此模型，無法在這裡再次生成。",
     "moreActions": "更多操作",
     "fewerActions": "收合"

@@ -1,10 +1,11 @@
 import { makerName, type MediaModel, type MediaRoute } from "./mediaCatalog";
+import { audioUse, lengthRange, startLength, taskParams, type AudioUse, type LengthRange } from "./mediaForm";
 import { resolutionRank } from "./mediaModelList";
-import { routeTasks, type ClassicTask } from "./mediaTasks";
+import { routeTasks, type ClassicKind, type ClassicTask } from "./mediaTasks";
 
 /** Classic media lane selection. A null selection keeps the existing core lane. */
 export interface MediaSelection {
-  kind: "image" | "video";
+  kind: ClassicKind;
   model: string;
   /** The route that runs. With routeMode "auto" it is re-derived from the catalog whenever keys change. */
   adapter: string;
@@ -24,6 +25,12 @@ export interface MediaSelection {
   audio?: boolean;
   negativePrompt?: string;
   seed?: number;
+  /** Values for the options the route declares (vendorOptions): a voice id, a switch, a listed choice. */
+  options?: Record<string, string | boolean>;
+  /** The chosen voice's name, kept so the closed control can show it without the voice list. */
+  voiceName?: string;
+  /** For audio: whether the prompt is read aloud or describes a sound, kept so the composer can say so without the catalog. */
+  use?: AudioUse;
 }
 
 export interface MediaSelectionState {
@@ -34,8 +41,8 @@ export interface MediaSelectionState {
   mediaAdjustments: Adjustment[];
   dismissMediaAdjustments: () => void;
   /** The model window; `kind` limits it to one output type. Null when closed. */
-  mediaPicker: { kind?: "image" | "video" } | null;
-  openMediaPicker: (kind?: "image" | "video") => void;
+  mediaPicker: { kind?: ClassicKind } | null;
+  openMediaPicker: (kind?: ClassicKind) => void;
   closeMediaPicker: () => void;
   /** The last failed media job, kept through reloads until dismissed or a later job succeeds. */
   mediaFailure: import("./mediaFailure").MediaFailure | null;
@@ -51,7 +58,7 @@ export interface MediaSelectionState {
   remakeMediaResult: (item: import("../types").GenerateItem) => Promise<void>;
 }
 
-export type AdjustedField = "task" | "durationSec" | "resolution" | "quality" | "aspectRatio" | "audio" | "seed" | "negativePrompt";
+export type AdjustedField = "task" | "durationSec" | "resolution" | "quality" | "aspectRatio" | "audio" | "seed" | "negativePrompt" | "voice";
 export interface Adjustment { field: AdjustedField; from: string; to: string | null }
 
 export const MAX_SEED = 2_147_483_647;
@@ -98,6 +105,34 @@ function keepDuration(previous: number | undefined, allowed: readonly number[] |
   return allowed.reduce((best, value) => (Math.abs(value - previous) < Math.abs(best - previous) ? value : best), allowed[0]!);
 }
 
+/** A free length stays where it was when the range still holds it, and moves to the nearest end when it does not. */
+function keepLength(previous: number | undefined, range: LengthRange): number | undefined {
+  if (previous === undefined) return startLength(range);
+  return Math.min(range.maxSec, Math.max(range.minSec, previous));
+}
+
+/**
+ * Values for the options the route declares, keeping each earlier value the declaration still allows.
+ * A voice id belongs to one provider's list, so it is kept only while the route stays the same.
+ */
+function keepOptions(route: MediaRoute, task: string, previous: MediaSelection | null): { options: Record<string, string | boolean>; voiceKept: boolean } {
+  const options: Record<string, string | boolean> = {};
+  let voiceKept = false;
+  for (const option of taskParams(route, task).options ?? []) {
+    const old = previous?.options?.[option.name];
+    if (option.type === "boolean") { if (old === true) options[option.name] = true; continue; }
+    if (option.type === "enum") {
+      const value = typeof old === "string" && option.values?.includes(old) ? old : option.required ? option.values?.[0] : undefined;
+      if (value !== undefined) options[option.name] = value;
+      continue;
+    }
+    if (typeof old !== "string" || !old) continue;
+    if (option.type === "voice") { if (previous?.adapter === route.adapter) { options[option.name] = old; voiceKept = true; } continue; }
+    options[option.name] = option.maxLength ? old.slice(0, option.maxLength) : old;
+  }
+  return { options, voiceKept };
+}
+
 function keepLabel(previous: string | undefined, allowed: readonly string[] | undefined, fallback: string | undefined): string | undefined {
   if (!allowed?.length) return undefined;
   if (previous === undefined) return fallback;
@@ -113,10 +148,12 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   routeMode: "auto" | "pinned"): { selection: MediaSelection; adjusted: Adjustment[] } {
   const tasks = routeTasks(route);
   const task: string = (tasks as string[]).includes(wantedTask) ? wantedTask : tasks[0] ?? route.tasks[0] ?? wantedTask;
-  const params = route.params;
-  const next: MediaSelection = { kind: model.kind as "image" | "video", model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: makerName(model), routeLabel: route.label };
+  const params = taskParams(route, task);
+  const next: MediaSelection = { kind: model.kind, model: model.id, adapter: route.adapter, task, routeMode, label: model.label, vendor: makerName(model), routeLabel: route.label };
   if (route.logo?.urls.mark) next.routeMark = route.logo.urls.mark;
-  const durationSec = keepDuration(previous?.durationSec, params.durationsSec);
+  if (model.kind === "audio") next.use = audioUse(route, task);
+  const range = lengthRange(params);
+  const durationSec = range ? keepLength(previous?.durationSec, range) : keepDuration(previous?.durationSec, params.durationsSec);
   const resolution = keepLabel(previous?.resolution, params.resolutions, defaultResolution(params.resolutions));
   const aspectRatio = keepLabel(previous?.aspectRatio, params.aspectRatios, undefined);
   const quality = keepLabel(previous?.quality, params.qualities, defaultQuality(params.qualities));
@@ -127,6 +164,9 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   if (params.nativeAudio && previous?.audio !== undefined) next.audio = previous.audio;
   if (params.negativePrompt && previous?.negativePrompt) next.negativePrompt = previous.negativePrompt;
   if (params.seed && previous?.seed !== undefined) next.seed = previous.seed;
+  const kept = keepOptions(route, task, previous);
+  if (Object.keys(kept.options).length > 0) next.options = kept.options;
+  if (kept.voiceKept && previous?.voiceName) next.voiceName = previous.voiceName;
   if (!previous) return { selection: next, adjusted: [] };
   const adjusted: Adjustment[] = [];
   const note = (field: AdjustedField, from: unknown, to: unknown) => {
@@ -142,6 +182,7 @@ export function reconcileSelection(model: MediaModel, route: MediaRoute, wantedT
   note("audio", previous.audio, next.audio);
   note("seed", previous.seed, next.seed);
   note("negativePrompt", previous.negativePrompt ? "set" : undefined, next.negativePrompt ? "set" : undefined);
+  note("voice", previous.voiceName, next.voiceName);
   return { selection: next, adjusted };
 }
 

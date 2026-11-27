@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../../i18n";
 import { getGalleryItemKey } from "../../lib/galleryNavigation";
+import { isAudioItem } from "../../lib/audioMedia";
 import { useAppStore } from "../../store/useAppStore";
 import type { GenerateItem } from "../../types";
 
@@ -25,6 +26,9 @@ function RecentMedia({ item, featured }: { item: GenerateItem; featured: boolean
   ).slice(0, 60);
   const alt = t("home.recentResultAlt", { prompt });
 
+  if (isAudioItem(item)) {
+    return <div className="home-recent-card__fallback home-recent-card__fallback--audio" role="img" aria-label={alt}><span aria-hidden="true">♪</span>{prompt}</div>;
+  }
   if (!source || failed) {
     return (
       <div className="home-recent-card__fallback" role="img" aria-label={alt}>

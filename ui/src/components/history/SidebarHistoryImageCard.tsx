@@ -2,6 +2,8 @@ import type { DragEvent } from "react";
 import type { GenerateItem } from "../../types";
 import { getGalleryItemKey } from "../../lib/galleryNavigation";
 import { isVideoItem } from "../../lib/videoMedia";
+import { isAudioItem } from "../../lib/audioMedia";
+import { AudioThumbPlaceholder } from "../AudioThumbPlaceholder";
 import { buildVideoDragPayload } from "../../lib/videoContinuity";
 import { VideoThumbPlaceholder } from "../VideoThumbPlaceholder";
 
@@ -26,6 +28,7 @@ export function SidebarHistoryImageCard({
 }: SidebarHistoryImageCardProps) {
   const key = getGalleryItemKey(item);
   const isVideo = isVideoItem(item);
+  const isAudio = isAudioItem(item);
 
   const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
     event.dataTransfer.setData(
@@ -40,14 +43,14 @@ export function SidebarHistoryImageCard({
       <button
         ref={(node) => setRef(key, node)}
         type="button"
-        className={`sidebar-history__thumb${active ? " active" : ""}${isVideo ? " sidebar-history__thumb--video" : ""}`}
+        className={`sidebar-history__thumb${active ? " active" : ""}${isVideo || isAudio ? " sidebar-history__thumb--video" : ""}`}
         onClick={() => onSelect(item)}
         aria-label={selectLabel}
         title={item.prompt ?? ""}
-        draggable
+        draggable={!isAudio}
         onDragStart={onDragStart}
       >
-        {isVideo ? (
+        {isAudio ? <AudioThumbPlaceholder /> : isVideo ? (
           <>
             {item.thumb ? (
               <img src={item.thumb} alt="" loading="lazy" decoding="async" />

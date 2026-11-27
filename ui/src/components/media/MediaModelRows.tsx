@@ -31,12 +31,14 @@ export function MediaModelRow({ model, task, selected, onPick, reason, facts: gi
           <span className="media-row__name">
             {model.label}
             {facts.audio ? <span className="media-row__tag">{t("mediaPicker.audioTag")}</span> : null}
+            {facts.voice ? <span className="media-row__tag">{t("mediaPicker.voiceTag")}</span> : null}
             {model.retiring ? <span className="media-row__tag">{t("mediaPicker.retiring")}</span> : null}
           </span>
           <span className="media-row__sub">{reason ?? makerName(model)}</span>
         </span>
         <span className="media-row__facts">
-          <span className="media-row__price">{fromPrice(facts.price, t)}</span>
+          {/* A local route has no price to be "unpublished": the row says there is no charge, as the settings do. */}
+          <span className="media-row__price">{facts.local && !facts.price ? t("mediaPicker.localFree") : fromPrice(facts.price, t)}</span>
           <span className="media-row__spec">{[resolution, duration].filter(Boolean).join(" · ")}</span>
         </span>
         <span className="media-row__check" aria-hidden="true">{selected ? <CheckIcon /> : null}</span>
