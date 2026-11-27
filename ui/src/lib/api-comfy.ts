@@ -1,5 +1,10 @@
 import { jsonFetch } from "./api-core";
 
+/** A request with a JSON body. The server reads a body only when it is declared as JSON; undeclared, it arrives empty. */
+function sendJson<T>(url: string, method: "POST" | "PUT", body: unknown): Promise<T> {
+  return jsonFetch<T>(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+}
+
 export type ComfyMediaKind = "image" | "video" | "audio";
 
 export interface ComfyHealth {
@@ -112,7 +117,7 @@ export function listComfyWorkflows(): Promise<{ ok: true; workflows: ComfyWorkfl
  * With an origin, that server is asked what its nodes accept and what the workflow needs that it lacks.
  */
 export function inspectComfyWorkflow(source: { graph?: unknown; pngBase64?: string }, origin?: string): Promise<ComfyInspectResult> {
-  return jsonFetch("/api/comfy/inspect", { method: "POST", body: JSON.stringify(origin ? { ...source, origin } : source) });
+  return sendJson("/api/comfy/inspect", "POST", origin ? { ...source, origin } : source);
 }
 
 /**
@@ -124,7 +129,7 @@ export function inspectComfyWorkflow(source: { graph?: unknown; pngBase64?: stri
  * problems that deserve two different messages.
  */
 export function probeComfyOrigin(origin: string): Promise<{ ok: true; origin: string; health: ComfyHealth }> {
-  return jsonFetch("/api/comfy/probe", { method: "POST", body: JSON.stringify({ origin }) });
+  return sendJson("/api/comfy/probe", "POST", { origin });
 }
 
 export function createComfyWorkflow(input: {
@@ -137,7 +142,7 @@ export function createComfyWorkflow(input: {
   pngBase64?: string;
   replace?: boolean;
 }): Promise<{ ok: true; workflow: ComfyWorkflowRecord; server?: ComfyServerReport; media?: { model: string; task: string } }> {
-  return jsonFetch("/api/comfy/workflows", { method: "POST", body: JSON.stringify(input) });
+  return sendJson("/api/comfy/workflows", "POST", input);
 }
 
 export function deleteComfyWorkflow(id: string): Promise<{ ok: true; id: string }> {
@@ -150,7 +155,7 @@ export function listComfyRemotes(): Promise<{ ok: true; remotes: ComfyRemote[] }
 
 /** Adds a server, or updates its token. An empty token leaves a saved one as it is. */
 export function putComfyRemote(origin: string, token?: string): Promise<{ ok: true; remote: ComfyRemote }> {
-  return jsonFetch("/api/comfy/remotes", { method: "PUT", body: JSON.stringify(token ? { origin, token } : { origin }) });
+  return sendJson("/api/comfy/remotes", "PUT", token ? { origin, token } : { origin });
 }
 
 /** strandedWorkflows: registered workflows that still point at the removed server and can no longer run. */
