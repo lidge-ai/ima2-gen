@@ -104,3 +104,24 @@ test("a step shows the model the server's estimate planned, not the workflow def
   await expect(page.getByRole("button", { name: "Restyle the first frame: GPT Image 2" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Restyle the first frame: Seedream 5.5" })).toHaveCount(0);
 });
+
+test("steps say what they do in two lines; credits sit once, collapsed, under Sources", async ({ page }) => {
+  await page.goto("/#/remix/remix-restyle");
+  const description = page.getByText("Redraws the source's first frame in the chosen style.");
+  await expect(description).toBeVisible();
+  expect(await description.evaluate((el) => getComputedStyle(el).webkitLineClamp)).toBe("2");
+  const sources = page.locator("details.workflow-credits");
+  await expect(sources.locator("summary")).toHaveText("Sources (2)");
+  const link = sources.getByRole("link", { name: "D3voz/openjutsu" });
+  await expect(link).toBeHidden();
+  await sources.locator("summary").click();
+  await expect(link).toHaveAttribute("href", "https://github.com/D3voz/openjutsu");
+  await expect(sources.getByRole("link")).toHaveCount(2);
+});
+
+test("in Korean, step descriptions and the sources heading are Korean", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ima2.locale", "ko"));
+  await page.goto("/#/remix/remix-restyle");
+  await expect(page.getByText("원본의 첫 프레임을 고른 스타일로 다시 그려요.")).toBeVisible();
+  await expect(page.locator("details.workflow-credits summary")).toHaveText("출처 (2)");
+});

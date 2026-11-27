@@ -235,6 +235,16 @@ const PRISTINE: Cell[] = [
   },
   { id: "models__token-prices", hash: "/models/bytedance", setup: tokenPrices },
   {
+    id: "remix__step-credits",
+    hash: "/remix/remix-restyle",
+    act: async (p) => {
+      const summary = p.locator("details.workflow-credits summary").first();
+      await summary.scrollIntoViewIfNeeded();
+      await summary.click();
+      await p.waitForTimeout(300);
+    },
+  },
+  {
     id: "video__picker-after-keyless",
     hash: "/video",
     act: async (p) => {

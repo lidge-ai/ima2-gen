@@ -58,6 +58,8 @@ export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
       ...(slot.runnable ? { runnable: slot.runnable } : {}),
       ...(slot.defaultRoute ? { route: slot.defaultRoute } : {}),
       rationale: slot.rationale,
+      ...(slot.description || slot.rationale ? { description: slot.description ?? slot.rationale } : {}),
+      ...(slot.credits?.length ? { credits: slot.credits } : {}),
     })),
     ...(wire.i18n ? { i18n: wire.i18n } : {}),
   };
@@ -89,7 +91,10 @@ export function localizeWorkflow(def: WorkflowDef, locale: string): WorkflowDef 
         ...(param.options ? { options: param.options.map((o) => ({ ...o, label: f?.options?.[o.value] ?? o.label })) } : {}),
       };
     }),
-    steps: def.steps.map((step) => ({ ...step, label: text.slots?.[step.id] ?? step.label })),
+    steps: def.steps.map((step) => {
+      const description = text.slotDescriptions?.[step.id] ?? step.description;
+      return { ...step, label: text.slots?.[step.id] ?? step.label, ...(description !== undefined ? { description } : {}) };
+    }),
   };
 }
 
