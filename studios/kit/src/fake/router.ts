@@ -37,6 +37,12 @@ function checkForm(params: import("../types.ts").MediaModelSpec["params"] | unde
     if (count < need.min || count > need.max) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Needs " + need.min + " " + need.role + " input");
   }
   if (needs.length > 0 && roles.some((role) => !needs.some((need) => need.role === role))) throw invalid();
+  const fields = params?.taskFields?.[String(data.task) as never] as import("../types.ts").MediaTaskFields | undefined;
+  if (fields) {
+    const sent = (["prompt", "negativePrompt", "durationSec", "resolution", "aspectRatio", "audio", "seed"] as const).filter((name) => data[name] !== undefined);
+    if (sent.some((name) => !fields.accepts.includes(name))) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Unsupported field for " + String(data.task));
+    if ((fields.requires ?? []).some((name) => !sent.includes(name))) throw new Fault(400, "MEDIA_INVALID_REQUEST", "Missing field for " + String(data.task));
+  }
   if (TALKING.has(String(data.task)) && (data.prompt !== undefined || data.durationSec !== undefined || data.aspectRatio !== undefined)) throw invalid();
   const options = (data.vendorOptions ?? {}) as Record<string, unknown>;
   for (const option of (params?.options ?? []).filter(forTask)) {
@@ -106,7 +112,7 @@ async function submit(req: IncomingMessage, res: ServerResponse, jobs: Jobs, key
   const requestId = (data.requestId as string | undefined) ?? randomUUID();
   if (jobs.jobs.has(requestId)) throw new Fault(409, "MEDIA_DUPLICATE_REQUEST", "Duplicate request");
   const { model, selected } = route(data.model, data.adapter as string | undefined, keys);
-  if (!model.tasks.includes(data.task as never)) throw new Fault(400, "MEDIA_TASK_UNSUPPORTED", "Unsupported task");
+  if (!(selected.tasks ?? model.tasks).includes(data.task as never)) throw new Fault(400, "MEDIA_TASK_UNSUPPORTED", "Unsupported task");
   checkForm(model.routeParams?.[selected.providerId], data);
   jobs.start({
     requestId,

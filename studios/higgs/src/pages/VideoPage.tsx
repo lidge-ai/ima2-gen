@@ -9,8 +9,10 @@ import { HowItWorks } from "./create/HowItWorks.tsx";
 import { PresetGallery } from "./create/PresetGallery.tsx";
 import { VideoPanel } from "./create/VideoPanel.tsx";
 import { SpeakPanel } from "./speak/SpeakPanel.tsx";
+import { EditPanel } from "./edit/EditPanel.tsx";
+import { videoModes } from "./create/VideoModeTabs.tsx";
 import { defaultModel } from "./create/defaults.ts";
-import { EDIT_TASKS, defaultsFor, emptyForm, handOffFailed, type CreateForm } from "./create/form.ts";
+import { CREATE_TASKS, defaultsFor, emptyForm, handOffFailed, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
 import { readDraft, syncModelToUrl, useRestore, writeDraft } from "../studio/draft.ts";
 
@@ -60,12 +62,13 @@ interface StageProps {
   catalog: Catalog;
   /** The talking form is open: presets do not apply to it. */
   speaking: boolean;
+  editing: boolean;
 }
 
-function StageBody({ view, setView, form, set, catalog, speaking }: StageProps) {
-  const guide = <HowItWorks kind={speaking ? "speak" : "video"} />;
+function StageBody({ view, setView, form, set, catalog, speaking, editing }: StageProps) {
+  const guide = <HowItWorks kind={speaking ? "speak" : editing ? "edit" : "video"} />;
   if (view === "guide") return guide;
-  if (view === "history" || speaking) return <Feed kind="video" empty={guide} />;
+  if (view === "history" || speaking || editing) return <Feed kind="video" empty={guide} />;
   return (
     <PresetGallery
       kind="video"
@@ -85,7 +88,7 @@ function Stage(props: StageProps) {
     <main className="stage">
       <div className="stage-head">
         <div className="tabs" role="group" aria-label={t("views")}>
-          {VIEWS.filter((v) => !props.speaking || v.id !== "presets").map((v) => (
+          {VIEWS.filter((v) => !(props.speaking || props.editing) || v.id !== "presets").map((v) => (
             <button
               key={v.id}
               type="button"
@@ -109,18 +112,13 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
   const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
   const speaking = mode === "speak";
-  const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("video"), mode: mode === "edit" ? "edit" : "create" }));
+  const editing = mode === "edit";
+  const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("video") }));
   const [view, setView] = useState<View>("history");
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, ...patch }));
   useEffect(() => writeDraft("video", form.prompt), [form.prompt]);
-  // The talking form keeps its own model in the address.
-  useEffect(() => { if (!speaking) syncModelToUrl("video", form.model); }, [form.model, speaking]);
-  // Arriving from the talking form's tabs: the address says which of create and edit to show.
-  useEffect(() => {
-    if (speaking) return;
-    const wanted = mode === "edit" ? "edit" : "create";
-    setForm((f) => (f.mode === wanted ? f : { ...f, mode: wanted, model: undefined }));
-  }, [mode, speaking]);
+  // The talking and edit forms keep their own model in the address.
+  useEffect(() => { if (!speaking && !editing) syncModelToUrl("video", form.model); }, [form.model, speaking, editing]);
   // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here.
   useRestore("video", (prompt, id) =>
     setForm((f) => {
@@ -131,20 +129,18 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
   // "Animate" on an image result: it becomes the start frame, here or after opening this screen.
   useHandOff(
     "video",
-    (upload, name) => set({ mode: "create", refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
+    (upload, name) => set({ refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
     () => set({ notice: handOffFailed() }),
   );
   useEffect(() => {
     if (!catalog || form.model) return;
-    const tasks = form.mode === "edit" ? EDIT_TASKS : undefined;
-    const asked =
-      form.mode === "create" ? catalog.models.find((m) => m.id === requested && m.kind === "video") : undefined;
-    const model = asked ?? defaultModel(catalog.models, "video", tasks);
+    const asked = catalog.models.find((m) => m.id === requested && m.kind === "video" && m.tasks.some((task) => CREATE_TASKS.includes(task)));
+    const model = asked ?? defaultModel(catalog.models, "video", CREATE_TASKS);
     setForm((f) => {
       const next = { ...f, model: model?.id, ...defaultsFor(model, f) };
       return f.preset === undefined && preset ? { ...next, ...applyPreset(catalog, next, findPreset(preset)) } : next;
     });
-  }, [catalog, form.model, form.mode, preset, requested]);
+  }, [catalog, form.model, preset, requested]);
   if (!catalog)
     return (
       <div className="empty" role="status">
@@ -155,10 +151,12 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
     <div className="workspace">
       {speaking ? (
         <SpeakPanel catalog={catalog} {...(requested ? { model: requested } : {})} />
+      ) : editing ? (
+        <EditPanel catalog={catalog} modes={videoModes(catalog)} {...(requested ? { model: requested } : {})} />
       ) : (
         <VideoPanel catalog={catalog} form={form} set={set} onOpenPresets={() => setView("presets")} />
       )}
-      <Stage view={view} setView={setView} form={form} set={set} catalog={catalog} speaking={speaking} />
+      <Stage view={view} setView={setView} form={form} set={set} catalog={catalog} speaking={speaking} editing={editing} />
     </div>
   );
 }

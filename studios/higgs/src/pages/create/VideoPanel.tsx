@@ -8,10 +8,9 @@ import { UploadSlot } from "../../ui/UploadSlot.tsx";
 import { AdvancedFields, ParamControls } from "./ParamControls.tsx";
 import { PresetCard } from "./PresetCard.tsx";
 import { RefSlots } from "./RefSlots.tsx";
-import { EDIT_TASKS, type CreateForm } from "./form.ts";
+import { CREATE_TASKS, type CreateForm } from "./form.ts";
 import { useCreate } from "./useCreate.ts";
-import { VideoModeTabs } from "./VideoModeTabs.tsx";
-import { availableTasks } from "../speak/speakForm.ts";
+import { VideoModeTabs, videoModes } from "./VideoModeTabs.tsx";
 import { navigate } from "../../router.ts";
 
 const M = messages(
@@ -24,7 +23,6 @@ const M = messages(
     "optional": "Optional",
     "promptOnly": "{model} works from the prompt only.",
     "prompt": "Prompt",
-    "editPlaceholder": "Describe the change: make it snow, turn day into night",
     "createPlaceholder": "Describe the shot: subject, motion, camera, light",
     "soundOn": "Sound on",
     "soundOff": "Sound off",
@@ -33,8 +31,6 @@ const M = messages(
     "generate": "Generate",
     "estimate": "Estimated {cost}",
     "noPrice": "Price not published",
-    "source": "Video to edit",
-    "format": "MP4 or MOV",
     "nokey": "Add a key to generate.",
     "unavailable": "No route is available for this model.",
   },
@@ -47,7 +43,6 @@ const M = messages(
     "optional": "선택",
     "promptOnly": "{model} 모델은 프롬프트만 사용할 수 있어요.",
     "prompt": "프롬프트",
-    "editPlaceholder": "바꿀 내용을 적어 주세요. 예: 눈 내리게 하기, 낮을 밤으로 바꾸기",
     "createPlaceholder": "장면의 피사체, 움직임, 카메라, 조명을 설명해 주세요",
     "soundOn": "사운드 켬",
     "soundOff": "사운드 끔",
@@ -56,8 +51,6 @@ const M = messages(
     "generate": "생성",
     "estimate": "예상 {cost}",
     "noPrice": "공개 가격 없음",
-    "source": "편집할 영상",
-    "format": "MP4 또는 MOV",
     "nokey": "생성하려면 키를 추가해 주세요.",
     "unavailable": "이 모델을 사용할 수 있는 경로가 없어요.",
   },
@@ -150,11 +143,7 @@ function PromptCard({ model, form, set }: { model: CatalogModel | undefined; for
         value={form.prompt}
         onChange={(e) => set({ prompt: e.target.value })}
         rows={4}
-        placeholder={
-          form.mode === "edit"
-            ? t("editPlaceholder")
-            : t("createPlaceholder")
-        }
+        placeholder={t("createPlaceholder")}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
         }}
@@ -201,19 +190,6 @@ function SourceInputs({
   set: Props["set"];
   onOpenPresets: () => void;
 }) {
-  const t = useT(M);
-  if (form.mode === "edit") {
-    return (
-      <UploadSlot
-        label={t("source")}
-        role="source-video"
-        accept="video/*"
-        value={form.sourceVideo}
-        onChange={(sourceVideo) => set({ sourceVideo })}
-        hint={t("format")}
-      />
-    );
-  }
   return (
     <>
       <PresetCard
@@ -251,7 +227,6 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
   const t = useT(M);
   const create = useCreate(catalog, form, set);
   const { model } = create;
-  const tasks = form.mode === "edit" ? EDIT_TASKS : ["text-to-video", "image-to-video", "reference-to-video"];
   return (
     <form
       className="panel"
@@ -262,8 +237,8 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
       }}
     >
       <VideoModeTabs
-        mode={form.mode}
-        modes={availableTasks(catalog).length > 0 ? ["create", "edit", "speak"] : ["create", "edit"]}
+        mode="create"
+        modes={videoModes(catalog)}
         onPick={(mode) => navigate("video", mode === "create" ? undefined : { mode })}
       />
       <div className="panel-body">
@@ -272,7 +247,7 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
         <ModelPicker
           models={catalog.models}
           kind="video"
-          tasks={tasks}
+          tasks={CREATE_TASKS}
           value={form.model}
           onChange={create.pickModel}
         />

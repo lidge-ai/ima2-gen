@@ -55,6 +55,13 @@ type Params = MediaModelSpec["params"];
 /** [id, label, kind, tasks, params, routes as providerId:usd-per-unit, params of single routes when they differ] */
 type ModelRow = [string, string, MediaKind, MediaTask[], Params, Record<string, number | null>, Record<string, Params>?];
 
+/** The one clip an edit, extend or upscale works on. */
+const SOURCE = { role: "source-video", min: 1, max: 1 } as const;
+/** Routes that serve fewer tasks than their model lists. */
+const ROUTE_TASKS: Readonly<Record<string, Readonly<Record<string, readonly MediaTask[]>>>> = {
+  "bytedance/seedance-2": { fal: ["text-to-video", "image-to-video"] },
+};
+
 /** Forms the talking-video routes declare, shaped like the real catalog's. */
 const LIPSYNC_FORM: Params = {
   inputs: [
@@ -204,6 +211,8 @@ const MODELS: ModelRow[] = [
     ["video-upscale"],
     { resolutions: ["1080p", "4k"] },
     { topaz: null, fal: 0.08 },
+    // The direct route needs settings a form cannot fill, so only the aggregator declares a form.
+    { topaz: {}, fal: { resolutions: ["1080p", "4k"], inputs: [{ ...SOURCE, tasks: ["video-upscale"], billedLength: true }], taskFields: { "video-upscale": { accepts: ["resolution"] } } } },
   ],
   [
     "openai/gpt-image-2",
@@ -308,9 +317,19 @@ const MODELS: ModelRow[] = [
     { elevenlabs: 0.15, fal: 0.2 },
     { elevenlabs: MUSIC_FORM, fal: MUSIC_FORM },
   ],
-  ["xai/grok-imagine-video", "Grok Imagine Video", "video", ["video-to-video"], V_SHORT, { xai: 0.05 }],
+  // An edit follows its source; an extension takes only the added length (as the real route declares).
+  [
+    "xai/grok-imagine-video", "Grok Imagine Video", "video", ["video-to-video", "video-extend"], V_SHORT, { xai: 0.05 },
+    { xai: { ...V_SHORT, inputs: [{ ...SOURCE, tasks: ["video-to-video"], billedLength: true }, { ...SOURCE, tasks: ["video-extend"] }],
+      taskFields: { "video-to-video": { accepts: ["prompt"], requires: ["prompt"] }, "video-extend": { accepts: ["prompt", "durationSec"], requires: ["prompt"] } } } },
+  ],
   ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }],
-  ["bytedance/seedance-2", "Seedance 2.0", "video", [...T2V, "video-to-video"], V_FULL, { byteplus: 0.06, fal: 0.075 }],
+  // Only the direct route edits; the aggregator route creates (ROUTE_TASKS).
+  [
+    "bytedance/seedance-2", "Seedance 2.0", "video", [...T2V, "video-to-video"], V_FULL, { byteplus: 0.06, fal: 0.075 },
+    { byteplus: { ...V_FULL, inputs: [{ ...SOURCE, tasks: ["video-to-video"] }],
+      taskFields: { "video-to-video": { accepts: ["prompt", "durationSec", "resolution", "aspectRatio", "audio"] } } } },
+  ],
   [
     "bytedance/seedance-2-mini",
     "Seedance 2.0 Mini",
@@ -356,6 +375,7 @@ function toModel(row: ModelRow, keyed: ReadonlySet<string>): CatalogModel {
     pricing: pricing(kind, tasks, usd, id),
     docsUrl: PROVIDERS[providerId]!.consoleUrl,
     keyConfigured: keyed.has(providerId),
+    ...(ROUTE_TASKS[id]?.[providerId] ? { tasks: ROUTE_TASKS[id]![providerId]! } : {}),
   }));
   const rank = (r: (typeof entries)[number]) => (r.keyConfigured ? 0 : 2) + (r.route === "direct" ? 0 : 1);
   return {
@@ -400,7 +420,7 @@ export function wireCatalog(keys: import("./keys.ts").Keys) {
       route: route.route,
       label: route.label,
       upstreamId: route.upstreamId,
-      tasks: model.tasks,
+      tasks: route.tasks ?? model.tasks,
       params: model.routeParams?.[route.providerId] ?? ROUTE_PARAMS[model.id]?.[route.providerId] ?? model.params,
       pricing: route.pricing,
       docsUrl: route.docsUrl,

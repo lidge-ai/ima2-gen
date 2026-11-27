@@ -15,11 +15,13 @@ import type {
   MediaPrice,
   MediaProviderError,
   MediaTask,
+  MediaTaskFieldName,
+  MediaTaskFields,
   MediaVoice,
 } from "../../../lib/providers/media/contract.ts";
 
 export type {
-  MediaInputRequirement, MediaInputRole, MediaKind, MediaModelSpec, MediaOptionSpec, MediaPrice, MediaProviderError, MediaTask, MediaVoice,
+  MediaInputRequirement, MediaInputRole, MediaKind, MediaModelSpec, MediaOptionSpec, MediaPrice, MediaProviderError, MediaTask, MediaTaskFieldName, MediaTaskFields, MediaVoice,
 };
 
 /** One adapter that can run a model: a direct maker API, an aggregator, or the user's own machine ("local"). */
