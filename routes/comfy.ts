@@ -5,6 +5,8 @@ import { probeComfyOrigins } from "../lib/comfyImageAdapter.js";
 import { deriveParams, parseApiGraph } from "../lib/comfyGraphBind.js";
 import { describeParams } from "../lib/comfy/detect.js";
 import { inspectComfyWorkflow } from "../lib/comfy/inspect.js";
+import { syncLocalCatalog, workflowSpec } from "../lib/comfy/localCatalog.js";
+import { readMediaSlots, withClassicReference } from "../lib/comfy/register.js";
 import { extractComfyApiGraph, isPngBuffer } from "../lib/comfyPngWorkflow.js";
 import {
   deleteWorkflow,
@@ -47,11 +49,15 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
    *
    * The store is the source of truth and generation reads it directly; this
    * projection exists so the synchronous adapter contract (validateAuth,
-   * listModels) and the lane display have something to read.
+   * listModels) and the lane display have something to read. The media catalog
+   * keeps its own copy (comfy/<id> models) and is refreshed with it.
    */
   const refreshWorkflows = async (): Promise<void> => {
     ctx.comfyWorkflows = await listWorkflows();
+    await syncLocalCatalog();
   };
+  // The media catalog lists registered workflows from the first request on, not only after the first write.
+  void syncLocalCatalog();
 
   const failWorkflow = (res: Response, error: unknown) => {
     if (isComfyWorkflowError(error)) {
@@ -121,7 +127,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const graph = graphFromBody(req.body);
       const requested = (req.body ?? {}) as { origin?: unknown };
       const target = (await loadAccess()).target(typeof requested.origin === "string" ? requested.origin : ctx.config.comfy.defaultUrl);
-      const { candidates, mediaKind, server } = await inspectComfyWorkflow(graph, target, schemaTimeoutMs);
+      const { candidates, mediaKind, mediaSlots, server } = await inspectComfyWorkflow(graph, target, schemaTimeoutMs);
       return res.json({
         ok: true,
         nodes: Object.entries(graph).map(([id, node]) => ({
@@ -132,6 +138,7 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
         candidates,
         ...(mediaKind ? { mediaKind } : {}),
         needsConfirmation: candidates.some((candidate) => !candidate.unambiguous),
+        mediaSlots,
         server,
       });
     } catch (error) {
@@ -217,12 +224,6 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
       const access = await loadAccess();
       const target = access.target(typeof body.origin === "string" ? body.origin : ctx.config.comfy.defaultUrl);
       const inspection = await inspectComfyWorkflow(graph, target, schemaTimeoutMs, bind.output.node);
-      if (inspection.mediaKind === "audio") {
-        throw new ComfyWorkflowError(
-          COMFY_WORKFLOW_ERROR.MEDIA_KIND_INVALID,
-          `Workflow output node '${bind.output.node}' saves audio. Only image and video workflows can be registered here.`,
-        );
-      }
       const inferredMediaKind = inspection.mediaKind;
       const mediaKind = body.mediaKind === undefined
         ? inferredMediaKind ?? "image"
@@ -233,19 +234,24 @@ export function registerComfyRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
           `Workflow output node '${bind.output.node}' is ${inferredMediaKind}, not ${mediaKind}.`,
         );
       }
+      const slots = readMediaSlots((bind as { inputs?: unknown }).inputs, graph);
+      const stored = withClassicReference(bind, slots, mediaKind);
+      const paidNodes = inspection.server.reachable ? inspection.server.paidNodes : [];
       const record = await putWorkflow({
         id: typeof body.id === "string" ? body.id : "",
         label: typeof body.label === "string" ? body.label : String(body.id ?? ""),
         origin: target.origin,
         mediaKind,
         graph,
-        bind,
+        bind: stored,
         params: Array.isArray(body.params) ? body.params
-          : inspection.info ? describeParams(graph, bind, inspection.info) : deriveParams(graph, bind),
+          : inspection.info ? describeParams(graph, stored, inspection.info) : deriveParams(graph, stored),
+        ...(paidNodes.length > 0 ? { paidNodes } : {}),
       }, { allowReplace: body.replace === true, access });
       await refreshWorkflows();
       // Registration does not wait for a missing node or model to be installed; it says what is missing.
-      return res.json({ ok: true, workflow: record, server: inspection.server });
+      const spec = workflowSpec(record);
+      return res.json({ ok: true, workflow: record, server: inspection.server, media: { model: spec.id, task: spec.tasks[0] } });
     } catch (error) {
       return failWorkflow(res, error);
     }

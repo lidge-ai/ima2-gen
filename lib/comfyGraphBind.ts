@@ -169,6 +169,7 @@ export function unambiguousBindings(candidates: BindCandidate[]): Partial<ComfyW
  */
 export function deriveParams(graph: ComfyGraph, bind: ComfyWorkflowBindings): ComfyWorkflowParam[] {
   const bound = new Set<string>();
+  for (const slot of bind.inputs ?? []) bound.add(`${slot.node}.${slot.input}`);
   for (const value of Object.values(bind)) {
     if (!value) continue;
     const entry = value as { node: string; input?: string; also?: Array<{ node: string; input: string }> };
