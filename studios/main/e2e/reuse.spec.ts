@@ -85,6 +85,12 @@ test("an image result goes to the video form as the end frame or as a reference 
 
   let dialog = await open(page, "images", prompt);
   await dialog.getByRole("button", { name: "Use in video" }).click();
+  // The menu sits right under its button, inside the result's dialog.
+  const button = (await dialog.getByRole("button", { name: "Use in video" }).boundingBox())!;
+  const menu = (await page.getByRole("dialog", { name: "Use in video" }).boundingBox())!;
+  const frame = (await dialog.boundingBox())!;
+  expect({ dx: Math.round(Math.abs(menu.x - button.x)), dy: Math.round(menu.y - (button.y + button.height)) }).toEqual({ dx: 0, dy: 6 });
+  expect(menu.x >= frame.x && menu.y + menu.height <= frame.y + frame.height, "the menu is inside the result's dialog").toBe(true);
   await page.getByRole("dialog", { name: "Use in video" }).getByRole("button", { name: "End frame", exact: true }).click();
   await expect(page).toHaveURL(/#\/video/);
   await expect(page.getByRole("button", { name: /^Remove End frame/ })).toBeVisible();
