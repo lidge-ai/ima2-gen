@@ -84,6 +84,10 @@ test("subscription motion transfer pins GPT-composited frames into a Grok 1.5 re
     "frame-first", "frame-key-1", "frame-key-2", "frame-key-3", "frame-key-4", "frame-last",
     "swap-first", "swap-key-1", "swap-key-2", "swap-key-3", "swap-key-4", "swap-last", "render", "sound",
   ]);
+  // Labels are for people: no step ids such as "key-1" inside them.
+  assert.deepEqual(p.plan.steps.slice(0, 3).map((s) => s.label), ["Take the first frame", "Take key frame 1", "Take key frame 2"]);
+  assert.equal(p.plan.steps.find((s) => s.id === "swap-key-1")?.label, "Put the subject into key frame 1");
+  assert.ok(p.plan.steps.every((s) => !/\b(?:key|shot|cut|edit)-\d/.test(s.label)), "no step id in a label");
   const render = p.plan.steps.find((s) => s.id === "render") as MediaStep;
   assert.deepEqual([render.route, render.units.quantity, render.units.variant], ["xai-oauth", 12, "720p"]);
   const gpt = fakeAdapter({ states: [{ status: "succeeded", outputs: [{ kind: "image", bytes: new TextEncoder().encode("composited"), mimeType: "image/png" }] }] });

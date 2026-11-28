@@ -111,6 +111,9 @@ test("the subscription combo is this graph with GPT anchors on every pinned fram
   const p = await prep("remix-motion-transfer-open", { video: video(), images, anchors: 2 }, gateway, { combo: "subscription" });
   const ids = p.plan.steps.map((s) => s.id);
   assert.deepEqual(ids.filter((s) => s.startsWith("subject-")), ["subject-first", "subject-key-1", "subject-key-2", "subject-last"]);
+  assert.deepEqual(p.plan.steps.filter((s) => s.id.startsWith("subject-")).map((s) => s.label),
+    ["Prepare the first frame", "Prepare key frame 1", "Prepare key frame 2", "Prepare the last frame"]);
+  assert.ok(p.plan.steps.every((s) => !/\b(?:key|shot|cut|edit)-\d|\bmid\b/.test(s.label)), "no step id in a label");
   const render = p.plan.steps.find((s) => s.id === "render") as MediaStep;
   assert.deepEqual([render.model, render.route, render.units.quantity], ["xai/grok-imagine-video-1.5", "xai-oauth", 4]);
   await run("sub", p, gateway);
