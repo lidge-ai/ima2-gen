@@ -1,9 +1,12 @@
 // Workflow text in Korean (L6 with L7): one dictionary, sent as i18n.ko by GET /api/workflows.
-import { test } from "node:test";
+import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { WORKFLOWS, describeWorkflow } from "../lib/workflows/index.js";
+import { rmSync } from "node:fs";
+import type { MediaModelSpec } from "../lib/providers/media/contract.js";
+import { WORKFLOWS, describeWorkflow, prepareWorkflow, summarizeSteps } from "../lib/workflows/index.js";
 import { englishStrings } from "../lib/workflows/i18n/index.js";
 import { KO } from "../lib/workflows/i18n/ko.js";
+import { fakeGateway, fakeLocal, spec, tempDir, writeFixture } from "./_workflowFakes.js";
 
 test("every English string a workflow sends has a Korean entry", () => {
   const missing = WORKFLOWS.flatMap((w) => englishStrings(w).filter((s) => !(s in KO)).map((s) => w.id + ": " + s));
@@ -106,4 +109,72 @@ test("open-source project names appear only in credits", () => {
     const hits = strings(withoutCredits).filter((s) => names.some((n) => s.toLowerCase().includes(n)));
     assert.deepEqual(hits, [], w.id);
   }
+});
+
+// Step labels: estimates and runs list every planned step (steps[].label) with steps[].i18n.ko.label.
+const stepRoot = tempDir("ima2-wf-i18n-");
+after(() => rmSync(stepRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
+const clip = writeFixture(stepRoot, "clip.mp4", "clip");
+const longClip = writeFixture(stepRoot, "long.mp4", "long");
+const still = writeFixture(stepRoot, "still.png", "still");
+const stepLocal = fakeLocal({
+  "clip.mp4": { durationSec: 6, width: 1280, height: 720, hasAudio: true },
+  "long.mp4": { durationSec: 12, width: 1280, height: 720, hasAudio: true },
+}, { "clip.mp4": [], "long.mp4": [] });
+const IMAGE_TASKS = new Set(["text-to-image", "image-to-image", "image-segment"]);
+/** Every model a slot names, with the tasks its slots use and room for any references. */
+function permissiveSpecs(): Record<string, MediaModelSpec> {
+  const tasks = new Map<string, Set<string>>();
+  for (const w of WORKFLOWS) for (const s of w.slots) {
+    for (const m of [s.defaultModel, ...s.alternatives, ...Object.values(s.tierModels ?? {})]) tasks.set(m, (tasks.get(m) ?? new Set()).add(s.task));
+  }
+  return Object.fromEntries([...tasks].map(([id, t]) => {
+    const list = [...t, ...(t.has("reference-to-video") ? ["text-to-video"] : [])] as MediaModelSpec["tasks"][number][];
+    const kind = list.every((x) => IMAGE_TASKS.has(x)) ? "image" : list.includes("video-to-audio") ? "audio" : "video";
+    return [id, spec(id, { kind, tasks: list, params: { maxReferenceImages: 30, maxReferenceVideos: 10, nativeAudio: id !== "google/gemini-omni-flash-1.2" } })];
+  }));
+}
+
+test("every planned step of every workflow carries a Korean label, with no English left in it", async () => {
+  const gateway = fakeGateway({}, permissiveSpecs(), () => ({}), () => true);
+  const video = (path = clip) => [{ path, mimeType: "video/mp4" }];
+  const images = [{ path: still, mimeType: "image/png" }];
+  const shots = [{ prompt: "wide", durationSec: 5 }, { prompt: "close", durationSec: 5 }];
+  const cases: [string, Record<string, unknown>, unknown?][] = [
+    ["remix-motion-transfer", { video: video(), images }],
+    ["remix-object-swap", { video: video(), images, target: "the boat" }],
+    ["remix-restyle", { video: video(), style: "watercolor" }],
+    ["remix-motion-transfer-subscription", { video: video(), images }],
+    ["remix-object-swap-subscription", { video: video(), images, target: "the boat" }],
+    ["remix-restyle-subscription", { video: video(longClip), style: "watercolor" }],
+    ["remix-motion-transfer-open", { video: video(), images }],
+    ["remix-motion-transfer-open", { video: video(), images, anchors: 2 }, { combo: "subscription" }],
+    ["remix-object-swap-open", { video: video(), images, target: "the boat" }],
+    ["remix-restyle-open", { video: video(), style: "watercolor" }],
+    ["remix-restyle-open", { video: video(), style: "watercolor" }, { combo: "subscription" }],
+    ["director-studio", { prompt: "a lake at dawn" }],
+    ["director-studio", { prompt: "a lake at dawn", duration: 30 }, { models: { render: "bytedance/seedance-2" } }],
+    ["director-studio", { shots }, { models: { render: "google/gemini-omni-flash-1.2" } }],
+    ["director-cast", { prompt: "a hero" }],
+    ["director-locations", { prompt: "a harbour" }],
+    ["director-cinema", { prompt: "a still" }],
+  ];
+  const seen = new Map<string, string>();
+  for (const [id, values, selection] of cases) {
+    const p = await prepareWorkflow(WORKFLOWS.find((w) => w.id === id)!, { values, ...(selection ? { selection } : {}) },
+      { gateway, local: stepLocal, allowedRoots: [stepRoot] }, new AbortController().signal);
+    for (const step of summarizeSteps(p.plan)) {
+      const ko = step.i18n?.ko.label;
+      assert.ok(ko, id + "/" + step.id + " (" + step.label + ") has a Korean label");
+      assert.doesNotMatch(ko, /[A-Za-z][A-Za-z'-]*(?:[ ,]+[A-Za-z][A-Za-z'-]*){2,}/, id + "/" + step.id + " Korean label has no English phrase");
+      seen.set(step.id, ko);
+    }
+  }
+  // The cases reached every kind of numbered or framed step.
+  for (const id of ["plan-shots", "shot-2", "shot-1-last", "join", "sound", "mix", "render", "frame-key-1", "swap-key-1", "subject-key-1", "subject-first", "cut-2", "edit-2", "segment", "caption", "scenes"]) {
+    assert.ok(seen.has(id), id + " was planned");
+  }
+  assert.equal(seen.get("shot-1-last"), "샷 1의 마지막 프레임 가져오기");
+  assert.equal(seen.get("frame-key-1"), "키 프레임 1 가져오기");
+  assert.equal(seen.get("shot-2"), "샷 2");
 });

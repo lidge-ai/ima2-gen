@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { estimatePlan } from "./cost.js";
 import { inputError, toErrorInfo, WorkflowError } from "./errors.js";
 import { DEFAULT_POLL_POLICY, isAbort, runMediaStep, type PollPolicy } from "./mediaStep.js";
+import { stepLabelKo } from "./i18n/steps.js";
 import { ArtifactStore, createStepRuntime } from "./runtime.js";
 import type {
   PlanEnv, PlanNote, ResolvedSlot, StepSummary, WorkflowArtifact, WorkflowDefinition, WorkflowEstimate, WorkflowEvent,
@@ -87,6 +88,8 @@ export function summarizeSteps(plan: WorkflowPlan): StepSummary[] {
       summary.model = step.model;
       if (step.route) summary.route = step.route;
     }
+    const ko = stepLabelKo(step.label);
+    if (ko) summary.i18n = { ko: { label: ko } };
     return summary;
   });
 }
