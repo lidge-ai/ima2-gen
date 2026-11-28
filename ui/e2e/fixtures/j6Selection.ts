@@ -138,7 +138,8 @@ async function serveJ6(route: Route, origin: string, capture: J6Capture, gate: C
   } else if (Object.hasOwn(readFixtures(capture.catalog, capture.nonGenerating), url.pathname)) {
     await route.fulfill({ json: readFixtures(capture.catalog, capture.nonGenerating)[url.pathname] });
   } else if (url.pathname.startsWith("/api/")) {
-    capture.unexpected.push("GET unexpected-api");
+    // The pathname only (no query), as for a refused mutation above: a failure then names the read that needs a fixture.
+    capture.unexpected.push(`GET ${url.pathname} unexpected-api`);
     await route.abort("blockedbyclient");
   } else {
     capture.continued.push(`${method} ${url.pathname}`);
