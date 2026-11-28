@@ -141,7 +141,7 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
                 <button type="button" className="chip" aria-pressed={form.cutting} onClick={() => form.setCutting(true)}>{t("cutList")}</button>
               </div>
             ) : null}
-            {def.shots && form.cutting ? <CutList form={form} spec={def.shots} model={form.catalog?.models.find((m) => m.id === form.slotModel("render"))} /> : null}
+            {def.shots && form.cutting ? <CutList form={form} spec={def.shots} model={form.catalog?.models.find((m) => m.id === form.slotModel("render", def.steps.find((step) => step.id === "render")?.model))} /> : null}
             {def.inputs.map((input) => (
               <Fragment key={input.name}>
                 <WorkflowInput input={{ ...input, required: form.needed(input) }} form={form} />

@@ -17,11 +17,11 @@ test("cut list: shots with their own prompts and lengths are sent in order, pric
   await expect(page.getByText("Required: Scene")).toBeVisible();
   await page.getByRole("group", { name: "How the clip is cut" }).getByRole("button", { name: "Cut list" }).click();
   // The shots set the length, so the one length for the whole clip is not offered with them.
-  await expect(page.getByLabel("Length (seconds)")).toHaveCount(0);
+  await expect(page.getByLabel("Length (seconds)", { exact: true })).toHaveCount(0);
   await expect(shots(page).getByRole("listitem")).toHaveCount(2);
   await expect(page.getByText("Required: Shot 1, Shot 2")).toBeVisible();
   await expect(generate).toBeDisabled();
-  await expect(shots(page).getByText("Seedance 2.5 makes shots of 4, 5, 8, 10, 12 seconds.")).toBeVisible();
+  await expect(shots(page).getByText("Seedance 2.5 makes shots of 1, 2, 3, 4, 5, 8, 10, 12, 15 seconds.")).toBeVisible();
 
   await shots(page).getByRole("textbox", { name: "Shot 1" }).fill("She opens the door");
   await shots(page).getByRole("textbox", { name: "Shot 2" }).fill("Rain on the window");
@@ -89,7 +89,7 @@ test("cut list: one scene still works as before, the list is kept while it is of
   await shots(page).getByRole("textbox", { name: "Shot 1" }).fill("Kept while away");
   await page.getByRole("button", { name: "One scene" }).click();
   await expect(shots(page)).toHaveCount(0);
-  await expect(page.getByLabel("Length (seconds)")).toBeVisible();
+  await expect(page.getByLabel("Length (seconds)", { exact: true })).toBeVisible();
   await expect(page.getByText("Required: Scene")).toBeVisible();
   await page.getByRole("textbox", { name: "Scene" }).fill("A person walks into a quiet room");
   const sent = workflowRequest(page);

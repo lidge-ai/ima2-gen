@@ -609,7 +609,7 @@ test("director studio takes a cut list: one priced step per shot, and the server
       });
     await refused({ inputs: { prompt: "" } }, "prompt: is required", "prompt");
     await refused({ inputs: { prompt: "" }, shots: shots.slice(0, 1) }, "shots: needs 2-6 shots", "shots");
-    await refused({ inputs: { prompt: "" }, shots: [shots[0]!, { prompt: "Too long", durationSec: 20 }] }, "shots: shot 2 is 20 s; bytedance/seedance-2.5 makes 4-12 s per shot", "shots");
+    await refused({ inputs: { prompt: "" }, shots: [shots[0]!, { prompt: "Too long", durationSec: 20 }] }, "shots: shot 2 is 20 s; bytedance/seedance-2.5 makes 1-15 s per shot", "shots");
     await refused({ inputs: { prompt: "" }, shots: Array.from({ length: 6 }, () => ({ prompt: "x", durationSec: 12 })) }, "shots: add up to 72 s; the most is 60 s", "shots");
     await refused({ inputs: { prompt: "" }, params: { duration: 5 }, shots }, "duration: leave it out when shots are given; the shots set the length");
     // A planned clip (no cut list) still needs its scene and prices one render step.
