@@ -16,7 +16,7 @@ import type { useImageTool } from "./useImageTool.ts";
 const M = messages(
   {
     title: "Image tool",
-    "image-to-imageHelp": "Add more images for the model to draw from.",
+    "image-to-imageHelp": "Add more images for the model to draw from.", editOne: "This model edits one image at a time here.",
     "image-upscaleHelp": "The same image, larger and sharper.",
     "image-vectorizeHelp": "The image redrawn as an SVG.",
     "image-segmentHelp": "The image split into separate layers or cut-outs.",
@@ -32,7 +32,7 @@ const M = messages(
   },
   {
     title: "이미지 도구",
-    "image-to-imageHelp": "참고할 이미지를 더 넣을 수 있어요.",
+    "image-to-imageHelp": "참고할 이미지를 더 넣을 수 있어요.", editOne: "이 모델은 여기서 이미지 한 장을 편집해요.",
     "image-upscaleHelp": "같은 이미지를 더 크고 선명하게 만들어요.",
     "image-vectorizeHelp": "이미지를 SVG로 다시 그려요.",
     "image-segmentHelp": "이미지를 레이어나 조각으로 나눠요.",
@@ -169,7 +169,7 @@ export function ImageToolDock({ catalog, tool, tabs, unrunnable, notice }: Props
       <div className="dock-main">
         <div className="dock-fields">
           {unrunnable ? <p className="form-hint dock-reason" role="status">{t("notHere", { model: unrunnable })}</p> : null}
-          <p className="dock-help">{t((task + "Help") as "image-upscaleHelp")}</p>
+          <p className="dock-help">{task === "image-to-image" && form?.max === 1 ? t("editOne") : t((task + "Help") as "image-upscaleHelp")}</p>
           <Tray tool={tool} max={form?.max ?? 1} brush={brushable(form)} />
           {sentMask(form, state) ? <p className="dock-help" role="status">{t("painted")}</p> : state.mask && !brushable(form) ? <p className="form-hint dock-reason" role="status">{t("unusedMask")}</p> : null}
           {form && takes(form, "prompt") ? (
