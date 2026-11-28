@@ -33,7 +33,7 @@ async function seed(page: Page) {
 const named = (name: RegExp): Act => async (page) => { await page.getByRole("button", { name }).filter({ visible: true }).first().click(); await page.waitForTimeout(300); };
 const inFolder = (name: string): Act => async (page) => { await named(/^(Folder|폴더): /)(page); await page.getByRole("dialog").getByRole("button", { name, exact: true }).click(); await page.waitForTimeout(900); };
 const openFox: Act = async (page) => { await page.getByRole("button", { name: /red fox/ }).first().click(); await page.waitForTimeout(400); };
-const manager: Act = named(/^(Edit folders|폴더 편집)$/);
+const manager: Act = async (page) => { await named(/^(Folder|폴더): /)(page); await page.getByRole("dialog").getByRole("button", { name: /^(Edit folders…|폴더 편집…)$/ }).click(); await page.waitForTimeout(300); };
 const harborRow = (page: Page) => page.getByRole("dialog").getByRole("listitem").filter({ hasText: "Harbor series" });
 
 const CELLS: Cell[] = [

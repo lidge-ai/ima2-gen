@@ -36,19 +36,22 @@ export function narrowQuery(narrow: Narrow): Record<string, string | undefined> 
   };
 }
 
-/** Which folder to show, and the way into the folder list. A folder in the address that no longer exists shows as "All results". */
+const EDIT = "\u0000edit";
+
+/** Which folder to show; the menu's last item opens the folder list. A folder in the address that no longer exists shows as "All results". */
 function FolderFilter({ folder, setFolder }: { folder: string; setFolder: (value: string) => void }) {
   const t = useT(FM);
   const { folders } = useFolders();
+  const [editing, setEditing] = useState(false);
   const known = (folders ?? []).some((entry) => entry.id === folder);
   return (
     <>
       <SettingTile
         variant="chip" menuPlacement="bottom" caption={t("folder")} chipText={(label) => t("folder") + ": " + label}
-        value={known ? folder : ""} onChange={setFolder}
-        options={[{ value: "", label: t("allFolders") }, ...(folders ?? []).map((entry) => ({ value: entry.id, label: entry.name }))]}
+        value={known ? folder : ""} onChange={(value) => { if (value === EDIT) setEditing(true); else setFolder(value); }}
+        options={[{ value: "", label: t("allFolders") }, ...(folders ?? []).map((entry) => ({ value: entry.id, label: entry.name })), { value: EDIT, label: t("edit") }]}
       />
-      <FolderManager onRemoved={(id) => { if (id === folder) setFolder(""); }} />
+      <FolderManager open={editing} onClose={() => setEditing(false)} onRemoved={(id) => { if (id === folder) setFolder(""); }} />
     </>
   );
 }

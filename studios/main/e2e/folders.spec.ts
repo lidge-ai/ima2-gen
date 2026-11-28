@@ -29,7 +29,7 @@ test("folders: a result is put in a new folder from its lightbox, shown by folde
   await lightbox.getByRole("button", { name: "Folder: None", exact: true }).click();
   await page.getByRole("button", { name: "New folder…", exact: true }).click();
   await lightbox.getByLabel("New folder name").fill(folder);
-  await lightbox.getByRole("button", { name: "Create and move here" }).click();
+  await lightbox.getByRole("button", { name: "Create and move" }).click();
   await expect(lightbox.getByRole("status").filter({ hasText: "Moved to " + folder + "." })).toBeVisible();
   await expect(lightbox.getByRole("button", { name: "Folder: " + folder, exact: true })).toBeVisible();
   // Delete is still the last action.
@@ -64,7 +64,8 @@ test("folders: a result is put in a new folder from its lightbox, shown by folde
   await page.getByRole("button", { name: folder, exact: true }).click();
   await expect(lightbox.getByRole("status").filter({ hasText: "Moved to " + folder + "." })).toBeVisible();
   await lightbox.getByRole("button", { name: "Close" }).click();
-  await tools.getByRole("button", { name: "Edit folders" }).click();
+  await tools.getByRole("button", { name: /^Folder: / }).click();
+  await page.getByRole("dialog", { name: "Folder", exact: true }).getByRole("button", { name: "Edit folders…", exact: true }).click();
   const list = page.getByRole("dialog", { name: "Folders" });
   const row = list.getByRole("listitem").filter({ hasText: folder });
   await row.getByRole("button", { name: "Rename" }).click();
@@ -85,7 +86,9 @@ test("folders: a result is put in a new folder from its lightbox, shown by folde
 
   await page.getByRole("button", { name: /Language/ }).click();
   await expect(page.getByRole("button", { name: "폴더: 모든 결과", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "폴더 편집" })).toBeVisible();
+  await page.getByRole("button", { name: "폴더: 모든 결과", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "폴더", exact: true }).getByRole("button", { name: "폴더 편집…", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /언어|Language/ }).first().click();
 });
 
@@ -94,7 +97,8 @@ test("folders: a folder is made in the folder list, an empty name is not accepte
   await page.goto("/#/assets/all?folder=af_gone");
   const tools = page.getByRole("group", { name: "Search, filter and sort" });
   await expect(tools.getByRole("button", { name: "Folder: All results", exact: true })).toBeVisible();
-  await tools.getByRole("button", { name: "Edit folders" }).click();
+  await tools.getByRole("button", { name: /^Folder: / }).click();
+  await page.getByRole("dialog", { name: "Folder", exact: true }).getByRole("button", { name: "Edit folders…", exact: true }).click();
   const list = page.getByRole("dialog", { name: "Folders" });
   await expect(list.getByRole("button", { name: "Create folder" })).toBeDisabled();
   await list.getByLabel("New folder name").fill("   ");

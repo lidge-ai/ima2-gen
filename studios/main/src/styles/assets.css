@@ -140,6 +140,12 @@
   background: var(--surface-3);
   color: var(--text);
 }
+/* On a phone the grid is two columns either way, so the density choice is left out. */
+@media (max-width: 600px) {
+  .assets-density {
+    display: none;
+  }
+}
 @media (max-width: 760px) {
   .assets-filters {
     flex-wrap: wrap;

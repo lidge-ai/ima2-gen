@@ -79,11 +79,10 @@ function NewFolder() {
   );
 }
 
-/** A button that opens the folder list: make a folder, rename one, delete one (its results stay). */
-export function FolderManager({ onRemoved }: { onRemoved: (id: string) => void }) {
+/** The folder list as a dialog: make a folder, rename one, delete one (its results stay). Opened from the Folder menu. */
+export function FolderManager({ open, onClose, onRemoved }: { open: boolean; onClose: () => void; onRemoved: (id: string) => void }) {
   const t = useT(FM);
   const dialog = useRef<HTMLDialogElement>(null);
-  const [open, setOpen] = useState(false);
   const { folders, error, loading, reload } = useFolders(open);
   useEffect(() => {
     const el = dialog.current;
@@ -92,26 +91,23 @@ export function FolderManager({ onRemoved }: { onRemoved: (id: string) => void }
     if (!open && el.open) el.close();
   }, [open]);
   return (
-    <>
-      <button type="button" className="chip" onClick={() => setOpen(true)}>{t("edit")}</button>
-      <dialog ref={dialog} className="folder-manager" aria-label={t("title")} onClose={() => setOpen(false)}>
-        {open ? (
-          <div className="folder-manager-body">
-            <header>
-              <h2>{t("title")}</h2>
-              <p>{t("lead")}</p>
-            </header>
-            <NewFolder />
-            {error ? <div role="alert">{t("failed", { error })} <button className="btn" type="button" onClick={reload}>{t("retry")}</button></div> : null}
-            {loading ? <p role="status">{t("loading")}</p> : null}
-            {folders && folders.length === 0 ? <p className="form-hint">{t("empty")}</p> : null}
-            <ul className="folder-list" aria-label={t("list")}>
-              {(folders ?? []).map((folder) => <FolderRow key={folder.id} folder={folder} onRemoved={onRemoved} />)}
-            </ul>
-            <div className="folder-manager-foot"><button type="button" className="btn" onClick={() => setOpen(false)}>{t("close")}</button></div>
-          </div>
-        ) : null}
-      </dialog>
-    </>
+    <dialog ref={dialog} className="folder-manager" aria-label={t("title")} onClose={onClose}>
+      {open ? (
+        <div className="folder-manager-body">
+          <header>
+            <h2>{t("title")}</h2>
+            <p>{t("lead")}</p>
+          </header>
+          <NewFolder />
+          {error ? <div role="alert">{t("failed", { error })} <button className="btn" type="button" onClick={reload}>{t("retry")}</button></div> : null}
+          {loading ? <p role="status">{t("loading")}</p> : null}
+          {folders && folders.length === 0 ? <p className="form-hint">{t("empty")}</p> : null}
+          <ul className="folder-list" aria-label={t("list")}>
+            {(folders ?? []).map((folder) => <FolderRow key={folder.id} folder={folder} onRemoved={onRemoved} />)}
+          </ul>
+          <div className="folder-manager-foot"><button type="button" className="btn" onClick={onClose}>{t("close")}</button></div>
+        </div>
+      ) : null}
+    </dialog>
   );
 }
