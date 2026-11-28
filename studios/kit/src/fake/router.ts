@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { makeCatalog, routeParamsFor, wireCatalog } from "./catalog.ts";
 import { quoteFor } from "../../../../lib/providers/media/priceQuote.ts";
 import { workflows, estimateWorkflow } from "./workflows.ts";
+import { planCuts } from "./cutList.ts";
 import { fakeShowcase } from "./showcase.ts";
 import { fakeResultGraph } from "./comfyGraph.ts";
 import type { Jobs } from "./jobs.ts";
@@ -207,12 +208,12 @@ async function workflow(
     throw new Fault(400, "WORKFLOW_INPUT_INVALID", "Invalid values");
   const fields = values as Record<string, unknown>;
   validateWorkflowFields(def.fields, fields);
-  const plan = estimateWorkflow(
-    def,
-    fields,
-    makeCatalog(keys.keyed),
-    (data.selection ?? {}) as Record<string, unknown>,
-  );
+  const selection = (data.selection ?? {}) as Record<string, unknown>;
+  const catalog = makeCatalog(keys.keyed);
+  const render = (selection.models as Record<string, string> | undefined)?.render ?? def.slots.find((s) => s.name === "render")?.defaultModel ?? "";
+  const cuts = planCuts(def, fields, catalog, render);
+  if (cuts && !Array.isArray(cuts)) throw new Fault(400, "WORKFLOW_INPUT_INVALID", cuts.message, "invalid-request", cuts.field);
+  const plan = estimateWorkflow(def, fields, catalog, selection, cuts);
   if (parts[3] === "estimate") {
     send(res, 200, plan);
     return;

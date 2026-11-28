@@ -99,6 +99,8 @@ const DESCRIPTIONS: Record<string, string> = {
     "Restyles a 4-15 second clip with Grok's video edit, in segments of up to 8.7 seconds, and puts the source sound back.",
   "director-cast": "Create a consistent character reference sheet.",
   "director-cinema": "Create a cinematic film still.",
+  "director-studio":
+    "A directed clip from one prompt or your own cut list: 4-30 seconds planned into shots, or 2-6 shots of your own up to 60 seconds, with a look, a sound bed and image, video and audio references.",
   "director-locations": "Create a cinematic location study.",
 };
 const simple = (id: string, label: string, fields: WireField[], slots: WireSlot[]): WireWorkflow => ({
@@ -187,8 +189,13 @@ const base: WireWorkflow[] = [
     "director-studio",
     "Director studio",
     [
-      text("prompt", "Scene", true),
+      // Required unless a cut list carries the prompts; the server checks that across fields (see cutList.ts).
+      text("prompt", "Scene"),
       { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },
+      {
+        name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000,
+        help: "Optional cut list: 2-6 shots in order, each with its own prompt and whole seconds, up to 60 seconds in all. Leave Length empty when you use it.",
+      },
       tail[0]!,
       aspect,
       { name: "generateAudio", type: "boolean", label: "Sound", required: false, default: true },
@@ -300,14 +307,21 @@ export function estimateWorkflow(
   values: Record<string, unknown>,
   catalog: Catalog,
   selection: Record<string, unknown> = {},
+  /** A cut list's fitted lengths: the render slot becomes one step per shot. */
+  cuts: readonly number[] | null = null,
 ): WireEstimateResponse {
   const models = (selection.models ?? {}) as Record<string, string>,
     routes = (selection.routes ?? {}) as Record<string, string>;
-  const steps = def.slots.map((slot, index) => ({
-    id: slot.name,
-    label: slot.label,
+  const lengths = new Map<string, number>();
+  const planned = def.slots.flatMap((slot) =>
+    cuts && slot.name === "render" ? cuts.map((seconds, i) => ({ slot, id: "shot-" + (i + 1), label: "Shot " + (i + 1), seconds })) : [{ slot, id: slot.name, label: slot.label, seconds: undefined }],
+  );
+  const total = cuts ? cuts.reduce((a, b) => a + b, 0) : Number(values.duration ?? 5);
+  const steps = planned.map(({ slot, id, label, seconds }, index) => ({
+    id: (lengths.set(id, seconds ?? total), id),
+    label,
     kind: "media",
-    dependsOn: index ? [def.slots[index - 1]!.name] : [],
+    dependsOn: index ? [planned[index - 1]!.id] : [],
     model: models[slot.name] ?? slot.defaultModel,
     route:
       routes[slot.name] ??
@@ -315,12 +329,12 @@ export function estimateWorkflow(
         ?.providerId ??
       "fal",
     slot: slot.name,
-    final: index === def.slots.length - 1,
+    final: index === planned.length - 1,
   }));
   const estimates = steps.map((step) => {
     const model = catalog.models.find((m) => m.id === step.model),
       price = model?.routes.find((r) => r.providerId === step.route)?.pricing[0];
-    const quantity = price?.unit === "second" ? Number(values.duration ?? 5) : 1;
+    const quantity = price?.unit === "second" ? lengths.get(step.id)! : 1;
     return {
       stepId: step.id,
       model: step.model,

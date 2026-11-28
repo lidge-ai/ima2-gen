@@ -4,8 +4,14 @@ import { messages, tr } from "../../i18n.ts";
 import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 import { spendBlock } from "../../studio/spend.ts";
+import { newCut, totalSec, type Cut } from "../director/cutList.ts";
 
-const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요" });
+const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow", shot: "Shot {n}" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요", shot: "컷 {n}" });
+
+/** The text a cut list stands in for: the server asks for it unless shots carry the prompts (director-studio's check). */
+const SCENE = "prompt";
+/** The single length a cut list replaces; the server refuses both together. */
+const LENGTH = "duration";
 
 function useWorkflowForm(def: WorkflowDef) {
   const [files, setFiles] = useState<Record<string, SlotValue[]>>({});
@@ -14,6 +20,10 @@ function useWorkflowForm(def: WorkflowDef) {
     Object.fromEntries(def.params.filter((p) => p.default !== undefined).map((p) => [p.name, p.default!])),
   );
   const [steps, setSteps] = useState<Record<string, { model: string }>>({});
+  // The cut list is kept while it is switched off, so going back to it loses nothing.
+  const [cutting, setCutting] = useState(false);
+  const [cuts, setCuts] = useState<Cut[]>(() => [newCut(), newCut()]);
+  const useCuts = !!def.shots && cutting;
   const body = useMemo<WorkflowRunBody>(
     () => ({
       inputs: Object.fromEntries(
@@ -27,15 +37,19 @@ function useWorkflowForm(def: WorkflowDef) {
               })),
         ]),
       ),
-      params,
+      params: useCuts ? Object.fromEntries(Object.entries(params).filter(([name]) => name !== LENGTH)) : params,
       steps,
+      ...(useCuts ? { shots: cuts.map((cut) => ({ prompt: cut.prompt, durationSec: cut.durationSec })) } : {}),
     }),
-    [def, files, texts, params, steps],
+    [def, files, texts, params, steps, useCuts, cuts],
   );
-  const missing = def.inputs.filter(
-    (input) => input.required && (input.kind === "text" ? !texts[input.name]?.trim() : !files[input.name]?.length),
-  );
-  return { files, setFiles, texts, setTexts, params, setParams, steps, setSteps, body, missing };
+  const needed = (input: WorkflowDef["inputs"][number]) => input.required || (!!def.shots && !useCuts && input.kind === "text" && input.name === SCENE);
+  const missing: { name: string; label: string }[] = [
+    ...def.inputs.filter((input) => needed(input) && (input.kind === "text" ? !texts[input.name]?.trim() : !files[input.name]?.length)),
+    ...(useCuts ? cuts.flatMap((cut, i) => (cut.prompt.trim() ? [] : [{ name: "shot-" + cut.id, label: tr(M, "shot", { n: i + 1 }) }])) : []),
+  ];
+  const cutsOver = useCuts && !!def.shots && totalSec(cuts) > def.shots.maxTotalSec;
+  return { files, setFiles, texts, setTexts, params, setParams, steps, setSteps, body, missing, needed, cutting: useCuts, setCutting, cuts, setCuts, cutsOver };
 }
 
 /**
@@ -45,10 +59,12 @@ function useWorkflowForm(def: WorkflowDef) {
 function needsMoreInput(err: unknown): string | null {
   if (!(err instanceof StudioApiError) || err.status !== 400 || err.code !== "WORKFLOW_INPUT_INVALID") return null;
   const field = (err.details as { field?: unknown } | undefined)?.field;
+  // A cut list the chosen model cannot make (a shot too long for it) is also something to change, not a failure.
+  if (field === "shots") return err.message.replace(/^shots: /, "");
   return field === undefined ? err.message : null;
 }
 
-function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
+function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody, ready: boolean) {
   const studio = useStudioApi();
   const [estimate, setEstimate] = useState<WorkflowEstimate | null>(null);
   const [estimateError, setEstimateError] = useState<string | null>(null);
@@ -58,7 +74,7 @@ function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
     setEstimate(null);
     setEstimateError(null);
     setInputNeeded(null);
-    if (def.inputs.some((input) => input.required && !body.inputs[input.name]?.length)) return;
+    if (!ready) return;
     const timer = setTimeout(() => {
       void studio.client.workflows.estimate(def.id, body).then(
         (value) => {
@@ -76,7 +92,7 @@ function useWorkflowEstimate(def: WorkflowDef, body: WorkflowRunBody) {
       current = false;
       clearTimeout(timer);
     };
-  }, [studio, def, body]);
+  }, [studio, def, body, ready]);
   return { estimate, estimateError, inputNeeded };
 }
 
@@ -102,7 +118,7 @@ export function useWorkflow(def: WorkflowDef) {
   const studio = useStudioApi();
   const catalog = useStudio((s) => s.catalog);
   const form = useWorkflowForm(def);
-  const estimate = useWorkflowEstimate(def, form.body);
+  const estimate = useWorkflowEstimate(def, form.body, form.missing.length === 0 && !form.cutsOver);
   const run = useWorkflowRun(def, form.body);
   // What the server planned for a slot: steps name their slot; older servers only by id ("subject-first").
   const planned = (slot: string) =>
@@ -135,6 +151,7 @@ export function useWorkflow(def: WorkflowDef) {
   const blocked =
     !catalog ||
     !!spendReason ||
+    form.cutsOver ||
     estimate.inputNeeded !== null ||
     choices.some(
       (item) =>

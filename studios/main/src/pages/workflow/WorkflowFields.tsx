@@ -16,12 +16,14 @@ const NEXT_STEP = messages(
     "choose a style or describe the look": "Choose a style or describe the look to see the cost.",
     "choose a style, a style reference or describe the look": "Choose a style, add a style reference or describe the look to see the cost.",
     other: "To see the cost: {reason}.",
+    shotLength: "Shot {n} is {seconds} s. {model} makes {min}-{max} s per shot; change its length.",
   },
   {
     "choose a style or add a style reference": "스타일을 고르거나 스타일 참조를 넣으면 비용이 나와요.",
     "choose a style or describe the look": "스타일을 고르거나 원하는 느낌을 적으면 비용이 나와요.",
     "choose a style, a style reference or describe the look": "스타일을 고르거나, 스타일 참조를 넣거나, 원하는 느낌을 적으면 비용이 나와요.",
     other: "비용을 보려면 이 입력이 더 필요해요: “{reason}”",
+    shotLength: "컷 {n}은 {seconds}초예요. {model} 모델은 한 컷을 {min}~{max}초로 만들어요. 길이를 바꿔 주세요.",
   },
 );
 
@@ -29,6 +31,9 @@ function useNextStep(form: WorkflowForm): string | null {
   const t = useT(NEXT_STEP);
   const reason = form.inputNeeded;
   if (reason === null) return null;
+  // lib/workflows/definitions/directorShots.ts fitShots: "shot 2 is 40 s; <model> makes 4-30 s per shot".
+  const shot = /^shot (\d+) is (\d+) s; (\S+) makes (\d+)-(\d+) s per shot$/.exec(reason);
+  if (shot) return t("shotLength", { n: shot[1]!, seconds: shot[2]!, model: form.catalog?.models.find((m) => m.id === shot[3])?.label ?? shot[3]!, min: shot[4]!, max: shot[5]! });
   const known = reason !== "other" && Object.hasOwn(NEXT_STEP.en, reason);
   return known ? t(reason as keyof typeof NEXT_STEP.en) : t("other", { reason });
 }

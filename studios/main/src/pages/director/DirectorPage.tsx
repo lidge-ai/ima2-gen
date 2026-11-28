@@ -11,11 +11,12 @@ import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
 import { useWorkflows } from "../../studio/workflows.ts";
 import { CameraMoveMenu } from "../../ui/CameraMoveMenu.tsx";
+import { CutList } from "./CutList.tsx";
 import "../../styles/director.css";
 
 const M = messages(
-  { noAttach: "{workflow} does not accept {kind} attachments", attachFailed: "Could not attach result", cast: "cast", location: "location", castLabel: "Cast", locationLabel: "Location", attach: "Attach {kind}: {name}", elements: "Your cast and locations", emptyElements: "Create cast or locations to reuse them here.", workflows: "Director workflows", workflow: "Director workflow", historyLabel: "Director history", history: "History", emptyHistory: "No director results yet", emptyHint: "Generate a result to see it here.", loadError: "Could not load workflows: {error}", none: "No director workflows available", loading: "Loading director workflows" },
-  { noAttach: "{workflow}에는 {kind}을 추가할 수 없어요", attachFailed: "결과를 추가하지 못했어요", cast: "인물", location: "장소", castLabel: "인물", locationLabel: "장소", attach: "{kind} 추가: {name}", elements: "내 인물과 장소", emptyElements: "인물이나 장소를 생성하면 여기서 다시 쓸 수 있어요.", workflows: "디렉터 워크플로", workflow: "디렉터 워크플로", historyLabel: "디렉터 기록", history: "기록", emptyHistory: "아직 디렉터 결과가 없어요", emptyHint: "결과를 생성하면 여기에 표시돼요.", loadError: "워크플로를 불러오지 못했어요: {error}", none: "사용할 수 있는 디렉터 워크플로가 없어요", loading: "디렉터 워크플로를 불러오는 중이에요" },
+  { noAttach: "{workflow} does not accept {kind} attachments", attachFailed: "Could not attach result", cast: "cast", location: "location", castLabel: "Cast", locationLabel: "Location", attach: "Attach {kind}: {name}", elements: "Your cast and locations", emptyElements: "Create cast or locations to reuse them here.", workflows: "Director workflows", workflow: "Director workflow", historyLabel: "Director history", history: "History", emptyHistory: "No director results yet", emptyHint: "Generate a result to see it here.", loadError: "Could not load workflows: {error}", none: "No director workflows available", loading: "Loading director workflows", cutMode: "How the clip is cut", oneScene: "One scene", cutList: "Cut list" },
+  { noAttach: "{workflow}에는 {kind}을 추가할 수 없어요", attachFailed: "결과를 추가하지 못했어요", cast: "인물", location: "장소", castLabel: "인물", locationLabel: "장소", attach: "{kind} 추가: {name}", elements: "내 인물과 장소", emptyElements: "인물이나 장소를 생성하면 여기서 다시 쓸 수 있어요.", workflows: "디렉터 워크플로", workflow: "디렉터 워크플로", historyLabel: "디렉터 기록", history: "기록", emptyHistory: "아직 디렉터 결과가 없어요", emptyHint: "결과를 생성하면 여기에 표시돼요.", loadError: "워크플로를 불러오지 못했어요: {error}", none: "사용할 수 있는 디렉터 워크플로가 없어요", loading: "디렉터 워크플로를 불러오는 중이에요", cutMode: "컷 나누는 방식", oneScene: "장면 하나", cutList: "컷 목록" },
 );
 
 const order = ["director-studio", "director-cinema", "director-cast", "director-locations"];
@@ -131,11 +132,19 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
             void form.submit();
           }}
         >
-          <WorkflowParams def={def} form={form} />
+          {/* A cut list sets the length shot by shot, so the single length is not offered with it. */}
+          <WorkflowParams def={form.cutting ? { ...def, params: def.params.filter((param) => param.name !== "duration") } : def} form={form} />
           <div className="director-composer" ref={composer}>
+            {def.shots ? (
+              <div className="cut-mode" role="group" aria-label={t("cutMode")}>
+                <button type="button" className="chip" aria-pressed={!form.cutting} onClick={() => form.setCutting(false)}>{t("oneScene")}</button>
+                <button type="button" className="chip" aria-pressed={form.cutting} onClick={() => form.setCutting(true)}>{t("cutList")}</button>
+              </div>
+            ) : null}
+            {def.shots && form.cutting ? <CutList form={form} spec={def.shots} model={form.catalog?.models.find((m) => m.id === form.slotModel("render"))} /> : null}
             {def.inputs.map((input) => (
               <Fragment key={input.name}>
-                <WorkflowInput input={input} form={form} />
+                <WorkflowInput input={{ ...input, required: form.needed(input) }} form={form} />
                 {/* Right under the scene it writes into. */}
                 {scene && input.name === scene.name ? (
                   <div className="director-moves">

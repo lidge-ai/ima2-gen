@@ -333,6 +333,25 @@ export interface WorkflowParamSpec {
   default?: string | number | boolean;
 }
 
+/** One shot of a cut list: its own prompt and its length in whole seconds. */
+export interface WorkflowShot {
+  prompt: string;
+  durationSec: number;
+}
+
+/** A workflow's optional cut list: shots in order, sent instead of one length. */
+export interface WorkflowShotsSpec {
+  name: string;
+  label: string;
+  description?: string;
+  /** Fewest and most shots in a list. */
+  min: number;
+  max: number;
+  promptMaxLength: number;
+  /** The most the shots may add up to, in seconds. */
+  maxTotalSec: number;
+}
+
 export interface WorkflowStepSpec {
   id: string;
   label: string;
@@ -392,6 +411,8 @@ export interface WorkflowDef {
   inputs: readonly WorkflowInputSpec[];
   params: readonly WorkflowParamSpec[];
   steps: readonly WorkflowStepSpec[];
+  /** Present when the workflow takes a cut list. */
+  shots?: WorkflowShotsSpec;
   preset?: WorkflowPreset;
   /** Text in other languages as the server sent it; see localizeWorkflow. */
   i18n?: Readonly<Record<string, WorkflowText>>;
@@ -400,6 +421,8 @@ export interface WorkflowDef {
 export interface WorkflowRunBody {
   inputs: Readonly<Record<string, readonly SubmitInput[] | string>>;
   params?: Readonly<Record<string, string | number | boolean>>;
+  /** The cut list, for a workflow whose definition has shots; an empty list sends none. */
+  shots?: readonly WorkflowShot[];
   /** Per-step model and provider overrides, keyed by step id. */
   steps?: Readonly<Record<string, { model?: string; provider?: string }>>;
   clientRequestId?: string;

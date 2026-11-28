@@ -127,7 +127,9 @@ export type WireField =
   | (WireFieldBase & { type: "integer"; min: number; max: number; default?: number })
   | (WireFieldBase & { type: "boolean"; default: boolean })
   | (WireFieldBase & { type: "media"; accept: MediaKind; min: number; max: number; minDurationSec?: number; maxDurationSec?: number })
-  | (WireFieldBase & { type: "colors"; min: number; max: number });
+  | (WireFieldBase & { type: "colors"; min: number; max: number })
+  /** An ordered cut list: each shot is { prompt, durationSec } in whole seconds. */
+  | (WireFieldBase & { type: "shots"; min: number; max: number; promptMaxLength: number });
 
 export interface WireSlot {
   name: string;

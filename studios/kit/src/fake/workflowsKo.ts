@@ -15,14 +15,14 @@ const LABELS: Record<string, [string, string]> = {
   "remix-motion-transfer-open": ["리믹스: 동작 따라하기 (단계별)", "첫 프레임을 먼저 만들고 영상을 렌더해요."],
   "remix-object-swap-open": ["리믹스: 사물 바꾸기 (단계별)", "첫 프레임을 먼저 만들고 영상을 렌더해요."],
   "remix-restyle-open": ["리믹스: 스타일 바꾸기 (단계별)", "첫 프레임을 먼저 만들고 영상을 렌더해요."],
-  "director-studio": ["디렉터 스튜디오", "프롬프트와 이미지, 영상, 오디오 레퍼런스로 장면과 소리를 갖춘 4~30초 영상을 만들어요."],
+  "director-studio": ["디렉터 스튜디오", "프롬프트 하나나 직접 짠 컷 목록으로 영상을 연출해요. 4~30초를 샷으로 나눠 계획하거나, 직접 정한 2~6개 샷을 최대 60초까지 만들어요."],
   "director-cinema": ["디렉터 시네마", "영화 같은 스틸 이미지를 만들어요."],
   "director-cast": ["디렉터 인물", "일관된 인물 레퍼런스 시트를 만들어요."],
   "director-locations": ["디렉터 장소", "영화 같은 장소 이미지를 만들어요."],
 };
 const FIELDS: Record<string, string> = {
   video: "원본 영상", images: "레퍼런스 이미지", styleImage: "스타일 레퍼런스", target: "바꿀 대상", characterImage: "인물 레퍼런스",
-  videos: "레퍼런스 영상", audios: "레퍼런스 오디오", sceneImage: "장면 레퍼런스", scene: "장면", duration: "길이(초)",
+  videos: "레퍼런스 영상", audios: "레퍼런스 오디오", sceneImage: "장면 레퍼런스", scene: "장면", duration: "길이(초)", shots: "컷 목록",
   generateAudio: "소리", continuity: "장면 연결", anchors: "고정 키프레임", resolution: "해상도", sound: "소리", tier: "품질",
   style: "스타일", aspectRatio: "화면 비율", camera: "카메라", lens: "렌즈", palette: "색상 팔레트", paletteColors: "사용자 팔레트", n: "개수",
 };

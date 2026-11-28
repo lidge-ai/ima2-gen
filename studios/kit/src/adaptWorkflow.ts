@@ -2,6 +2,7 @@
 import { wireRef } from "./elements.ts";
 import type {
   MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowPreset, WorkflowRunBody,
+  WorkflowShotsSpec,
 } from "./types.ts";
 import type { WireEstimateResponse, WireField, WireWorkflow } from "./wire.ts";
 
@@ -40,6 +41,18 @@ function toParam(field: WireField): WorkflowParamSpec | null {
   }
 }
 
+/** The most a cut list may add up to (lib/workflows/validate.ts SHOTS_MAX_TOTAL_SEC); the field itself does not carry it. */
+export const SHOTS_MAX_TOTAL_SEC = 60;
+
+function toShots(fields: readonly WireField[]): WorkflowShotsSpec | undefined {
+  const field = fields.find((f) => f.type === "shots");
+  if (!field || field.type !== "shots") return undefined;
+  return {
+    name: field.name, label: field.label, min: field.min, max: field.max, promptMaxLength: field.promptMaxLength,
+    maxTotalSec: SHOTS_MAX_TOTAL_SEC, ...(field.help ? { description: field.help } : {}),
+  };
+}
+
 export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
   return {
     id: wire.id,
@@ -60,6 +73,7 @@ export function toWorkflowDef(wire: WireWorkflow): WorkflowDef {
       ...(slot.description ? { description: slot.description } : {}),
       ...(slot.credits?.length ? { credits: slot.credits } : {}),
     })),
+    ...(toShots(wire.fields) ? { shots: toShots(wire.fields)! } : {}),
     ...(wire.i18n ? { i18n: wire.i18n } : {}),
     ...(wire.preset?.label ? { preset: toPreset(wire.preset) } : {}),
   };
@@ -96,6 +110,9 @@ export function localizeWorkflow(def: WorkflowDef, locale: string): WorkflowDef 
         ...(param.options ? { options: param.options.map((o) => ({ ...o, label: f?.options?.[o.value] ?? o.label })) } : {}),
       };
     }),
+    ...(def.shots
+      ? { shots: { ...def.shots, label: field(def.shots.name)?.label ?? def.shots.label, ...((field(def.shots.name)?.help ?? def.shots.description) !== undefined ? { description: field(def.shots.name)?.help ?? def.shots.description! } : {}) } }
+      : {}),
     ...(def.preset
       ? {
           preset: {
@@ -127,6 +144,7 @@ export function toWireRun(body: WorkflowRunBody, def?: WorkflowDef): Record<stri
   const values: Record<string, unknown> = {};
   for (const [name, value] of Object.entries(body.inputs)) values[name] = typeof value === "string" ? value : mediaValue(value);
   for (const [name, value] of Object.entries(body.params ?? {})) values[name] = colorsValue(def, name, value);
+  if (body.shots?.length) values[def?.shots?.name ?? "shots"] = body.shots.map((shot) => ({ prompt: shot.prompt.trim(), durationSec: shot.durationSec }));
   const models: Record<string, string> = {};
   const routes: Record<string, string> = {};
   for (const [slot, pick] of Object.entries(body.steps ?? {})) {
