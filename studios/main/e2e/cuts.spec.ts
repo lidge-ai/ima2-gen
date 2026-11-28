@@ -116,6 +116,12 @@ test("cut list: one scene still works as before, the list is kept while it is of
   await expect(list.getByRole("textbox", { name: "샷 1" })).toBeVisible();
   await expect(list.getByRole("status")).toHaveText("샷 2개 · 60초 중 10초");
   await expect(page.getByText("필수: 샷 1, 샷 2")).toBeVisible();
+  // The cost rows and the running job's steps use the server's Korean step names.
+  await list.getByRole("textbox", { name: "샷 1" }).fill("문이 열린다");
+  await list.getByRole("textbox", { name: "샷 2" }).fill("창에 비가 내린다");
+  await expect(page.getByLabel("비용 내역").locator(".workflow-step").first()).toContainText("샷 1");
+  await page.getByRole("button", { name: /^생성/ }).click();
+  await expect(page.locator(".job-steps").first()).toContainText("샷 1의 마지막 프레임 가져오기");
   // At phone width the settings and the list stay inside the screen.
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);

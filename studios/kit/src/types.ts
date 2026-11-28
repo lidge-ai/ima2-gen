@@ -195,6 +195,8 @@ export type JobError = MediaProviderError;
 export interface WorkflowStepState {
   id: string;
   label: string;
+  /** The label in other languages, by locale; see stepLabel. */
+  labels?: Readonly<Record<string, string>>;
   status: JobStatus;
   model?: string;
   provider?: string;
@@ -314,6 +316,8 @@ export interface WorkflowInputSpec {
   kind: MediaKind | "text";
   role?: MediaInputRole;
   required: boolean;
+  /** Required unless this other field (an input, or the cut list) is given; required is then false. */
+  requiredUnless?: string;
   /** Accept attribute for file inputs. */
   accept?: string;
   maxCount?: number;
@@ -433,7 +437,7 @@ export type WorkflowStepKind = "media" | "text" | "local";
 
 export interface WorkflowEstimate {
   /** Per planned step: the model and route the server will actually use (its plan, not the defaults). */
-  steps: readonly { id: string; label?: string; model?: string; route?: string; slot?: string; kind?: WorkflowStepKind; estimate: CostEstimate }[];
+  steps: readonly { id: string; label?: string; labels?: Readonly<Record<string, string>>; model?: string; route?: string; slot?: string; kind?: WorkflowStepKind; estimate: CostEstimate }[];
   total: CostEstimate;
 }
 

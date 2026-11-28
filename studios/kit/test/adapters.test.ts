@@ -190,6 +190,8 @@ test("a cut list reaches the server as ordered shots, and its field reads in the
     name: "shots", label: "Shots", min: 2, max: 6, promptMaxLength: 1000, maxTotalSec: 60,
     description: "Optional cut list: 2-6 shots in order, each with its own prompt and whole seconds, up to 60 seconds in all. Leave Length empty when you use it.",
   });
+  // The scene is required unless the cut list is given, as the server says it.
+  assert.deepEqual([def.inputs.find((i) => i.name === "prompt")?.required, def.inputs.find((i) => i.name === "prompt")?.requiredUnless], [false, "shots"]);
   // The cut list is its own thing: not a file input and not a setting tile.
   assert.equal(def.inputs.some((i) => i.name === "shots"), false);
   assert.equal(def.params.some((p) => p.name === "shots"), false);

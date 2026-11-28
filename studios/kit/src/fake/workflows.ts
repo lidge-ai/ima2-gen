@@ -189,8 +189,8 @@ const base: WireWorkflow[] = [
     "director-studio",
     "Director studio",
     [
-      // Required unless a cut list carries the prompts; the server checks that across fields (see cutList.ts).
-      text("prompt", "Scene"),
+      // Required unless a cut list carries the prompts (see cutList.ts).
+      { ...text("prompt", "Scene"), requiredUnless: "shots" },
       { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },
       {
         name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000,
@@ -332,12 +332,13 @@ export function estimateWorkflow(
       "fal",
     slot: slot.name,
     final: index === planned.length - 1,
+    ...(/^Shot \d+$/.test(label) ? { i18n: { ko: { label: label.replace("Shot", "샷") } } } : {}),
   }));
   // Like the server, a cut list also plans work it does itself: the last frame of each shot but the last, and the join.
-  const local = (id: string, label: string, dependsOn: string[]) => ({ id, label, kind: "local", dependsOn, final: false });
+  const local = (id: string, label: string, dependsOn: string[], ko: string) => ({ id, label, kind: "local", dependsOn, final: false, i18n: { ko: { label: ko } } });
   if (cuts) {
     const shots = steps.filter((step) => step.id.startsWith("shot-"));
-    const extra = [...shots.slice(0, -1).map((shot) => local(shot.id + "-last", "Take the last frame of " + shot.id, [shot.id])), local("join", "Join the shots", shots.map((shot) => shot.id))];
+    const extra = [...shots.slice(0, -1).map((shot) => local(shot.id + "-last", "Take the last frame of " + shot.label.toLowerCase(), [shot.id], shot.label.replace("Shot", "샷") + "의 마지막 프레임 가져오기")), local("join", "Join the shots", shots.map((shot) => shot.id), "샷 잇기")];
     const done = { ...summaryEstimate(steps, catalog, lengths) };
     const localEstimates = extra.map((step) => ({ stepId: step.id, usd: 0, note: "runs locally" }));
     const all = [...done.estimates, ...localEstimates];

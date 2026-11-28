@@ -8,8 +8,6 @@ import { newCut, totalSec, type Cut } from "../director/cutList.ts";
 
 const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow", shot: "Shot {n}" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요", shot: "샷 {n}" });
 
-/** The text a cut list stands in for: the server asks for it unless shots carry the prompts (director-studio's check). */
-const SCENE = "prompt";
 /** The single length a cut list replaces; the server refuses both together. */
 const LENGTH = "duration";
 
@@ -43,7 +41,9 @@ function useWorkflowForm(def: WorkflowDef) {
     }),
     [def, files, texts, params, steps, useCuts, cuts],
   );
-  const needed = (input: WorkflowDef["inputs"][number]) => input.required || (!!def.shots && !useCuts && input.kind === "text" && input.name === SCENE);
+  // "Required unless X": X is the cut list, or another input that is still empty.
+  const given = (name: string) => (name === def.shots?.name ? useCuts : !!texts[name]?.trim() || !!files[name]?.length);
+  const needed = (input: WorkflowDef["inputs"][number]) => input.required || (!!input.requiredUnless && !given(input.requiredUnless));
   const missing: { name: string; label: string }[] = [
     ...def.inputs.filter((input) => needed(input) && (input.kind === "text" ? !texts[input.name]?.trim() : !files[input.name]?.length)),
     ...(useCuts ? cuts.flatMap((cut, i) => (cut.prompt.trim() ? [] : [{ name: "shot-" + cut.id, label: tr(M, "shot", { n: i + 1 }) }])) : []),

@@ -4,7 +4,7 @@ import type {
   MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowPreset, WorkflowRunBody,
   WorkflowShotsSpec, WorkflowStepKind,
 } from "./types.ts";
-import type { WireEstimateResponse, WireField, WireWorkflow } from "./wire.ts";
+import type { WireEstimateResponse, WireField, WireStepSummary, WireWorkflow } from "./wire.ts";
 
 const IMAGE_OUTPUT = new Set(["director-cast", "director-locations"]);
 
@@ -13,7 +13,10 @@ function family(id: string): WorkflowDef["family"] {
 }
 
 function toInput(field: WireField): WorkflowInputSpec | null {
-  const base = { name: field.name, label: field.label, required: field.required, ...(field.help ? { description: field.help } : {}) };
+  const base = {
+    name: field.name, label: field.label, required: field.required,
+    ...(field.requiredUnless ? { requiredUnless: field.requiredUnless } : {}), ...(field.help ? { description: field.help } : {}),
+  };
   if (field.type === "media") {
     const role = field.accept === "video" ? "source-video" : field.accept === "audio" ? "reference-audio" : "reference-image";
     return {
@@ -158,6 +161,18 @@ export function toWireRun(body: WorkflowRunBody, def?: WorkflowDef): Record<stri
   };
 }
 
+/** A step's translated labels by locale (steps[].i18n.<locale>.label), or undefined when the server sent none. */
+export function stepLabels(step: Pick<WireStepSummary, "i18n">): Record<string, string> | undefined {
+  const out: Record<string, string> = {};
+  for (const [locale, text] of Object.entries(step.i18n ?? {})) if (text.label) out[locale] = text.label;
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** A step's label in the given language; English when the server sent no translation. */
+export function stepLabel(step: { id: string; label?: string; labels?: Readonly<Record<string, string>> }, locale: string): string {
+  return step.labels?.[locale] ?? step.label ?? step.id;
+}
+
 const isStepKind = (kind: string): kind is WorkflowStepKind => kind === "media" || kind === "text" || kind === "local";
 
 export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
@@ -167,6 +182,7 @@ export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
     return {
       id: e.stepId,
       ...(summary ? { label: summary.label } : {}),
+      ...(summary && stepLabels(summary) ? { labels: stepLabels(summary)! } : {}),
       ...(e.model ? { model: e.model } : summary?.model ? { model: summary.model } : {}),
       ...(summary?.route ? { route: summary.route } : {}),
       ...(summary?.slot ? { slot: summary.slot } : {}),

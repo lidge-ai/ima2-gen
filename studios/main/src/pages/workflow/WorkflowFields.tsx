@@ -1,6 +1,6 @@
-import { formatUsd, type WorkflowCredit, type WorkflowDef, type WorkflowInputSpec } from "@ima2/studio-kit";
+import { formatUsd, stepLabel, type WorkflowCredit, type WorkflowDef, type WorkflowInputSpec } from "@ima2/studio-kit";
 import { useState } from "react";
-import { messages, tr, useT } from "../../i18n.ts";
+import { messages, tr, useLocale, useT } from "../../i18n.ts";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
 import { ModelName } from "../../ui/ModelName.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
@@ -39,8 +39,8 @@ function useNextStep(form: WorkflowForm): string | null {
 }
 
 const M = messages(
-  { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", afterInputs: "Step costs appear once the inputs are complete.", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable", auto: "Auto", typeValue: "Type to set", on: "On", off: "Off", credits: "Sources ({n})", addAnother: "Add another: {label}", count: "{n} of {max}", shot: "Shot {n}", shorten: "Shorten the cut list for price", localSteps: "{n} more steps (frames, joining, mixing) are done by ima2 at no charge." },
-  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", afterInputs: "입력을 마치면 단계별 비용이 나와요.", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐", credits: "출처 ({n})", addAnother: "하나 더 추가: {label}", count: "{max}개 중 {n}개", shot: "샷 {n}", shorten: "컷 목록을 줄이면 비용이 나와요", localSteps: "프레임 추출, 이어 붙이기, 믹싱 같은 나머지 {n}단계는 ima2가 직접 처리해서 비용이 없어요." },
+  { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", afterInputs: "Step costs appear once the inputs are complete.", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable", auto: "Auto", typeValue: "Type to set", on: "On", off: "Off", credits: "Sources ({n})", addAnother: "Add another: {label}", count: "{n} of {max}", shorten: "Shorten the cut list for price", localSteps: "{n} more steps (frames, joining, mixing) are done by ima2 at no charge." },
+  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", afterInputs: "입력을 마치면 단계별 비용이 나와요.", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐", credits: "출처 ({n})", addAnother: "하나 더 추가: {label}", count: "{max}개 중 {n}개", shorten: "컷 목록을 줄이면 비용이 나와요", localSteps: "프레임 추출, 이어 붙이기, 믹싱 같은 나머지 {n}단계는 ima2가 직접 처리해서 비용이 없어요." },
 );
 
 function TextWorkflowInput({
@@ -312,12 +312,13 @@ function WorkflowCosts({ form }: { form: WorkflowForm }) {
               : t("estimating")}
       </p>
     );
+  const locale = useLocale();
   const local = form.estimate.steps.filter((step) => step.kind === "local").length;
   return (
     <div className="workflow-steps" aria-label={t("breakdown")}>
       {form.estimate.steps.filter((step) => step.kind !== "local").map((step) => (
         <div className="workflow-step" key={step.id}>
-          <span>{shotLabel(step.label ?? step.id)}</span>
+          <span>{stepLabel(step, locale)}</span>
           {step.model ? <ModelName id={step.model} /> : null}
           <span className="muted">{price(step.estimate)}</span>
         </div>
@@ -326,12 +327,6 @@ function WorkflowCosts({ form }: { form: WorkflowForm }) {
       {local > 0 ? <p className="form-hint">{t("localSteps", { n: local })}</p> : null}
     </div>
   );
-}
-
-/** The server names a cut list's steps "Shot 1", "Shot 2"; they read in the screen's language like the list does. */
-function shotLabel(label: string): string {
-  const shot = /^Shot (\d+)$/.exec(label);
-  return shot ? tr(M, "shot", { n: shot[1]! }) : label;
 }
 
 export function price(value: { usd: number | null; basis: string }): string {

@@ -120,6 +120,8 @@ interface WireFieldBase {
   label: string;
   help?: string;
   required: boolean;
+  /** Required unless the named field is given (required is then false). */
+  requiredUnless?: string;
 }
 export type WireField =
   | (WireFieldBase & { type: "text"; maxLength: number; multiline?: boolean })
@@ -179,6 +181,8 @@ export interface WireStepSummary {
   /** Workflow slot this media step fills (servers with step slots). */
   slot?: string;
   final: boolean;
+  /** The label in other languages (ko today). */
+  i18n?: Readonly<Record<string, { label?: string }>>;
 }
 
 export interface WireEstimateResponse {

@@ -2,6 +2,7 @@
  * Folds the server's flat job events (GET /api/events, jobKind media|workflow)
  * into full Job snapshots, so screens always render one object per job.
  */
+import { stepLabels } from "./adaptWorkflow.ts";
 import type { Job, JobEventName, JobOutput, MediaKind, MediaSubmitBody, WorkflowStepState } from "./types.ts";
 import type { WireOutput, WireStepEstimate, WireStepSummary } from "./wire.ts";
 
@@ -30,6 +31,8 @@ function plannedSteps(data: WireEventData): WorkflowStepState[] {
   return steps.map((s) => {
     const e = estimates.find((x) => x.stepId === s.id);
     const step: WorkflowStepState = { id: s.id, label: s.label, status: "queued" };
+    const labels = stepLabels(s);
+    if (labels) step.labels = labels;
     if (s.model) step.model = s.model;
     if (s.route) step.provider = s.route;
     if (e) step.estimate = { usd: e.usd, basis: e.note ?? (e.units ? e.units.quantity + " " + e.units.unit : "") };

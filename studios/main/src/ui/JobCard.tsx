@@ -1,5 +1,5 @@
-import { messages, useT } from "../i18n.ts";
-import { isTerminal, type Job, type JobError } from "@ima2/studio-kit";
+import { messages, useLocale, useT } from "../i18n.ts";
+import { isTerminal, stepLabel, type Job, type JobError } from "@ima2/studio-kit";
 import { useStudioApi } from "../studio/context.tsx";
 import { Icon } from "./Icon.tsx";
 import { MediaView, downloadName } from "./MediaView.tsx";
@@ -49,6 +49,7 @@ function ErrorBlock({ job, error }: { job: Job; error: JobError }) {
 
 function Steps({ job }: { job: Job }) {
   const t = useT(M);
+  const locale = useLocale();
   if (!job.steps?.length) return null;
   return (
     <ol className="job-steps" aria-label={t("steps")}>
@@ -56,7 +57,7 @@ function Steps({ job }: { job: Job }) {
         <li key={step.id} className={"job-step is-" + step.status}>
           <span className="job-step-dot" aria-hidden />
           <span>
-            {step.label}
+            {stepLabel(step, locale)}
             {step.model ? <ModelName id={step.model} /> : null}
             {step.provider ? <ProviderName id={step.provider} /> : null}
           </span>

@@ -5,6 +5,7 @@ import { startFakeServer } from "../src/fake/server.ts";
 import { createStudioClient, type StudioClient } from "../src/client.ts";
 import { elementInputs } from "../src/elements.ts";
 import { StudioApiError } from "../src/http.ts";
+import { stepLabel } from "../src/adaptWorkflow.ts";
 import { readSse } from "../src/sse.ts";
 import type { JobEvent } from "../src/types.ts";
 
@@ -600,6 +601,8 @@ test("director studio takes a cut list: one priced step per shot, and the server
       ["shot-1-last", "local"], ["shot-2-last", "local"], ["join", "local"],
     ]);
     assert.deepEqual(estimate.steps.filter((s) => s.kind === "local").map((s) => s.estimate.usd), [0, 0, 0]);
+    // Step labels come with the server's Korean; a step without one reads in English.
+    assert.deepEqual([stepLabel(estimate.steps[1]!, "ko"), stepLabel(estimate.steps[4]!, "ko"), stepLabel(estimate.steps[3]!, "ko"), stepLabel(estimate.steps[4]!, "en")], ["샷 2", "샷 1의 마지막 프레임 가져오기", "Sound bed", "Take the last frame of shot 1"]);
     assert.deepEqual(estimate.steps.slice(0, 3).map((s) => s.label), ["Shot 1", "Shot 2", "Shot 3"]);
     // Each shot is priced by its own length.
     const [a, b] = estimate.steps;
