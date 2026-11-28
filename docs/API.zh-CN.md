@@ -598,7 +598,7 @@ Grok视频 API 使用的提示界面：
 | `DELETE` | `/api/assets/folders/:id` |删除一个空文件夹|
 | `GET` | `/api/assets/tags` |不同的标签|
 
-`kind`是其中之一`image | video | element | preset | template`. `filePath`是
+`kind`是其中之一`image | video | audio | element | preset | template`. `filePath`是
 需要用于`image`/`video`，必须呆在里面`generated/`，并且被存储
 相对于它。光标分页顺序`created_at DESC, id DESC`;错误
 使用带有代码的标准信封，例如`INVALID_ASSET_KIND`,

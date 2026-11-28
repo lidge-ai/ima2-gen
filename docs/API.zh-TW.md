@@ -598,7 +598,7 @@ Grok視訊 API 使用的提示介面：
 | `DELETE` | `/api/assets/folders/:id` |刪除一個空資料夾|
 | `GET` | `/api/assets/tags` |不同的標籤|
 
-`kind`是其中之一`image | video | element | preset | template`. `filePath`是
+`kind`是其中之一`image | video | audio | element | preset | template`. `filePath`是
 需要用於`image`/`video`，必須待在裡面`generated/`，並且被存儲
 相對於它。遊標分頁順序`created_at DESC, id DESC`;錯誤
 使用帶有代碼的標準信封，例如`INVALID_ASSET_KIND`,

@@ -913,8 +913,8 @@ files inside `generated/`; deleting an asset never deletes the file.
 | `DELETE` | `/api/assets/folders/:id` | Delete an empty folder |
 | `GET` | `/api/assets/tags` | Distinct tags |
 
-`kind` is one of `image | video | element | preset | template`. `filePath` is
-required for `image`/`video`, must stay inside `generated/`, and is stored
+`kind` is one of `image | video | audio | element | preset | template`. `filePath` is
+required for `image`/`video`/`audio`, must stay inside `generated/`, and is stored
 relative to it. Cursor pagination orders by `created_at DESC, id DESC`; errors
 use the standard envelope with codes such as `INVALID_ASSET_KIND`,
 `INVALID_FILENAME`, `INVALID_PARENT`, `FOLDER_CYCLE`, `FOLDER_NOT_EMPTY`.

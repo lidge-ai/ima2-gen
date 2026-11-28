@@ -4,7 +4,7 @@ import { config } from "../config.js";
 import { getDb } from "./db.js";
 import { assertCharacterBindings, assertRefsPreservedForBindings } from "./characterBindings.js";
 
-export const ASSET_KINDS = ["image", "video", "element", "preset", "template"] as const;
+export const ASSET_KINDS = ["image", "video", "audio", "element", "preset", "template"] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 export const ELEMENT_KINDS = ["character", "product", "style", "scene"] as const;
 export type ElementKind = (typeof ELEMENT_KINDS)[number];

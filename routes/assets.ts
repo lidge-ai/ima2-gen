@@ -73,8 +73,8 @@ function validateElementMetadata(metadata: unknown, notes: unknown) {
 async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<string | null> {
   const rel = typeof raw === "string" ? raw.trim() : "";
   if (!rel) {
-    if (kind === "image" || kind === "video") {
-      throw httpError(400, "INVALID_FILENAME", "filePath required for image/video assets");
+    if (kind === "image" || kind === "video" || kind === "audio") {
+      throw httpError(400, "INVALID_FILENAME", "filePath required for image/video/audio assets");
     }
     return null;
   }
