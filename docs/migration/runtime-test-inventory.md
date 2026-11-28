@@ -32,6 +32,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/asset-derived.test.ts`
 - `tests/asset-lifecycle-path.test.ts`
 - `tests/asset-ref-contract.test.ts`
+- `tests/assets-element-inputs.test.ts`
 - `tests/assets-routes-contract.test.ts`
 - `tests/assets-store-contract.test.ts`
 - `tests/atlascloud-provider-contract.test.ts`
