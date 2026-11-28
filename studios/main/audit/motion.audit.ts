@@ -15,6 +15,7 @@ const VIDEO = "/video?model=bytedance%2Fseedance-2.5";
 const CELLS: Cell[] = [
   { id: "motion__button", hash: VIDEO, act: typed("A fox trots along a frozen harbor at dawn") },
   { id: "motion__menu", hash: VIDEO, act: then(typed("A fox trots along a frozen harbor at dawn"), openMenu) },
+  { id: "motion__menu-preview", hash: VIDEO, act: then(typed("A fox trots along a frozen harbor at dawn"), openMenu, async (page) => { await page.getByRole("dialog").getByRole("button", { name: /^(Crane up|크레인 상승)$/ }).focus(); }) },
   { id: "motion__menu-search", hash: VIDEO, act: then(openMenu, async (page) => { await page.getByRole("dialog").getByRole("searchbox").fill("drone"); }) },
   { id: "motion__menu-none", hash: VIDEO, act: then(openMenu, async (page) => { await page.getByRole("dialog").getByRole("searchbox").fill("teleport"); }) },
   {
@@ -22,6 +23,7 @@ const CELLS: Cell[] = [
     act: then(typed("A fox trots along a frozen harbor at dawn"), openMenu, async (page) => { await page.getByRole("dialog").getByRole("button", { name: /^(Orbit left|왼쪽으로 돌기)$/ }).click(); await page.waitForTimeout(300); }),
   },
   { id: "motion__cards", hash: "/presets/moves" },
+  { id: "motion__cards-group", hash: "/presets/moves", act: async (page) => { await page.getByRole("button", { name: /^(Orbit and arc|돌기와 아크)$/ }).click(); } },
   { id: "motion__cards-search", hash: "/presets/moves", act: async (page) => { await page.getByRole("searchbox").fill("drone"); } },
   { id: "motion__cards-none", hash: "/presets/moves", act: async (page) => { await page.getByRole("searchbox").fill("teleport"); } },
   { id: "motion__director", hash: "/director/director-studio", act: then(typed("She crosses the square as the lamps come on"), openMenu) },

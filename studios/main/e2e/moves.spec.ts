@@ -39,6 +39,15 @@ test("camera moves: the menu groups and searches the moves in both languages and
   await page.getByRole("button", { name: "Camera move", exact: true }).click();
   const menu = page.getByRole("dialog", { name: "Camera moves" });
   await expect(menu.getByText("How closely it is followed depends on the model.")).toBeVisible();
+  // The menu opens to the right of the form, level with its button, so the prompt stays readable while choosing.
+  const [form, button, box] = await Promise.all([page.locator(".panel").boundingBox(), page.getByRole("button", { name: "Camera move", exact: true }).boundingBox(), menu.boundingBox()]);
+  expect(Math.round(box!.x - (form!.x + form!.width))).toBe(8);
+  expect(Math.abs(box!.y - button!.y)).toBeLessThan(box!.height);
+  // The sentence a move adds shows at the foot of the menu before it is chosen, by pointer and by keyboard.
+  await menu.getByRole("button", { name: "Crane up", exact: true }).hover();
+  await expect(menu.getByText("Adds: The camera cranes up from ground level to a high wide view.")).toBeVisible();
+  await menu.getByRole("button", { name: "Top-down", exact: true }).focus();
+  await expect(menu.getByText("Adds: A top-down overhead shot looking straight down, drifting slowly.")).toBeVisible();
   await expect(menu.getByRole("group", { name: "Crane and drone" }).getByRole("button")).toHaveCount(6);
   await menu.getByRole("searchbox").fill("drone");
   await expect(menu.getByRole("button")).toHaveText(["Drone flyover", "Drone rise"]);
@@ -64,8 +73,17 @@ test("camera moves: the Presets tab lists them as text cards; Use adds the sente
   await expect(list.getByRole("article")).toHaveCount(32);
   // A card is words only: no picture or clip stands in for a result.
   await expect(list.locator("img, video")).toHaveCount(0);
+  // The kind chips narrow the cards to one group; search then narrows within it.
+  const kinds = list.getByRole("group", { name: "Kind of move" });
+  await kinds.getByRole("button", { name: "Focus and zoom" }).click();
+  await expect(list.getByRole("article")).toHaveCount(4);
+  await expect(kinds.getByRole("button", { name: "Focus and zoom" })).toHaveAttribute("aria-pressed", "true");
   await list.getByRole("searchbox", { name: "Search camera moves" }).fill("drone");
+  await expect(list.getByRole("status")).toHaveText("No camera move matches. Change the search.");
+  await kinds.getByRole("button", { name: "All", exact: true }).click();
   await expect(list.getByRole("article")).toHaveCount(2);
+  // The English sentence is labelled as what gets added.
+  await expect(list.getByRole("article", { name: "Drone rise" })).toContainText("Adds");
   await expect(list.getByRole("article", { name: "Drone rise" })).toContainText(RISE);
   await list.getByRole("link", { name: "Use Drone rise in a video" }).click();
   await expect(page.getByLabel("Prompt")).toHaveValue("A lighthouse at dusk. " + RISE);

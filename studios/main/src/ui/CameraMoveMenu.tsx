@@ -5,8 +5,8 @@ import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
 
 export const MM = messages(
-  { button: "Camera move", title: "Camera moves", search: "Search camera moves", none: "No camera move matches.", lead: "Adds a sentence to your prompt. How closely it is followed depends on the model.", added: "Added to the prompt: {name}" },
-  { button: "카메라 무브", title: "카메라 무브", search: "카메라 무브 검색", none: "맞는 카메라 무브가 없어요.", lead: "프롬프트에 문장을 하나 더해요. 얼마나 따르는지는 모델마다 달라요.", added: "프롬프트에 추가했어요: {name}" },
+  { button: "Camera move", title: "Camera moves", search: "Search camera moves", none: "No camera move matches.", lead: "Adds a sentence to your prompt. How closely it is followed depends on the model.", adds: "Adds: {phrase}", added: "Added to the prompt: {name}" },
+  { button: "카메라 무브", title: "카메라 무브", search: "카메라 무브 검색", none: "맞는 카메라 무브가 없어요.", lead: "프롬프트에 문장을 하나 더해요. 얼마나 따르는지는 모델마다 달라요.", adds: "넣는 문장: {phrase}", added: "프롬프트에 추가했어요: {name}" },
 );
 
 interface Props {
@@ -26,6 +26,8 @@ export function CameraMoveMenu({ value, onChange, field }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [added, setAdded] = useState("");
+  // The move under the pointer or the keyboard focus: its sentence shows at the foot of the menu before it is chosen.
+  const [preview, setPreview] = useState<CameraMove | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   // The caret is read when the menu opens: opening it moves focus away from the prompt.
   const caret = useRef<{ start: number; end: number } | null>(null);
@@ -34,6 +36,7 @@ export function CameraMoveMenu({ value, onChange, field }: Props) {
     caret.current = el && document.activeElement === el ? { start: el.selectionStart, end: el.selectionEnd } : null;
     setQuery("");
     setAdded("");
+    setPreview(null);
     setOpen(true);
   };
   const pick = (move: CameraMove) => {
@@ -53,30 +56,30 @@ export function CameraMoveMenu({ value, onChange, field }: Props) {
   return (
     <>
       <button ref={trigger} type="button" className="chip" aria-haspopup="dialog" aria-expanded={open} onMouseDown={(e) => e.preventDefault()} onClick={() => (open ? setOpen(false) : show())}>
-        <Icon name="video" size={13} /> {t("button")}
+        {t("button")}
       </button>
       {added ? <span className="visually-hidden" role="status">{added}</span> : null}
-      {/* Beside the button where there is room, so the prompt stays readable while choosing. */}
-      <Popover open={open} onClose={() => setOpen(false)} label={t("title")} className="menu-popover move-popover" anchor={trigger} placement="right">
+      {/* Beside the form the button is in where there is room, so the whole prompt stays readable while choosing. */}
+      <Popover open={open} onClose={() => setOpen(false)} label={t("title")} className="menu-popover move-popover" anchor={trigger} placement="beside" region={() => trigger.current?.closest(".panel") ?? null}>
         <p className="menu-title">{t("title")}</p>
         <label className="popover-search">
           <Icon name="search" size={15} />
           <input type="search" value={query} placeholder={t("search")} aria-label={t("search")} onChange={(e) => setQuery(e.target.value)} />
         </label>
-        <p className="move-lead">{t("lead")}</p>
         {found.length === 0 ? <p className="empty-line" role="status">{t("none")}</p> : null}
         <div className="move-list">
           {MOVE_GROUPS.filter((group) => found.some((move) => move.group === group)).map((group) => (
             <div key={group} role="group" aria-label={moveGroupLabel(group)} className="move-group">
               <p className="move-group-title">{moveGroupLabel(group)}</p>
               {found.filter((move) => move.group === group).map((move) => (
-                <button key={move.id} type="button" className="menu-item move-item" title={move.phrase} onClick={() => pick(move)}>
+                <button key={move.id} type="button" className="menu-item move-item" onFocus={() => setPreview(move)} onMouseEnter={() => setPreview(move)} onClick={() => pick(move)}>
                   <span className="menu-label">{move.label}</span>
                 </button>
               ))}
             </div>
           ))}
         </div>
+        <p className="move-preview" lang={preview ? "en" : undefined}>{preview ? t("adds", { phrase: preview.phrase + "." }) : t("lead")}</p>
       </Popover>
     </>
   );

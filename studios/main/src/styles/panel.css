@@ -113,9 +113,15 @@
 .move-popover {
   width: min(320px, 92vw);
 }
-.move-lead {
-  margin: 6px 8px;
+/* The foot of the menu: what the menu does, or the sentence of the move under the pointer or focus. Its height is
+   fixed so the list above never moves. */
+.move-preview {
+  margin: 6px 0 0;
+  padding: 8px 8px 2px;
+  border-top: 1px solid var(--line);
   font-size: 12px;
+  line-height: 1.4;
+  min-height: calc(4.2em + 10px);
   color: var(--text-muted);
 }
 .move-list {
@@ -171,6 +177,25 @@
 .move-card h3 {
   margin: 0;
   font-size: 15px;
+}
+.move-adds {
+  margin: 0 0 -6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+/* Wide screens: six columns, so each group of five or six moves is one row. */
+@media (min-width: 1200px) {
+  .moves-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .move-phrase {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
 }
 .move-phrase {
   margin: 0;
