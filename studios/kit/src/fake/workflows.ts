@@ -313,12 +313,14 @@ export function estimateWorkflow(
   const models = (selection.models ?? {}) as Record<string, string>,
     routes = (selection.routes ?? {}) as Record<string, string>;
   const lengths = new Map<string, number>();
-  const planned = def.slots.flatMap((slot) =>
-    cuts && slot.name === "render" ? cuts.map((seconds, i) => ({ slot, id: "shot-" + (i + 1), label: "Shot " + (i + 1), seconds })) : [{ slot, id: slot.name, label: slot.label, seconds: undefined }],
-  );
   const total = cuts ? cuts.reduce((a, b) => a + b, 0) : Number(values.duration ?? 5);
+  const planned = def.slots.flatMap((slot): { slot: WireSlot; id: string; label: string; seconds: number }[] =>
+    cuts && slot.name === "render"
+      ? cuts.map((seconds, i) => ({ slot, id: "shot-" + (i + 1), label: "Shot " + (i + 1), seconds }))
+      : [{ slot, id: slot.name, label: slot.label, seconds: total }],
+  );
   const steps = planned.map(({ slot, id, label, seconds }, index) => ({
-    id: (lengths.set(id, seconds ?? total), id),
+    id: (lengths.set(id, seconds), id),
     label,
     kind: "media",
     dependsOn: index ? [planned[index - 1]!.id] : [],
