@@ -2,7 +2,7 @@
 import { wireRef } from "./elements.ts";
 import type {
   MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowPreset, WorkflowRunBody,
-  WorkflowShotsSpec,
+  WorkflowShotsSpec, WorkflowStepKind,
 } from "./types.ts";
 import type { WireEstimateResponse, WireField, WireWorkflow } from "./wire.ts";
 
@@ -158,6 +158,8 @@ export function toWireRun(body: WorkflowRunBody, def?: WorkflowDef): Record<stri
   };
 }
 
+const isStepKind = (kind: string): kind is WorkflowStepKind => kind === "media" || kind === "text" || kind === "local";
+
 export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
   const steps = wire.estimate.steps.map((e) => {
     const summary = wire.steps.find((s) => s.id === e.stepId);
@@ -168,6 +170,7 @@ export function toEstimate(wire: WireEstimateResponse): WorkflowEstimate {
       ...(e.model ? { model: e.model } : summary?.model ? { model: summary.model } : {}),
       ...(summary?.route ? { route: summary.route } : {}),
       ...(summary?.slot ? { slot: summary.slot } : {}),
+      ...(summary && isStepKind(summary.kind) ? { kind: summary.kind } : {}),
       estimate: { usd: e.usd, basis: e.usd === null ? "No published price" : basis },
     };
   });

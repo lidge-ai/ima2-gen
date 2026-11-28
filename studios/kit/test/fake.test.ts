@@ -594,7 +594,12 @@ test("director studio takes a cut list: one priced step per shot, and the server
   await withServer({ timeScale: 0.02 }, async ({ client }) => {
     const shots = [{ prompt: "She opens the door", durationSec: 4 }, { prompt: "Rain on the window", durationSec: 8 }, { prompt: "The street below", durationSec: 5 }];
     const estimate = await client.workflows.estimate("director-studio", { inputs: { prompt: "" }, shots });
-    assert.deepEqual(estimate.steps.map((s) => s.id), ["shot-1", "shot-2", "shot-3", "sound"]);
+    assert.deepEqual(estimate.steps.map((s) => [s.id, s.kind]), [
+      ["shot-1", "media"], ["shot-2", "media"], ["shot-3", "media"], ["sound", "media"],
+      // What the server does itself is marked, so a screen can keep it out of the priced rows.
+      ["shot-1-last", "local"], ["shot-2-last", "local"], ["join", "local"],
+    ]);
+    assert.deepEqual(estimate.steps.filter((s) => s.kind === "local").map((s) => s.estimate.usd), [0, 0, 0]);
     assert.deepEqual(estimate.steps.slice(0, 3).map((s) => s.label), ["Shot 1", "Shot 2", "Shot 3"]);
     // Each shot is priced by its own length.
     const [a, b] = estimate.steps;

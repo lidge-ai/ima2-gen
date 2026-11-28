@@ -428,9 +428,12 @@ export interface WorkflowRunBody {
   clientRequestId?: string;
 }
 
+/** What a planned step is: a paid model call, a text plan, or work the server does itself (frames, joins, mixing) at no charge. */
+export type WorkflowStepKind = "media" | "text" | "local";
+
 export interface WorkflowEstimate {
   /** Per planned step: the model and route the server will actually use (its plan, not the defaults). */
-  steps: readonly { id: string; label?: string; model?: string; route?: string; slot?: string; estimate: CostEstimate }[];
+  steps: readonly { id: string; label?: string; model?: string; route?: string; slot?: string; kind?: WorkflowStepKind; estimate: CostEstimate }[];
   total: CostEstimate;
 }
 

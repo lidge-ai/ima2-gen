@@ -333,6 +333,28 @@ export function estimateWorkflow(
     slot: slot.name,
     final: index === planned.length - 1,
   }));
+  // Like the server, a cut list also plans work it does itself: the last frame of each shot but the last, and the join.
+  const local = (id: string, label: string, dependsOn: string[]) => ({ id, label, kind: "local", dependsOn, final: false });
+  if (cuts) {
+    const shots = steps.filter((step) => step.id.startsWith("shot-"));
+    const extra = [...shots.slice(0, -1).map((shot) => local(shot.id + "-last", "Take the last frame of " + shot.id, [shot.id])), local("join", "Join the shots", shots.map((shot) => shot.id))];
+    const done = { ...summaryEstimate(steps, catalog, lengths) };
+    const localEstimates = extra.map((step) => ({ stepId: step.id, usd: 0, note: "runs locally" }));
+    const all = [...done.estimates, ...localEstimates];
+    return { steps: [...steps, ...extra], estimate: { usd: all.reduce((sum, e) => sum + (e.usd ?? 0), 0), complete: all.every((e) => e.usd !== null), steps: all } };
+  }
+  const { estimates } = summaryEstimate(steps, catalog, lengths);
+  return {
+    steps,
+    estimate: {
+      usd: estimates.reduce((sum, e) => sum + (e.usd ?? 0), 0),
+      complete: estimates.every((e) => e.usd !== null),
+      steps: estimates,
+    },
+  };
+}
+
+function summaryEstimate(steps: readonly { id: string; model: string; route: string }[], catalog: Catalog, lengths: ReadonlyMap<string, number>) {
   const estimates = steps.map((step) => {
     const model = catalog.models.find((m) => m.id === step.model),
       price = model?.routes.find((r) => r.providerId === step.route)?.pricing[0];
@@ -346,12 +368,5 @@ export function estimateWorkflow(
         : { note: "No published price" }),
     };
   });
-  return {
-    steps,
-    estimate: {
-      usd: estimates.reduce((sum, e) => sum + (e.usd ?? 0), 0),
-      complete: estimates.every((e) => e.usd !== null),
-      steps: estimates,
-    },
-  };
+  return { estimates };
 }

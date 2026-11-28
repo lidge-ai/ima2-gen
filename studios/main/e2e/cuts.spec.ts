@@ -44,6 +44,9 @@ test("cut list: shots with their own prompts and lengths are sent in order, pric
   await expect(costs.locator(".workflow-step")).toHaveCount(4);
   const usd = async (n: number) => Number((await costs.locator(".workflow-step").nth(n).locator(".muted").innerText()).replace(/[^0-9.]/g, ""));
   await expect(costs.locator(".workflow-step").nth(2)).toContainText("Shot 3");
+  // What the server does itself (last frames, the join) is one line, not a $0 row each.
+  await expect(costs.getByText("Take the last frame")).toHaveCount(0);
+  await expect(costs.getByText("3 more steps (frames, joining, mixing) are done by ima2 at no charge.")).toBeVisible();
   expect((await usd(2)) / (await usd(0))).toBeCloseTo(8 / 5, 2);
 
   const sent = workflowRequest(page);
