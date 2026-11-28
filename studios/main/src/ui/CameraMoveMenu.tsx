@@ -56,7 +56,8 @@ export function CameraMoveMenu({ value, onChange, field }: Props) {
         <Icon name="video" size={13} /> {t("button")}
       </button>
       {added ? <span className="visually-hidden" role="status">{added}</span> : null}
-      <Popover open={open} onClose={() => setOpen(false)} label={t("title")} className="menu-popover move-popover" anchor={trigger} placement="bottom">
+      {/* Beside the button where there is room, so the prompt stays readable while choosing. */}
+      <Popover open={open} onClose={() => setOpen(false)} label={t("title")} className="menu-popover move-popover" anchor={trigger} placement="right">
         <p className="menu-title">{t("title")}</p>
         <label className="popover-search">
           <Icon name="search" size={15} />

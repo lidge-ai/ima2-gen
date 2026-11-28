@@ -8,7 +8,7 @@ type Act = (page: Page) => Promise<void>;
 interface Cell { id: string; hash: string; act?: Act }
 const BUTTON = /^(Camera move|카메라 무브)$/;
 const openMenu: Act = async (page) => { await page.getByRole("button", { name: BUTTON }).first().click(); await page.waitForTimeout(300); };
-const typed = (text: string): Act => async (page) => { await page.getByRole("textbox").first().fill(text); };
+const typed = (text: string): Act => async (page) => { await page.locator("textarea").first().fill(text); };
 const then = (...acts: Act[]): Act => async (page) => { for (const act of acts) await act(page); };
 const VIDEO = "/video?model=bytedance%2Fseedance-2.5";
 

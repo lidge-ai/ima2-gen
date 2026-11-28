@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { Fragment, useRef } from "react";
 import type { HistoryItem, WorkflowDef } from "@ima2/studio-kit";
 import { messages, tr, useT } from "../../i18n.ts";
 import { useStudio } from "../../studio/context.tsx";
@@ -134,17 +134,20 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
           <WorkflowParams def={def} form={form} />
           <div className="director-composer" ref={composer}>
             {def.inputs.map((input) => (
-              <WorkflowInput key={input.name} input={input} form={form} />
+              <Fragment key={input.name}>
+                <WorkflowInput input={input} form={form} />
+                {/* Right under the scene it writes into. */}
+                {scene && input.name === scene.name ? (
+                  <div className="director-moves">
+                    <CameraMoveMenu
+                      value={form.texts[scene.name] ?? ""}
+                      onChange={(next) => form.setTexts((old) => ({ ...old, [scene.name]: next }))}
+                      field={() => composer.current?.querySelector<HTMLTextAreaElement>('textarea[aria-label="' + scene.label + '"]') ?? null}
+                    />
+                  </div>
+                ) : null}
+              </Fragment>
             ))}
-            {scene ? (
-              <div className="director-moves">
-                <CameraMoveMenu
-                  value={form.texts[scene.name] ?? ""}
-                  onChange={(next) => form.setTexts((old) => ({ ...old, [scene.name]: next }))}
-                  field={() => composer.current?.querySelector<HTMLTextAreaElement>('textarea[aria-label="' + scene.label + '"]') ?? null}
-                />
-              </div>
-            ) : null}
             <Generate form={form} />
           </div>
           <WorkflowSteps def={def} form={form} />
