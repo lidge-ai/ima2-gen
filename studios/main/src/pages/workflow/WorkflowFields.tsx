@@ -298,6 +298,7 @@ function WorkflowCredits({ def }: { def: WorkflowDef }) {
 
 function WorkflowCosts({ form }: { form: WorkflowForm }) {
   const t = useT(M);
+  const locale = useLocale();
   if (!form.estimate)
     return (
       <p className="form-hint">
@@ -312,7 +313,6 @@ function WorkflowCosts({ form }: { form: WorkflowForm }) {
               : t("estimating")}
       </p>
     );
-  const locale = useLocale();
   const local = form.estimate.steps.filter((step) => step.kind === "local").length;
   return (
     <div className="workflow-steps" aria-label={t("breakdown")}>
