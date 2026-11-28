@@ -19,7 +19,7 @@ export function parseHash(hash: string): Route {
   switch (head) {
     case "image":
     case "video":
-      return clean({ page: "create", kind: head, model: get("model"), preset: get("preset"), mode: head === "video" ? get("mode") : undefined });
+      return clean({ page: "create", kind: head, model: get("model"), preset: get("preset"), mode: get("mode") });
     case "audio":
       return clean({ page: "audio", tool: get("tool"), model: get("model") });
     case "remix":

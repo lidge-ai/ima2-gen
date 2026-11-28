@@ -383,6 +383,26 @@ test("estimates come from the server's rule, including rows a studio-side matche
   });
 });
 
+test("an image route takes the declared images and fields, and a repaint-white mask only where it says so", async () => {
+  await withServer({}, async ({ client }) => {
+    await client.keys.save("openai", { apiKey: SECRET });
+    const put = () => client.uploads.put(new Uint8Array([137, 80, 78, 71]), "image/png");
+    const [a, b, mask] = [await put(), await put(), await put()];
+    const refused = (e: unknown) => e instanceof StudioApiError && e.code === "MEDIA_INVALID_REQUEST";
+    const edit = { model: "openai/gpt-image-2.6", task: "image-to-image" as const, prompt: "a red door" };
+    const source = { role: "source-image" as const, inputId: a.inputId }, second = { role: "source-image" as const, inputId: b.inputId };
+    await assert.rejects(client.media.submit({ ...edit, provider: "openai", inputs: [source, second] }), refused, "one image to edit on the direct route");
+    await assert.rejects(client.media.submit({ ...edit, provider: "openai", aspectRatio: "1:1", inputs: [source] }), refused, "no ratio on the direct route");
+    const masked = { ...edit, maskConvention: "repaint-white" as const, inputs: [source, { role: "reference-image" as const, inputId: b.inputId }, { role: "mask" as const, inputId: mask.inputId }] };
+    assert.ok((await client.media.submit({ ...masked, provider: "openai" })).jobId);
+    assert.ok((await client.media.submit({ ...edit, provider: "fal", inputs: [source, second] })).jobId);
+    await assert.rejects(client.media.submit({ ...edit, provider: "fal", inputs: [source, { role: "mask", inputId: mask.inputId }] }), refused, "no mask on the aggregator route");
+    const upscale = { model: "topaz-labs/topaz-image-upscale", provider: "fal", task: "image-upscale" as const, inputs: [source] };
+    await assert.rejects(client.media.submit({ ...upscale, prompt: "sharper" }), refused, "an upscale takes no prompt");
+    assert.ok((await client.media.submit(upscale)).jobId);
+  });
+});
+
 test("per-character and per-minute prices are the server's figure; the text itself is not sent", async () => {
   const server = await startFakeServer({ timeScale: 0.02 });
   const sent: Record<string, unknown>[] = [];

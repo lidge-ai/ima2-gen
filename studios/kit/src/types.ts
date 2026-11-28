@@ -154,8 +154,12 @@ export interface MediaSubmitBody {
   seed?: number;
   audio?: boolean;
   count?: number;
+  /** One of the route's params.qualities. */
+  quality?: string;
   inputs: readonly SubmitInput[];
   vendorOptions?: Readonly<Record<string, unknown>>;
+  /** What the mask input means; "repaint-white" only on a route whose mask entry lists it. */
+  maskConvention?: "vendor" | "repaint-white";
   /** Idempotency token: resubmitting the same value returns the existing job. */
   clientRequestId?: string;
 }

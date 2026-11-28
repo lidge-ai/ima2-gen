@@ -90,6 +90,10 @@
   flex: 1;
   min-height: 0;
 }
+/* Height of the bottom bar where it shows (up to 1000px), home indicator included. Pages that end above it read this. */
+:root {
+  --bottombar-h: calc(64px + env(safe-area-inset-bottom, 0px));
+}
 .bottombar {
   display: none;
 }

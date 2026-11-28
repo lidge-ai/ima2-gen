@@ -8,7 +8,11 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 16px 8px;
+  /* The bottom padding is the fade's height, so the end of the content stays clear when scrolled to it. */
+  padding: 16px 16px 24px;
+  /* What scrolls under the dock fades out above it instead of showing between the tool chips. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
 }
 .image-empty {
   display: grid;
@@ -108,6 +112,37 @@
   display: grid;
   place-items: center;
   padding: 0;
+}
+.dock-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dock-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.dock-tray .dock-attachment,
+.dock-tray .dock-attachment img {
+  width: 44px;
+  height: 44px;
+}
+.dock-tray-count {
+  font-size: 12px;
+  color: var(--text-dim, var(--muted));
+  font-variant-numeric: tabular-nums;
+}
+.dock-reason {
+  margin: 0;
+  padding: 0 2px;
+}
+.dock-help {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 13px;
+  color: var(--text-dim, var(--muted));
 }
 .stepper {
   display: inline-flex;
@@ -285,7 +320,7 @@
 }
 @media (max-width: 760px) {
   .image-page {
-    height: calc(100dvh - var(--topbar-h) - 64px);
+    height: calc(100dvh - var(--topbar-h) - var(--bottombar-h));
   }
   .dock-main {
     grid-template-columns: 1fr;
@@ -443,4 +478,8 @@
 .image-empty-stack img { min-width: 0; flex: 0 1 112px; }
 .dock-main:focus-within { outline: 2px solid var(--text); outline-offset: 2px; }
 
-@media (max-width: 760px) { .dock { max-height: 60dvh; overflow-y: auto; flex-shrink: 0; } }
+/* The bottom bar is there up to 1000px (shell.css): the page ends above it, and a tall dock scrolls. */
+@media (max-width: 1000px) {
+  .image-page { height: calc(100dvh - var(--topbar-h) - var(--bottombar-h)); }
+  .dock { max-height: 60dvh; overflow-y: auto; flex-shrink: 0; }
+}

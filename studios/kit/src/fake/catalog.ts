@@ -59,6 +59,23 @@ type Params = MediaModelSpec["params"];
 /** [id, label, kind, tasks, params, routes as providerId:usd-per-unit, params of single routes when they differ] */
 type ModelRow = [string, string, MediaKind, MediaTask[], Params, Record<string, number | null>, Record<string, Params>?];
 
+/** Image forms shaped like the real catalog's: a direct route with one image to edit and more to draw from, an aggregator with a list. */
+const IMG_EDIT_DIRECT: Params = {
+  resolutions: ["1024x1024", "1536x1024", "1024x1536"],
+  inputs: [
+    { role: "source-image", min: 1, max: 1, tasks: ["image-to-image"] },
+    { role: "reference-image", min: 0, max: 3, tasks: ["image-to-image"] },
+    { role: "mask", min: 0, max: 1, tasks: ["image-to-image"], conventions: ["vendor", "repaint-white"] },
+  ],
+  taskFields: { "image-to-image": { accepts: ["prompt", "resolution", "count"], requires: ["prompt"] } },
+};
+const IMG_EDIT_LIST: Params = {
+  aspectRatios: ["1:1", "16:9", "9:16"],
+  inputs: [{ role: "source-image", min: 1, max: 4, tasks: ["image-to-image"] }],
+  taskFields: { "image-to-image": { accepts: ["prompt", "aspectRatio", "seed"], requires: ["prompt"] } },
+};
+const IMG_ALONE = (task: MediaTask): Params => ({ inputs: [{ role: "source-image", min: 1, max: 1, tasks: [task] }], taskFields: { [task]: { accepts: [] } } });
+
 /** The one clip an edit, extend or upscale works on. */
 const SOURCE = { role: "source-video", min: 1, max: 1 } as const;
 /** Routes that serve fewer tasks than their model lists. */
@@ -266,8 +283,10 @@ const MODELS: ModelRow[] = [
     "Topaz Image Upscale",
     "image",
     ["image-upscale"],
-    { resolutions: ["2x", "4x"] },
-    { topaz: null },
+    {},
+    { topaz: null, fal: 0.08 },
+    // The upscaler takes the image alone: no prompt, ratio or count.
+    { topaz: IMG_ALONE("image-upscale"), fal: IMG_ALONE("image-upscale") },
   ],
   [
     "mirelo/mirelo-sfx-2",
@@ -339,7 +358,9 @@ const MODELS: ModelRow[] = [
     { xai: { ...V_SHORT, inputs: [{ ...SOURCE, tasks: ["video-to-video"], billedLength: true }, { ...SOURCE, tasks: ["video-extend"] }],
       taskFields: { "video-to-video": { accepts: ["prompt"], requires: ["prompt"] }, "video-extend": { accepts: ["prompt", "durationSec"], requires: ["prompt"] } } } },
   ],
-  ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }],
+  ["openai/gpt-image-2.6", "GPT Image 2.6", "image", T2I, IMG, { openai: 0.04, fal: 0.05 }, { openai: { ...IMG, ...IMG_EDIT_DIRECT }, fal: { ...IMG, ...IMG_EDIT_LIST } }],
+  ["recraft/recraft-vectorize", "Recraft Vectorize", "image", ["image-vectorize"], {}, { recraft: 0.01 }, { recraft: IMG_ALONE("image-vectorize") }],
+  ["meta/sam-3", "SAM 3", "image", ["image-segment"], {}, { fal: 0.005 }, { fal: { inputs: [{ role: "source-image", min: 1, max: 1, tasks: ["image-segment"] }], taskFields: { "image-segment": { accepts: ["prompt"] } } } }],
   // Only the direct route edits; the aggregator route creates (ROUTE_TASKS).
   [
     "bytedance/seedance-2", "Seedance 2.0", "video", [...T2V, "video-to-video"], V_FULL, { byteplus: 0.06, fal: 0.075 },
