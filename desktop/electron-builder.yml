@@ -31,6 +31,7 @@ files:
   - lib/**/*.js
   - routes/**/*.js
   - ui/dist/**
+  - studios/kit/assets/vendors/**
   - skills/**
   - assets/card-news/templates/**
   - assets/mcp-snapshots/**
@@ -68,8 +69,8 @@ beforeBuild: build/ensure-icons.mjs
 # not sign Mach-O binaries it did not place there. Seven of them have no file
 # extension (codex, rg, zsh, macos-trash, esbuild), so notarization rejects the
 # upload unless they are signed here first.
-# after-pack.mjs first fails the build if any production dependency is absent from the
-# packaged node_modules, then runs sign-extra-binaries.mjs.
+# after-pack.mjs first fails the build if any production dependency or vendor logo asset
+# is absent from the packaged app, then runs sign-extra-binaries.mjs.
 afterPack: build/after-pack.mjs
 
 # The updater reads this metadata from the packaged app. Draft creation keeps a
