@@ -8,7 +8,7 @@ type Act = (page: Page) => Promise<void>;
 interface Cell { id: string; act?: Act }
 const on: Act = async (page) => { await page.getByRole("button", { name: /^(Cut list|컷 목록)$/ }).click(); };
 const fill = (texts: string[]): Act => async (page) => {
-  for (let i = 2; i < texts.length; i += 1) await page.getByRole("button", { name: /^(Add shot|컷 추가)$/ }).click();
+  for (let i = 2; i < texts.length; i += 1) await page.getByRole("button", { name: /^(Add shot|샷 추가)$/ }).click();
   const boxes = page.locator(".cut textarea");
   for (const [i, text] of texts.entries()) await boxes.nth(i).fill(text);
   await page.waitForTimeout(700);

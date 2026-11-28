@@ -6,7 +6,7 @@ import type { SlotValue } from "../../ui/UploadSlot.tsx";
 import { spendBlock } from "../../studio/spend.ts";
 import { newCut, totalSec, type Cut } from "../director/cutList.ts";
 
-const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow", shot: "Shot {n}" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요", shot: "컷 {n}" });
+const M = messages({ estimate: "Could not estimate price", start: "Could not start workflow", shot: "Shot {n}" }, { estimate: "예상 비용을 계산하지 못했어요", start: "워크플로를 시작하지 못했어요", shot: "샷 {n}" });
 
 /** The text a cut list stands in for: the server asks for it unless shots carry the prompts (director-studio's check). */
 const SCENE = "prompt";

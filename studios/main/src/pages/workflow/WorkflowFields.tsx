@@ -23,7 +23,7 @@ const NEXT_STEP = messages(
     "choose a style or describe the look": "스타일을 고르거나 원하는 느낌을 적으면 비용이 나와요.",
     "choose a style, a style reference or describe the look": "스타일을 고르거나, 스타일 참조를 넣거나, 원하는 느낌을 적으면 비용이 나와요.",
     other: "비용을 보려면 이 입력이 더 필요해요: “{reason}”",
-    shotLength: "컷 {n}은 {seconds}초예요. {model} 모델은 한 컷을 {min}~{max}초로 만들어요. 길이를 바꿔 주세요.",
+    shotLength: "샷 {n}은 {seconds}초예요. {model} 모델은 한 샷을 {min}~{max}초로 만들어요. 길이를 바꿔 주세요.",
   },
 );
 
@@ -40,7 +40,7 @@ function useNextStep(form: WorkflowForm): string | null {
 
 const M = messages(
   { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", afterInputs: "Step costs appear once the inputs are complete.", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable", auto: "Auto", typeValue: "Type to set", on: "On", off: "Off", credits: "Sources ({n})", addAnother: "Add another: {label}", count: "{n} of {max}", shot: "Shot {n}", shorten: "Shorten the cut list for price" },
-  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", afterInputs: "입력을 마치면 단계별 비용이 나와요.", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐", credits: "출처 ({n})", addAnother: "하나 더 추가: {label}", count: "{max}개 중 {n}개", shot: "컷 {n}", shorten: "컷 목록을 줄이면 비용이 나와요" },
+  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", afterInputs: "입력을 마치면 단계별 비용이 나와요.", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐", credits: "출처 ({n})", addAnother: "하나 더 추가: {label}", count: "{max}개 중 {n}개", shot: "샷 {n}", shorten: "컷 목록을 줄이면 비용이 나와요" },
 );
 
 function TextWorkflowInput({

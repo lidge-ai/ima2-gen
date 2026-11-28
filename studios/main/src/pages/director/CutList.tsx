@@ -5,7 +5,7 @@ import { CameraMoveMenu } from "../../ui/CameraMoveMenu.tsx";
 import { Icon } from "../../ui/Icon.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import type { WorkflowForm } from "../workflow/useWorkflow.ts";
-import { fitLength, MIN_SHOT_SEC, moved, newCut, shotLengths, totalSec, type Cut } from "./cutList.ts";
+import { fitLength, lengthsText, MIN_SHOT_SEC, moved, newCut, shotLengths, totalSec, type Cut } from "./cutList.ts";
 
 export const CM = messages(
   {
@@ -17,12 +17,12 @@ export const CM = messages(
     lengths: "{model} makes shots of {list} seconds.", anyLength: "Whole seconds, at least {min}. The longest one shot can be depends on the model.",
   },
   {
-    list: "컷 목록", shot: "컷 {n}", placeholder: "이 컷에서 일어나는 일", length: "길이", lengthOf: "컷 {n} 길이", lengthSec: "컷 {n} 길이(초)", seconds: "{n}초",
-    up: "컷 {n} 위로 옮기기", down: "컷 {n} 아래로 옮기기", remove: "컷 {n} 삭제", add: "컷 추가",
-    sum: "컷 {count}개 · {max}초 중 {total}초", full: "컷은 최대 {max}개까지 넣을 수 있어요.",
-    over: "컷 길이를 합치면 {total}초예요. 최대 {max}초라서 컷을 줄이거나 지워 주세요.",
-    lead: "컷마다 영상을 따로 만들어 이 순서대로 이어 붙여요. 장면을 적으면 모든 컷에 함께 들어가요.",
-    lengths: "{model} 모델은 한 컷을 {list}초 길이로 만들어요.", anyLength: "초 단위 정수로 {min}초 이상이에요. 한 컷의 최대 길이는 모델마다 달라요.",
+    list: "컷 목록", shot: "샷 {n}", placeholder: "이 샷에서 일어나는 일", length: "길이", lengthOf: "샷 {n} 길이", lengthSec: "샷 {n} 길이(초)", seconds: "{n}초",
+    up: "샷 {n} 위로 옮기기", down: "샷 {n} 아래로 옮기기", remove: "샷 {n} 삭제", add: "샷 추가",
+    sum: "샷 {count}개 · {max}초 중 {total}초", full: "샷은 최대 {max}개까지 넣을 수 있어요.",
+    over: "샷 길이를 합치면 {total}초예요. 최대 {max}초라서 샷을 줄이거나 지워 주세요.",
+    lead: "샷마다 영상을 따로 만들어 이 순서대로 이어 붙여요. 장면을 적으면 모든 샷에 함께 들어가요.",
+    lengths: "{model} 모델은 한 샷을 {list}초 길이로 만들어요.", anyLength: "초 단위 정수로 {min}초 이상이에요. 한 샷의 최대 길이는 모델마다 달라요.",
   },
 );
 
@@ -74,7 +74,7 @@ export function CutList({ form, spec, model }: Props) {
   const total = totalSec(cuts);
   return (
     <section className="cut-list" aria-label={t("list")}>
-      <p className="form-hint">{t("lead")} {listed ? t("lengths", { model: model?.label ?? "", list: listed.join(", ") }) : t("anyLength", { min: MIN_SHOT_SEC })}</p>
+      <p className="form-hint">{t("lead")} {listed ? t("lengths", { model: model?.label ?? "", list: lengthsText(listed) }) : t("anyLength", { min: MIN_SHOT_SEC })}</p>
       <ol>
         {cuts.map((cut, index) => (
           <li key={cut.id} className="cut">

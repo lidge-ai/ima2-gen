@@ -40,3 +40,11 @@ export function moved(cuts: readonly Cut[], index: number, by: -1 | 1): Cut[] {
   [next[index], next[to]] = [next[to]!, next[index]!];
   return next;
 }
+
+/** The lengths as words: "4-30" when every whole second in a range is offered, else the list ("4, 5, 8, 10"). */
+export function lengthsText(listed: readonly number[]): string {
+  const first = listed[0]!;
+  const last = listed[listed.length - 1]!;
+  const run = listed.length > 2 && listed.every((seconds, i) => seconds === first + i);
+  return run ? first + "-" + last : listed.join(", ");
+}
