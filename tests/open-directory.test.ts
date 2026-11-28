@@ -73,16 +73,22 @@ test("openDirectory reports spawn errors and early nonzero exits", async () => {
 test("openDirectory on Windows resolves immediately on exit code 1", async () => {
   const dir = await mkdtemp(join(tmpdir(), "ima2-open-"));
   try {
+    // Timed from the moment explorer is started, not from the call: creating the directory first can
+    // take longer than any short timer on a loaded Windows machine, and that is not what is under test.
+    let spawnedAt = 0;
     const spawnImpl = () => {
+      spawnedAt = performance.now();
       const child = fakeChild();
       queueMicrotask(() => child.emit("exit", 1));
       return child;
     };
-    const result = await Promise.race([
-      openDirectory(dir, { platform: "win32", spawnImpl, settleMs: 5000 }),
-      new Promise((resolve) => setTimeout(() => resolve("timeout"), 50)),
-    ]);
+    const settleMs = 5000;
+    const result = await openDirectory(dir, { platform: "win32", spawnImpl, settleMs });
+    const waited = performance.now() - spawnedAt;
     assert.deepEqual(result, { ok: true });
+    assert.ok(spawnedAt > 0, "explorer was started");
+    // Answered by the exit, not by the settle timer: waiting for the timer would take all of settleMs.
+    assert.ok(waited < settleMs / 5, "resolved " + String(Math.round(waited)) + " ms after the exit; the settle timer is " + String(settleMs) + " ms");
   } finally {
     await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
