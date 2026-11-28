@@ -50,7 +50,7 @@ describe("assets store contract", () => {
   });
 
   it("rejects kinds outside the allowlist", () => {
-    expectCode(() => store.createAsset({ kind: "audio" as never }), "INVALID_ASSET_KIND", 400);
+    expectCode(() => store.createAsset({ kind: "hologram" as never }), "INVALID_ASSET_KIND", 400);
   });
 
   it("creates, renames, and moves folders while validating parent graphs", () => {

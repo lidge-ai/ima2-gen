@@ -30,7 +30,50 @@ export function getDb() {
 
 export function migrate(database: Database.Database) {
   database.pragma("busy_timeout = 5000");
-  database.transaction(() => migrateSchema(database)).immediate();
+  // Rebuilding a table drops the old one. With foreign keys enforced that would delete the tags and clear the
+  // sprite links that point at it, and the setting cannot change inside a transaction, so it is turned off
+  // around this one migration and the references are checked before it commits.
+  const rebuild = assetsNeedAudioKind(database);
+  const enforced = database.pragma("foreign_keys", { simple: true }) === 1;
+  if (rebuild && enforced) database.pragma("foreign_keys = OFF");
+  try {
+    database.transaction(() => migrateSchema(database)).immediate();
+  } finally {
+    if (rebuild && enforced) database.pragma("foreign_keys = ON");
+  }
+}
+
+const ASSETS_TABLE = `(
+      id         TEXT PRIMARY KEY,
+      kind       TEXT NOT NULL CHECK (kind IN ('image','video','audio','element','preset','template')),
+      name       TEXT NOT NULL,
+      file_path  TEXT,
+      folder_id  TEXT,
+      notes      TEXT,
+      metadata   TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (folder_id) REFERENCES asset_folders(id) ON DELETE SET NULL
+    )`;
+
+/** True for a database whose assets table was made before the audio kind (schema version 9 and earlier). */
+function assetsNeedAudioKind(database: Database.Database): boolean {
+  const table = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'assets'").get() as { sql?: string } | undefined;
+  return typeof table?.sql === "string" && !table.sql.includes("'audio'");
+}
+
+/** Schema version 10: the same assets table with 'audio' among its kinds. Rows, ids and timestamps are copied as they are. */
+function rebuildAssetsForAudioKind(database: Database.Database) {
+  database.exec(`
+    DROP TABLE IF EXISTS assets_v10;
+    CREATE TABLE assets_v10 ${ASSETS_TABLE};
+    INSERT INTO assets_v10 (id, kind, name, file_path, folder_id, notes, metadata, created_at, updated_at)
+      SELECT id, kind, name, file_path, folder_id, notes, metadata, created_at, updated_at FROM assets;
+    DROP TABLE assets;
+    ALTER TABLE assets_v10 RENAME TO assets;
+  `);
+  const broken = database.pragma("foreign_key_check") as unknown[];
+  if (broken.length > 0) throw new Error("assets table rebuild left " + broken.length + " broken reference(s); nothing was changed");
 }
 
 function migrateSchema(database: Database.Database) {
@@ -328,18 +371,11 @@ function migrateSchema(database: Database.Database) {
       FOREIGN KEY (parent_id) REFERENCES asset_folders(id) ON DELETE SET NULL
     );
 
-    CREATE TABLE IF NOT EXISTS assets (
-      id         TEXT PRIMARY KEY,
-      kind       TEXT NOT NULL CHECK (kind IN ('image','video','element','preset','template')),
-      name       TEXT NOT NULL,
-      file_path  TEXT,
-      folder_id  TEXT,
-      notes      TEXT,
-      metadata   TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      FOREIGN KEY (folder_id) REFERENCES asset_folders(id) ON DELETE SET NULL
-    );
+    CREATE TABLE IF NOT EXISTS assets ${ASSETS_TABLE};
+  `);
+  // Before the indexes below: the rebuild drops the old table and its indexes with it.
+  if (assetsNeedAudioKind(database)) rebuildAssetsForAudioKind(database);
+  database.exec(`
 
     CREATE TABLE IF NOT EXISTS asset_tags (
       asset_id TEXT NOT NULL,
@@ -376,10 +412,10 @@ function migrateSchema(database: Database.Database) {
   migrateResetTables(database);
   const row = database.prepare("SELECT value FROM _meta WHERE key = 'schema_version'").get() as { value?: string } | undefined;
   if (!row) {
-    database.prepare("INSERT INTO _meta (key, value) VALUES ('schema_version', '9')").run();
-  } else if (row.value !== "9") {
+    database.prepare("INSERT INTO _meta (key, value) VALUES ('schema_version', '10')").run();
+  } else if (row.value !== "10") {
     database
-      .prepare("UPDATE _meta SET value = '9' WHERE key = 'schema_version'")
+      .prepare("UPDATE _meta SET value = '10' WHERE key = 'schema_version'")
       .run();
   }
 }
