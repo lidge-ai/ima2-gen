@@ -85,7 +85,7 @@ test("edit video: upscale has no prompt, offers the output size and prices the c
   await expect(page.getByRole("button", { name: /^Model: / })).toContainText("Topaz Video Upscale");
   await expect(page.getByLabel(/^Prompt/)).toHaveCount(0);
   // The direct route declares no form, so there is one way to run it and nothing to choose.
-  await expect(page.getByRole("button", { name: /^Run through/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Route: / })).toHaveCount(0);
   await expect(generate(page)).toContainText("Add the video to see the price");
   await page.getByLabel("Video to upscale").setInputFiles(CLIP);
   await expect(page.getByRole("button", { name: /^Output size: / })).toHaveAccessibleName("Output size: 1080p");
