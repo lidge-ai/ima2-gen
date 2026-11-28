@@ -108,6 +108,18 @@ test("only workflow-dependent descriptors vary with the workflow catalog", () =>
   }
 });
 
+test("a field required unless another is given becomes anyOf: one of the two must be present", () => {
+  const studio = WORKFLOWS.find((workflow) => workflow.id === "director-studio")!;
+  const schema = workflowValuesSchema(studio.fields) as Schema;
+  assert.equal((schema.required ?? []).includes("prompt"), false);
+  assert.equal(check(schema, {}), false, "neither Scene nor shots");
+  assert.equal(check(schema, { prompt: "a canoe at dawn" }), true);
+  assert.equal(check(schema, { shots: [{ prompt: "wide", durationSec: 5 }, { prompt: "close", durationSec: 5 }] }), true);
+  for (const workflow of WORKFLOWS.filter((w) => w.fields.every((f) => !f.requiredUnless))) {
+    assert.equal("anyOf" in workflowValuesSchema(workflow.fields), false, workflow.id);
+  }
+});
+
 test("workflow fields preserve their required flags, types, bounds, enums, and defaults", () => {
   for (const workflow of WORKFLOWS) {
     const schema = workflowValuesSchema(workflow.fields) as Schema;

@@ -145,6 +145,7 @@ test("explicit shots: one step per shot, no planner, the scene as shared context
     { gateway, local, allowedRoots: [root] }, new AbortController().signal);
   assert.deepEqual(p.plan.steps.map((s) => s.id), ["shot-1", "shot-1-last", "shot-2", "join"]);
   assert.deepEqual(p.plan.steps.find((s) => s.id === "shot-2")?.dependsOn, ["shot-1-last"]);
+  assert.equal(p.plan.steps.find((s) => s.id === "shot-1-last")?.label, "Take the last frame of shot 1");
   assert.deepEqual(p.plan.steps.filter((s) => s.kind === "media").map((s) => (s as MediaStep).units.quantity), [5, 7]);
   assert.deepEqual([p.estimate.usd, p.estimate.complete], [2.4, true]);
   const result = await runWorkflow({ runId: "x1", prepared: p, workDir: join(root, "run-x1"), emit: () => undefined, poll: instantPoll, deps: { gateway, local, allowedRoots: [root] } });
@@ -183,6 +184,9 @@ test("explicit shots refuse a length, the wrong count, more than 60 s or a bad s
   await rejects({ shots: [{ prompt: "a".repeat(1001), durationSec: 5 }, { prompt: "b", durationSec: 5 }] }, /shots: shot 1 .*1000 characters/);
   await assert.rejects(prep({ duration: 5 }), (e: { code?: string; options?: { field?: string }; message?: string }) =>
     e.code === "WORKFLOW_INPUT_INVALID" && e.options?.field === "prompt" && e.message === "prompt: is required");
+  // The wire says when Scene may be left out, so a client does not have to know the rule.
+  assert.equal(studio!.fields.find((f) => f.name === "prompt")?.requiredUnless, "shots");
+  assert.equal(describeWorkflow(studio!).fields.find((f) => f.name === "prompt")?.requiredUnless, "shots");
   const field = studio!.fields.find((f) => f.name === "shots");
   assert.deepEqual(field && { ...field }, { name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000, help: field?.help });
 });

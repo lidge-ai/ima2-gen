@@ -157,6 +157,11 @@ export async function validateValues(def: WorkflowDefinition, raw: unknown, opti
     }
     values[field.name] = value;
   }
+  for (const field of def.fields) {
+    if (field.requiredUnless && values[field.name] === undefined && values[field.requiredUnless] === undefined) {
+      throw inputError(field.name, "is required");
+    }
+  }
   const problem = def.check?.(values, provided) ?? null;
   if (problem) throw new WorkflowError("WORKFLOW_INPUT_INVALID", problem, { status: 400 });
   return values;
