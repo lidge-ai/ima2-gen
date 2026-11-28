@@ -13,11 +13,12 @@ export function SaveAsElement({ item }: { item: HistoryItem }) {
   const studio = useStudioApi();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<ElementKind>("character");
+  // No kind is chosen for the person: a lighthouse is not filed as a character by default.
+  const [kind, setKind] = useState<ElementKind | "">("");
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState("");
   const save = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !kind) return;
     setState("saving");
     setError("");
     try {
@@ -38,10 +39,11 @@ export function SaveAsElement({ item }: { item: HistoryItem }) {
         <span>{t("name")}</span>
         <input autoFocus value={name} maxLength={80} placeholder={t("namePlaceholder")} onChange={(e) => setName(e.target.value)} />
       </label>
-      <KindChoice value={kind} onChange={(next) => { if (next) setKind(next); }} />
+      <KindChoice value={kind} onChange={setKind} />
       <div className="save-element-actions">
-        <button type="submit" className="btn btn-primary" disabled={!name.trim() || state === "saving"}>{t(state === "saving" ? "saving" : "save")}</button>
+        <button type="submit" className="btn btn-primary" disabled={!name.trim() || !kind || state === "saving"}>{t(state === "saving" ? "saving" : "save")}</button>
         <button type="button" className="btn" onClick={() => setOpen(false)}>{t("cancel")}</button>
+        {name.trim() && !kind ? <span className="form-hint">{t("needKind")}</span> : null}
       </div>
       {error ? <p className="form-error" role="alert">{t("actionFailed", { error })}</p> : null}
     </form>

@@ -129,6 +129,25 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
   gap: 14px;
+  align-items: start;
+}
+.elements-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+/* Edit and Delete sit on every card, so they stay quiet until pointed at. */
+.element-card-quiet {
+  height: 28px;
+  padding: 0 8px;
+  margin-left: -8px;
+  font-size: 12.5px;
+}
+.element-card-quiet + .element-card-quiet {
+  margin-left: 0;
 }
 .element-card {
   display: grid;
@@ -257,7 +276,9 @@
 }
 .element-picker-foot {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .save-element {
   display: grid;
@@ -268,6 +289,10 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+}
+.save-element-actions .form-hint {
+  flex-basis: 100%;
 }
 /* In a form laid out as a column, the picker button keeps its own width and sits at the start. */
 .element-pick {

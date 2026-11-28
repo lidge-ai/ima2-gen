@@ -122,8 +122,8 @@ function ElementCard({ element }: { element: Element }) {
             </div>
           ) : (
             <div className="element-card-actions">
-              <button type="button" className="btn" onClick={() => setMode("edit")}>{t("edit")}</button>
-              <button type="button" className="btn" onClick={() => setMode("remove")}>{t("remove")}</button>
+              <button type="button" className="btn btn-ghost element-card-quiet" onClick={() => setMode("edit")}>{t("edit")}</button>
+              <button type="button" className="btn btn-ghost element-card-quiet" onClick={() => setMode("remove")}>{t("remove")}</button>
             </div>
           )}
         </div>
@@ -143,7 +143,7 @@ export function ElementsPanel() {
     <div className="elements">
       <p className="elements-lead">{t("lead")}</p>
       <NewElement />
-      <KindChoice all value={kind} onChange={setKind} />
+      <div className="elements-filter"><span>{t("show")}</span><KindChoice all value={kind} onChange={setKind} /></div>
       {error ? <div role="alert">{t("failed", { error })} <button className="btn" type="button" onClick={reload}>{t("retry")}</button></div> : null}
       {loading ? <p role="status">{t("loading")}</p> : null}
       {elements && elements.length === 0 ? (

@@ -42,7 +42,7 @@ const CELLS: Cell[] = [
       await form.getByRole("button", { name: /^(Product|제품)$/ }).click();
     },
   },
-  { id: "library__kind-filter", hash: "/assets/elements", setup: (page) => reset(page, true), act: async (page) => { await page.getByRole("group", { name: /^(Element kinds|요소 종류)$/ }).getByRole("button", { name: /^(Scene|장소)$/ }).click(); } },
+  { id: "library__kind-filter", hash: "/assets/elements", setup: (page) => reset(page, true), act: async (page) => { await page.getByRole("group", { name: /^(Element kinds|요소 종류)$/ }).getByRole("button", { name: /^(Scene|장면)$/ }).click(); } },
   { id: "library__edit", hash: "/assets/elements", setup: (page) => reset(page, true), act: async (page) => { await mug(page).getByRole("button", { name: /^(Edit|수정)$/ }).click(); } },
   { id: "library__delete-confirm", hash: "/assets/elements", setup: (page) => reset(page, true), act: async (page) => { await mug(page).getByRole("button", { name: /^(Delete|삭제)$/ }).click(); } },
   { id: "library__loading", hash: "/assets/elements", setup: async (page) => { await page.route("**/api/assets?*", () => undefined); } },
@@ -56,6 +56,19 @@ const CELLS: Cell[] = [
   {
     id: "library__video-picker", hash: "/video?model=bytedance%2Fseedance-2.5", setup: (page) => reset(page, true),
     act: async (page) => { await page.getByRole("button", { name: /^(References|레퍼런스)$/ }).click(); await named(/^(From elements|요소에서 고르기)$/)(page); },
+  },
+  {
+    // An element with more images than the tray has room for: the tray says how many went in.
+    id: "library__picked-trimmed", hash: "/image?mode=edit",
+    setup: async (page) => {
+      await reset(page, true);
+      const upload = (await (await page.request.post("/api/media/inputs", { data: SAMPLE("editorial.jpg"), headers: { "content-type": "image/jpeg" } })).json()) as { ref: string };
+      await page.request.post("/api/assets/promote-element", { data: { inputRef: upload.ref, name: "Mina, second look", elementKind: "character" } });
+      const list = (await (await page.request.get("/api/assets?kind=element&limit=200")).json()) as { assets: { metadata: { refs: string[] } }[] };
+      const refs = list.assets.map((asset) => asset.metadata.refs[0]!);
+      await page.request.post("/api/assets", { data: { kind: "element", name: "Studio set", metadata: { elementKind: "scene", name: "Studio set", refs } } });
+    },
+    act: async (page) => { await named(/^(From elements|요소에서 고르기)$/)(page); await page.getByRole("dialog").getByRole("button", { name: /Studio set/ }).click(); await page.waitForTimeout(400); },
   },
   {
     id: "library__save-result", hash: "/assets/images",

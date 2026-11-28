@@ -1,5 +1,5 @@
 import { messages, useT } from "../../i18n.ts";
-import { elementInputs, type Catalog, type CatalogModel } from "@ima2/studio-kit";
+import type { Catalog, CatalogModel } from "@ima2/studio-kit";
 import { ElementPicker } from "../../ui/ElementPicker.tsx";
 import { findPreset } from "../../data/presets.ts";
 import { Icon } from "../../ui/Icon.tsx";
@@ -126,8 +126,8 @@ function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateF
           />
           <div className="element-pick-row">
             <ElementPicker
-              disabled={form.references.length >= (model.params.maxReferenceImages ?? 3)}
-              onPick={(element) => set({ references: [...form.references, ...elementInputs(element, "reference-image", (model.params.maxReferenceImages ?? 3) - form.references.length)] })}
+              role="reference-image" into="references" held={form.references} max={model.params.maxReferenceImages ?? 3}
+              onAdd={(inputs) => set({ references: [...form.references, ...inputs] })}
             />
           </div>
         </>

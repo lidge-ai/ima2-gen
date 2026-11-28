@@ -82,6 +82,12 @@ test("elements: a saved element goes into an image edit and a video as reference
   await page.getByRole("button", { name: "From elements" }).click();
   await page.getByRole("dialog", { name: "Choose an element" }).getByRole("button", { name: "Use " + name }).click();
   await expect(page.getByRole("button", { name: /^Remove Reference 1/ })).toBeVisible();
+  // The video form says the images become references; choosing the same element again adds nothing and says why.
+  await page.getByRole("button", { name: "From elements" }).click();
+  await expect(page.getByRole("dialog", { name: "Choose an element" }).getByText("Its images are added as references.")).toBeVisible();
+  await page.getByRole("dialog", { name: "Choose an element" }).getByRole("button", { name: "Use " + name }).click();
+  await expect(page.getByRole("status").filter({ hasText: "This element's images are already here." })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Remove Reference 2/ })).toHaveCount(0);
   await page.getByLabel("Prompt").fill("she walks along the pier");
   request = submitted(page);
   await page.getByRole("button", { name: /Generate/ }).click();
@@ -90,13 +96,39 @@ test("elements: a saved element goes into an image edit and a video as reference
   expect(inputs(body).map((input) => [input.role, /^elements\//.test(input.filename ?? "")])).toEqual([["reference-image", true]]);
 });
 
+test("elements: when an element has more images than the form has room for, the form says how many went in", async ({ page }) => {
+  const refs: string[] = [];
+  for (let i = 0; i < 3; i += 1) {
+    const upload = (await (await page.request.post("/api/media/inputs", { data: PNG, headers: { "content-type": "image/png" } })).json()) as { ref: string };
+    const made = (await (await page.request.post("/api/assets/promote-element", { data: { inputRef: upload.ref, name: "part " + i } })).json()) as { asset: { id: string; metadata: { refs: string[] } } };
+    refs.push(made.asset.metadata.refs[0]!);
+  }
+  const name = unique("Trio");
+  expect((await page.request.post("/api/assets", { data: { kind: "element", name, metadata: { elementKind: "product", name, refs } } })).status()).toBe(201);
+
+  await page.goto("/#/image?mode=edit");
+  const images = page.getByRole("group", { name: "Images", exact: true });
+  await images.getByLabel("Image file").setInputFiles([file("one.png"), file("two.png")]);
+  await expect(images.getByText("2 of 4")).toBeVisible();
+  await images.getByRole("button", { name: "From elements" }).click();
+  const picker = page.getByRole("dialog", { name: "Choose an element" });
+  await expect(picker.getByText("Its images go into this form's image list.")).toBeVisible();
+  await picker.getByRole("button", { name: "Use " + name }).click();
+  await expect(images.getByText("4 of 4")).toBeVisible();
+  await expect(images.getByRole("status").filter({ hasText: "Added 2 of the element's 3 images; there was room for 2." })).toBeVisible();
+  await expect(images.getByRole("button", { name: "From elements" })).toBeDisabled();
+});
+
 test("elements: an image result is saved as an element from its lightbox; with none saved the picker says where to make one; Korean names the tab", async ({ page }) => {
   await page.goto("/#/image?mode=edit");
   await page.route("**/api/assets?*", async (route) => { await route.fulfill({ json: { assets: [], nextCursor: null } }); });
   await page.getByRole("group", { name: "Images", exact: true }).getByRole("button", { name: "From elements" }).click();
   const picker = page.getByRole("dialog", { name: "Choose an element" });
   await expect(picker.getByText("No elements yet.")).toBeVisible();
-  await expect(picker.getByRole("link", { name: "Open elements" })).toHaveAttribute("href", "#/assets/elements");
+  // Making one opens in a new tab, so the form keeps what is in it.
+  const make = picker.getByRole("link", { name: "Make an element in Assets" });
+  await expect(make).toHaveAttribute("href", "#/assets/elements");
+  await expect(make).toHaveAttribute("target", "_blank");
   await picker.getByRole("button", { name: "Close" }).click();
   await page.unroute("**/api/assets?*");
 
@@ -112,10 +144,14 @@ test("elements: an image result is saved as an element from its lightbox; with n
   const save = dialog.getByRole("form", { name: "Save as element" });
   const name = unique("Keeper");
   await save.getByLabel("Name").fill(name);
+  // No kind is chosen for the person.
+  await expect(save.getByRole("button", { name: "Save element" })).toBeDisabled();
+  await expect(save.getByText("Choose a kind.")).toBeVisible();
+  await save.getByRole("button", { name: "Scene", exact: true }).click();
   await save.getByRole("button", { name: "Save element" }).click();
   await expect(dialog.getByText("Saved to elements.")).toBeVisible();
   await dialog.getByRole("link", { name: "See elements" }).click();
-  await expect(card(page, name)).toContainText("Character");
+  await expect(card(page, name)).toContainText("Scene");
   // This element points at the result itself, not at a copy.
   expect(await card(page, name).locator("img").getAttribute("src")).not.toMatch(/\/elements\//);
 
