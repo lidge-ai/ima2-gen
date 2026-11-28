@@ -123,6 +123,15 @@ test("workflow fields preserve their required flags, types, bounds, enums, and d
         case "boolean": assert.equal(prop.type, "boolean"); assert.equal(prop.default, field.default); break;
         case "colors":
         case "media": assert.equal(prop.type, "array"); assert.equal(prop.minItems, field.min); assert.equal(prop.maxItems, field.max); break;
+        case "shots":
+          assert.equal(prop.type, "array"); assert.equal(prop.minItems, field.min); assert.equal(prop.maxItems, field.max);
+          assert.equal(check(prop.items, { prompt: "wide shot", durationSec: 5 }), true);
+          assert.equal(check(prop.items, { prompt: "wide shot", durationSec: 5.5 }), false);
+          assert.equal(check(prop.items, { prompt: "", durationSec: 5 }), false);
+          assert.equal(check(prop.items, { prompt: "x".repeat(field.promptMaxLength + 1), durationSec: 5 }), false);
+          assert.equal(check(prop.items, { prompt: "wide shot" }), false);
+          assert.equal(check(prop.items, { prompt: "wide shot", durationSec: 5, camera: "x" }), false);
+          break;
       }
       if (field.type === "colors") {
         assert.equal(check(prop.items, "#a0B1c2"), true);

@@ -2,9 +2,9 @@ import { realpath } from "node:fs/promises";
 import { isAbsolute, resolve, sep } from "node:path";
 import { inputError, WorkflowError } from "./errors.js";
 import type {
-  ColorsField, EnumField, IntegerField, MediaField, ModelSlot, PlanEnv, PlanNote, ResolvedSlot, TextField, WorkflowCombo,
+  ColorsField, EnumField, IntegerField, MediaField, ModelSlot, PlanEnv, PlanNote, ResolvedSlot, ShotsField, TextField, WorkflowCombo,
   WorkflowDefinition, WorkflowField, WorkflowLocalOps, WorkflowMediaRef, WorkflowSelection,
-  WorkflowValue, WorkflowValues,
+  WorkflowShot, WorkflowValue, WorkflowValues,
 } from "./types.js";
 
 export interface ValidateOptions {
@@ -13,6 +13,9 @@ export interface ValidateOptions {
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
+
+/** Longest clip an explicit shot list may add up to. */
+export const SHOTS_MAX_TOTAL_SEC = 60;
 
 function readText(field: TextField, raw: unknown): string | undefined {
   if (raw === undefined || raw === null || raw === "") return undefined;
@@ -45,6 +48,32 @@ function readColors(field: ColorsField, raw: unknown): readonly string[] | undef
   }
   if (raw.length < field.min || raw.length > field.max) throw inputError(field.name, "needs " + field.min + "-" + field.max + " colors");
   return (raw as string[]).map((c) => c.toLowerCase());
+}
+
+function readShot(field: ShotsField, raw: unknown, n: number): WorkflowShot {
+  const where = "shot " + n;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw inputError(field.name, where + " must be { prompt, durationSec }");
+  const item = raw as Record<string, unknown>;
+  const extra = Object.keys(item).find((k) => k !== "prompt" && k !== "durationSec");
+  if (extra) throw inputError(field.name, where + " has an unknown key " + extra);
+  const prompt = typeof item.prompt === "string" ? item.prompt.trim() : "";
+  if (!prompt) throw inputError(field.name, where + " needs a prompt");
+  if (prompt.length > field.promptMaxLength) throw inputError(field.name, where + " prompt is longer than " + field.promptMaxLength + " characters");
+  const seconds = item.durationSec;
+  if (typeof seconds !== "number" || !Number.isInteger(seconds) || seconds < 1) throw inputError(field.name, where + " needs a whole number of seconds");
+  return { prompt, durationSec: seconds };
+}
+
+/** An ordered cut list; an empty list counts as none. Per-model lengths are checked when planning. */
+function readShots(field: ShotsField, raw: unknown): readonly WorkflowShot[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) throw inputError(field.name, "must be a list of { prompt, durationSec }");
+  if (raw.length === 0) return undefined;
+  if (raw.length < field.min || raw.length > field.max) throw inputError(field.name, "needs " + field.min + "-" + field.max + " shots");
+  const shots = raw.map((item, i) => readShot(field, item, i + 1));
+  const total = shots.reduce((sum, s) => sum + s.durationSec, 0);
+  if (total > SHOTS_MAX_TOTAL_SEC) throw inputError(field.name, "add up to " + total + " s; the most is " + SHOTS_MAX_TOTAL_SEC + " s");
+  return shots;
 }
 
 /** Windows paths compare case-insensitively; POSIX paths as written. */
@@ -105,6 +134,7 @@ async function readField(field: WorkflowField, raw: unknown, options: ValidateOp
       return raw;
     case "colors": return readColors(field, raw);
     case "media": return readMedia(field, raw, options);
+    case "shots": return readShots(field, raw);
   }
 }
 
@@ -116,7 +146,10 @@ export async function validateValues(def: WorkflowDefinition, raw: unknown, opti
   const unknown = Object.keys(input).filter((k) => !known.has(k));
   if (unknown.length > 0) throw inputError(unknown[0] ?? "values", "is not an input of " + def.id);
   const values: Record<string, WorkflowValue> = {};
+  const provided = new Set<string>();
   for (const field of def.fields) {
+    const sent = input[field.name];
+    if (sent !== undefined && sent !== null && sent !== "") provided.add(field.name);
     const value = await readField(field, input[field.name], options);
     if (value === undefined) {
       if (field.required) throw inputError(field.name, "is required");
@@ -124,7 +157,7 @@ export async function validateValues(def: WorkflowDefinition, raw: unknown, opti
     }
     values[field.name] = value;
   }
-  const problem = def.check?.(values) ?? null;
+  const problem = def.check?.(values, provided) ?? null;
   if (problem) throw new WorkflowError("WORKFLOW_INPUT_INVALID", problem, { status: 400 });
   return values;
 }

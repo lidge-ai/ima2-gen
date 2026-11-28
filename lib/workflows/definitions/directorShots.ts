@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import type { MediaModelSpec } from "../../providers/media/contract.js";
-import { WorkflowError } from "../errors.js";
-import type { StepRuntime, TextStep } from "../types.js";
+import { inputError, WorkflowError } from "../errors.js";
+import type { StepRuntime, TextStep, WorkflowShot } from "../types.js";
+import { SHOTS_MAX_TOTAL_SEC } from "../validate.js";
 
 /**
  * Longest single call per model when the catalog spec does not say. From maker docs read 2026-11-26:
@@ -32,6 +33,35 @@ export function fitDuration(target: number, spec: MediaModelSpec | undefined): n
   const listed = [...(spec?.params.durationsSec ?? [])].sort((a, b) => a - b);
   if (listed.length === 0) return target;
   return listed.find((d) => d >= target) ?? listed[listed.length - 1] ?? target;
+}
+
+/** Shortest shot when the model lists no lengths: the studio's own minimum clip length. */
+export const MIN_SHOT_SEC = 4;
+
+/** One call's [shortest, longest] length: the listed lengths, else MIN_SHOT_SEC up to the known maximum. */
+export function shotBounds(model: string, spec: MediaModelSpec | undefined): [number, number] {
+  const listed = spec?.params.durationsSec;
+  if (listed && listed.length > 0) return [Math.min(...listed), Math.max(...listed)];
+  return [MIN_SHOT_SEC, maxShotSeconds(model, spec)];
+}
+
+/**
+ * Lengths for an explicit cut list: each shot must fall inside one call's range (the error names the shot),
+ * then rounds up to the nearest listed length. The fitted total must still be at most SHOTS_MAX_TOTAL_SEC.
+ */
+export function fitShots(shots: readonly WorkflowShot[], model: string, spec: MediaModelSpec | undefined): number[] {
+  const [min, max] = shotBounds(model, spec);
+  const fitted = shots.map((shot, i) => {
+    if (shot.durationSec < min || shot.durationSec > max) {
+      throw inputError("shots", "shot " + (i + 1) + " is " + shot.durationSec + " s; " + model + " makes " + min + "-" + max + " s per shot");
+    }
+    return fitDuration(shot.durationSec, spec);
+  });
+  const total = fitted.reduce((a, b) => a + b, 0);
+  if (total > SHOTS_MAX_TOTAL_SEC) {
+    throw inputError("shots", "add up to " + total + " s after rounding to " + model + "'s listed lengths; the most is " + SHOTS_MAX_TOTAL_SEC + " s");
+  }
+  return fitted;
 }
 
 /** Splits a total length into the fewest shots that each fit one call, as evenly as possible. */

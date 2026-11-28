@@ -17,6 +17,7 @@ const specs = {
   "bytedance/seedance-2.5": spec("bytedance/seedance-2.5", { tasks: ["text-to-video", "reference-to-video"], params: { nativeAudio: true }, pricing: [price("720p", 0.2)] }),
   "bytedance/seedance-2": spec("bytedance/seedance-2", { params: { nativeAudio: true, durationsSec: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] }, pricing: [price("720p", 0.1)] }),
   "google/gemini-omni-flash-1.2": spec("google/gemini-omni-flash-1.2", { params: { nativeAudio: false } }),
+  "google/veo-3.1": spec("google/veo-3.1", { params: { nativeAudio: true, durationsSec: [4, 6, 8] }, pricing: [price("720p", 0.4)] }),
 };
 const local = fakeLocal({});
 
@@ -130,4 +131,57 @@ test("a still model's reference limit is enforced at planning", async () => {
   const cast = WORKFLOWS.find((w) => w.id === "director-cast")!;
   const refs = [1, 2, 3].map((i) => ({ url: "https://img.example/" + i + ".png", mimeType: "image/png" }));
   await assert.rejects(prepareWorkflow(cast, { values: { prompt: "hero", images: refs } }, { gateway: fakeGateway({}, kontext), local, allowedRoots: [root] }, new AbortController().signal), /at most 1 reference images/);
+});
+
+const shots = (...list: [number, string][]) => list.map(([durationSec, prompt]) => ({ prompt, durationSec }));
+const rejects = (values: Record<string, unknown>, pattern: RegExp, selection?: unknown) =>
+  assert.rejects(prep(values, selection), (e: { code?: string; status?: number; message?: string }) =>
+    e.code === "WORKFLOW_INPUT_INVALID" && e.status === 400 && pattern.test(e.message ?? ""));
+
+test("explicit shots: one step per shot, no planner, the scene as shared context, chained by last frames and joined", async () => {
+  const adapter = fakeAdapter();
+  const gateway = fakeGateway({ "bytedance/seedance-2.5": adapter }, specs);
+  const p = await prepareWorkflow(studio!, { values: { prompt: "a misty lake at dawn", shots: shots([5, "wide: a canoe glides in"], [7, "close: the paddle dips"]) } },
+    { gateway, local, allowedRoots: [root] }, new AbortController().signal);
+  assert.deepEqual(p.plan.steps.map((s) => s.id), ["shot-1", "shot-1-last", "shot-2", "join"]);
+  assert.deepEqual(p.plan.steps.find((s) => s.id === "shot-2")?.dependsOn, ["shot-1-last"]);
+  assert.deepEqual(p.plan.steps.filter((s) => s.kind === "media").map((s) => (s as MediaStep).units.quantity), [5, 7]);
+  assert.deepEqual([p.estimate.usd, p.estimate.complete], [2.4, true]);
+  const result = await runWorkflow({ runId: "x1", prepared: p, workDir: join(root, "run-x1"), emit: () => undefined, poll: instantPoll, deps: { gateway, local, allowedRoots: [root] } });
+  assert.equal(result.status, "succeeded");
+  assert.equal(gateway.planned.length, 0, "explicit shots never ask the planner");
+  const submits = adapter.calls.filter((c) => c.op === "submit").map((c) => c.request);
+  assert.deepEqual(submits.map((r) => r?.durationSec), [5, 7]);
+  assert.match(submits[0]?.prompt ?? "", /^wide: a canoe glides in/);
+  assert.match(submits[0]?.prompt ?? "", /a misty lake at dawn/);
+  assert.match(submits[1]?.prompt ?? "", /^close: the paddle dips/);
+  assert.deepEqual(submits[1]?.inputs.map((i) => i.role), ["first-frame"]);
+  assert.deepEqual(result.artifacts.map((a) => a.stepId), ["join"]);
+  const independent = await prep({ shots: shots([5, "a"], [5, "b"], [5, "c"]), continuity: "independent" });
+  assert.deepEqual(independent.plan.steps.map((s) => s.id), ["shot-1", "shot-2", "shot-3", "join"]);
+});
+
+test("explicit shots fit the model's listed lengths, name the shot that cannot, and keep the sound bed", async () => {
+  const veo = await prep({ prompt: "rain", shots: shots([5, "a"], [8, "b"]) }, { models: { render: "google/veo-3.1" } });
+  assert.deepEqual(veo.plan.steps.filter((s) => s.kind === "media").map((s) => (s as MediaStep).units.quantity), [6, 8]);
+  await rejects({ shots: shots([5, "a"], [10, "b"]) }, /shot 2.*4-8 s/, { models: { render: "google/veo-3.1" } });
+  await rejects({ shots: shots([5, "a"], [3, "b"]) }, /shot 2.*4-15 s/, { models: { render: "bytedance/seedance-2" } });
+  await rejects({ shots: shots([31, "a"], [5, "b"]) }, /shot 1.*4-30 s/);
+  const quiet = await prep({ shots: shots([5, "a"], [5, "b"]) }, { models: { render: "google/gemini-omni-flash-1.2" } });
+  assert.deepEqual(quiet.plan.steps.map((s) => s.id), ["shot-1", "shot-1-last", "shot-2", "join", "sound", "mix"]);
+  assert.equal((quiet.plan.steps.find((s) => s.id === "sound") as MediaStep).units.quantity, 10);
+});
+
+test("explicit shots refuse a length, the wrong count, more than 60 s or a bad shot; without shots the scene is still required", async () => {
+  await rejects({ prompt: "x", duration: 10, shots: shots([5, "a"], [5, "b"]) }, /duration.*shots|shots.*duration/);
+  await rejects({ shots: shots([5, "a"]) }, /shots: needs 2-6 shots/);
+  await rejects({ shots: shots([5, "a"], [5, "b"], [5, "c"], [5, "d"], [5, "e"], [5, "f"], [5, "g"]) }, /shots: needs 2-6 shots/);
+  await rejects({ shots: shots([30, "a"], [30, "b"], [5, "c"]) }, /shots: .*60 s/);
+  await rejects({ shots: [{ prompt: " ", durationSec: 5 }, { prompt: "b", durationSec: 5 }] }, /shots: shot 1 needs a prompt/);
+  await rejects({ shots: [{ prompt: "a", durationSec: 5 }, { prompt: "b", durationSec: 5.5 }] }, /shots: shot 2 needs a whole number of seconds/);
+  await rejects({ shots: [{ prompt: "a", durationSec: 5 }, { prompt: "b", durationSec: 5, camera: "x" }] }, /shots: shot 2/);
+  await rejects({ shots: [{ prompt: "a".repeat(1001), durationSec: 5 }, { prompt: "b", durationSec: 5 }] }, /shots: shot 1 .*1000 characters/);
+  await assert.rejects(prep({ duration: 5 }), (e: { code?: string; field?: string; message?: string }) => e.code === "WORKFLOW_INPUT_INVALID" && e.field === "prompt" && e.message === "prompt: is required");
+  const field = studio!.fields.find((f) => f.name === "shots");
+  assert.deepEqual(field && { ...field }, { name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000, help: field?.help });
 });
