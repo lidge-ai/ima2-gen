@@ -13,6 +13,8 @@ async function listImageFiles(baseDir: string) {
     const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
     for (const entry of entries) {
       if (entry.name === config.storage.trashDirName) continue;
+      // Images uploaded as element references live here; they are inputs, not results.
+      if (dir === baseDir && entry.isDirectory() && entry.name === config.storage.elementsDirName) continue;
       const full = join(dir, entry.name);
       if (entry.isDirectory() && depth > 0) {
         await walk(full, depth - 1);

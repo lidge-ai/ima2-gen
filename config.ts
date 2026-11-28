@@ -344,6 +344,8 @@ export const config = {
     trashDir: pickStr(env.IMA2_TRASH_DIR, fileCfg.storage?.trashDir, join(configDir, "generated", ".trash")),
     generatedDirName: pickStr(env.IMA2_GENERATED_DIRNAME, fileCfg.storage?.generatedDirName, "generated"),
     trashDirName: pickStr(env.IMA2_TRASH_DIRNAME, fileCfg.storage?.trashDirName, ".trash"),
+    // Folder inside generatedDir for images uploaded as element references. Not results: history skips it.
+    elementsDirName: pickStr(env.IMA2_ELEMENTS_DIRNAME, fileCfg.storage?.elementsDirName, "elements"),
     dbPath: pickStr(env.IMA2_DB_PATH, fileCfg.storage?.dbPath, join(configDir, "sessions.db")),
     promptImportIndexCacheFile: pickStr(
       env.IMA2_PROMPT_IMPORT_INDEX_CACHE_FILE,

@@ -1,5 +1,8 @@
 import type { Express, Request, Response } from "express";
+import { randomBytes } from "crypto";
 import { existsSync, lstatSync } from "fs";
+import { copyFile, mkdir } from "fs/promises";
+import { extname, join } from "path";
 import { config } from "../config.js";
 import { errInfo } from "../lib/errInfo.js";
 import { logEvent } from "../lib/logger.js";
@@ -20,6 +23,8 @@ import {
   updateFolder,
   clearAllAssets,
 } from "../lib/assetsStore.js";
+
+import { resolveMediaRefPath } from "../lib/providers/media/inputs.js";
 
 type IdParams = { id: string };
 
@@ -78,6 +83,35 @@ async function resolveValidatedFilePath(kind: string, raw: unknown): Promise<str
   }
   await assertRegularGeneratedPath(abs);
  return rel;
+}
+
+/** Checks the refs an element is about to be given. Refs it already holds are left alone: their files may be gone by now. */
+async function validateElementRefs(metadata: unknown, stored: readonly unknown[] = []): Promise<void> {
+  const refs = (metadata as { refs?: unknown } | null)?.refs;
+  if (!Array.isArray(refs)) return;
+  for (const ref of refs) if (!stored.includes(ref)) await resolveValidatedFilePath("element", ref);
+}
+
+/**
+ * Copies an uploaded image (the "input:<id>" ref from POST /api/media/inputs) into the generated files, so an
+ * element can point at it like at any result. Returns the path relative to the generated directory.
+ */
+async function importElementInput(inputRef: unknown): Promise<string> {
+  const refused = (message: string) => httpError(400, "INVALID_ELEMENT_REFS", message);
+  if (typeof inputRef !== "string" || !inputRef.trim()) throw refused("inputRef must be an upload ref");
+  let source: { path?: string; mimeType: string };
+  try {
+    source = resolveMediaRefPath({ ref: inputRef.trim() }, { generatedDir: config.storage.generatedDir, inputsDir: join(config.storage.configDir, "media-inputs") }, "inputRef");
+  } catch {
+    throw refused("inputRef is not an upload this server holds");
+  }
+  if (!source.path || !existsSync(source.path)) throw refused("inputRef is not an upload this server holds");
+  if (!source.mimeType.startsWith("image/")) throw refused("an element is made from an image");
+  const dir = resolveInGenerated(config.storage.generatedDir, config.storage.elementsDirName);
+  await mkdir(dir, { recursive: true });
+  const rel = config.storage.elementsDirName + "/" + randomBytes(12).toString("hex") + extname(source.path).toLowerCase();
+  await copyFile(source.path, resolveInGenerated(config.storage.generatedDir, rel));
+  return rel;
 }
 
 export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
@@ -146,6 +180,7 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
       const filePath = queryStr(req.query.filePath);
       const result = listAssets({
         kind: queryStr(req.query.kind),
+        elementKind: queryStr(req.query.elementKind),
         filePath: filePath === undefined ? undefined : canonicalizeStoredPath(filePath) ?? "",
         folderId: queryStr(req.query.folderId),
         tag: queryStr(req.query.tag),
@@ -185,9 +220,14 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
         folderId?: unknown;
         tags?: unknown;
         sourceAssetId?: unknown;
+        /** An uploaded image instead of a result: "input:<id>" from POST /api/media/inputs. */
+        inputRef?: unknown;
       };
       const resultPath = body.result?.path ?? body.result?.filePath ?? body.path ?? body.filePath;
-      const ref = await resolveValidatedFilePath("element", resultPath);
+      if (body.inputRef !== undefined && (resultPath !== undefined || body.sourceAssetId !== undefined)) {
+        throw httpError(400, "INVALID_ELEMENT_REFS", "give an uploaded image or a result, not both");
+      }
+      const ref = body.inputRef !== undefined ? await importElementInput(body.inputRef) : await resolveValidatedFilePath("element", resultPath);
       if (!ref) throw httpError(400, "INVALID_ELEMENT_REFS", "gallery result path required");
       const sourceAssetId = typeof body.sourceAssetId === "string" && body.sourceAssetId.trim()
         ? body.sourceAssetId.trim()
@@ -250,7 +290,10 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
         tags?: unknown;
       };
       const kind = assertAssetKind(body.kind);
-      if (kind === "element") validateElementMetadata(body.metadata, body.notes);
+      if (kind === "element") {
+        validateElementMetadata(body.metadata, body.notes);
+        await validateElementRefs(body.metadata);
+      }
       const filePath = await resolveValidatedFilePath(kind, body.filePath);
       const asset = createAsset({
         kind,
@@ -268,7 +311,7 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
     }
   });
 
-  app.patch("/api/assets/:id", (req: Request<IdParams>, res: Response) => {
+  app.patch("/api/assets/:id", async (req: Request<IdParams>, res: Response) => {
     try {
       const body = (req.body ?? {}) as {
         name?: unknown;
@@ -285,6 +328,8 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
       }
       if (existing.kind === "element") {
         validateElementMetadata(body.metadata ?? existing.metadata, body.notes ?? existing.notes);
+        const stored = (existing.metadata as { refs?: unknown } | null)?.refs;
+        if (body.metadata !== undefined) await validateElementRefs(body.metadata, Array.isArray(stored) ? stored : []);
       }
       const asset = updateAsset(req.params.id, body);
       res.json({ asset });

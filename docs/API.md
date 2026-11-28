@@ -897,10 +897,10 @@ files inside `generated/`; deleting an asset never deletes the file.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/api/assets` | List/search assets (`kind`, `folderId`, `tag`, `q`, `cursor`, `limit`) |
+| `GET` | `/api/assets` | List/search assets (`kind`, `elementKind`, `folderId`, `tag`, `q`, `cursor`, `limit`). `elementKind` keeps elements of one kind (`character`, `product`, `style`, `scene`) |
 | `GET` | `/api/assets/:id` | Fetch one asset by ID; returns `404 ASSET_NOT_FOUND` when absent |
-| `POST` | `/api/assets` | Promote/create an asset (`filePath`, `kind`, `name?`, `folderId?`, `tags?`, `metadata?`) |
-| `POST` | `/api/assets/promote-element` | Promote a gallery result to an `element` asset (`result.path` or `filePath`, `elementKind`, `name?`, `notes?`, `folderId?`, `tags?`) |
+| `POST` | `/api/assets` | Promote/create an asset (`filePath`, `kind`, `name?`, `folderId?`, `tags?`, `metadata?`). For an `element`, every path in `metadata.refs` must be a file in the generated storage (400 `INVALID_FILENAME`); `PATCH` checks the refs it adds and leaves the stored ones alone |
+| `POST` | `/api/assets/promote-element` | Promote a gallery result to an `element` asset (`result.path` or `filePath`, `elementKind`, `name?`, `notes?`, `folderId?`, `tags?`). Or make one from an uploaded image: `inputRef` is the `input:<id>` ref from `POST /api/media/inputs`; the file is copied to `elements/` inside the generated storage (not listed in history) and that path becomes the element's ref, usable as `{ role: "reference-image", filename }` in `POST /api/media`. `inputRef` cannot be combined with a result path or `sourceAssetId` |
 | `POST` | `/api/assets/derived` | Save a derived asset (raw `image/png` body; query `source`, `kind=keyed-png`, `projectId?`, `name?`, `meta?` JSON) — writes `<src>-keyed-<ts>.png` + sidecar with `derivedFrom` and registers an asset record `kind=vector-svg` sends NO body: the server reads the validated `source` from generated storage, traces it via `lib/vectorizeImage.ts`, and writes `<src>-vector-<ts>.svg` (query `preset?`, `colorPrecision?`, `filterSpeckle?`, `cornerThreshold?`; a non-raster source is refused with `DERIVED_SOURCE_NOT_RASTER`). Traced SVGs are served with a restrictive CSP and `nosniff`. |
 | `POST` | `/api/video/keying` | Derive an alpha WebM from a generated green-screen mp4 (`source`, `keyParams{tolerance,softness,keyColor?}`, `projectId?`, `name?`) — responds `202 {requestId, filePath}`, publishes `keying-start/progress/done/error` on the event bus, writes sidecar with `derivedFrom` and registers a video asset |
 | `PATCH` | `/api/assets/:id` | Update name/folder/notes/tags/metadata |
