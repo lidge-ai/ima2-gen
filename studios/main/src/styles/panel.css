@@ -180,7 +180,7 @@
 }
 .move-adds {
   margin: 0 0 -6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 /* Wide screens: six columns, so each group of five or six moves is one row. */
