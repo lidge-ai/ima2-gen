@@ -100,7 +100,7 @@ test("video: choosing a route and settings changes the estimate", async ({ page 
   await page.getByRole("button", { name: /^Duration: / }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^10s/ }).click();
   await expect(generate).toContainText("$0.75");
-  await page.getByRole("button", { name: /^Run through: / }).click();
+  await page.getByRole("button", { name: /^Route: / }).click();
   await page.getByRole("dialog").getByRole("button", { name: /BytePlus ModelArk/ }).click();
   await expect(page.getByText("Add a key to run this model")).toBeVisible();
   await expect(generate).toBeDisabled();
@@ -152,3 +152,18 @@ test("a model being retired shows its plain name, with a 'Retiring soon' badge o
   await expect(row).toContainText("Retiring soon");
   await expect(page.getByText("(deprecated)")).toHaveCount(0);
 });
+
+for (const lang of [
+  { locale: "en", auto: "Route: Automatic", fal: "Route: fal", group: "Route" },
+  { locale: "ko", auto: "경로: 자동", fal: "경로: fal", group: "경로" },
+] as const) {
+  test(`the route chip says what it is, and its name matches what it shows (${lang.locale})`, async ({ page }) => {
+    await page.addInitScript((locale) => localStorage.setItem("ima2.locale", locale), lang.locale);
+    await page.goto("/#/image");
+    const chip = page.getByRole("button", { name: lang.auto, exact: true });
+    await expect(chip).toHaveText(lang.auto);
+    await chip.click();
+    await page.getByRole("group", { name: lang.group, exact: true }).getByRole("button", { name: /^fal/ }).click();
+    await expect(page.getByRole("button", { name: lang.fal, exact: true })).toHaveText(lang.fal);
+  });
+}

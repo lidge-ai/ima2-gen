@@ -45,8 +45,8 @@ test("image tools: another route for the same model takes the images as a list a
   await page.goto("/#/image?mode=edit");
   await page.getByLabel("Image file").setInputFiles([file("a.png"), file("b.png")]);
   await page.getByLabel("Prompt").fill("combine them");
-  await page.getByRole("button", { name: /^Run through/ }).click();
-  await page.getByRole("group", { name: "Run through" }).getByRole("button", { name: /^fal/ }).click();
+  await page.getByRole("button", { name: /^Route: / }).click();
+  await page.getByRole("group", { name: "Route", exact: true }).getByRole("button", { name: /^fal/ }).click();
   await expect(page.getByRole("button", { name: /^Aspect ratio: / })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Size: / })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "Number of images" })).toHaveCount(0);

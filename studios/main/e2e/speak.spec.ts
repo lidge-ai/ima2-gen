@@ -101,7 +101,7 @@ test("talking video: a model is run through the route that has a form, not the d
   await page.goto("/#/video?mode=speak&model=kling%2Fkling-lipsync");
   await expect(page.getByRole("button", { name: /^Model: / })).toContainText("Kling Lip Sync");
   // One usable route: nothing to choose.
-  await expect(page.getByRole("button", { name: /^Run through/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Route: / })).toHaveCount(0);
   await page.getByLabel("Video of the speaker").setInputFiles(CLIP);
   await page.getByLabel("Audio to speak").setInputFiles(audio);
   const request = submitted(page);

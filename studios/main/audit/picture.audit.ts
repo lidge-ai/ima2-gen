@@ -52,7 +52,7 @@ const CELLS: Cell[] = [
   { id: "picture__edit-empty", hash: "/image?mode=edit" },
   { id: "picture__edit-three", hash: "/image?mode=edit", act: async (page) => { await add("door.png", "paint-sample.png", "window-frame.png")(page); await prompt("Paint the door the red of the sample, keep the frame")(page); } },
   { id: "picture__edit-full", hash: "/image?mode=edit", act: add("one.png", "two.png", "three.png", "four.png") },
-  { id: "picture__edit-route-open", hash: "/image?mode=edit", act: async (page) => { await add("door.png")(page); await named(/^(Run through|사용 경로)/)(page); } },
+  { id: "picture__edit-route-open", hash: "/image?mode=edit", act: async (page) => { await add("door.png")(page); await named(/^(Route|경로): /)(page); } },
   { id: "picture__upscale", hash: "/image?mode=upscale", act: add("old-photo-scan.png") },
   { id: "picture__separate", hash: "/image?mode=separate", act: add("product-shot.png") },
   { id: "picture__vectorize-needs-key", hash: "/image?mode=vectorize", act: add("logo-sketch.png") },

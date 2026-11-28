@@ -102,8 +102,8 @@ test("image brush: a route without a brush sends no mask and says the whole imag
   await expect(page.getByText("Only the painted area of the first image changes.")).toBeVisible();
 
   // fal's route for the same model takes no mask.
-  await page.getByRole("button", { name: /^Run through/ }).click();
-  await page.getByRole("group", { name: "Run through" }).getByRole("button", { name: /^fal/ }).click();
+  await page.getByRole("button", { name: /^Route: / }).click();
+  await page.getByRole("group", { name: "Route", exact: true }).getByRole("button", { name: /^fal/ }).click();
   await expect(page.getByText("This route has no brush, so the whole image is edited.")).toBeVisible();
   await expect(images(page).getByRole("button", { name: /^Paint (the|a new) area/ })).toHaveCount(0);
   let request = submitted(page);
@@ -115,8 +115,8 @@ test("image brush: a route without a brush sends no mask and says the whole imag
   expect(body).toHaveProperty("aspectRatio");
 
   // Back on the direct route the area is still there; removing it sends a plain edit.
-  await page.getByRole("button", { name: /^Run through/ }).click();
-  await page.getByRole("group", { name: "Run through" }).getByRole("button", { name: /OpenAI API/ }).click();
+  await page.getByRole("button", { name: /^Route: / }).click();
+  await page.getByRole("group", { name: "Route", exact: true }).getByRole("button", { name: /OpenAI API/ }).click();
   await expect(page.getByText("Only the painted area of the first image changes.")).toBeVisible();
   await images(page).getByRole("button", { name: "Remove the painted area" }).click();
   await expect(page.getByText("Only the painted area of the first image changes.")).toHaveCount(0);

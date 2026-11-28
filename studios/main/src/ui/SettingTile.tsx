@@ -20,7 +20,7 @@ interface Props<T> {
   /** "tile" is the panel card; "chip" is the compact dock button. */
   variant?: "tile" | "chip";
   icon?: Parameters<typeof Icon>[0]["name"];
-  /** Chip text when the value alone is unclear, e.g. "via fal". */
+  /** Chip text when the value alone is unclear, e.g. "Route: fal"; keep it the same words as the accessible name. */
   chipText?: (label: string) => string;
 }
 

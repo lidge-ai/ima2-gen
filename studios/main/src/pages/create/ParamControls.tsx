@@ -16,8 +16,8 @@ const M = messages(
     "duration": "Duration",
     "aspect": "Aspect ratio",
     "resolution": "Resolution",
-    "route": "Run through",
-    "via": "via {label}",
+    "route": "Route",
+    "via": "Route: {label}",
     "advanced": "Advanced",
     "avoid": "Avoid",
     "avoidPlaceholder": "What should not appear",
@@ -36,8 +36,8 @@ const M = messages(
     "duration": "길이",
     "aspect": "화면 비율",
     "resolution": "해상도",
-    "route": "사용 경로",
-    "via": "{label} 사용",
+    "route": "경로",
+    "via": "경로: {label}",
     "advanced": "고급 설정",
     "avoid": "제외할 내용",
     "avoidPlaceholder": "이미지에 나타나지 않을 내용",
@@ -92,7 +92,7 @@ export function routeOptions(model: CatalogModel): TileOption<string>[] {
   ];
 }
 
-/** The route chip's text, e.g. "via fal". */
+/** The route chip's text, the same words as its accessible name ("Route: fal"). */
 export const routeChipText = (label: string): string => tr(M, "via", { label });
 
 /** Settings the selected model accepts. Options come from the catalog, never a fixed list. */
