@@ -112,6 +112,7 @@ _Tests considered "runtime-importing" if they import from `../lib/`, `../routes/
 - `tests/grokVideoPlannerFallback.test.ts`
 - `tests/grokVideoTimeoutBudgets.test.ts`
 - `tests/history-metadata-fallback.test.ts`
+- `tests/history-query.test.ts`
 - `tests/history-tombstone.test.ts`
 - `tests/history-video-row.test.ts`
 - `tests/image-metadata-route.test.ts`

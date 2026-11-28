@@ -4,87 +4,28 @@ import {
   getHistoryIndex,
   invalidateFavoriteOverlay,
   invalidateHistoryIndex,
-  type HistoryIndexRow,
 } from "../lib/historyIndex.js";
 import { getSessionTitleMap } from "../lib/sessionStore.js";
 import { logError, logEvent } from "../lib/logger.js";
 import { getDb } from "../lib/db.js";
+import { folderByFilePath, HistoryQueryError, parseHistoryQuery, selectHistoryPage, type HistoryQuery } from "../lib/historyQuery.js";
 
 import { errInfo } from "../lib/errInfo.js";
 import { requireRuntimeContext, type RouteRuntimeContext } from "../lib/runtimeContext.js";
 import { backfillThumbnails } from "../lib/thumbBackfill.js";
 
-function asStr(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function matchesHistoryFilters(
-  row: HistoryIndexRow,
-  params: {
-    sinceTs: number;
-    beforeTs: number;
-    beforeFn: string | null;
-    sessionId: string | null;
-    requestId: string | null;
-    favoritesOnly: boolean;
-    favoriteSet: Set<string>;
-    /** Audio rows are opt-in: the classic UI renders every non-video row as an image. */
-    includeAudio: boolean;
-  },
-): boolean {
-  if (!params.includeAudio && row.mediaType === "audio") return false;
-  if (Number.isFinite(params.sinceTs) && row.createdAt <= params.sinceTs) return false;
-  if (Number.isFinite(params.beforeTs)) {
-    if (row.createdAt > params.beforeTs) return false;
-    if (row.createdAt === params.beforeTs) {
-      if (!params.beforeFn || row.filename >= params.beforeFn) return false;
-    }
-  }
-  if (params.sessionId && row.sessionId !== params.sessionId) return false;
-  if (params.requestId && row.requestId !== params.requestId) return false;
-  if (params.favoritesOnly && !params.favoriteSet.has(row.filename)) return false;
-  return true;
-}
-
-function selectHistoryPage(
-  rows: HistoryIndexRow[],
-  limit: number,
-  params: Parameters<typeof matchesHistoryFilters>[1],
-) {
-  const selected: HistoryIndexRow[] = [];
-  for (const row of rows) {
-    if (!matchesHistoryFilters(row, params)) continue;
-    selected.push(row);
-    if (selected.length > limit) break;
-  }
-  const pageRows = selected.slice(0, limit);
-  const page = pageRows.map((r) => ({ ...r, isFavorite: params.favoriteSet.has(r.filename) }));
-  const last = page[page.length - 1];
-  return {
-    page,
-    nextCursor: selected.length > limit && last
-      ? { before: last.createdAt, beforeFilename: last.filename }
-      : null,
-  };
-}
-
 export function registerHistoryRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
   const ctx = requireRuntimeContext(ctxRaw);
   app.get("/api/history", async (req: Request, res: Response) => {
     try {
-      const limitRaw = parseInt(asStr(req.query.limit));
-      const limit = Math.min(
-        Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : ctx.config.history.defaultPageSize,
-        ctx.config.history.maxPageCap,
-      );
-      const beforeTs = parseInt(asStr(req.query.before));
-      const beforeFn = typeof req.query.beforeFilename === "string" ? req.query.beforeFilename : null;
-      const sinceTs = parseInt(asStr(req.query.since));
-      const sessionId = typeof req.query.sessionId === "string" ? req.query.sessionId : null;
-      const requestId = typeof req.query.requestId === "string" ? req.query.requestId : null;
+      let query: HistoryQuery;
+      try {
+        query = parseHistoryQuery(req.query as Record<string, unknown>, ctx.config.history);
+      } catch (e) {
+        if (e instanceof HistoryQueryError) return res.status(400).json({ error: e.message });
+        throw e;
+      }
       const groupBy = req.query.groupBy === "session" ? "session" : null;
-      const favoritesOnly =
-        req.query.favoritesOnly === "1" || req.query.favoritesOnly === "true";
       const browserId = typeof req.headers["x-ima2-browser-id"] === "string"
         ? req.headers["x-ima2-browser-id"]
         : null;
@@ -99,16 +40,7 @@ export function registerHistoryRoutes(app: Express, ctxRaw: RouteRuntimeContext)
         favoriteSet = new Set(favRows.map((r) => r.filename));
       }
 
-      const { page, nextCursor } = selectHistoryPage(rows, limit, {
-        sinceTs,
-        beforeTs,
-        beforeFn,
-        sessionId,
-        requestId,
-        favoritesOnly,
-        favoriteSet,
-        includeAudio: req.query.includeAudio === "1" || req.query.includeAudio === "true",
-      });
+      const { page, nextCursor, matched, facets } = selectHistoryPage(rows, query, { favoriteSet, folders: folderByFilePath() });
 
       if (groupBy === "session") {
         type HistoryRow = (typeof page)[number];
@@ -140,10 +72,10 @@ export function registerHistoryRoutes(app: Express, ctxRaw: RouteRuntimeContext)
           loose: loose.length,
           total: rows.length,
         });
-        return res.json({ sessions, loose, total: rows.length, nextCursor });
+        return res.json({ sessions, loose, total: rows.length, matched, nextCursor, ...(facets ? { facets } : {}) });
       }
 
-      res.json({ items: page, total: rows.length, nextCursor });
+      res.json({ items: page, total: rows.length, matched, nextCursor, ...(facets ? { facets } : {}) });
     } catch (e) {
       const err = errInfo(e);
       logError("history", "error", err.raw);

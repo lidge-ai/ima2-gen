@@ -92,7 +92,7 @@ routes/
 | `routes/videoExtended.ts` | 488 | Video edit, extension, frame extraction, and configured-planner first/last-frame analysis (Grok 4.5 default) |
 | `routes/nodes.ts` | 28 | Node generation and node fetch route wiring |
 | `routes/sessions.ts` | 318 | SQLite-backed session list/load/save/rename/delete, style-sheet get/put/enable/extract, graph save |
-| `routes/history.ts` | 239 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
+| `routes/history.ts` | 171 | History list, cursor pagination, favorites-only filtering, grouped gallery, soft delete (OS trash), restore, gallery favorite toggle, permanent delete |
 | `routes/imageImport.ts` | 38 | `POST /api/history/import-local` raw image upload (PNG/JPEG/WebP) — Phase 10 drop-import for Canvas |
 | `routes/health.ts` | 154 | Providers, health, OAuth status, inflight list/cancel for classic/node/multimode jobs, billing |
 | `routes/mcpConnections.ts` | 164 | MCP provider list/status/connect/callback/refresh/disconnect/model routes; truthful state-to-HTTP mapping and secret-free responses |
@@ -325,6 +325,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/videoExtendI2vOperation.ts` | 105 | Actual whole last-frame background operation Promise, preserving phase/persistence/terminal order |
 | `lib/grokVideoPlannerPrompt.ts` | 225 | Grok video planner prompt construction |
 | `lib/historyIndex.ts` | 57 | Generated-history index construction and lookup |
+| `lib/historyQuery.ts` | 138 | GET /api/history query parsing, filters, period, order, page cut, matched count, model facets and folder lookup |
 | `lib/imageThumb.ts` | 50 | Image thumbnail generation helpers |
 | `lib/maskedEditComposite.ts` | 98 | Masked-edit pixel lock: restores source pixels wherever the edit mask is opaque (`features.preserveOutsideMask`); RGBA blend, 4096² cap, one composite at a time |
 | `lib/multimodeHelpers.ts` | 48 | Shared multimode generation helpers |
