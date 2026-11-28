@@ -74,7 +74,9 @@ test("cut list: 2 to 6 shots and 60 seconds in all, said before anything is sent
   page.on("request", (r) => { if (r.url().includes("/api/workflows/director-studio/estimate")) asked += 1; });
   await setLength(page, 6, 12);
   await expect(shots(page).getByRole("alert")).toHaveText("The shots add up to 72 s. The most is 60 s; shorten or remove a shot.");
+  // Generate says why there is no price, and nothing is asked of the server while the list is too long.
   await expect(page.getByRole("button", { name: /^Generate/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^Generate/ })).toContainText("Shorten the cut list for price");
   await page.waitForTimeout(600);
   expect(asked).toBe(0);
   await shots(page).getByRole("button", { name: "Remove shot 6" }).click();
@@ -111,6 +113,10 @@ test("cut list: one scene still works as before, the list is kept while it is of
   await expect(list.getByRole("textbox", { name: "컷 1" })).toBeVisible();
   await expect(list.getByRole("status")).toHaveText("컷 2개 · 60초 중 10초");
   await expect(page.getByText("필수: 컷 1, 컷 2")).toBeVisible();
+  // At phone width the settings and the list stay inside the screen.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("button", { name: /언어|Language/ }).first().click();
 });
 

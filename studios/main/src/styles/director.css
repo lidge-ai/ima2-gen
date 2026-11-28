@@ -70,6 +70,9 @@
   align-content: center;
 }
 .director-form > .workflow-params > .field input {
+  /* A text setting fills its tile; its own width would push a narrow grid past the screen. */
+  width: 100%;
+  min-width: 0;
   height: 22px;
   padding: 0;
   border: 0;

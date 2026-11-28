@@ -51,7 +51,7 @@ export function koText(wire: WireWorkflow): WorkflowText {
   const fields: Record<string, { label?: string; help?: string; options?: Record<string, string> }> = {};
   for (const field of wire.fields) {
     const name = field.name;
-    const fieldLabel = name === "prompt" ? (wire.id.startsWith("director") ? "프롬프트" : field.label === "Look" ? "스타일 설명" : "메모") : FIELDS[name];
+    const fieldLabel = name === "prompt" ? (wire.id === "director-studio" ? "장면" : wire.id.startsWith("director") ? "프롬프트" : field.label === "Look" ? "스타일 설명" : "메모") : FIELDS[name];
     const entry = { ...(fieldLabel ? { label: fieldLabel } : {}), ...(HELP[name] && wire.id.startsWith("remix-") ? { help: HELP[name] } : {}), ...(OPTIONS[name] ? { options: OPTIONS[name] } : {}) };
     if (Object.keys(entry).length) fields[name] = entry;
   }
