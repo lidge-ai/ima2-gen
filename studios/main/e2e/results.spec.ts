@@ -26,8 +26,9 @@ test("a result opened on the Image screen fills that screen: same prompt and mod
   await dialog.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect(page.locator(".dock-attachment").getByRole("img")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Remove image" })).toBeVisible();
-  await expect(page).toHaveURL(/#\/image\?model=/);
+  await expect(page.getByRole("button", { name: /^Remove / })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Tool" }).getByRole("button", { name: "Edit", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/#\/image\?.*mode=edit/);
 });
 
 test("Animate on an image result opens Video with the image as the start frame", async ({ page }) => {
