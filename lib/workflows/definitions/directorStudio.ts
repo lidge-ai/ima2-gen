@@ -1,6 +1,7 @@
 import type { MediaInput, MediaModelSpec } from "../../providers/media/contract.js";
-import type { LocalStep, MediaStep, ModelSlot, PlanEnv, ResolvedSlot, StepRuntime, WorkflowDefinition, WorkflowStep, WorkflowValues } from "../types.js";
-import { fitDuration, maxShotSeconds, planShotsStep, shotPrompt, splitDuration } from "./directorShots.js";
+import { inputError } from "../errors.js";
+import type { LocalStep, MediaStep, ModelSlot, PlanEnv, ResolvedSlot, StepRuntime, WorkflowDefinition, WorkflowShot, WorkflowStep, WorkflowValues } from "../types.js";
+import { fitDuration, fitShots, maxShotSeconds, planShotsStep, shotPrompt, splitDuration } from "./directorShots.js";
 import { aspectField, checkLook, checkModelFit, inputsFrom, intOf, joinPrompt, lookFields, lookPrompt, option, refsOf, textOf, videoResolutionField } from "./shared.js";
 
 const RENDER_SLOT: ModelSlot = {
@@ -29,6 +30,8 @@ interface Shape {
   native: boolean;
   wantSound: boolean;
   resolution: string;
+  /** The caller's cut list, when given: shot prompts come from it instead of the planner. */
+  shots?: readonly WorkflowShot[];
 }
 
 function referenceInputs(rt: StepRuntime, values: WorkflowValues): Promise<MediaInput[][]> {
@@ -39,18 +42,29 @@ function referenceInputs(rt: StepRuntime, values: WorkflowValues): Promise<Media
   ]);
 }
 
+const shotsOf = (values: WorkflowValues): readonly WorkflowShot[] | undefined => values.shots as readonly WorkflowShot[] | undefined;
+
+/** The scene text for one call: an explicit shot with the Scene as shared context, a planned shot, or the whole Scene. */
+async function scenePrompt(rt: StepRuntime, shape: Shape, index: number, multi: boolean): Promise<string | undefined> {
+  const scene = textOf(shape.values, "prompt");
+  const explicit = shape.shots?.[index];
+  if (explicit) return joinPrompt(explicit.prompt, scene ? "Shared context for every shot: " + scene : undefined);
+  return multi ? shotPrompt(rt, index) : scene;
+}
+
 function shotStep(shape: Shape, index: number, seconds: number, multi: boolean, continuity: boolean): MediaStep {
   const { values, render } = shape;
   const id = multi ? "shot-" + (index + 1) : "render";
-  const deps = multi ? ["plan-shots", ...(continuity && index > 0 ? ["shot-" + index + "-last"] : [])] : [];
+  const previous = multi && continuity && index > 0 ? "shot-" + index + "-last" : undefined;
+  const deps = [...(multi && !shape.shots ? ["plan-shots"] : []), ...(previous ? [previous] : [])];
   const step: MediaStep = {
     id, label: multi ? "Shot " + (index + 1) : "Render the clip", kind: "media", slot: "render", model: render.model,
     outputKind: "video", dependsOn: deps,
     units: { unit: "second", quantity: seconds, variant: shape.resolution + (shape.native && shape.wantSound ? "+audio" : "") },
     async build(rt) {
-      const scene = multi ? await shotPrompt(rt, index) : textOf(values, "prompt");
+      const scene = await scenePrompt(rt, shape, index, multi);
       const inputs = (await referenceInputs(rt, values)).flat();
-      const prev = deps[1] ? rt.artifactsOf(deps[1])[0] : undefined;
+      const prev = previous ? rt.artifactsOf(previous)[0] : undefined;
       if (prev) inputs.unshift(await rt.asInput(prev, "first-frame"));
       return {
         model: render.model, task: inputs.length > 0 ? "reference-to-video" : "text-to-video",
@@ -119,15 +133,18 @@ function buildPlan(values: WorkflowValues, models: Readonly<Record<string, Resol
   if (!render || !sound) throw new Error("director-studio slots missing");
   const spec: MediaModelSpec | undefined = env.catalog(render.model);
   checkModelFit(env, render.model, values, refsOf(values, "images").length);
-  const total = intOf(values, "duration", 5);
-  const durations = splitDuration(total, maxShotSeconds(render.model, spec)).map((d) => fitDuration(d, spec));
+  const shots = shotsOf(values);
+  const durations = shots
+    ? fitShots(shots, render.model, spec)
+    : splitDuration(intOf(values, "duration", 5), maxShotSeconds(render.model, spec)).map((d) => fitDuration(d, spec));
   const shape: Shape = {
     values, render, native: spec?.params.nativeAudio === true,
     wantSound: values.generateAudio !== false, resolution: textOf(values, "resolution") ?? "720p",
+    ...(shots ? { shots } : {}),
   };
   const multi = durations.length > 1;
   const continuity = (textOf(values, "continuity") ?? "first-frame") === "first-frame";
-  const steps: WorkflowStep[] = multi ? [planShotsStep(textOf(values, "prompt") ?? "", durations)] : [];
+  const steps: WorkflowStep[] = multi && !shots ? [planShotsStep(textOf(values, "prompt") ?? "", durations)] : [];
   durations.forEach((seconds, i) => {
     steps.push(shotStep(shape, i, seconds, multi, continuity));
     if (multi && continuity && i < durations.length - 1) steps.push(lastFrameStep("shot-" + (i + 1)));
@@ -143,10 +160,14 @@ function buildPlan(values: WorkflowValues, models: Readonly<Record<string, Resol
 export const directorStudio: WorkflowDefinition = {
   id: "director-studio",
   label: "Director studio",
-  description: "A directed 4-30 second clip from one prompt: planned shots, a look and a sound bed, with image, video and audio references.",
+  description: "A directed clip from one prompt or your own cut list: 4-30 seconds planned into shots, or 2-6 shots of your own up to 60 seconds, with a look, a sound bed and image, video and audio references.",
   fields: [
-    { name: "prompt", type: "text", label: "Scene", required: true, maxLength: 4000, multiline: true, help: "What happens. Name references as image 1, video 1, audio 1." },
+    { name: "prompt", type: "text", label: "Scene", required: false, maxLength: 4000, multiline: true, help: "What happens. Name references as image 1, video 1, audio 1." },
     { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },
+    {
+      name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000,
+      help: "Optional cut list: 2-6 shots in order, each with its own prompt and whole seconds, up to 60 seconds in all. Leave Length empty when you use it.",
+    },
     videoResolutionField(),
     aspectField(["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"], "16:9"),
     { name: "generateAudio", type: "boolean", label: "Sound", required: false, default: true },
@@ -155,13 +176,18 @@ export const directorStudio: WorkflowDefinition = {
     { name: "audios", type: "media", accept: "audio", label: "Audio references", required: false, min: 1, max: 10, maxDurationSec: 30 },
     {
       name: "continuity", type: "enum", label: "Between shots", required: false, default: "first-frame",
-      help: "Only used when the clip is longer than one model call.",
+      help: "Used when the clip has more than one shot.",
       options: [option("first-frame", "Continue from the previous shot's last frame"), option("independent", "Independent shots")],
     },
     ...lookFields(),
   ],
   slots: [RENDER_SLOT, SOUND_SLOT],
-  check: checkLook,
+  check(values, provided) {
+    // Scene is required unless a cut list carries the prompts (same answer as a required field).
+    if (!shotsOf(values) && textOf(values, "prompt") === undefined) throw inputError("prompt", "is required");
+    if (shotsOf(values) && provided.has("duration")) return "duration: leave it out when shots are given; the shots set the length";
+    return checkLook(values);
+  },
   plan(values, models, env) {
     return { workflowId: "director-studio", steps: buildPlan(values, models, env) };
   },
