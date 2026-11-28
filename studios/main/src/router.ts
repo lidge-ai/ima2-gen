@@ -7,7 +7,7 @@ export type Route =
   | { page: "remix"; workflow?: string }
   | { page: "director"; workflow?: string }
   | { page: "presets"; tab?: string }
-  | { page: "assets"; kind?: string }
+  | { page: "assets"; kind?: string; q?: string; model?: string; period?: string; order?: string }
   | { page: "keys"; focus?: string }
   | { page: "models"; vendor?: string };
 
@@ -29,7 +29,7 @@ export function parseHash(hash: string): Route {
     case "presets":
       return clean({ page: "presets", tab: sub });
     case "assets":
-      return clean({ page: "assets", kind: sub });
+      return clean({ page: "assets", kind: sub, q: get("q"), model: get("model"), period: get("period"), order: get("order") });
     case "models":
       return clean({ page: "models", vendor: sub || get("vendor") });
     case "keys":
@@ -52,6 +52,12 @@ export function href(path: string, query?: Record<string, string | undefined>): 
 
 export function navigate(path: string, query?: Record<string, string | undefined>): void {
   window.location.hash = href(path, query);
+}
+
+/** Changes the address without a new history entry (typing in a search box), and tells the router. */
+export function replaceRoute(path: string, query?: Record<string, string | undefined>): void {
+  window.history.replaceState(null, "", href(path, query));
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 
 export function useRoute(): Route {

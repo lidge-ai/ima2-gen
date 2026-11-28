@@ -19,10 +19,10 @@ test("asset filters, favorites and deletion", async ({ page, request }) => {
     .toBeTruthy();
   await page.goto("/#/assets/videos");
   await expect(page.getByRole("heading", { name: "Assets", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Filter by model", exact: true }).click();
+  await page.getByRole("button", { name: /^Model: / }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Seedance 2.5", exact: true }).click();
   await expect(page.getByRole("button", { name: `Open ${prompt}` })).toBeVisible();
-  await page.getByRole("button", { name: "Filter by model", exact: true }).click();
+  await page.getByRole("button", { name: /^Model: / }).click();
   await page.getByRole("dialog").getByRole("button", { name: "All models", exact: true }).click();
   await page.getByRole("button", { name: `Open ${prompt}` }).click();
   const dialog = page.getByRole("dialog", { name: "Result" });
@@ -69,12 +69,17 @@ test("assets: search, kind, period and order are asked of the server; the count 
   await tools.getByRole("searchbox", { name: "Search prompts and models" }).fill(mark);
   await asked;
   await expect(page.getByRole("status").filter({ hasText: "2 results" })).toBeVisible();
+  // The search is in the address: a reload shows the same narrowed list.
+  await expect(page).toHaveURL(new RegExp("#/assets/all\\?q=" + mark + "$"));
+  await page.reload();
+  await expect(tools.getByRole("searchbox")).toHaveValue(mark);
+  await expect(page.getByRole("status").filter({ hasText: "2 results" })).toBeVisible();
   // Newest first: the video was made after the image.
   const order = () => results.getByRole("button", { name: /^Open / }).evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")));
   await expect.poll(order).toEqual(["Open " + prompts.whale, "Open " + prompts.fox]);
 
   asked = listed(page, (p) => p.get("order") === "asc" && p.get("q") === mark);
-  await tools.getByRole("button", { name: "Order", exact: true }).click();
+  await tools.getByRole("button", { name: "Order: Newest first", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Oldest first", exact: true }).click();
   await asked;
   await expect.poll(order).toEqual(["Open " + prompts.fox, "Open " + prompts.whale]);
@@ -87,13 +92,15 @@ test("assets: search, kind, period and order are asked of the server; the count 
   await expect(results.getByRole("button", { name: "Open " + prompts.fox })).toHaveCount(0);
 
   asked = listed(page, (p) => Number(p.get("since")) > Date.now() - 25 * 60 * 60 * 1000 && p.get("q") === mark);
-  await tools.getByRole("button", { name: "Made", exact: true }).click();
+  await tools.getByRole("button", { name: "Period: Any time", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Last 24 hours", exact: true }).click();
   await asked;
   await expect(results.getByRole("button", { name: "Open " + prompts.whale })).toBeVisible();
 
   await tools.getByRole("searchbox").fill(mark + " nothing like this");
   await expect(page.getByRole("heading", { name: "Nothing matches this search and these filters." })).toBeVisible();
+  // On a narrower tab, the same search can be taken to every tab.
+  await expect(page.getByRole("link", { name: "Search every tab" })).toHaveAttribute("href", /^#\/assets\/all\?q=/);
   await page.getByRole("button", { name: "Clear search and filters" }).click();
   await expect(tools.getByRole("searchbox")).toHaveValue("");
   await expect(results.getByRole("button", { name: "Open " + prompts.whale })).toBeVisible();
@@ -101,7 +108,8 @@ test("assets: search, kind, period and order are asked of the server; the count 
 
   await page.getByRole("button", { name: /Language/ }).click();
   await expect(page.getByRole("group", { name: "검색, 필터, 정렬" }).getByRole("searchbox", { name: "프롬프트와 모델 검색" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "정렬", exact: true })).toContainText("오래된순");
+  await expect(page.getByRole("button", { name: "정렬: 오래된순", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "기간: 전체", exact: true })).toBeVisible();
   await page.getByRole("button", { name: /언어|Language/ }).first().click();
 });
 

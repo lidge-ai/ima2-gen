@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useT } from "../../i18n.ts";
 import { M } from "./messages.ts";
+import { href } from "../../router.ts";
 import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
@@ -12,7 +13,7 @@ export const PERIODS = ["any", "day", "week", "month"] as const;
 export type Period = (typeof PERIODS)[number];
 export type Order = "newest" | "oldest";
 
-/** What narrows and orders the results, besides the tab. */
+/** What narrows and orders the results, besides the tab. Kept in the address, so a reload or a link shows the same list. */
 export interface Narrow {
   q: string;
   model: string;
@@ -20,6 +21,14 @@ export interface Narrow {
   period: Period;
 }
 export const NO_NARROW: Narrow = { q: "", model: "", order: "newest", period: "any" };
+
+/** The address query for a narrowing; defaults are left out. */
+export function narrowQuery(narrow: Narrow): Record<string, string | undefined> {
+  return {
+    q: narrow.q || undefined, model: narrow.model || undefined,
+    period: narrow.period === "any" ? undefined : narrow.period, order: narrow.order === "oldest" ? "oldest" : undefined,
+  };
+}
 
 function ModelFilter({ model, setModel, models }: { model: string; setModel: (value: string) => void; models: readonly string[] }) {
   const t = useT(M);
@@ -39,11 +48,8 @@ function ModelFilter({ model, setModel, models }: { model: string; setModel: (va
   });
   return (
     <SettingTile
-      caption={t("filterModel")}
-      accessibleLabel={t("filterModel")}
-      value={model}
-      onChange={setModel}
-      options={[{ value: "", label: t("allModels") }, ...options]}
+      variant="chip" menuPlacement="bottom" caption={t("model")} chipText={(label) => t("model") + ": " + label}
+      value={model} onChange={setModel} options={[{ value: "", label: t("allModels") }, ...options]}
     />
   );
 }
@@ -81,7 +87,8 @@ export function AssetFilters({ tab, narrow, setNarrow, models, density, setDensi
     <div className="assets-filters">
       <nav className="tabs assets-tabs" aria-label={t("filters")}>
         {tabs.map((value) => (
-          <a key={value} className="tab" href={"#/assets/" + value} aria-current={tab === value ? "page" : undefined}>
+          // Another tab keeps the search and filters; Elements has none of its own.
+          <a key={value} className="tab" href={href("assets/" + value, value === "elements" ? undefined : narrowQuery(narrow))} aria-current={tab === value ? "page" : undefined}>
             {t(value)}
           </a>
         ))}
@@ -92,12 +99,12 @@ export function AssetFilters({ tab, narrow, setNarrow, models, density, setDensi
           <Search value={narrow.q} onChange={(q) => setNarrow({ q })} />
           <ModelFilter model={narrow.model} setModel={(model) => setNarrow({ model })} models={models} />
           <SettingTile
-            caption={t("period")} accessibleLabel={t("period")} value={narrow.period} onChange={(period) => setNarrow({ period })}
-            options={PERIODS.map((value) => ({ value, label: t(value) }))}
+            variant="chip" menuPlacement="bottom" caption={t("period")} chipText={(label) => t("period") + ": " + label}
+            value={narrow.period} onChange={(period) => setNarrow({ period })} options={PERIODS.map((value) => ({ value, label: t(value) }))}
           />
           <SettingTile
-            caption={t("order")} accessibleLabel={t("order")} value={narrow.order} onChange={(order) => setNarrow({ order })}
-            options={(["newest", "oldest"] as const).map((value) => ({ value, label: t(value) }))}
+            variant="chip" menuPlacement="bottom" caption={t("order")} chipText={(label) => t("order") + ": " + label}
+            value={narrow.order} onChange={(order) => setNarrow({ order })} options={(["newest", "oldest"] as const).map((value) => ({ value, label: t(value) }))}
           />
           <div className="assets-density" role="group" aria-label={t("density")}>
             {(["comfortable", "compact"] as const).map((value) => (

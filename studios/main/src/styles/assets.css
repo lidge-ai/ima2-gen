@@ -42,10 +42,16 @@
 .assets-count {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
   color: var(--text-muted);
   font-size: 13px;
+}
+.assets-empty-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .assets-density [aria-pressed="true"] {
   background: var(--surface-3);

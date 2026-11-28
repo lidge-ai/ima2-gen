@@ -36,9 +36,9 @@ const CELLS: Cell[] = [
   { id: "shelf__search", hash: "/assets/all", setup: seed, act: search("fox") },
   { id: "shelf__search-none", hash: "/assets/all", setup: seed, act: search("a lighthouse nobody made") },
   { id: "shelf__audio", hash: "/assets/audio", setup: seed },
-  { id: "shelf__period-menu", hash: "/assets/all", setup: seed, act: pick(/^(Made|만든 때)$/, /./) },
-  { id: "shelf__order-menu", hash: "/assets/videos", setup: seed, act: pick(/^(Order|정렬)$/, /./) },
-  { id: "shelf__model-menu", hash: "/assets/images", setup: seed, act: pick(/^(Filter by model|모델별 필터)$/, /./) },
+  { id: "shelf__period-menu", hash: "/assets/all", setup: seed, act: pick(/^(Period|기간): /, /./) },
+  { id: "shelf__order-menu", hash: "/assets/videos", setup: seed, act: pick(/^(Order|정렬): /, /./) },
+  { id: "shelf__model-menu", hash: "/assets/images", setup: seed, act: pick(/^(Model|모델): /, /./) },
   { id: "shelf__loading", hash: "/assets/all", setup: async (page) => { await page.route("**/api/history?*", () => undefined); } },
   { id: "shelf__load-error", hash: "/assets/all", setup: async (page) => { await page.route("**/api/history?*", (route) => route.fulfill({ status: 503, json: { error: { code: "UNAVAILABLE", message: "History unavailable" } } })); } },
 ];
