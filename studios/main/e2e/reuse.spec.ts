@@ -54,7 +54,7 @@ test("the same action on the open video form fills it in place, and a result mad
   await expect(page.getByLabel("Prompt")).toHaveValue(prompt);
   await expect(page.getByRole("button", { name: "Duration: 12s" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Aspect ratio: 1:1" })).toBeVisible();
-  const note = page.getByRole("status").filter({ hasText: "made from an input file, which is not kept: add it again." });
+  const note = page.getByRole("status").filter({ hasText: "The input file it used is not kept, so add it again." });
   await expect(note).toBeVisible();
   // It sits with the input slots, in view, not below the settings.
   await expect(note).toBeInViewport();
@@ -84,7 +84,8 @@ test("an image result goes to the video form as the end frame or as a reference 
   page.on("request", (r) => { if (r.method() === "POST" && new URL(r.url()).pathname === "/api/media/inputs") uploads += 1; });
 
   let dialog = await open(page, "images", prompt);
-  await dialog.getByRole("button", { name: "Use as end frame" }).click();
+  await dialog.getByRole("button", { name: "Use in video" }).click();
+  await page.getByRole("dialog", { name: "Use in video" }).getByRole("button", { name: "End frame", exact: true }).click();
   await expect(page).toHaveURL(/#\/video/);
   await expect(page.getByRole("button", { name: /^Remove End frame/ })).toBeVisible();
   // With no start frame the form says what the request will be.
@@ -96,7 +97,8 @@ test("an image result goes to the video form as the end frame or as a reference 
   expect(body.inputs).toEqual([{ role: "last-frame", filename: row.filename }]);
 
   dialog = await open(page, "images", prompt);
-  await dialog.getByRole("button", { name: "Use as reference" }).click();
+  await dialog.getByRole("button", { name: "Use in video" }).click();
+  await page.getByRole("dialog", { name: "Use in video" }).getByRole("button", { name: "Reference", exact: true }).click();
   await expect(page.getByRole("button", { name: "References", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: /^Remove Reference 1/ })).toBeVisible();
   await page.getByLabel("Prompt").fill("the keeper climbs the stairs");
@@ -115,6 +117,11 @@ test("an image result goes to the video form as the end frame or as a reference 
     sessionStorage.setItem("ima2-studio-handoff", JSON.stringify({ url: "/generated/" + path, mimeType: "image/png", name: "lighthouse", target: "video", values: { slot: "reference" }, path }));
     window.dispatchEvent(new CustomEvent("ima2-handoff", { detail: { handled: false } }));
   }, row.filename);
-  await expect(page.getByRole("alert").filter({ hasText: "takes no reference images" })).toBeVisible();
+  // The reason sits under the input slots, in view, and offers the next step.
+  const refusal = page.getByRole("alert").filter({ hasText: "takes no reference images" });
+  await expect(refusal).toBeInViewport();
+  await refusal.getByRole("button", { name: "Choose a model" }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Seedance 2\.5$/ }).first()).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: /^Remove Reference/ })).toHaveCount(0);
 });

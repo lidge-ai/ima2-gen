@@ -62,7 +62,7 @@ function linkedTool(catalog: Catalog, tools: readonly ImageTask[], mode: string 
 
 function Workspace({ catalog, preset, requested, mode }: { catalog: Catalog; preset?: string | undefined; requested?: string | undefined; mode?: string | undefined }) {
   const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("image") }));
-  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, info: undefined, ...patch }));
+  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, noticeModel: undefined, info: undefined, ...patch }));
   const tools = availableTools(catalog);
   const tool = linkedTool(catalog, tools, mode, requested);
   const creating = tool === "create";

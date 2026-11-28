@@ -16,24 +16,24 @@ const M = messages(
     "inputs": "{model} cannot use these inputs. Remove an input or choose another model.",
     "prompt": "Write a prompt.",
     "handOff": "Could not bring that result here. Add it with the upload button.",
-    "inputsAgain": "The settings are back. This result was also made from {n} input files, which are not kept: add them again.",
-    "inputsAgainOne": "The settings are back. This result was also made from an input file, which is not kept: add it again.",
+    "inputsAgain": "Settings copied from this result. The {n} input files it used are not kept, so add them again.",
+    "inputsAgainOne": "Settings copied from this result. The input file it used is not kept, so add it again.",
     "noFrames": "{model} takes no start or end frame. Choose a model that makes video from an image.",
     "noRefs": "{model} takes no reference images. Choose a model that takes references.",
     "refsFull": "The references are full ({max}). Remove one to add this image.",
-    "endOnly": "Set as the end frame. Add a start frame too: without one this is sent as a text-to-video request.",
+    "endOnly": "Set as the end frame. Add a start frame too: without one, depending on the model, the end frame is not used or the request is refused.",
   },
   {
     "model": "모델을 골라 주세요.",
     "inputs": "{model} 모델은 이 입력을 사용할 수 없어요. 입력을 삭제하거나 다른 모델을 골라 주세요.",
     "prompt": "프롬프트를 입력해 주세요.",
     "handOff": "결과를 가져오지 못했어요. 업로드 버튼으로 직접 추가해 주세요.",
-    "inputsAgain": "설정을 되돌렸어요. 이 결과는 입력 파일 {n}개로도 만들었는데, 입력 파일은 보관되지 않아요. 다시 추가해 주세요.",
-    "inputsAgainOne": "설정을 되돌렸어요. 이 결과는 입력 파일 1개로도 만들었는데, 입력 파일은 보관되지 않아요. 다시 추가해 주세요.",
+    "inputsAgain": "이 결과의 설정을 가져왔어요. 만들 때 쓴 입력 파일 {n}개는 보관되지 않아서 다시 넣어 주세요.",
+    "inputsAgainOne": "이 결과의 설정을 가져왔어요. 만들 때 쓴 입력 파일 1개는 보관되지 않아서 다시 넣어 주세요.",
     "noFrames": "{model} 모델은 시작·끝 프레임을 받지 않아요. 이미지로 영상을 만드는 모델을 골라 주세요.",
     "noRefs": "{model} 모델은 레퍼런스 이미지를 받지 않아요. 레퍼런스를 받는 모델을 골라 주세요.",
     "refsFull": "레퍼런스가 가득 찼어요({max}개). 하나를 지우고 이 이미지를 추가해 주세요.",
-    "endOnly": "끝 프레임으로 넣었어요. 시작 프레임도 추가해 주세요. 시작 프레임이 없으면 텍스트로 영상 만들기 요청으로 보내져요.",
+    "endOnly": "끝 프레임으로 넣었어요. 시작 프레임도 넣어 주세요. 시작 프레임이 없으면 모델에 따라 끝 프레임이 쓰이지 않거나 요청이 거절돼요.",
   },
 );
 
@@ -56,6 +56,8 @@ export interface CreateForm {
   preset: string | undefined;
   /** A problem with something sent from another screen; cleared by the next change to the form. */
   notice?: string | undefined;
+  /** The problem is this model: the notice offers to choose another. */
+  noticeModel?: boolean | undefined;
   /** Something the person should know that is not a problem; cleared by the next change to the form. */
   info?: string | undefined;
 }
@@ -84,13 +86,13 @@ export function withResult(model: CatalogModel, form: CreateForm, settings: Resu
 export function withSentImage(model: CatalogModel | undefined, form: CreateForm, slot: "last" | "reference", image: Omit<SlotValue, "role">): CreateForm {
   const label = model?.label ?? "";
   if (slot === "last") {
-    if (model && !model.tasks.includes("image-to-video")) return { ...form, notice: tr(M, "noFrames", { model: label }) };
+    if (model && !model.tasks.includes("image-to-video")) return { ...form, notice: tr(M, "noFrames", { model: label }), noticeModel: true };
     return {
       ...form, notice: undefined, refMode: "frames", references: [], lastFrame: { ...image, role: "last-frame" },
       info: form.firstFrame ? undefined : tr(M, "endOnly"),
     };
   }
-  if (model && !model.tasks.includes("reference-to-video")) return { ...form, notice: tr(M, "noRefs", { model: label }) };
+  if (model && !model.tasks.includes("reference-to-video")) return { ...form, notice: tr(M, "noRefs", { model: label }), noticeModel: true };
   const max = model?.params.maxReferenceImages ?? 3;
   if (form.references.some((held) => held.upload.inputId === image.upload.inputId)) return { ...form, notice: undefined, refMode: "references" };
   if (form.references.length >= max) return { ...form, refMode: "references", notice: tr(M, "refsFull", { max }) };

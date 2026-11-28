@@ -399,6 +399,10 @@
   font-weight: 450;
 }
 /* An action at the end of a menu of values sits under a divider and reads a little quieter. */
+.input-note .chip {
+  margin-left: 4px;
+  color: var(--text);
+}
 .menu-action {
   margin-top: 6px;
   border-radius: 0 0 8px 8px;

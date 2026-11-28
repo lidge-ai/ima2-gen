@@ -115,7 +115,7 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
   const editing = mode === "edit";
   const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("video") }));
   const [view, setView] = useState<View>("history");
-  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, info: undefined, ...patch }));
+  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, noticeModel: undefined, info: undefined, ...patch }));
   useEffect(() => writeDraft("video", form.prompt), [form.prompt]);
   // The talking and edit forms keep their own model in the address.
   useEffect(() => { if (!speaking && !editing) syncModelToUrl("video", form.model); }, [form.model, speaking, editing]);

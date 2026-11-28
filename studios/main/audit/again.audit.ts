@@ -28,6 +28,8 @@ const openResult = (prompt: string): Act => async (page) => { await page.getByRo
 const press = (name: RegExp): Act => async (page) => { await page.getByRole("dialog").getByRole("button", { name }).click(); await page.waitForTimeout(1200); };
 const then = (...acts: Act[]): Act => async (page) => { for (const act of acts) await act(page); };
 const AGAIN = /^(Same prompt and settings|같은 프롬프트와 설정으로)$/;
+const VIDEO = /^(Use in video|영상에 쓰기)$/;
+const sendTo = (place: RegExp): Act => async (page) => { await page.getByRole("dialog").getByRole("button", { name: VIDEO }).click(); await page.getByRole("dialog", { name: VIDEO }).getByRole("button", { name: place }).click(); await page.waitForTimeout(1200); };
 
 const CELLS: Cell[] = [
   { id: "again__image-result", hash: "/assets/images", setup: seed, act: openResult(P.still) },
@@ -35,8 +37,9 @@ const CELLS: Cell[] = [
   { id: "again__video-filled", hash: "/assets/videos", setup: seed, act: then(openResult(P.plain), press(AGAIN)) },
   { id: "again__video-inputs-note", hash: "/assets/videos", setup: seed, act: then(openResult(P.framed), press(AGAIN)) },
   { id: "again__image-filled", hash: "/assets/images", setup: seed, act: then(openResult(P.still), press(AGAIN)) },
-  { id: "again__end-frame", hash: "/assets/images", setup: seed, act: then(openResult(P.still), press(/^(Use as end frame|끝 프레임으로)$/)) },
-  { id: "again__reference", hash: "/assets/images", setup: seed, act: then(openResult(P.still), press(/^(Use as reference|레퍼런스로)$/)) },
+  { id: "again__video-menu", hash: "/assets/images", setup: seed, act: then(openResult(P.still), async (page) => { await page.getByRole("dialog").getByRole("button", { name: VIDEO }).click(); await page.waitForTimeout(300); }) },
+  { id: "again__end-frame", hash: "/assets/images", setup: seed, act: then(openResult(P.still), sendTo(/^(End frame|끝 프레임)$/)) },
+  { id: "again__reference", hash: "/assets/images", setup: seed, act: then(openResult(P.still), sendTo(/^(Reference|레퍼런스)$/)) },
   {
     id: "again__no-references", hash: "/video?model=kling%2Fkling-3", setup: seed,
     act: async (page) => {
