@@ -121,7 +121,8 @@ test("an image result goes to the video form as the end frame or as a reference 
   const refusal = page.getByRole("alert").filter({ hasText: "takes no reference images" });
   await expect(refusal).toBeInViewport();
   await refusal.getByRole("button", { name: "Choose a model" }).click();
-  await expect(page.getByRole("dialog").getByRole("button", { name: /Seedance 2\.5$/ }).first()).toBeVisible();
+  // The model list opens, where models that take references say so.
+  await expect(page.getByRole("dialog").getByRole("button", { name: /· References/ }).first()).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: /^Remove Reference/ })).toHaveCount(0);
 });
