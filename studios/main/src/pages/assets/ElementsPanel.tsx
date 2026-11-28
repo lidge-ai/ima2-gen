@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ELEMENT_KINDS, type Element, type ElementKind } from "@ima2/studio-kit";
+import { ELEMENT_KINDS, type Element, type ElementKind, type UploadedInput } from "@ima2/studio-kit";
 import { useT } from "../../i18n.ts";
 import { useStudioApi } from "../../studio/context.tsx";
 import { elementsChanged, useElements } from "../../studio/elements.ts";
@@ -25,19 +25,30 @@ function NewElement() {
   const t = useT(EM);
   const studio = useStudioApi();
   const input = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<{ file: File; url: string } | null>(null);
+  // The image is uploaded when chosen, as in the forms, and the preview is the server's copy.
+  const [file, setFile] = useState<UploadedInput | null>(null);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<ElementKind>("character");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const problem = !file ? t("needImage") : !name.trim() ? t("needName") : null;
+  const choose = async (picked: File) => {
+    setBusy(true);
+    setError("");
+    try {
+      setFile(await studio.upload(picked));
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setBusy(false);
+    }
+  };
   const save = async () => {
     if (!file || problem) return;
     setBusy(true);
     setError("");
     try {
-      const upload = await studio.upload(file.file);
-      await studio.client.elements.fromUpload({ inputId: upload.inputId, name: name.trim(), kind });
+      await studio.client.elements.fromUpload({ inputId: file.inputId, name: name.trim(), kind });
       setFile(null);
       setName("");
       elementsChanged();
@@ -56,7 +67,7 @@ function NewElement() {
         </button>
         <input
           ref={input} type="file" accept="image/*" hidden aria-label={t("image")}
-          onChange={(e) => { const picked = e.target.files?.[0]; if (picked) setFile({ file: picked, url: URL.createObjectURL(picked) }); e.target.value = ""; }}
+          onChange={(e) => { const picked = e.target.files?.[0]; if (picked) void choose(picked); e.target.value = ""; }}
         />
         <div className="element-new-fields">
           <label className="field">
