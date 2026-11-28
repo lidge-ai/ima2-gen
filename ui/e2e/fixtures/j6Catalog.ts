@@ -62,14 +62,12 @@ export function readFixtures(catalog: J6CatalogState, composer = false): Record<
     "/api/inflight": { jobs: [], terminalJobs: [] },
     "/api/assets": { assets: [], nextCursor: null, total: 0 },
     // Reads a destination makes once it has finished mounting: Assets lists its folders and tags,
-    // Settings asks for quota 1.5 s after it opens, Agent loads its workspace. A journey that leaves a
-    // destination quickly usually never sees them; when it stays long enough they must have an answer.
+    // Settings asks for quota 1.5 s after it opens. A journey that leaves a destination quickly usually
+    // never sees them; when it stays long enough they must have an answer.
     "/api/assets/folders": { folders: [] },
     "/api/assets/tags": { tags: [] },
     "/api/quota": { codex: { provider: "codex", authenticated: false, windows: [] }, grok: { provider: "grok", authenticated: false, windows: [] },
       nai: { provider: "nai", authenticated: false, windows: [] } },
-    "/api/agent/sessions": { sessions: [], turnsBySession: {}, imagesById: {}, imageIdsBySession: {}, selectedSessionId: null, currentImageId: null,
-      allowedTools: [], manifest: null, queueBySession: {}, runSummaryBySession: {} },
     "/api/sessions": { sessions: [session] },
     "/api/sessions/wp02-session": { session },
     "/api/config/grok-planner": { model: "grok-4.3", options: ["grok-4.3"] },
