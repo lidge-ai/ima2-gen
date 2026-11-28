@@ -23,7 +23,7 @@ const M = messages(
     "image-to-imagePrompt": "Describe the change", "image-upscalePrompt": "Describe what to keep or sharpen",
     "image-vectorizePrompt": "Describe the drawing", "image-segmentPrompt": "Name what to separate",
     prompt: "Prompt", images: "Images", add: "Add an image", file: "Image file", remove: "Remove {name}", full: "This model takes no more images here",
-    paint: "Paint the area to change", repaint: "Paint the area again", unpaint: "Remove the painted area", painted: "Only the painted area of the first image changes.",
+    paint: "Paint the area to change", repaint: "Paint a new area", unpaint: "Remove the painted area", painted: "Only the painted area of the first image changes.",
     unusedMask: "This route has no brush, so the whole image is edited.",
     count: "{n} of {max}", resolution: "Size", aspect: "Aspect ratio", quality: "Quality",
     route: "Run through",
@@ -39,7 +39,7 @@ const M = messages(
     "image-to-imagePrompt": "바꾸고 싶은 내용을 적어 주세요", "image-upscalePrompt": "살리거나 선명하게 할 부분을 적어 주세요",
     "image-vectorizePrompt": "그림을 설명해 주세요", "image-segmentPrompt": "나눌 대상을 적어 주세요",
     prompt: "프롬프트", images: "이미지", add: "이미지 추가", file: "이미지 파일", remove: "{name} 삭제", full: "이 모델은 여기서 이미지를 더 받지 않아요",
-    paint: "바꿀 부분 칠하기", repaint: "다시 칠하기", unpaint: "칠한 부분 지우기", painted: "첫 이미지의 칠한 부분만 바뀌어요.",
+    paint: "바꿀 부분 칠하기", repaint: "새로 칠하기", unpaint: "칠한 부분 지우기", painted: "첫 이미지의 칠한 부분만 바뀌어요.",
     unusedMask: "이 경로에는 브러시가 없어 이미지 전체를 편집해요.",
     count: "{n}/{max}", resolution: "크기", aspect: "화면 비율", quality: "품질",
     route: "사용 경로",
@@ -90,9 +90,7 @@ function Tray({ tool, max, brush }: { tool: Tool; max: number; brush: boolean })
       <span className="dock-tray-count" aria-live="polite">{t("count", { n: images.length, max })}</span>
       {brush && images[0] ? (
         <>
-          <button type="button" className="chip" aria-pressed={!!tool.state.mask} onClick={() => setPainting(true)}>
-            <Icon name="sparkle" size={13} /> {t(tool.state.mask ? "repaint" : "paint")}
-          </button>
+          <button type="button" className="chip" onClick={() => setPainting(true)}>{t(tool.state.mask ? "repaint" : "paint")}</button>
           {tool.state.mask ? (
             <button type="button" className="chip" onClick={() => tool.setMask(null)}>{t("unpaint")}</button>
           ) : null}

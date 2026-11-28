@@ -82,7 +82,8 @@ test("image brush: the painted area is sent as a mask the size of the image, whi
 
   await expect(dialog).toBeHidden();
   await expect(page.getByText("Only the painted area of the first image changes.")).toBeVisible();
-  await expect(images(page).getByRole("button", { name: "Paint the area again" })).toHaveAttribute("aria-pressed", "true");
+  // The button opens a dialog; it is not a switch, and its label says an area is already painted.
+  await expect(images(page).getByRole("button", { name: "Paint a new area" })).not.toHaveAttribute("aria-pressed");
   const request = submitted(page);
   await generate(page).click();
   const body = (await request).postDataJSON() as Record<string, unknown>;
@@ -104,7 +105,7 @@ test("image brush: a route without a brush sends no mask and says the whole imag
   await page.getByRole("button", { name: /^Run through/ }).click();
   await page.getByRole("group", { name: "Run through" }).getByRole("button", { name: /^fal/ }).click();
   await expect(page.getByText("This route has no brush, so the whole image is edited.")).toBeVisible();
-  await expect(images(page).getByRole("button", { name: /^Paint the area/ })).toHaveCount(0);
+  await expect(images(page).getByRole("button", { name: /^Paint (the|a new) area/ })).toHaveCount(0);
   let request = submitted(page);
   await generate(page).click();
   let body = (await request).postDataJSON() as Record<string, unknown>;
@@ -138,10 +139,11 @@ test("image brush: cancel keeps nothing, Clear empties the canvas, and Korean na
   await paintLeft(page);
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toBeHidden();
-  await expect(images(page).getByRole("button", { name: "Paint the area to change" })).toHaveAttribute("aria-pressed", "false");
+  await expect(images(page).getByRole("button", { name: "Paint the area to change" })).toBeVisible();
+  await expect(images(page).getByRole("button", { name: "Paint a new area" })).toHaveCount(0);
   // The painted area belongs to its image: with the image gone there is nothing to paint.
   await images(page).getByRole("button", { name: "Remove door.png" }).click();
-  await expect(images(page).getByRole("button", { name: /^Paint the area/ })).toHaveCount(0);
+  await expect(images(page).getByRole("button", { name: /^Paint (the|a new) area/ })).toHaveCount(0);
 
   await page.getByRole("button", { name: /Language/ }).click();
   await page.getByLabel("이미지 파일").setInputFiles(photo);

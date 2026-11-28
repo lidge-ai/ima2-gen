@@ -23,11 +23,19 @@ export async function maskPng(strokes: HTMLCanvasElement): Promise<Blob> {
   out.width = strokes.width;
   out.height = strokes.height;
   const ctx = out.getContext("2d")!;
+  // The strokes are drawn in a tint so they show on any image; in the mask every painted pixel is white.
+  ctx.drawImage(strokes, 0, 0);
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.globalCompositeOperation = "destination-over";
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, out.width, out.height);
-  ctx.drawImage(strokes, 0, 0);
   return new Promise((resolve, reject) => out.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("no mask"))), "image/png"));
 }
+
+/** The colour strokes are shown in: one that reads on light and dark parts of a photo alike. */
+const TINT = "rgb(255, 64, 129)";
 
 interface Props {
   /** The image being edited; null closes the dialog. */
@@ -71,7 +79,7 @@ export function MaskBrush({ image, onCancel, onDone }: Props) {
     ctx.lineWidth = (Math.max(el.width, el.height) * size) / 100;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#fff";
+    ctx.strokeStyle = TINT;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);

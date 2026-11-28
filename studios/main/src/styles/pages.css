@@ -157,8 +157,8 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  /* The strokes are white in the mask; on screen they read as a tint over the image. */
-  opacity: 0.55;
+  /* The strokes are a tint on screen (MaskBrush.tsx) and white in the mask that is sent. */
+  opacity: 0.5;
   cursor: crosshair;
   touch-action: none;
 }
