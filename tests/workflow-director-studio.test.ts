@@ -181,7 +181,8 @@ test("explicit shots refuse a length, the wrong count, more than 60 s or a bad s
   await rejects({ shots: [{ prompt: "a", durationSec: 5 }, { prompt: "b", durationSec: 5.5 }] }, /shots: shot 2 needs a whole number of seconds/);
   await rejects({ shots: [{ prompt: "a", durationSec: 5 }, { prompt: "b", durationSec: 5, camera: "x" }] }, /shots: shot 2/);
   await rejects({ shots: [{ prompt: "a".repeat(1001), durationSec: 5 }, { prompt: "b", durationSec: 5 }] }, /shots: shot 1 .*1000 characters/);
-  await assert.rejects(prep({ duration: 5 }), (e: { code?: string; field?: string; message?: string }) => e.code === "WORKFLOW_INPUT_INVALID" && e.field === "prompt" && e.message === "prompt: is required");
+  await assert.rejects(prep({ duration: 5 }), (e: { code?: string; options?: { field?: string }; message?: string }) =>
+    e.code === "WORKFLOW_INPUT_INVALID" && e.options?.field === "prompt" && e.message === "prompt: is required");
   const field = studio!.fields.find((f) => f.name === "shots");
   assert.deepEqual(field && { ...field }, { name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000, help: field?.help });
 });
