@@ -110,7 +110,7 @@ describe("assets routes contract", () => {
       { filePath: "../x", kind: "image", code: "INVALID_FILENAME" },
       { filePath: "missing.png", kind: "image", code: "INVALID_FILENAME" },
       { filePath: "subdir", kind: "image", code: "INVALID_FILENAME" },
-      { filePath: "a.png", kind: "audio", code: "INVALID_ASSET_KIND" },
+      { filePath: "a.png", kind: "hologram", code: "INVALID_ASSET_KIND" },
     ]) {
       const result = await request(base, "/api/assets", "POST", payload);
       assert.equal(result.response.status, 400);
