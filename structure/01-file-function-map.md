@@ -295,7 +295,7 @@ scope/revision/identity reconciliation shared by polling and reload actions.
 | `lib/providers/adapters/googleExecution.ts` | 95 | Agy/Gemini four-surface mapping, lossless context-filtered node references and one-image sequence projection |
 | `lib/apiCachePolicy.ts` | 12 | API response cache-control policy helpers |
 | `lib/apiRequestBudget.ts` | 57 | Case-insensitive API matching and bounded per-app socket-peer request admission |
-| `lib/assetsStore.ts` | 533 | Generated asset indexing, lookup, and persistence helpers |
+| `lib/assetsStore.ts` | 544 | Generated asset indexing, lookup, and persistence helpers |
 | `lib/assetRef.ts` | 57 | Asset-id-first reference resolution with legacy filename fallback and `via` provenance for generate requests |
 | `lib/atomicWrite.ts` | 16 | Atomic file-write helper |
 | `lib/capabilities.ts` | 275 | Runtime provider and feature capability resolution |
