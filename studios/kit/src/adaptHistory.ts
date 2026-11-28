@@ -1,5 +1,5 @@
 /** History rows (GET /api/history) as kit HistoryItems, with an opaque string cursor. */
-import type { HistoryItem, HistoryPage, HistoryQuery, MediaKind } from "./types.ts";
+import type { HistoryItem, HistoryPage, HistoryQuery, MediaKind, ResultSettings } from "./types.ts";
 import type { WireHistoryPage, WireHistoryRow } from "./wire.ts";
 
 const MIME: Record<string, string> = {
@@ -15,6 +15,21 @@ function mimeFor(filename: string): string {
 function kindOf(row: WireHistoryRow): MediaKind {
   if (row.mediaType === "video" || row.mediaType === "audio" || row.mediaType === "image") return row.mediaType;
   return mimeFor(row.filename).split("/")[0] === "video" ? "video" : "image";
+}
+
+function settingsOf(row: WireHistoryRow, route: string | undefined): ResultSettings | undefined {
+  const media = row.media;
+  if (!media) return undefined;
+  return {
+    ...(media.task ? { task: media.task } : {}),
+    ...(route ? { route } : {}),
+    ...(typeof media.durationSec === "number" ? { durationSec: media.durationSec } : {}),
+    ...(media.resolution ? { resolution: media.resolution } : {}),
+    ...(media.aspectRatio ? { aspectRatio: media.aspectRatio } : {}),
+    ...(typeof media.audio === "boolean" ? { audio: media.audio } : {}),
+    ...(media.quality ? { quality: media.quality } : {}),
+    ...(media.inputRoles?.length ? { inputRoles: media.inputRoles } : {}),
+  };
 }
 
 export function toHistoryItem(row: WireHistoryRow): HistoryItem {
@@ -37,6 +52,8 @@ export function toHistoryItem(row: WireHistoryRow): HistoryItem {
   if (row.height) item.height = row.height;
   if (row.duration) item.durationSec = row.duration;
   if (row.folderId !== undefined) item.folderId = row.folderId;
+  const settings = settingsOf(row, provider);
+  if (settings) item.settings = settings;
   return item;
 }
 

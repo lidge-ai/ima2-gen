@@ -9,6 +9,8 @@ export interface TileOption<T> {
   /** Logo or icon shown before the label. */
   icon?: ReactNode;
   disabled?: boolean;
+  /** An action that opens something ("New folder…"), not a value: set apart from the values by a divider. */
+  action?: boolean;
 }
 
 interface Props<T> {
@@ -47,7 +49,7 @@ function OptionMenu<T extends string | number>({ titleId, caption, value, option
             type="button"
             aria-pressed={option.value === value}
             disabled={option.disabled}
-            className="menu-item"
+            className={option.action ? "menu-item menu-action" : "menu-item"}
             onClick={() => onPick(option.value)}
           >
             <span className="menu-label">

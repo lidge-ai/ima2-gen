@@ -4,7 +4,7 @@ import { useStudio } from "../studio/context.tsx";
 import { Feed } from "../ui/Feed.tsx";
 import { ImageDock } from "./create/ImageDock.tsx";
 import { defaultModel, presetText } from "./create/defaults.ts";
-import { defaultsFor, emptyForm, handOffFailed, type CreateForm } from "./create/form.ts";
+import { defaultsFor, emptyForm, handOffFailed, withResult, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
 import { IMAGE_TASKS, imageRoutes, type Catalog, type ImageTask } from "@ima2/studio-kit";
 import { ImageToolDock } from "./image/ImageToolDock.tsx";
@@ -62,7 +62,7 @@ function linkedTool(catalog: Catalog, tools: readonly ImageTask[], mode: string 
 
 function Workspace({ catalog, preset, requested, mode }: { catalog: Catalog; preset?: string | undefined; requested?: string | undefined; mode?: string | undefined }) {
   const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("image") }));
-  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, ...patch }));
+  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, noticeModel: undefined, info: undefined, ...patch }));
   const tools = availableTools(catalog);
   const tool = linkedTool(catalog, tools, mode, requested);
   const creating = tool === "create";
@@ -74,11 +74,13 @@ function Workspace({ catalog, preset, requested, mode }: { catalog: Catalog; pre
   const open = (next: ImageTool) => navigate("image", next === "create" ? undefined : { mode: TOOL_MODE[next] });
   useEffect(() => writeDraft("image", form.prompt), [form.prompt]);
   useEffect(() => { if (creating) syncModelToUrl("image", form.model); }, [form.model, creating]);
-  // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here.
-  useRestore("image", (prompt, id) =>
+  // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here; a result's
+  // "Same prompt and settings" also puts back the route, shape and size it was made with.
+  useRestore("image", (prompt, id, settings) =>
     setForm((f) => {
       const m = catalog.models.find((x) => x.id === id && x.kind === "image");
-      return m && m.id !== f.model ? { ...f, prompt, model: m.id, provider: "", ...defaultsFor(m, f) } : { ...f, prompt };
+      const base: CreateForm = m && m.id !== f.model ? { ...f, prompt, model: m.id, provider: "", ...defaultsFor(m, f) } : { ...f, prompt };
+      return m ? withResult(m, { ...base, notice: undefined, info: undefined }, settings) : base;
     }),
   );
   const edit = tools.includes("image-to-image");

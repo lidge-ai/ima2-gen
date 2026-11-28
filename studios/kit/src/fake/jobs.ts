@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { WireJob, WireEstimateResponse } from "../wire.ts";
+import type { WireHistoryRow, WireJob, WireEstimateResponse } from "../wire.ts";
 import type { MediaKind } from "../types.ts";
 import { EventRing } from "./events.ts";
 import { History } from "./history.ts";
@@ -16,6 +16,8 @@ export interface JobStart {
   sessionId?: string;
   workflow?: string;
   aspectRatio?: string;
+  /** The settings the server keeps on the result (sidecar "media"), so it can be made again as it was. */
+  media?: Record<string, unknown>;
   plan?: WireEstimateResponse;
 }
 export class Jobs {
@@ -109,6 +111,8 @@ export class Jobs {
       provider: "media:" + job.adapter,
       requestId: job.requestId,
       kind: job.jobKind,
+      adapter: job.adapter,
+      ...(job.media ? { media: job.media as NonNullable<WireHistoryRow["media"]> } : {}),
       ...(job.workflow ? { workflow: job.workflow } : {}),
     });
     this.emit("done", job, {

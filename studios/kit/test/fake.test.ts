@@ -257,6 +257,22 @@ test("folders: a result is filed, listed by folder, moved and taken out; deletin
   });
 });
 
+test("history: a result carries the settings it was made with", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    const upload = await client.uploads.put(new Uint8Array([137, 80, 78, 71]), "image/png");
+    const done = await client.watchJob((await client.media.submit({
+      model: "bytedance/seedance-2.5", task: "image-to-video", prompt: "the harbor wakes", durationSec: 8, aspectRatio: "9:16", resolution: "720p", audio: false,
+      inputs: [{ role: "first-frame", inputId: upload.inputId }],
+    })).jobId);
+    const item = (await client.history.list()).items.find((entry) => entry.historyId === done.outputs![0]!.historyId)!;
+    assert.deepEqual(item.settings, { task: "image-to-video", route: item.provider, durationSec: 8, resolution: "720p", aspectRatio: "9:16", audio: false, inputRoles: ["first-frame"] });
+    // A result with nothing recorded has no settings, not an empty guess.
+    const plain = await client.watchJob((await client.media.submit({ ...image, prompt: "plain" })).jobId);
+    const bare = (await client.history.list()).items.find((entry) => entry.historyId === plain.outputs![0]!.historyId)!;
+    assert.deepEqual(bare.settings, { task: "text-to-image", route: bare.provider });
+  });
+});
+
 test("workflows estimate per step and run with step events", async () => {
   await withServer({ timeScale: 0.02 }, async ({ client }) => {
     const defs = await client.workflows.list();

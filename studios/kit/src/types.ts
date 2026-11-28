@@ -234,6 +234,20 @@ export interface JobEvent {
   job: Job;
 }
 
+/** How a result was made, as far as the server recorded it: enough to fill the form that made it. Its input files are not kept, only their roles. */
+export interface ResultSettings {
+  task?: string;
+  /** The provider the request ran through. */
+  route?: string;
+  durationSec?: number;
+  resolution?: string;
+  aspectRatio?: string;
+  audio?: boolean;
+  quality?: string;
+  /** The role of each input the request had (an image to edit, a start frame, references). */
+  inputRoles?: readonly string[];
+}
+
 export interface HistoryItem {
   historyId: string;
   jobId: string;
@@ -252,6 +266,8 @@ export interface HistoryItem {
   favorite?: boolean;
   /** The folder this result is filed in; null when in none. Absent from a server that does not say. */
   folderId?: string | null;
+  /** Present on results made through the media forms. */
+  settings?: ResultSettings;
 }
 
 /** A saved result as a ComfyUI graph in API format (GET /api/comfy/result-graph). */

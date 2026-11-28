@@ -18,7 +18,7 @@ test("a result opened on the Image screen fills that screen: same prompt and mod
   const dialog = page.getByRole("dialog", { name: "Result" });
   await page.getByLabel("Prompt").fill("something else");
   await page.getByRole("button", { name: "Open " + prompt }).click();
-  await dialog.getByRole("button", { name: "Same prompt and model" }).click();
+  await dialog.getByRole("button", { name: "Same prompt and settings" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByLabel("Prompt")).toHaveValue(prompt);
 
@@ -35,7 +35,8 @@ test("Animate on an image result opens Video with the image as the start frame",
   const prompt = unique("A paper lantern at night");
   await makeImage(page, prompt);
   await page.getByRole("button", { name: "Open " + prompt }).click();
-  await page.getByRole("dialog", { name: "Result" }).getByRole("button", { name: "Animate" }).click();
+  await page.getByRole("dialog", { name: "Result" }).getByRole("button", { name: "Use in video" }).click();
+  await page.getByRole("dialog", { name: "Use in video" }).getByRole("button", { name: "Start frame", exact: true }).click();
   await expect(page).toHaveURL(/#\/video/);
   await expect(page.getByRole("button", { name: /^Remove Start frame/ })).toBeVisible();
 });

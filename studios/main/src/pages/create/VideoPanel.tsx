@@ -1,4 +1,5 @@
 import { messages, useT } from "../../i18n.ts";
+import { useRef } from "react";
 import type { Catalog, CatalogModel } from "@ima2/studio-kit";
 import { ElementPicker } from "../../ui/ElementPicker.tsx";
 import { findPreset } from "../../data/presets.ts";
@@ -27,6 +28,7 @@ const M = messages(
     "createPlaceholder": "Describe the shot: subject, motion, camera, light",
     "soundOn": "Sound on",
     "soundOff": "Sound off",
+    "pickModel": "Choose a model",
     "create": "Create video",
     "sending": "Sending",
     "generate": "Generate",
@@ -45,6 +47,7 @@ const M = messages(
     "createPlaceholder": "장면의 피사체, 움직임, 카메라, 조명을 설명해 주세요",
     "soundOn": "사운드 켬",
     "soundOff": "사운드 끔",
+    "pickModel": "모델 고르기",
     "create": "영상 생성",
     "sending": "요청 중",
     "generate": "생성",
@@ -208,7 +211,26 @@ function SourceInputs({
   );
 }
 
-function PanelNotices({ create, catalog, notice }: { create: Create; catalog: Catalog; notice?: string | undefined }) {
+/**
+ * What a result sent here needs said, right under the input slots where it would have landed: a hint (inputs to
+ * add again) or a refusal. A refusal about the model offers the model list.
+ */
+function InputNotes({ form, onPickModel }: { form: CreateForm; onPickModel: () => void }) {
+  const t = useT(M);
+  return (
+    <>
+      {form.notice ? (
+        <p className="form-error input-note" role="alert">
+          {form.notice}{" "}
+          {form.noticeModel ? <button type="button" className="chip" onClick={onPickModel}>{t("pickModel")}</button> : null}
+        </p>
+      ) : null}
+      {form.info ? <p className="form-hint" role="status">{form.info}</p> : null}
+    </>
+  );
+}
+
+function PanelNotices({ create, catalog }: { create: Create; catalog: Catalog }) {
   return (
     <>
       {create.choice.kind === "needs-key" ? (
@@ -219,11 +241,6 @@ function PanelNotices({ create, catalog, notice }: { create: Create; catalog: Ca
           {create.error}
         </p>
       ) : null}
-      {notice ? (
-        <p className="form-error" role="alert">
-          {notice}
-        </p>
-      ) : null}
     </>
   );
 }
@@ -232,6 +249,7 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
   const t = useT(M);
   const create = useCreate(catalog, form, set);
   const { model } = create;
+  const picker = useRef<HTMLDivElement>(null);
   return (
     <form
       className="panel"
@@ -248,17 +266,20 @@ export function VideoPanel({ catalog, form, set, onOpenPresets }: Props) {
       />
       <div className="panel-body">
         <SourceInputs model={model} form={form} set={set} onOpenPresets={onOpenPresets} />
+        <InputNotes form={form} onPickModel={() => picker.current?.querySelector("button")?.click()} />
         <PromptCard model={model} form={form} set={set} />
-        <ModelPicker
-          models={catalog.models}
-          kind="video"
-          tasks={CREATE_TASKS}
-          value={form.model}
-          onChange={create.pickModel}
-        />
+        <div ref={picker}>
+          <ModelPicker
+            models={catalog.models}
+            kind="video"
+            tasks={CREATE_TASKS}
+            value={form.model}
+            onChange={create.pickModel}
+          />
+        </div>
         {model ? <ParamControls model={model} form={form} set={set} /> : null}
         {model ? <AdvancedFields model={model} form={form} set={set} /> : null}
-        <PanelNotices create={create} catalog={catalog} notice={form.notice} />
+        <PanelNotices create={create} catalog={catalog} />
       </div>
       <PanelFoot create={create} />
     </form>

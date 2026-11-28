@@ -49,7 +49,7 @@ export function MoveToFolder({ item }: { item: HistoryItem }) {
   if (!folders) return null;
   // A result still marked with a folder that has since been deleted is in no folder.
   const shown = folders.some((folder) => folder.id === current) ? current : "";
-  const options = [{ value: "", label: t("none") }, ...folders.map((folder) => ({ value: folder.id, label: folder.name })), { value: NEW, label: t("newFolder") }];
+  const options = [{ value: "", label: t("none") }, ...folders.map((folder) => ({ value: folder.id, label: folder.name })), { value: NEW, label: t("newFolder"), action: true }];
   return (
     <div className="move-folder">
       <SettingTile

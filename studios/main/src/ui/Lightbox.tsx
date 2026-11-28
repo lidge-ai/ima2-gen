@@ -12,10 +12,11 @@ import { navigate } from "../router.ts";
 import { timeAgo } from "./format.ts";
 import { ModelName, ProviderName } from "./ModelName.tsx";
 import { ComfyGraphButton } from "./ComfyGraphButton.tsx";
+import { Popover } from "./Popover.tsx";
 
 const M = messages(
-  { animate: "Animate", edit: "Edit", remix: "Remix", extend: "Extend", upscale: "Upscale", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
-  { animate: "영상 만들기", edit: "편집", remix: "리믹스", extend: "연장", upscale: "업스케일", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 모델로", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
+  { edit: "Edit", remix: "Remix", extend: "Extend", upscale: "Upscale", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and settings", useInVideo: "Use in video", startFrame: "Start frame", endFrame: "End frame", reference: "Reference", copy: "Copy prompt", copied: "Prompt copied" },
+  { edit: "편집", remix: "리믹스", extend: "연장", upscale: "업스케일", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 설정으로", useInVideo: "영상에 쓰기", startFrame: "시작 프레임", endFrame: "끝 프레임", reference: "레퍼런스", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
 );
 
 interface Props {
@@ -25,10 +26,37 @@ interface Props {
 
 type Target = "video" | "video-edit" | "remix" | "image";
 
+type Slot = "last" | "reference";
+/** Where in the video form an image result can go: one choice with three places. */
+const VIDEO_SLOTS: readonly { label: keyof typeof M.en; slot?: Slot }[] = [{ label: "startFrame" }, { label: "endFrame", slot: "last" }, { label: "reference", slot: "reference" }];
+
+/** "Use in video" on an image result: a button whose menu names the three places the image can go. */
+function VideoSendMenu({ onSend }: { onSend: (slot?: Slot) => void }) {
+  const t = useT(M);
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button ref={trigger} type="button" className="btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Icon name="video" size={15} /> {t("useInVideo")}
+      </button>
+      <Popover open={open} onClose={() => setOpen(false)} label={t("useInVideo")} className="menu-popover" anchor={trigger} placement="bottom">
+        <p className="menu-title">{t("useInVideo")}</p>
+        <div role="group" aria-label={t("useInVideo")} className="menu-list">
+          {VIDEO_SLOTS.map((entry) => (
+            <button key={entry.label} type="button" className="menu-item" onClick={() => { setOpen(false); onSend(entry.slot); }}>
+              <span className="menu-label">{t(entry.label)}</span>
+            </button>
+          ))}
+        </div>
+      </Popover>
+    </>
+  );
+}
+
 /** tool: the edit tool a video result opens with. */
 const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: keyof typeof M.en; icon: IconName; tool?: string }[]> = {
   image: [
-    { target: "video", label: "animate", icon: "video" },
     { target: "image", label: "edit", icon: "image" },
   ],
   video: [
@@ -66,20 +94,24 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
   const t = useT(M);
   const actions = useItemActions(item, onClose);
   const [copied, setCopied] = useState(false);
-  const reuse = (target: Target, tool?: string) => {
-    const taken = handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target, ...(tool ? { values: { tool } } : {}) });
+  const reuse = (target: Target, tool?: string, slot?: Slot) => {
+    // An end frame or a reference is used where it is saved (its history id is its path); the other targets upload a copy.
+    const taken = handOff({
+      url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target,
+      ...(tool ? { values: { tool } } : {}), ...(slot ? { values: { slot }, path: item.historyId } : {}),
+    });
     onClose();
     // The target screen may already be open behind this dialog; it took the result itself.
     if (taken) return;
     if (target === "video-edit") navigate("video", { mode: "edit" });
     else navigate(target);
   };
-  // Same prompt and model on the screen that made it: filled in place when that screen is open
+  // Same prompt, model and settings on the screen that made it: filled in place when that screen is open
   // behind this dialog, otherwise the screen opens with them as its draft.
   const again = item.kind === "image" || item.kind === "video" ? item.kind : null;
   const runAgain = () => {
     if (!again) return;
-    const filled = restoreDraft(again, item.prompt ?? "", item.model);
+    const filled = restoreDraft(again, item.prompt ?? "", item.model, item.settings);
     onClose();
     if (!filled) navigate(again, { model: item.model });
   };
@@ -106,6 +138,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
       <button type="button" className="btn" aria-pressed={!!item.favorite} onClick={() => void actions.save()}>
         <Icon name="heart" size={15} /> {item.favorite ? t("saved") : t("save")}
       </button>
+      {item.kind === "image" ? <VideoSendMenu onSend={(slot) => reuse("video", undefined, slot)} /> : null}
       {REUSE[item.kind].map((r) => (
         <button key={r.label} type="button" className="btn" onClick={() => reuse(r.target, r.tool)}>
           <Icon name={r.icon} size={15} /> {t(r.label)}

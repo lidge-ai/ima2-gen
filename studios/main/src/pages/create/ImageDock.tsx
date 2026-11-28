@@ -184,6 +184,7 @@ export function ImageDock({ catalog, form, set, tabs, onAttach }: Props) {
           {form.notice}
         </p>
       ) : null}
+      {form.info ? <p className="form-hint" role="status">{form.info}</p> : null}
       {!create.canSend && !create.sending ? <p className="form-hint">{create.blocked ?? (create.choice.kind === "needs-key" ? t("nokey") : t("unavailable"))}</p> : null}
       {tabs}
       <div className="dock-main">
