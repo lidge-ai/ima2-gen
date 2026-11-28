@@ -207,7 +207,9 @@ export interface WireHistoryRow {
 export interface WireHistoryPage {
   items: readonly WireHistoryRow[];
   total: number;
-  nextCursor: { before: number; beforeFilename: string } | null;
+  matched?: number;
+  nextCursor: { before: number; beforeFilename: string } | { after: number; afterFilename: string } | null;
+  facets?: { model?: readonly { value: string; count: number }[] };
 }
 
 /** POST /api/media/estimate answer (lib/providers/media/estimate.ts). Only the fields the studio reads. */

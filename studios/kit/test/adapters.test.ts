@@ -77,7 +77,10 @@ test("workflow and history adapters translate values, estimates and cursors", ()
     {},
   );
   assert.equal(page.items[0]?.provider, "fal");
-  assert.deepEqual(historyParams({ cursor: page.nextCursor! }), { limit: 40, before: "1", beforeFilename: "a.png" });
+  // Audio is always asked for: the server leaves it out by default and the studio lists it like any result.
+  assert.deepEqual(historyParams({ cursor: page.nextCursor! }), { limit: 40, includeAudio: "1", before: "1", beforeFilename: "a.png" });
+  assert.deepEqual(historyParams({ kind: "video", q: " fox ", order: "oldest", sinceMs: 5, models: true, cursor: "a:7|b.mp4" }),
+    { limit: 40, includeAudio: "1", mediaType: "video", q: "fox", order: "asc", since: 5, facets: "model", after: "7", afterFilename: "b.mp4" });
 });
 test("reducer applies planned, step, done and cancellation events", () => {
   const base = { requestId: "r", jobKind: "workflow" },

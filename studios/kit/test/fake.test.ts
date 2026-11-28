@@ -172,6 +172,46 @@ test("history pages, favorites and deletes", async () => {
   });
 });
 
+test("history: the server searches, filters, orders and counts, and audio results are listed", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client, url }) => {
+    await client.keys.save("elevenlabs", { apiKey: SECRET });
+    const run = async (body: Parameters<typeof client.media.submit>[0]) => client.watchJob((await client.media.submit(body)).jobId);
+    await run({ ...image, prompt: "Red fox in snow" });
+    await run({ ...image, model: "openai/gpt-image-2.6", prompt: "blue whale" });
+    await run({ model: "bytedance/seedance-2.5", task: "text-to-video", prompt: "a fox runs", inputs: [] });
+    const song = await run({ model: "elevenlabs/elevenlabs-music-2.5", task: "text-to-audio", prompt: "slow piano", durationSec: 5, inputs: [] });
+    // The finished audio job has its saved output, and the default list includes it.
+    assert.equal(song.outputs?.[0]?.kind, "audio");
+    const all = await client.history.list();
+    assert.deepEqual(all.items.map((item) => item.kind).sort(), ["audio", "image", "image", "video"]);
+    assert.equal(all.matched, 4);
+    // A server that is not asked for audio leaves it out, as the real one does.
+    assert.equal(((await (await fetch(url + "/api/history")).json()) as { items: unknown[] }).items.length, 3);
+
+    const foxes = await client.history.list({ q: "FOX" });
+    assert.deepEqual(foxes.items.map((item) => item.prompt), ["a fox runs", "Red fox in snow"]);
+    assert.equal(foxes.matched, 2);
+    // One kind is one page of that kind: a page of 1 holds the 1 video, not an empty slice of the newest rows.
+    const videos = await client.history.list({ kind: "video", limit: 1 });
+    assert.deepEqual(videos.items.map((item) => item.prompt), ["a fox runs"]);
+    assert.equal(videos.nextCursor, null);
+    assert.deepEqual((await client.history.list({ kind: "audio" })).items.map((item) => item.prompt), ["slow piano"]);
+
+    const oldest = await client.history.list({ order: "oldest", limit: 3 });
+    assert.deepEqual(oldest.items.map((item) => item.prompt), ["Red fox in snow", "blue whale", "a fox runs"]);
+    const rest = await client.history.list({ order: "oldest", limit: 3, cursor: oldest.nextCursor! });
+    assert.deepEqual(rest.items.map((item) => item.prompt), ["slow piano"]);
+    assert.equal(rest.nextCursor, null);
+
+    const counted = await client.history.list({ kind: "image", model: "openai/gpt-image-2", models: true });
+    assert.deepEqual(counted.items.map((item) => item.prompt), ["Red fox in snow"]);
+    assert.deepEqual(counted.models, [{ id: "openai/gpt-image-2", count: 1 }, { id: "openai/gpt-image-2.6", count: 1 }]);
+    const cut = Date.parse(all.items.at(-1)!.createdAt);
+    assert.equal((await client.history.list({ sinceMs: cut })).matched, 3);
+    assert.equal((await client.history.list({ untilMs: cut })).matched, 1);
+  });
+});
+
 test("workflows estimate per step and run with step events", async () => {
   await withServer({ timeScale: 0.02 }, async ({ client }) => {
     const defs = await client.workflows.list();
