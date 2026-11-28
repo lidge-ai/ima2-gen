@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { handOffFile, takeHandOff, watchHandOff, type HandOff } from "../../studio/handoff.ts";
 import { useStudioApi } from "../../studio/context.tsx";
-import type { UploadedInput } from "@ima2/studio-kit";
+import { savedFileInput, type UploadedInput } from "@ima2/studio-kit";
 
 /**
  * Picks up a result sent from another screen, or from a result opened on this one, and uploads it.
@@ -20,6 +20,11 @@ export function useHandOff(
       watchHandOff(() => {
         const value = takeHandOff(target);
         if (!value) return false;
+        // A saved result named by its path needs no download and no second upload.
+        if (value.path) {
+          latest.current.accept(savedFileInput(value.path), value.name, value.values);
+          return true;
+        }
         // No unmount guard: the hand-off is consumed when read, and a remount (React strict mode)
         // must still receive it. Setting state on the same component is safe.
         void handOffFile(value)

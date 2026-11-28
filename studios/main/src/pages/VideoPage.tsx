@@ -12,7 +12,7 @@ import { SpeakPanel } from "./speak/SpeakPanel.tsx";
 import { EditPanel } from "./edit/EditPanel.tsx";
 import { videoModes } from "./create/VideoModeTabs.tsx";
 import { defaultModel } from "./create/defaults.ts";
-import { CREATE_TASKS, defaultsFor, emptyForm, handOffFailed, type CreateForm } from "./create/form.ts";
+import { CREATE_TASKS, defaultsFor, emptyForm, handOffFailed, withResult, withSentImage, type CreateForm } from "./create/form.ts";
 import { useHandOff } from "./create/useHandOff.ts";
 import { readDraft, syncModelToUrl, useRestore, writeDraft } from "../studio/draft.ts";
 
@@ -115,21 +115,28 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
   const editing = mode === "edit";
   const [form, setForm] = useState<CreateForm>(() => ({ ...emptyForm(), prompt: readDraft("video") }));
   const [view, setView] = useState<View>("history");
-  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, ...patch }));
+  const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, info: undefined, ...patch }));
   useEffect(() => writeDraft("video", form.prompt), [form.prompt]);
   // The talking and edit forms keep their own model in the address.
   useEffect(() => { if (!speaking && !editing) syncModelToUrl("video", form.model); }, [form.model, speaking, editing]);
-  // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here.
-  useRestore("video", (prompt, id) =>
+  // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here; a result's
+  // "Same prompt and settings" also puts back the route, length, shape, size and sound it was made with.
+  useRestore("video", (prompt, id, settings) =>
     setForm((f) => {
       const m = catalog?.models.find((x) => x.id === id && x.kind === "video");
-      return m && m.id !== f.model ? { ...f, prompt, model: m.id, provider: "", ...defaultsFor(m, f) } : { ...f, prompt };
+      const base: CreateForm = m && m.id !== f.model ? { ...f, prompt, model: m.id, provider: "", ...defaultsFor(m, f) } : { ...f, prompt };
+      return m ? withResult(m, { ...base, notice: undefined, info: undefined }, settings) : base;
     }),
+    !!catalog,
   );
-  // "Animate" on an image result: it becomes the start frame, here or after opening this screen.
+  // An image result sent here: "Animate" makes it the start frame; it can also come as the end frame or a reference.
   useHandOff(
     "video",
-    (upload, name) => set({ refMode: "frames", firstFrame: { role: "first-frame", upload, name } }),
+    (upload, name, values) => {
+      const slot = values?.slot;
+      if (slot === "last" || slot === "reference") setForm((f) => withSentImage(catalog?.models.find((m) => m.id === f.model), { ...f, info: undefined }, slot, { upload, name }));
+      else set({ refMode: "frames", firstFrame: { role: "first-frame", upload, name } });
+    },
     () => set({ notice: handOffFailed() }),
   );
   useEffect(() => {

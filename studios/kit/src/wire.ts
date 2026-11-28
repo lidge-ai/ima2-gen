@@ -203,6 +203,12 @@ export interface WireHistoryRow {
   duration?: number;
   workflow?: string;
   folderId?: string | null;
+  /** The route's adapter id and the request's settings, on results made through /api/media (lib/providers/media/runner.ts). */
+  adapter?: string | null;
+  media?: {
+    task?: string; durationSec?: number | null; resolution?: string | null; aspectRatio?: string | null;
+    audio?: boolean | null; quality?: string; inputRoles?: readonly string[];
+  } | null;
 }
 
 export interface WireHistoryPage {

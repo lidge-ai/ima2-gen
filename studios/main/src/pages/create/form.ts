@@ -5,6 +5,7 @@ import {
   type CatalogModel,
   type MediaSubmitBody,
   type MediaTask,
+  type ResultSettings,
   type RouteChoice,
 } from "@ima2/studio-kit";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
@@ -15,12 +16,24 @@ const M = messages(
     "inputs": "{model} cannot use these inputs. Remove an input or choose another model.",
     "prompt": "Write a prompt.",
     "handOff": "Could not bring that result here. Add it with the upload button.",
+    "inputsAgain": "The settings are back. This result was also made from {n} input files, which are not kept: add them again.",
+    "inputsAgainOne": "The settings are back. This result was also made from an input file, which is not kept: add it again.",
+    "noFrames": "{model} takes no start or end frame. Choose a model that makes video from an image.",
+    "noRefs": "{model} takes no reference images. Choose a model that takes references.",
+    "refsFull": "The references are full ({max}). Remove one to add this image.",
+    "endOnly": "Set as the end frame. Add a start frame too: without one this is sent as a text-to-video request.",
   },
   {
     "model": "모델을 골라 주세요.",
     "inputs": "{model} 모델은 이 입력을 사용할 수 없어요. 입력을 삭제하거나 다른 모델을 골라 주세요.",
     "prompt": "프롬프트를 입력해 주세요.",
     "handOff": "결과를 가져오지 못했어요. 업로드 버튼으로 직접 추가해 주세요.",
+    "inputsAgain": "설정을 되돌렸어요. 이 결과는 입력 파일 {n}개로도 만들었는데, 입력 파일은 보관되지 않아요. 다시 추가해 주세요.",
+    "inputsAgainOne": "설정을 되돌렸어요. 이 결과는 입력 파일 1개로도 만들었는데, 입력 파일은 보관되지 않아요. 다시 추가해 주세요.",
+    "noFrames": "{model} 모델은 시작·끝 프레임을 받지 않아요. 이미지로 영상을 만드는 모델을 골라 주세요.",
+    "noRefs": "{model} 모델은 레퍼런스 이미지를 받지 않아요. 레퍼런스를 받는 모델을 골라 주세요.",
+    "refsFull": "레퍼런스가 가득 찼어요({max}개). 하나를 지우고 이 이미지를 추가해 주세요.",
+    "endOnly": "끝 프레임으로 넣었어요. 시작 프레임도 추가해 주세요. 시작 프레임이 없으면 텍스트로 영상 만들기 요청으로 보내져요.",
   },
 );
 
@@ -43,9 +56,46 @@ export interface CreateForm {
   preset: string | undefined;
   /** A problem with something sent from another screen; cleared by the next change to the form. */
   notice?: string | undefined;
+  /** Something the person should know that is not a problem; cleared by the next change to the form. */
+  info?: string | undefined;
 }
 
 export const handOffFailed = () => tr(M, "handOff");
+
+/**
+ * The form with a result's settings put back: its route, length, shape, size and sound, each kept only when
+ * this model offers it. A result made from input files says so, since the files themselves are not kept.
+ */
+export function withResult(model: CatalogModel, form: CreateForm, settings: ResultSettings | undefined): CreateForm {
+  if (!settings) return form;
+  const kept = defaultsFor(model, {
+    aspectRatio: settings.aspectRatio ?? form.aspectRatio, durationSec: settings.durationSec ?? form.durationSec,
+    resolution: settings.resolution ?? form.resolution, audio: settings.audio ?? form.audio,
+  });
+  const inputs = settings.inputRoles?.length ?? 0;
+  return {
+    ...form, ...kept,
+    provider: settings.route && model.routes.some((route) => route.providerId === settings.route) ? settings.route : "",
+    info: inputs === 0 ? undefined : tr(M, inputs === 1 ? "inputsAgainOne" : "inputsAgain", { n: inputs }),
+  };
+}
+
+/** A result sent to the video form as an end frame or a reference: where it goes, or why this model cannot take it. */
+export function withSentImage(model: CatalogModel | undefined, form: CreateForm, slot: "last" | "reference", image: Omit<SlotValue, "role">): CreateForm {
+  const label = model?.label ?? "";
+  if (slot === "last") {
+    if (model && !model.tasks.includes("image-to-video")) return { ...form, notice: tr(M, "noFrames", { model: label }) };
+    return {
+      ...form, notice: undefined, refMode: "frames", references: [], lastFrame: { ...image, role: "last-frame" },
+      info: form.firstFrame ? undefined : tr(M, "endOnly"),
+    };
+  }
+  if (model && !model.tasks.includes("reference-to-video")) return { ...form, notice: tr(M, "noRefs", { model: label }) };
+  const max = model?.params.maxReferenceImages ?? 3;
+  if (form.references.some((held) => held.upload.inputId === image.upload.inputId)) return { ...form, notice: undefined, refMode: "references" };
+  if (form.references.length >= max) return { ...form, refMode: "references", notice: tr(M, "refsFull", { max }) };
+  return { ...form, notice: undefined, refMode: "references", firstFrame: null, lastFrame: null, references: [...form.references, { ...image, role: "reference-image" }] };
+}
 
 /** What the create form makes; editing a clip has its own form (pages/edit). */
 export const CREATE_TASKS: readonly MediaTask[] = ["text-to-video", "image-to-video", "reference-to-video"];

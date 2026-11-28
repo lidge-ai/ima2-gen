@@ -12,6 +12,8 @@ export interface HandOff {
   workflow?: string;
   /** Field values to prefill on the target screen (prompt, target, style...). */
   values?: Record<string, string | number | boolean>;
+  /** The result's path in the server's saved files: the target uses the file where it is instead of uploading it again. */
+  path?: string;
 }
 
 const KEY = "ima2-studio-handoff";

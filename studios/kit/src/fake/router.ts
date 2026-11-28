@@ -169,6 +169,15 @@ async function submit(req: IncomingMessage, res: ServerResponse, jobs: Jobs, key
     kind: model.kind,
     ...(typeof data.sessionId === "string" ? { sessionId: data.sessionId } : {}),
     ...(typeof data.aspectRatio === "string" ? { aspectRatio: data.aspectRatio } : {}),
+    // As lib/providers/media/runner.ts writes it.
+    media: {
+      task: data.task, durationSec: typeof data.durationSec === "number" ? data.durationSec : null,
+      resolution: typeof data.resolution === "string" ? data.resolution : null,
+      aspectRatio: typeof data.aspectRatio === "string" ? data.aspectRatio : null, seed: null,
+      audio: typeof data.audio === "boolean" ? data.audio : null,
+      inputRoles: ((data.inputs as { role?: unknown }[] | undefined) ?? []).map((input) => String(input.role)),
+      ...(typeof data.quality === "string" ? { quality: data.quality } : {}),
+    },
   });
   send(res, 202, { requestId, model: model.id, adapter: selected.providerId });
 }

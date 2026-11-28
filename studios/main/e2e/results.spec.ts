@@ -18,7 +18,7 @@ test("a result opened on the Image screen fills that screen: same prompt and mod
   const dialog = page.getByRole("dialog", { name: "Result" });
   await page.getByLabel("Prompt").fill("something else");
   await page.getByRole("button", { name: "Open " + prompt }).click();
-  await dialog.getByRole("button", { name: "Same prompt and model" }).click();
+  await dialog.getByRole("button", { name: "Same prompt and settings" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByLabel("Prompt")).toHaveValue(prompt);
 

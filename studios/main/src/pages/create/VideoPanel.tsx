@@ -132,6 +132,8 @@ function CreateInputs({ model, form, set }: { model: CatalogModel; form: CreateF
           </div>
         </>
       )}
+      {/* Under the input slots, where the files it asks for are added. */}
+      {form.info ? <p className="form-hint" role="status">{form.info}</p> : null}
     </>
   );
 }

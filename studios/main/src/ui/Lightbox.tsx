@@ -14,8 +14,8 @@ import { ModelName, ProviderName } from "./ModelName.tsx";
 import { ComfyGraphButton } from "./ComfyGraphButton.tsx";
 
 const M = messages(
-  { animate: "Animate", edit: "Edit", remix: "Remix", extend: "Extend", upscale: "Upscale", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and model", copy: "Copy prompt", copied: "Prompt copied" },
-  { animate: "영상 만들기", edit: "편집", remix: "리믹스", extend: "연장", upscale: "업스케일", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 모델로", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
+  { animate: "Animate", edit: "Edit", remix: "Remix", extend: "Extend", upscale: "Upscale", download: "Download", saved: "Saved", save: "Save", delete: "Delete", actionFailed: "Action failed: {error}", model: "Model", provider: "Ran through", workflow: "Workflow", created: "Created", size: "Size", length: "Length", result: "Result", close: "Close", noPrompt: "No prompt", again: "Same prompt and settings", endFrame: "Use as end frame", reference: "Use as reference", copy: "Copy prompt", copied: "Prompt copied" },
+  { animate: "영상 만들기", edit: "편집", remix: "리믹스", extend: "연장", upscale: "업스케일", download: "다운로드", saved: "저장됨", save: "저장", delete: "삭제", actionFailed: "작업에 실패했어요: {error}", model: "모델", provider: "제공업체", workflow: "워크플로", created: "생성 시각", size: "크기", length: "길이", result: "결과", close: "닫기", noPrompt: "프롬프트 없음", again: "같은 프롬프트와 설정으로", endFrame: "끝 프레임으로", reference: "레퍼런스로", copy: "프롬프트 복사", copied: "프롬프트를 복사했어요" },
 );
 
 interface Props {
@@ -25,10 +25,12 @@ interface Props {
 
 type Target = "video" | "video-edit" | "remix" | "image";
 
-/** tool: the edit tool a video result opens with. */
-const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: keyof typeof M.en; icon: IconName; tool?: string }[]> = {
+/** tool: the edit tool a video result opens with. slot: where in the video form an image goes when it is not the start frame. */
+const REUSE: Record<HistoryItem["kind"], readonly { target: Target; label: keyof typeof M.en; icon: IconName; tool?: string; slot?: "last" | "reference" }[]> = {
   image: [
     { target: "video", label: "animate", icon: "video" },
+    { target: "video", label: "endFrame", icon: "video", slot: "last" },
+    { target: "video", label: "reference", icon: "layers", slot: "reference" },
     { target: "image", label: "edit", icon: "image" },
   ],
   video: [
@@ -66,20 +68,24 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
   const t = useT(M);
   const actions = useItemActions(item, onClose);
   const [copied, setCopied] = useState(false);
-  const reuse = (target: Target, tool?: string) => {
-    const taken = handOff({ url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target, ...(tool ? { values: { tool } } : {}) });
+  const reuse = (target: Target, tool?: string, slot?: "last" | "reference") => {
+    // An end frame or a reference is used where it is saved (its history id is its path); the other targets upload a copy.
+    const taken = handOff({
+      url: item.url, mimeType: item.mimeType, name: downloadName(item.url, item.historyId), target,
+      ...(tool ? { values: { tool } } : {}), ...(slot ? { values: { slot }, path: item.historyId } : {}),
+    });
     onClose();
     // The target screen may already be open behind this dialog; it took the result itself.
     if (taken) return;
     if (target === "video-edit") navigate("video", { mode: "edit" });
     else navigate(target);
   };
-  // Same prompt and model on the screen that made it: filled in place when that screen is open
+  // Same prompt, model and settings on the screen that made it: filled in place when that screen is open
   // behind this dialog, otherwise the screen opens with them as its draft.
   const again = item.kind === "image" || item.kind === "video" ? item.kind : null;
   const runAgain = () => {
     if (!again) return;
-    const filled = restoreDraft(again, item.prompt ?? "", item.model);
+    const filled = restoreDraft(again, item.prompt ?? "", item.model, item.settings);
     onClose();
     if (!filled) navigate(again, { model: item.model });
   };
@@ -107,7 +113,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
         <Icon name="heart" size={15} /> {item.favorite ? t("saved") : t("save")}
       </button>
       {REUSE[item.kind].map((r) => (
-        <button key={r.label} type="button" className="btn" onClick={() => reuse(r.target, r.tool)}>
+        <button key={r.label} type="button" className="btn" onClick={() => reuse(r.target, r.tool, r.slot)}>
           <Icon name={r.icon} size={15} /> {t(r.label)}
         </button>
       ))}

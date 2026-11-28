@@ -49,7 +49,7 @@ function FolderFilter({ folder, setFolder }: { folder: string; setFolder: (value
       <SettingTile
         variant="chip" menuPlacement="bottom" caption={t("folder")} chipText={(label) => t("folder") + ": " + label}
         value={known ? folder : ""} onChange={(value) => { if (value === EDIT) setEditing(true); else setFolder(value); }}
-        options={[{ value: "", label: t("allFolders") }, ...(folders ?? []).map((entry) => ({ value: entry.id, label: entry.name })), { value: EDIT, label: t("edit") }]}
+        options={[{ value: "", label: t("allFolders") }, ...(folders ?? []).map((entry) => ({ value: entry.id, label: entry.name })), { value: EDIT, label: t("edit"), action: true }]}
       />
       <FolderManager open={editing} onClose={() => setEditing(false)} onRemoved={(id) => { if (id === folder) setFolder(""); }} />
     </>
