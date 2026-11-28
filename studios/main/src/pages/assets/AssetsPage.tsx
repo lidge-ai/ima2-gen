@@ -6,16 +6,17 @@ import { useStudio, useStudioApi } from "../../studio/context.tsx";
 import { Tile } from "../../ui/Feed.tsx";
 import { Lightbox } from "../../ui/Lightbox.tsx";
 import { AssetFilters } from "./AssetFilters.tsx";
+import { ElementsPanel } from "./ElementsPanel.tsx";
 import { useAssetModels, useAssetPages } from "./useAssets.ts";
 import "../../styles/assets.css";
 
-const tabs = ["all", "images", "videos", "audio", "saved"] as const;
+const tabs = ["all", "images", "videos", "audio", "saved", "elements"] as const;
 export type Tab = (typeof tabs)[number];
 const kinds: Partial<Record<Tab, MediaKind>> = { images: "image", videos: "video", audio: "audio" };
 
 function AssetEmpty({ tab, model, clearModel }: { tab: Tab; model: string; clearModel: () => void }) {
   const t = useT(M);
-  const text = model ? t("noMatch") : t(({ all: "noAll", images: "noImages", videos: "noVideos", audio: "noAudio", saved: "noSaved" } as const)[tab]);
+  const text = model ? t("noMatch") : t(({ all: "noAll", images: "noImages", videos: "noVideos", audio: "noAudio", saved: "noSaved", elements: "noAll" } as const)[tab]);
   return (
     <div className="empty">
       <h2>{text}</h2>
@@ -117,7 +118,9 @@ export function AssetsPage({ kind }: { kind?: string }) {
         density={density}
         setDensity={setDensity}
       />
-      <AssetResults {...pages} tab={tab} model={model} density={density} select={setSelected} clearModel={() => setModel("")} />
+      {tab === "elements" ? <ElementsPanel /> : (
+        <AssetResults {...pages} tab={tab} model={model} density={density} select={setSelected} clearModel={() => setModel("")} />
+      )}
       <Lightbox item={open} onClose={() => setSelected(null)} />
     </main>
   );

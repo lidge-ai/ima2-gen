@@ -1,3 +1,4 @@
+import { assets } from "./assets.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { makeCatalog, routeParamsFor, wireCatalog } from "./catalog.ts";
@@ -328,11 +329,13 @@ async function dispatch(req: IncomingMessage, res: ServerResponse, jobs: Jobs, k
     return;
   }
   if (method === "GET" && p[0] === "generated") {
-    const found = jobs.files.get(p[1] ?? "");
+    // A saved file can sit in a folder (elements/<name>).
+    const found = jobs.files.get(p.slice(1).map(decodeURIComponent).join("/"));
     if (!found) throw missing();
     file(req, res, found.data, found.mime);
     return;
   }
+  if (await assets(req, res, url, jobs)) return;
   if (method === "GET" && url.pathname === "/api/media/catalog") {
     const catalog = wireCatalog(keys);
     send(res, 200, {

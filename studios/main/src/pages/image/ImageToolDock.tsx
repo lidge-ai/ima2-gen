@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
-import type { Catalog, ImageTask } from "@ima2/studio-kit";
+import { elementInputs, type Catalog, type ImageTask } from "@ima2/studio-kit";
+import { ElementPicker } from "../../ui/ElementPicker.tsx";
 import { messages, useT } from "../../i18n.ts";
 import { useStudioApi } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
@@ -88,6 +89,7 @@ function Tray({ tool, max, brush }: { tool: Tool; max: number; brush: boolean })
         <Icon name={busy ? "clock" : "plus"} size={16} />
       </button>
       <span className="dock-tray-count" aria-live="polite">{t("count", { n: images.length, max })}</span>
+      <ElementPicker disabled={full} onPick={(element) => tool.addImages(elementInputs(element, "source-image", max - images.length))} />
       {brush && images[0] ? (
         <>
           <button type="button" className="chip" onClick={() => setPainting(true)}>{t(tool.state.mask ? "repaint" : "paint")}</button>

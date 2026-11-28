@@ -5,7 +5,7 @@ import { SettingTile } from "../../ui/SettingTile.tsx";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
 import type { Tab } from "./AssetsPage.tsx";
 
-const tabs: readonly Tab[] = ["all", "images", "videos", "audio", "saved"];
+const tabs: readonly Tab[] = ["all", "images", "videos", "audio", "saved", "elements"];
 
 function ModelFilter({
   model,
@@ -68,7 +68,9 @@ export function AssetFilters({
           </a>
         ))}
       </nav>
-      <ModelFilter model={model} setModel={setModel} models={models} />
+      {/* Elements are not results: they have no model and one layout. */}
+      {tab === "elements" ? null : <ModelFilter model={model} setModel={setModel} models={models} />}
+      {tab === "elements" ? null : (
       <div className="assets-density" role="group" aria-label={t("density")}>
         {(["comfortable", "compact"] as const).map((value) => (
           <button
@@ -82,6 +84,7 @@ export function AssetFilters({
           </button>
         ))}
       </div>
+      )}
     </div>
   );
 }

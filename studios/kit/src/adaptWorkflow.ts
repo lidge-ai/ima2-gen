@@ -1,4 +1,5 @@
 /** Workflow description, run body and estimate translation (lib/workflows <-> kit types). */
+import { wireRef } from "./elements.ts";
 import type {
   MediaKind, SubmitInput, WorkflowDef, WorkflowEstimate, WorkflowInputSpec, WorkflowParamSpec, WorkflowPreset, WorkflowRunBody,
 } from "./types.ts";
@@ -113,7 +114,7 @@ export function localizeWorkflow(def: WorkflowDef, locale: string): WorkflowDef 
 }
 
 function mediaValue(list: readonly SubmitInput[]) {
-  return list.map((item) => ("inputId" in item ? { ref: item.inputId } : { url: item.url }));
+  return list.map((item) => ("inputId" in item ? wireRef(item.inputId) : { url: item.url }));
 }
 
 function colorsValue(def: WorkflowDef | undefined, name: string, value: unknown): unknown {
