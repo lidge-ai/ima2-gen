@@ -623,6 +623,9 @@ test("director studio takes a cut list: one priced step per shot, and the server
     // A planned clip (no cut list) still needs its scene and prices one render step.
     assert.deepEqual((await client.workflows.estimate("director-studio", { inputs: { prompt: "A quiet room" }, params: { duration: 5 } })).steps.map((s) => s.id), ["render", "sound"]);
     const run = await client.workflows.run("director-studio", { inputs: { prompt: "Shared look" }, shots });
-    assert.equal((await client.watchJob(run.jobId)).status, "succeeded");
+    const done = await client.watchJob(run.jobId);
+    assert.equal(done.status, "succeeded");
+    // The job's steps carry the same Korean names as the estimate.
+    assert.equal(done.steps?.find((step) => step.id === "join")?.labels?.ko, "샷 잇기");
   });
 });
