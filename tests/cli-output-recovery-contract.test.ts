@@ -139,8 +139,11 @@ describe("cli-output-recovery-contract: recover-output.ts exports", () => {
   });
 
   it("history route can filter by requestId before pagination", () => {
-    assert.match(historyRoute, /const requestId = typeof req\.query\.requestId === "string"/);
-    assert.match(historyRoute, /if \(params\.requestId && row\.requestId !== params\.requestId\) return false/);
+    // The query is parsed and applied in lib/historyQuery.ts; tests/history-query.test.ts checks the behavior.
+    const historyQuery = readSrc("lib/historyQuery.ts");
+    assert.match(historyRoute, /parseHistoryQuery\(req\.query/);
+    assert.match(historyQuery, /requestId: str\(query\.requestId\)/);
+    assert.match(historyQuery, /if \(query\.requestId && row\.requestId !== query\.requestId\) return false/);
   });
 
   it("edit writes requestId metadata and terminal filename", () => {

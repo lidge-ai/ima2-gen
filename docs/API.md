@@ -885,6 +885,7 @@ Bring-your-own-key generation across direct model makers and aggregators. Every 
 | `GET` | `/api/history` | List generated assets |
 | `GET` | `/api/history?groupBy=session` | Group assets by session title |
 | `GET` | `/api/history?includeAudio=1` | Also return audio outputs (`mediaType: "audio"`); omitted by default because the classic UI renders every non-video row as an image |
+| `GET` | `/api/history?q=&mediaType=&model=&workflow=&folderId=&since=&until=&order=&facets=model` | Optional filters; with none of them the answer is unchanged. `q`: case-insensitive substring of the prompt, model or filename. `mediaType`: `image`, `video`, `audio`, comma separated (listing `audio` includes audio rows). `model`, `workflow`: exact. `folderId`: rows whose file is filed in that asset folder. `since` (after) and `until` (at or before), in ms. `order=asc` lists oldest first and pages with `after` + `afterFilename` (`nextCursor: { after, afterFilename }`); the default `desc` keeps `before` + `beforeFilename`. An unknown `mediaType` or `order` is a 400. The response adds `matched` (rows after filters, before the page is cut; `total` stays the whole history), each row carries `folderId` (`null` when not filed), and `facets=model` adds `facets.model: [{ value, count }]` counted under every filter except `model` |
 | `DELETE` | `/api/history/:filename` | Tombstone a generated asset |
 | `POST` | `/api/history/:filename/restore` | Restore a recently deleted asset |
 

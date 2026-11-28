@@ -27,12 +27,13 @@ test("gallery can load older pages without raising the default history cap", () 
 });
 
 test("favorites mode supports its own cursor and load older action", () => {
-  const routes = readSource("routes/history.ts");
+  // The history query is parsed in lib/historyQuery.ts; tests/history-query.test.ts checks the behavior.
+  const routes = readSource("lib/historyQuery.ts");
   const store = readSource("ui/src/store/useAppStore.ts");
   const gallery = readSource("ui/src/components/GalleryModal.tsx");
   const controls = readSource("ui/src/components/gallery/GalleryLoadControls.tsx");
 
-  assert.match(routes, /const favoritesOnly =/);
+  assert.match(routes, /favoritesOnly: flag\(query\.favoritesOnly\)/);
   assert.match(routes, /favoritesOnly:\s*boolean/);
   assert.match(store, /loadFavoriteHistory:\s*async/);
   assert.match(store, /getHistory\(\{ limit: HISTORY_LIMIT, favoritesOnly: true \}\)/);
