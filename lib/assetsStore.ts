@@ -428,6 +428,17 @@ export function deleteAsset(id: string): boolean {
   return res.changes > 0;
 }
 
+/** Whether any element still lists this path among its refs (compared as stored). */
+export function elementRefInUse(ref: string): boolean {
+  const row = getDb()
+    .prepare(
+      "SELECT 1 AS used FROM assets WHERE kind = 'element' AND json_valid(metadata) AND json_type(metadata, '$.refs') = 'array' " +
+        "AND EXISTS (SELECT 1 FROM json_each(metadata, '$.refs') WHERE value = ?) LIMIT 1",
+    )
+    .get(ref);
+  return row !== undefined;
+}
+
 const FOLDER_SELECT =
   "SELECT id, name, parent_id AS parentId, created_at AS createdAt, updated_at AS updatedAt FROM asset_folders";
 

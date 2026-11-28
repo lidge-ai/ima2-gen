@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { randomBytes } from "crypto";
 import { existsSync, lstatSync } from "fs";
-import { copyFile, mkdir } from "fs/promises";
+import { copyFile, mkdir, unlink } from "fs/promises";
 import { extname, join } from "path";
 import { config } from "../config.js";
 import { errInfo } from "../lib/errInfo.js";
@@ -14,6 +14,7 @@ import {
   createAsset,
   deleteAsset,
   deleteFolder,
+  elementRefInUse,
   createFolder,
   getAsset,
   listAssets,
@@ -112,6 +113,29 @@ async function importElementInput(inputRef: unknown): Promise<string> {
   const rel = config.storage.elementsDirName + "/" + randomBytes(12).toString("hex") + extname(source.path).toLowerCase();
   await copyFile(source.path, resolveInGenerated(config.storage.generatedDir, rel));
   return rel;
+}
+
+/**
+ * After an element is deleted: removes the upload copies it pointed at that no other element uses. Only a file
+ * directly inside the elements folder qualifies, so a result an element pointed at is never touched.
+ */
+async function removeUnusedElementFiles(refs: unknown): Promise<void> {
+  if (!Array.isArray(refs)) return;
+  const dir = config.storage.elementsDirName;
+  for (const ref of new Set(refs)) {
+    if (typeof ref !== "string" || !ref.startsWith(dir + "/")) continue;
+    const name = ref.slice(dir.length + 1);
+    if (!name || name === "." || name === ".." || /[\\/]/.test(name)) continue;
+    if (elementRefInUse(ref)) continue;
+    const abs = resolveInGenerated(config.storage.generatedDir, ref);
+    try {
+      if (!lstatSync(abs).isFile()) continue;
+      await unlink(abs);
+      logEvent("assets", "element-file-remove", { file: ref });
+    } catch (e) {
+      if ((e as { code?: unknown })?.code !== "ENOENT") logEvent("assets", "element-file-remove-failed", { file: ref, message: errInfo(e).message });
+    }
+  }
 }
 
 export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) {
@@ -362,14 +386,16 @@ export function registerAssetsRoutes(app: Express, ctxRaw: RouteRuntimeContext) 
     }
   });
 
-  app.delete("/api/assets/:id", (req: Request<IdParams>, res: Response) => {
+  app.delete("/api/assets/:id", async (req: Request<IdParams>, res: Response) => {
     try {
+      const existing = getAsset(req.params.id);
       const ok = deleteAsset(req.params.id);
       if (!ok) {
         return res
           .status(404)
           .json({ error: { code: "ASSET_NOT_FOUND", message: "Asset not found" } });
       }
+      if (existing?.kind === "element") await removeUnusedElementFiles((existing.metadata as { refs?: unknown } | null)?.refs);
       logEvent("assets", "delete", { assetId: req.params.id });
       res.json({ ok: true });
     } catch (e) {
