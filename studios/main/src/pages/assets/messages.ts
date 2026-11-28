@@ -2,7 +2,7 @@ import { messages } from "../../i18n.ts";
 
 export const M = messages(
   {
-    all: "All", images: "Images", videos: "Videos", audio: "Audio", saved: "Saved",
+    all: "All", images: "Images", videos: "Videos", audio: "Audio", saved: "Saved", elements: "Elements",
     filterModel: "Filter by model", allModels: "All models", filters: "Asset filters", density: "Grid density",
     comfortable: "Comfortable", compact: "Compact", title: "Assets", intro: "Browse your generated media.",
     noMatch: "No assets match this model and filter.", noAll: "No assets yet.", noImages: "No images yet.",
@@ -12,7 +12,7 @@ export const M = messages(
     loading: "Loading assets", results: "Assets results", loadingMore: "Loading", loadMore: "Load more",
   },
   {
-    all: "전체", images: "이미지", videos: "영상", audio: "오디오", saved: "저장됨",
+    all: "전체", images: "이미지", videos: "영상", audio: "오디오", saved: "저장됨", elements: "요소",
     filterModel: "모델별 필터", allModels: "모든 모델", filters: "에셋 필터", density: "그리드 밀도",
     comfortable: "넓게", compact: "촘촘하게", title: "에셋", intro: "생성한 미디어를 살펴보세요.",
     noMatch: "이 모델과 필터에 맞는 에셋이 없어요.", noAll: "아직 에셋이 없어요.", noImages: "아직 이미지가 없어요.",

@@ -14,6 +14,7 @@ export { formatUsd, sumEstimates } from "./pricing.ts";
 export { chooseRoute, modelHasKey, type RouteChoice } from "./routing.ts";
 export { TALKING_TASKS, billedSeconds, chooseFormRoute, formRoutes, taskForm, type TalkingTask, type TaskForm } from "./taskForm.ts";
 export { IMAGE_TASKS, chooseImageRoute, imageForm, imageRoles, imageRoutes, type ImageForm, type ImageTask } from "./imageForm.ts";
+export { ELEMENT_KINDS, MAX_ELEMENT_IMAGES, SAVED_FILE, elementInputs, savedFileInput, type Element, type ElementImage, type ElementKind } from "./elements.ts";
 export { EDIT_TASKS, chooseEditRoute, editForm, editRoutes, type EditForm, type EditTask } from "./editForm.ts";
 export { resolutionParts, sameResolution, tidyResolutions, type ResolutionParts, type UpscaleTier } from "./resolutions.ts";
 export {

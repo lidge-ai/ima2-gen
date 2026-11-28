@@ -3,6 +3,7 @@ import { createServer } from "node:net";
 import assert from "node:assert/strict";
 import { startFakeServer } from "../src/fake/server.ts";
 import { createStudioClient, type StudioClient } from "../src/client.ts";
+import { elementInputs } from "../src/elements.ts";
 import { StudioApiError } from "../src/http.ts";
 import { readSse } from "../src/sse.ts";
 import type { JobEvent } from "../src/types.ts";
@@ -448,4 +449,42 @@ test("per-character and per-minute prices are the server's figure; the text itse
   } finally {
     await server.close();
   }
+});
+
+test("elements are made from an upload or from results, listed by kind, edited and removed, and go into a request by path", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client, url }) => {
+    const refused = (code: string) => (e: unknown) => e instanceof StudioApiError && e.code === code;
+    const upload = await client.uploads.put(new Uint8Array([137, 80, 78, 71]), "image/png");
+    const mina = await client.elements.fromUpload({ inputId: upload.inputId, name: "Mina", kind: "character" });
+    assert.equal(mina.kind, "character");
+    assert.match(mina.images[0]!.path, /^elements\//);
+    // The element's image is served from the saved files, not from the upload.
+    const shown = await fetch(new URL(mina.images[0]!.url, url));
+    assert.equal(shown.status, 200);
+    await assert.rejects(client.elements.fromUpload({ inputId: "input:missing.png", name: "x", kind: "character" }), refused("INVALID_ELEMENT_REFS"));
+
+    const job = await client.media.submit({ ...image, prompt: "a harbor at dawn" });
+    const done = (await client.watchJob(job.jobId)).outputs[0]!.historyId;
+    const harbor = await client.elements.fromResults({ paths: [done], name: "Harbor", kind: "scene" });
+    assert.deepEqual(harbor.images.map((i) => i.path), [done]);
+    await assert.rejects(client.elements.fromResults({ paths: ["nope.png"], name: "x", kind: "scene" }), refused("INVALID_FILENAME"));
+
+    assert.deepEqual((await client.elements.list()).map((e) => e.name), ["Harbor", "Mina"]);
+    assert.deepEqual((await client.elements.list("scene")).map((e) => e.name), ["Harbor"]);
+    const renamed = await client.elements.update(mina, { name: "Mina Park", kind: "product" });
+    assert.deepEqual([renamed.name, renamed.kind, renamed.images[0]!.path], ["Mina Park", "product", mina.images[0]!.path]);
+
+    // In a form the element's image is an input like any other; on the wire it is the file's path.
+    const [input] = elementInputs(harbor, "source-image", 1);
+    const sent: Record<string, unknown>[] = [];
+    const watching = createStudioClient({ baseUrl: url, fetch: async (target, init) => {
+      if (String(target).endsWith("/api/media") && typeof init?.body === "string") sent.push(JSON.parse(init.body) as Record<string, unknown>);
+      return fetch(target, init);
+    } });
+    await watching.media.submit({ model: "openai/gpt-image-2.6", provider: "fal", task: "image-to-image", prompt: "at dusk", inputs: [{ role: input!.role, inputId: input!.upload.inputId }] });
+    assert.deepEqual(sent[0]!.inputs, [{ role: "source-image", filename: done }]);
+
+    await client.elements.remove(harbor.id);
+    assert.deepEqual((await client.elements.list()).map((e) => e.name), ["Mina Park"]);
+  });
 });

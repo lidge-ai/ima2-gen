@@ -1,3 +1,4 @@
+import { elementsApi } from "./elements.ts";
 import { fromWireJob, toCatalog, toKeyStatuses, toQuote, toWireSubmit } from "./adapt.ts";
 import { historyParams, toHistoryPage } from "./adaptHistory.ts";
 import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
@@ -185,6 +186,8 @@ export function createStudioClient(options: StudioClientOptions = {}) {
     uploads: uploadsApi(http),
     media: mediaApi(http, cache, options.sessionId),
     history: historyApi(http, options.browserId),
+    /** Saved characters, products, styles and scenes to use again as references. */
+    elements: elementsApi(http),
     workflows: workflowsApi(http, cache, options.sessionId),
     comfy: {
       /** The ComfyUI graph of a saved result. Throws COMFY_GRAPH_UNAVAILABLE with the reason when there is none; a shared web instance has no such route. */

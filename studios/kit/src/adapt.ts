@@ -2,6 +2,7 @@
  * Translates the server's wire shapes (wire.ts) into the UI-facing kit types
  * (types.ts) and back. Pure functions; client.ts does the I/O.
  */
+import { wireRef } from "./elements.ts";
 import type { Catalog, CatalogModel, CatalogProvider, Job, JobError, KeyStatus, MediaModelSpec, MediaQuote, MediaSubmitBody, SubmitInput } from "./types.ts";
 import type { WireAdapter, WireCatalog, WireJob, WireMediaEstimate, WireModel, WireRoute } from "./wire.ts";
 import { tidyResolutions } from "./resolutions.ts";
@@ -97,7 +98,7 @@ export function toKeyStatuses(wire: WireCatalog): KeyStatus[] {
 /* ---------- submit ---------- */
 
 function wireInput(input: SubmitInput): Record<string, string> {
-  return "inputId" in input ? { role: input.role, ref: input.inputId } : { role: input.role, url: input.url };
+  return "inputId" in input ? { role: input.role, ...wireRef(input.inputId) } : { role: input.role, url: input.url };
 }
 
 export function toWireSubmit(body: MediaSubmitBody, sessionId?: string): Record<string, unknown> {

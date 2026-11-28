@@ -1,3 +1,4 @@
+import { SaveAsElement } from "./SaveAsElement.tsx";
 import { messages, useT } from "../i18n.ts";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { HistoryItem } from "@ima2/studio-kit";
@@ -109,6 +110,7 @@ function LightboxActions({ item, onClose }: { item: HistoryItem; onClose: () => 
           <Icon name={r.icon} size={15} /> {t(r.label)}
         </button>
       ))}
+      {item.kind === "image" ? <SaveAsElement key={item.historyId} item={item} /> : null}
       <button type="button" className="btn btn-danger" onClick={() => void actions.remove()}>
         <Icon name="trash" size={15} /> {t("delete")}
       </button>
