@@ -72,8 +72,12 @@ function fieldSchema(field: WorkflowField): object {
 }
 
 export function workflowValuesSchema(fields: readonly WorkflowField[]): ObjectSchema {
-  return object(Object.fromEntries(fields.map((field) => [field.name, fieldSchema(field)])),
+  const schema = object(Object.fromEntries(fields.map((field) => [field.name, fieldSchema(field)])),
     fields.filter((field) => field.required).map((field) => field.name));
+  // A field required unless another is given: one of the two must be present.
+  const either = fields.flatMap((field) => (field.requiredUnless ? [{ anyOf: [{ required: [field.name] }, { required: [field.requiredUnless] }] }] : []));
+  if (either.length === 1) return { ...schema, ...either[0] };
+  return either.length > 1 ? { ...schema, allOf: either } : schema;
 }
 
 export function withClientMediaPaths(schema: ObjectSchema): ObjectSchema {

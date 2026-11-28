@@ -8,7 +8,7 @@ import type { MediaInput, MediaModelSpec } from "../../../providers/media/contra
 import { WorkflowError } from "../../errors.js";
 import type { LocalStep, MediaStep, PlanEnv, ResolvedSlot, StepRuntime, TextStep, WorkflowStep, WorkflowValues } from "../../types.js";
 import { keepSoundStep, sourceOf } from "../remixShared.js";
-import { inputsFrom, refsOf, textOf, wholeSeconds } from "../shared.js";
+import { frameLabel, inputsFrom, refsOf, textOf, wholeSeconds } from "../shared.js";
 import { anchorTimes, pinnedDuration } from "../subscription.js";
 import { CAPTION_SYSTEM, captionUser, readCaption, type Caption } from "./prompts.js";
 
@@ -66,7 +66,7 @@ export function scenesStep(): LocalStep {
 
 export function frameStep(point: FramePoint): LocalStep {
   return {
-    id: "frame-" + point.id, label: "Take the " + point.id + " frame", kind: "local", op: "frame", dependsOn: [],
+    id: "frame-" + point.id, label: "Take " + frameLabel(point.id), kind: "local", op: "frame", dependsOn: [],
     async run(rt) {
       const source = sourceOf(rt.values);
       if (!source.path) throw new Error("source file missing");
@@ -138,7 +138,7 @@ export interface SubjectSpec {
 export function subjectStep(spec: SubjectSpec): MediaStep {
   const deps = ["frame-" + spec.point.id, ...(spec.masked ? ["segment"] : [])];
   const step: MediaStep = {
-    id: "subject-" + spec.point.id, label: "Prepare the " + spec.point.id + " frame", kind: "media", slot: "subject",
+    id: "subject-" + spec.point.id, label: "Prepare " + frameLabel(spec.point.id), kind: "media", slot: "subject",
     model: spec.slot.model, outputKind: "image", dependsOn: deps, units: { unit: "image", quantity: 1 },
     async build(rt) {
       const frame = rt.artifactsOf("frame-" + spec.point.id)[0];

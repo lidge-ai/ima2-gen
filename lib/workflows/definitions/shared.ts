@@ -16,6 +16,13 @@ export function textOf(values: WorkflowValues, name: string): string | undefined
   return typeof value === "string" ? value : undefined;
 }
 
+/** A frame point id ("first", "mid", "last", "key-2") as people read it: "the first frame", "key frame 2". */
+export function frameLabel(id: string): string {
+  const key = /^key-(\d+)$/.exec(id);
+  if (key) return "key frame " + key[1];
+  return "the " + (id === "mid" ? "middle" : id) + " frame";
+}
+
 export function intOf(values: WorkflowValues, name: string, fallback: number): number {
   const value = values[name];
   return typeof value === "number" ? value : fallback;

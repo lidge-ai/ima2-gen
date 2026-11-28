@@ -1,7 +1,7 @@
 import type { LocalStep, MediaStep, ResolvedSlot, WorkflowDefinition, WorkflowField, WorkflowPreset, WorkflowStep, WorkflowValues } from "../types.js";
 import { checkReferenceLimit } from "../validate.js";
 import { keepSoundStep, referenceImagesField, sourceOf, sourceVideoField } from "./remixShared.js";
-import { inputsFrom, joinPrompt, option, refsOf, textOf } from "./shared.js";
+import { frameLabel, inputsFrom, joinPrompt, option, refsOf, textOf } from "./shared.js";
 import {
   anchorTimes, BILLING_NOTE, GPT_FRAME_SLOT, XAI_PIN_MAX_KEYFRAMES, XAI_PIN_SLOT, pinnedDuration, REQUIRES,
 } from "./subscription.js";
@@ -22,7 +22,7 @@ function anchors(values: WorkflowValues): { duration: number; list: Anchor[] } {
 
 function frameStep(anchor: Anchor): LocalStep {
   return {
-    id: "frame-" + anchor.id, label: "Take the " + anchor.id + " frame", kind: "local", op: "frame", dependsOn: [],
+    id: "frame-" + anchor.id, label: "Take " + frameLabel(anchor.id), kind: "local", op: "frame", dependsOn: [],
     async run(rt) {
       const source = sourceOf(rt.values);
       if (!source.path) throw new Error("source file missing");
@@ -46,7 +46,7 @@ function compositePrompt(mode: Mode, values: WorkflowValues, refCount: number): 
 
 function compositeStep(mode: Mode, anchor: Anchor, slot: ResolvedSlot, values: WorkflowValues): MediaStep {
   const step: MediaStep = {
-    id: "swap-" + anchor.id, label: "Put the subject into the " + anchor.id + " frame", kind: "media", slot: "composite",
+    id: "swap-" + anchor.id, label: "Put the subject into " + frameLabel(anchor.id), kind: "media", slot: "composite",
     model: slot.model, outputKind: "image", dependsOn: ["frame-" + anchor.id], units: { unit: "image", quantity: 1 },
     async build(rt) {
       const frame = rt.artifactsOf("frame-" + anchor.id)[0];

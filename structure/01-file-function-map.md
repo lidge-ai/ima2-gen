@@ -124,7 +124,7 @@ routes/
 | `bin/lib/mcpServer.ts` | 132 | MCP server registration and dispatch |
 | `bin/lib/mcpMediaHandlers.ts` | 87 | Media MCP tool handlers and response projection |
 | `bin/lib/mcpWorkflowHandlers.ts` | 25 | Workflow MCP tool handlers |
-| `lib/providers/media/toolSchema.ts` | 177 | Media and workflow tool descriptors and schemas |
+| `lib/providers/media/toolSchema.ts` | 181 | Media and workflow tool descriptors and schemas |
 | `lib/providers/media/estimate.ts` | 84 | Published media price estimates |
 | `routes/mediaTools.ts` | 51 | Media descriptors, estimates and workflow schema routes |
 | `bin/lib/media/catalogCmd.ts` | 16 | Catalog display |

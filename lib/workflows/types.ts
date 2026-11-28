@@ -25,6 +25,11 @@ interface FieldBase {
   label: string;
   help?: string;
   required: boolean;
+  /**
+   * Required unless the named field is given (required is then false). The server answers
+   * "<name>: is required" when both are missing; the values JSON Schema says the same with anyOf.
+   */
+  requiredUnless?: string;
 }
 export interface TextField extends FieldBase { type: "text"; maxLength: number; multiline?: boolean }
 export interface EnumField extends FieldBase {

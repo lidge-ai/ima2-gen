@@ -1,5 +1,4 @@
 import type { MediaInput, MediaModelSpec } from "../../providers/media/contract.js";
-import { inputError } from "../errors.js";
 import type { LocalStep, MediaStep, ModelSlot, PlanEnv, ResolvedSlot, StepRuntime, WorkflowDefinition, WorkflowShot, WorkflowStep, WorkflowValues } from "../types.js";
 import { fitDuration, fitShots, maxShotSeconds, planShotsStep, shotPrompt, splitDuration } from "./directorShots.js";
 import { aspectField, checkLook, checkModelFit, inputsFrom, intOf, joinPrompt, lookFields, lookPrompt, option, refsOf, textOf, videoResolutionField } from "./shared.js";
@@ -77,9 +76,10 @@ function shotStep(shape: Shape, index: number, seconds: number, multi: boolean, 
   return step;
 }
 
-function lastFrameStep(shotId: string): LocalStep {
+function lastFrameStep(index: number): LocalStep {
+  const shotId = "shot-" + (index + 1);
   return {
-    id: shotId + "-last", label: "Take the last frame of " + shotId, kind: "local", op: "frame", dependsOn: [shotId],
+    id: shotId + "-last", label: "Take the last frame of shot " + (index + 1), kind: "local", op: "frame", dependsOn: [shotId],
     async run(rt) {
       const clip = rt.artifactsOf(shotId)[0];
       if (!clip) throw new Error(shotId + " output missing");
@@ -147,7 +147,7 @@ function buildPlan(values: WorkflowValues, models: Readonly<Record<string, Resol
   const steps: WorkflowStep[] = multi && !shots ? [planShotsStep(textOf(values, "prompt") ?? "", durations)] : [];
   durations.forEach((seconds, i) => {
     steps.push(shotStep(shape, i, seconds, multi, continuity));
-    if (multi && continuity && i < durations.length - 1) steps.push(lastFrameStep("shot-" + (i + 1)));
+    if (multi && continuity && i < durations.length - 1) steps.push(lastFrameStep(i));
   });
   if (multi) steps.push(joinStep(durations.map((_, i) => "shot-" + (i + 1))));
   const videoStep = multi ? "join" : "render";
@@ -162,7 +162,10 @@ export const directorStudio: WorkflowDefinition = {
   label: "Director studio",
   description: "A directed clip from one prompt or your own cut list: 4-30 seconds planned into shots, or 2-6 shots of your own up to 60 seconds, with a look, a sound bed and image, video and audio references.",
   fields: [
-    { name: "prompt", type: "text", label: "Scene", required: false, maxLength: 4000, multiline: true, help: "What happens. Name references as image 1, video 1, audio 1." },
+    {
+      name: "prompt", type: "text", label: "Scene", required: false, requiredUnless: "shots", maxLength: 4000, multiline: true,
+      help: "What happens. Name references as image 1, video 1, audio 1.",
+    },
     { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },
     {
       name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000,
@@ -183,8 +186,6 @@ export const directorStudio: WorkflowDefinition = {
   ],
   slots: [RENDER_SLOT, SOUND_SLOT],
   check(values, provided) {
-    // Scene is required unless a cut list carries the prompts (same answer as a required field).
-    if (!shotsOf(values) && textOf(values, "prompt") === undefined) throw inputError("prompt", "is required");
     if (shotsOf(values) && provided.has("duration")) return "duration: leave it out when shots are given; the shots set the length";
     return checkLook(values);
   },
