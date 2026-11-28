@@ -391,6 +391,8 @@ export interface StepSummary {
   model?: string;
   route?: string;
   final: boolean;
+  /** The label in other languages (ko today); clients fall back to label. */
+  i18n?: { ko: { label: string } };
 }
 
 export interface WorkflowErrorInfo {
