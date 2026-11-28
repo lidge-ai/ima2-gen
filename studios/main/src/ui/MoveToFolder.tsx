@@ -47,13 +47,15 @@ export function MoveToFolder({ item }: { item: HistoryItem }) {
   if (item.folderId === undefined) return null;
   if (loadError) return <p role="alert" className="form-error move-folder">{t("failed", { error: loadError })} <button type="button" className="btn" onClick={reload}>{t("retry")}</button></p>;
   if (!folders) return null;
+  // A result still marked with a folder that has since been deleted is in no folder.
+  const shown = folders.some((folder) => folder.id === current) ? current : "";
   const options = [{ value: "", label: t("none") }, ...folders.map((folder) => ({ value: folder.id, label: folder.name })), { value: NEW, label: t("newFolder") }];
   return (
     <div className="move-folder">
       <SettingTile
         variant="chip" menuPlacement="bottom" caption={t("folder")} chipText={(label) => t("folder") + ": " + label}
-        value={current} options={options}
-        onChange={(value) => { if (value === NEW) setNaming(true); else if (value !== current) void file(value, folders.find((folder) => folder.id === value)?.name ?? ""); }}
+        value={shown} options={options}
+        onChange={(value) => { if (value === NEW) setNaming(true); else if (value !== shown) void file(value, folders.find((folder) => folder.id === value)?.name ?? ""); }}
       />
       {naming ? (
         <form className="move-folder-new" onSubmit={(e) => { e.preventDefault(); void createAndFile(); }}>
