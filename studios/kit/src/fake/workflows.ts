@@ -99,6 +99,8 @@ const DESCRIPTIONS: Record<string, string> = {
     "Restyles a 4-15 second clip with Grok's video edit, in segments of up to 8.7 seconds, and puts the source sound back.",
   "director-cast": "Create a consistent character reference sheet.",
   "director-cinema": "Create a cinematic film still.",
+  "director-studio":
+    "A directed clip from one prompt or your own cut list: 4-30 seconds planned into shots, or 2-6 shots of your own up to 60 seconds, with a look, a sound bed and image, video and audio references.",
   "director-locations": "Create a cinematic location study.",
 };
 const simple = (id: string, label: string, fields: WireField[], slots: WireSlot[]): WireWorkflow => ({
@@ -187,8 +189,13 @@ const base: WireWorkflow[] = [
     "director-studio",
     "Director studio",
     [
-      text("prompt", "Scene", true),
+      // Required unless a cut list carries the prompts (see cutList.ts).
+      { ...text("prompt", "Scene"), requiredUnless: "shots" },
       { name: "duration", type: "integer", label: "Length (seconds)", required: false, min: 4, max: 30, default: 5 },
+      {
+        name: "shots", type: "shots", label: "Shots", required: false, min: 2, max: 6, promptMaxLength: 1000,
+        help: "Optional cut list: 2-6 shots in order, each with its own prompt and whole seconds, up to 60 seconds in all. Leave Length empty when you use it.",
+      },
       tail[0]!,
       aspect,
       { name: "generateAudio", type: "boolean", label: "Sound", required: false, default: true },
@@ -300,14 +307,23 @@ export function estimateWorkflow(
   values: Record<string, unknown>,
   catalog: Catalog,
   selection: Record<string, unknown> = {},
+  /** A cut list's fitted lengths: the render slot becomes one step per shot. */
+  cuts: readonly number[] | null = null,
 ): WireEstimateResponse {
   const models = (selection.models ?? {}) as Record<string, string>,
     routes = (selection.routes ?? {}) as Record<string, string>;
-  const steps = def.slots.map((slot, index) => ({
-    id: slot.name,
-    label: slot.label,
+  const lengths = new Map<string, number>();
+  const total = cuts ? cuts.reduce((a, b) => a + b, 0) : Number(values.duration ?? 5);
+  const planned = def.slots.flatMap((slot): { slot: WireSlot; id: string; label: string; seconds: number }[] =>
+    cuts && slot.name === "render"
+      ? cuts.map((seconds, i) => ({ slot, id: "shot-" + (i + 1), label: "Shot " + (i + 1), seconds }))
+      : [{ slot, id: slot.name, label: slot.label, seconds: total }],
+  );
+  const steps = planned.map(({ slot, id, label, seconds }, index) => ({
+    id: (lengths.set(id, seconds), id),
+    label,
     kind: "media",
-    dependsOn: index ? [def.slots[index - 1]!.name] : [],
+    dependsOn: index ? [planned[index - 1]!.id] : [],
     model: models[slot.name] ?? slot.defaultModel,
     route:
       routes[slot.name] ??
@@ -315,12 +331,35 @@ export function estimateWorkflow(
         ?.providerId ??
       "fal",
     slot: slot.name,
-    final: index === def.slots.length - 1,
+    final: index === planned.length - 1,
+    ...(/^Shot \d+$/.test(label) ? { i18n: { ko: { label: label.replace("Shot", "샷") } } } : {}),
   }));
+  // Like the server, a cut list also plans work it does itself: the last frame of each shot but the last, and the join.
+  const local = (id: string, label: string, dependsOn: string[], ko: string) => ({ id, label, kind: "local", dependsOn, final: false, i18n: { ko: { label: ko } } });
+  if (cuts) {
+    const shots = steps.filter((step) => step.id.startsWith("shot-"));
+    const extra = [...shots.slice(0, -1).map((shot) => local(shot.id + "-last", "Take the last frame of " + shot.label.toLowerCase(), [shot.id], shot.label.replace("Shot", "샷") + "의 마지막 프레임 가져오기")), local("join", "Join the shots", shots.map((shot) => shot.id), "샷 잇기")];
+    const done = { ...summaryEstimate(steps, catalog, lengths) };
+    const localEstimates = extra.map((step) => ({ stepId: step.id, usd: 0, note: "runs locally" }));
+    const all = [...done.estimates, ...localEstimates];
+    return { steps: [...steps, ...extra], estimate: { usd: all.reduce((sum, e) => sum + (e.usd ?? 0), 0), complete: all.every((e) => e.usd !== null), steps: all } };
+  }
+  const { estimates } = summaryEstimate(steps, catalog, lengths);
+  return {
+    steps,
+    estimate: {
+      usd: estimates.reduce((sum, e) => sum + (e.usd ?? 0), 0),
+      complete: estimates.every((e) => e.usd !== null),
+      steps: estimates,
+    },
+  };
+}
+
+function summaryEstimate(steps: readonly { id: string; model: string; route: string }[], catalog: Catalog, lengths: ReadonlyMap<string, number>) {
   const estimates = steps.map((step) => {
     const model = catalog.models.find((m) => m.id === step.model),
       price = model?.routes.find((r) => r.providerId === step.route)?.pricing[0];
-    const quantity = price?.unit === "second" ? Number(values.duration ?? 5) : 1;
+    const quantity = price?.unit === "second" ? lengths.get(step.id)! : 1;
     return {
       stepId: step.id,
       model: step.model,
@@ -330,12 +369,5 @@ export function estimateWorkflow(
         : { note: "No published price" }),
     };
   });
-  return {
-    steps,
-    estimate: {
-      usd: estimates.reduce((sum, e) => sum + (e.usd ?? 0), 0),
-      complete: estimates.every((e) => e.usd !== null),
-      steps: estimates,
-    },
-  };
+  return { estimates };
 }

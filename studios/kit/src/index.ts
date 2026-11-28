@@ -35,6 +35,6 @@ export {
 } from "./vendors.ts";
 export { reduceJobEvent } from "./jobReducer.ts";
 export { toCatalog, toKeyStatuses, fromWireJob } from "./adapt.ts";
-export { toWorkflowDef, toWireRun, toEstimate, localizeWorkflow } from "./adaptWorkflow.ts";
+export { toWorkflowDef, toWireRun, toEstimate, localizeWorkflow, stepLabel, SHOTS_MAX_TOTAL_SEC } from "./adaptWorkflow.ts";
 export { toHistoryItem, toHistoryPage } from "./adaptHistory.ts";
 export type * from "./wire.ts";

@@ -2,7 +2,7 @@ import { elementsApi } from "./elements.ts";
 import { foldersApi } from "./folders.ts";
 import { fromWireJob, toCatalog, toKeyStatuses, toQuote, toWireSubmit } from "./adapt.ts";
 import { historyParams, toHistoryPage } from "./adaptHistory.ts";
-import { toEstimate, toWireRun, toWorkflowDef } from "./adaptWorkflow.ts";
+import { toEstimate, toWireRun, toWorkflowDef, stepLabels } from "./adaptWorkflow.ts";
 import { followEvents, type StreamStatus, type SubscribeOptions } from "./events.ts";
 import { Http, StudioApiError, type HttpOptions } from "./http.ts";
 import type {
@@ -168,7 +168,7 @@ function workflowsApi(http: Http, cache: JobCache, sessionId: string | undefined
       const now = new Date().toISOString();
       cache.remember({
         jobId: wire.requestId, kind: "workflow", target: id, status: "queued", createdAt: now, updatedAt: now, request: body, outputs: [],
-        steps: wire.steps.map((s) => ({ id: s.id, label: s.label, status: "queued" as const, ...(s.model ? { model: s.model } : {}),
+        steps: wire.steps.map((s) => ({ id: s.id, label: s.label, status: "queued" as const, ...(stepLabels(s) ? { labels: stepLabels(s)! } : {}), ...(s.model ? { model: s.model } : {}),
           ...(s.route ? { provider: s.route } : {}), ...(estimate.steps.find((e) => e.id === s.id) ? { estimate: estimate.steps.find((e) => e.id === s.id)!.estimate } : {}) })),
       });
       return { jobId: wire.requestId, provider: "workflow", estimate: estimate.total };

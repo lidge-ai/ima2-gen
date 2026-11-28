@@ -182,3 +182,25 @@ test("a clip's length limit arrives as numbers, so each screen words it in its o
   assert.equal(video.description, undefined);
   assert.equal(localizeWorkflow(def, "ko").inputs.find((i) => i.name === "video")?.description, undefined);
 });
+
+test("a cut list reaches the server as ordered shots, and its field reads in the screen's language", () => {
+  const wire = workflows.find((w) => w.id === "director-studio")!;
+  const def = toWorkflowDef(wire);
+  assert.deepEqual(def.shots, {
+    name: "shots", label: "Shots", min: 2, max: 6, promptMaxLength: 1000, maxTotalSec: 60,
+    description: "Optional cut list: 2-6 shots in order, each with its own prompt and whole seconds, up to 60 seconds in all. Leave Length empty when you use it.",
+  });
+  // The scene is required unless the cut list is given, as the server says it.
+  assert.deepEqual([def.inputs.find((i) => i.name === "prompt")?.required, def.inputs.find((i) => i.name === "prompt")?.requiredUnless], [false, "shots"]);
+  // The cut list is its own thing: not a file input and not a setting tile.
+  assert.equal(def.inputs.some((i) => i.name === "shots"), false);
+  assert.equal(def.params.some((p) => p.name === "shots"), false);
+  assert.equal(localizeWorkflow(def, "ko").shots?.label, "컷 목록");
+  assert.equal(toWorkflowDef(workflows.find((w) => w.id === "director-cinema")!).shots, undefined);
+  const shots = [{ prompt: " She opens the door ", durationSec: 4 }, { prompt: "Rain on the window", durationSec: 8 }];
+  assert.deepEqual(toWireRun({ inputs: { prompt: "" }, params: { resolution: "720p" }, shots }, def).values, {
+    prompt: "", resolution: "720p", shots: [{ prompt: "She opens the door", durationSec: 4 }, { prompt: "Rain on the window", durationSec: 8 }],
+  });
+  // Without shots nothing about them is sent, so a planned clip goes out as before.
+  assert.deepEqual(toWireRun({ inputs: { prompt: "scene" }, params: { duration: 5 }, shots: [] }, def).values, { prompt: "scene", duration: 5 });
+});

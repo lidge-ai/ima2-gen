@@ -120,6 +120,8 @@ interface WireFieldBase {
   label: string;
   help?: string;
   required: boolean;
+  /** Required unless the named field is given (required is then false). */
+  requiredUnless?: string;
 }
 export type WireField =
   | (WireFieldBase & { type: "text"; maxLength: number; multiline?: boolean })
@@ -127,7 +129,9 @@ export type WireField =
   | (WireFieldBase & { type: "integer"; min: number; max: number; default?: number })
   | (WireFieldBase & { type: "boolean"; default: boolean })
   | (WireFieldBase & { type: "media"; accept: MediaKind; min: number; max: number; minDurationSec?: number; maxDurationSec?: number })
-  | (WireFieldBase & { type: "colors"; min: number; max: number });
+  | (WireFieldBase & { type: "colors"; min: number; max: number })
+  /** An ordered cut list: each shot is { prompt, durationSec } in whole seconds. */
+  | (WireFieldBase & { type: "shots"; min: number; max: number; promptMaxLength: number });
 
 export interface WireSlot {
   name: string;
@@ -177,6 +181,8 @@ export interface WireStepSummary {
   /** Workflow slot this media step fills (servers with step slots). */
   slot?: string;
   final: boolean;
+  /** The label in other languages (ko today). */
+  i18n?: Readonly<Record<string, { label?: string }>>;
 }
 
 export interface WireEstimateResponse {

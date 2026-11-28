@@ -195,6 +195,8 @@ export type JobError = MediaProviderError;
 export interface WorkflowStepState {
   id: string;
   label: string;
+  /** The label in other languages, by locale; see stepLabel. */
+  labels?: Readonly<Record<string, string>>;
   status: JobStatus;
   model?: string;
   provider?: string;
@@ -314,6 +316,8 @@ export interface WorkflowInputSpec {
   kind: MediaKind | "text";
   role?: MediaInputRole;
   required: boolean;
+  /** Required unless this other field (an input, or the cut list) is given; required is then false. */
+  requiredUnless?: string;
   /** Accept attribute for file inputs. */
   accept?: string;
   maxCount?: number;
@@ -331,6 +335,25 @@ export interface WorkflowParamSpec {
   max?: number;
   step?: number;
   default?: string | number | boolean;
+}
+
+/** One shot of a cut list: its own prompt and its length in whole seconds. */
+export interface WorkflowShot {
+  prompt: string;
+  durationSec: number;
+}
+
+/** A workflow's optional cut list: shots in order, sent instead of one length. */
+export interface WorkflowShotsSpec {
+  name: string;
+  label: string;
+  description?: string;
+  /** Fewest and most shots in a list. */
+  min: number;
+  max: number;
+  promptMaxLength: number;
+  /** The most the shots may add up to, in seconds. */
+  maxTotalSec: number;
 }
 
 export interface WorkflowStepSpec {
@@ -392,6 +415,8 @@ export interface WorkflowDef {
   inputs: readonly WorkflowInputSpec[];
   params: readonly WorkflowParamSpec[];
   steps: readonly WorkflowStepSpec[];
+  /** Present when the workflow takes a cut list. */
+  shots?: WorkflowShotsSpec;
   preset?: WorkflowPreset;
   /** Text in other languages as the server sent it; see localizeWorkflow. */
   i18n?: Readonly<Record<string, WorkflowText>>;
@@ -400,14 +425,19 @@ export interface WorkflowDef {
 export interface WorkflowRunBody {
   inputs: Readonly<Record<string, readonly SubmitInput[] | string>>;
   params?: Readonly<Record<string, string | number | boolean>>;
+  /** The cut list, for a workflow whose definition has shots; an empty list sends none. */
+  shots?: readonly WorkflowShot[];
   /** Per-step model and provider overrides, keyed by step id. */
   steps?: Readonly<Record<string, { model?: string; provider?: string }>>;
   clientRequestId?: string;
 }
 
+/** What a planned step is: a paid model call, a text plan, or work the server does itself (frames, joins, mixing) at no charge. */
+export type WorkflowStepKind = "media" | "text" | "local";
+
 export interface WorkflowEstimate {
   /** Per planned step: the model and route the server will actually use (its plan, not the defaults). */
-  steps: readonly { id: string; label?: string; model?: string; route?: string; slot?: string; estimate: CostEstimate }[];
+  steps: readonly { id: string; label?: string; labels?: Readonly<Record<string, string>>; model?: string; route?: string; slot?: string; kind?: WorkflowStepKind; estimate: CostEstimate }[];
   total: CostEstimate;
 }
 

@@ -5,6 +5,7 @@ import { startFakeServer } from "../src/fake/server.ts";
 import { createStudioClient, type StudioClient } from "../src/client.ts";
 import { elementInputs } from "../src/elements.ts";
 import { StudioApiError } from "../src/http.ts";
+import { stepLabel } from "../src/adaptWorkflow.ts";
 import { readSse } from "../src/sse.ts";
 import type { JobEvent } from "../src/types.ts";
 
@@ -587,5 +588,44 @@ test("elements are made from an upload or from results, listed by kind, edited a
 
     await client.elements.remove(harbor.id);
     assert.deepEqual((await client.elements.list()).map((e) => e.name), ["Mina Park"]);
+  });
+});
+
+test("director studio takes a cut list: one priced step per shot, and the server's refusals", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    const shots = [{ prompt: "She opens the door", durationSec: 4 }, { prompt: "Rain on the window", durationSec: 8 }, { prompt: "The street below", durationSec: 5 }];
+    const estimate = await client.workflows.estimate("director-studio", { inputs: { prompt: "" }, shots });
+    assert.deepEqual(estimate.steps.map((s) => [s.id, s.kind]), [
+      ["shot-1", "media"], ["shot-2", "media"], ["shot-3", "media"], ["sound", "media"],
+      // What the server does itself is marked, so a screen can keep it out of the priced rows.
+      ["shot-1-last", "local"], ["shot-2-last", "local"], ["join", "local"],
+    ]);
+    assert.deepEqual(estimate.steps.filter((s) => s.kind === "local").map((s) => s.estimate.usd), [0, 0, 0]);
+    // Step labels come with the server's Korean; a step without one reads in English.
+    assert.deepEqual([stepLabel(estimate.steps[1]!, "ko"), stepLabel(estimate.steps[4]!, "ko"), stepLabel(estimate.steps[3]!, "ko"), stepLabel(estimate.steps[4]!, "en")], ["샷 2", "샷 1의 마지막 프레임 가져오기", "Sound bed", "Take the last frame of shot 1"]);
+    assert.deepEqual(estimate.steps.slice(0, 3).map((s) => s.label), ["Shot 1", "Shot 2", "Shot 3"]);
+    // Each shot is priced by its own length.
+    const [a, b] = estimate.steps;
+    assert.ok(a!.estimate.usd! > 0);
+    assert.ok(Math.abs(b!.estimate.usd! - a!.estimate.usd! * 2) < 1e-9);
+    const refused = async (body: Parameters<typeof client.workflows.estimate>[1], message: string, field?: string) =>
+      assert.rejects(client.workflows.estimate("director-studio", body), (e: unknown) => {
+        assert.ok(e instanceof StudioApiError && e.status === 400 && e.code === "WORKFLOW_INPUT_INVALID");
+        assert.equal(e.message, message);
+        assert.deepEqual(e.details, field ? { field } : undefined);
+        return true;
+      });
+    await refused({ inputs: { prompt: "" } }, "prompt: is required", "prompt");
+    await refused({ inputs: { prompt: "" }, shots: shots.slice(0, 1) }, "shots: needs 2-6 shots", "shots");
+    await refused({ inputs: { prompt: "" }, shots: [shots[0]!, { prompt: "Too long", durationSec: 20 }] }, "shots: shot 2 is 20 s; bytedance/seedance-2.5 makes 1-15 s per shot", "shots");
+    await refused({ inputs: { prompt: "" }, shots: Array.from({ length: 6 }, () => ({ prompt: "x", durationSec: 12 })) }, "shots: add up to 72 s; the most is 60 s", "shots");
+    await refused({ inputs: { prompt: "" }, params: { duration: 5 }, shots }, "duration: leave it out when shots are given; the shots set the length");
+    // A planned clip (no cut list) still needs its scene and prices one render step.
+    assert.deepEqual((await client.workflows.estimate("director-studio", { inputs: { prompt: "A quiet room" }, params: { duration: 5 } })).steps.map((s) => s.id), ["render", "sound"]);
+    const run = await client.workflows.run("director-studio", { inputs: { prompt: "Shared look" }, shots });
+    const done = await client.watchJob(run.jobId);
+    assert.equal(done.status, "succeeded");
+    // The job's steps carry the same Korean names as the estimate.
+    assert.equal(done.steps?.find((step) => step.id === "join")?.labels?.ko, "샷 잇기");
   });
 });
