@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { HistoryItem, WorkflowDef } from "@ima2/studio-kit";
 import { messages, tr, useT } from "../../i18n.ts";
 import { useStudio } from "../../studio/context.tsx";
@@ -9,6 +10,7 @@ import { WorkflowInput, WorkflowParams, WorkflowSteps, Generate } from "../workf
 import { useWorkflow, type WorkflowForm } from "../workflow/useWorkflow.ts";
 import { WorkflowsError } from "../workflow/WorkflowsError.tsx";
 import { useWorkflows } from "../../studio/workflows.ts";
+import { CameraMoveMenu } from "../../ui/CameraMoveMenu.tsx";
 import "../../styles/director.css";
 
 const M = messages(
@@ -110,6 +112,9 @@ function DirectorSidebar({
 function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: readonly WorkflowDef[] }) {
   const t = useT(M);
   const form = useWorkflow(def);
+  const composer = useRef<HTMLDivElement>(null);
+  // The scene prompt of the workflow that makes video takes camera moves; the stills workflows do not.
+  const scene = def.id === "director-studio" ? def.inputs.find((input) => input.kind === "text" && input.name === "prompt") : undefined;
   return (
     <div className="director-layout">
       <DirectorSidebar def={def} workflows={workflows} form={form} />
@@ -127,10 +132,19 @@ function DirectorWorkspace({ def, workflows }: { def: WorkflowDef; workflows: re
           }}
         >
           <WorkflowParams def={def} form={form} />
-          <div className="director-composer">
+          <div className="director-composer" ref={composer}>
             {def.inputs.map((input) => (
               <WorkflowInput key={input.name} input={input} form={form} />
             ))}
+            {scene ? (
+              <div className="director-moves">
+                <CameraMoveMenu
+                  value={form.texts[scene.name] ?? ""}
+                  onChange={(next) => form.setTexts((old) => ({ ...old, [scene.name]: next }))}
+                  field={() => composer.current?.querySelector<HTMLTextAreaElement>('textarea[aria-label="' + scene.label + '"]') ?? null}
+                />
+              </div>
+            ) : null}
             <Generate form={form} />
           </div>
           <WorkflowSteps def={def} form={form} />

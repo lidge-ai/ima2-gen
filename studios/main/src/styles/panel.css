@@ -106,6 +106,80 @@
 .prompt-editor-chips {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Camera moves: the menu on a prompt, and the cards on the Presets page. */
+.move-popover {
+  width: min(320px, 92vw);
+}
+.move-lead {
+  margin: 6px 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.move-list {
+  display: grid;
+  gap: 6px;
+  max-height: min(360px, 50dvh);
+  overflow-y: auto;
+}
+.move-group-title {
+  margin: 6px 8px 2px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.move-group {
+  display: grid;
+  gap: 2px;
+}
+.moves {
+  display: grid;
+  gap: 16px;
+}
+.moves-lead {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--text-muted);
+}
+.moves-search {
+  width: min(320px, 100%);
+}
+.moves-group {
+  display: grid;
+  gap: 10px;
+}
+.moves-group h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.moves-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.move-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  justify-items: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+}
+.move-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.move-phrase {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.director-moves {
+  display: flex;
 }
 
 .picker {
