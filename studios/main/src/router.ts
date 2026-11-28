@@ -7,7 +7,7 @@ export type Route =
   | { page: "remix"; workflow?: string }
   | { page: "director"; workflow?: string }
   | { page: "presets"; tab?: string }
-  | { page: "assets"; kind?: string; q?: string; model?: string; period?: string; order?: string }
+  | { page: "assets"; kind?: string; q?: string; model?: string; period?: string; order?: string; folder?: string }
   | { page: "keys"; focus?: string }
   | { page: "models"; vendor?: string };
 
@@ -29,7 +29,7 @@ export function parseHash(hash: string): Route {
     case "presets":
       return clean({ page: "presets", tab: sub });
     case "assets":
-      return clean({ page: "assets", kind: sub, q: get("q"), model: get("model"), period: get("period"), order: get("order") });
+      return clean({ page: "assets", kind: sub, q: get("q"), model: get("model"), period: get("period"), order: get("order"), folder: get("folder") });
     case "models":
       return clean({ page: "models", vendor: sub || get("vendor") });
     case "keys":

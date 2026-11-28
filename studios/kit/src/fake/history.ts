@@ -4,7 +4,8 @@ import type { WireHistoryRow } from "../wire.ts";
 export class History {
   readonly items: WireHistoryRow[] = [];
   readonly favorites = new Map<string, Set<string>>();
-  list(query: URLSearchParams, browser: string) {
+  /** folderOf: the folder a file is filed in, as the server joins it from its asset records. */
+  list(query: URLSearchParams, browser: string, folderOf: (filename: string) => string | null = () => null) {
     const favorites = this.favorites.get(browser);
     const kinds = query.get("mediaType")?.split(",").filter(Boolean) ?? null;
     // As on the server, audio rows are left out unless asked for.
@@ -20,6 +21,7 @@ export class History {
       (!Number.isFinite(until) || item.createdAt <= until) &&
       (!withModel || !query.get("model") || item.model === query.get("model")) &&
       (!query.get("workflow") || item.workflow === query.get("workflow")) &&
+      (!query.get("folderId") || folderOf(item.filename) === query.get("folderId")) &&
       (!q || [item.prompt, item.model, item.filename].some((text) => text?.toLowerCase().includes(q)));
     const asc = query.get("order") === "asc";
     const matched = this.items.filter((item) => matches(item, true));
@@ -30,7 +32,7 @@ export class History {
         ? item.createdAt > at || (item.createdAt === at && item.filename > name)
         : item.createdAt < at || (item.createdAt === at && item.filename < name)));
     const limit = Math.max(1, Math.min(100, Number(query.get("limit")) || 40));
-    const page = eligible.slice(0, limit).map((item) => ({ ...item, isFavorite: favorites?.has(item.filename) ?? false, folderId: null }));
+    const page = eligible.slice(0, limit).map((item) => ({ ...item, isFavorite: favorites?.has(item.filename) ?? false, folderId: folderOf(item.filename) }));
     const last = page.at(-1);
     const more = eligible.length > limit && last;
     return {

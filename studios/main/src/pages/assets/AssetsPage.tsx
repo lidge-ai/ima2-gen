@@ -1,5 +1,6 @@
 import { useT } from "../../i18n.ts";
 import { M } from "./messages.ts";
+import { FM } from "./folderMessages.ts";
 import { useMemo, useState } from "react";
 import type { HistoryItem, MediaKind } from "@ima2/studio-kit";
 import { href, navigate, replaceRoute } from "../../router.ts";
@@ -18,8 +19,19 @@ const DAY = 24 * 60 * 60 * 1000;
 const SPAN: Record<Period, number> = { any: 0, day: DAY, week: 7 * DAY, month: 30 * DAY };
 
 /** Nothing to show: with a search or filter on, say so and offer to clear it; otherwise where to make something. */
-function AssetEmpty({ tab, narrowed, clear, elsewhere }: { tab: Tab; narrowed: boolean; clear: () => void; elsewhere: string | null }) {
+function AssetEmpty({ tab, narrowed, clear, elsewhere, onlyFolder }: { tab: Tab; narrowed: boolean; clear: () => void; elsewhere: string | null; onlyFolder: boolean }) {
   const t = useT(M);
+  const f = useT(FM);
+  // A folder with nothing in it, and no other filter on: say how results get here.
+  if (onlyFolder) {
+    return (
+      <div className="empty">
+        <h2>{f("emptyFolder")}</h2>
+        <p>{f("emptyFolderBody")}</p>
+        <button className="btn" type="button" onClick={clear}>{f("seeAll")}</button>
+      </div>
+    );
+  }
   const text = narrowed ? t("noMatch") : t(({ all: "noAll", images: "noImages", videos: "noVideos", audio: "noAudio", saved: "noSaved", elements: "noAll" } as const)[tab]);
   return (
     <div className="empty">
@@ -52,6 +64,8 @@ interface AssetResultsProps {
   clear: () => void;
   /** The same search on the All tab, when this tab is narrower and a search is on. */
   elsewhere: string | null;
+  /** The only thing narrowing the list is a folder. */
+  onlyFolder: boolean;
 }
 
 function LoadMore({ loading, loadMore }: { loading: boolean; loadMore: () => Promise<void> }) {
@@ -63,7 +77,7 @@ function LoadMore({ loading, loadMore }: { loading: boolean; loadMore: () => Pro
   );
 }
 
-function AssetResults({ items, tab, narrowed, matched, density, error, loading, cursor, retry, loadMore, select, clear, elsewhere }: AssetResultsProps) {
+function AssetResults({ items, tab, narrowed, matched, density, error, loading, cursor, retry, loadMore, select, clear, elsewhere, onlyFolder }: AssetResultsProps) {
   const t = useT(M);
   return (
     <>
@@ -76,7 +90,7 @@ function AssetResults({ items, tab, narrowed, matched, density, error, loading, 
         </div>
       ) : null}
       {loading && !items.length ? <p role="status">{t("loading")}</p> : null}
-      {!loading && !error && !items.length ? <AssetEmpty tab={tab} narrowed={narrowed} clear={clear} elsewhere={elsewhere} /> : null}
+      {!loading && !error && !items.length ? <AssetEmpty tab={tab} narrowed={narrowed} clear={clear} elsewhere={elsewhere} onlyFolder={onlyFolder} /> : null}
       {/* The count matters once something narrows the list; the whole library's size is not a result. */}
       {narrowed && matched !== null && items.length ? (
         <p className="assets-count" role="status">
@@ -94,7 +108,7 @@ function AssetResults({ items, tab, narrowed, matched, density, error, loading, 
   );
 }
 
-export function AssetsPage({ kind, q, model, period, order }: { kind?: string; q?: string; model?: string; period?: string; order?: string }) {
+export function AssetsPage({ kind, q, model, period, order, folder }: { kind?: string; q?: string; model?: string; period?: string; order?: string; folder?: string }) {
   const t = useT(M);
   const tab: Tab = tabs.includes(kind as Tab) ? (kind as Tab) : "all";
   const studio = useStudioApi();
@@ -103,7 +117,8 @@ export function AssetsPage({ kind, q, model, period, order }: { kind?: string; q
   const narrow: Narrow = useMemo(() => ({
     q: q ?? "", model: model ?? "", order: order === "oldest" ? "oldest" : "newest",
     period: PERIODS.includes(period as Period) ? (period as Period) : "any",
-  }), [q, model, order, period]);
+    folder: folder ?? "",
+  }), [q, model, order, period, folder]);
   const setAll = (next: Narrow, typing = false) => (typing ? replaceRoute : navigate)("assets/" + tab, narrowQuery(next));
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [selected, setSelected] = useState<string | null>(null);
@@ -116,8 +131,10 @@ export function AssetsPage({ kind, q, model, period, order }: { kind?: string; q
     ...(narrow.q ? { q: narrow.q } : {}),
     ...(narrow.order === "oldest" ? { order: "oldest" as const } : {}),
     ...(sinceMs !== undefined ? { sinceMs } : {}),
+    ...(narrow.folder ? { folderId: narrow.folder } : {}),
   }, history);
-  const narrowed = !!(narrow.q || narrow.model || narrow.period !== "any");
+  const narrowed = !!(narrow.q || narrow.model || narrow.period !== "any" || narrow.folder);
+  const onlyFolder = !!narrow.folder && !(narrow.q || narrow.model || narrow.period !== "any") && tab === "all";
   const open = pages.items.find((item) => item.historyId === selected) ?? null;
   return (
     <main className="page-pad assets-page">
@@ -140,6 +157,7 @@ export function AssetsPage({ kind, q, model, period, order }: { kind?: string; q
           {...pages} tab={tab} narrowed={narrowed} density={density} select={setSelected}
           clear={() => setAll({ ...NO_NARROW, order: narrow.order })}
           elsewhere={narrow.q && tab !== "all" ? href("assets/all", narrowQuery({ ...narrow, model: "" })) : null}
+          onlyFolder={onlyFolder}
         />
       )}
       <Lightbox item={open} onClose={() => setSelected(null)} />

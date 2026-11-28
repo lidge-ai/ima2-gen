@@ -202,6 +202,7 @@ export interface WireHistoryRow {
   height?: number;
   duration?: number;
   workflow?: string;
+  folderId?: string | null;
 }
 
 export interface WireHistoryPage {

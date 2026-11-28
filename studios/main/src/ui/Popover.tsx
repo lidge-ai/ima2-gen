@@ -45,7 +45,10 @@ function place(anchor: DOMRect, panel: DOMRect, placement: Placement): CSSProper
   return { left: clampX(anchor.left), top };
 }
 
-/** Floating panel attached to its trigger. Rendered in body so scroll containers never clip it. */
+/**
+ * Floating panel attached to its trigger. Rendered in body so scroll containers never clip it; when the trigger is
+ * inside an open modal dialog, rendered in that dialog, because nothing outside a modal dialog can be seen or clicked.
+ */
 export function Popover({ open, onClose, label, children, anchor, placement = "bottom", className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
@@ -81,6 +84,8 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
     const trigger = anchor.current;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // Inside a modal dialog the same key would also close the dialog; this press is for the panel.
+        event.preventDefault();
         event.stopPropagation();
         onClose();
         trigger?.focus();
@@ -92,9 +97,14 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
+    // Escape closes this panel only, not the dialog it sits in.
+    const dialog = trigger?.closest("dialog[open]");
+    const onCancel = (event: Event) => event.preventDefault();
+    dialog?.addEventListener("cancel", onCancel);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown);
+      dialog?.removeEventListener("cancel", onCancel);
       if (trigger && document.activeElement === document.body) trigger.focus();
     };
   }, [open, onClose, anchor]);
@@ -103,6 +113,6 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
     <div ref={ref} className={"popover " + (className ?? "")} role="dialog" aria-label={label} style={style}>
       {children}
     </div>,
-    document.body,
+    anchor.current?.closest("dialog[open]") ?? document.body,
   );
 }

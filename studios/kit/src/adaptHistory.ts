@@ -36,6 +36,7 @@ export function toHistoryItem(row: WireHistoryRow): HistoryItem {
   if (row.width) item.width = row.width;
   if (row.height) item.height = row.height;
   if (row.duration) item.durationSec = row.duration;
+  if (row.folderId !== undefined) item.folderId = row.folderId;
   return item;
 }
 
@@ -58,6 +59,7 @@ export function historyParams(query: HistoryQuery): Record<string, string | numb
   if (query.order === "oldest") params.order = "asc";
   if (query.sinceMs !== undefined) params.since = query.sinceMs;
   if (query.untilMs !== undefined) params.until = query.untilMs;
+  if (query.folderId) params.folderId = query.folderId;
   if (query.models) params.facets = "model";
   if (query.cursor) {
     const asc = query.cursor.startsWith("a:");
