@@ -3,7 +3,12 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import verifyBundledDependencies, { missingBundledDependencies, packagedAppDir } from '../desktop/build/verify-bundled-deps.mjs';
+import verifyBundledDependencies, {
+  missingBundledDependencies,
+  missingBundledVendorAssets,
+  packagedAppDir,
+  verifyBundledVendorAssets,
+} from '../desktop/build/verify-bundled-deps.mjs';
 
 function packagedApp(t, installed: string[]) {
   const root = fs.mkdtempSync(join(fs.realpathSync(tmpdir()), 'ima2-bundled-deps-'));
@@ -34,4 +39,20 @@ test('passes when every declared dependency, including scoped ones, is bundled',
 test('resolves Resources/app for Windows and Linux layouts', () => {
   const appDir = packagedAppDir({ electronPlatformName: 'win32', appOutDir: '/out/win-unpacked' });
   assert.equal(appDir, join('/out/win-unpacked', 'resources', 'app'));
+});
+
+test('fails the package when studios/kit/assets/vendors is omitted or missing a manifest logo', (t) => {
+  const { context, appDir } = packagedApp(t, ['dotenv', '@modelcontextprotocol/sdk']);
+  assert.throws(() => verifyBundledVendorAssets(context), /missing vendor assets:.*manifest\.json/);
+
+  const vendorDir = join(appDir, 'studios', 'kit', 'assets', 'vendors');
+  fs.mkdirSync(vendorDir, { recursive: true });
+  fs.writeFileSync(join(vendorDir, 'manifest.json'), JSON.stringify({
+    vendors: [{ id: 'openai', files: [{ file: 'openai.svg', variant: 'primary' }] }],
+  }));
+  assert.throws(() => verifyBundledVendorAssets(context), /missing vendor assets:.*openai\.svg/);
+
+  fs.writeFileSync(join(vendorDir, 'openai.svg'), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+  assert.deepEqual(missingBundledVendorAssets(appDir), []);
+  assert.doesNotThrow(() => verifyBundledVendorAssets(context));
 });

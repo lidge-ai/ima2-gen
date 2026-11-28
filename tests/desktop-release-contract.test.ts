@@ -125,4 +125,20 @@ describe("multiplatform desktop release contract", () => {
     assert.doesNotMatch(upload, /desktop\/dist\/\*/);
     assert.doesNotMatch(upload, /report\.json|signature-proof/);
   });
+
+  it("bundles vendor logo assets in electron-builder and rebuilds desktop when they change", () => {
+    const config = read("desktop/electron-builder.yml");
+    assert.ok(
+      Array.isArray(config.files) && config.files.includes("studios/kit/assets/vendors/**"),
+      "desktop/electron-builder.yml files[] must include studios/kit/assets/vendors/**",
+    );
+
+    const prepare = read(".github/workflows/desktop.yml").jobs.prepare;
+    const pathsStep = stepByName(prepare.steps, "Detect desktop-relevant changes");
+    const filters = parse(pathsStep.with.filters);
+    assert.ok(
+      Array.isArray(filters.desktop) && filters.desktop.includes("studios/kit/assets/vendors/**"),
+      ".github/workflows/desktop.yml paths-filter must include studios/kit/assets/vendors/**",
+    );
+  });
 });
