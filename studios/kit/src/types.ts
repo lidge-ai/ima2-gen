@@ -266,6 +266,15 @@ export interface HistoryQuery {
   model?: string;
   workflow?: string;
   favorite?: boolean;
+  /** Words to find in the prompt, model or file name. */
+  q?: string;
+  /** Newest first unless "oldest". A cursor belongs to the order it was returned for. */
+  order?: "newest" | "oldest";
+  /** Period: created after sinceMs, and at or before untilMs. */
+  sinceMs?: number;
+  untilMs?: number;
+  /** Also return how many results each model has under the other filters. */
+  models?: boolean;
   cursor?: string;
   limit?: number;
 }
@@ -273,6 +282,10 @@ export interface HistoryQuery {
 export interface HistoryPage {
   items: readonly HistoryItem[];
   nextCursor: string | null;
+  /** How many results match the filters in all, across pages. Absent from a server that does not count. */
+  matched?: number;
+  /** With models: true. Most results first. */
+  models?: readonly { id: string; count: number }[];
 }
 
 export interface WorkflowInputSpec {

@@ -1,40 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HistoryItem, HistoryQuery, StudioClient } from "@ima2/studio-kit";
 
-export function useAssetModels(client: StudioClient, history: readonly HistoryItem[], revision: number) {
-  const [models, setModels] = useState<string[]>([]);
-  useEffect(() => {
-    let active = true;
-    async function collect() {
-      const found = new Set<string>();
-      let next: string | null = null;
-      do {
-        const page = await client.history.list({ limit: 100, ...(next ? { cursor: next } : {}) });
-        page.items.forEach((item) => found.add(item.model));
-        next = page.nextCursor;
-      } while (next && active);
-      if (active) setModels([...found].sort());
-    }
-    void collect().catch(() => {
-      if (active) setModels([]);
-    });
-    return () => {
-      active = false;
-    };
-  }, [client, history, revision]);
-  return models;
-}
+type Filters = Pick<HistoryQuery, "kind" | "model" | "favorite" | "q" | "order" | "sinceMs">;
 
-export function useAssetPages(client: StudioClient, query: HistoryQuery, history: readonly HistoryItem[]) {
+/**
+ * Pages of results for one set of filters. The server filters, orders and counts, so a page holds 40 results
+ * of what was asked for, and the first page brings the models to offer in the model filter.
+ */
+export function useAssetPages(client: StudioClient, query: Filters, history: readonly HistoryItem[]) {
   const [items, setItems] = useState<readonly HistoryItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [matched, setMatched] = useState<number | null>(null);
+  const [models, setModels] = useState<readonly string[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
-  const { kind, model, favorite } = query;
+  const { kind, model, favorite, q, order, sinceMs } = query;
   // Results belong to one filter: a new filter starts empty, and a page that arrives for an
   // older filter (a slow first page or load-more) is dropped instead of mixed in.
-  const key = JSON.stringify([kind, model, favorite]);
+  const key = JSON.stringify([kind, model, favorite, q, order, sinceMs]);
   const current = useRef(key);
   useEffect(() => {
     let active = true;
@@ -42,21 +26,25 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
       current.current = key;
       setItems([]);
       setCursor(null);
+      setMatched(null);
     }
     setLoading(true);
     client.history
-      .list({ kind, model, favorite, limit: 40 })
+      .list({ kind, model, favorite, q, order, sinceMs, models: true, limit: 40 })
       .then(
         (page) => {
           if (!active) return;
           setItems(page.items);
           setCursor(page.nextCursor);
+          setMatched(page.matched ?? null);
+          setModels((page.models ?? []).map((entry) => entry.id).sort());
           setError("");
         },
         (err: unknown) => {
           if (!active) return;
           setItems([]);
           setCursor(null);
+          setMatched(null);
           setError(err instanceof Error ? err.message : String(err));
         },
       )
@@ -66,13 +54,13 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
     return () => {
       active = false;
     };
-  }, [client, key, kind, model, favorite, history, revision]);
+  }, [client, key, kind, model, favorite, q, order, sinceMs, history, revision]);
   const loadMore = useCallback(async () => {
     if (!cursor) return;
     const requested = key;
     setLoading(true);
     try {
-      const page = await client.history.list({ kind, model, favorite, cursor, limit: 40 });
+      const page = await client.history.list({ kind, model, favorite, q, order, sinceMs, cursor, limit: 40 });
       if (current.current !== requested) return;
       setItems((shown) => [...shown, ...page.items]);
       setCursor(page.nextCursor);
@@ -82,6 +70,6 @@ export function useAssetPages(client: StudioClient, query: HistoryQuery, history
     } finally {
       setLoading(false);
     }
-  }, [client, cursor, key, kind, model, favorite]);
-  return { items, cursor, error, loading, revision, loadMore, retry: () => setRevision((v) => v + 1) };
+  }, [client, cursor, key, kind, model, favorite, q, order, sinceMs]);
+  return { items, cursor, matched, models, error, loading, loadMore, retry: () => setRevision((v) => v + 1) };
 }

@@ -40,21 +40,36 @@ export function toHistoryItem(row: WireHistoryRow): HistoryItem {
 }
 
 export function encodeCursor(cursor: WireHistoryPage["nextCursor"]): string | null {
-  return cursor ? cursor.before + "|" + cursor.beforeFilename : null;
+  if (!cursor) return null;
+  return "after" in cursor ? "a:" + cursor.after + "|" + cursor.afterFilename : cursor.before + "|" + cursor.beforeFilename;
 }
 
-/** Query string for GET /api/history. Kind, model and workflow filters are applied client-side. */
+/**
+ * Query string for GET /api/history. The server filters, orders and counts. The studio shows audio like any
+ * other result, so audio rows are always asked for (the server leaves them out by default).
+ */
 export function historyParams(query: HistoryQuery): Record<string, string | number | undefined> {
-  const params: Record<string, string | number | undefined> = { limit: query.limit ?? 40 };
+  const params: Record<string, string | number | undefined> = { limit: query.limit ?? 40, includeAudio: "1" };
   if (query.favorite) params.favoritesOnly = "1";
+  if (query.kind) params.mediaType = query.kind;
+  if (query.model) params.model = query.model;
+  if (query.workflow) params.workflow = query.workflow;
+  if (query.q?.trim()) params.q = query.q.trim();
+  if (query.order === "oldest") params.order = "asc";
+  if (query.sinceMs !== undefined) params.since = query.sinceMs;
+  if (query.untilMs !== undefined) params.until = query.untilMs;
+  if (query.models) params.facets = "model";
   if (query.cursor) {
-    const cut = query.cursor.indexOf("|");
-    params.before = query.cursor.slice(0, cut);
-    params.beforeFilename = query.cursor.slice(cut + 1);
+    const asc = query.cursor.startsWith("a:");
+    const cursor = asc ? query.cursor.slice(2) : query.cursor;
+    const cut = cursor.indexOf("|");
+    params[asc ? "after" : "before"] = cursor.slice(0, cut);
+    params[asc ? "afterFilename" : "beforeFilename"] = cursor.slice(cut + 1);
   }
   return params;
 }
 
+/** The kind, model and workflow checks repeat what the server was asked, so a server from before those filters still gives a correct page. */
 export function toHistoryPage(wire: WireHistoryPage, query: HistoryQuery): HistoryPage {
   const items = wire.items.map(toHistoryItem).filter(
     (item) =>
@@ -62,5 +77,10 @@ export function toHistoryPage(wire: WireHistoryPage, query: HistoryQuery): Histo
       (!query.model || item.model === query.model) &&
       (!query.workflow || item.workflow === query.workflow),
   );
-  return { items, nextCursor: encodeCursor(wire.nextCursor) };
+  const models = wire.facets?.model?.map((entry) => ({ id: entry.value, count: entry.count }));
+  return {
+    items, nextCursor: encodeCursor(wire.nextCursor),
+    ...(wire.matched !== undefined ? { matched: wire.matched } : {}),
+    ...(models ? { models } : {}),
+  };
 }

@@ -22,6 +22,8 @@ interface Props<T> {
   icon?: Parameters<typeof Icon>[0]["name"];
   /** Chip text when the value alone is unclear, e.g. "Route: fal"; keep it the same words as the accessible name. */
   chipText?: (label: string) => string;
+  /** Where the menu opens. A chip in a dock opens upward (the default for chips); one in a toolbar opens downward. */
+  menuPlacement?: "top" | "bottom";
 }
 
 interface MenuProps<T> {
@@ -72,7 +74,7 @@ function valueText<T>(
 
 /** A labelled setting that opens a single-choice menu. */
 export function SettingTile<T extends string | number>(props: Props<T>) {
-  const { caption, accessibleLabel, value, options, onChange, variant = "tile", icon, chipText } = props;
+  const { caption, accessibleLabel, value, options, onChange, variant = "tile", icon, chipText, menuPlacement } = props;
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -102,7 +104,7 @@ export function SettingTile<T extends string | number>(props: Props<T>) {
         label={caption}
         className="menu-popover"
         anchor={trigger}
-        placement={variant === "chip" ? "top" : "bottom"}
+        placement={menuPlacement ?? (variant === "chip" ? "top" : "bottom")}
       >
         <OptionMenu
           titleId={titleId}

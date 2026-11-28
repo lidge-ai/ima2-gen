@@ -22,23 +22,36 @@
   color: var(--text);
   border-bottom: 2px solid var(--text);
 }
-.assets-model {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-muted);
-}
-.assets-model select {
-  max-width: 210px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-s);
-  color: var(--text);
-  background: var(--surface-2);
-}
 .assets-density {
   display: flex;
   gap: 4px;
+}
+/* Search, model, period, order and density: one row that wraps under the tabs when there is no room. */
+.assets-narrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.assets-search {
+  flex: 1 1 200px;
+  max-width: 320px;
+  min-width: 0;
+}
+.assets-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.assets-empty-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .assets-density [aria-pressed="true"] {
   background: var(--surface-3);
@@ -50,7 +63,7 @@
     padding-bottom: 6px;
   }
   .assets-tabs,
-  .assets-model,
+  .assets-narrow,
   .assets-density {
     flex: 0 1 auto;
     min-width: 0;
