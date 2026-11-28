@@ -28,7 +28,26 @@ const noKeys: Act = async (page) => {
   });
 };
 
+const DIALOG = /^(Paint the area to change|바꿀 부분 칠하기)$/;
+/** Opens the brush on the first image and paints a patch over its middle. */
+const paint: Act = async (page) => {
+  await page.getByRole("group", { name: /^(Images|이미지)$/ }).getByRole("button", { name: DIALOG }).click();
+  const canvas = page.getByRole("dialog", { name: DIALOG }).locator("canvas");
+  await canvas.waitFor();
+  const box = (await canvas.boundingBox())!;
+  for (const y of [0.4, 0.5, 0.6]) {
+    await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.65, box.y + box.height * y, { steps: 5 });
+    await page.mouse.up();
+  }
+  await page.waitForTimeout(200);
+};
+
 const CELLS: Cell[] = [
+  { id: "brush__dialog-empty", hash: "/image?mode=edit", act: async (page) => { await add("door.png")(page); await page.getByRole("group", { name: /^(Images|이미지)$/ }).getByRole("button", { name: DIALOG }).click(); await page.waitForTimeout(400); } },
+  { id: "brush__dialog-painted", hash: "/image?mode=edit", act: async (page) => { await add("door.png")(page); await paint(page); } },
+  { id: "brush__dock-painted", hash: "/image?mode=edit", act: async (page) => { await add("door.png", "paint-sample.png")(page); await prompt("Paint the door the red of the sample")(page); await paint(page); await named(/^(Use this area|이 부분 사용)$/)(page); await page.waitForTimeout(600); } },
   { id: "picture__create-tabs", hash: "/image" },
   { id: "picture__edit-empty", hash: "/image?mode=edit" },
   { id: "picture__edit-three", hash: "/image?mode=edit", act: async (page) => { await add("door.png", "paint-sample.png", "window-frame.png")(page); await prompt("Paint the door the red of the sample, keep the frame")(page); } },

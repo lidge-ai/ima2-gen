@@ -23,6 +23,8 @@ export interface ToolState {
   provider: string;
   prompt: string;
   images: readonly SlotValue[];
+  /** The painted area of the first image, uploaded as a repaint-white mask. It belongs to that image. */
+  mask: SlotValue | null;
   resolution: string | undefined;
   aspectRatio: string | undefined;
   quality: string | undefined;
@@ -30,7 +32,7 @@ export interface ToolState {
 }
 
 export function emptyState(tool: ImageTask): ToolState {
-  return { tool, model: undefined, provider: "", prompt: "", images: [], resolution: undefined, aspectRatio: undefined, quality: undefined, count: 1 };
+  return { tool, model: undefined, provider: "", prompt: "", images: [], mask: null, resolution: undefined, aspectRatio: undefined, quality: undefined, count: 1 };
 }
 
 export function modelsFor(catalog: Catalog, tool: ImageTask): CatalogModel[] {
@@ -75,6 +77,14 @@ export function withForm(state: ToolState, form: ImageForm | null): ToolState {
 
 export const takes = (form: ImageForm, name: MediaTaskFieldName) => form.fields.accepts.includes(name);
 
+/** The route converts a painted mask (white = repaint) to the provider's own rule; only then is the brush offered. */
+export const brushable = (form: ImageForm | null): boolean => !!form?.mask?.conventions?.includes("repaint-white");
+
+/** The mask that would be sent: a painted area, on a route that takes one, with its image still first in the tray. */
+export function sentMask(form: ImageForm | null, state: ToolState): SlotValue | null {
+  return brushable(form) && state.images.length > 0 ? state.mask : null;
+}
+
 /** The first thing still missing, said as the next step; null when the form can be sent. */
 export function problem(model: CatalogModel | undefined, form: ImageForm | null, state: ToolState): string | null {
   if (!model || !form) return tr(M, "model");
@@ -89,12 +99,18 @@ export function toBody(model: CatalogModel, form: ImageForm, state: ToolState, p
   const prompt = state.prompt.trim();
   // While there are too few or too many images the request cannot run; the estimate still reads the rest of it.
   const roles = imageRoles(form, state.images.length) ?? [];
+  const mask = sentMask(form, state);
   return {
     model: model.id, provider, task: state.tool,
-    inputs: roles.map((role, i) => ({ role, inputId: state.images[i]!.upload.inputId })),
+    inputs: [
+      ...roles.map((role, i) => ({ role, inputId: state.images[i]!.upload.inputId })),
+      ...(mask ? [{ role: "mask" as const, inputId: mask.upload.inputId }] : []),
+    ],
+    ...(mask ? { maskConvention: "repaint-white" as const } : {}),
     ...(takes(form, "prompt") && prompt ? { prompt } : {}),
     ...(takes(form, "resolution") && state.resolution ? { resolution: state.resolution } : {}),
-    ...(takes(form, "aspectRatio") && state.aspectRatio ? { aspectRatio: state.aspectRatio } : {}),
+    // A masked edit keeps the image's shape, so no ratio goes with it.
+    ...(takes(form, "aspectRatio") && state.aspectRatio && !mask ? { aspectRatio: state.aspectRatio } : {}),
     ...(takes(form, "quality") && state.quality ? { quality: state.quality } : {}),
     ...(takes(form, "count") ? { count: state.count } : {}),
     clientRequestId: crypto.randomUUID(),
