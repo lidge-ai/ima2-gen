@@ -124,7 +124,7 @@ routes/
 | `bin/lib/mcpServer.ts` | 132 | MCP server registration and dispatch |
 | `bin/lib/mcpMediaHandlers.ts` | 87 | Media MCP tool handlers and response projection |
 | `bin/lib/mcpWorkflowHandlers.ts` | 25 | Workflow MCP tool handlers |
-| `lib/providers/media/toolSchema.ts` | 173 | Media and workflow tool descriptors and schemas |
+| `lib/providers/media/toolSchema.ts` | 177 | Media and workflow tool descriptors and schemas |
 | `lib/providers/media/estimate.ts` | 84 | Published media price estimates |
 | `routes/mediaTools.ts` | 51 | Media descriptors, estimates and workflow schema routes |
 | `bin/lib/media/catalogCmd.ts` | 16 | Catalog display |
@@ -134,7 +134,7 @@ routes/
 | `bin/lib/media/progress.ts` | 18 | Media progress output |
 | `bin/lib/media/runCmd.ts` | 31 | Media job submission |
 | `bin/lib/media/studioCmd.ts` | 23 | Studio CLI actions |
-| `bin/lib/media/workflowCmd.ts` | 35 | Workflow CLI input parsing |
+| `bin/lib/media/workflowCmd.ts` | 46 | Workflow CLI input parsing |
 | `bin/commands/gen.ts` | 445 | CLI image-generation client with references, provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, background preset (`--bg`), `--character` (MCP lanes), and output-dir options |
 | `bin/commands/edit.ts` | 181 | CLI image-edit client with provider override, model, mode, moderation, web-search, reasoning-effort, session, timeout recovery, and output options |
 | `bin/commands/vectorize.ts` | 110 | Local CLI raster-to-SVG tracing; no server or provider roundtrip |

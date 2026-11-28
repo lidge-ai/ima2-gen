@@ -45,7 +45,15 @@ export interface MediaField extends FieldBase {
   maxBytes?: number;
 }
 export interface ColorsField extends FieldBase { type: "colors"; min: number; max: number }
-export type WorkflowField = TextField | EnumField | IntegerField | BooleanField | MediaField | ColorsField;
+/** An ordered cut list: each shot is { prompt, durationSec } (whole seconds). */
+export interface ShotsField extends FieldBase { type: "shots"; min: number; max: number; promptMaxLength: number }
+export type WorkflowField = TextField | EnumField | IntegerField | BooleanField | MediaField | ColorsField | ShotsField;
+
+/** One shot of an explicit cut list. */
+export interface WorkflowShot {
+  prompt: string;
+  durationSec: number;
+}
 
 /** A media value as the server sees it: a local file the route stored, or an HTTPS URL. */
 export interface WorkflowMediaRef {
@@ -58,7 +66,7 @@ export interface WorkflowMediaRef {
   width?: number;
   height?: number;
 }
-export type WorkflowValue = string | number | boolean | readonly string[] | readonly WorkflowMediaRef[];
+export type WorkflowValue = string | number | boolean | readonly string[] | readonly WorkflowMediaRef[] | readonly WorkflowShot[];
 export type WorkflowValues = Readonly<Record<string, WorkflowValue | undefined>>;
 
 /* ---------- Model slots: one per media step family, user-overridable ---------- */
@@ -260,8 +268,11 @@ export interface WorkflowDefinition {
   slots: readonly ModelSlot[];
   /** An enum field whose value picks ModelSlot.tierModels defaults. */
   tierField?: string;
-  /** Cross-field checks after field validation. Return an error message or null. */
-  check?(values: WorkflowValues): string | null;
+  /**
+   * Cross-field checks after field validation. Return an error message or null.
+   * provided names the fields the caller sent (defaults filled in by validation are not in it).
+   */
+  check?(values: WorkflowValues, provided: ReadonlySet<string>): string | null;
   plan(values: WorkflowValues, models: Readonly<Record<string, ResolvedSlot>>, env: PlanEnv): WorkflowPlan;
 }
 

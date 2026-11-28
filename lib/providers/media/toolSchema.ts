@@ -63,6 +63,10 @@ function fieldSchema(field: WorkflowField): object {
     case "boolean": return { type: "boolean", default: field.default };
     case "colors": return { type: "array", minItems: field.min, maxItems: field.max, items: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" } };
     case "media": return { type: "array", minItems: field.min, maxItems: field.max, items: workflowMediaSchema() };
+    case "shots": return { type: "array", minItems: field.min, maxItems: field.max, items: object({
+      prompt: { type: "string", minLength: 1, maxLength: field.promptMaxLength },
+      durationSec: { type: "integer", minimum: 1 },
+    }, ["prompt", "durationSec"]) };
     default: { const exhaustive: never = field; return exhaustive; }
   }
 }

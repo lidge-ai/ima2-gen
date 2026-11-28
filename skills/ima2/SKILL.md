@@ -1685,13 +1685,14 @@ ima2 media keys validate VOCABULARY
 ima2 media keys delete VOCABULARY --yes
 ```
 
-Discover and inspect a workflow before estimating and running it. Repeat `--input` for list fields.
+Discover and inspect a workflow before estimating and running it. Repeat `--input` for list fields. A `shots` field (director-studio's cut list) takes one `--input shots=<seconds>:<prompt>` per shot, in order.
 
 ```bash
 ima2 media workflows
 ima2 media workflow WORKFLOW_ID --schema
 ima2 media workflow WORKFLOW_ID --input name=value --estimate
 ima2 media workflow WORKFLOW_ID --input name=value --request-id workflow-001 --no-wait
+ima2 media workflow director-studio --input "shots=5:wide, a canoe glides into the mist" --input "shots=7:close on the paddle" --estimate
 ima2 media studios
 ima2 media studio open NAME
 ima2 media studio open NAME --no-open   # print the URL, do not launch a browser

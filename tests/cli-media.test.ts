@@ -42,7 +42,7 @@ async function fixture(run: (base: string, calls: { url: string; body: string; t
       stream?.write(`event: done\ndata: ${JSON.stringify({ jobId: data.requestId, outputs: [{ filename: "result.png" }] })}\n\n`);
       return;
     }
-    if (url === "/api/workflows") { res.end(JSON.stringify({ workflows: [{ id: "demo", fields: [{ name: "image", type: "media", accept: "image" }, { name: "count", type: "integer" }, { name: "enabled", type: "boolean" }, { name: "palette", type: "colors" }] }] })); return; }
+    if (url === "/api/workflows") { res.end(JSON.stringify({ workflows: [{ id: "demo", fields: [{ name: "image", type: "media", accept: "image" }, { name: "count", type: "integer" }, { name: "enabled", type: "boolean" }, { name: "palette", type: "colors" }, { name: "shots", type: "shots" }] }] })); return; }
     if (url === "/api/workflows/demo/estimate") { res.end('{"estimate":{"usd":0.2,"complete":true,"steps":[]},"steps":[]}'); return; }
     if (url === "/api/workflows/demo") {
       const data = JSON.parse(body) as { requestId: string };
@@ -89,11 +89,13 @@ test("key from stdin is redacted even if server echoes it", async () => fixture(
 
 test("workflow estimate converts typed and uploaded inputs; run waits for completion", async () => fixture(async (base, calls) => {
   const image = join(root, "workflow.png"); await writeFile(image, "pixels");
-  const flags = ["workflow", "demo", "--input", `image=${image}`, "--input", "count=3", "--input", "enabled=false", "--input", "palette=#112233,#445566", "--json"];
+  const flags = ["workflow", "demo", "--input", `image=${image}`, "--input", "count=3", "--input", "enabled=false", "--input", "palette=#112233,#445566",
+    "--input", "shots=5:wide: a canoe at dawn", "--input", "shots=7:close up", "--json"];
   const estimate = await cli(base, [...flags, "--estimate"]);
   assert.equal(estimate.code, 0, estimate.stderr);
   assert.deepEqual(JSON.parse(calls.find((c) => c.url === "/api/workflows/demo/estimate")!.body).values,
-    { image: [{ ref: "input:fake.png" }], count: 3, enabled: false, palette: ["#112233", "#445566"] });
+    { image: [{ ref: "input:fake.png" }], count: 3, enabled: false, palette: ["#112233", "#445566"],
+      shots: [{ prompt: "wide: a canoe at dawn", durationSec: 5 }, { prompt: "close up", durationSec: 7 }] });
   const run = await cli(base, flags);
   assert.equal(run.code, 0, run.stderr); assert.equal(JSON.parse(run.stdout).paths[0], join(root, "result.png"));
 }));
