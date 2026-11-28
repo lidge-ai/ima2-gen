@@ -6,6 +6,9 @@ import { useStudio } from "../../studio/context.tsx";
 import { Icon } from "../../ui/Icon.tsx";
 import { SettingTile } from "../../ui/SettingTile.tsx";
 import { VendorLogo } from "../../ui/VendorLogo.tsx";
+import { useFolders } from "../../studio/folders.ts";
+import { FolderManager } from "./FolderManager.tsx";
+import { FM } from "./folderMessages.ts";
 import type { Tab } from "./AssetsPage.tsx";
 
 const tabs: readonly Tab[] = ["all", "images", "videos", "audio", "saved", "elements"];
@@ -19,15 +22,38 @@ export interface Narrow {
   model: string;
   order: Order;
   period: Period;
+  /** A folder id, or "" for every result. */
+  folder: string;
 }
-export const NO_NARROW: Narrow = { q: "", model: "", order: "newest", period: "any" };
+export const NO_NARROW: Narrow = { q: "", model: "", order: "newest", period: "any", folder: "" };
 
 /** The address query for a narrowing; defaults are left out. */
 export function narrowQuery(narrow: Narrow): Record<string, string | undefined> {
   return {
     q: narrow.q || undefined, model: narrow.model || undefined,
     period: narrow.period === "any" ? undefined : narrow.period, order: narrow.order === "oldest" ? "oldest" : undefined,
+    folder: narrow.folder || undefined,
   };
+}
+
+const EDIT = "\u0000edit";
+
+/** Which folder to show; the menu's last item opens the folder list. A folder in the address that no longer exists shows as "All results". */
+function FolderFilter({ folder, setFolder }: { folder: string; setFolder: (value: string) => void }) {
+  const t = useT(FM);
+  const { folders } = useFolders();
+  const [editing, setEditing] = useState(false);
+  const known = (folders ?? []).some((entry) => entry.id === folder);
+  return (
+    <>
+      <SettingTile
+        variant="chip" menuPlacement="bottom" caption={t("folder")} chipText={(label) => t("folder") + ": " + label}
+        value={known ? folder : ""} onChange={(value) => { if (value === EDIT) setEditing(true); else setFolder(value); }}
+        options={[{ value: "", label: t("allFolders") }, ...(folders ?? []).map((entry) => ({ value: entry.id, label: entry.name })), { value: EDIT, label: t("edit") }]}
+      />
+      <FolderManager open={editing} onClose={() => setEditing(false)} onRemoved={(id) => { if (id === folder) setFolder(""); }} />
+    </>
+  );
 }
 
 function ModelFilter({ model, setModel, models }: { model: string; setModel: (value: string) => void; models: readonly string[] }) {
@@ -98,6 +124,7 @@ export function AssetFilters({ tab, narrow, setNarrow, models, density, setDensi
         <div className="assets-narrow" role="group" aria-label={t("narrow")}>
           <Search value={narrow.q} onChange={(q) => setNarrow({ q })} />
           <ModelFilter model={narrow.model} setModel={(model) => setNarrow({ model })} models={models} />
+          <FolderFilter folder={narrow.folder} setFolder={(folder) => setNarrow({ folder })} />
           <SettingTile
             variant="chip" menuPlacement="bottom" caption={t("period")} chipText={(label) => t("period") + ": " + label}
             value={narrow.period} onChange={(period) => setNarrow({ period })} options={PERIODS.map((value) => ({ value, label: t(value) }))}

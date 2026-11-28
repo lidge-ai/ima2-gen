@@ -53,9 +53,98 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+
+/* Folders: the list dialog, and the folder menu on a result. */
+.folder-manager {
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--text);
+  width: min(520px, 96vw);
+  max-height: 86dvh;
+}
+.folder-manager::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+.folder-manager-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.folder-manager-body h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.folder-manager-body header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.folder-new,
+.folder-row-line,
+.move-folder-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.folder-new input,
+.folder-row-line input,
+.move-folder-new input {
+  flex: 1 1 160px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.folder-new .form-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+.folder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  max-height: 46dvh;
+  overflow-y: auto;
+}
+.folder-row {
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.folder-row-name,
+.folder-row-ask {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.folder-manager-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.move-folder {
+  display: grid;
+  gap: 6px;
+  flex-basis: 100%;
+  justify-items: start;
+}
+.move-folder p {
+  margin: 0;
+}
 .assets-density [aria-pressed="true"] {
   background: var(--surface-3);
   color: var(--text);
+}
+/* On a phone the grid is two columns either way, so the density choice is left out. */
+@media (max-width: 600px) {
+  .assets-density {
+    display: none;
+  }
 }
 @media (max-width: 760px) {
   .assets-filters {

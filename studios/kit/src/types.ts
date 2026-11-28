@@ -250,6 +250,8 @@ export interface HistoryItem {
   height?: number;
   durationSec?: number;
   favorite?: boolean;
+  /** The folder this result is filed in; null when in none. Absent from a server that does not say. */
+  folderId?: string | null;
 }
 
 /** A saved result as a ComfyUI graph in API format (GET /api/comfy/result-graph). */
@@ -273,6 +275,8 @@ export interface HistoryQuery {
   /** Period: created after sinceMs, and at or before untilMs. */
   sinceMs?: number;
   untilMs?: number;
+  /** Only results filed in this folder. */
+  folderId?: string;
   /** Also return how many results each model has under the other filters. */
   models?: boolean;
   cursor?: string;

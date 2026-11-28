@@ -222,4 +222,10 @@ export class Studio {
     const next = { ...item, favorite };
     this.set({ history: this.state.history.map((it) => (it.historyId === next.historyId ? next : it)) });
   }
+
+  /** Puts a result in a folder, or takes it out with null. Every list of results reads again. */
+  async fileResult(item: HistoryItem, folderId: string | null): Promise<void> {
+    await this.client.folders.file(item, folderId);
+    this.set({ history: this.state.history.map((it) => (it.historyId === item.historyId ? { ...it, folderId } : it)) });
+  }
 }

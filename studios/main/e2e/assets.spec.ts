@@ -56,11 +56,14 @@ test("history errors can be retried", async ({ page }) => {
 test("assets: search, kind, period and order are asked of the server; the count and a clear action follow the filters", async ({ page, request }) => {
   const mark = "mk" + Date.now().toString(36);
   const prompts = { fox: "harbor " + mark + " fox", whale: mark + " whale" };
-  for (const data of [
+  // One after the other: a result's time is when it finished, and the order below depends on it.
+  for (const [n, data] of [
     { model: "openai/gpt-image-2", task: "text-to-image", prompt: prompts.fox, inputs: [] },
     { model: "bytedance/seedance-2.5", task: "text-to-video", prompt: prompts.whale, inputs: [] },
-  ]) expect((await request.post("/api/media", { data })).ok()).toBeTruthy();
-  await expect.poll(async () => ((await (await request.get("/api/history?q=" + mark)).json()) as { matched: number }).matched, { timeout: 20_000 }).toBe(2);
+  ].entries()) {
+    expect((await request.post("/api/media", { data })).ok()).toBeTruthy();
+    await expect.poll(async () => ((await (await request.get("/api/history?q=" + mark)).json()) as { matched: number }).matched, { timeout: 20_000 }).toBe(n + 1);
+  }
 
   await page.goto("/#/assets/all");
   const tools = page.getByRole("group", { name: "Search, filter and sort" });

@@ -1,4 +1,5 @@
 import { assets } from "./assets.ts";
+import { folderOf } from "./filing.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { makeCatalog, routeParamsFor, wireCatalog } from "./catalog.ts";
@@ -276,7 +277,7 @@ async function history(
 ): Promise<void> {
   const browser = String(req.headers["x-ima2-browser-id"] ?? "default");
   if (req.method === "GET" && !parts[2]) {
-    send(res, 200, jobs.history.list(url.searchParams, browser));
+    send(res, 200, jobs.history.list(url.searchParams, browser, (filename) => folderOf(jobs, filename)));
     return;
   }
   if (req.method === "POST" && parts[2] === "favorite") {

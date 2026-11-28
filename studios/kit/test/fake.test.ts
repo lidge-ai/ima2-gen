@@ -212,6 +212,51 @@ test("history: the server searches, filters, orders and counts, and audio result
   });
 });
 
+test("folders: a result is filed, listed by folder, moved and taken out; deleting a folder keeps its results", async () => {
+  await withServer({ timeScale: 0.02 }, async ({ client }) => {
+    await client.keys.save("elevenlabs", { apiKey: SECRET });
+    const run = async (body: Parameters<typeof client.media.submit>[0]) => (await client.watchJob((await client.media.submit(body)).jobId)).outputs![0]!.historyId!;
+    const fox = await run({ ...image, prompt: "fox" });
+    const whale = await run({ ...image, prompt: "whale" });
+    const song = await run({ model: "elevenlabs/elevenlabs-music-2.5", task: "text-to-audio", prompt: "piano", durationSec: 5, inputs: [] });
+    const item = async (id: string) => (await client.history.list()).items.find((entry) => entry.historyId === id)!;
+    assert.equal((await item(fox)).folderId, null);
+
+    const animals = await client.folders.create("  Animals ");
+    const sounds = await client.folders.create("Sounds");
+    assert.equal(animals.name, "Animals");
+    assert.deepEqual((await client.folders.list()).map((folder) => folder.name), ["Animals", "Sounds"]);
+    await assert.rejects(client.folders.create("   "), (err) => err instanceof StudioApiError && err.code === "INVALID_NAME");
+
+    await client.folders.file(await item(fox), animals.id);
+    await client.folders.file(await item(whale), animals.id);
+    await client.folders.file(await item(song), sounds.id);
+    assert.equal((await item(fox)).folderId, animals.id);
+    const inAnimals = await client.history.list({ folderId: animals.id });
+    assert.deepEqual(inAnimals.items.map((entry) => entry.prompt).sort(), ["fox", "whale"]);
+    assert.equal(inAnimals.matched, 2);
+    // An audio result is filed like the others.
+    assert.deepEqual((await client.history.list({ folderId: sounds.id })).items.map((entry) => entry.kind), ["audio"]);
+
+    // Moving and taking out change the one record; a result is never in two folders.
+    await client.folders.file(await item(whale), sounds.id);
+    assert.equal((await item(whale)).folderId, sounds.id);
+    assert.equal((await client.history.list({ folderId: animals.id })).matched, 1);
+    await client.folders.file(await item(whale), null);
+    assert.equal((await item(whale)).folderId, null);
+    // Taking out a result that was never filed makes no record.
+    await client.folders.file(await item(whale), null);
+
+    assert.equal((await client.folders.rename(animals.id, "Wildlife")).name, "Wildlife");
+    await client.folders.remove(animals.id);
+    assert.deepEqual((await client.folders.list()).map((folder) => folder.name), ["Sounds"]);
+    const after = await item(fox);
+    assert.equal(after.folderId, null, "the result left the deleted folder");
+    assert.equal(after.prompt, "fox", "the result itself is still there");
+    await assert.rejects(client.folders.file(after, animals.id), (err) => err instanceof StudioApiError && err.code === "INVALID_FOLDER");
+  });
+});
+
 test("workflows estimate per step and run with step events", async () => {
   await withServer({ timeScale: 0.02 }, async ({ client }) => {
     const defs = await client.workflows.list();

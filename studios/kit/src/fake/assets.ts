@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Jobs } from "./jobs.ts";
+import { FILE_KINDS, FilingRefusal, changeFiled, fileResult, folders, listFiled } from "./filing.ts";
 
 interface Stored { id: string; kind: "element"; name: string; notes: string | null; metadata: { elementKind: string; name: string; refs: string[] }; tags: string[]; createdAt: number; updatedAt: number }
 const KINDS = ["character", "product", "style", "scene"];
@@ -51,7 +52,13 @@ export async function assets(req: IncomingMessage, res: ServerResponse, url: URL
   if (p[0] !== "api" || p[1] !== "assets") return false;
   const list = of(jobs);
   try {
-    if (req.method === "GET" && p.length === 2) {
+    if (p[2] === "folders") {
+      const answer = folders(jobs, req.method ?? "GET", p[3], req.method === "POST" || req.method === "PATCH" ? await json(req) : {});
+      if (!answer) throw new Refusal(404, "NOT_FOUND", "Not found");
+      send(res, answer.status, answer.body);
+    } else if (req.method === "GET" && p.length === 2 && (url.searchParams.has("filePath") || url.searchParams.has("folderId") || FILE_KINDS.includes(url.searchParams.get("kind") ?? ""))) {
+      send(res, 200, { assets: listFiled(jobs, url.searchParams), nextCursor: null });
+    } else if (req.method === "GET" && p.length === 2) {
       const kind = url.searchParams.get("elementKind");
       if (kind && !KINDS.includes(kind)) throw new Refusal(400, "INVALID_ELEMENT_KIND", "elementKind must be one of " + KINDS.join("|"));
       send(res, 200, { assets: url.searchParams.get("kind") === "element" || !url.searchParams.has("kind") ? list.filter((a) => !kind || a.metadata.elementKind === kind) : [], nextCursor: null });
@@ -72,16 +79,23 @@ export async function assets(req: IncomingMessage, res: ServerResponse, url: URL
       send(res, 201, { asset: create(jobs, name, checked(jobs, { elementKind: body.elementKind ?? "character", name, refs: [ref] })) });
     } else if (req.method === "POST" && p.length === 2) {
       const body = await json(req);
-      if (body.kind !== "element") throw new Refusal(400, "INVALID_KIND", "only elements are kept by this server");
-      send(res, 201, { asset: create(jobs, body.name, checked(jobs, body.metadata)) });
+      if (FILE_KINDS.includes(String(body.kind))) send(res, 201, { asset: fileResult(jobs, body) });
+      else if (body.kind !== "element") throw new Refusal(400, "INVALID_ASSET_KIND", "this server keeps elements and filed results");
+      else send(res, 201, { asset: create(jobs, body.name, checked(jobs, body.metadata)) });
     } else if (p.length === 3 && (req.method === "PATCH" || req.method === "DELETE")) {
+      const body = req.method === "PATCH" ? await json(req) : {};
+      const filed = changeFiled(jobs, req.method, p[2]!, body);
+      if (filed) {
+        send(res, filed.status, filed.body);
+        return true;
+      }
       const index = list.findIndex((a) => a.id === p[2]);
       if (index < 0) throw new Refusal(404, "ASSET_NOT_FOUND", "Asset not found");
       if (req.method === "DELETE") {
         list.splice(index, 1);
         send(res, 200, { ok: true });
       } else {
-        const body = await json(req), asset = list[index]!;
+        const asset = list[index]!;
         if (body.metadata !== undefined) asset.metadata = checked(jobs, body.metadata, asset.metadata.refs);
         if (typeof body.name === "string" && body.name.trim()) asset.name = body.name.trim().slice(0, 80);
         asset.updatedAt = Date.now();
@@ -89,7 +103,7 @@ export async function assets(req: IncomingMessage, res: ServerResponse, url: URL
       }
     } else throw new Refusal(404, "NOT_FOUND", "Not found");
   } catch (error) {
-    if (!(error instanceof Refusal)) throw error;
+    if (!(error instanceof Refusal) && !(error instanceof FilingRefusal)) throw error;
     send(res, error.status, { error: { code: error.code, message: error.message } });
   }
   return true;
