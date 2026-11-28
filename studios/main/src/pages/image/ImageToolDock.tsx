@@ -9,7 +9,8 @@ import { SettingTile } from "../../ui/SettingTile.tsx";
 import type { SlotValue } from "../../ui/UploadSlot.tsx";
 import { Count } from "../create/ImageDock.tsx";
 import { resolutionLabel, routeChipText, routeOptions } from "../create/ParamControls.tsx";
-import { modelsFor, takes } from "./imageState.ts";
+import { MaskBrush } from "./MaskBrush.tsx";
+import { brushable, modelsFor, sentMask, takes } from "./imageState.ts";
 import type { useImageTool } from "./useImageTool.ts";
 
 const M = messages(
@@ -22,6 +23,8 @@ const M = messages(
     "image-to-imagePrompt": "Describe the change", "image-upscalePrompt": "Describe what to keep or sharpen",
     "image-vectorizePrompt": "Describe the drawing", "image-segmentPrompt": "Name what to separate",
     prompt: "Prompt", images: "Images", add: "Add an image", file: "Image file", remove: "Remove {name}", full: "This model takes no more images here",
+    paint: "Paint the area to change", repaint: "Paint the area again", unpaint: "Remove the painted area", painted: "Only the painted area of the first image changes.",
+    unusedMask: "This route has no brush, so the whole image is edited.",
     count: "{n} of {max}", resolution: "Size", aspect: "Aspect ratio", quality: "Quality",
     route: "Run through",
     generate: "Generate", sending: "Sending", nokey: "Add a key to generate.", uploadError: "Upload failed. Try again.",
@@ -36,6 +39,8 @@ const M = messages(
     "image-to-imagePrompt": "바꾸고 싶은 내용을 적어 주세요", "image-upscalePrompt": "살리거나 선명하게 할 부분을 적어 주세요",
     "image-vectorizePrompt": "그림을 설명해 주세요", "image-segmentPrompt": "나눌 대상을 적어 주세요",
     prompt: "프롬프트", images: "이미지", add: "이미지 추가", file: "이미지 파일", remove: "{name} 삭제", full: "이 모델은 여기서 이미지를 더 받지 않아요",
+    paint: "바꿀 부분 칠하기", repaint: "다시 칠하기", unpaint: "칠한 부분 지우기", painted: "첫 이미지의 칠한 부분만 바뀌어요.",
+    unusedMask: "이 경로에는 브러시가 없어 이미지 전체를 편집해요.",
     count: "{n}/{max}", resolution: "크기", aspect: "화면 비율", quality: "품질",
     route: "사용 경로",
     generate: "생성", sending: "요청 중", nokey: "생성하려면 키를 추가해 주세요.", uploadError: "업로드하지 못했어요. 다시 시도해 주세요.",
@@ -46,12 +51,13 @@ const M = messages(
 type Tool = ReturnType<typeof useImageTool>;
 
 /** The images the tool works on: thumbnails with a remove button each, and an add button until the route's limit. */
-function Tray({ tool, max }: { tool: Tool; max: number }) {
+function Tray({ tool, max, brush }: { tool: Tool; max: number; brush: boolean }) {
   const t = useT(M);
   const studio = useStudioApi();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [painting, setPainting] = useState(false);
   const { images } = tool.state;
   const full = images.length >= max;
   const take = async (files: readonly File[]) => {
@@ -82,6 +88,25 @@ function Tray({ tool, max }: { tool: Tool; max: number }) {
         <Icon name={busy ? "clock" : "plus"} size={16} />
       </button>
       <span className="dock-tray-count" aria-live="polite">{t("count", { n: images.length, max })}</span>
+      {brush && images[0] ? (
+        <>
+          <button type="button" className="chip" aria-pressed={!!tool.state.mask} onClick={() => setPainting(true)}>
+            <Icon name="sparkle" size={13} /> {t(tool.state.mask ? "repaint" : "paint")}
+          </button>
+          {tool.state.mask ? (
+            <button type="button" className="chip" onClick={() => tool.setMask(null)}>{t("unpaint")}</button>
+          ) : null}
+        </>
+      ) : null}
+      <MaskBrush
+        image={painting && images[0] ? { url: images[0].upload.url, name: images[0].name } : null}
+        onCancel={() => setPainting(false)}
+        onDone={async (blob) => {
+          const file = new File([blob], "mask.png", { type: "image/png" });
+          tool.setMask({ role: "mask", upload: await studio.upload(file), name: file.name });
+          setPainting(false);
+        }}
+      />
       {failed ? <span className="form-error" role="alert">{t("uploadError")}</span> : null}
       <input
         ref={input} type="file" accept="image/*" multiple={max > 1} hidden aria-label={t("file")}
@@ -103,7 +128,7 @@ function Settings({ catalog, tool }: { catalog: Catalog; tool: Tool }) {
         <SettingTile variant="chip" icon="layers" caption={t("resolution")} value={state.resolution}
           options={form.resolutions.map((value) => ({ value, label: resolutionLabel(value) }))} onChange={(resolution) => tool.set({ resolution })} />
       ) : null}
-      {form && form.aspectRatios.length > 0 && state.aspectRatio ? (
+      {form && form.aspectRatios.length > 0 && state.aspectRatio && !sentMask(form, state) ? (
         <SettingTile variant="chip" icon="ratio" caption={t("aspect")} value={state.aspectRatio}
           options={form.aspectRatios.map((value) => ({ value, label: value }))} onChange={(aspectRatio) => tool.set({ aspectRatio })} />
       ) : null}
@@ -145,7 +170,8 @@ export function ImageToolDock({ catalog, tool, tabs, unrunnable, notice }: Props
         <div className="dock-fields">
           {unrunnable ? <p className="form-hint dock-reason" role="status">{t("notHere", { model: unrunnable })}</p> : null}
           <p className="dock-help">{t((task + "Help") as "image-upscaleHelp")}</p>
-          <Tray tool={tool} max={form?.max ?? 1} />
+          <Tray tool={tool} max={form?.max ?? 1} brush={brushable(form)} />
+          {sentMask(form, state) ? <p className="dock-help" role="status">{t("painted")}</p> : state.mask && !brushable(form) ? <p className="form-hint dock-reason" role="status">{t("unusedMask")}</p> : null}
           {form && takes(form, "prompt") ? (
             <>
               <label className="visually-hidden" htmlFor="image-tool-prompt">{t("prompt")}</label>

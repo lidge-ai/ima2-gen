@@ -56,7 +56,12 @@ export function useImageTool(catalog: Catalog, tool: ImageTask, requested: strin
     pickRoute: (provider: string) => setState((s) => withModel(s, catalog.models.find((m) => m.id === s.model), provider)),
     set: (patch: Partial<Pick<ToolState, "prompt" | "resolution" | "aspectRatio" | "quality" | "count">>) => setState((s) => ({ ...s, ...patch })),
     addImages: (values: readonly SlotValue[]) => setState((s) => ({ ...s, images: [...s.images, ...values] })),
-    removeImage: (inputId: string) => setState((s) => ({ ...s, images: s.images.filter((image) => image.upload.inputId !== inputId) })),
+    // The mask was painted on the first image; it goes when that image does.
+    removeImage: (inputId: string) => setState((s) => ({
+      ...s, images: s.images.filter((image) => image.upload.inputId !== inputId),
+      mask: s.images[0]?.upload.inputId === inputId ? null : s.mask,
+    })),
+    setMask: (mask: SlotValue | null) => setState((s) => ({ ...s, mask })),
     submit,
   };
 }

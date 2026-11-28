@@ -113,6 +113,70 @@
   place-items: center;
   padding: 0;
 }
+.mask-brush {
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--text);
+  width: min(900px, 96vw);
+  max-height: 92dvh;
+}
+.mask-brush::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+.mask-brush-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.mask-brush-body h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.mask-brush-body header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.mask-brush-stage {
+  position: relative;
+  justify-self: center;
+  line-height: 0;
+  background: #000;
+  border-radius: var(--radius-m, 10px);
+  overflow: hidden;
+}
+.mask-brush-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: 60dvh;
+}
+.mask-brush-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* The strokes are white in the mask; on screen they read as a tint over the image. */
+  opacity: 0.55;
+  cursor: crosshair;
+  touch-action: none;
+}
+.mask-brush-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.mask-brush-tools label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.mask-brush-spacer {
+  flex: 1;
+}
 .dock-tools {
   display: flex;
   flex-wrap: wrap;
