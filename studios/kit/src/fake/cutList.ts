@@ -1,4 +1,6 @@
+import { chooseRoute } from "../routing.ts";
 import type { Catalog } from "../types.ts";
+import { routeParamsFor } from "./catalog.ts";
 import type { WireWorkflow } from "../wire.ts";
 
 /**
@@ -50,7 +52,11 @@ export function planCuts(def: WireWorkflow, values: Record<string, unknown>, cat
   if (values.duration !== undefined && values.duration !== null && values.duration !== "") {
     return { message: "duration: leave it out when shots are given; the shots set the length" };
   }
-  const listed = [...(catalog.models.find((m) => m.id === model)?.params.durationsSec ?? [])].sort((a, b) => a - b);
+  // Like the server, the lengths are those of the route the model runs on when none is chosen.
+  const spec = catalog.models.find((m) => m.id === model);
+  const choice = spec ? chooseRoute(spec) : undefined;
+  const params = spec && choice && choice.kind !== "unavailable" ? routeParamsFor(spec, choice.route.providerId) : spec?.params;
+  const listed = [...(params?.durationsSec ?? [])].sort((a, b) => a - b);
   const [min, max] = listed.length ? [listed[0]!, listed[listed.length - 1]!] : [MIN_SHOT_SEC, KNOWN_MAX_SHOT_SEC[model] ?? 15];
   const fitted: number[] = [];
   for (const [i, shot] of shots.entries()) {

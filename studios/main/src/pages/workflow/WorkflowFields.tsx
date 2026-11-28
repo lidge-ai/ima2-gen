@@ -39,8 +39,8 @@ function useNextStep(form: WorkflowForm): string | null {
 }
 
 const M = messages(
-  { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", afterInputs: "Step costs appear once the inputs are complete.", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable", auto: "Auto", typeValue: "Type to set", on: "On", off: "Off", credits: "Sources ({n})", addAnother: "Add another: {label}", count: "{n} of {max}" },
-  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", afterInputs: "입력을 마치면 단계별 비용이 나와요.", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐", credits: "출처 ({n})", addAnother: "하나 더 추가: {label}", count: "{max}개 중 {n}개" },
+  { prompt: "Prompt", required: "Required", optional: "Optional", steps: "Steps and estimated cost", noRoute: "No route", unavailable: "Model unavailable for {step}", addInputs: "Add required inputs to estimate", afterInputs: "Step costs appear once the inputs are complete.", estimateUnavailable: "Estimate unavailable", estimating: "Estimating", breakdown: "Cost breakdown", unpublished: "Price not published", requiredList: "Required: {fields}", priceFailed: "Price estimate failed: {error}", sending: "Sending", generate: "Generate", addPrice: "Add inputs for price", priceUnavailable: "Price unavailable", auto: "Auto", typeValue: "Type to set", on: "On", off: "Off", credits: "Sources ({n})", addAnother: "Add another: {label}", count: "{n} of {max}", shot: "Shot {n}" },
+  { prompt: "프롬프트", required: "필수", optional: "선택", steps: "단계 및 예상 비용", noRoute: "경로 없음", unavailable: "{step}에 사용할 모델이 없어요", addInputs: "예상 비용을 보려면 필수 항목을 추가해 주세요", afterInputs: "입력을 마치면 단계별 비용이 나와요.", estimateUnavailable: "예상 비용을 볼 수 없어요", estimating: "예상 비용 계산 중", breakdown: "비용 내역", unpublished: "공개된 가격 없음", requiredList: "필수: {fields}", priceFailed: "예상 비용 계산 실패: {error}", sending: "요청 중", generate: "생성", addPrice: "비용을 보려면 입력 추가", priceUnavailable: "가격 확인 불가", auto: "자동", typeValue: "입력해서 지정", on: "켜짐", off: "꺼짐", credits: "출처 ({n})", addAnother: "하나 더 추가: {label}", count: "{max}개 중 {n}개", shot: "컷 {n}" },
 );
 
 function TextWorkflowInput({
@@ -314,13 +314,19 @@ function WorkflowCosts({ form }: { form: WorkflowForm }) {
     <div className="workflow-steps" aria-label={t("breakdown")}>
       {form.estimate.steps.map((step) => (
         <div className="workflow-step" key={step.id}>
-          <span>{step.label ?? step.id}</span>
+          <span>{shotLabel(step.label ?? step.id)}</span>
           {step.model ? <ModelName id={step.model} /> : null}
           <span className="muted">{price(step.estimate)}</span>
         </div>
       ))}
     </div>
   );
+}
+
+/** The server names a cut list's steps "Shot 1", "Shot 2"; they read in the screen's language like the list does. */
+function shotLabel(label: string): string {
+  const shot = /^Shot (\d+)$/.exec(label);
+  return shot ? tr(M, "shot", { n: shot[1]! }) : label;
 }
 
 export function price(value: { usd: number | null; basis: string }): string {

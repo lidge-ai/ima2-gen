@@ -1,4 +1,4 @@
-import type { CatalogModel } from "@ima2/studio-kit";
+import { chooseRoute, type CatalogModel } from "@ima2/studio-kit";
 
 /** One row of the cut list on screen; id keeps a row's fields with it while rows move. */
 export interface Cut {
@@ -14,9 +14,14 @@ const START_SEC = 5;
 let serial = 0;
 export const newCut = (durationSec = START_SEC): Cut => ({ id: ++serial, prompt: "", durationSec });
 
-/** The lengths one shot can have with a model: its listed lengths in order, or null when it lists none. */
+/**
+ * The lengths one shot can have with a model: its listed lengths in order, or null when it lists none.
+ * The server reads them from the route the model runs on when none is chosen, so this does too.
+ */
 export function shotLengths(model: CatalogModel | undefined): readonly number[] | null {
-  const listed = model?.params.durationsSec;
+  const choice = model ? chooseRoute(model) : undefined;
+  const params = model && choice && choice.kind !== "unavailable" ? (model.routeParams?.[choice.route.providerId] ?? model.params) : model?.params;
+  const listed = params?.durationsSec;
   return listed && listed.length > 0 ? [...listed].sort((a, b) => a - b) : null;
 }
 
