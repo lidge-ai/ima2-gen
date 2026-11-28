@@ -133,3 +133,47 @@ describe("element refs point at files that exist", () => {
     assert.equal(bad.status, 400);
   }));
 });
+describe("deleting an element removes the upload copy only it used", () => {
+  const fromUpload = async (base: string, text: string) => {
+    const made = await request(base, "/api/assets/promote-element", "POST", { inputRef: (await upload(text)).ref, name: "Copy" });
+    assert.equal(made.status, 201);
+    return { id: made.body.asset.id as string, ref: (made.body.asset.metadata.refs as string[])[0]! };
+  };
+
+  it("the copy made for an element is removed with it", async () => withApp(async (base) => {
+    const one = await fromUpload(base, "only-mine");
+    assert.ok(existsSync(join(GENERATED_DIR, one.ref)));
+    const removed = await request(base, "/api/assets/" + one.id, "DELETE");
+    assert.deepEqual([removed.status, removed.body.ok], [200, true]);
+    assert.ok(!existsSync(join(GENERATED_DIR, one.ref)), "the element's copy is still on disk");
+  }));
+
+  it("a copy another element still points at stays until the last of them is deleted", async () => withApp(async (base) => {
+    const first = await fromUpload(base, "shared");
+    const second = await request(base, "/api/assets", "POST", element([first.ref, "a.png"]));
+    assert.equal(second.status, 201);
+    assert.equal((await request(base, "/api/assets/" + first.id, "DELETE")).status, 200);
+    assert.ok(existsSync(join(GENERATED_DIR, first.ref)), "a file another element uses was removed");
+    assert.equal((await request(base, "/api/assets/" + second.body.asset.id, "DELETE")).status, 200);
+    assert.ok(!existsSync(join(GENERATED_DIR, first.ref)), "the copy outlived every element that used it");
+    assert.ok(existsSync(join(GENERATED_DIR, "a.png")), "a result was removed with an element");
+  }));
+
+  it("results, files in subfolders of elements/ and other asset kinds are never removed", async () => withApp(async (base) => {
+    mkdirSync(join(GENERATED_DIR, "elements", "nested"), { recursive: true });
+    writeFileSync(join(GENERATED_DIR, "elements", "nested", "deep.png"), "deep");
+    writeFileSync(join(GENERATED_DIR, "elements", "kept.png"), "kept");
+    const made = await request(base, "/api/assets", "POST", element(["b.png", "elements/nested/deep.png", "./elements/../b.png"]));
+    assert.equal(made.status, 201);
+    assert.equal((await request(base, "/api/assets/" + made.body.asset.id, "DELETE")).status, 200);
+    assert.ok(existsSync(join(GENERATED_DIR, "b.png")), "a result was removed with an element");
+    assert.ok(existsSync(join(GENERATED_DIR, "elements", "nested", "deep.png")), "a file below a subfolder was removed");
+    // An image asset whose file happens to sit in elements/ is a catalog row, not an element.
+    const image = await request(base, "/api/assets", "POST", { kind: "image", name: "Kept", filePath: "elements/kept.png" });
+    assert.equal(image.status, 201);
+    assert.equal((await request(base, "/api/assets/" + image.body.asset.id, "DELETE")).status, 200);
+    assert.ok(existsSync(join(GENERATED_DIR, "elements", "kept.png")), "an image asset's file was removed");
+    // An unknown id is still a 404.
+    assert.equal((await request(base, "/api/assets/nope", "DELETE")).status, 404);
+  }));
+});

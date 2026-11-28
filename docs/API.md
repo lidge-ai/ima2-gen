@@ -905,7 +905,7 @@ files inside `generated/`; deleting an asset never deletes the file.
 | `POST` | `/api/video/keying` | Derive an alpha WebM from a generated green-screen mp4 (`source`, `keyParams{tolerance,softness,keyColor?}`, `projectId?`, `name?`) — responds `202 {requestId, filePath}`, publishes `keying-start/progress/done/error` on the event bus, writes sidecar with `derivedFrom` and registers a video asset |
 | `PATCH` | `/api/assets/:id` | Update name/folder/notes/tags/metadata |
 | `POST` | `/api/assets/:id/test-sheet` | Run an element test sheet; currently returns `501 TEST_SHEET_NOT_IMPLEMENTED` after validating the element asset |
-| `DELETE` | `/api/assets/:id` | Delete the catalog row only (file untouched) |
+| `DELETE` | `/api/assets/:id` | Delete the catalog row only (file untouched). One exception: deleting an `element` also removes the upload copies it pointed at, that is, files directly inside `elements/` that no other element lists in its refs. Results and files elsewhere are never removed |
 | `DELETE` | `/api/assets/all` | Delete all asset records (files untouched) |
 | `GET` | `/api/assets/folders` | List folders (flat; tree assembled client-side) |
 | `POST` | `/api/assets/folders` | Create folder (`name`, `parentId?`) |
