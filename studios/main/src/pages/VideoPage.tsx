@@ -2,6 +2,8 @@ import { messages, useT } from "../i18n.ts";
 import { useEffect, useState } from "react";
 import type { Catalog } from "@ima2/studio-kit";
 import { findPreset, type Preset } from "../data/presets.ts";
+import { findMove, insertPhrase } from "../data/cameraMoves.ts";
+import { replaceRoute } from "../router.ts";
 import { useStudio } from "../studio/context.tsx";
 import { Feed } from "../ui/Feed.tsx";
 import { Icon } from "../ui/Icon.tsx";
@@ -108,7 +110,7 @@ function Stage(props: StageProps) {
   );
 }
 
-export function VideoPage({ preset, model: requested, mode }: { preset?: string; model?: string; mode?: string }) {
+export function VideoPage({ preset, model: requested, mode, move }: { preset?: string; model?: string; mode?: string; move?: string }) {
   const t = useT(M);
   const catalog = useStudio((s) => s.catalog);
   const speaking = mode === "speak";
@@ -117,6 +119,14 @@ export function VideoPage({ preset, model: requested, mode }: { preset?: string;
   const [view, setView] = useState<View>("history");
   const set = (patch: Partial<CreateForm>) => setForm((f) => ({ ...f, notice: undefined, noticeModel: undefined, info: undefined, ...patch }));
   useEffect(() => writeDraft("video", form.prompt), [form.prompt]);
+  // A camera move chosen on the Presets page: its sentence is added to what is already written, once,
+  // and the address drops it so a reload does not add it again.
+  useEffect(() => {
+    const chosen = findMove(move);
+    if (!chosen) return;
+    setForm((f) => (f.prompt.includes(chosen.phrase) ? f : { ...f, prompt: insertPhrase(f.prompt, chosen.phrase).text }));
+    replaceRoute("video", { model: requested, mode });
+  }, [move, requested, mode]);
   // The talking and edit forms keep their own model in the address.
   useEffect(() => { if (!speaking && !editing) syncModelToUrl("video", form.model); }, [form.model, speaking, editing]);
   // A failed job's "Edit the prompt" or "Try again" puts its prompt and model back here; a result's

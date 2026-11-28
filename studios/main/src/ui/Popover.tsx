@@ -9,7 +9,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-export type Placement = "bottom" | "top" | "right";
+/** "beside": to the right of a region (see region), level with the trigger; where that does not fit, beside the trigger, then below it. */
+export type Placement = "bottom" | "top" | "right" | "beside";
 
 interface Props {
   open: boolean;
@@ -19,15 +20,20 @@ interface Props {
   anchor: RefObject<HTMLElement | null>;
   placement?: Placement;
   className?: string;
+  /** With placement "beside": the region the panel sits next to, so it covers none of it (a form the trigger is in). */
+  region?: () => Element | null;
 }
 
 const MARGIN = 8;
 
-function place(anchor: DOMRect, panel: DOMRect, placement: Placement): CSSProperties {
+function place(anchor: DOMRect, panel: DOMRect, placement: Placement, region?: DOMRect | null): CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  const clampTop = (y: number) => Math.max(MARGIN, Math.min(y, vh - panel.height - MARGIN));
+  if (placement === "beside" && region && region.right + 8 + panel.width <= vw - MARGIN) return { left: region.right + 8, top: clampTop(anchor.top) };
   const fitsRight = anchor.right + 12 + panel.width <= vw - MARGIN;
-  const side = placement === "right" && !fitsRight ? "bottom" : placement;
+  const beside = placement === "beside" ? "right" : placement;
+  const side = beside === "right" && !fitsRight ? "bottom" : beside;
   const clampX = (x: number) => Math.max(MARGIN, Math.min(x, vw - panel.width - MARGIN));
   const clampY = (y: number) => Math.max(MARGIN, Math.min(y, vh - panel.height - MARGIN));
   if (side === "right")
@@ -49,7 +55,7 @@ function place(anchor: DOMRect, panel: DOMRect, placement: Placement): CSSProper
  * Floating panel attached to its trigger. Rendered in body so scroll containers never clip it; when the trigger is
  * inside an open modal dialog, rendered in that dialog, because nothing outside a modal dialog can be seen or clicked.
  */
-export function Popover({ open, onClose, label, children, anchor, placement = "bottom", className }: Props) {
+export function Popover({ open, onClose, label, children, anchor, placement = "bottom", className, region }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
   const focusPending = useRef(false);
@@ -57,7 +63,7 @@ export function Popover({ open, onClose, label, children, anchor, placement = "b
     if (!open) return;
     const update = () => {
       if (!anchor.current || !ref.current) return;
-      setStyle(place(anchor.current.getBoundingClientRect(), ref.current.getBoundingClientRect(), placement));
+      setStyle(place(anchor.current.getBoundingClientRect(), ref.current.getBoundingClientRect(), placement, region?.()?.getBoundingClientRect()));
     };
     update();
     focusPending.current = true;

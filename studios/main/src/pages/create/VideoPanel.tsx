@@ -2,6 +2,7 @@ import { messages, useT } from "../../i18n.ts";
 import { useRef } from "react";
 import type { Catalog, CatalogModel } from "@ima2/studio-kit";
 import { ElementPicker } from "../../ui/ElementPicker.tsx";
+import { CameraMoveMenu } from "../../ui/CameraMoveMenu.tsx";
 import { findPreset } from "../../data/presets.ts";
 import { Icon } from "../../ui/Icon.tsx";
 import { KeyNotice } from "../../ui/KeyNotice.tsx";
@@ -156,13 +157,14 @@ function PromptCard({ model, form, set }: { model: CatalogModel | undefined; for
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
         }}
       />
-      {model?.params.nativeAudio ? (
-        <div className="prompt-editor-chips">
+      <div className="prompt-editor-chips">
+        {model?.params.nativeAudio ? (
           <button type="button" className="chip" aria-pressed={form.audio} onClick={() => set({ audio: !form.audio })}>
             <Icon name="audio" size={13} /> {t(form.audio ? "soundOn" : "soundOff")}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+        <CameraMoveMenu value={form.prompt} onChange={(prompt) => set({ prompt })} field={() => document.getElementById("video-prompt") as HTMLTextAreaElement | null} />
+      </div>
     </div>
   );
 }
